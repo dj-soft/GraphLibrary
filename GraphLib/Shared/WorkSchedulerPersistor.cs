@@ -219,6 +219,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string DataContent { get; set; }
         /// <summary>
+        /// Verze, pod kterou chceme ukládat data. Defaultní = null = nejnovější.
+        /// Možnosti jsou <see cref="Version100"/> nebo <see cref="Version200"/>.
+        /// </summary>
+        public string Version { get; set; }
+        /// <summary>
+        /// Verze 1.00
+        /// </summary>
+        public const string Version100 = XmlPersist.XmlPersistV1.Version;
+        /// <summary>
+        /// Verze 2.00
+        /// </summary>
+        public const string Version200 = XmlPersist.XmlPersistV2.Version;
+        /// <summary>
         /// Režim komprimace.
         /// Defaultní je <see cref="XmlCompressMode.None"/> = výstupní string není komprimovaný.
         /// </summary>
@@ -260,7 +273,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Chybný formát hodnot
         /// </summary>
-        BadFormatValue
+        BadFormatValue,
+        /// <summary>
+        /// Hotovo
+        /// </summary>
+        Done
     }
     /// <summary>
     /// Režim komprimace serializovaného stringu
@@ -1716,11 +1733,6 @@ namespace Noris.LCS.Base.WorkScheduler
             ((IDisposable)this._TypeLibrary).Dispose();
             this._TypeLibrary = null;
         }
-        /// <summary>
-        /// Označení verze dat při jejich načítání.
-        /// Je tak umožněno aktuálním loaderem načíst data uložená v dřívější verzi XmlPersist.
-        /// </summary>
-        private string XmlPersistedVersion { get; set; }
         #endregion
         #region Statické internal metody = jediný veřejný přístup
         /// <summary>
@@ -1782,7 +1794,7 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         #endregion
-        #region Privátní výkonné metody: Save
+        #region Privátní výkonné metody: Save, Load, CloneProperties, komprimace a dekomprimace
         /// <summary>
         /// Serializuje daný objekt s danými parametry.
         /// Výstupem je XML string.
@@ -1792,92 +1804,25 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         private string _Serialize(object data, PersistArgs parameters)
         {
+            this.PreparePersistAdapter(parameters.Version);
+
             XmlDocument xDoc = new System.Xml.XmlDocument();
             xDoc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
 
-            XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
-            xDoc.AppendChild(xRootElement);
-            CreateAttribute("Version", "1.00", xRootElement);
-            CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
-            CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
+            this.PersistAdapter.Save(data, parameters, xDoc);
 
-            XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
-            this.SaveObject(new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this._TypeLibrary));
+            //parameters.WriterSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
+            //parameters.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
+            //parameters.WriterSettings.OmitXmlDeclaration = false;
+            //parameters.WriterSettings.WriteEndDocumentOnClose = true;
 
             StringBuilder sb = new StringBuilder();
-            parameters.WriterSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
-            parameters.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
-            parameters.WriterSettings.OmitXmlDeclaration = false;
-            parameters.WriterSettings.WriteEndDocumentOnClose = true;
-
             XmlWriter xw = XmlWriter.Create(sb, parameters.WriterSettings);
             xDoc.WriteTo(xw);
             xw.Flush();
 
             return sb.ToString();
         }
-        /// <summary>
-        /// Uloží předaný objekt do XML.
-        /// Tato metoda nezakládá nový element, pokud vstupují data typu Simple.
-        /// Ostatní typy dat řeší specializované metody, ty si svoje elementy zakládají.
-        /// </summary>
-        /// <param name="args">Kompletní datový balík pro uložení dat</param>
-        private void SaveObject(XmlPersistSaveArgs args)
-        {
-            // do XML budu persistovat pouze not null hodnoty!
-            if (!args.HasData) return;
-
-            try
-            {
-                // Zjistíme, jaký objekt to sem přišel:
-                args.DataTypeInfo = this._TypeLibrary.GetInfo(args.Data.GetType());
-
-                // Podle reálného typu, podle jeho charakteru předám řízení do odpovídající metody:
-                switch (args.DataTypeInfo.PersistenceType)
-                {
-                    case TypeLibrary.XmlPersistenceType.Simple:
-                        this.SimpleTypeSave(args);
-                        break;
-                    case TypeLibrary.XmlPersistenceType.Self:
-                        this.SelfTypeSave(args);
-                        break;
-                    case TypeLibrary.XmlPersistenceType.Enum:
-                        this.EnumTypeSave(args);
-                        break;
-                    case TypeLibrary.XmlPersistenceType.Array:
-                        this.ArrayTypeSave(args);
-                        break;
-                    case TypeLibrary.XmlPersistenceType.IList:
-                        this.IListTypeSave(args);
-                        break;
-                    case TypeLibrary.XmlPersistenceType.IDictionary:
-                        this.IDictionaryTypeSave(args);
-                        break;
-                    case TypeLibrary.XmlPersistenceType.Compound:
-                        this.CompoundTypeSave(args);
-                        break;
-                }
-            }
-            catch (InvalidOperationException)
-            {   // Tuhle výjimku jsme hodili sami v některém vnořeném cyklu, proto ji nebudu nijak řešit a pošlu ji dál...
-                throw;
-            }
-            catch (Exception exc)
-            {   // Chyby při serializaci okomentujeme, aby developer věděl, odkud vítr fouká:
-                string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
-                string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
-                string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
-                string eol = Environment.NewLine;
-                throw new InvalidOperationException("Error on serialize of object." + eol + 
-                    "Type: " + type + ";" + eol + 
-                    "Operation: " + oper + ";" + eol +
-                    "Property: " + prop + ";" + eol + 
-                    "Error: " + exc.Message, 
-                    exc);
-            }
-        }
-        #endregion
-        #region Privátní výkonné metody: Load
         /// <summary>
         /// Z dodaného XML obsahu sestaví a vrátí odpovídající objekt.
         /// Vstupní string se serializovaným obsahem očekává v <see cref="PersistArgs.XmlContent"/>.
@@ -1897,156 +1842,15 @@ namespace Noris.LCS.Base.WorkScheduler
                 return null;
             }
 
-            // Najdu element "persistent", z něj lze načíst číslo verze:
-            XmElement xmPers = xmDoc.FindElement(_DocumentNamePersist);          // Element "persistent" je Root
-            if (xmPers == null)
+            if (!this.PreparePersistAdapter(xmDoc))
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatPersistent;
                 return null;
             }
-            this.XmlPersistedVersion = xmPers.FindAttributeValue("Version", "");
 
-            // Najdu element "data", v něm bude uložen objekt:
-            XmElement elData = xmDoc.FindElement(_DocumentNamePersist + "/" + _DocumentNameData);
-            if (elData == null)
-            {
-                parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatData;
-                return null;
-            }
-
-            // Element Data bude obsahovat buď atribut nebo sub element Value:
-            XmAttribute atValue;
-            XmElement elValue;
-            if (!_FindAttrElementByName(elData, _DocumentNameValue, true, out elValue, out atValue))
-            {
-                parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatValue;
-                return null;
-            }
-
-            return _CreateObjectOfType(_CreateLoadArgs(parameters, null, null, elValue, atValue));
+            parameters.DeserializeStatus = XmlDeserializeStatus.Done;
+            return this.PersistAdapter.Load(parameters, xmDoc);
         }
-        /// <summary>
-        /// Metoda zjistí, zda daný element (inElement) obsahuje atribut daného jména (name): pak ten atribut vloží do out findAttribute, a do out findElement vloží vstupující element a vrátí true.
-        /// Pokud nenajde, podívá se do přímo podřízených elementů k elementu inElement, zda v něm najde element daného jména. Pokud najde, pak do out findElement vloží ten nalezený element,
-        /// a do findAttribute zkusí najít atribut daného jména v tomto nalezeném elementu.
-        /// Pokud nenajde, nechá všude null a vrátí false.
-        /// Toto hledání odpovídá stylu ukládání Simple / Compound prvků.
-        /// </summary>
-        /// <param name="inElement"></param>
-        /// <param name="name"></param>
-        /// <param name="requiredAttInElement"></param>
-        /// <param name="findElement"></param>
-        /// <param name="findAttribute"></param>
-        /// <returns></returns>
-        private bool _FindAttrElementByName(XmElement inElement, string name, bool requiredAttInElement, out XmElement findElement, out XmAttribute findAttribute)
-        {
-            findElement = null;
-            findAttribute = null;
-
-            // Zkusím najít atribut s daným jménem:
-            XmAttribute att;
-            if (inElement.TryGetAttribute(name, out att))
-            {   // Nalezen atribut (typický vzhled:  <element Value.Type="XmlPersistor.GID" Value="1234;5678" />)
-                findElement = inElement;
-                findAttribute = att;
-                return true;
-            }
-
-            // Zkusím hledat element s daným jménem:
-            XmElement ele = inElement.TryFindElement(name);
-            if (ele != null)
-            {   // Uvnitř daného elementu <element> je element <name...> (například: <Value Value.Type="XmlPersistor.DataObject" BindFlags="Public, SetField" ... a další atributy = jednoduché property):
-                bool find = ele.TryGetAttribute(name, out att);
-                if (find || !requiredAttInElement)
-                {   // Nalezen atribut (typický vzhled:  <element Value.Type="XmlPersistor.GID" Value="1234;5678" />)
-                    findElement = ele;
-                    findAttribute = att;
-                    return true;
-                }
-            }
-            return false;
-        }
-        /// <summary>
-        /// Vytvoří argument pro načítání dat.
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <param name="propInfo"></param>
-        /// <param name="estimatedType"></param>
-        /// <param name="xmElement"></param>
-        /// <param name="xmAttribute"></param>
-        /// <returns></returns>
-        private XmlPersistLoadArgs _CreateLoadArgs(PersistArgs parameters, TypeLibrary.PropInfo propInfo, Type estimatedType, XmElement xmElement, XmAttribute xmAttribute)
-        {
-            Type dataType = null;
-            if (xmAttribute != null && !String.IsNullOrEmpty(xmAttribute.Type))
-            {
-                Type explicitDataType = TypeLibrary.GetTypeFromSerial(xmAttribute.Type, xmAttribute.Assembly);
-                if (explicitDataType != null)
-                    dataType = explicitDataType;
-            }
-            if (dataType == null)
-            {
-                dataType = estimatedType;
-                Type innerType = TypeLibrary.GetNullableInnerType(dataType);
-                if (innerType != null) dataType = innerType;
-            }
-
-            TypeLibrary.TypeInfo dataTypeInfo = null;
-            if (dataType != null)
-                dataTypeInfo = this._TypeLibrary.GetInfo(dataType);
-
-            return new XmlPersistLoadArgs(parameters, propInfo, dataType, dataTypeInfo, xmElement, xmAttribute);
-        }
-        /// <summary>
-		/// Vytvoří objekt na základě dat v aktuálním elementu readeru.
-		/// Na vstupu je předán reader, defaultní typ prvku, jméno nepovinného atributu, který nese explicitní typ, a jméno atributu který nese hodnotu (platí pouze pro Simple typy).
-		/// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-		/// <returns></returns>
-		private object _CreateObjectOfType(XmlPersistLoadArgs args)
-        {
-            if (args.DataType == null) return null;
-            try
-            {
-                switch (args.DataTypeInfo.PersistenceType)
-                {
-                    case TypeLibrary.XmlPersistenceType.Simple:
-                        return this.SimpleTypeLoad(args);
-                    case TypeLibrary.XmlPersistenceType.Self:
-                        return this.SelfTypeLoad(args);
-                    case TypeLibrary.XmlPersistenceType.Enum:
-                        return this.EnumTypeLoad(args);
-                    case TypeLibrary.XmlPersistenceType.Array:
-                        return this.ArrayTypeLoad(args);
-                    case TypeLibrary.XmlPersistenceType.IList:
-                        return this.IListTypeLoad(args);
-                    case TypeLibrary.XmlPersistenceType.IDictionary:
-                        return this.IDictionaryTypeLoad(args);
-                    case TypeLibrary.XmlPersistenceType.Compound:
-                        return this.CompoundTypeLoad(args);
-                }
-            }
-            catch (InvalidOperationException)
-            {   // Tuhle výjimku jsme hodili sami v některém vnořeném cyklu, proto ji nebudu nijak řešit a pošlu ji dál...
-                throw;
-            }
-            catch (Exception exc)
-            {   // Chyby při deserializaci okomentujeme, aby developer věděl, odkud vítr fouká:
-                string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
-                string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
-                string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
-                string eol = Environment.NewLine;
-                throw new InvalidOperationException("Error on deserialize of object." + eol +
-                    "Type: " + type + ";" + eol +
-                    "Operation: " + oper + ";" + eol +
-                    "Property: " + prop + ";" + eol +
-                    "Error: " + exc.Message,
-                    exc);
-            }
-            return null;
-        }
-        #endregion
-        #region Privátní výkonné metody: CloneProperties
         /// <summary>
         /// Přenese hodnoty (objekty z properties) ze source do target, provede Shallow Copy (MemberwiseClone)
         /// </summary>
@@ -2080,8 +1884,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
             }
         }
-        #endregion
-        #region Privátní výkonné metody: komprimace a dekomprimace
         /// <summary>
         /// Metoda zajistí provedení komprimace dodaných XML dat podle nastavení v parametru.
         /// </summary>
@@ -2120,257 +1922,67 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         #endregion
-        #region Simple typy: Save, Create
+        #region Adapter na konkrétní formátovací algoritmy
         /// <summary>
-        /// Daný objekt (data) konvertuje pomocí TypeConvertoru pro Simple typ, a výslednou hodnotu vloží do atributu daného jména.
+        /// Připraví adapter <see cref="PersistAdapter"/> podle zadané verze. Implicitní je V2.
+        /// Používá se při Serializaci (=Save).
         /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        private void SimpleTypeSave(XmlPersistSaveArgs args)
+        /// <param name="version"></param>
+        private void PreparePersistAdapter(string version = null)
         {
-            args.CurrentOperation = "NotifyData.Begin";
-            args.CurrentProperty = null;
-            NotifyData(args.Data, XmlPersistState.SaveBegin);
-
-            args.CurrentOperation = "SerializeValue";
-            if (args.DataTypeInfo.TypeConvert == null)
-                throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() neobsahuje TypeConvertor.");
-            if (args.DataTypeInfo.TypeConvert.Serializator == null)
-                throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() obsahuje TypeConvertor, který nemá serializátor.");
-            string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
-
-            args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args);
-
-            args.CurrentOperation = "SaveValues";
-            args.CurrentProperty = "Value";
-            CreateAttribute(args.ObjectName, value, args.XmlElement);
-            args.CurrentProperty = null;
-
-            args.CurrentOperation = "NotifyData.End";
-            NotifyData(args.Data, XmlPersistState.SaveDone);
+            if (!String.IsNullOrEmpty(version))
+            {
+                if (version == XmlPersistV1.Version)
+                    this.PersistAdapter = new XmlPersistV1(this);
+                else if (version == PersistArgs.Version200)
+                    this.PersistAdapter = new XmlPersistV2(this);
+            }
+            if (this.PersistAdapter == null)
+                this.PersistAdapter = new XmlPersistV2(this);
         }
         /// <summary>
-        /// Z dodaného readeru načte a sestaví objekt uložený jako Simple (tj. je uložený v jednom atributu jako jeden string)
+        /// Najde a připraví adapter <see cref="PersistAdapter"/> pro daný dokument. Detekuje obsah dokumentu.
+        /// Pokud nelze detekovat, vrací false (=BadFormat).
         /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private object SimpleTypeLoad(XmlPersistLoadArgs args)
+        /// <param name="xmDoc"></param>
+        private bool PreparePersistAdapter(XmDocument xmDoc)
         {
-            args.CurrentOperation = "DeserializeValue";
-            if (args.DataTypeInfo.TypeConvert == null)
-                throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() neobsahuje TypeConvertor.");
-            if (args.DataTypeInfo.TypeConvert.Deserializator == null)
-                throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() obsahuje TypeConvertor, který nemá deserializátor.");
+            if (xmDoc == null) return false;
+            IXmlPersistVersion persistAdapter = null;
 
-            return args.DataTypeInfo.TypeConvert.Deserializator(args.XmAttribute.ValueFirstOrDefault);
+            persistAdapter = new XmlPersistV2(this);
+            if (persistAdapter.IsValidFormat(xmDoc))
+            {
+                this.PersistAdapter = persistAdapter;
+                return true;
+            }
+
+            persistAdapter = new XmlPersistV1(this);
+            if (persistAdapter.IsValidFormat(xmDoc))
+            {
+                this.PersistAdapter = persistAdapter;
+                return true;
+            }
+
+            return false;
         }
+        /// <summary>
+        /// Adapter na konkrétní persistor dané verze
+        /// </summary>
+        private IXmlPersistVersion PersistAdapter;
         #endregion
-        #region Self typy: Save, Create
-        /// <summary>
-        /// Uloží do Xml dokumentu daný objekt, který je typu Self (tj. serializaci provádí on sám osobně)
-        /// </summary>
-        /// <param name="args"></param>
-        private void SelfTypeSave(XmlPersistSaveArgs args)
-        {
-            if (args.HasData)
-            {
-                args.CurrentOperation = "NotifyData.Begin";
-                args.CurrentProperty = null;
-                NotifyData(args.Data, XmlPersistState.SaveBegin);
-
-                args.CurrentOperation = "SerializeValue";
-                if (!(args.Data is IXmlSerializer))
-                    throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SelfTypeSave() neimplementuje interface IXmlSerializer.");
-                string value = ((IXmlSerializer)args.Data).XmlSerialData;
-
-                args.CurrentOperation = "SaveType";
-                SaveTypeAttribute(args);
-
-                args.CurrentOperation = "SaveValues";
-                args.CurrentProperty = "SelfValue";
-                CreateAttribute(args.ObjectName, value, args.XmlElement);
-                args.CurrentProperty = null;
-
-                args.CurrentOperation = "NotifyData.End";
-                NotifyData(args.Data, XmlPersistState.SaveDone);
-            }
-        }
-        /// <summary>
-        /// Z dodaného readeru načte a sestaví objekt uložený jako Self (tj. deserializaci provádí on sám osobně)
-        /// </summary>
-        /// <returns></returns>
-        private object SelfTypeLoad(XmlPersistLoadArgs args)
-        {
-            string xmlData = args.XmAttribute.ValueFirstOrDefault;
-            if (xmlData == null)
-                return null;
-
-            args.CurrentOperation = "CreateInstance";
-            object data = _ObjectCreate(args.DataType);
-            if (data == null)
-                return null;
-
-            args.CurrentOperation = "NotifyData.Begin";
-            NotifyData(data, XmlPersistState.LoadBegin);
-
-            args.CurrentOperation = "Deserialize";
-            ((IXmlSerializer)data).XmlSerialData = xmlData;
-
-            args.CurrentOperation = "NotifyData.End";
-            NotifyData(data, XmlPersistState.LoadDone);
-
-            return data;
-        }
-        #endregion
-        #region Enum typy: Save, Create
-        /// <summary>
-        /// Uloží do Xml dokumentu daný objekt, který je typu Self (tj. serializaci provádí on sám osobně)
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        private void EnumTypeSave(XmlPersistSaveArgs args)
-        {
-            args.CurrentOperation = "SerializeValue";
-            string value = Enum.Format(args.DataType, args.Data, "F");
-
-            args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args);
-
-            args.CurrentOperation = "SaveValues";
-            args.CurrentProperty = "EnumValue";
-            CreateAttribute(args.ObjectName, value, args.XmlElement);
-            args.CurrentProperty = null;
-        }
-        /// <summary>
-        /// Z dodaného readeru načte a sestaví objekt uložený jako Enum
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        /// <returns></returns>
-        private object EnumTypeLoad(XmlPersistLoadArgs args)
-        {
-            string xmlData = args.XmAttribute.ValueFirstOrDefault;
-            if (xmlData == null)
-                return null;
-
-            object data = null;
-            try
-            {
-                args.CurrentOperation = "ParseEnum";
-                data = Enum.Parse(args.DataType, xmlData);
-            }
-            catch
-            {
-                args.CurrentOperation = "DefaultEnum";
-                data = _ObjectCreate(args.DataType);                  // Vytvoří objekt, prázdný (hodnota = 0)
-            }
-            return data;
-        }
-        #endregion
-        #region Array typy: Save, Create
-        /// <summary>
-        /// Uloží do Xml dokumentu daný objekt, který je typu Array
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        private void ArrayTypeSave(XmlPersistSaveArgs args)
-        {
-            // Zavedu element pro celé pole Array, pod jménem cíle, kam toto pole je vloženo (nahoru):
-            XmlElement xmlArrayElement = CreateElement(args.ObjectName, args.XmlElement);
-
-            // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
-            args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args, args.ObjectName, xmlArrayElement);
-            Array array = args.Data as Array;
-            if (array == null) return;
-
-            Type itemType = args.DataTypeInfo.ItemDataType;
-
-            // Správce indexů pole:
-            args.CurrentOperation = "CreateIndices";
-            _ArrayIndices arrayIndices = new _ArrayIndices(array);
-
-            // Rozměry pole:  [0+2,0+45] :
-            CreateAttribute(_ArrayNameArrayRange, arrayIndices.Serial, xmlArrayElement);
-
-            // Výpis všech Items:
-            args.CurrentOperation = "EnumerateArray";
-            for (int[] indices = arrayIndices.FirstIndices(); arrayIndices.IsValidIndices(indices); indices = arrayIndices.NextIndices(indices))
-            {
-                // Data:
-                object item = array.GetValue(indices);
-                if (item != null)
-                {   // Pokud data jsou null, můžu je vynechat, protože to je default stav pole Array po jeho vytvoření. Ukládám tedy jen nut null hodnoty:
-                    args.CurrentOperation = "SaveValue";
-                    args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
-
-                    // Vytvořím element pro prvek pole, a vepíšu do něj atribut obsahující indexy:
-                    XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlArrayElement);
-                    CreateAttribute(_ArrayNameItemIndices, _ArrayIndices.SerialIndices(indices), xmlItemElement);
-
-                    // Do XML elementu pro prvek pole vložím hodnoty z objektu:
-                    this.SaveObject(new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this._TypeLibrary));
-                }
-            }
-            args.CurrentProperty = null;
-        }
-        /// <summary>
-        /// Z dodaného readeru načte a sestaví objekt uložený jako Array
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        /// <returns></returns>
-        private object ArrayTypeLoad(XmlPersistLoadArgs args)
-        {
-            XmAttribute xmAtt;
-            if (!args.XmElement.TryGetAttribute(_ArrayName, out xmAtt)) return null;
-
-            args.CurrentOperation = "ParseIndices";
-            _ArrayIndices arrayIndices = new _ArrayIndices(xmAtt.Range);
-            Type itemType = args.DataTypeInfo.ItemDataType;
-            args.CurrentOperation = "CreateArray";
-            Array array = arrayIndices.CreateArray(itemType);
-            if (array == null) return null;
-
-            args.CurrentOperation = "EnumerateItems";
-            foreach (XmElement xmEle in args.XmElement.XmElements)
-            {
-                if (xmEle.Name == _ArrayNameItem)
-                {   // Element má odpovídající jméno. 
-                    XmAttribute itemAttribute;
-                    if (xmEle.TryGetAttribute(_ArrayNameItem, out itemAttribute) && itemAttribute.Indices != null)
-                    {   // V elementu jsme našli atribut: Item.Indices="[0,5,20]" nesoucí indexy aktuálního prvku:
-                        int[] indices = _ArrayIndices.DeSerialIndices(itemAttribute.Indices);
-                        if (indices.Length == arrayIndices.Rank)
-                        {   // Deserializované indexy mají správný počet položek pro naše pole:
-                            args.CurrentOperation = "ReadValue";
-                            args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
-
-                            object value = null;
-                            // Element xmEle: buď obsahuje atribut, nebo podřízený element s názvem "Value":
-                            XmAttribute atValue;
-                            XmElement elValue;
-                            if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
-                            {
-                                args.CurrentOperation = "CreateItem";
-                                XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
-                                value = this._CreateObjectOfType(itemArgs);
-                            }
-                            array.SetValue(value, indices);
-                        }
-                    }
-                }
-            }
-
-            return array;
-        }
+        #region class ArrayIndices
         /// <summary>
         /// Třída pro analýzu rozměrů pole, serializaci a deserializaci rozměrů, a pro enumeraci přes všechny buňky pole
         /// </summary>
-        private class _ArrayIndices
+        internal class ArrayIndices
         {
             #region Konstruktory, základní data, serializace, deserializace
             /// <summary>
             /// Konstruktor pro konkrétní pole
             /// </summary>
             /// <param name="array"></param>
-            public _ArrayIndices(Array array)
+            public ArrayIndices(Array array)
             {
                 if (array != null)
                 {
@@ -2389,7 +2001,7 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Konstruktor pro serializovanou deklaraci pole
             /// </summary>
             /// <param name="serial"></param>
-            public _ArrayIndices(string serial)
+            public ArrayIndices(string serial)
             {
                 string[] parts = DeSerialString(serial);             // Ze stringu "[0+10,0+20,0+30]" vrací části "0+10"; "0+20"; "0+30".
                 if (parts != null)
@@ -2423,7 +2035,7 @@ namespace Noris.LCS.Base.WorkScheduler
             }
             /// <summary>
             /// Obsahuje serializovanou hodnotu rozměrů pole, například pole deklarované new int[10,20,30] zde obsahuje text: "[0+10,0+20,0+30]".
-            /// Z této serializované formy lze následně vytvořit new instanci <see cref="_ArrayIndices"/> konstruktorem <see cref="_ArrayIndices(String)"/>.
+            /// Z této serializované formy lze následně vytvořit new instanci <see cref="ArrayIndices"/> konstruktorem <see cref="ArrayIndices(String)"/>.
             /// </summary>
             public string Serial
             {
@@ -2555,9 +2167,9 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Metoda vygeneruje a vrátí první sadu idnexů, ukazující typicky na [0,0,...].
             /// Sadu si interně zapamatuje.
             /// <para/>
-            /// Typické použití: for (int[] indices = <see cref="_ArrayIndices.FirstIndices()"/>; 
-            /// <see cref="_ArrayIndices.IsValidIndices"/>(indices); 
-            /// indices = <see cref="_ArrayIndices.NextIndices"/>(indices)) { akce ... }
+            /// Typické použití: for (int[] indices = <see cref="ArrayIndices.FirstIndices()"/>; 
+            /// <see cref="ArrayIndices.IsValidIndices"/>(indices); 
+            /// indices = <see cref="ArrayIndices.NextIndices"/>(indices)) { akce ... }
             /// </summary>
             /// <returns></returns>
             public int[] FirstIndices()
@@ -2627,463 +2239,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
             }
             #endregion
-        }
-        #endregion
-        #region IList typy: Save, Create
-        /// <summary>
-        /// Uloží kolekci (List)
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        private void IListTypeSave(XmlPersistSaveArgs args)
-        {
-            // Zavedu element pro celý List, pod jménem cíle, kam tento List pole je vložen (nahoru):
-            XmlElement xmlListElement = CreateElement(args.ObjectName, args.XmlElement);
-
-            // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
-            args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args, args.ObjectName, xmlListElement);
-
-            IList iList = args.Data as IList;
-            if (iList == null) return;
-
-            args.CurrentOperation = "Map.IList";
-            Type itemType = args.DataTypeInfo.GetGenericType(0);
-
-            args.CurrentOperation = "Enumerate.IList";
-            int index = 0;
-            foreach (object item in iList)
-            {
-                args.CurrentOperation = "SaveValue";
-                args.CurrentProperty = "Item[" + (index++).ToString() + "]";
-
-                // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
-                XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlListElement);
-
-                // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
-                if (item != null)
-                    this.SaveObject(new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this._TypeLibrary));
-            }
-        }
-        /// <summary>
-        /// Vytvoří a vrátí datový objekt
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        /// <returns></returns>
-        private object IListTypeLoad(XmlPersistLoadArgs args)
-        {
-            // Vytvořím objekt s daty odpovídajícími datům persistovaným:
-            args.CurrentOperation = "Create.IList";
-            object data = _ObjectCreate(args.DataType);
-            IList iList = data as IList;
-            if (iList == null) return null;
-
-            args.CurrentOperation = "GetGenerics";
-            args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
-            Type itemType = args.DataTypeInfo.ItemDataType;
-            if (itemType == null)
-                itemType = args.DataTypeInfo.GetGenericType(0);
-
-            args.CurrentOperation = "NotifyData.Begin";
-            NotifyData(data, XmlPersistState.LoadBegin);
-
-            args.CurrentOperation = "EnumerateItems";
-            foreach (XmElement xmEle in args.XmElement.XmElements)
-            {
-                if (xmEle.Name == _ArrayNameItem)
-                {   // Element má odpovídající jméno. 
-                    object value = null;
-                    // Buď obsahuje atribut, nebo podřízený element s názvem Value:
-                    XmAttribute atValue;
-                    XmElement elValue;
-                    if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
-                    {
-                        args.CurrentOperation = "CreateItem";
-                        XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
-                        value = this._CreateObjectOfType(itemArgs);
-                    }
-                    iList.Add(value);
-                }
-            }
-
-            args.CurrentOperation = "NotifyData.End";
-            NotifyData(data, XmlPersistState.LoadDone);
-
-            return data;
-        }
-        #endregion
-        #region IDictionary typy: Save, Create
-        /// <summary>
-        /// Uloží Dictionary
-        /// </summary>
-        private void IDictionaryTypeSave(XmlPersistSaveArgs args)
-        {
-            // Zavedu element pro celý Dictionary, pod jménem cíle, kam tento List pole je vložen (nahoru):
-            XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);
-
-            // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
-            args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args, args.ObjectName, xmlDictElement);
-
-            IDictionary iDict = args.Data as IDictionary;
-            if (iDict == null) return;
-
-            args.CurrentOperation = "Map.IDictionary";
-            Type keyType = args.DataTypeInfo.GetGenericType(0);
-            Type valueType = args.DataTypeInfo.GetGenericType(1);
-
-            args.CurrentOperation = "Enumerate.IDictionary";
-            foreach (DictionaryEntry entry in iDict)
-            {
-                args.CurrentOperation = "SaveValue";
-                args.CurrentProperty = "Item[" + entry.Key.ToString() + "]";        // Key v Dictionary nemůže být null !!!
-
-                // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
-                XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
-
-                this.SaveObject(new XmlPersistSaveArgs(entry.Key, _DictNameKey, keyType, xmlItemElement, this._TypeLibrary));
-                this.SaveObject(new XmlPersistSaveArgs(entry.Value, _DictNameValue, valueType, xmlItemElement, this._TypeLibrary));
-            }
-        }
-        /// <summary>
-        /// Z dodaného readeru načte a sestaví objekt uložený jako Dictionary
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        /// <returns></returns>
-        private object IDictionaryTypeLoad(XmlPersistLoadArgs args)
-        {
-            args.CurrentOperation = "Create.IDictionary";
-            object data = _ObjectCreate(args.DataType);
-            IDictionary iDict = data as IDictionary;
-            if (iDict == null) return null;
-
-            args.CurrentOperation = "GetGenerics";
-            args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
-            Type keyType = args.DataTypeInfo.GetGenericType(0);
-            Type valueType = args.DataTypeInfo.GetGenericType(1);
-
-            args.CurrentOperation = "NotifyData.Begin";
-            NotifyData(data, XmlPersistState.LoadBegin);
-
-            args.CurrentOperation = "EnumerateItems";
-            foreach (XmElement xmEle in args.XmElement.XmElements)
-            {
-                if (xmEle.Name == _DictNamePair)
-                {   // Element má odpovídající jméno. 
-                    object key = null;
-                    object value = null;
-                    // Buď obsahuje atribut, nebo podřízený element s názvem Value:
-                    XmAttribute atValue;
-                    XmElement elValue;
-                    if (_FindAttrElementByName(xmEle, _DictNameKey, false, out elValue, out atValue))
-                    {
-                        args.CurrentOperation = "CreateKey";
-                        XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
-                        key = this._CreateObjectOfType(itemArgs);
-                    }
-                    if (_FindAttrElementByName(xmEle, _DictNameValue, false, out elValue, out atValue))
-                    {
-                        args.CurrentOperation = "CreateValue";
-                        XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
-                        value = this._CreateObjectOfType(itemArgs);
-                    }
-                    if (key != null)
-                    {
-                        args.CurrentOperation = "AddItem.IDictionary";
-                        iDict.Add(key, value);
-                    }
-                }
-            }
-
-            args.CurrentOperation = "NotifyData.End";
-            NotifyData(data, XmlPersistState.LoadDone);
-
-            return iDict;
-        }
-        #endregion
-        #region Compound typy: Save, Create
-        /// <summary>
-        /// Uloží do Xml dokumentu daný objekt, který je typu Compound (tj. má property)
-        /// </summary>
-        /// <param name="args">Kompletní datový balík</param>
-        private void CompoundTypeSave(XmlPersistSaveArgs args)
-        {
-            args.CurrentOperation = "NotifyData.Begin";
-            args.CurrentProperty = null;
-            NotifyData(args.Data, XmlPersistState.SaveBegin);
-
-            args.CurrentOperation = "SaveType";
-            XmlElement xmlCurrElement = CreateElement(_ElementNameValue, args.XmlElement);
-            SaveTypeAttribute(args, _ElementNameValue, xmlCurrElement);
-
-            args.CurrentOperation = "SaveValues";
-            if (args.HasObjectName)
-                CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.ObjectName, xmlCurrElement);
-            foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
-            {   // V jednom cyklu zapisujeme data z jednoduhých i složitých propeties (tzn. do XmlAtributů i do XmlElementů),
-                //  to řeší až metoda SaveObject() podle typu persistence konkrétního objektu.
-                args.CurrentProperty = propInfo.Name;
-                object value = propInfo.Property.GetValue(args.Data, null);
-                this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, this._TypeLibrary));
-            }
-            args.CurrentProperty = null;
-
-            args.CurrentOperation = "NotifyData.End";
-            NotifyData(args.Data, XmlPersistState.SaveDone);
-        }
-        /// <summary>
-        /// Vytvoří a vrátí objekt typu Compound z dat XML
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-		private object CompoundTypeLoad(XmlPersistLoadArgs args)
-        {
-            // Vytvořím objekt s daty odpovídajícími datům persistovaným:
-            args.CurrentOperation = "Create.Compound";
-            object data = _ObjectCreate(args.DataType);
-
-            args.CurrentOperation = "NotifyData.Begin";
-            NotifyData(data, XmlPersistState.LoadBegin);
-            args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());             // Reálný Type + jeho property
-
-            // 1. Projdeme atributy, ty obsahují jednoduché datové typy. Uložíme je do property našeho objektu:
-            args.CurrentOperation = "ReadAttributes";
-            foreach (XmAttribute xmAtt in args.XmElement.XmAttributes)
-            {
-                if (xmAtt.Values.Count == 0) continue;          // Atribut bez hodnoty = nese jen suffixy, například: Type, Indices, Assembly. Takové nelze zpracovávat zde.
-                TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmAtt.Name);
-                if (propInfo != null)
-                {
-                    args.CurrentProperty = propInfo.Name;
-                    XmlPersistLoadArgs propArgs = this._CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
-                    object value = this._CreateObjectOfType(propArgs);
-                    propInfo.Property.SetValue(data, value, null);
-                }
-            }
-
-            // 2. Projdeme si sub-elementy našeho elementu. Pro každý z nich určíme, zda máme cílovou property, a pak načtu jejich hodnotu do této property:
-            args.CurrentOperation = "ReadElements";
-            foreach (XmElement xmEle in args.XmElement.XmElements)
-            {
-                string name = xmEle.Name;
-                if (name == _ElementNameValue)
-                {
-                    XmAttribute xmVal;
-                    if (xmEle.TryGetAttribute(_ElementNameValue, out xmVal))
-                        name = xmVal.Target;
-                }
-                /*
-                if (xmEle.Name != _ElementNameValue) continue;  // Všechny elementy mají mít shodný název. Cílová property je uvedena v XmlAtributu:
-                XmAttribute xmVal;
-                if (!xmEle.TryGetAttribute(_ElementNameValue, out xmVal)) continue;
-                TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmVal.Target);
-                */
-
-                TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(name);
-                if (propInfo != null)
-                {
-                    args.CurrentProperty = propInfo.Name;
-                    XmAttribute xmAte;
-                    xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
-                    XmlPersistLoadArgs propArgs = this._CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
-                    object value = this._CreateObjectOfType(propArgs);
-                    propInfo.Property.SetValue(data, value, null);
-                }
-            }
-
-            args.CurrentOperation = "NotifyData.End";
-            NotifyData(data, XmlPersistState.LoadDone);
-            return data;
-        }
-        #endregion
-        #region Konstanty
-        private const string _DocumentNamePersist = "id-persistent";
-        private const string _DocumentNameData = "id-data";
-        private const string _DocumentNameValue = "id-value";
-        private const string _ElementNameValue = "id-value";
-        private const string _ArrayName = "id-array";
-        private const string _ArrayNameItem = "id-item";
-        private const string _DictNamePair = "id-pair";
-        private const string _DictNameKey = "id-key";
-        private const string _DictNameValue = "id-value";
-        private const string _ArrayNameArrayRange = _ArrayName + "." + XmAttribute.SuffixNameRange;
-        private const string _ArrayNameItemIndices = _ArrayNameItem + "." + XmAttribute.SuffixNameIndices;
-
-
-        #endregion
-        #region Xml prvky - tvorba, zápisy, nalezení
-        /// <summary>
-        /// Založí nový element do elementu předaného. Nic do něj nevpisuje. Vrátí tento nově založený element.
-        /// </summary>
-        /// <param name="elementName">Název elementu (typicky jde o název property, nebo klíčové slovo pro element za položku listu, atd)</param>
-        /// <param name="xParentElement"></param>
-        /// <returns></returns>
-        private static XmlElement CreateElement(string elementName, XmlElement xParentElement)
-        {
-            string name = CreateXmlName(elementName);
-            XmlElement xElement = xParentElement.OwnerDocument.CreateElement(name);
-            xParentElement.AppendChild(xElement);
-            return xElement;
-        }
-        /// <summary>
-        /// Z daného textu vyloučí nevhodné znaky a výsledek vrátí. Nemění ToLower.
-        /// Odstraňuje ampersand, čárku, mezeru, hranaté závorky.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        internal static string CreateXmlName(string name)
-        {
-            string excludeChars = "`, []";
-            string xmlName = name;
-            foreach (char c in excludeChars)
-            {
-                if (xmlName.Contains(c))
-                    xmlName = xmlName.Replace(c.ToString(), "");
-            }
-            return xmlName;
-        }
-        /// <summary>
-        /// Založí nový atribut a vloží jej do předaného elementu.
-        /// </summary>
-        /// <param name="name">Název atributu</param>
-        /// <param name="value">Hodnota do atributu, string. Pokud bude null, bude atribut bez hodnoty.</param>
-        /// <param name="xElement"></param>
-        private static XmlAttribute CreateAttribute(string name, string value, XmlElement xElement)
-        {
-            XmlAttribute xAttribute = xElement.OwnerDocument.CreateAttribute(name);
-            if (value != null)
-                xAttribute.Value = value;
-            xElement.Attributes.Append(xAttribute);
-            return xAttribute;
-        }
-        /// <summary>
-        /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
-        /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
-        /// </summary>
-        private static void SaveTypeAttribute(XmlPersistSaveArgs args)
-        {
-            SaveTypeAttribute(args, args.ObjectName, args.XmlElement);
-        }
-        /// <summary>
-        /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
-        /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
-        /// </summary>
-        private static void SaveTypeAttribute(XmlPersistSaveArgs args, string objectName, XmlElement xmlElement)
-        {
-            // Pokud se očekávaný typ a reálný typ neliší, pak do atributu nebudeme vepisovat explicitní typ pro aktuální objekt:
-            if (TypeLibrary.IsEqualType(args.EstimatedType, args.DataType)) return;
-
-            // Získám serializovatelné hodnoty o typu:
-            string serialType, serialAssembly;
-            TypeLibrary.GetSerialForType(args.DataType, out serialType, out serialAssembly);
-
-            // Vytvořím atributy pro neprázdné serial hodnoty:
-            if (!String.IsNullOrEmpty(serialType))
-                CreateAttribute(objectName + "." + XmAttribute.SuffixNameType, serialType, xmlElement);
-            if (!String.IsNullOrEmpty(serialAssembly))
-                CreateAttribute(objectName + "." + XmAttribute.SuffixNameAssembly, serialAssembly, xmlElement);
-        }
-        /// <summary>
-        /// Najde v daném readeru začátek daného elementu, 
-        /// </summary>
-        /// <param name="xmlReader"></param>
-        /// <param name="elementName"></param>
-        /// <param name="depthType"></param>
-        private static bool XmlReadFindElement(XmlTextReader xmlReader, string elementName, XmlElementDepthType depthType)
-        {
-            int depth = xmlReader.Depth;
-            while (!xmlReader.EOF)
-            {
-                if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == elementName)
-                {
-                    switch (depthType)
-                    {
-                        case XmlElementDepthType.None:
-                            break;
-                        case XmlElementDepthType.Anywhere:
-                            return true;
-                        case XmlElementDepthType.InCurrentDepth:
-                            if (xmlReader.Depth == depth)
-                                return true;
-                            break;
-                        case XmlElementDepthType.CurrentAndAnyChilds:
-                            if (xmlReader.Depth >= depth)
-                                return true;
-                            break;
-                        case XmlElementDepthType.OnlyInChilds:
-                            if (xmlReader.Depth > depth)
-                                return true;
-                            break;
-                    }
-                    return true;
-                }
-                xmlReader.Read();
-            }
-            return false;
-        }
-        #endregion
-        #region Privátní výkonné metody: obecné
-        /// <summary>
-        /// Vytvoří a vrátí objekt daného typu
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private object _ObjectCreate(Type type)
-        {
-            object result = null;
-            ConstructorInfo constructor = this.CheckConstructors(type);     // Ověří, zda Type má bezparametrický konstruktor. Vrátí jej.
-            if (constructor != null)
-                result = constructor.Invoke(null);
-            else
-                // Například struktury nemají bezparametrický konstruktor definovaný, proto vrací null. Přesto je lze standardně vytvořit:
-                result = System.Activator.CreateInstance(type);
-            return result;
-        }
-        /// <summary>
-        /// Metoda ověří, zda typ má bezparametrický konstruktor.
-        /// Pokud jej nemá, vyhodí chybu.
-        /// Pokud jej má, vrátí jej.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private ConstructorInfo CheckConstructors(Type type)
-        {
-            if (type.IsClass)
-            {
-                ConstructorInfo[] typeConsts = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);   // Najdu konstruktory daného Type
-                ConstructorInfo[] typeConstNps = typeConsts.Where(c => c.GetParameters().Length == 0).ToArray();     // Najdu jen ty bezparametrické...
-                if (typeConstNps.Length == 0)
-                    throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " can not be persisted, must be a type with parameterless constructor!");
-                return typeConstNps[0];
-            }
-            if (type.IsInterface)
-            {
-                throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is interface. Object can not be created.!");
-            }
-            if (type.IsValueType || type.IsEnum || type.IsPrimitive)
-            {
-                return null;
-            }
-            throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is unknown type. Object can not be created.!");
-        }
-        /// <summary>
-        /// Oznámí datovému objektu změnu stavu na danou hodnotu.
-        /// Datový objekt se tak může připravit na nadcházející události (vkládání dat do property v režimu Load() nemusí vyvolávat množství logiky, a nemělo by vyvolávat mnoho chyb).
-        /// Ukončení tohoto stavu (Load / Save) bude oznámeno vložením hodnoty LoadDone nebo SaveDone, a pak ihned None.
-        /// Pokud daný objekt nepodporuje IXmlPersistNotify, pak tato metoda nic nevkládá.
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="xmlPersistState"></param>
-        private static void NotifyData(object data, XmlPersistState xmlPersistState)
-        {
-            if (data != null && data is IXmlPersistNotify)
-            {
-                IXmlPersistNotify xmlPers = data as IXmlPersistNotify;
-                xmlPers.XmlPersistState = xmlPersistState;
-
-                // Ze stavu LoadDone a SaveDone automaticky přejdu do stavu None:
-                if (xmlPersistState == XmlPersistState.LoadDone || xmlPersistState == XmlPersistState.SaveDone)
-                    xmlPers.XmlPersistState = XmlPersistState.None;
-            }
         }
         #endregion
         #region Komprimace a dekomprimace stringu
@@ -3315,6 +2470,1674 @@ namespace Noris.LCS.Base.WorkScheduler
             /// </summary>
             OnlyMyOwnChild
         }
+        #endregion
+        #region Výměnné algoritmy konkrétní verze persistence - dovolují načítat XML dokumenty autodetectem z různých verzí
+        #region Algoritmy verze 1.0
+        internal class XmlPersistV1 : XmlPersistVBase, IXmlPersistVersion
+        {
+            #region Konstruktor, číslo verze
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            internal XmlPersistV1(XmlPersist owner)
+                : base(owner)
+            { }
+            /// <summary>
+            /// Číslo verze
+            /// </summary>
+            public const string Version = "1.00";
+            #endregion
+            #region Řízení serializace/deserializace
+            void IXmlPersistVersion.Save(object data, PersistArgs parameters, XmlDocument xDoc)
+            {
+                XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
+                xDoc.AppendChild(xRootElement);
+                CreateAttribute("Version", Version, xRootElement);
+                CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
+                CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
+
+                XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
+                XmlPersistSaveArgs saveArgs = new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this.TypeLibrary);
+                this.SaveObject(saveArgs);
+            }
+            bool IXmlPersistVersion.IsValidFormat(XmDocument xmDoc)
+            {
+                string version;
+                XmAttribute atValue;
+                XmElement elValue;
+                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out atValue, out elValue);
+                return (elData != null && version != null && version == Version);
+            }
+            object IXmlPersistVersion.Load(PersistArgs parameters, XmDocument xmDoc)
+            {
+                string version;
+                XmAttribute atValue;
+                XmElement elValue;
+                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out atValue, out elValue);
+                if (!(elData != null && version != null && version == Version)) return null;
+
+                XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, elValue, atValue);
+                return this._CreateObjectOfType(itemArgs);
+            }
+            /// <summary>
+            /// Uloží předaný objekt do XML.
+            /// Tato metoda nezakládá nový element, pokud vstupují data typu Simple.
+            /// Ostatní typy dat řeší specializované metody, ty si svoje elementy zakládají.
+            /// </summary>
+            /// <param name="args">Kompletní datový balík pro uložení dat</param>
+            private void SaveObject(XmlPersistSaveArgs args)
+            {
+                // do XML budu persistovat pouze not null hodnoty!
+                if (!args.HasData) return;
+
+                try
+                {
+                    // Zjistíme, jaký objekt to sem přišel:
+                    args.DataTypeInfo = this.TypeLibrary.GetInfo(args.Data.GetType());
+
+                    // Podle reálného typu, podle jeho charakteru předám řízení do odpovídající metody:
+                    switch (args.DataTypeInfo.PersistenceType)
+                    {
+                        case TypeLibrary.XmlPersistenceType.Simple:
+                            this.SimpleTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Self:
+                            this.SelfTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Enum:
+                            this.EnumTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Array:
+                            this.ArrayTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.IList:
+                            this.IListTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.IDictionary:
+                            this.IDictionaryTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Compound:
+                            this.CompoundTypeSave(args);
+                            break;
+                    }
+                }
+                catch (InvalidOperationException)
+                {   // Tuhle výjimku jsme hodili sami v některém vnořeném cyklu, proto ji nebudu nijak řešit a pošlu ji dál...
+                    throw;
+                }
+                catch (Exception exc)
+                {   // Chyby při serializaci okomentujeme, aby developer věděl, odkud vítr fouká:
+                    string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
+                    string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
+                    string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
+                    string eol = Environment.NewLine;
+                    throw new InvalidOperationException("Error on serialize of object." + eol +
+                        "Type: " + type + ";" + eol +
+                        "Operation: " + oper + ";" + eol +
+                        "Property: " + prop + ";" + eol +
+                        "Error: " + exc.Message,
+                        exc);
+                }
+            }
+            private XmElement SearchRootDataElement(XmDocument xmDoc, out string version, out XmAttribute atValue, out XmElement elValue)
+            {
+                version = null;
+                atValue = null;
+                elValue = null;
+
+                // Najdu element "persistent", z něj lze načíst číslo verze:
+                XmElement xmPers = xmDoc.FindElement(_DocumentNamePersist);
+                if (xmPers == null) return null;
+
+                version = xmPers.FindAttributeValue("Version", "");
+                if (!String.Equals(version, Version)) return null;
+
+                // Najdu element "data", v něm bude uložen objekt:
+                XmElement elData = xmDoc.FindElement(_DocumentNamePersist + "/" + _DocumentNameData);
+                if (elData == null) return null;
+
+                // Element Data bude obsahovat buď atribut nebo sub element Value:
+                if (!this._FindAttrElementByName(elData, _DocumentNameValue, true, out elValue, out atValue)) return null;
+
+                return elData;
+            }
+            /// <summary>
+            /// Vytvoří objekt na základě dat v aktuálním elementu readeru.
+            /// Na vstupu je předán reader, defaultní typ prvku, jméno nepovinného atributu, který nese explicitní typ, a jméno atributu který nese hodnotu (platí pouze pro Simple typy).
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object _CreateObjectOfType(XmlPersistLoadArgs args)
+            {
+                if (args.DataType == null) return null;
+                try
+                {
+                    switch (args.DataTypeInfo.PersistenceType)
+                    {
+                        case TypeLibrary.XmlPersistenceType.Simple:
+                            return this.SimpleTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Self:
+                            return this.SelfTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Enum:
+                            return this.EnumTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Array:
+                            return this.ArrayTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.IList:
+                            return this.IListTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.IDictionary:
+                            return this.IDictionaryTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Compound:
+                            return this.CompoundTypeLoad(args);
+                    }
+                }
+                catch (InvalidOperationException)
+                {   // Tuhle výjimku jsme hodili sami v některém vnořeném cyklu, proto ji nebudu nijak řešit a pošlu ji dál...
+                    throw;
+                }
+                catch (Exception exc)
+                {   // Chyby při deserializaci okomentujeme, aby developer věděl, odkud vítr fouká:
+                    string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
+                    string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
+                    string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
+                    string eol = Environment.NewLine;
+                    throw new InvalidOperationException("Error on deserialize of object." + eol +
+                        "Type: " + type + ";" + eol +
+                        "Operation: " + oper + ";" + eol +
+                        "Property: " + prop + ";" + eol +
+                        "Error: " + exc.Message,
+                        exc);
+                }
+                return null;
+            }
+            #endregion
+            #region Simple typy: Save, Create
+            /// <summary>
+            /// Daný objekt (data) konvertuje pomocí TypeConvertoru pro Simple typ, a výslednou hodnotu vloží do atributu daného jména.
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void SimpleTypeSave(XmlPersistSaveArgs args)
+            {
+                args.CurrentOperation = "NotifyData.Begin";
+                args.CurrentProperty = null;
+                NotifyData(args.Data, XmlPersistState.SaveBegin);
+
+                args.CurrentOperation = "SerializeValue";
+                if (args.DataTypeInfo.TypeConvert == null)
+                    throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() neobsahuje TypeConvertor.");
+                if (args.DataTypeInfo.TypeConvert.Serializator == null)
+                    throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() obsahuje TypeConvertor, který nemá serializátor.");
+                string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
+
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args);
+
+                args.CurrentOperation = "SaveValues";
+                args.CurrentProperty = "Value";
+                CreateAttribute(args.ObjectName, value, args.XmlElement);
+                args.CurrentProperty = null;
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(args.Data, XmlPersistState.SaveDone);
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Simple (tj. je uložený v jednom atributu jako jeden string)
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            private object SimpleTypeLoad(XmlPersistLoadArgs args)
+            {
+                args.CurrentOperation = "DeserializeValue";
+                if (args.DataTypeInfo.TypeConvert == null)
+                    throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() neobsahuje TypeConvertor.");
+                if (args.DataTypeInfo.TypeConvert.Deserializator == null)
+                    throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() obsahuje TypeConvertor, který nemá deserializátor.");
+
+                return args.DataTypeInfo.TypeConvert.Deserializator(args.XmAttribute.ValueFirstOrDefault);
+            }
+            #endregion
+            #region Self typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Self (tj. serializaci provádí on sám osobně)
+            /// </summary>
+            /// <param name="args"></param>
+            private void SelfTypeSave(XmlPersistSaveArgs args)
+            {
+                if (args.HasData)
+                {
+                    args.CurrentOperation = "NotifyData.Begin";
+                    args.CurrentProperty = null;
+                    NotifyData(args.Data, XmlPersistState.SaveBegin);
+
+                    args.CurrentOperation = "SerializeValue";
+                    if (!(args.Data is IXmlSerializer))
+                        throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SelfTypeSave() neimplementuje interface IXmlSerializer.");
+                    string value = ((IXmlSerializer)args.Data).XmlSerialData;
+
+                    args.CurrentOperation = "SaveType";
+                    SaveTypeAttribute(args);
+
+                    args.CurrentOperation = "SaveValues";
+                    args.CurrentProperty = "SelfValue";
+                    CreateAttribute(args.ObjectName, value, args.XmlElement);
+                    args.CurrentProperty = null;
+
+                    args.CurrentOperation = "NotifyData.End";
+                    NotifyData(args.Data, XmlPersistState.SaveDone);
+                }
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Self (tj. deserializaci provádí on sám osobně)
+            /// </summary>
+            /// <returns></returns>
+            private object SelfTypeLoad(XmlPersistLoadArgs args)
+            {
+                string xmlData = args.XmAttribute.ValueFirstOrDefault;
+                if (xmlData == null)
+                    return null;
+
+                args.CurrentOperation = "CreateInstance";
+                object data = _ObjectCreate(args.DataType);
+                if (data == null)
+                    return null;
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+
+                args.CurrentOperation = "Deserialize";
+                ((IXmlSerializer)data).XmlSerialData = xmlData;
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+
+                return data;
+            }
+            #endregion
+            #region Enum typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Self (tj. serializaci provádí on sám osobně)
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void EnumTypeSave(XmlPersistSaveArgs args)
+            {
+                args.CurrentOperation = "SerializeValue";
+                string value = Enum.Format(args.DataType, args.Data, "F");
+
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args);
+
+                args.CurrentOperation = "SaveValues";
+                args.CurrentProperty = "EnumValue";
+                CreateAttribute(args.ObjectName, value, args.XmlElement);
+                args.CurrentProperty = null;
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Enum
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object EnumTypeLoad(XmlPersistLoadArgs args)
+            {
+                string xmlData = args.XmAttribute.ValueFirstOrDefault;
+                if (xmlData == null)
+                    return null;
+
+                object data = null;
+                try
+                {
+                    args.CurrentOperation = "ParseEnum";
+                    data = Enum.Parse(args.DataType, xmlData);
+                }
+                catch
+                {
+                    args.CurrentOperation = "DefaultEnum";
+                    data = _ObjectCreate(args.DataType);                  // Vytvoří objekt, prázdný (hodnota = 0)
+                }
+                return data;
+            }
+            #endregion
+            #region Array typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Array
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void ArrayTypeSave(XmlPersistSaveArgs args)
+            {
+                // Zavedu element za celý List,například <Array ...>...</Array>:
+                XmlElement xmlArrayElement = CreateElement(args.ObjectName, args.XmlElement);
+
+                // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, args.ObjectName, xmlArrayElement);
+                Array array = args.Data as Array;
+                Type itemType = args.DataTypeInfo.ItemDataType;
+
+                // Správce indexů pole:
+                args.CurrentOperation = "CreateIndices";
+                ArrayIndices arrayIndices = new ArrayIndices(array);
+
+                // Rozměry pole:  [0+2,0+45] :
+                CreateAttribute(_ArrayNameArrayRange, arrayIndices.Serial, xmlArrayElement);
+
+                // Výpis všech Items:
+                args.CurrentOperation = "EnumerateArray";
+                // string itemName = _ArrayNameItem;
+                for (int[] indices = arrayIndices.FirstIndices(); arrayIndices.IsValidIndices(indices); indices = arrayIndices.NextIndices(indices))
+                {
+                    // Data:
+                    object item = array.GetValue(indices);
+                    if (item != null)
+                    {   // Pokud data jsou null, můžu je vynechat, protože to je default stav pole Array po jeho vytvoření. Ukládám tedy jen nut null hodnoty:
+                        args.CurrentOperation = "SaveValue";
+                        args.CurrentProperty = "Item" + ArrayIndices.ToString(indices);
+
+                        XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlArrayElement);
+                        // Vypíšu indices:
+                        CreateAttribute(_ArrayNameItemIndices, ArrayIndices.SerialIndices(indices), xmlItemElement);
+
+                        // Vypíšu obsah itemu:
+                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        this.SaveObject(nextArgs);
+                    }
+                }
+                args.CurrentProperty = null;
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Array
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object ArrayTypeLoad(XmlPersistLoadArgs args)
+            {
+                XmAttribute xmAtt;
+                if (!args.XmElement.TryGetAttribute(_ArrayName, out xmAtt)) return null;
+
+                args.CurrentOperation = "ParseIndices";
+                ArrayIndices arrayIndices = new ArrayIndices(xmAtt.Range);
+                Type itemType = args.DataTypeInfo.ItemDataType;
+                args.CurrentOperation = "CreateArray";
+                Array array = arrayIndices.CreateArray(itemType);
+                if (array == null) return null;
+
+                args.CurrentOperation = "EnumerateXmlElements";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    if (xmEle.Name == _ArrayNameItem)
+                    {   // Element má odpovídající jméno. 
+                        XmAttribute itemAttribute;
+                        if (xmEle.TryGetAttribute(_ArrayNameItem, out itemAttribute) && itemAttribute.Indices != null)
+                        {   // V elementu jsme našli atribut: Item.Indices="[0,5,20]" nesoucí indexy aktuálního prvku:
+                            int[] indices = ArrayIndices.DeSerialIndices(itemAttribute.Indices);
+                            if (indices.Length == arrayIndices.Rank)
+                            {   // Deserializované indexy mají správný počet položek pro naše pole:
+                                args.CurrentOperation = "ReadValue";
+                                args.CurrentProperty = "Item" + ArrayIndices.ToString(indices);
+
+                                object value = null;
+                                // Element xmEle: buď obsahuje atribut, nebo podřízený element s názvem "Value":
+                                XmAttribute atValue;
+                                XmElement elValue;
+                                if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
+                                {
+                                    args.CurrentOperation = "CreateItem";
+                                    XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
+                                    value = this._CreateObjectOfType(nextArgs);
+                                }
+                                array.SetValue(value, indices);
+                            }
+                        }
+                    }
+                }
+
+                return array;
+            }
+            #endregion
+            #region IList typy: Save, Create
+            /// <summary>
+            /// Uloží kolekci (List)
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void IListTypeSave(XmlPersistSaveArgs args)
+            {
+                // Zavedu element za celý List,například <ItemList ...>...</ItemList>:
+                XmlElement xmlListElement = CreateElement(args.ObjectName, args.XmlElement);
+
+                // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, args.ObjectName, xmlListElement);
+
+                IList iList = args.Data as IList;
+                if (iList == null) return;
+
+                args.CurrentOperation = "Map.IList";
+                Type itemType = args.DataTypeInfo.GetGenericType(0);
+
+                args.CurrentOperation = "Enumerate.IList";
+                int index = 0;
+                foreach (object item in iList)
+                {
+                    args.CurrentOperation = "SaveValue";
+                    args.CurrentProperty = "Item[" + (index++).ToString() + "]";
+
+                    // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
+                    XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlListElement);
+
+                    // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
+                    if (item != null)
+                    {
+                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        this.SaveObject(nextArgs);
+                    }
+                }
+            }
+            /// <summary>
+            /// Vytvoří a vrátí datový objekt
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object IListTypeLoad(XmlPersistLoadArgs args)
+            {
+                // Vytvořím objekt s daty odpovídajícími datům persistovaným:
+                args.CurrentOperation = "Create.IList";
+                object data = _ObjectCreate(args.DataType);
+                IList iList = data as IList;
+                if (iList == null) return null;
+
+                args.CurrentOperation = "GetGenerics";
+                args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
+                Type itemType = args.DataTypeInfo.ItemDataType;
+                if (itemType == null)
+                    itemType = args.DataTypeInfo.GetGenericType(0);
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+
+                args.CurrentOperation = "EnumerateItems";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    if (xmEle.Name == _ArrayNameItem)
+                    {   // Element má odpovídající jméno. 
+                        object value = null;
+                        // Buď obsahuje atribut, nebo podřízený element s názvem Value:
+                        XmAttribute atValue;
+                        XmElement elValue;
+                        if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
+                        {
+                            args.CurrentOperation = "CreateItem";
+                            XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
+                            value = this._CreateObjectOfType(itemArgs);
+                        }
+                        iList.Add(value);
+                    }
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+
+                return data;
+            }
+            #endregion
+            #region IDictionary typy: Save, Create
+            /// <summary>
+            /// Uloží Dictionary
+            /// </summary>
+            private void IDictionaryTypeSave(XmlPersistSaveArgs args)
+            {
+                // string currentName, string itemName, TypeInfo typeInfo, object data, Type estimatedType, string typeAttributeName, XmlElement xElement)
+                XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);  // Zavedu element za celý List,například <ItemList ...>...</ItemList>
+
+                // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, args.ObjectName, xmlDictElement);
+
+                IDictionary iDict = args.Data as IDictionary;
+                if (iDict == null) return;
+
+                args.CurrentOperation = "Map.IDictionary";
+                Type keyType = args.DataTypeInfo.GetGenericType(0);
+                Type valueType = args.DataTypeInfo.GetGenericType(1);
+
+                args.CurrentOperation = "Enumerate.IDictionary";
+                foreach (DictionaryEntry entry in iDict)
+                {
+                    // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
+                    XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
+
+                    this.SaveObject(new XmlPersistSaveArgs(entry.Key, _DictNameKey, keyType, xmlItemElement, this.TypeLibrary));
+                    this.SaveObject(new XmlPersistSaveArgs(entry.Value, _DictNameValue, valueType, xmlItemElement, this.TypeLibrary));
+                }
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Dictionary
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object IDictionaryTypeLoad(XmlPersistLoadArgs args)
+            {
+                args.CurrentOperation = "Create.IDictionary";
+                object data = _ObjectCreate(args.DataType);
+                IDictionary iDict = data as IDictionary;
+                if (iDict == null) return null;
+
+                args.CurrentOperation = "GetGenerics";
+                args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
+                Type keyType = args.DataTypeInfo.GetGenericType(0);
+                Type valueType = args.DataTypeInfo.GetGenericType(1);
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+
+                args.CurrentOperation = "EnumerateItems";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    if (xmEle.Name == _DictNamePair)
+                    {   // Element má odpovídající jméno. 
+                        object key = null;
+                        object value = null;
+                        // Buď obsahuje atribut, nebo podřízený element s názvem Value:
+                        XmAttribute atValue;
+                        XmElement elValue;
+                        if (_FindAttrElementByName(xmEle, _DictNameKey, false, out elValue, out atValue))
+                        {
+                            args.CurrentOperation = "CreateKey";
+                            XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
+                            key = this._CreateObjectOfType(itemArgs);
+                        }
+                        if (_FindAttrElementByName(xmEle, _DictNameValue, false, out elValue, out atValue))
+                        {
+                            args.CurrentOperation = "CreateValue";
+                            XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
+                            value = this._CreateObjectOfType(itemArgs);
+                        }
+                        if (key != null)
+                        {
+                            args.CurrentOperation = "AddItem.IDictionary";
+                            iDict.Add(key, value);
+                        }
+                    }
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+
+                return iDict;
+            }
+            #endregion
+            #region Compound typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Compound (tj. má property)
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void CompoundTypeSave(XmlPersistSaveArgs args)
+            {
+                args.CurrentOperation = "NotifyData.Begin";
+                args.CurrentProperty = null;
+                NotifyData(args.Data, XmlPersistState.SaveBegin);
+
+                args.CurrentOperation = "SaveType";
+                XmlElement xmlCurrElement = CreateElement(args.ObjectName, args.XmlElement);
+                SaveTypeAttribute(args, args.ObjectName, xmlCurrElement);
+
+                args.CurrentOperation = "SaveValues";
+                foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
+                {
+                    args.CurrentProperty = propInfo.Name;
+                    object value = propInfo.Property.GetValue(args.Data, null);
+                    this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, this.TypeLibrary));
+                }
+                args.CurrentProperty = null;
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(args.Data, XmlPersistState.SaveDone);
+            }
+            /// <summary>
+            /// Vytvoří a vrátí objekt typu Compound z dat XML
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            private object CompoundTypeLoad(XmlPersistLoadArgs args)
+            {
+                // Vytvořím objekt s daty odpovídajícími datům persistovaným:
+                args.CurrentOperation = "Create.Compound";
+                object data = _ObjectCreate(args.DataType);
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+                args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());             // Reálný Type + jeho property
+
+                // 1. Projdeme atributy, ty obsahují jednoduché datové typy. Uložíme je do property našeho objektu:
+                args.CurrentOperation = "ReadAttributes";
+                foreach (XmAttribute xmAtt in args.XmElement.XmAttributes)
+                {
+                    TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmAtt.Name);
+                    if (propInfo != null)
+                    {
+                        args.CurrentProperty = propInfo.Name;
+                        XmlPersistLoadArgs propArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
+                        object value = this._CreateObjectOfType(propArgs);
+                        propInfo.Property.SetValue(data, value, null);
+                    }
+                }
+
+                // 2. Projdeme si sub-elementy našeho elementu. pro každý z nich určím zda máme cílovou property, a pak načtu hodnotu:
+                args.CurrentOperation = "ReadElements";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmEle.Name);
+                    if (propInfo != null)
+                    {
+                        args.CurrentProperty = propInfo.Name;
+                        XmAttribute xmAte;
+                        xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
+                        XmlPersistLoadArgs propArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
+                        object value = this._CreateObjectOfType(propArgs);
+                        propInfo.Property.SetValue(data, value, null);
+                    }
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+                return data;
+            }
+            #endregion
+
+
+            #region Konstanty
+            private const string _DocumentNamePersist = "persistent";
+            private const string _DocumentNameData = "data";
+            private const string _DocumentNameValue = "Value";
+            private const string _ElementNameValue = "Value";
+            private const string _ArrayName = "Array";
+            private const string _ArrayNameItem = "Item";
+            private const string _DictNamePair = "Entry";
+            private const string _DictNameKey = "Key";
+            private const string _DictNameValue = "Value";
+            private const string _ArrayNameArrayRange = _ArrayName + "." + XmAttribute.SuffixNameRange;
+            private const string _ArrayNameItemIndices = _ArrayNameItem + "." + XmAttribute.SuffixNameIndices;
+            #endregion
+        }
+        #endregion
+        #region Algoritmy verze 2.0
+        internal class XmlPersistV2 : XmlPersistVBase, IXmlPersistVersion
+        {
+            #region Konstruktor, číslo verze
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            internal XmlPersistV2(XmlPersist owner) 
+                : base(owner)
+            { }
+            /// <summary>
+            /// Číslo verze
+            /// </summary>
+            public const string Version = "2.00";
+            #endregion
+            #region Řízení serializace/deserializace
+            void IXmlPersistVersion.Save(object data, PersistArgs parameters, XmlDocument xDoc)
+            {
+                XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
+                xDoc.AppendChild(xRootElement);
+                CreateAttribute("Version", Version, xRootElement);
+                CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
+                CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
+
+                XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
+                this.SaveObject(new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this.TypeLibrary));
+            }
+            bool IXmlPersistVersion.IsValidFormat(XmDocument xmDoc)
+            {
+                string version;
+                XmAttribute atValue;
+                XmElement elValue;
+                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out atValue, out elValue);
+                return (elData != null && version != null && version == Version);
+            }
+            object IXmlPersistVersion.Load(PersistArgs parameters, XmDocument xmDoc)
+            {
+                string version;
+                XmAttribute atValue;
+                XmElement elValue;
+                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out atValue, out elValue);
+                if (!(elData != null && version != null && version == Version)) return null;
+
+                XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, elValue, atValue);
+                return this._CreateObjectOfType(itemArgs);
+            }
+            /// <summary>
+            /// Uloží předaný objekt do XML.
+            /// Tato metoda nezakládá nový element, pokud vstupují data typu Simple.
+            /// Ostatní typy dat řeší specializované metody, ty si svoje elementy zakládají.
+            /// </summary>
+            /// <param name="args">Kompletní datový balík pro uložení dat</param>
+            private void SaveObject(XmlPersistSaveArgs args)
+            {
+                // do XML budu persistovat pouze not null hodnoty!
+                if (!args.HasData) return;
+
+                try
+                {
+                    // Zjistíme, jaký objekt to sem přišel:
+                    args.DataTypeInfo = this.TypeLibrary.GetInfo(args.Data.GetType());
+
+                    // Podle reálného typu, podle jeho charakteru předám řízení do odpovídající metody:
+                    switch (args.DataTypeInfo.PersistenceType)
+                    {
+                        case TypeLibrary.XmlPersistenceType.Simple:
+                            this.SimpleTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Self:
+                            this.SelfTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Enum:
+                            this.EnumTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Array:
+                            this.ArrayTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.IList:
+                            this.IListTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.IDictionary:
+                            this.IDictionaryTypeSave(args);
+                            break;
+                        case TypeLibrary.XmlPersistenceType.Compound:
+                            this.CompoundTypeSave(args);
+                            break;
+                    }
+                }
+                catch (InvalidOperationException)
+                {   // Tuhle výjimku jsme hodili sami v některém vnořeném cyklu, proto ji nebudu nijak řešit a pošlu ji dál...
+                    throw;
+                }
+                catch (Exception exc)
+                {   // Chyby při serializaci okomentujeme, aby developer věděl, odkud vítr fouká:
+                    string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
+                    string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
+                    string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
+                    string eol = Environment.NewLine;
+                    throw new InvalidOperationException("Error on serialize of object." + eol +
+                        "Type: " + type + ";" + eol +
+                        "Operation: " + oper + ";" + eol +
+                        "Property: " + prop + ";" + eol +
+                        "Error: " + exc.Message,
+                        exc);
+                }
+            }
+            private XmElement SearchRootDataElement(XmDocument xmDoc, out string version, out XmAttribute atValue, out XmElement elValue)
+            {
+                version = null;
+                atValue = null;
+                elValue = null;
+
+                // Najdu element "persistent", z něj lze načíst číslo verze:
+                XmElement xmPers = xmDoc.FindElement(_DocumentNamePersist);
+                if (xmPers == null) return null;
+
+                version = xmPers.FindAttributeValue("Version", "");
+                if (!String.Equals(version, Version)) return null;
+
+                // Najdu element "data", v něm bude uložen objekt:
+                XmElement elData = xmDoc.FindElement(_DocumentNamePersist + "/" + _DocumentNameData);
+                if (elData == null) return null;
+
+                // Element Data bude obsahovat buď atribut nebo sub element Value:
+                if (!this._FindAttrElementByName(elData, _DocumentNameValue, true, out elValue, out atValue)) return null;
+
+                return elData;
+            }
+            /// <summary>
+            /// Vytvoří objekt na základě dat v aktuálním elementu readeru.
+            /// Na vstupu je předán reader, defaultní typ prvku, jméno nepovinného atributu, který nese explicitní typ, a jméno atributu který nese hodnotu (platí pouze pro Simple typy).
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object _CreateObjectOfType(XmlPersistLoadArgs args)
+            {
+                if (args.DataType == null) return null;
+                try
+                {
+                    switch (args.DataTypeInfo.PersistenceType)
+                    {
+                        case TypeLibrary.XmlPersistenceType.Simple:
+                            return this.SimpleTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Self:
+                            return this.SelfTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Enum:
+                            return this.EnumTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Array:
+                            return this.ArrayTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.IList:
+                            return this.IListTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.IDictionary:
+                            return this.IDictionaryTypeLoad(args);
+                        case TypeLibrary.XmlPersistenceType.Compound:
+                            return this.CompoundTypeLoad(args);
+                    }
+                }
+                catch (InvalidOperationException)
+                {   // Tuhle výjimku jsme hodili sami v některém vnořeném cyklu, proto ji nebudu nijak řešit a pošlu ji dál...
+                    throw;
+                }
+                catch (Exception exc)
+                {   // Chyby při deserializaci okomentujeme, aby developer věděl, odkud vítr fouká:
+                    string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
+                    string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
+                    string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
+                    string eol = Environment.NewLine;
+                    throw new InvalidOperationException("Error on deserialize of object." + eol +
+                        "Type: " + type + ";" + eol +
+                        "Operation: " + oper + ";" + eol +
+                        "Property: " + prop + ";" + eol +
+                        "Error: " + exc.Message,
+                        exc);
+                }
+                return null;
+            }
+            #endregion
+            #region Simple typy: Save, Create
+            /// <summary>
+            /// Daný objekt (data) konvertuje pomocí TypeConvertoru pro Simple typ, a výslednou hodnotu vloží do atributu daného jména.
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void SimpleTypeSave(XmlPersistSaveArgs args)
+            {
+                args.CurrentOperation = "NotifyData.Begin";
+                args.CurrentProperty = null;
+                NotifyData(args.Data, XmlPersistState.SaveBegin);
+
+                args.CurrentOperation = "SerializeValue";
+                if (args.DataTypeInfo.TypeConvert == null)
+                    throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() neobsahuje TypeConvertor.");
+                if (args.DataTypeInfo.TypeConvert.Serializator == null)
+                    throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() obsahuje TypeConvertor, který nemá serializátor.");
+                string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
+
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args);
+
+                args.CurrentOperation = "SaveValues";
+                args.CurrentProperty = "Value";
+                CreateAttribute(args.ObjectName, value, args.XmlElement);
+                args.CurrentProperty = null;
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(args.Data, XmlPersistState.SaveDone);
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Simple (tj. je uložený v jednom atributu jako jeden string)
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            private object SimpleTypeLoad(XmlPersistLoadArgs args)
+            {
+                args.CurrentOperation = "DeserializeValue";
+                if (args.DataTypeInfo.TypeConvert == null)
+                    throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() neobsahuje TypeConvertor.");
+                if (args.DataTypeInfo.TypeConvert.Deserializator == null)
+                    throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() obsahuje TypeConvertor, který nemá deserializátor.");
+
+                return args.DataTypeInfo.TypeConvert.Deserializator(args.XmAttribute.ValueFirstOrDefault);
+            }
+            #endregion
+            #region Self typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Self (tj. serializaci provádí on sám osobně)
+            /// </summary>
+            /// <param name="args"></param>
+            private void SelfTypeSave(XmlPersistSaveArgs args)
+            {
+                if (args.HasData)
+                {
+                    args.CurrentOperation = "NotifyData.Begin";
+                    args.CurrentProperty = null;
+                    NotifyData(args.Data, XmlPersistState.SaveBegin);
+
+                    args.CurrentOperation = "SerializeValue";
+                    if (!(args.Data is IXmlSerializer))
+                        throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SelfTypeSave() neimplementuje interface IXmlSerializer.");
+                    string value = ((IXmlSerializer)args.Data).XmlSerialData;
+
+                    args.CurrentOperation = "SaveType";
+                    SaveTypeAttribute(args);
+
+                    args.CurrentOperation = "SaveValues";
+                    args.CurrentProperty = "SelfValue";
+                    CreateAttribute(args.ObjectName, value, args.XmlElement);
+                    args.CurrentProperty = null;
+
+                    args.CurrentOperation = "NotifyData.End";
+                    NotifyData(args.Data, XmlPersistState.SaveDone);
+                }
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Self (tj. deserializaci provádí on sám osobně)
+            /// </summary>
+            /// <returns></returns>
+            private object SelfTypeLoad(XmlPersistLoadArgs args)
+            {
+                string xmlData = args.XmAttribute.ValueFirstOrDefault;
+                if (xmlData == null)
+                    return null;
+
+                args.CurrentOperation = "CreateInstance";
+                object data = this._ObjectCreate(args.DataType);
+                if (data == null)
+                    return null;
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+
+                args.CurrentOperation = "Deserialize";
+                ((IXmlSerializer)data).XmlSerialData = xmlData;
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+
+                return data;
+            }
+            #endregion
+            #region Enum typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Self (tj. serializaci provádí on sám osobně)
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void EnumTypeSave(XmlPersistSaveArgs args)
+            {
+                args.CurrentOperation = "SerializeValue";
+                string value = Enum.Format(args.DataType, args.Data, "F");
+
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args);
+
+                args.CurrentOperation = "SaveValues";
+                args.CurrentProperty = "EnumValue";
+                CreateAttribute(args.ObjectName, value, args.XmlElement);
+                args.CurrentProperty = null;
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Enum
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object EnumTypeLoad(XmlPersistLoadArgs args)
+            {
+                string xmlData = args.XmAttribute.ValueFirstOrDefault;
+                if (xmlData == null)
+                    return null;
+
+                object data = null;
+                try
+                {
+                    args.CurrentOperation = "ParseEnum";
+                    data = Enum.Parse(args.DataType, xmlData);
+                }
+                catch
+                {
+                    args.CurrentOperation = "DefaultEnum";
+                    data = _ObjectCreate(args.DataType);                  // Vytvoří objekt, prázdný (hodnota = 0)
+                }
+                return data;
+            }
+            #endregion
+            #region Array typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Array
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void ArrayTypeSave(XmlPersistSaveArgs args)
+            {
+                // Zavedu element pro celé pole Array, pod jménem cíle, kam toto pole je vloženo (nahoru):
+                XmlElement xmlArrayElement = CreateElement(args.ObjectName, args.XmlElement);
+
+                // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, args.ObjectName, xmlArrayElement);
+                Array array = args.Data as Array;
+                if (array == null) return;
+
+                Type itemType = args.DataTypeInfo.ItemDataType;
+
+                // Správce indexů pole:
+                args.CurrentOperation = "CreateIndices";
+                ArrayIndices arrayIndices = new ArrayIndices(array);
+
+                // Rozměry pole:  [0+2,0+45] :
+                CreateAttribute(_ArrayNameArrayRange, arrayIndices.Serial, xmlArrayElement);
+
+                // Výpis všech Items:
+                args.CurrentOperation = "EnumerateArray";
+                for (int[] indices = arrayIndices.FirstIndices(); arrayIndices.IsValidIndices(indices); indices = arrayIndices.NextIndices(indices))
+                {
+                    // Data:
+                    object item = array.GetValue(indices);
+                    if (item != null)
+                    {   // Pokud data jsou null, můžu je vynechat, protože to je default stav pole Array po jeho vytvoření. Ukládám tedy jen nut null hodnoty:
+                        args.CurrentOperation = "SaveValue";
+                        args.CurrentProperty = "Item" + ArrayIndices.ToString(indices);
+
+                        // Vytvořím element pro prvek pole, a vepíšu do něj atribut obsahující indexy:
+                        XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlArrayElement);
+                        CreateAttribute(_ArrayNameItemIndices, ArrayIndices.SerialIndices(indices), xmlItemElement);
+
+                        // Do XML elementu pro prvek pole vložím hodnoty z objektu:
+                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        this.SaveObject(nextArgs);
+                    }
+                }
+                args.CurrentProperty = null;
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Array
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object ArrayTypeLoad(XmlPersistLoadArgs args)
+            {
+                XmAttribute xmAtt;
+                if (!args.XmElement.TryGetAttribute(_ArrayName, out xmAtt)) return null;
+
+                args.CurrentOperation = "ParseIndices";
+                ArrayIndices arrayIndices = new ArrayIndices(xmAtt.Range);
+                Type itemType = args.DataTypeInfo.ItemDataType;
+                args.CurrentOperation = "CreateArray";
+                Array array = arrayIndices.CreateArray(itemType);
+                if (array == null) return null;
+
+                args.CurrentOperation = "EnumerateXmlElements";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    if (xmEle.Name == _ArrayNameItem)
+                    {   // Element má odpovídající jméno. 
+                        XmAttribute itemAttribute;
+                        if (xmEle.TryGetAttribute(_ArrayNameItem, out itemAttribute) && itemAttribute.Indices != null)
+                        {   // V elementu jsme našli atribut: Item.Indices="[0,5,20]" nesoucí indexy aktuálního prvku:
+                            int[] indices = ArrayIndices.DeSerialIndices(itemAttribute.Indices);
+                            if (indices.Length == arrayIndices.Rank)
+                            {   // Deserializované indexy mají správný počet položek pro naše pole:
+                                args.CurrentOperation = "ReadValue";
+                                args.CurrentProperty = "Item" + ArrayIndices.ToString(indices);
+
+                                object value = null;
+                                // Element xmEle: buď obsahuje atribut, nebo podřízený element s názvem "Value":
+                                XmAttribute atValue;
+                                XmElement elValue;
+                                if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
+                                {
+                                    args.CurrentOperation = "CreateItem";
+                                    XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
+                                    value = this._CreateObjectOfType(nextArgs);
+                                }
+                                array.SetValue(value, indices);
+                            }
+                        }
+                    }
+                }
+
+                return array;
+            }
+            #endregion
+            #region IList typy: Save, Create
+            /// <summary>
+            /// Uloží kolekci (List)
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void IListTypeSave(XmlPersistSaveArgs args)
+            {
+                // Zavedu element pro celý List, pod jménem cíle, kam tento List pole je vložen (nahoru):
+                XmlElement xmlListElement = CreateElement(args.ObjectName, args.XmlElement);
+
+                // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, args.ObjectName, xmlListElement);
+
+                IList iList = args.Data as IList;
+                if (iList == null) return;
+
+                args.CurrentOperation = "Map.IList";
+                Type itemType = args.DataTypeInfo.GetGenericType(0);
+
+                args.CurrentOperation = "Enumerate.IList";
+                int index = 0;
+                foreach (object item in iList)
+                {
+                    args.CurrentOperation = "SaveValue";
+                    args.CurrentProperty = "Item[" + (index++).ToString() + "]";
+
+                    // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
+                    XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlListElement);
+
+                    // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
+                    if (item != null)
+                    {
+                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        this.SaveObject(nextArgs);
+                    }
+                }
+            }
+            /// <summary>
+            /// Vytvoří a vrátí datový objekt
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object IListTypeLoad(XmlPersistLoadArgs args)
+            {
+                // Vytvořím objekt s daty odpovídajícími datům persistovaným:
+                args.CurrentOperation = "Create.IList";
+                object data = _ObjectCreate(args.DataType);
+                IList iList = data as IList;
+                if (iList == null) return null;
+
+                args.CurrentOperation = "GetGenerics";
+                args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
+                Type itemType = args.DataTypeInfo.ItemDataType;
+                if (itemType == null)
+                    itemType = args.DataTypeInfo.GetGenericType(0);
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+
+                args.CurrentOperation = "EnumerateItems";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    if (xmEle.Name == _ArrayNameItem)
+                    {   // Element má odpovídající jméno. 
+                        object value = null;
+                        // Buď obsahuje atribut, nebo podřízený element s názvem Value:
+                        XmAttribute atValue;
+                        XmElement elValue;
+                        if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
+                        {
+                            args.CurrentOperation = "CreateItem";
+                            XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
+                            value = this._CreateObjectOfType(nextArgs);
+                        }
+                        iList.Add(value);
+                    }
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+
+                return data;
+            }
+            #endregion
+            #region IDictionary typy: Save, Create
+            /// <summary>
+            /// Uloží Dictionary
+            /// </summary>
+            private void IDictionaryTypeSave(XmlPersistSaveArgs args)
+            {
+                // Zavedu element pro celý Dictionary, pod jménem cíle, kam tento List pole je vložen (nahoru):
+                XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);
+
+                // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, args.ObjectName, xmlDictElement);
+
+                IDictionary iDict = args.Data as IDictionary;
+                if (iDict == null) return;
+
+                args.CurrentOperation = "Map.IDictionary";
+                Type keyType = args.DataTypeInfo.GetGenericType(0);
+                Type valueType = args.DataTypeInfo.GetGenericType(1);
+
+                args.CurrentOperation = "Enumerate.IDictionary";
+                foreach (DictionaryEntry entry in iDict)
+                {
+                    args.CurrentOperation = "SaveValue";
+                    args.CurrentProperty = "Item[" + entry.Key.ToString() + "]";        // Key v Dictionary nemůže být null !!!
+
+                    // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
+                    XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
+
+                    this.SaveObject(new XmlPersistSaveArgs(entry.Key, _DictNameKey, keyType, xmlItemElement, this.TypeLibrary));
+                    this.SaveObject(new XmlPersistSaveArgs(entry.Value, _DictNameValue, valueType, xmlItemElement, this.TypeLibrary));
+                }
+            }
+            /// <summary>
+            /// Z dodaného readeru načte a sestaví objekt uložený jako Dictionary
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            /// <returns></returns>
+            private object IDictionaryTypeLoad(XmlPersistLoadArgs args)
+            {
+                args.CurrentOperation = "Create.IDictionary";
+                object data = _ObjectCreate(args.DataType);
+                IDictionary iDict = data as IDictionary;
+                if (iDict == null) return null;
+
+                args.CurrentOperation = "GetGenerics";
+                args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
+                Type keyType = args.DataTypeInfo.GetGenericType(0);
+                Type valueType = args.DataTypeInfo.GetGenericType(1);
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+
+                args.CurrentOperation = "EnumerateItems";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    if (xmEle.Name == _DictNamePair)
+                    {   // Element má odpovídající jméno. 
+                        object key = null;
+                        object value = null;
+                        // Buď obsahuje atribut, nebo podřízený element s názvem Value:
+                        XmAttribute atValue;
+                        XmElement elValue;
+                        if (_FindAttrElementByName(xmEle, _DictNameKey, false, out elValue, out atValue))
+                        {
+                            args.CurrentOperation = "CreateKey";
+                            XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
+                            key = this._CreateObjectOfType(itemArgs);
+                        }
+                        if (_FindAttrElementByName(xmEle, _DictNameValue, false, out elValue, out atValue))
+                        {
+                            args.CurrentOperation = "CreateValue";
+                            XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
+                            value = this._CreateObjectOfType(itemArgs);
+                        }
+                        if (key != null)
+                        {
+                            args.CurrentOperation = "AddItem.IDictionary";
+                            iDict.Add(key, value);
+                        }
+                    }
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+
+                return iDict;
+            }
+            #endregion
+            #region Compound typy: Save, Create
+            /// <summary>
+            /// Uloží do Xml dokumentu daný objekt, který je typu Compound (tj. má property)
+            /// </summary>
+            /// <param name="args">Kompletní datový balík</param>
+            private void CompoundTypeSave(XmlPersistSaveArgs args)
+            {
+                args.CurrentOperation = "NotifyData.Begin";
+                args.CurrentProperty = null;
+                NotifyData(args.Data, XmlPersistState.SaveBegin);
+
+                args.CurrentOperation = "SaveType";
+                XmlElement xmlCurrElement = CreateElement(_ElementNameValue, args.XmlElement);
+                SaveTypeAttribute(args, _ElementNameValue, xmlCurrElement);
+
+                args.CurrentOperation = "SaveValues";
+                if (args.HasObjectName)
+                    CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.ObjectName, xmlCurrElement);
+                foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
+                {   // V jednom cyklu zapisujeme data z jednoduhých i složitých propeties (tzn. do XmlAtributů i do XmlElementů),
+                    //  to řeší až metoda SaveObject() podle typu persistence konkrétního objektu.
+                    args.CurrentProperty = propInfo.Name;
+                    object value = propInfo.Property.GetValue(args.Data, null);
+                    this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, this.TypeLibrary));
+                }
+                args.CurrentProperty = null;
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(args.Data, XmlPersistState.SaveDone);
+            }
+            /// <summary>
+            /// Vytvoří a vrátí objekt typu Compound z dat XML
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            private object CompoundTypeLoad(XmlPersistLoadArgs args)
+            {
+                // Vytvořím objekt s daty odpovídajícími datům persistovaným:
+                args.CurrentOperation = "Create.Compound";
+                object data = _ObjectCreate(args.DataType);
+
+                args.CurrentOperation = "NotifyData.Begin";
+                NotifyData(data, XmlPersistState.LoadBegin);
+                args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());             // Reálný Type + jeho property
+
+                // 1. Projdeme atributy, ty obsahují jednoduché datové typy. Uložíme je do property našeho objektu:
+                args.CurrentOperation = "ReadAttributes";
+                foreach (XmAttribute xmAtt in args.XmElement.XmAttributes)
+                {
+                    if (xmAtt.Values.Count == 0) continue;          // Atribut bez hodnoty = nese jen suffixy, například: Type, Indices, Assembly. Takové nelze zpracovávat zde.
+                    TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmAtt.Name);
+                    if (propInfo != null)
+                    {
+                        args.CurrentProperty = propInfo.Name;
+                        XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
+                        object value = this._CreateObjectOfType(nextArgs);
+                        propInfo.Property.SetValue(data, value, null);
+                    }
+                }
+
+                // 2. Projdeme si sub-elementy našeho elementu. Pro každý z nich určíme, zda máme cílovou property, a pak načtu jejich hodnotu do této property:
+                args.CurrentOperation = "ReadElements";
+                foreach (XmElement xmEle in args.XmElement.XmElements)
+                {
+                    string name = xmEle.Name;
+                    if (name == _ElementNameValue)
+                    {
+                        XmAttribute xmVal;
+                        if (xmEle.TryGetAttribute(_ElementNameValue, out xmVal))
+                            name = xmVal.Target;
+                    }
+                    TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(name);
+                    if (propInfo != null)
+                    {
+                        args.CurrentProperty = propInfo.Name;
+                        XmAttribute xmAte;
+                        xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
+                        XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
+                        object value = this._CreateObjectOfType(nextArgs);
+                        propInfo.Property.SetValue(data, value, null);
+                    }
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+                return data;
+            }
+            #endregion
+            #region Konstanty
+            private const string _DocumentNamePersist = "id-persistent";
+            private const string _DocumentNameData = "id-data";
+            private const string _DocumentNameValue = "id-value";
+            private const string _ElementNameValue = "id-value";
+            private const string _ArrayName = "id-array";
+            private const string _ArrayNameItem = "id-item";
+            private const string _DictNamePair = "id-pair";
+            private const string _DictNameKey = "id-key";
+            private const string _DictNameValue = "id-value";
+            private const string _ArrayNameArrayRange = _ArrayName + "." + XmAttribute.SuffixNameRange;
+            private const string _ArrayNameItemIndices = _ArrayNameItem + "." + XmAttribute.SuffixNameIndices;
+            #endregion
+        }
+        #endregion
+        #region Algoritmy verze - bázová třída
+        internal class XmlPersistVBase
+        {
+            #region Konsrtuktor, Owner, TypeLibrary
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            protected XmlPersistVBase(XmlPersist owner)
+            {
+                this.Owner = owner;
+                this.TypeLibrary = owner._TypeLibrary;
+            }
+            /// <summary>
+            /// Majitel
+            /// </summary>
+            protected XmlPersist Owner { get; private set; }
+            /// <summary>
+            /// Knihovna typů
+            /// </summary>
+            protected TypeLibrary TypeLibrary { get; private set; }
+            #endregion
+            #region Support pro práci s typy a argumenty
+            /// <summary>
+            /// Metoda zjistí, zda daný element (inElement) obsahuje atribut daného jména (name): pak ten atribut vloží do out findAttribute, a do out findElement vloží vstupující element a vrátí true.
+            /// Pokud nenajde, podívá se do přímo podřízených elementů k elementu inElement, zda v něm najde element daného jména. Pokud najde, pak do out findElement vloží ten nalezený element,
+            /// a do findAttribute zkusí najít atribut daného jména v tomto nalezeném elementu.
+            /// Pokud nenajde, nechá všude null a vrátí false.
+            /// Toto hledání odpovídá stylu ukládání Simple / Compound prvků.
+            /// </summary>
+            /// <param name="inElement"></param>
+            /// <param name="name"></param>
+            /// <param name="requiredAttInElement"></param>
+            /// <param name="findElement"></param>
+            /// <param name="findAttribute"></param>
+            /// <returns></returns>
+            protected bool _FindAttrElementByName(XmElement inElement, string name, bool requiredAttInElement, out XmElement findElement, out XmAttribute findAttribute)
+            {
+                // return this.Owner._FindAttrElementByName(inElement, name, requiredAttInElement, out findElement, out findAttribute);
+                findElement = null;
+                findAttribute = null;
+
+                // Zkusím najít atribut s daným jménem:
+                XmAttribute att;
+                if (inElement.TryGetAttribute(name, out att))
+                {   // Nalezen atribut (typický vzhled:  <element Value.Type="XmlPersistor.GID" Value="1234;5678" />)
+                    findElement = inElement;
+                    findAttribute = att;
+                    return true;
+                }
+
+                // Zkusím hledat element s daným jménem:
+                XmElement ele = inElement.TryFindElement(name);
+                if (ele != null)
+                {   // Uvnitř daného elementu <element> je element <name...> (například: <Value Value.Type="XmlPersistor.DataObject" BindFlags="Public, SetField" ... a další atributy = jednoduché property):
+                    bool find = ele.TryGetAttribute(name, out att);
+                    if (find || !requiredAttInElement)
+                    {   // Nalezen atribut (typický vzhled:  <element Value.Type="XmlPersistor.GID" Value="1234;5678" />)
+                        findElement = ele;
+                        findAttribute = att;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            /// <summary>
+            /// Vytvoří argument pro načítání dat.
+            /// </summary>
+            /// <param name="parameters"></param>
+            /// <param name="propInfo"></param>
+            /// <param name="estimatedType"></param>
+            /// <param name="xmElement"></param>
+            /// <param name="xmAttribute"></param>
+            /// <returns></returns>
+            protected XmlPersistLoadArgs CreateLoadArgs(PersistArgs parameters, TypeLibrary.PropInfo propInfo, Type estimatedType, XmElement xmElement, XmAttribute xmAttribute)
+            {
+                Type dataType = null;
+                if (xmAttribute != null && !String.IsNullOrEmpty(xmAttribute.Type))
+                {
+                    Type explicitDataType = TypeLibrary.GetTypeFromSerial(xmAttribute.Type, xmAttribute.Assembly);
+                    if (explicitDataType != null)
+                        dataType = explicitDataType;
+                }
+                if (dataType == null)
+                {
+                    dataType = estimatedType;
+                    Type innerType = TypeLibrary.GetNullableInnerType(dataType);
+                    if (innerType != null) dataType = innerType;
+                }
+
+                TypeLibrary.TypeInfo dataTypeInfo = null;
+                if (dataType != null)
+                    dataTypeInfo = this.TypeLibrary.GetInfo(dataType);
+
+                return new XmlPersistLoadArgs(parameters, propInfo, dataType, dataTypeInfo, xmElement, xmAttribute);
+            }
+            /// <summary>
+            /// Vytvoří a vrátí objekt daného typu
+            /// </summary>
+            /// <param name="type"></param>
+            /// <returns></returns>
+            protected object _ObjectCreate(Type type)
+            {
+                object result = null;
+                ConstructorInfo constructor = this.CheckConstructors(type);     // Ověří, zda Type má bezparametrický konstruktor. Vrátí jej.
+                if (constructor != null)
+                    result = constructor.Invoke(null);
+                else
+                    // Například struktury nemají bezparametrický konstruktor definovaný, proto vrací null. Přesto je lze standardně vytvořit:
+                    result = System.Activator.CreateInstance(type);
+                return result;
+            }
+            /// <summary>
+            /// Metoda ověří, zda typ má bezparametrický konstruktor.
+            /// Pokud jej nemá, vyhodí chybu.
+            /// Pokud jej má, vrátí jej.
+            /// </summary>
+            /// <param name="type"></param>
+            /// <returns></returns>
+            protected ConstructorInfo CheckConstructors(Type type)
+            {
+                if (type.IsClass)
+                {
+                    ConstructorInfo[] typeConsts = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);   // Najdu konstruktory daného Type
+                    ConstructorInfo[] typeConstNps = typeConsts.Where(c => c.GetParameters().Length == 0).ToArray();     // Najdu jen ty bezparametrické...
+                    if (typeConstNps.Length == 0)
+                        throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " can not be persisted, must be a type with parameterless constructor!");
+                    return typeConstNps[0];
+                }
+                if (type.IsInterface)
+                {
+                    throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is interface. Object can not be created.!");
+                }
+                if (type.IsValueType || type.IsEnum || type.IsPrimitive)
+                {
+                    return null;
+                }
+                throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is unknown type. Object can not be created.!");
+            }
+            /// <summary>
+            /// Oznámí datovému objektu změnu stavu na danou hodnotu.
+            /// Datový objekt se tak může připravit na nadcházející události (vkládání dat do property v režimu Load() nemusí vyvolávat množství logiky, a nemělo by vyvolávat mnoho chyb).
+            /// Ukončení tohoto stavu (Load / Save) bude oznámeno vložením hodnoty LoadDone nebo SaveDone, a pak ihned None.
+            /// Pokud daný objekt nepodporuje IXmlPersistNotify, pak tato metoda nic nevkládá.
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="xmlPersistState"></param>
+            protected void NotifyData(object data, XmlPersistState xmlPersistState)
+            {
+                if (data != null && data is IXmlPersistNotify)
+                {
+                    IXmlPersistNotify xmlPers = data as IXmlPersistNotify;
+                    xmlPers.XmlPersistState = xmlPersistState;
+
+                    // Ze stavu LoadDone a SaveDone automaticky přejdu do stavu None:
+                    if (xmlPersistState == XmlPersistState.LoadDone || xmlPersistState == XmlPersistState.SaveDone)
+                        xmlPers.XmlPersistState = XmlPersistState.None;
+                }
+            }
+            #endregion
+            #region Xml prvky - tvorba, zápisy, nalezení
+            /// <summary>
+            /// Založí nový element do elementu předaného. Nic do něj nevpisuje. Vrátí tento nově založený element.
+            /// </summary>
+            /// <param name="elementName">Název elementu (typicky jde o název property, nebo klíčové slovo pro element za položku listu, atd)</param>
+            /// <param name="xParentElement"></param>
+            /// <returns></returns>
+            protected static XmlElement CreateElement(string elementName, XmlElement xParentElement)
+            {
+                string name = WorkScheduler.TypeLibrary.CreateXmlName(elementName);
+                XmlElement xElement = xParentElement.OwnerDocument.CreateElement(name);
+                xParentElement.AppendChild(xElement);
+                return xElement;
+            }
+            /// <summary>
+            /// Založí nový atribut a vloží jej do předaného elementu.
+            /// </summary>
+            /// <param name="name">Název atributu</param>
+            /// <param name="value">Hodnota do atributu, string. Pokud bude null, bude atribut bez hodnoty.</param>
+            /// <param name="xElement"></param>
+            protected static XmlAttribute CreateAttribute(string name, string value, XmlElement xElement)
+            {
+                XmlAttribute xAttribute = xElement.OwnerDocument.CreateAttribute(name);
+                if (value != null)
+                    xAttribute.Value = value;
+                xElement.Attributes.Append(xAttribute);
+                return xAttribute;
+            }
+            /// <summary>
+            /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
+            /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
+            /// </summary>
+            protected static void SaveTypeAttribute(XmlPersistSaveArgs args)
+            {
+                SaveTypeAttribute(args, args.ObjectName, args.XmlElement);
+            }
+            /// <summary>
+            /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
+            /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
+            /// </summary>
+            protected static void SaveTypeAttribute(XmlPersistSaveArgs args, string objectName, XmlElement xmlElement)
+            {
+                // Pokud se očekávaný typ a reálný typ neliší, pak do atributu nebudeme vepisovat explicitní typ pro aktuální objekt:
+                if (TypeLibrary.IsEqualType(args.EstimatedType, args.DataType)) return;
+
+                // Získám serializovatelné hodnoty o typu:
+                string serialType, serialAssembly;
+                TypeLibrary.GetSerialForType(args.DataType, out serialType, out serialAssembly);
+
+                // Vytvořím atributy pro neprázdné serial hodnoty:
+                if (!String.IsNullOrEmpty(serialType))
+                    CreateAttribute(objectName + "." + XmAttribute.SuffixNameType, serialType, xmlElement);
+                if (!String.IsNullOrEmpty(serialAssembly))
+                    CreateAttribute(objectName + "." + XmAttribute.SuffixNameAssembly, serialAssembly, xmlElement);
+            }
+            /// <summary>
+            /// Najde v daném readeru začátek daného elementu, 
+            /// </summary>
+            /// <param name="xmlReader"></param>
+            /// <param name="elementName"></param>
+            /// <param name="depthType"></param>
+            protected static bool XmlReadFindElement(XmlTextReader xmlReader, string elementName, XmlElementDepthType depthType)
+            {
+                int depth = xmlReader.Depth;
+                while (!xmlReader.EOF)
+                {
+                    if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == elementName)
+                    {
+                        switch (depthType)
+                        {
+                            case XmlElementDepthType.None:
+                                break;
+                            case XmlElementDepthType.Anywhere:
+                                return true;
+                            case XmlElementDepthType.InCurrentDepth:
+                                if (xmlReader.Depth == depth)
+                                    return true;
+                                break;
+                            case XmlElementDepthType.CurrentAndAnyChilds:
+                                if (xmlReader.Depth >= depth)
+                                    return true;
+                                break;
+                            case XmlElementDepthType.OnlyInChilds:
+                                if (xmlReader.Depth > depth)
+                                    return true;
+                                break;
+                        }
+                        return true;
+                    }
+                    xmlReader.Read();
+                }
+                return false;
+            }
+            #endregion
+        }
+        #endregion
+        #region Interface adapteru
+        /// <summary>
+        /// Předpis pro persistor konkrétní verze
+        /// </summary>
+        internal interface IXmlPersistVersion
+        {
+            /// <summary>
+            /// Uloží dodaná data podle daných parametrů do dodaného XML dokumentu
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="parameters"></param>
+            /// <param name="xDoc"></param>
+            void Save(object data, PersistArgs parameters, XmlDocument xDoc);
+            /// <summary>
+            /// Vrátí true, pokud XML dokument načtený v daném objektu odpovídá this adapteru pro čtení
+            /// </summary>
+            /// <param name="xmDoc"></param>
+            /// <returns></returns>
+            bool IsValidFormat(XmDocument xmDoc);
+            /// <summary>
+            /// Metoda vytvoří a vrátí objekt, který je persistován v daném XML dokumentu
+            /// </summary>
+            /// <param name="parameters"></param>
+            /// <param name="xmDoc"></param>
+            /// <returns></returns>
+            object Load(PersistArgs parameters, XmDocument xmDoc);
+        }
+        #endregion
         #endregion
         #region Ukázky XML
         /*    XML sample
@@ -4060,7 +4883,7 @@ anebo neprázdný objekt:
                     this.XmlName = (attName as PropertyNameAttribute).PropertyName;
                 if (String.IsNullOrEmpty(this.XmlName))
                     this.XmlName = this.Name;
-                this.XmlName = XmlPersist.CreateXmlName(this.XmlName);
+                this.XmlName = WorkScheduler.TypeLibrary.CreateXmlName(this.XmlName);
             }
             /// <summary>
             /// Určí, zda danou property je možno serializovat z hlediska jejich get a set metod a z hlediska datového typu
@@ -4303,6 +5126,23 @@ anebo neprázdný objekt:
         #endregion
         #region enum XmlPersistenceType
         /// <summary>
+        /// Z daného textu vyloučí nevhodné znaky a výsledek vrátí. Nemění ToLower.
+        /// Odstraňuje ampersand, čárku, mezeru, hranaté závorky.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        internal static string CreateXmlName(string name)
+        {
+            string excludeChars = "`, []";
+            string xmlName = name;
+            foreach (char c in excludeChars)
+            {
+                if (xmlName.Contains(c))
+                    xmlName = xmlName.Replace(c.ToString(), "");
+            }
+            return xmlName;
+        }
+        /// <summary>
         /// Typ objektu z hlediska persistence
         /// </summary>
         internal enum XmlPersistenceType
@@ -4341,7 +5181,6 @@ anebo neprázdný objekt:
             IDictionary
         }
         #endregion
-
     }
     #endregion
     #region class XmDocument: obálka nad objektem System.Xml.Linq.XDocument

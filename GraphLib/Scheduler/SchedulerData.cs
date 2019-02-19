@@ -340,12 +340,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="isSelectable"></param>
         /// <param name="isSelected"></param>
         /// <param name="selectionGroupName"></param>
-        /// <param name="userData"></param>
+        /// <param name="systemItemId"></param>
         /// <returns></returns>
         private FunctionGlobalItem _CreateToolbarItem(string name, string image, string text, string toolTip,
             FunctionGlobalItemSize size = FunctionGlobalItemSize.Half, string imageHot = null, FunctionGlobalItemType itemType = FunctionGlobalItemType.Button,
             LayoutHint layoutHint = LayoutHint.Default, int? moduleWidth = null,
-            bool isSelectable = false, bool isSelected = false, string selectionGroupName = null, object userData = null)
+            bool isSelectable = false, bool isSelected = false, string selectionGroupName = null, ToolbarSystemItem? systemItemId = null)
         {
             FunctionGlobalItem functionItem = new FunctionGlobalItem(this);
             functionItem.Name = name;
@@ -360,9 +360,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             functionItem.IsCheckable = isSelectable;
             functionItem.IsChecked = isSelected;
             functionItem.CheckedGroupName = selectionGroupName;
-            functionItem.UserData = userData;
+            functionItem.UserData = systemItemId;
+
+            // Přidat do Dictionary:
+            if (systemItemId.HasValue)
+            {
+                if (this._ToolBarSysButtonDict == null)
+                    this._ToolBarSysButtonDict = new Dictionary<ToolbarSystemItem, FunctionGlobalItem>();
+                this._ToolBarSysButtonDict.AddOnce(systemItemId.Value, functionItem);
+            }
+
             return functionItem;
         }
+        /// <summary>
+        /// Metoda vrátí první existující <see cref="FunctionGlobalItem"/> pro daný soupis klíčů <see cref="ToolbarSystemItem"/>. Může vrátit null.
+        /// </summary>
+        /// <param name="systemItemIds"></param>
+        /// <returns></returns>
+        private FunctionGlobalItem _SearchFirstToolBarItem(params ToolbarSystemItem[] systemItemIds)
+        {
+            FunctionGlobalItem result = null;
+            if (this._ToolBarSysButtonDict != null && systemItemIds != null)
+            {
+                foreach (ToolbarSystemItem systemItemId in systemItemIds)
+                {
+                    if (this._ToolBarSysButtonDict.TryGetValue(systemItemId, out result)) break;
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// Dictionary obsahující systémové prvky Toolbaru
+        /// </summary>
+        private Dictionary<ToolbarSystemItem, FunctionGlobalItem> _ToolBarSysButtonDict;
         /// <summary>
         /// Do toolbaru vloží aplikační funkce
         /// </summary>
@@ -813,6 +843,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             SchedulerConfigUserPair toolBarStatusPair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TOOLBAR_STATUS).FirstOrDefault();
             if (toolBarStatusPair != null && toolBarStatusPair.Value != null && toolBarStatusPair.Value is string)
                 this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;
+
+            this._PrepareDefaultTimeZoom();
         }
         /// <summary>
         /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
@@ -1051,23 +1083,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolbarSystemTimeAxisGroup.AddSeparator(this);
 
             // Zoom:
-            ToolbarSystemItem timeAxisZoom = this.Config.TimeAxisZoom;
+            // ToolbarSystemItem timeAxisZoom = this.Config.TimeAxisZoom;
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomOneDay))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.Calendarday32x32Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomOneDay), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomOneDay));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.Calendarday32x32Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomOneDay), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomOneDay));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.Calendarworkingweek32x32Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWorkWeek), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWorkWeek));
-            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.Calendarweek32x32Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWholeWeek));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.Calendarworkingweek32x32Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWorkWeek), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWorkWeek));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWholeWeek))
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.Calendarweek32x32Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWholeWeek));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomMonth))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.Calendarmonth32x32Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomMonth));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.Calendarmonth32x32Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomMonth));
 
             // Go:
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoPrev))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.Calendarprevious32x32Png, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.ThisItemSkipToNextRow | LayoutHint.NextItemOnSameRow, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoPrev));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.Calendarprevious32x32Png, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.ThisItemSkipToNextRow | LayoutHint.NextItemOnSameRow, moduleWidth: 1, systemItemId: ToolbarSystemItem.TimeAxisGoPrev));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoHome))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoHome, R.Images.Asol.Calendartoday32x32Png, null, "Aktuální čas", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 2, userData: ToolbarSystemItem.TimeAxisGoHome));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoHome, R.Images.Asol.Calendartoday32x32Png, null, "Aktuální čas", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 2, systemItemId: ToolbarSystemItem.TimeAxisGoHome));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoNext))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.Calendarnext32x32Png, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextTable, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoNext));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.Calendarnext32x32Png, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextTable, moduleWidth: 1, systemItemId: ToolbarSystemItem.TimeAxisGoNext));
         }
         /// <summary>
         /// Metoda se volá po akci SelectedChange na systémové položce ToolBaru. 
@@ -1108,13 +1140,45 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Pokud požadovaná akce je nějaký Zoom, pak nastavím tento Zoom jako "aktuální":
             ToolbarSystemItem zoom = (action & ToolbarSystemItem.TimeAxisZoomAll);
             if (zoom != ToolbarSystemItem.None)
-                this.Config.TimeAxisZoom = zoom;
+                this.CurrentTimeZoom = zoom;                        // Dříve šel do Configu:  this.Config.TimeAxisZoom = zoom;
 
             // Změna času:
             TimeRange currentTime = this._MainControl.SynchronizedTime.Value;
-            TimeRange actionTime = _TimeAxisGetNewTime(currentTime, null, action, this.Config.TimeAxisZoom);     // Action a TimeAxisZoom se mohou lišit !!!  action může být TimeAxisGoHome, a přitom TimeAxisZoom si udržuje aktuální hodnotu, např. TimeAxisZoomOneDay
+            TimeRange actionTime = _TimeAxisGetNewTime(currentTime, null, action, this.CurrentTimeZoom);     // Action a CurrentTimeZoom se mohou lišit !!!  action může být TimeAxisGoHome, a přitom _CurrentTimeZoom si udržuje aktuální hodnotu, např. TimeAxisZoomOneDay
             if (actionTime != null)
                 this._MainControl.SynchronizedTime.Value = actionTime;
+        }
+        /// <summary>
+        /// Aktuální časové měřítko odvozené od Toolbaru.
+        /// Obsahuje pouze hodnoty z rozmezí <see cref="ToolbarSystemItem.TimeAxisZoomAll"/>.
+        /// </summary>
+        private ToolbarSystemItem CurrentTimeZoom
+        {
+            get { return this.__CurrentTimeZoom; }
+            set { this.__CurrentTimeZoom = (value & ToolbarSystemItem.TimeAxisZoomAll); }
+        }
+        /// <summary>
+        /// Aktuální časové měřítko odvozené od Toolbaru
+        /// </summary>
+        private ToolbarSystemItem __CurrentTimeZoom = ToolbarSystemItem.None;
+        /// <summary>
+        /// Metoda zajistí přípravu defaultního časového měřítka, pokud nebylo z Configu načteno do ToolBaru.
+        /// Volá se až po načtení obsahu Configu do controlu.
+        /// </summary>
+        private void _PrepareDefaultTimeZoom()
+        {
+            qqq;
+            // Pokud už máme určené nějaké časové měřítko, nemusíme nic řešit:
+            if (this.CurrentTimeZoom != ToolbarSystemItem.None) return;
+
+            // Zkusím najít první existující button v toolbaru pro některé časové měřítko:
+            FunctionGlobalItem timeItem = this._SearchFirstToolBarItem(ToolbarSystemItem.TimeAxisZoomWorkWeek, ToolbarSystemItem.TimeAxisZoomWholeWeek, ToolbarSystemItem.TimeAxisZoomOneDay, ToolbarSystemItem.TimeAxisZoomMonth);
+            if (timeItem == null) return;
+
+            // V toolbaru najdu jeho grafický prvek (ten je "živý", na rozdíl od datového prvku):
+            var gItem = this._MainControl.ToolBarGFunctionItems.FirstOrDefault(i => Object.ReferenceEquals(i.DataItem, timeItem));
+            if (gItem == null) return;
+            gItem.IsSelected = true;
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a daný požadavek
@@ -1267,7 +1331,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const string _Tlb_TimeAxis_GoPrev = "TimeAxisGoPrev";
         private const string _Tlb_TimeAxis_GoHome = "TimeAxisGoHome";
         private const string _Tlb_TimeAxis_GoNext = "TimeAxisGoNext";
-
         /// <summary>
         /// Eventhandler volaný po změně synchronního času
         /// </summary>
@@ -1296,7 +1359,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolbarSystemSettingsGroup.AddSeparator(this);
 
             if (items.HasFlag(ToolbarSystemItem.ShowSystemConfig))
-                this._ToolbarSystemSettingsGroup.Items.Add(_CreateToolbarItem(_Tlb_SystemSettingsConfig, R.Images.Actions.RunBuildConfigurePng, "Nastavení", "Otevře okno kompletního nastavení aplikace", size: FunctionGlobalItemSize.Whole, userData: ToolbarSystemItem.ShowSystemConfig));
+                this._ToolbarSystemSettingsGroup.Items.Add(_CreateToolbarItem(_Tlb_SystemSettingsConfig, R.Images.Actions.RunBuildConfigurePng, "Nastavení", "Otevře okno kompletního nastavení aplikace", size: FunctionGlobalItemSize.Whole, systemItemId: ToolbarSystemItem.ShowSystemConfig));
 
             this._ToolbarSystemSettingsGroup.AddSeparator(this, true);
         }

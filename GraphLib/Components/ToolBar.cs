@@ -249,17 +249,21 @@ namespace Asol.Tools.WorkScheduler.Components
             this._AddGuiGroups(groups);
         }
         /// <summary>
-        /// Souhrn všech grup v toolbaru
+        /// Souhrn všech grup v toolbaru (datové objekty)
         /// </summary>
         public FunctionGlobalGroup[] FunctionGroups { get { return this._ToolbarGroupList.Select(g => g.DataGroup).ToArray(); } }
         /// <summary>
-        /// Souhrn všech grafických grup v toolbaru
+        /// Souhrn všech prvků ve všech grupách toolbaru (datové objekty)
+        /// </summary>
+        public FunctionGlobalItem[] FunctionItems { get { return this._ToolbarGroupList.SelectMany(g => g.DataGroup.Items).ToArray(); } }
+        /// <summary>
+        /// Souhrn všech grafických grup v toolbaru (vizuální objekty)
         /// </summary>
         internal GToolBarGroup[] GFunctionGroups { get { return this._ToolbarGroupList.ToArray(); } }
         /// <summary>
-        /// Souhrn všech prvků ve všech grupách toolbaru
+        /// Souhrn všech grafických prvků v toolbaru (vizuální objekty) = tlačítka, labely, images...
         /// </summary>
-        public FunctionGlobalItem[] FunctionItems { get { return this._ToolbarGroupList.SelectMany(g => g.DataGroup.Items).ToArray(); } }
+        internal GToolBarItem[] GFunctionItems { get { return this._ToolbarGroupList.SelectMany(g => g.FunctionGItems).ToArray(); } }
         /// <summary>
         /// Vymaže všechny prvky Toolbaru
         /// </summary>

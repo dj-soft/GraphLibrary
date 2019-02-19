@@ -172,6 +172,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public FunctionGlobalItem[] ToolBarFunctionItems { get { return this._ToolBar.FunctionItems; } }
         /// <summary>
+        /// Souhrn všech grafických grup v toolbaru (vizuální objekty)
+        /// </summary>
+        internal GToolBarGroup[] ToolBarGFunctionGroups { get { return this._ToolBar.GFunctionGroups; } }
+        /// <summary>
+        /// Souhrn všech grafických prvků v toolbaru (vizuální objekty) = tlačítka, labely, images...
+        /// </summary>
+        internal GToolBarItem[] ToolBarGFunctionItems { get { return this._ToolBar.GFunctionItems; } }
+        /// <summary>
         /// Vymaže všechny prvky Toolbaru
         /// </summary>
         public void ClearToolBar()
