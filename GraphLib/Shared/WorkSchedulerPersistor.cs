@@ -241,14 +241,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public XmlDeserializeStatus DeserializeStatus { get; set; }
         /// <summary>
+        /// Počet uložených primitivních hodnot
+        /// </summary>
+        public int SavePrimitivesCount { get; set; }
+        /// <summary>
+        /// Sumárné délka uložených primitivních hodnot
+        /// </summary>
+        public int SavePrimitivesLength { get; set; }
+        /// <summary>
         /// Kompletní obsah všech uložených Primitives, oddělený Cr+Lf.
         /// Pokud je null, nevytváří se.
         /// </summary>
         public StringBuilder SavePrimitivesContent { get; set; }
-        /// <summary>
-        /// Počet uložených primitivních hodnot
-        /// </summary>
-        public int SavePrimitivesCount { get; set; }
         /// <summary>
         /// Začátek XML stringu pro jeho detekci: "&lt;?xml version="
         /// </summary>
@@ -3183,6 +3187,7 @@ namespace Noris.LCS.Base.WorkScheduler
             #region Řízení serializace/deserializace
             void IXmlPersistVersion.Save(object data, PersistArgs parameters, XmlDocument xDoc)
             {
+                this.SaveBegin(parameters);
                 parameters.SavePrimitivesCount = 0;
                 this.Parameters = parameters;
 
@@ -3346,20 +3351,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
                 return null;
             }
-            /// <summary>
-            /// Uloží primitivní obsah do StringBuilderu a napočítá počet těchto primitivů
-            /// </summary>
-            /// <param name="content"></param>
-            private void SavePrimitive(string content)
-            {
-                if (this.Parameters != null)
-                {
-                    this.Parameters.SavePrimitivesCount++;
-                    if (this.Parameters.SavePrimitivesContent != null)
-                        this.Parameters.SavePrimitivesContent.AppendLine(content);
-                }
-            }
-            private PersistArgs Parameters;
             #endregion
             #region Simple typy: Save, Create
             /// <summary>
@@ -3907,6 +3898,44 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Knihovna typů
             /// </summary>
             protected TypeLibrary TypeLibrary { get; private set; }
+            /// <summary>
+            /// Začátek ukládání dat
+            /// </summary>
+            /// <param name="parameters"></param>
+            protected void SaveBegin(PersistArgs parameters)
+            {
+                parameters.SavePrimitivesCount = 0;
+                parameters.SavePrimitivesLength = 0;
+                this.Parameters = parameters;
+            }
+            /// <summary>
+            /// Konec ukládání dat
+            /// </summary>
+            protected void SaveEnd()
+            {
+                this.Parameters = null;
+            }
+            /// <summary>
+            /// Uloží primitivní obsah do StringBuilderu a napočítá počet těchto primitivů
+            /// </summary>
+            /// <param name="content"></param>
+            protected void SavePrimitive(string content)
+            {
+                if (this.Parameters != null)
+                {
+                    this.Parameters.SavePrimitivesCount++;
+                    if (content != null)
+                    {
+                        this.Parameters.SavePrimitivesLength += content.Length;
+                        if (this.Parameters.SavePrimitivesContent != null)
+                            this.Parameters.SavePrimitivesContent.AppendLine(content);
+                    }
+                }
+            }
+            /// <summary>
+            /// Parametry pro ukládání primitivů
+            /// </summary>
+            protected PersistArgs Parameters;
             #endregion
             #region Support pro práci s typy a argumenty
             /// <summary>

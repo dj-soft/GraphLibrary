@@ -3837,7 +3837,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         text = System.Convert.ToBase64String(data, Base64FormattingOptions.None);
                     }
                 }
-                return (text != null ? prefix + text : null);
+                return (text != null ? prefix + text : "");
             }
             set
             {   // Je vložen (persistovaný) string, vložíme jej tam kam patří (podle prefixu):
