@@ -1399,6 +1399,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private static GuiData SerialDeserialData(GuiData guiData, XmlCompressMode mode)
         {
             string serial = null;
+            string primitive = null;
             PersistArgs desArgs = null;
             GuiData result = null;
             bool isCompress = (mode != XmlCompressMode.None);
@@ -1408,17 +1409,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             using (var scopeS = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Serialize", compress, runMode))
             {
                 PersistArgs serArgs = (isCompress ? PersistArgs.Compressed : PersistArgs.Default);
+                serArgs.SavePrimitivesContent = new StringBuilder();
                 serial = XmlPersist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
+                scopeS.AddItem("PrimitivesLength: " + serArgs.SavePrimitivesLength.ToString());
+                primitive = serArgs.SavePrimitivesContent.ToString();
             }
 
             SerialSaveData(serial, mode);
+            SerialSaveData(primitive, ".txt");
 
             using (var scopeD = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Deserialize", compress, runMode))
             {
                 desArgs = new PersistArgs() { CompressMode = mode, DataContent = serial };
                 result = XmlPersist.Deserialize(desArgs) as GuiData;
-                scopeD.AddItem("SerialLength: " + serial.Length.ToString());
             }
 
             // Prověříme alespoň základní shodu dat:
@@ -1454,17 +1458,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (resGrid.RowTable.Rows.Length != guiGrid.RowTable.Rows.Length)
                 throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Rows count.");
 
-
             return result;
         }
-
+        /// <summary>
+        /// Uloží dodaná data do souboru v adresáři Trace
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <param name="mode"></param>
         private static void SerialSaveData(string serial, XmlCompressMode mode)
         {
-            if (String.IsNullOrEmpty(serial)) return;
+            string extension = (mode == XmlCompressMode.None ? ".xml" : ".bin");
+            SerialSaveData(serial, extension);
+        }
+        /// <summary>
+        /// Uloží dodaná data do souboru v adresáři Trace
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="extension"></param>
+        private static void SerialSaveData(string content, string extension)
+        {
+            if (String.IsNullOrEmpty(content)) return;
             string traceFile = Application.App.Trace.File;
             if (String.IsNullOrEmpty(traceFile)) return;
-            string saveFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(traceFile), "SerialData") + (mode == XmlCompressMode.None ? ".xml" : ".bin");
-            System.IO.File.WriteAllText(saveFile, serial, Encoding.UTF8);
+            string saveFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(traceFile), "SerialData") + extension;
+            System.IO.File.WriteAllText(saveFile, content, Encoding.UTF8);
         }
         #endregion
         #region Konstanty, jména GUI prvků
