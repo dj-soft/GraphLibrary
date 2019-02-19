@@ -1401,7 +1401,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             string serial = null;
             string primitive = null;
             PersistArgs desArgs = null;
-            GuiData result = null;
+            GuiData resData = null;
             bool isCompress = (mode != XmlCompressMode.None);
             string compress = (isCompress ? "Compress" : "Plain");
             string runMode = (System.Diagnostics.Debugger.IsAttached ? "Debug" : "Run");
@@ -1419,31 +1419,35 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             SerialSaveData(serial, mode);
             SerialSaveData(primitive, ".txt");
 
+            // Test formátu verze 1.00 (načítání starších souborů):
+            // serial = System.IO.File.ReadAllText(@"c:\Users\David\AppData\Local\Asseco Solutions\WorkScheduler\Data\WorkScheduler.setting", Encoding.UTF8);
+
             using (var scopeD = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Deserialize", compress, runMode))
             {
                 desArgs = new PersistArgs() { CompressMode = mode, DataContent = serial };
-                result = XmlPersist.Deserialize(desArgs) as GuiData;
+                object result = XmlPersist.Deserialize(desArgs);
+                resData = result as GuiData;
             }
 
             // Prověříme alespoň základní shodu dat:
-            if (result == null)
+            if (resData == null)
                 throw new FormatException("Serialize and Deserialize of GuiData fail; Deserialize process returns null value.");
 
-            if (result.ContextMenuItems == null && guiData.ContextMenuItems != null)
+            if (resData.ContextMenuItems == null && guiData.ContextMenuItems != null)
                 throw new FormatException("Serialize and Deserialize of GuiData.ContextMenuItems fail; Deserialize process of ContextMenuItems returns null value.");
-            if (result.ContextMenuItems != null && guiData.ContextMenuItems != null && result.ContextMenuItems.Count != guiData.ContextMenuItems.Count)
+            if (resData.ContextMenuItems != null && guiData.ContextMenuItems != null && resData.ContextMenuItems.Count != guiData.ContextMenuItems.Count)
                 throw new FormatException("Serialize and Deserialize of GuiData.ContextMenuItems fail; Deserialize process of ContextMenuItems returns bad Count items.");
 
-            if (result.Pages == null && guiData.Pages != null)
+            if (resData.Pages == null && guiData.Pages != null)
                 throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages returns null value.");
-            if (result.Pages != null && guiData.Pages != null && result.Pages.Count != guiData.Pages.Count)
+            if (resData.Pages != null && guiData.Pages != null && resData.Pages.Count != guiData.Pages.Count)
                 throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages returns bad Count items.");
 
-            if (guiData.Pages == null || guiData.Pages.Count == 0) return result;
+            if (guiData.Pages == null || guiData.Pages.Count == 0) return resData;
 
             GuiPage guiPage = guiData.Pages.Pages[0];
-            GuiPage resPage = result.Pages.Pages[0];
-            if (guiPage.MainPanel.Grids == null || guiPage.MainPanel.Grids.Count == 0) return result;
+            GuiPage resPage = resData.Pages.Pages[0];
+            if (guiPage.MainPanel.Grids == null || guiPage.MainPanel.Grids.Count == 0) return resData;
             if (resPage.MainPanel.Grids == null || resPage.MainPanel.Grids.Count != guiPage.MainPanel.Grids.Count)
                 throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages[0] returns bad MainPanel.Grids.Count items.");
 
@@ -1458,7 +1462,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (resGrid.RowTable.Rows.Length != guiGrid.RowTable.Rows.Length)
                 throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Rows count.");
 
-            return result;
+            return resData;
         }
         /// <summary>
         /// Uloží dodaná data do souboru v adresáři Trace
