@@ -1167,7 +1167,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _PrepareDefaultTimeZoom()
         {
-            qqq;
+            // qqq;
             // Pokud už máme určené nějaké časové měřítko, nemusíme nic řešit:
             if (this.CurrentTimeZoom != ToolbarSystemItem.None) return;
 

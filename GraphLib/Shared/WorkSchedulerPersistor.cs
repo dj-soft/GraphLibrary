@@ -241,6 +241,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public XmlDeserializeStatus DeserializeStatus { get; set; }
         /// <summary>
+        /// Kompletní obsah všech uložených Primitives, oddělený Cr+Lf.
+        /// Pokud je null, nevytváří se.
+        /// </summary>
+        public StringBuilder SavePrimitivesContent { get; set; }
+        /// <summary>
+        /// Počet uložených primitivních hodnot
+        /// </summary>
+        public int SavePrimitivesCount { get; set; }
+        /// <summary>
         /// Začátek XML stringu pro jeho detekci: "&lt;?xml version="
         /// </summary>
         public static string XmlStringHeader { get { return "<?xml version="; } }
@@ -2518,7 +2527,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 if (!(elData != null && version != null && version == Version)) return null;
 
                 XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, elValue, atValue);
-                return this._CreateObjectOfType(itemArgs);
+                return this.LoadObject(itemArgs);
             }
             /// <summary>
             /// Uloží předaný objekt do XML.
@@ -2608,7 +2617,7 @@ namespace Noris.LCS.Base.WorkScheduler
             /// </summary>
             /// <param name="args">Kompletní datový balík</param>
             /// <returns></returns>
-            private object _CreateObjectOfType(XmlPersistLoadArgs args)
+            private object LoadObject(XmlPersistLoadArgs args)
             {
                 if (args.DataType == null) return null;
                 try
@@ -2881,7 +2890,7 @@ namespace Noris.LCS.Base.WorkScheduler
                                 {
                                     args.CurrentOperation = "CreateItem";
                                     XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
-                                    value = this._CreateObjectOfType(nextArgs);
+                                    value = this.LoadObject(nextArgs);
                                 }
                                 array.SetValue(value, indices);
                             }
@@ -2965,7 +2974,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         {
                             args.CurrentOperation = "CreateItem";
                             XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
-                            value = this._CreateObjectOfType(itemArgs);
+                            value = this.LoadObject(itemArgs);
                         }
                         iList.Add(value);
                     }
@@ -3041,13 +3050,13 @@ namespace Noris.LCS.Base.WorkScheduler
                         {
                             args.CurrentOperation = "CreateKey";
                             XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
-                            key = this._CreateObjectOfType(itemArgs);
+                            key = this.LoadObject(itemArgs);
                         }
                         if (_FindAttrElementByName(xmEle, _DictNameValue, false, out elValue, out atValue))
                         {
                             args.CurrentOperation = "CreateValue";
                             XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
-                            value = this._CreateObjectOfType(itemArgs);
+                            value = this.LoadObject(itemArgs);
                         }
                         if (key != null)
                         {
@@ -3114,7 +3123,7 @@ namespace Noris.LCS.Base.WorkScheduler
                     {
                         args.CurrentProperty = propInfo.Name;
                         XmlPersistLoadArgs propArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
-                        object value = this._CreateObjectOfType(propArgs);
+                        object value = this.LoadObject(propArgs);
                         propInfo.Property.SetValue(data, value, null);
                     }
                 }
@@ -3130,7 +3139,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         XmAttribute xmAte;
                         xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
                         XmlPersistLoadArgs propArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
-                        object value = this._CreateObjectOfType(propArgs);
+                        object value = this.LoadObject(propArgs);
                         propInfo.Property.SetValue(data, value, null);
                     }
                 }
@@ -3140,8 +3149,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 return data;
             }
             #endregion
-
-
             #region Konstanty
             private const string _DocumentNamePersist = "persistent";
             private const string _DocumentNameData = "data";
@@ -3176,6 +3183,9 @@ namespace Noris.LCS.Base.WorkScheduler
             #region Řízení serializace/deserializace
             void IXmlPersistVersion.Save(object data, PersistArgs parameters, XmlDocument xDoc)
             {
+                parameters.SavePrimitivesCount = 0;
+                this.Parameters = parameters;
+
                 XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
                 xDoc.AppendChild(xRootElement);
                 CreateAttribute("Version", Version, xRootElement);
@@ -3184,6 +3194,8 @@ namespace Noris.LCS.Base.WorkScheduler
 
                 XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
                 this.SaveObject(new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this.TypeLibrary));
+
+                this.Parameters = null;
             }
             bool IXmlPersistVersion.IsValidFormat(XmDocument xmDoc)
             {
@@ -3202,7 +3214,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 if (!(elData != null && version != null && version == Version)) return null;
 
                 XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, elValue, atValue);
-                return this._CreateObjectOfType(itemArgs);
+                return this.LoadObject(itemArgs);
             }
             /// <summary>
             /// Uloží předaný objekt do XML.
@@ -3292,7 +3304,7 @@ namespace Noris.LCS.Base.WorkScheduler
             /// </summary>
             /// <param name="args">Kompletní datový balík</param>
             /// <returns></returns>
-            private object _CreateObjectOfType(XmlPersistLoadArgs args)
+            private object LoadObject(XmlPersistLoadArgs args)
             {
                 if (args.DataType == null) return null;
                 try
@@ -3334,6 +3346,20 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
                 return null;
             }
+            /// <summary>
+            /// Uloží primitivní obsah do StringBuilderu a napočítá počet těchto primitivů
+            /// </summary>
+            /// <param name="content"></param>
+            private void SavePrimitive(string content)
+            {
+                if (this.Parameters != null)
+                {
+                    this.Parameters.SavePrimitivesCount++;
+                    if (this.Parameters.SavePrimitivesContent != null)
+                        this.Parameters.SavePrimitivesContent.AppendLine(content);
+                }
+            }
+            private PersistArgs Parameters;
             #endregion
             #region Simple typy: Save, Create
             /// <summary>
@@ -3352,6 +3378,8 @@ namespace Noris.LCS.Base.WorkScheduler
                 if (args.DataTypeInfo.TypeConvert.Serializator == null)
                     throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() obsahuje TypeConvertor, který nemá serializátor.");
                 string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
+
+                this.SavePrimitive(value);
 
                 args.CurrentOperation = "SaveType";
                 SaveTypeAttribute(args);
@@ -3397,6 +3425,8 @@ namespace Noris.LCS.Base.WorkScheduler
                     if (!(args.Data is IXmlSerializer))
                         throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SelfTypeSave() neimplementuje interface IXmlSerializer.");
                     string value = ((IXmlSerializer)args.Data).XmlSerialData;
+
+                    this.SavePrimitive(value);
 
                     args.CurrentOperation = "SaveType";
                     SaveTypeAttribute(args);
@@ -3446,6 +3476,8 @@ namespace Noris.LCS.Base.WorkScheduler
             {
                 args.CurrentOperation = "SerializeValue";
                 string value = Enum.Format(args.DataType, args.Data, "F");
+
+                this.SavePrimitive(value);
 
                 args.CurrentOperation = "SaveType";
                 SaveTypeAttribute(args);
@@ -3566,7 +3598,7 @@ namespace Noris.LCS.Base.WorkScheduler
                                 {
                                     args.CurrentOperation = "CreateItem";
                                     XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
-                                    value = this._CreateObjectOfType(nextArgs);
+                                    value = this.LoadObject(nextArgs);
                                 }
                                 array.SetValue(value, indices);
                             }
@@ -3650,7 +3682,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         {
                             args.CurrentOperation = "CreateItem";
                             XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
-                            value = this._CreateObjectOfType(nextArgs);
+                            value = this.LoadObject(nextArgs);
                         }
                         iList.Add(value);
                     }
@@ -3729,13 +3761,13 @@ namespace Noris.LCS.Base.WorkScheduler
                         {
                             args.CurrentOperation = "CreateKey";
                             XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
-                            key = this._CreateObjectOfType(itemArgs);
+                            key = this.LoadObject(itemArgs);
                         }
                         if (_FindAttrElementByName(xmEle, _DictNameValue, false, out elValue, out atValue))
                         {
                             args.CurrentOperation = "CreateValue";
                             XmlPersistLoadArgs itemArgs = this.CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
-                            value = this._CreateObjectOfType(itemArgs);
+                            value = this.LoadObject(itemArgs);
                         }
                         if (key != null)
                         {
@@ -3806,7 +3838,7 @@ namespace Noris.LCS.Base.WorkScheduler
                     {
                         args.CurrentProperty = propInfo.Name;
                         XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
-                        object value = this._CreateObjectOfType(nextArgs);
+                        object value = this.LoadObject(nextArgs);
                         propInfo.Property.SetValue(data, value, null);
                     }
                 }
@@ -3829,7 +3861,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         XmAttribute xmAte;
                         xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
                         XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
-                        object value = this._CreateObjectOfType(nextArgs);
+                        object value = this.LoadObject(nextArgs);
                         propInfo.Property.SetValue(data, value, null);
                     }
                 }
