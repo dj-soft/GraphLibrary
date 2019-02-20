@@ -1167,10 +1167,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _PrepareDefaultTimeZoom()
         {
-            // Pokud už máme určené nějaké časové měřítko, nemusíme nic víc řešit:
+            // Pokud už máme určené nějaké časové měřítko (CurrentTimeZoom není None), pak nemusíme nic víc řešit:
             if (this.CurrentTimeZoom != ToolbarSystemItem.None) return;
 
-            // V Configu nemáme uložené časové měřítko: zkusím najít první existující button časové osy pro některé časové měřítko:
+            // V Configu nemáme uložené časové měřítko (anebo mu neodpovídá žádný aktuální button):
+            //  zkusím najít první existující button časové osy pro některé časové měřítko:
             FunctionGlobalItem timeItem = this._SearchFirstToolBarItem(ToolbarSystemItem.TimeAxisZoomWorkWeek, ToolbarSystemItem.TimeAxisZoomWholeWeek, ToolbarSystemItem.TimeAxisZoomOneDay, ToolbarSystemItem.TimeAxisZoomMonth);
             if (timeItem == null) return;
 
@@ -1178,7 +1179,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             var gItem = this._MainControl.ToolBarGFunctionItems.FirstOrDefault(i => Object.ReferenceEquals(i.DataItem, timeItem));
             if (gItem == null) return;
 
-            // Musím nasimulovat jeho zaškrtnutí uživatelem = včetně řízení OptionGroup a vyvolání eventů:
+            // Musím nasimulovat jeho zaškrtnutí uživatelem = včetně řízení IsChecked v OptionGroup, a vyvolání eventů (Selected, Click):
             gItem.DoClick();
         }
         /// <summary>
