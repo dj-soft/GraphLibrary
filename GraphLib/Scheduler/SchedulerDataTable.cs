@@ -3142,6 +3142,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Ostatní property jsou načítané dynamicky přímo z item._GuiGraphItem.
 
+            // Resetuji SkinIndex na defaultní skin:
+            item.SkinCurrentIndex = 0;
+
             return item;
         }
         /// <summary>
