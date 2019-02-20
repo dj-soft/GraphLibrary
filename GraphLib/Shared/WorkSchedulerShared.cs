@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 // Tento soubor se nachází jednak v Greenu: Noris\App\Lcs\Base\WorkSchedulerShared.cs, a zcela identický i v GraphLibrary: \GraphLib\Shared\WorkSchedulerShared.cs
 namespace Noris.LCS.Base.WorkScheduler
 {
-    #region GuiData : data předávaná mezi Helios Green a WorkScheduler
+    #region GuiData : data předávaná z Helios Green do WorkScheduler při spouštění Pluginu
     #region GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler
     /// <summary>
     /// GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler.
@@ -353,7 +353,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiPanel RightPanel { get; private set; }
         /// <summary>
-        /// Střední panel, typicky používaný pro informace (detailní data, výsledky, problémy)
+        /// Dolní panel, typicky používaný pro informace (detailní data, výsledky, problémy)
         /// </summary>
         public GuiPanel BottomPanel { get; private set; }
         /// <summary>
@@ -2361,6 +2361,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public sealed class GuiGraphItem : GuiGraphBaseItem
     {
+        #region Data nad rámec GuiGraphBaseItem (struktury pro data povinná a vhodná)
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2381,6 +2382,7 @@ namespace Noris.LCS.Base.WorkScheduler
                     "text string, tooltip string, " +
                     "back_color string, line_color string, back_style string, " +
                     "ratio_begin float, ratio_end float, ratio_begin_back_color string, ratio_end_back_color string, ratio_line_color string, ratio_line_width int";
+        #endregion
     }
     /// <summary>
     /// Bázová třída pro předávání dat o grafických položkách.
@@ -2522,7 +2524,100 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public float? RatioEnd { get; set; }
         #endregion
-        #region Skin
+        #region Skiny: SkinCurrent, SkinDefault, SkinDict, SkinCurrentIndex
+        /// <summary>
+        /// Aktuální Skin, může to být buď <see cref="SkinDefault"/> (pokud <see cref="SkinCurrentIndex"/> == 0), nebo některý z <see cref="SkinDict"/>.
+        /// Nikdy není null.
+        /// Přímý přístup k této property se příliš nepoužívá.
+        /// </summary>
+        [PersistingEnabled(false)]               // Neprovádí se persistence.
+        public GuiGraphSkin SkinCurrent
+        {
+            get
+            {
+                if (this._SkinCurrent == null)
+                    this._SkinCurrent = this.SkinDefault;
+                return this._SkinCurrent;
+            }
+        }
+        private GuiGraphSkin _SkinCurrent;
+        /// <summary>
+        /// Defaultní skin, nikdy není null.
+        /// Přímý přístup k hodnotám se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
+        /// </summary>
+        public GuiGraphSkin SkinDefault
+        {
+            get
+            {
+                if (this._SkinDefault == null)
+                    this._SkinDefault = new GuiGraphSkin();
+                return this._SkinDefault;
+            }
+            private set
+            {
+                this._SkinDefault = value;
+            }
+        }
+        private GuiGraphSkin _SkinDefault;
+        /// <summary>
+        /// Kolekce skinů pro jiné hodnoty klíče <see cref="SkinCurrentIndex"/> než 0.
+        /// Může být null, dokud není použit skin s indexem jiným než 0.
+        /// Přímý přístup k hodnotám se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
+        /// </summary>
+        public Dictionary<int, GuiGraphSkin> SkinDict { get; set; }
+        /// <summary>
+        /// Index aktuálního Skinu. Výchozí hodnota = 0, ta odkazuje na defaultní skin.
+        /// Lze setovat libovolnou numerickou hodnotu, tím se aktivuje daný skin. Skin pro novou hodnotu bude automaticky vytvořen jako prázdný.
+        /// Čtení konkrétní hodnoty se provádí z explicitně deklarovaného skinu, a pokud v konkrétní property je null, pak se čte z defaultního skinu.
+        /// Zápis hodnoty se provádí výhradně do aktuálního skinu (explicitní / defaultní).
+        /// Je tak zajištěno, že bude existovat defaultní sada grafických hodnot (=defaultní skin) 
+        /// plus libovolně široká řada explicitních skinů, které mohou přepisovat (tj. definovat vlastní) hodnotu jen u některé property.
+        /// Aplikace deklaruje nejprve kompletní defaultní skin, a poté deklaruje potřebnou sadu skinů.
+        /// <para/>
+        /// Konkrétní skiny si aktivuje uživatel v GUI, typicky nějakým tlačítkem v toolbaru, které má definovanou akci <see cref="TargetActionType.ActivateGraphSkin"/>,
+        /// s parametrem odpovídajícím číslu skinu.
+        /// <para/>
+        /// Aplikační kód při definici grafického prvku postupuje takto:
+        /// a) nastaví index <see cref="SkinCurrentIndex"/> na 0 (lze vynechat, to je default);
+        /// b) naplní hodnoty do properties typu Color;
+        /// c) nastaví index <see cref="SkinCurrentIndex"/> na další hodnoty, podle toho které skiny chce používat;
+        /// d) naplní hodnoty do properties typu Color;
+        /// <para/>
+        /// Skin ovlivňuje hodnoty v těchto properties:
+        /// <see cref="GuiGraphBaseItem.BackColor"/>, <see cref="GuiGraphBaseItem.HatchColor"/>, <see cref="GuiGraphBaseItem.LineColor"/>, 
+        /// <see cref="GuiGraphBaseItem.BackStyle"/>, <see cref="GuiGraphBaseItem.RatioBeginBackColor"/>, <see cref="GuiGraphBaseItem.RatioEndBackColor"/>, 
+        /// <see cref="GuiGraphBaseItem.RatioLineColor"/>, <see cref="GuiGraphBaseItem.RatioLineWidth"/>, 
+        /// <see cref="GuiGraphBaseItem.ImageBegin"/>, <see cref="GuiGraphBaseItem.ImageEnd"/>.
+        /// </summary>
+        [PersistingEnabled(false)]               // Neprovádí se persistence. Aktuální hodnota SkinCurrentIndex (ze strany zdroje) nemá po persistenci význam (na straně cíle).
+        public int SkinCurrentIndex
+        {
+            get { return this._SkinCurrentIndex; }
+            set
+            {
+                int key = value;
+                GuiGraphSkin skin = null;
+                if (key == 0)
+                {   // Aktivujeme výchozí skin:
+                    skin = this.SkinDefault;
+                }
+                else
+                {   // Aktivujeme explicitní skin:
+                    if (this.SkinDict == null)
+                        this.SkinDict = new Dictionary<int, GuiGraphSkin>();
+                    if (!this.SkinDict.TryGetValue(key, out skin))
+                    {
+                        skin = new GuiGraphSkin();
+                        this.SkinDict.Add(key, skin);
+                    }
+                }
+                this._SkinCurrent = skin;
+                this._SkinCurrentIndex = value;
+            }
+        }
+        private int _SkinCurrentIndex;
+        #endregion
+        #region Aktuální hodnoty Skinu načtené z SkinCurrent a SkinDefault. Tyto property se nepersistují (to zajišťuje SkinDefault a SkinDict)
         /// <summary>
         /// Prvek je viditelný?
         /// Defaultní hodnota je null, tato hodnota se interpretuje jako true (v metodách, kde je třeba binární výstup)
@@ -2624,95 +2719,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public GuiImage ImageEnd { get { return this.SkinCurrent.ImageEnd ?? this.SkinDefault.ImageEnd; } set { this.SkinCurrent.ImageEnd = value; } }
-
-        /// <summary>
-        /// Aktuální Skin, může to být buď <see cref="SkinDefault"/> (pokud <see cref="SkinCurrentIndex"/> == 0), nebo některý z <see cref="SkinDict"/>.
-        /// Nikdy není null.
-        /// </summary>
-        [PersistingEnabled(false)]               // Neprovádí se persistence.
-        protected GuiGraphSkin SkinCurrent
-        {
-            get
-            {
-                if (this._SkinCurrent == null)
-                    this._SkinCurrent = this.SkinDefault;
-                return this._SkinCurrent;
-            }
-        }
-        private GuiGraphSkin _SkinCurrent;
-        /// <summary>
-        /// Defaultní skin, nikdy není null
-        /// </summary>
-        protected GuiGraphSkin SkinDefault
-        {
-            get
-            {
-                if (this._SkinDefault == null)
-                    this._SkinDefault = new GuiGraphSkin();
-                return this._SkinDefault;
-            }
-            set
-            {
-                this._SkinDefault = value;
-            }
-        }
-        private GuiGraphSkin _SkinDefault;
-        /// <summary>
-        /// Kolekce skinů pro jiné hodnoty klíče <see cref="SkinCurrentIndex"/> než 0.
-        /// Může být null, dokud není použit skin s indexem jiným než 0.
-        /// </summary>
-        protected Dictionary<int, GuiGraphSkin> SkinDict { get; set; }
-        /// <summary>
-        /// Index aktuálního Skinu. Výchozí hodnota = 0, ta odkazuje na defaultní skin.
-        /// Lze setovat libovolnou numerickou hodnotu, tím se aktivuje daný skin. Skin pro novou hodnotu bude automaticky vytvořen jako prázdný.
-        /// Čtení konkrétní hodnoty se provádí z explicitně deklarovaného skinu, a pokud v konkrétní property je null, pak se čte z defaultního skinu.
-        /// Zápis hodnoty se provádí výhradně do aktuálního skinu (explicitní / defaultní).
-        /// Je tak zajištěno, že bude existovat defaultní sada grafických hodnot (=defaultní skin) 
-        /// plus libovolně široká řada explicitních skinů, které mohou přepisovat (tj. definovat vlastní) hodnotu jen u některé property.
-        /// Aplikace deklaruje nejprve kompletní defaultní skin, a poté deklaruje potřebnou sadu skinů.
-        /// <para/>
-        /// Konkrétní skiny si aktivuje uživatel v GUI, typicky nějakým tlačítkem v toolbaru, které má definovanou akci <see cref="TargetActionType.ActivateGraphSkin"/>,
-        /// s parametrem odpovídajícím číslu skinu.
-        /// <para/>
-        /// Aplikační kód při definici grafického prvku postupuje takto:
-        /// a) nastaví index <see cref="SkinCurrentIndex"/> na 0 (lze vynechat, to je default);
-        /// b) naplní hodnoty do properties typu Color;
-        /// c) nastaví index <see cref="SkinCurrentIndex"/> na další hodnoty, podle toho které skiny chce používat;
-        /// d) naplní hodnoty do properties typu Color;
-        /// <para/>
-        /// Skin ovlivňuje hodnoty v těchto properties:
-        /// <see cref="GuiGraphBaseItem.BackColor"/>, <see cref="GuiGraphBaseItem.HatchColor"/>, <see cref="GuiGraphBaseItem.LineColor"/>, 
-        /// <see cref="GuiGraphBaseItem.BackStyle"/>, <see cref="GuiGraphBaseItem.RatioBeginBackColor"/>, <see cref="GuiGraphBaseItem.RatioEndBackColor"/>, 
-        /// <see cref="GuiGraphBaseItem.RatioLineColor"/>, <see cref="GuiGraphBaseItem.RatioLineWidth"/>, 
-        /// <see cref="GuiGraphBaseItem.ImageBegin"/>, <see cref="GuiGraphBaseItem.ImageEnd"/>.
-        /// </summary>
-        [PersistingEnabled(false)]               // Neprovádí se persistence. Aktuální hodnota SkinCurrentIndex (ze strany zdroje) nemá po persistenci význam (na straně cíle).
-        public int SkinCurrentIndex
-        {
-            get { return this._SkinCurrentIndex; }
-            set
-            {
-                int key = value;
-                GuiGraphSkin skin = null;
-                if (key == 0)
-                {   // Aktivujeme výchozí skin:
-                    skin = this.SkinDefault;
-                }
-                else
-                {   // Aktivujeme explicitní skin:
-                    if (this.SkinDict == null)
-                        this.SkinDict = new Dictionary<int, GuiGraphSkin>();
-                    if (!this.SkinDict.TryGetValue(key, out skin))
-                    {
-                        skin = new GuiGraphSkin();
-                        this.SkinDict.Add(key, skin);
-                    }
-                }
-                this._SkinCurrent = skin;
-                this._SkinCurrentIndex = value;
-            }
-        }
-        private int _SkinCurrentIndex;
         #endregion
         #region Optimalizace pro persistenci dat : protected properties s menší velikosti v serializaci, nahrazující standardní serializaci některých public properties
         /// <summary>
@@ -2763,6 +2769,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiGraphSkin
     {
+        #region Standardní properties
         /// <summary>
         /// Prvek je viditelný?
         /// Defaultní hodnota je null, tato hodnota se interpretuje jako true (v metodách, kde je třeba binární výstup)
@@ -2849,6 +2856,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// pak se jako <see cref="ImageEnd"/> má vložit <see cref="GuiImage.Empty"/>
         /// </summary>
         public GuiImage ImageEnd { get; set; }
+        #endregion
     }
     #endregion
     #region GuiGraphLink : propojovací linka mezi prvky grafů GuiGraphItem

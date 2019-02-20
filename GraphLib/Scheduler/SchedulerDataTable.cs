@@ -3140,56 +3140,82 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._ItemId = iGraphTable.GetId(item.ItemGId);
             item._GroupId = iGraphTable.GetId(item.GroupGId);
 
-            // Ostatní property jsou načítané přímo z item._GuiGraphItem.
+            // Ostatní property jsou načítané dynamicky přímo z item._GuiGraphItem.
 
             return item;
         }
         /// <summary>
         /// Prvek si aktualizuje data z dodaného prvku.
         /// </summary>
-        /// <param name="updateItem"></param>
-        public bool UpdateFrom(GuiGraphBaseItem updateItem)
+        /// <param name="sourceItem"></param>
+        public bool UpdateFrom(GuiGraphBaseItem sourceItem)
         {
             // Tato hodnota je ukládaná do prvku přímo, protože se provádí její editace:
-            if (updateItem.Time != null) this._Time = updateItem.Time;
+            if (sourceItem.Time != null) this._Time = sourceItem.Time;
 
             // Aktualizovat jednotlivé statické hodnoty:
-            GuiGraphBaseItem currentItem = this._GuiGraphItem;
+            GuiGraphBaseItem targetItem = this._GuiGraphItem;
 
-            if (updateItem.Layer != 0) currentItem.Layer = updateItem.Layer;
-            if (updateItem.Level != 0) currentItem.Level = updateItem.Level;
-            if (updateItem.Order != 0) currentItem.Order = updateItem.Order;
-            if (updateItem.Height > 0f) currentItem.Height = updateItem.Height;
-            if (updateItem.Text != null) currentItem.Text = updateItem.Text;
-            if (updateItem.ToolTip != null) currentItem.ToolTip = updateItem.ToolTip;
-            if (updateItem.BackColor.HasValue) currentItem.BackColor = GetUpdatedColor(updateItem.BackColor);
-            if (updateItem.LineColor.HasValue) currentItem.LineColor = GetUpdatedColor(updateItem.LineColor);
-            if (updateItem.RatioBegin.HasValue) currentItem.RatioBegin = updateItem.RatioBegin;
-            if (updateItem.RatioEnd.HasValue) currentItem.RatioEnd = updateItem.RatioEnd;
-            if (updateItem.RatioBeginBackColor.HasValue) currentItem.RatioBeginBackColor = GetUpdatedColor(updateItem.RatioBeginBackColor);
-            if (updateItem.RatioEndBackColor.HasValue) currentItem.RatioEndBackColor = GetUpdatedColor(updateItem.RatioEndBackColor);
-            if (updateItem.RatioLineColor.HasValue) currentItem.RatioLineColor = GetUpdatedColor(updateItem.RatioLineColor);
-            if (updateItem.RatioLineWidth.HasValue) currentItem.RatioLineWidth = updateItem.RatioLineWidth;
-            if (updateItem.HatchColor.HasValue) currentItem.HatchColor = GetUpdatedColor(updateItem.HatchColor);
-            if (updateItem.HatchColor.HasValue) currentItem.BackStyle = updateItem.BackStyle;      // Úmyslná změna: pokud je předána hodnota HatchColor, přebírám i BackStyle.
-            if (updateItem.ImageBegin != null) currentItem.ImageBegin = GetUpdatedImage(updateItem.ImageBegin);
-            if (updateItem.ImageEnd != null) currentItem.ImageEnd = GetUpdatedImage(updateItem.ImageEnd);
+            if (sourceItem.Layer != 0) targetItem.Layer = sourceItem.Layer;
+            if (sourceItem.Level != 0) targetItem.Level = sourceItem.Level;
+            if (sourceItem.Order != 0) targetItem.Order = sourceItem.Order;
+            if (sourceItem.Height > 0f) targetItem.Height = sourceItem.Height;
+            if (sourceItem.Text != null) targetItem.Text = sourceItem.Text;
+            if (sourceItem.ToolTip != null) targetItem.ToolTip = sourceItem.ToolTip;
+
+            // Aktualizovat hodnoty Skinů, ale nikoli aktuální platný SkinIndex (to zajišťuje toolbar nebo jiná technika):
+            if (sourceItem.SkinDefault != null) UpdateSkinFrom(targetItem.SkinDefault, sourceItem.SkinDefault);     // Defaultní skin
+            if (sourceItem.SkinDict != null) UpdateSkinsFrom(targetItem, sourceItem);                               // Explicitní skiny
 
             // Tyto property budeme aktualizovat do zdejšího datového prvku GuiGraphBaseItem _GuiGraphItem, 
             //   i do this.*, protože tyto hodnoty zde máme jako pracovní (=editovatelné):
-            if (updateItem.Time != null)
+            if (sourceItem.Time != null)
             {
-                currentItem.Time = updateItem.Time;
-                this.Time = updateItem.Time;
+                targetItem.Time = sourceItem.Time;
+                this.Time = sourceItem.Time;
             }
-            if (updateItem.BehaviorMode != GraphItemBehaviorMode.None)
+            if (sourceItem.BehaviorMode != GraphItemBehaviorMode.None)
             {
-                currentItem.BehaviorMode = updateItem.BehaviorMode;
-                this._BehaviorMode = updateItem.BehaviorMode;
+                targetItem.BehaviorMode = sourceItem.BehaviorMode;
+                this._BehaviorMode = sourceItem.BehaviorMode;
             }
 
             // Zajistit invalidaci grafu:
             return true;
+        }
+        /// <summary>
+        /// Zajistí aktualizaci skinů v this instanci daty z dodané instance, kde <see cref="GuiGraphBaseItem.SkinDict"/> není null.
+        /// </summary>
+        /// <param name="targetItem"></param>
+        /// <param name="sourceItem"></param>
+        protected static void UpdateSkinsFrom(GuiGraphBaseItem targetItem, GuiGraphBaseItem sourceItem)
+        {
+            foreach (var pair in sourceItem.SkinDict)
+            {   // Zajistíme, že v targetItem budou existovat klíče dodané v sourceItem, a budou mít zadané hodnoty.
+                // Na druhou stranu klíče, které v sourceItem nejsou, nebudeme z targetItem odebírat.
+                GuiGraphSkin sourceSkin = pair.Value;
+                GuiGraphSkin targetSkin = targetItem.SkinDict.GetAdd(pair.Key, key => new GuiGraphSkin());
+                UpdateSkinFrom(targetSkin, sourceSkin);
+            }
+        }
+        /// <summary>
+        /// Zajistí aktualizaci daného skinu
+        /// </summary>
+        /// <param name="targetSkin"></param>
+        /// <param name="sourceSkin"></param>
+        protected static void UpdateSkinFrom(GuiGraphSkin targetSkin, GuiGraphSkin sourceSkin)
+        {
+            if (sourceSkin.IsVisible.HasValue) targetSkin.IsVisible = sourceSkin.IsVisible;
+            if (sourceSkin.BackColor.HasValue) targetSkin.BackColor = GetUpdatedColor(sourceSkin.BackColor);
+            if (sourceSkin.HatchColor.HasValue) targetSkin.HatchColor = GetUpdatedColor(sourceSkin.HatchColor);
+            if (sourceSkin.HatchColor.HasValue) targetSkin.BackStyle = sourceSkin.BackStyle;      // Úmyslná změna: pokud je předána hodnota HatchColor, přebírám i BackStyle, i kdyby bylo null.
+            if (sourceSkin.LineColor.HasValue) targetSkin.LineColor = GetUpdatedColor(sourceSkin.LineColor);
+            if (sourceSkin.RatioBeginBackColor.HasValue) targetSkin.RatioBeginBackColor = GetUpdatedColor(sourceSkin.RatioBeginBackColor);
+            if (sourceSkin.RatioEndBackColor.HasValue) targetSkin.RatioEndBackColor = GetUpdatedColor(sourceSkin.RatioEndBackColor);
+            if (sourceSkin.RatioLineColor.HasValue) targetSkin.RatioLineColor = GetUpdatedColor(sourceSkin.RatioLineColor);
+            if (sourceSkin.RatioLineWidth.HasValue) targetSkin.RatioLineWidth = sourceSkin.RatioLineWidth;
+            if (sourceSkin.ImageBegin != null) targetSkin.ImageBegin = GetUpdatedImage(sourceSkin.ImageBegin);
+            if (sourceSkin.ImageEnd != null) targetSkin.ImageEnd = GetUpdatedImage(sourceSkin.ImageEnd);
         }
         /// <summary>
         /// Metoda vrátí danou barvu.
