@@ -962,6 +962,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
                 this.AddProductOrderToGrid(guiTable, productOrder);
 
+            this.AddProductOrderTagItems(guiTable);
+
             gridLeft.RowTable = guiTable;
 
             this.GridLeft = gridLeft;
@@ -1007,6 +1009,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiId rowGid = productStructure.RecordGid;
             GuiDataRow row = guiTable.AddRow(rowGid, productStructure.Refer, productStructure.Name, productStructure.Qty);
             row.ParentRowGuiId = productStructure.ProductOperation.RecordGid;
+        }
+        /// <summary>
+        /// Do tabulky Výrobních příkazů přidá řádkové filtry do úrovně tabulky
+        /// </summary>
+        /// <param name="guiTable"></param>
+        protected void AddProductOrderTagItems(GuiDataTable guiTable)
+        {
+            List<GuiTagItem> tagItems = new List<GuiTagItem>();
+
+            foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
+            {
+                string tagText = "Ref" + productOrder.Refer.Substring(productOrder.Refer.Length - 2, 1);
+                tagItems.Add(new GuiTagItem() { RowId = productOrder.RecordGid, BackColor = Color.LightSeaGreen, TagText = tagText });
+            }
+            guiTable.TagItems = tagItems;
         }
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu do horní tabulky = Pracoviště
