@@ -257,7 +257,7 @@ namespace Noris.LCS.Base.WorkScheduler
             return this.Name + "; Count: " + (this.Pages != null ? this.Pages.Count.ToString() : "{Null}");
         }
         /// <summary>
-        /// Název prvku <see cref="GuiTagItems"/>
+        /// Název prvku <see cref="GuiPage"/>
         /// </summary>
         public const string PAGES_NAME = "pages";
         /// <summary>
@@ -1114,6 +1114,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int? TemplateId { get; set; }
         /// <summary>
+        /// Jednotlivé prvky typu <see cref="GuiTagItem"/>.
+        /// Výchozí hodnota je null.
+        /// Tagy mohou být zadány buď zde = hromadně pro celoou tabulku, anebo mohou být zadány přímo v konkrétním řádku v <see cref="GuiDataRow.TagItems"/>.
+        /// Zadání lze libovolně kombinovat. Při konfliktu vyhrává prvek zadaný do řádku.
+        /// </summary>
+        public List<GuiTagItem> TagItems { get; set; }
+        /// <summary>
         /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>.
         /// Výchozí hodnota je prázdný List.
         /// </summary>
@@ -1670,6 +1677,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Jednotlivé prvky typu <see cref="GuiTagItem"/>.
         /// Výchozí hodnota je null.
+        /// Tagy mohou být zadány buď zde = přímo v konkrétním řádku, anebo mohou být zadány hromadně v <see cref="GuiDataTable.TagItems"/>.
+        /// Zadání lze libovolně kombinovat. Při konfliktu vyhrává prvek zadaný do řádku.
         /// </summary>
         public List<GuiTagItem> TagItems { get; set; }
         /// <summary>
@@ -1935,76 +1944,9 @@ namespace Noris.LCS.Base.WorkScheduler
         Line2px
     }
     #endregion
-    #region GuiTagItems + GuiTagItem : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku, z nichž lze sestavit filtr typu "štítky"
+    #region GuiTagItem : reprezentuje Tag jednoho řádku, z Tagů všech řádků tabulky lze sestavit filtr typu "štítky"
     /// <summary>
-    /// GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku, z nichž lze sestavit filtr typu "štítky"
-    /// </summary>
-    public class GuiTagItems : GuiBase
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public GuiTagItems()
-        {
-            this.Name = TAG_ITEMS_NAME;
-            this.TagItemList = new List<GuiTagItem>();
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return this.Name + "; Count: " + (this.TagItemList != null ? this.TagItemList.Count.ToString() : "{Null}");
-        }
-        /// <summary>
-        /// Název prvku <see cref="GuiTagItems"/>
-        /// </summary>
-        public const string TAG_ITEMS_NAME = "tagItems";
-        /// <summary>
-        /// Jednotlivé prvky typu <see cref="GuiTagItem"/>
-        /// </summary>
-        public List<GuiTagItem> TagItemList { get; set; }
-        /// <summary>
-        /// Přidá další prvek do this seznamu
-        /// </summary>
-        /// <param name="item"></param>
-        public void Add(GuiTagItem item)
-        {
-            if (item == null) return;
-            if (this.TagItemList == null)
-                this.TagItemList = new List<GuiTagItem>();
-            this.TagItemList.Add(item);
-        }
-        /// <summary>
-        /// Přidá další prvky do this seznamu
-        /// </summary>
-        /// <param name="items"></param>
-        public void AddRange(IEnumerable<GuiTagItem> items)
-        {
-            if (items == null) return;
-            if (this.TagItemList == null)
-                this.TagItemList = new List<GuiTagItem>();
-            this.TagItemList.AddRange(items);
-        }
-        /// <summary>
-        /// Počet prvků v kolekci
-        /// </summary>
-        public int Count { get { return this.TagItemList.Count; } }
-        /// <summary>
-        /// Obsahuje prvek na daném indexu
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public GuiTagItem this[int index] { get { return this.TagItemList[index]; } }
-        /// <summary>
-        /// Potomek zde vrací soupis svých Child prvků
-        /// </summary>
-        [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiItem> Childs { get { return this.TagItemList; } }
-    }
-    /// <summary>
-    /// GuiTagItem : reprezentuje Tagy jednoho řádku (obsahuje klíč řádku + jeden Tag).
+    /// GuiTagItem : reprezentuje Tag jednoho řádku (obsahuje klíč řádku + jeden Tag).
     /// Tagy řádku dovolují k jednomu řádku připojit { 0 - 1 - mnoho } textových popisků (visačky = Tagy), a následně podle nich zafiltrovat řádky.
     /// </summary>
     public class GuiTagItem : GuiBase
@@ -2030,6 +1972,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Text tagu
         /// </summary>
         public string TagText { get; set; }
+        /// <summary>
+        /// Relativní velikost písma Tagu. Null = default = odpovídá hodnotě 1.0 = normální velikost.
+        /// Minimum = 0 = odpovídá 50% velikosti, maximum = 2 = odpovídá 200% velikosti.
+        /// </summary>
+        public float? TagSize { get; set; }
         /// <summary>
         /// Barva pozadí v běžném (nevybraném) stavu
         /// </summary>
@@ -2904,71 +2851,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiImage ImageEnd { get; set; }
     }
     #endregion
-    #region GuiGraphLinks + GuiGraphLink : propojovací linky mezi prvky grafů GuiGraphItem
-    /// <summary>
-    /// GuiGraphLinks : sada propojovacích linek mezi prvky grafů GuiGraphItem.
-    /// Propojovací linky obecně mohou vést mezi prvky různých grafů (=tj. v grafech, které se nachází na různých řádcích tabulky),
-    /// proto linky nejsou součástí Grafu ale Gridu.
-    /// </summary>
-    public class GuiGraphLinks : GuiBase
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public GuiGraphLinks() : base()
-        {
-            this.Name = GRAPH_LINKS_NAME;
-            this.LinkList = new List<GuiGraphLink>();
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return this.Name + "; Count: " + (this.LinkList != null ? this.LinkList.Count.ToString() : "{Null}");
-        }
-        /// <summary>
-        /// Název prvku <see cref="GuiTagItems"/>
-        /// </summary>
-        public const string GRAPH_LINKS_NAME = "graphLinks";
-        /// <summary>
-        /// Soupis jednotlivých linků
-        /// </summary>
-        public List<GuiGraphLink> LinkList { get; set; }
-        /// <summary>
-        /// Do <see cref="LinkList"/> přidá další záznam.
-        /// </summary>
-        /// <param name="link"></param>
-        public void Add(GuiGraphLink link)
-        {
-            if (link == null) return;
-            if (this.LinkList == null)
-                this.LinkList = new List<GuiGraphLink>();
-            this.LinkList.Add(link);
-        }
-        /// <summary>
-        /// Do <see cref="LinkList"/> přidá další sadu záznamů.
-        /// </summary>
-        /// <param name="links"></param>
-        public void AddRange(IEnumerable<GuiGraphLink> links)
-        {
-            if (links == null) return;
-            if (this.LinkList == null)
-                this.LinkList = new List<GuiGraphLink>();
-            this.LinkList.AddRange(links.Where(l => (l != null)));
-        }
-        /// <summary>
-        /// Počet prvků
-        /// </summary>
-        public int Count { get { return (this.LinkList != null ? this.LinkList.Count : 0); } }
-        /// <summary>
-        /// Obsahuje prvek na daném indexu
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public GuiGraphLink this[int index] { get { return this.LinkList[index]; } }
-    }
+    #region GuiGraphLink : propojovací linka mezi prvky grafů GuiGraphItem
     /// <summary>
     /// GuiGraphLink : jedna propojovací linka mezi dvěma prvky grafů <see cref="GuiGraphItem"/>.
     /// Prvek grafu je identifikován pomocí jeho <see cref="GuiId"/>.

@@ -3175,17 +3175,51 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public static Table CreateFrom(GuiDataTable guiTable)
         {
-            if (guiTable == null) return null;
-            Table table = new Table(guiTable.TableName);
-            table.ClassId = guiTable.ClassId;
-            table.TemplateId = guiTable.TemplateId;
-            table.TreeViewNodeOffset = guiTable.TreeViewNodeOffset;
-            table.TreeViewLinkMode = _ConvertLinkMode(guiTable.TreeViewLinkMode);
-            table.TreeViewLinkColor = guiTable.TreeViewLinkColor;
-
-            table.Columns.AddRange(Column.CreateFrom(guiTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
-            table.Rows.AddRange(Row.CreateFrom(guiTable.Rows));               // Vytvoří řádky
+            Table table = null;
+            using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "Table", "CreateFrom", "(GuiDataTable)"))
+            {
+                if (guiTable == null) return null;
+                table = new Table(guiTable.TableName);
+                table.ReadPropertiesFrom(guiTable);
+                table.Columns.AddRange(Column.CreateFrom(guiTable.Columns));   // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
+                table.Rows.AddRange(Row.CreateFrom(guiTable.Rows));            // Vytvoří řádky
+                table.AddTagItems(guiTable.TagItems);                          // Přidá TagItems z úrovně tabulky do jednotlivých řádků
+            }
             return table;
+        }
+        /// <summary>
+        /// Načte vlastnosti do this tabulky z dodané <see cref="GuiDataTable"/> tabulky
+        /// </summary>
+        /// <param name="guiTable"></param>
+        protected void ReadPropertiesFrom(GuiDataTable guiTable)
+        {
+            this.ClassId = guiTable.ClassId;
+            this.TemplateId = guiTable.TemplateId;
+            this.TreeViewNodeOffset = guiTable.TreeViewNodeOffset;
+            this.TreeViewLinkMode = _ConvertLinkMode(guiTable.TreeViewLinkMode);
+            this.TreeViewLinkColor = guiTable.TreeViewLinkColor;
+        }
+        /// <summary>
+        /// Do řádků this tabulky přidá <see cref="Row.TagItems"/> dodané v seznamu prvků <see cref="GuiTagItem"/>.
+        /// </summary>
+        /// <param name="tagItems"></param>
+        public void AddTagItems(IEnumerable<GuiTagItem> tagItems)
+        {
+            if (tagItems == null) return;
+
+            var groups = tagItems.GetGroupDictionaryList(t => (GId)t.RowId);   // Vytvořím Dictionary, kde Key = GIds a Value = List<GuiTagItem> pro daný řádek
+            if (groups.Count == 0) return;
+
+            foreach (Row row in this.Rows)
+            {
+                GId rowGId = row.RecordGId;
+                if (rowGId == null || rowGId.IsEmpty) continue;                // Bez GIdu řádku to nejde.
+                List<GuiTagItem> guiTagItems;
+                if (!groups.TryGetValue(rowGId, out guiTagItems)) continue;    // Pro tento řádek tabulky nejsou zadané žádné Tagy
+
+                var addItems = TagItem.CreateFrom(guiTagItems);
+                row.TagItems = DataExtensions.MergeByKey(t => t.Text, row.TagItems, addItems);
+            }
         }
         /// <summary>
         /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
@@ -3195,10 +3229,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public static Table CreateFrom(System.Data.DataTable dataTable, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null)
         {
-            if (dataTable == null) return null;
-            Table table = new Table(dataTable.TableName);
-            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
-            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, table.ClassId, tagItems));     // Vytvoří řádky, a současně do nich vloží TagItems
+            Table table = null;
+            using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "Table", "CreateFrom", "(DataTable)"))
+            {
+                if (dataTable == null) return null;
+                table = new Table(dataTable.TableName);
+                table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
+                table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, table.ClassId, tagItems));     // Vytvoří řádky, a současně do nich vloží TagItems
+            }
             return table;
         }
         /// <summary>

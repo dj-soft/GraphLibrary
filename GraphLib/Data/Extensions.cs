@@ -646,6 +646,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 foreach (TValue value in collection)
                 {
                     TKey key = keySelector(value);
+                    if (key == null) continue;                  // null klíč nedáváme do Dictionary. Ono to ani nejde :-)
                     if (!skipDuplicityItems)
                         dictionary.Add(key, value);             // Pokud daný klíč už je v Dictionary, dojde k chybě.
                     else if (!dictionary.ContainsKey(key))
@@ -683,6 +684,70 @@ namespace Asol.Tools.WorkScheduler.Data
                 }
             }
             return dictionary;
+        }
+        /// <summary>
+        /// Metoda z kolekce prvků sestaví grupy podobně jako extenze GroupBy(), ale vrací Dictionary, kde klíčem je grupovací hodnota, 
+        /// a hodnotou je List nalezených prvků.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="collection"></param>
+        /// <param name="keySelector"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, List<TValue>> GetGroupDictionaryList<TKey, TValue>(this IEnumerable<TValue> collection, Func<TValue, TKey> keySelector)
+        {
+            if (collection == null) return null;
+            Dictionary<TKey, List<TValue>> result = new Dictionary<TKey, List<TValue>>();
+            foreach (TValue value in collection)
+            {
+                TKey key = keySelector(value);
+                List<TValue> list = result.GetAdd(key, v => new List<TValue>());
+                list.Add(value);
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Metoda vrátí výslednou kolekci, v níž jsou zastoupeny prvky ze všech dodaných kolekcí, ale nikoli prostý součet,
+        /// ale pouze první nalezený prvek podle klíče.
+        /// Pokud na vstupu jsou všechny kolekce null, je vráceno null.
+        /// Pokud na vstupu je jen jedna kolekce, která není null, pak je vrácena tato kolekce bez dalších úprav (tzn. je vrácen nalezený not null objekt, beze změn).
+        /// Pokud je na vstupu více not null kolekcí, pak jsou shrnuty do jedné, proveden unique podle dodaného keySelector, a výsledek je vrácen ve formě array TValue[].
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="keySelector"></param>
+        /// <param name="collections"></param>
+        /// <returns></returns>
+        public static IEnumerable<TValue> MergeByKey<TValue, TKey>(Func<TValue, TKey> keySelector, params IEnumerable<TValue>[] collections)
+        {
+            // UNION do Listu::
+            IEnumerable<TValue> first = null;
+            List<TValue> union = null;
+            foreach (IEnumerable<TValue> collection in collections)
+            {
+                if (collection == null) continue;
+                if (first == null && union == null)
+                {   // Úplně první kolekce s daty, která není null: bude uložena do first:
+                    first = collection;
+                }
+                else if (first != null && union == null)
+                {   // Druhá kolekce s daty (protože první je ve first): obě (first i nynější) nalejeme do union, a first zrušíme:
+                    union = new List<TValue>();
+                    union.AddRange(first);
+                    union.AddRange(collection);
+                    first = null;
+                }
+                else if (union != null)
+                {   // Další kolekce s daty: přidáme ji do union:
+                    union.AddRange(collection);
+                }
+            }
+
+            // Detekce výsledku:
+            if (union == null) return first;
+            var unique = union.GetDictionary(keySelector, true);
+            return unique.Values.ToArray();
         }
         /// <summary>
         /// Metoda z this dictionary odebere všechny výskyty daných klíčů.
