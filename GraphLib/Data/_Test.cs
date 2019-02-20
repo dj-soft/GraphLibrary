@@ -144,6 +144,16 @@ SET @cislo = 15307;
         }
         #endregion
         #region Testy serializace
+
+        [TestMethod]
+        public void TestXmlPersistFromFile()
+        {
+            string file = @"d:\DavidPrac\Vývoje\0061146 Dílenské plánování D4\Zálohy\serial-Manufacturing.xml";
+            string serial = System.IO.File.ReadAllText(file, Encoding.UTF8);
+            object result = Persist.Deserialize(serial);
+            GuiData guiData = result as GuiData;
+        }
+
         /// <summary>
         /// Test XML Serializace a Deserializace
         /// </summary>
