@@ -3830,7 +3830,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         args.CurrentProperty = propInfo.Name;
                         XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
                         object value = this.LoadObject(nextArgs);
-                        propInfo.Property.SetValue(data, value, null);
+                        propInfo.SetValue(data, value);
                     }
                 }
 
@@ -3853,7 +3853,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
                         XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
                         object value = this.LoadObject(nextArgs);
-                        propInfo.Property.SetValue(data, value, null);
+                        propInfo.SetValue(data, value);
                     }
                 }
 
@@ -4823,11 +4823,17 @@ anebo neprázdný objekt:
             {
                 this._PropertyList = new List<PropInfo>();
                 this._PropertyDict = new Dictionary<string, PropInfo>();
-                PropertyInfo[] props = this.DataType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
-                foreach (PropertyInfo prop in props)
+                MemberInfo[] members = this.DataType.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+                Dictionary<string, MethodInfo> accessorsDict = members.Where(m => m.MemberType == MemberTypes.Method).Cast<MethodInfo>().Where(m => m.IsSpecialName).ToDictionary(m => m.Name);
+                PropertyInfo[] properties = members.Where(m => m.MemberType == MemberTypes.Property).Cast<PropertyInfo>().ToArray();
+                // PropertyInfo[] props = this.DataType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+                foreach (PropertyInfo prop in properties)
                 {
-                    PropInfo propData = new PropInfo(this, prop);
-                    if (!propData.Enabled) continue;
+                    PropInfo propData = PropInfo.Create(this, prop, accessorsDict);
+                    if (propData == null) continue;
+
+                    if (this._PropertyDict.ContainsKey(propData.XmlName))
+                        throw new ArgumentException("Chyba při persistenci typu " + this.DataType.Namespace + "." + this.DataType.Name + ": duplicitní název property: " + propData.XmlName + " (zkontrolujte atributy [PropertyName(string)])");
 
                     this._PropertyList.Add(propData);
                     this._PropertyDict.Add(propData.XmlName, propData);
@@ -4916,59 +4922,251 @@ anebo neprázdný objekt:
         /// </summary>
         internal class PropInfo
         {
-            internal PropInfo(TypeInfo typeInfo, PropertyInfo property)
+            #region Vytvoření instance
+            /// <summary>
+            /// Zkusí vytvořit a vrátit instanci třídy <see cref="PropInfo"/> pro danou property.
+            /// Pokud vrátí null, není možno s touto property pracovat.
+            /// </summary>
+            /// <param name="typeInfo"></param>
+            /// <param name="property"></param>
+            /// <param name="accessorsDict"></param>
+            /// <returns></returns>
+            public static PropInfo Create(TypeInfo typeInfo, PropertyInfo property, Dictionary<string, MethodInfo> accessorsDict)
             {
-                this.TypeInfo = typeInfo;
-                this.Property = property;
-                this._PropertyTypeInfo = null;
+                if (property == null || accessorsDict == null) return null;
 
-                // Property lze serializovat jen tehdy, když má get i set metodu, bez parametrů:
-                //  (get / set metody s parametry = indexery, a ty serializovat nelze)
-                this.Enabled = IsPropertySerializable(property);
-                this.XmlName = null;
-
-                // Zjistím, zda nejde o property "Djs.Tools.XmlPersistor.IXmlPersistNotify.XmlPersistState" (takovou nebudu persistovat zcela automaticky):
-                // Anebo, zda property má atribut PersistingEnabledAttribute s hodnotou PersistEnable = false, pak by se neukládala:
-                object[] atts = null;
-                if (!this.Enabled || property.Name == "Djs.Tools.XmlPersistor.IXmlPersistNotify.XmlPersistState" || !IsPropertyPersistable(property, out atts))
+                if (property.Name == "SkinDict")
                 {
-                    this.Enabled = false;
-                    return;
                 }
-                if (atts == null)
-                    atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
 
-                // XmlName (Custom / default):
-                object attName = atts.FirstOrDefault(at => at is PropertyNameAttribute);
-                if (attName != null)
-                    this.XmlName = (attName as PropertyNameAttribute).PropertyName;
-                if (String.IsNullOrEmpty(this.XmlName))
-                    this.XmlName = this.Name;
-                this.XmlName = WorkScheduler.TypeLibrary.CreateXmlName(this.XmlName);
+
+
+                // Pro některé property nebudu instanci vytvářet:
+                if (!_IsPropertyAllowed(property)) return null;
+
+                // Aby bylo možno property serializovat, musí mít správné GET a SET metody:
+                MethodInfo getMethod, setMethod;
+                bool getPrivate, setPrivate;
+                if (!_IsPropertySerializable(property, accessorsDict, out getMethod, out getPrivate, out setMethod, out setPrivate)) return null;
+
+                return new PropInfo(typeInfo, property, getMethod, getPrivate, setMethod, setPrivate);
             }
             /// <summary>
-            /// Určí, zda danou property je možno serializovat z hlediska jejich get a set metod a z hlediska datového typu
+            /// Vrací true, pokud property je povoleno řešit.
+            /// Tato metoda bere do úvahy: název property, její datový typ.
             /// </summary>
             /// <param name="property"></param>
             /// <returns></returns>
-            internal static bool IsPropertySerializable(PropertyInfo property)
+            private static bool _IsPropertyAllowed(PropertyInfo property)
             {
-                MethodInfo getMethod = property.GetGetMethod(true);
-                if (getMethod == null) return false;                           // Nemá GET metodu
-                ParameterInfo[] getParams = getMethod.GetParameters();
-                if (getParams != null && getParams.Length > 0) return false;   // Má GET metodu s parametry (tj. indexer)
-
-                MethodInfo setMethod = property.GetSetMethod(true);
-                if (setMethod == null) return false;                           // Nemá SET metodu
-                ParameterInfo[] setParams = setMethod.GetParameters();
-                if (setParams != null && setParams.Length > 1) return false;   // Má SET metodu s více parametry (tj. indexer)  (jeden parametr má vždy = setovaná hodnota)
-
+                // Některé typy prostě serializovat nebudu:
                 Type propertyType = property.PropertyType;
                 string typeName = propertyType.Namespace + "." + propertyType.Name;
                 if (typeName == "System.Type" || typeName == "System.RuntimeType") return false;
 
+                // Některé property dělat nebudu podle jejich jména:
+                Type ixpn = typeof(IXmlPersistNotify);
+                string excl = ixpn.Namespace + "." + ixpn.Name + ".XmlPersistState";
+                if (property.Name == excl) return false;
+
                 return true;
             }
+            /// <summary>
+            /// Vrací true, pokud property je technicky možno serializovat.
+            /// Tato metoda bere do úvahy: get a set metody k property.
+            /// </summary>
+            /// <param name="property"></param>
+            /// <param name="accessorsDict"></param>
+            /// <param name="getMethod"></param>
+            /// <param name="getPrivate"></param>
+            /// <param name="setMethod"></param>
+            /// <param name="setPrivate"></param>
+            /// <returns></returns>
+            private static bool _IsPropertySerializable(PropertyInfo property, Dictionary<string, MethodInfo> accessorsDict, 
+                out MethodInfo getMethod, out bool getPrivate, out MethodInfo setMethod, out bool setPrivate)
+            {
+                string name = property.Name;
+                MethodInfo[] privateAccessors = null;
+
+                // Musím najít obě metody = get i set:
+                bool hasGet = accessorsDict.TryGetValue("get_" + name, out getMethod);
+                getPrivate = false;
+                if (!hasGet)
+                {   // Pokud v "accessorsDict" není metoda get, může být důvodem to, že je deklarována jako "private" a přitom Reflected typ je potomkem.
+                    // Pak privátní metody nejsou zahrnuty v sadě členů potomka.
+                    // Ale persistor by je měl být schopen najít a použít.
+                    // Taková situace nastane málokdy, proto může být řešena specifickým způsobem...
+                    if (privateAccessors == null) privateAccessors = _GetPrivateAccessors(property);
+                    getMethod = privateAccessors.FirstOrDefault(m => m.Name == "get_" + name);
+                    hasGet = (getMethod != null);
+                    getPrivate = hasGet;
+                }
+
+                bool hasSet = accessorsDict.TryGetValue("set_" + name, out setMethod);
+                setPrivate = false;
+                if (!hasSet)
+                {
+                    if (privateAccessors == null) privateAccessors = _GetPrivateAccessors(property);
+                    setMethod = privateAccessors.FirstOrDefault(m => m.Name == "set_" + name);
+                    hasSet = (setMethod != null);
+                    setPrivate = hasSet;
+                }
+                if (!hasGet || !hasSet) return false;
+
+                // Obě metody musí být non-indexer:
+                ParameterInfo[] getParams = getMethod.GetParameters();
+                if (getParams != null && getParams.Length > 0) return false;   // Má GET metodu s parametry (tj. indexer)
+
+                ParameterInfo[] setParams = setMethod.GetParameters();
+                if (setParams != null && setParams.Length > 1) return false;   // Má SET metodu s více parametry (tj. indexer)  (jeden parametr má vždy = setovaná hodnota)
+
+                return true;
+            }
+            private static MethodInfo[] _GetPrivateAccessors(PropertyInfo property)
+            {
+                string name = property.Name;
+                MethodInfo[] privateAccessors = property.DeclaringType
+                    .GetMethods(BindFlags)
+                    .Where(m => m.IsSpecialName && (m.Name == "get_" + name || m.Name == "set_" + name))
+                    .ToArray();
+                return privateAccessors;
+            }
+            /// <summary>
+            /// Vrací true, pokud property je povoleno persistovat a klonovat.
+            /// Tato metoda bere do úvahy: její atribut PersistingEnabled, hodnotu PersistEnable a CloneEnable
+            /// </summary>
+            /// <param name="property"></param>
+            /// <param name="persistEnabled"></param>
+            /// <param name="cloneEnabled"></param>
+            /// <returns></returns>
+            private static void _DetectPropertyPersistableCloneable(PropertyInfo property, out bool persistEnabled, out bool cloneEnabled)
+            {
+                persistEnabled = true;
+                cloneEnabled = true;
+
+                // Některé property to samy zakazují pomocí atributu: [PersistingEnabled(false)]:
+                PersistingEnabledAttribute attEnabled = property.GetCustomAttributes(typeof(PersistingEnabledAttribute), true).Cast<PersistingEnabledAttribute>().FirstOrDefault();
+                if (attEnabled != null)
+                {
+                    persistEnabled = attEnabled.PersistEnable;
+                    cloneEnabled = attEnabled.CloneEnable;
+                }
+            }
+            /// <summary>
+            /// Metoda vrátí XmlName pro danou property
+            /// </summary>
+            /// <param name="property"></param>
+            /// <returns></returns>
+            private static string _GetPropertyXmlName(PropertyInfo property)
+            {
+                string xmlName = property.Name;
+                PropertyNameAttribute attName = property.GetCustomAttributes(typeof(PropertyNameAttribute), true).Cast<PropertyNameAttribute>().FirstOrDefault();
+                if (attName != null && !String.IsNullOrEmpty(attName.PropertyName))
+                    xmlName = attName.PropertyName;
+                return WorkScheduler.TypeLibrary.CreateXmlName(xmlName);
+            }
+            /// <summary>
+            /// Konstrutor
+            /// </summary>
+            /// <param name="typeInfo"></param>
+            /// <param name="property"></param>
+            /// <param name="getMethod"></param>
+            /// <param name="setMethod"></param>
+            private PropInfo(TypeInfo typeInfo, PropertyInfo property, MethodInfo getMethod, bool getPrivate, MethodInfo setMethod, bool setPrivate)
+            {
+                this.TypeInfo = typeInfo;
+                this.Property = property;
+                this.GetMethod = getMethod;
+                this.GetMethodPrivate = getPrivate;
+                this.SetMethod = setMethod;
+                this.SetMethodPrivate = setPrivate;
+                this._PropertyTypeInfo = null;
+
+                bool persistEnabled, cloneEnabled;
+                _DetectPropertyPersistableCloneable(property, out persistEnabled, out cloneEnabled);
+                this.PersistEnabled = persistEnabled;
+                this.CloneEnabled = cloneEnabled;
+
+                this.XmlName = _GetPropertyXmlName(property);
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                string text = this.Property.Name + ": ";
+                if (this.PersistEnabled)
+                    text += "XML name=" + this.XmlName + "; Type=" + this.PropertyType.Name;
+                else
+                    text += "Persist Disabled.";
+                return text;
+            }
+            internal static BindingFlags BindFlags { get { return (BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy); } }
+            #endregion
+            #region Properties
+            /// <summary>
+            /// Vztah na typ, jehož je tato property členem
+            /// </summary>
+            internal TypeInfo TypeInfo { get; private set; }
+            /// <summary>
+            /// Reference na knihovnu typů.
+            /// V ní je uložen můj TypeInfo, a přes něj se do knihovny dostanu i já.
+            /// </summary>
+            internal TypeLibrary TypeLibrary { get { return this.TypeInfo.TypeLibrary; } }
+            /// <summary>
+            /// Info o této property
+            /// </summary>
+            internal PropertyInfo Property { get; private set; }
+            /// <summary>
+            /// Název této property = exaktně z this.Property.Name
+            /// </summary>
+            internal string Name { get { return this.Property.Name; } }
+            /// <summary>
+            /// .NET Type této property = this.Property.PropertyType.
+            /// Jde o typ, jak je property deklarována, nikoli Type, který je v ní aktuálně uložen (to se zjistí až podle objektu s daty).
+            /// Může to být potomek zdejšího typu, anebo implementace interface...
+            /// </summary>
+            internal Type PropertyType { get { return this.Property.PropertyType; } }
+
+            public bool PersistEnabled { get; private set; }
+            public bool CloneEnabled { get; private set; }
+            /// <summary>
+            /// Rozšířené vlastnosti typu této property - data, načtená z TypeLibrary.
+            /// Data se načítají až on demand, z TypeLibrary.
+            /// </summary>
+            internal TypeInfo PropertyTypeInfo
+            {
+                get
+                {
+                    if (this._PropertyTypeInfo == null)
+                        this._PropertyTypeInfo = this.TypeLibrary.GetInfo(this.PropertyType);
+                    return this._PropertyTypeInfo;
+                }
+            }
+            private TypeInfo _PropertyTypeInfo;
+            /// <summary>
+            /// Jméno pro persistenci hodnoty této property
+            /// </summary>
+            internal string XmlName { get; private set; }
+            /// <summary>
+            /// Zajistí uložení hodnoty (value) do objektu (data) do jeho property this.
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="value"></param>
+            internal void SetValue(object data, object value)
+            {
+                if (this.SetMethodPrivate && this.SetMethod != null)
+                    this.SetMethod.Invoke(data, new object[] { value });
+                else
+                    this.Property.SetValue(data, value);
+            }
+            private MethodInfo GetMethod { get; set; }
+            private bool GetMethodPrivate { get; set; }
+            private MethodInfo SetMethod { get; set; }
+            private bool SetMethodPrivate { get; set; }
+            #endregion
+            #region Obecné static služby
             /// <summary>
             /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
             /// </summary>
@@ -5007,64 +5205,17 @@ anebo neprázdný objekt:
                 return true;
 
             }
-            public override string ToString()
-            {
-                string text = this.Property.Name + ": ";
-                if (this.Enabled)
-                    text += "XML name=" + this.XmlName + "; Type=" + this.PropertyType.Name;
-                else
-                    text += "disabled.";
-                return text;
-            }
+            /// <summary>
+            /// Pro třídění dle Name
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
             internal static int CompareByName(PropInfo a, PropInfo b)
             {
                 return String.Compare(a.Name, b.Name);
             }
-            /// <summary>
-            /// Vztah na typ, jehož je tato property členem
-            /// </summary>
-            internal TypeInfo TypeInfo { get; private set; }
-            /// <summary>
-            /// Reference na knihovnu typů.
-            /// V ní je uložen můj TypeInfo, a přes něj se do knihovny dostanu i já.
-            /// </summary>
-            internal TypeLibrary TypeLibrary { get { return this.TypeInfo.TypeLibrary; } }
-            /// <summary>
-            /// Info o této property
-            /// </summary>
-            internal PropertyInfo Property { get; private set; }
-            /// <summary>
-            /// Název této property = exaktně z this.Property.Name
-            /// </summary>
-            internal string Name { get { return this.Property.Name; } }
-            /// <summary>
-            /// .NET Type této property = this.Property.PropertyType.
-            /// Jde o typ, jak je property deklarována, nikoli Type, který je v ní aktuálně uložen (to se zjistí až podle objektu s daty).
-            /// Může to být potomek zdejšího typu, anebo implementace interface...
-            /// </summary>
-            internal Type PropertyType { get { return this.Property.PropertyType; } }
-            /// <summary>
-            /// true, pokud se tato property má persistovat
-            /// </summary>
-            internal bool Enabled { get; private set; }
-            /// <summary>
-            /// Rozšířené vlastnosti typu této property - data, načtená z TypeLibrary.
-            /// Data se načítají až on demand, z TypeLibrary.
-            /// </summary>
-            internal TypeInfo PropertyTypeInfo
-            {
-                get
-                {
-                    if (this._PropertyTypeInfo == null)
-                        this._PropertyTypeInfo = this.TypeLibrary.GetInfo(this.PropertyType);
-                    return this._PropertyTypeInfo;
-                }
-            }
-            private TypeInfo _PropertyTypeInfo;
-            /// <summary>
-            /// Jméno pro persistenci hodnoty této property
-            /// </summary>
-            internal string XmlName { get; private set; }
+            #endregion
             #region Vytváření jména elementu - asi zbytečné
             /// <summary>
             /// Ze jména property vytvoří jméno XML elementu/atributu

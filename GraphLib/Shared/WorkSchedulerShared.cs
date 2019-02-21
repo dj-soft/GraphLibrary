@@ -2417,7 +2417,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "RowId: " + this.RowId.ToString() + "; ItemId: " + this.ItemId.ToString() + "; Time: " + this.Time;
+            return "RowId: " + this.RowId?.ToString() + "; ItemId: " + this.ItemId?.ToString() + "; Time: " + this.Time;
         }
         /// <summary>
         /// ID položky časového grafu (ID obdélníčku).
@@ -2564,7 +2564,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Může být null, dokud není použit skin s indexem jiným než 0.
         /// Přímý přístup k hodnotám se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
         /// </summary>
-        public Dictionary<int, GuiGraphSkin> SkinDict { get; set; }
+        public Dictionary<int, GuiGraphSkin> SkinDict { get; private set; }
         /// <summary>
         /// Index aktuálního Skinu. Výchozí hodnota = 0, ta odkazuje na defaultní skin.
         /// Lze setovat libovolnou numerickou hodnotu, tím se aktivuje daný skin. Skin pro novou hodnotu bude automaticky vytvořen jako prázdný.
