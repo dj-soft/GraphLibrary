@@ -390,9 +390,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 RowBackColor = rowBackColor,
                 TagTexts = (tagText != null ? tagText.Split(',', ';') : null),
                 MachinesCount = machinesCount,
-                PlanUnitType = PlanUnitType.Workplace,
-                WorkTimes = CreateWorkingItems(1000 * recordId, calendar, (float)machinesCount, this.TimeRangeTotal)
+                PlanUnitType = PlanUnitType.Workplace
             };
+            planUnitC.WorkTimes = CreateWorkingItems(1000 * recordId, planUnitC, calendar, (float)machinesCount, this.TimeRangeTotal);
             this.WorkplaceDict.Add(planUnitC.RecordGid, planUnitC);
 
             return planUnitC.RecordGid;
@@ -418,9 +418,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 RowBackColor = rowBackColor,
                 TagTexts = null,
                 MachinesCount = 1,
-                PlanUnitType = PlanUnitType.Person,
-                WorkTimes = CreateWorkingItems(1000 * recordId, calendar, 1f, this.TimeRangeTotal)
+                PlanUnitType = PlanUnitType.Person
             };
+            planUnitC.WorkTimes = CreateWorkingItems(1000 * recordId, planUnitC, calendar, 1f, this.TimeRangeTotal);
             this.PersonDict.Add(planUnitC.RecordGid, planUnitC);
 
             return planUnitC.RecordGid;
@@ -433,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="height"></param>
         /// <param name="totalTimeRange"></param>
         /// <returns></returns>
-        protected List<WorkTime> CreateWorkingItems(int recordId, CalendarType calendar, float height, GuiTimeRange totalTimeRange)
+        protected List<WorkTime> CreateWorkingItems(int recordId, PlanUnitC planUnitC, CalendarType calendar, float height, GuiTimeRange totalTimeRange)
         {
             List<WorkTime> list = new List<WorkTime>();
             DateTime time = totalTimeRange.Begin.Date;
@@ -446,6 +446,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 WorkTime workTime = new WorkTime()
                 {
                     RecordId = ++recordId,
+                    PlanUnitC = planUnitC,
                     Time = workingTimeRange,
                     Height = height,
                     BackColor = backColor,
@@ -1403,11 +1404,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         public static GuiData SerialDeserialData(GuiData guiData)
         {
-            return guiData;
+            // return guiData;
             // if (!System.Diagnostics.Debugger.IsAttached) return guiData;
 
             GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
-            GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
+            // GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
             return guiDataP;
         }
         /// <summary>
@@ -1481,6 +1482,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Columns count.");
             if (resGrid.RowTable.Rows.Length != guiGrid.RowTable.Rows.Length)
                 throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Rows count.");
+
+            // Najdu první GraphItem pro třídu UnitTime = kus práce
+            var guiItems = guiGrid.RowTable.Rows[0].Graph.GraphItems;
+            var resItems = resGrid.RowTable.Rows[0].Graph.GraphItems;
+            int index = guiItems.FindIndex(i => i.ItemId.ClassId == UnitTime.ClassNumber);
+            GuiGraphBaseItem guiItem = (index >= 0 ? guiItems[index] : null);
+            GuiGraphBaseItem resItem = (index >= 0 ? resItems[index] : null);
+
+            if (guiItem != null)
+            {
+                if (resItem == null)
+                    throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiGraphItems is wrong, can not find WorkUnit item.");
+                if (guiItem.SkinDict != null && resItem.SkinDict == null)
+                    throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiGraphItems is wrong, SkinDict is null.");
+                var guiBColor = guiItem.SkinDefault.BackColor;
+                var resBColor = resItem.SkinDefault.BackColor;
+            }
 
             return resData;
         }
@@ -2263,6 +2281,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         public const int ClassNumber = 1365;
         public override int ClassId { get { return ClassNumber; } }
+        public PlanUnitC PlanUnitC { get; set; }
         public GuiTimeRange Time { get; set; }
         public float Height { get; set; }
         public Color? BackColor { get; set; }
@@ -2282,6 +2301,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
             {
+                RowId = this.PlanUnitC?.RecordGid,
                 ItemId = this.RecordGid,
                 Layer = 0,
                 BackColor = this.BackColor,
