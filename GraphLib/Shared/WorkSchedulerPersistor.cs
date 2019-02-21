@@ -19,6 +19,8 @@ using System.IO;
 // Tento soubor se nachází jednak v Greenu: Noris\App\Lcs\Base\WorkSchedulerPersistor.cs, a zcela identický i v GraphLibrary: \GraphLib\Shared\WorkSchedulerPersistor.cs
 namespace Noris.LCS.Base.WorkScheduler
 {
+    using Noris.LCS.Base.WorkScheduler.InternalPersistor;
+
     // public rozhraní:
     #region class Persist : Třída, která zajišťuje persistenci dat do / z XML formátu
     /// <summary>
@@ -1721,8 +1723,11 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     #endregion
+}
 
-    // XmlPersist, TypeLibrary, XmDocument : výkonné soukromé kódy
+// internal oblast: XmlPersist, TypeLibrary, XmDocument : výkonné soukromé kódy
+namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
+{
     /// <summary>
     /// Internal výkonná třída pro XML persistenci. 
     /// Tuto třídu nevyužívat z aplikačního kódu, má se používat třída (Djs.Tools.XmlPersistor.)Persist !!!
@@ -4084,7 +4089,7 @@ namespace Noris.LCS.Base.WorkScheduler
             /// <returns></returns>
             protected static XmlElement CreateElement(string elementName, XmlElement xParentElement)
             {
-                string name = WorkScheduler.TypeLibrary.CreateXmlName(elementName);
+                string name = WorkScheduler.InternalPersistor.TypeLibrary.CreateXmlName(elementName);
                 XmlElement xElement = xParentElement.OwnerDocument.CreateElement(name);
                 xParentElement.AppendChild(xElement);
                 return xElement;
@@ -4813,7 +4818,13 @@ anebo neprázdný objekt:
             /// Je naplněn pouze při PersistenceType = XmlPersistenceType.InnerObject.
             /// </summary>
             internal PropInfo[] Properties { get { return this._PropertyList.ToArray(); } }
+            /// <summary>
+            /// List pro enumeraci v pořadí dle názvů
+            /// </summary>
             private List<PropInfo> _PropertyList;
+            /// <summary>
+            /// Dictionary pro rychlé hledání
+            /// </summary>
             private Dictionary<string, PropInfo> _PropertyDict;
             #region Properties
             /// <summary>
@@ -4823,10 +4834,9 @@ anebo neprázdný objekt:
             {
                 this._PropertyList = new List<PropInfo>();
                 this._PropertyDict = new Dictionary<string, PropInfo>();
-                MemberInfo[] members = this.DataType.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+                MemberInfo[] members = this.DataType.GetMembers(PropInfo.BindFlags);
                 Dictionary<string, MethodInfo> accessorsDict = members.Where(m => m.MemberType == MemberTypes.Method).Cast<MethodInfo>().Where(m => m.IsSpecialName).ToDictionary(m => m.Name);
                 PropertyInfo[] properties = members.Where(m => m.MemberType == MemberTypes.Property).Cast<PropertyInfo>().ToArray();
-                // PropertyInfo[] props = this.DataType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
                 foreach (PropertyInfo prop in properties)
                 {
                     PropInfo propData = PropInfo.Create(this, prop, accessorsDict);
@@ -4874,9 +4884,7 @@ anebo neprázdný objekt:
             {
                 Type[] gps = this.DataType.GetGenericArguments();
                 if (gps == null || gps.Length == 0) return;
-                this.GenericList = new List<Type>();
-                foreach (Type generic in gps)
-                    this.GenericList.Add(generic);
+                this.GenericList = new List<Type>(gps);
             }
             /// <summary>
             /// Soupis generických typů zdejšího typu.
@@ -4935,16 +4943,10 @@ anebo neprázdný objekt:
             {
                 if (property == null || accessorsDict == null) return null;
 
-                if (property.Name == "SkinDict")
-                {
-                }
-
-
-
                 // Pro některé property nebudu instanci vytvářet:
                 if (!_IsPropertyAllowed(property)) return null;
 
-                // Aby bylo možno property serializovat, musí mít správné GET a SET metody:
+                // Aby bylo možno property serializovat, musí mít dostupné GET a SET metody:
                 MethodInfo getMethod, setMethod;
                 bool getPrivate, setPrivate;
                 if (!_IsPropertySerializable(property, accessorsDict, out getMethod, out getPrivate, out setMethod, out setPrivate)) return null;
@@ -4992,9 +4994,9 @@ anebo neprázdný objekt:
                 bool hasGet = accessorsDict.TryGetValue("get_" + name, out getMethod);
                 getPrivate = false;
                 if (!hasGet)
-                {   // Pokud v "accessorsDict" není metoda get, může být důvodem to, že je deklarována jako "private" a přitom Reflected typ je potomkem.
-                    // Pak privátní metody nejsou zahrnuty v sadě členů potomka.
-                    // Ale persistor by je měl být schopen najít a použít.
+                {   // Pokud v "accessorsDict" není metoda get, může být důvodem to, že je deklarována jako "private" ve tídě předka, a přitom Reflected typ je až potomkem.
+                    // Pak privátní metody nejsou zahrnuty v sadě členů potomka (GetMethods takovou metodu nenajde ani když bude hledat NonPublic | FlattenHierarchy ).
+                    // Ale Persistor by je měl být schopen najít a použít.
                     // Taková situace nastane málokdy, proto může být řešena specifickým způsobem...
                     if (privateAccessors == null) privateAccessors = _GetPrivateAccessors(property);
                     getMethod = privateAccessors.FirstOrDefault(m => m.Name == "get_" + name);
@@ -5063,7 +5065,7 @@ anebo neprázdný objekt:
                 PropertyNameAttribute attName = property.GetCustomAttributes(typeof(PropertyNameAttribute), true).Cast<PropertyNameAttribute>().FirstOrDefault();
                 if (attName != null && !String.IsNullOrEmpty(attName.PropertyName))
                     xmlName = attName.PropertyName;
-                return WorkScheduler.TypeLibrary.CreateXmlName(xmlName);
+                return WorkScheduler.InternalPersistor.TypeLibrary.CreateXmlName(xmlName);
             }
             /// <summary>
             /// Konstrutor
@@ -5071,7 +5073,9 @@ anebo neprázdný objekt:
             /// <param name="typeInfo"></param>
             /// <param name="property"></param>
             /// <param name="getMethod"></param>
+            /// <param name="getPrivate"></param>
             /// <param name="setMethod"></param>
+            /// <param name="setPrivate"></param>
             private PropInfo(TypeInfo typeInfo, PropertyInfo property, MethodInfo getMethod, bool getPrivate, MethodInfo setMethod, bool setPrivate)
             {
                 this.TypeInfo = typeInfo;
@@ -5102,6 +5106,9 @@ anebo neprázdný objekt:
                     text += "Persist Disabled.";
                 return text;
             }
+            /// <summary>
+            /// BindingFlags používané pro hledání properties a methods (= Instance | Public | NonPublic | FlattenHierarchy)
+            /// </summary>
             internal static BindingFlags BindFlags { get { return (BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy); } }
             #endregion
             #region Properties
@@ -5128,8 +5135,13 @@ anebo neprázdný objekt:
             /// Může to být potomek zdejšího typu, anebo implementace interface...
             /// </summary>
             internal Type PropertyType { get { return this.Property.PropertyType; } }
-
+            /// <summary>
+            /// Persistování je povoleno
+            /// </summary>
             public bool PersistEnabled { get; private set; }
+            /// <summary>
+            /// Klonování je povoleno
+            /// </summary>
             public bool CloneEnabled { get; private set; }
             /// <summary>
             /// Rozšířené vlastnosti typu této property - data, načtená z TypeLibrary.
@@ -5149,6 +5161,8 @@ anebo neprázdný objekt:
             /// Jméno pro persistenci hodnoty této property
             /// </summary>
             internal string XmlName { get; private set; }
+            #endregion
+            #region Podpora pro ukládání hodnoty
             /// <summary>
             /// Zajistí uložení hodnoty (value) do objektu (data) do jeho property this.
             /// </summary>
@@ -5161,9 +5175,21 @@ anebo neprázdný objekt:
                 else
                     this.Property.SetValue(data, value);
             }
+            /// <summary>
+            /// { get } metoda
+            /// </summary>
             private MethodInfo GetMethod { get; set; }
+            /// <summary>
+            /// true pokud { get } metoda je privátní ve třídě předka
+            /// </summary>
             private bool GetMethodPrivate { get; set; }
+            /// <summary>
+            /// { set } metoda
+            /// </summary>
             private MethodInfo SetMethod { get; set; }
+            /// <summary>
+            /// true pokud { set } metoda je privátní ve třídě předka
+            /// </summary>
             private bool SetMethodPrivate { get; set; }
             #endregion
             #region Obecné static služby
