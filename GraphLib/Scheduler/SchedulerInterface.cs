@@ -42,6 +42,7 @@ namespace Asol.Tools.WorkScheduler
         /// Konstruktor
         /// </summary>
         /// <param name="sessionId">SessionId dat</param>
+        /// <param name="requestId">RequestId požadavku</param>
         /// <param name="request">Data pro požadavek. Předává se do aplikační funkce. 
         /// Jde o instanci třídy <see cref="GuiRequest"/>.
         /// Konkrétní požadavek je specifikován v <see cref="GuiRequest.Command"/>, jeho hodnota pochází z konstant {<see cref="GuiRequest.COMMAND_OpenRecords"/> atd}.</param>
@@ -52,9 +53,10 @@ namespace Asol.Tools.WorkScheduler
         /// Požadavek se zpracovává asynchronně, odpověď (response) přijde v jiném threadu, a do threadu GUI je invokována.
         /// Tato metoda dostává data ve formě <see cref="AppHostResponseArgs"/>, součástí dat je i původní požadavek (zdejší argument request) a v něm tedy i přidaná data (zdejší argument userData).
         /// </param>
-        public AppHostRequestArgs(int? sessionId, GuiRequest request, bool blockGui = false, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
+        public AppHostRequestArgs(int? sessionId, int requestId, GuiRequest request, bool blockGui = false, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
         {
             this.SessionId = sessionId;
+            this.RequestId = requestId;
             this.Request = request;
             this.BlockGui = blockGui;
             this.UserData = userData;
@@ -65,6 +67,10 @@ namespace Asol.Tools.WorkScheduler
         /// SessionId dat
         /// </summary>
         public int? SessionId { get; protected set; }
+        /// <summary>
+        /// RequestId požadavku
+        /// </summary>
+        public int RequestId { get; protected set; }
         /// <summary>
         /// Data pro požadavek. 
         /// Zde je uložena standardní instance.

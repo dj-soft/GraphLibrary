@@ -46,6 +46,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Obsahuje, true pokud máme vztah na datového hostitele
         /// </summary>
         private bool _HasHost { get { return (this._AppHost != null); } }
+        /// <summary>
+        /// Pořadové číslo requestu
+        /// </summary>
+        private int _RequestId;
+        /// <summary>
+        /// ID číslo this session pluginu. Identifikace pro volající systém (ten může mít otevřených více oken pluginů)
+        /// </summary>
         private int? _SessionId;
         /// <summary>
         /// Datový hostitel
@@ -92,13 +99,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public System.Windows.Forms.Control CreateControlToForm(Form mainForm)
         {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "ApplyPropertiesToForm", ""))
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "ApplyPropertiesToForm", ""))
                 this._ApplyPropertiesToForm(mainForm);     // Nastavíme vlastnosti formu podle GuiProperties
 
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", ".ctor", ""))
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainControl", ".ctor", ""))
                 this._MainControl = new MainControl(this); // Vytvoříme new control MainControl
 
-            this._FillMainControlFromGui();                // Do controlu MainControl vygenerujeme všechny jeho controly
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlFromGui", ""))
+                this._FillMainControlFromGui();            // Do controlu MainControl vygenerujeme všechny jeho controly
+
             mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
             this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
             return this._MainControl;                      // hotovo!
@@ -190,41 +199,49 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="userData">Libovolná další data, která chce dostat metoda (callBackAction). Tato data se nijak nezpracovávají v hostiteli.</param>
         private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime = null, string blockGuiMessage = null, object userData = null)
         {
+            int requestId = ++this._RequestId;
             bool hasCallBack = (callBackAction != null);
             bool hasBlockGui = blockGuiTime.HasValue;
-            AppHostResponseArgs responseArgs = null;
-            AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, hasBlockGui, userData, callBackAction);
-            try
+            using (var scope = App.Trace.Scope("MainData", "CallAppHostFunction", "Start",
+                "SessionId: " + this._SessionId.ToString(),
+                "RequestId: " + requestId.ToString(),
+                "Command: " + request.Command, 
+                "BlockGui: " + (hasBlockGui ? blockGuiTime.Value.ToString() : "No"),
+                "CallBack: " + (hasCallBack ? "Yes" : "No"),
+                "Data: " + request.ToString()))
             {
-                if (this._VerifyAppHost(request))
-                {   // Máme-li hostitele, předáme mu požadavek:
-                    if (hasBlockGui)
-                    {   // Pokud přišel požadavek na blokování aktuálního threadu po danou dobu, pak požádám control o nastavení bloku na GUI:
-                        this._MainControl.BlockGUI(blockGuiTime.Value, blockGuiMessage);
-                        // A zajistím, že CallBack akce přijde k vyřízení do zdejší metody, namísto do metody aplikační:
-                        requestArgs.CallBackAction = this._CallAppHostAsyncFunctionResponse;
-                    }
-                    // Zavoláme AppHost; předem nevíme, zda AppHost je Synchronní nebo Asynchronní:
-                    responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
-                    // Pokud AppHost je Synchronní, tak nám rovnou vrátil Response, a vyřídíme to ihned:
-                    if (responseArgs != null)
-                    {
-                        if (hasCallBack)
-                            callBackAction(responseArgs);
+                AppHostResponseArgs responseArgs = null;
+                AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, requestId, request, hasBlockGui, userData, callBackAction);
+                try
+                {
+                    if (this._VerifyAppHost(request))
+                    {   // Máme-li hostitele, předáme mu požadavek:
+
+                        // Pokud je požadavek na blokování aktuálního threadu po danou dobu, pak požádám control o nastavení bloku na GUI:
                         if (hasBlockGui)
-                            this._MainControl.ReleaseGUI();
+                            this._MainControl.BlockGUI(blockGuiTime.Value, blockGuiMessage);
+
+                        // Zajistím, že CallBack akce přijde vždy k vyřízení do zdejší metody, namísto do metody aplikační:
+                        requestArgs.CallBackAction = this._CallAppHostAsyncFunctionResponse;
+                        
+                        // Zavoláme AppHost; předem nevíme, zda AppHost je Synchronní nebo Asynchronní:
+                        responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
+                        // Pokud AppHost je Synchronní, tak nám rovnou vrátil Response, a vyřídíme to ihned:
+                        if (responseArgs != null)
+                            this._CallAppHostAsyncFunctionResponse(responseArgs);
+                    }
+                    else if (hasCallBack)
+                    {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
+                        this._CallBackActionErrorNoHost(requestArgs);
                     }
                 }
-                else if (hasCallBack)
-                {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
-                    this._CallBackActionErrorNoHost(requestArgs);
+                catch (Exception exc)
+                {
+                    scope.AddItem("Exception: " + exc.Message);
+                    App.Trace.Exception(exc, request.ToString());
+                    string message = "Při zpracování požadavku " + request.Command + " došlo k chybě: " + exc.Message;
+                    this.ShowDialog(message, null, GuiDialogButtons.Ok);
                 }
-            }
-            catch (Exception exc)
-            {
-                App.Trace.Exception(exc, request.ToString());
-                string message = "Při zpracování požadavku " + request.Command + " došlo k chybě: " + exc.Message;
-                this.ShowDialog(message, null, GuiDialogButtons.Ok);
             }
         }
         /// <summary>
@@ -260,12 +277,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="responseArgs"></param>
         private void _CallAppHostAsyncFunctionResponse(AppHostResponseArgs responseArgs)
         {
-            // Nejprve odblokuji GUI:
-            if (responseArgs.Request.BlockGui)
-                this._MainControl.ReleaseGUI();
-            // Pak zavolám zpracování odpovědi, v něm může dojít k novému zablokování GUI (proto GUI odblokovávám před tím a ne až potom):
-            if (responseArgs.Request.OriginalCallBackAction != null)
-                responseArgs.Request.OriginalCallBackAction(responseArgs);
+            AppHostRequestArgs requestArgs = responseArgs.Request;
+            bool hasBlockGui = requestArgs.BlockGui;
+            using (var scope = App.Trace.Scope("MainData", "CallAppHostFunctionResponse", "Start",
+                    "SessionId: " + this._SessionId.ToString(),
+                    "RequestId: " + requestArgs.RequestId.ToString(),
+                    "Command: " + requestArgs.Request.Command,
+                    "BlockGui: " + (hasBlockGui ? "Yes" : "No"),
+                    "CallBack: " + ((requestArgs.OriginalCallBackAction != null) ? "Yes" : "No")))
+            {
+                // Nejprve odblokuji GUI:
+                if (requestArgs.BlockGui)
+                    this._MainControl.ReleaseGUI();
+
+                // Pak zavolám zpracování odpovědi, v něm může dojít k novému zablokování GUI (proto GUI odblokovávám před tím a ne až potom):
+                if (requestArgs.OriginalCallBackAction != null)
+                    requestArgs.OriginalCallBackAction(responseArgs);
+            }
         }
         #endregion
         #region Toolbar
@@ -294,7 +322,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlToolbar()
         {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlToolbar", ""))
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlToolbar", ""))
             {
                 this._ToolBarGuiItems = new List<ToolBarItem>();
                 this._MainControl.ClearToolBar();
@@ -837,14 +865,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlFromConfig()
         {
-            SchedulerConfig config = this.Config;
-            if (config == null) return;
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlFromConfig", ""))
+            {
+                SchedulerConfig config = this.Config;
+                if (config == null) return;
 
-            SchedulerConfigUserPair toolBarStatusPair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TOOLBAR_STATUS).FirstOrDefault();
-            if (toolBarStatusPair != null && toolBarStatusPair.Value != null && toolBarStatusPair.Value is string)
-                this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;
+                SchedulerConfigUserPair toolBarStatusPair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TOOLBAR_STATUS).FirstOrDefault();
+                if (toolBarStatusPair != null && toolBarStatusPair.Value != null && toolBarStatusPair.Value is string)
+                    this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;
 
-            this._PrepareDefaultTimeZoom();
+                this._PrepareDefaultTimeZoom();
+            }
         }
         /// <summary>
         /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
@@ -1817,7 +1848,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlPagesFromGui()
         {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlPagesFromGui", ""))
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlPagesFromGui", ""))
             {
                 this._MainControl.ClearPages();
                 this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
