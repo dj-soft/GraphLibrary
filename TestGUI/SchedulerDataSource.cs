@@ -1431,7 +1431,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 PersistArgs serArgs = (isCompress ? PersistArgs.Compressed : PersistArgs.Default);
                 serArgs.SavePrimitivesContent = new StringBuilder();
-                serial = XmlPersist.Serialize(guiData, serArgs);
+                serial = Persist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
                 scopeS.AddItem("PrimitivesLength: " + serArgs.SavePrimitivesLength.ToString());
                 primitive = serArgs.SavePrimitivesContent.ToString();
@@ -1446,7 +1446,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             using (var scopeD = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Deserialize", compress, runMode))
             {
                 desArgs = new PersistArgs() { CompressMode = mode, DataContent = serial };
-                object result = XmlPersist.Deserialize(desArgs);
+                object result = Persist.Deserialize(desArgs);
                 resData = result as GuiData;
             }
 
