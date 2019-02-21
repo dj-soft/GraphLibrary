@@ -43,6 +43,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         public GuiData CreateGuiData()
         {
+            Application.App.TracePriority = Application.TracePriority.Priority3_BellowNormal;
+
             this.MainData = new Noris.LCS.Base.WorkScheduler.GuiData();
 
             this.InitData();
@@ -55,8 +57,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateCenterPanelPersons();
             this.CreateRightPanel();
             this.CreateContextFunctions();
-
-            Application.App.TracePriority = Application.TracePriority.Priority5_Normal;
 
             return this.MainData;
         }
