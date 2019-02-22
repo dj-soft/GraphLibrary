@@ -403,7 +403,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 RepaintParentMode repaintParent = this.RepaintParent;
                 if (repaintParent == RepaintParentMode.Always || (repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.A < 255))
-                    this.Parent.Repaint(repaintLayers);
+                    this.Parent.Repaint();       // původně Repaint(repaintLayers) : chyby v kreslení Ghost, výrazně pomalé.
             }
         }
         /// <summary>

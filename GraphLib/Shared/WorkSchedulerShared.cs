@@ -3166,6 +3166,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string CheckedGroupName { get; set; }
         /// <summary>
+        /// Ukládat hodnotu tohoto prvku <see cref="IsChecked"/> do uživatelské konfigurace, a při příštím startu aplikace ji obnovit na předchozí hodnotu?
+        /// Default = null = ano (aplikuje se jen na ty prvky, které mají nějakou hodnotu)
+        /// </summary>
+        public bool? StoreValueToConfig { get; set; }
+        /// <summary>
         /// Čas, po který maximálně bude blokován GUI, po dobu běhu této funkce.
         /// Pokud je zde null, pak běh funkce neblokuje GUI.
         /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu bude GUI okna blokováno, do doby doběhnutí funkce nebo do doběhnutí tohoto Timeoutu.
@@ -3204,8 +3209,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public string RunInteractionNames { get; set; }
         /// <summary>
         /// Zdrojové akce, které se mají po stisknutí tohoto tlačítka provést v rámci interakcí.
+        /// Vyhodnocuje se pouze pokud v <see cref="GuiActions"/> je hodnota <see cref="GuiActionType.RunInteractions"/>.
         /// </summary>
-        public SourceActionType RunInteractionSource { get; set; }
+        public SourceActionType? RunInteractionSource { get; set; }
     }
     /// <summary>
     /// Akce, které má provést vrstva Gui po aktivaci tlačítka / funkce

@@ -367,13 +367,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moduleWidth"></param>
         /// <param name="isSelectable"></param>
         /// <param name="isSelected"></param>
+        /// <param name="isPersistEnabled"></param>
         /// <param name="selectionGroupName"></param>
         /// <param name="systemItemId"></param>
         /// <returns></returns>
         private FunctionGlobalItem _CreateToolbarItem(string name, string image, string text, string toolTip,
             FunctionGlobalItemSize size = FunctionGlobalItemSize.Half, string imageHot = null, FunctionGlobalItemType itemType = FunctionGlobalItemType.Button,
             LayoutHint layoutHint = LayoutHint.Default, int? moduleWidth = null,
-            bool isSelectable = false, bool isSelected = false, string selectionGroupName = null, ToolbarSystemItem? systemItemId = null)
+            bool isSelectable = false, bool isSelected = false, bool isPersistEnabled = false, string selectionGroupName = null, ToolbarSystemItem? systemItemId = null)
         {
             FunctionGlobalItem functionItem = new FunctionGlobalItem(this);
             functionItem.Name = name;
@@ -387,6 +388,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             functionItem.ModuleWidth = moduleWidth;
             functionItem.IsCheckable = isSelectable;
             functionItem.IsChecked = isSelected;
+            functionItem.PersistEnabled = isPersistEnabled;
             functionItem.CheckedGroupName = selectionGroupName;
             functionItem.UserData = systemItemId;
 
@@ -683,6 +685,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.ModuleWidth = refrData.ModuleWidth;
                 if (_Changed(currData.LayoutHint, refrData.LayoutHint, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.LayoutHint = refrData.LayoutHint;
+                if (_Changed(currData.StoreValueToConfig, refrData.StoreValueToConfig, GToolBarRefreshMode.None, ref refreshMode))
+                    currData.StoreValueToConfig = refrData.StoreValueToConfig;
                 if (_Changed(currData.BlockGuiTime, refrData.BlockGuiTime, GToolBarRefreshMode.None, ref refreshMode))
                     currData.BlockGuiTime = refrData.BlockGuiTime;
                 if (_Changed(currData.BlockGuiMessage, refrData.BlockGuiMessage, GToolBarRefreshMode.None, ref refreshMode))
@@ -691,8 +695,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.GuiActions = refrData.GuiActions;
                 if (_Changed(currData.RunInteractionNames, refrData.RunInteractionNames, GToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.RunInteractionNames = refrData.RunInteractionNames;
+                if (_Changed(currData.RunInteractionSource, refrData.RunInteractionSource, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.RunInteractionSource = refrData.RunInteractionSource;
 
                 return refreshMode;
+            }
+            private static bool _Changed(int? oldValue, int? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
             }
             private static bool _Changed(string oldValue, string newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
@@ -719,14 +733,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(TimeSpan? oldValue, TimeSpan? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
-            {
-                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
-                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
-                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
-                return true;
-            }
             private static bool _Changed(LayoutHint? oldValue, LayoutHint? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
@@ -743,7 +749,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(int? oldValue, int? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(SourceActionType? oldValue, SourceActionType? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(TimeSpan? oldValue, TimeSpan? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
@@ -849,6 +863,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Je rozumné dávat prvky jedné <see cref="CheckedGroupName"/> blízko k sobě, ale technicky nutné to není.
             /// </summary>
             public override string CheckedGroupName { get { return (this._HasItem ? this._GuiToolBarItem.CheckedGroupName : base.CheckedGroupName); } set { if (this._HasItem) this._GuiToolBarItem.CheckedGroupName = value; else base.CheckedGroupName = value; } }
+            /// <summary>
+            /// Příznak, zda tento prvek bude persistovat svoji hodnotu do uživatelské konfigurace.
+            /// Při příštím startu aplikace bude tato hodnota načtena z konfigurace a vložena do prvku.
+            /// Defaultní hodnota je false.
+            /// </summary>
+            public override bool PersistEnabled { get { return (this._HasItem ? (this._GuiToolBarItem.StoreValueToConfig.HasValue ? this._GuiToolBarItem.StoreValueToConfig.Value : true) : base.IsChecked); } set { if (this._HasItem) this._GuiToolBarItem.StoreValueToConfig = value; else base.PersistEnabled = value; } }
             #endregion
         }
         #endregion
@@ -927,7 +947,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._RunGuiInteractionsResetTargetInteractiveFilters(ref callRefresh);
 
             if (guiActions.HasFlag(GuiActionType.RunInteractions))
-                this._RunGuiInteractionsByName(SourceActionType.ToolbarClicked | guiToolbarItem.RunInteractionSource, guiToolbarItem.RunInteractionNames, ref callRefresh);
+                this._RunGuiInteractionsByName(SourceActionType.ToolbarClicked | (guiToolbarItem.RunInteractionSource.HasValue ? guiToolbarItem.RunInteractionSource.Value : SourceActionType.None), guiToolbarItem.RunInteractionNames, ref callRefresh);
 
             if (callRefresh)
                 this._MainControl.Refresh();
@@ -1116,13 +1136,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Zoom:
             // ToolbarSystemItem timeAxisZoom = this.Config.TimeAxisZoom;
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomOneDay))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.Calendarday32x32Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomOneDay), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomOneDay));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.Calendarday32x32Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomOneDay), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomOneDay));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.Calendarworkingweek32x32Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWorkWeek), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWorkWeek));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.Calendarworkingweek32x32Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWorkWeek), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWorkWeek));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWholeWeek))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.Calendarweek32x32Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWholeWeek));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.Calendarweek32x32Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWholeWeek));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomMonth))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.Calendarmonth32x32Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomMonth));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.Calendarmonth32x32Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomMonth));
 
             // Go:
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoPrev))

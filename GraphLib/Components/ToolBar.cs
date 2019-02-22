@@ -413,6 +413,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Aktuální nově vytvořená instance třídy <see cref="ToolBarStatus"/>, pro práci s persistencí hodnot prvků Toolbaru
+        /// </summary>
         private ToolBarStatus _CurrentToolBarStatus
         {
             get
@@ -1646,6 +1649,12 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Support pro serializaci hodnoty prvku (IsChecked nebo Value, atd)
         /// <summary>
+        /// Příznak, zda tento prvek bude persistovat svoji hodnotu <see cref="PersistValue"/>.
+        /// Při příštím startu aplikace bude tato hodnota načtena z konfigurace a vložena do prvku.
+        /// Defaultní hodnota je false.
+        /// </summary>
+        public virtual bool PersistEnabled { get { return this._DataItem.PersistEnabled; } }
+        /// <summary>
         /// Hodnota, která je pro tento prvek persistována. Pokud je zde null, pak persistence není.
         /// Potomek může tuto property přepsat, a konvertovat string na svoji hodnotu, pak bude persistována do příštího spuštění aplikace.
         /// </summary>
@@ -2173,6 +2182,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 string groupName = (gGroup.Name ?? "_") + ".";
                 foreach (GToolBarItem gItem in gGroup.FunctionGItems)
                 {
+                    if (!gItem.PersistEnabled) continue;
                     string itemName = gItem.Name;
                     if (String.IsNullOrEmpty(itemName)) continue;
                     string key = groupName + itemName;

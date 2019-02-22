@@ -348,6 +348,12 @@ namespace Asol.Tools.WorkScheduler.Services
         /// Explicitně požadovaná šířka prvku v počtu modulů
         /// </summary>
         public virtual int? ModuleWidth { get; set; }
+        /// <summary>
+        /// Příznak, zda tento prvek bude persistovat svoji hodnotu do uživatelské konfigurace.
+        /// Při příštím startu aplikace bude tato hodnota načtena z konfigurace a vložena do prvku.
+        /// Defaultní hodnota je false.
+        /// </summary>
+        public virtual bool PersistEnabled { get; set; }
     }
     #endregion
     #region IFunctionProvider, FunctionItem, FunctionItemEventHandler, FunctionItemEventArgs : Common function provider and classese
