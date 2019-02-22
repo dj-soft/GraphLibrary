@@ -829,6 +829,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Title = "Filtruj VP",
                 ToolTip = "Pokud bude aktivní, budou v levé tabulce zobrazeny jen ty Výrobní příkazy, jejichž některá operace se provádí na aktuálním pracovišti.",
                 IsCheckable = true,
+                StoreValueToConfig = false,         /* Button sice jde aktivovat, ale tento stav nechceme ukládat pro příští start. */
                 Image = RES.Images.Actions24.FormatIndentLess3Png,
                 GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
                 RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionFilterProductOrder,
@@ -839,7 +840,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 Name = GuiNameToolbarShowColorSet1,
                 Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                LayoutHint = LayoutHint.NextItemOnSameRow,
                 GroupName = "OZNAČIT OPERACE",
                 Title = "Barva 1",
                 ToolTip = "Aktivuje barvy skupiny 1.",
@@ -855,7 +856,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 Name = GuiNameToolbarShowColorSet2,
                 Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.NextItemSkipToNextTable,
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
                 GroupName = "OZNAČIT OPERACE",
                 Title = "Barva 2",
                 ToolTip = "Aktivuje barvy skupiny 2.",
@@ -870,7 +871,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 Name = GuiNameToolbarShowColorSet3,
                 Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                LayoutHint = LayoutHint.NextItemOnSameRow,
                 GroupName = "OZNAČIT OPERACE",
                 Title = "Barva 3",
                 ToolTip = "Aktivuje barvy skupiny 3.",
