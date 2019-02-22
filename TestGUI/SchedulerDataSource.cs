@@ -1451,6 +1451,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
 
             // Prověříme alespoň základní shodu dat:
+            CheckEqualData(guiData, resData);
+
+            return resData;
+        }
+        /// <summary>
+        /// Kontrola shody dat
+        /// </summary>
+        /// <param name="guiData"></param>
+        /// <param name="resData"></param>
+        private static void CheckEqualData(GuiData guiData, GuiData resData)
+        {
             if (resData == null)
                 throw new FormatException("Serialize and Deserialize of GuiData fail; Deserialize process returns null value.");
 
@@ -1464,11 +1475,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (resData.Pages != null && guiData.Pages != null && resData.Pages.Count != guiData.Pages.Count)
                 throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages returns bad Count items.");
 
-            if (guiData.Pages == null || guiData.Pages.Count == 0) return resData;
+            if (guiData.Pages == null || guiData.Pages.Count == 0) return;
 
             GuiPage guiPage = guiData.Pages.Pages[0];
             GuiPage resPage = resData.Pages.Pages[0];
-            if (guiPage.MainPanel.Grids == null || guiPage.MainPanel.Grids.Count == 0) return resData;
+            if (guiPage.MainPanel.Grids == null || guiPage.MainPanel.Grids.Count == 0) return;
             if (resPage.MainPanel.Grids == null || resPage.MainPanel.Grids.Count != guiPage.MainPanel.Grids.Count)
                 throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages[0] returns bad MainPanel.Grids.Count items.");
 
@@ -1493,14 +1504,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (guiItem != null)
             {
                 if (resItem == null)
-                    throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiGraphItems is wrong, can not find WorkUnit item.");
-                if (guiItem.SkinDict != null && resItem.SkinDict == null)
-                    throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiGraphItems is wrong, SkinDict is null.");
+                    throw new FormatException("Serialize and Deserialize of GuiGraphItem fail; can not find WorkUnit item.");
+                if (guiItem.SkinDict != null)
+                {
+                    if (resItem.SkinDict == null)
+                        throw new FormatException("Serialize and Deserialize of GuiGraphItem fail; SkinDict is null.");
+                    if (guiItem.SkinDict.Count != resItem.SkinDict.Count)
+                        throw new FormatException("Serialize and Deserialize of GuiGraphItem fail; SkinDict has unequal Count.");
+                }
+
                 var guiBColor = guiItem.SkinDefault.BackColor;
                 var resBColor = resItem.SkinDefault.BackColor;
-            }
+                if (!Nullable.Equals(guiBColor, resBColor))
+                    throw new FormatException("Serialize and Deserialize of GuiGraphItem fail; SkinDefault has unequal BackColor.");
 
-            return resData;
+                if (guiItem.SkinDict.Count > 0)
+                {
+                    int key = guiItem.SkinDict.First().Key;
+                    guiItem.SkinCurrentIndex = key;
+                    resItem.SkinCurrentIndex = key;
+
+                    if (!Nullable.Equals(guiItem.BackColor, resItem.BackColor))
+                        throw new FormatException("Serialize and Deserialize of GuiGraphItem fail; Skin[" + key + "] has unequal BackColor.");
+
+                    guiItem.SkinCurrentIndex = 0;
+                    resItem.SkinCurrentIndex = 0;
+                }
+            }
         }
         /// <summary>
         /// Uloží dodaná data do souboru v adresáři Trace
