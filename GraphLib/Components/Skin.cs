@@ -795,24 +795,81 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Barva použitá pro zvýraznění prostoru, kde se něco přetahuje myší
         /// </summary>
         public Color MouseDragTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDragTracking", DefaultMouseDragTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDragTracking", value); } }
+        /// <summary>
+        /// Barva zvýrazňující okolí myši při jejím pohybu
+        /// </summary>
         public Color MouseHotColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseHotColor", DefaultMouseHotColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseHotColor", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na počátku
+        /// </summary>
         public Color BackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorBegin", DefaultBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorBegin", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na konci
+        /// </summary>
         public Color BackColorEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorEnd", DefaultBackColorEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorEnd", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na počátku, stav MouseHot
+        /// </summary>
         public Color BackColorHotBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorHotBegin", DefaultBackColorHotBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorHotBegin", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na konci, stav MouseHot
+        /// </summary>
         public Color BackColorHotEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorHotEnd", DefaultBackColorHotEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorHotEnd", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na počátku, stav MouseDown
+        /// </summary>
         public Color BackColorDownBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDownBegin", DefaultBackColorDownBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDownBegin", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na konci, stav MouseDown
+        /// </summary>
         public Color BackColorDownEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDownEnd", DefaultBackColorDownEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDownEnd", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na počátku, stav Drag and Drop
+        /// </summary>
         public Color BackColorDragBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDragBegin", DefaultBackColorDragBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDragBegin", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí na konci, stav Drag and Drop
+        /// </summary>
         public Color BackColorDragEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDragEnd", DefaultBackColorDragEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDragEnd", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí, stav NotEnabled
+        /// </summary>
         public Color BackColorDisable { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDisable", DefaultBackColorDisable); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDisable", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí, stav Stín
+        /// </summary>
         public Color BackColorShadow { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorShadow", DefaultBackColorShadow); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorShadow", value); } }
+        /// <summary>
+        /// Modifikátor barvy textu, stav MouseHot
+        /// </summary>
         public Color TextColorHot { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorHot", DefaultTextColorHot); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorHot", value); } }
+        /// <summary>
+        /// Modifikátor barvy textu, stav MouseDown
+        /// </summary>
         public Color TextColorDown { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDown", DefaultTextColorDown); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDown", value); } }
+        /// <summary>
+        /// Modifikátor barvy textu, stav Drag and Drop
+        /// </summary>
         public Color TextColorDrag { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDrag", DefaultTextColorDrag); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDrag", value); } }
+        /// <summary>
+        /// Modifikátor barvy textu, stav Not Enabled
+        /// </summary>
         public Color TextColorDisable { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDisable", DefaultTextColorDisable); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDisable", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí pro 3D efekt, tmavší část
+        /// </summary>
         public Color Effect3DDark { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DDark", DefaultEffect3DDark); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DDark", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí pro 3D efekt, světlejší část
+        /// </summary>
         public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
+        /// <summary>
+        /// Poměr 3D efektu pro pozadí
+        /// </summary>
         public float Effect3DBackgroundRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DBackgroundRatio", DefaultEffect3DBackgroundRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DBackgroundRatio", value); } }
+        /// <summary>
+        /// Poměr 3D efektu pro okraje
+        /// </summary>
         public float Effect3DBorderRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
         public Color ShiftBackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorBegin", DefaultShiftBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorBegin", value); } }
         public Color ShiftBackColorEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorEnd", DefaultShiftBackColorEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorEnd", value); } }
@@ -822,7 +879,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color ShiftBackColorDownEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDownEnd", DefaultShiftBackColorDownEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDownEnd", value); } }
         public Color ShiftBackColorDragBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragBegin", DefaultShiftBackColorDragBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragBegin", value); } }
         public Color ShiftBackColorDragEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragEnd", DefaultShiftBackColorDragEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragEnd", value); } }
-
         #endregion
         #region Default colors
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
@@ -964,6 +1020,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public int MouseOverSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverSize", DefaultMouseOverSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverSize", value); } }
         public Color MouseDownColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDownColor", DefaultMouseDownColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDownColor", value); } }
         public int MouseDownSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDownSize", DefaultMouseDownSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDownSize", value); } }
+        public int InteractivePaddingSize { get { return this._Owner.GetValue(this._SkinSetKey, "InteractivePaddingSize", DefaultInteractivePaddingSize); } set { this._Owner.SetValue(this._SkinSetKey, "InteractivePaddingSize", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultInactiveColor { get { return Color.FromArgb(96, 96, 96, 64); } }
@@ -974,6 +1031,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual int DefaultMouseOverSize { get { return 4; } }
         protected virtual Color DefaultMouseDownColor { get { return Color.FromArgb(255, 64, 64, 64); } }
         protected virtual int DefaultMouseDownSize { get { return 4; } }
+        protected virtual int DefaultInteractivePaddingSize { get { return 3; } }
         #endregion
     }
     /// <summary>

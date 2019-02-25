@@ -865,11 +865,22 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 return new RectangleD(x, y, r - x, b - y);
         }
-        public bool IntersectsWith(RectangleD rect)
+        /// <summary>
+        /// Vrátí informaci, zda this má společný průnik s daným prostorem
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <returns></returns>
+        public bool HasIntersectsWith(RectangleD rect)
         {
             decimal x, y, r, b;
             return _Intersect(this, rect, out x, out y, out r, out b);
         }
+        /// <summary>
+        /// Vrátí spojení dvou prostorů
+        /// </summary>
+        /// <param name="r1"></param>
+        /// <param name="r2"></param>
+        /// <returns></returns>
         public static RectangleD Union(RectangleD r1, RectangleD r2)
         {
             decimal x, y, r, b;
@@ -878,22 +889,37 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 return new RectangleD(x, y, r - x, b - y);
         }
+        /// <summary>
+        /// Vrátí this zarovnaný na souřadnice Int32 (Left, Top = Floor(); Right, Bottom = Ceiling()
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static Rectangle Ceiling(RectangleD value)
         {
-            int x = (int)Math.Ceiling(value._X);
-            int y = (int)Math.Ceiling(value._Y);
-            int w = (int)Math.Ceiling(value._Width);
-            int h = (int)Math.Ceiling(value._Height);
-            return new Rectangle(x, y, w, h);
+            int l = (int)Math.Floor(value.Left);
+            int t = (int)Math.Floor(value.Top);
+            int r = (int)Math.Ceiling(value.Right);
+            int b = (int)Math.Ceiling(value.Bottom);
+            return Rectangle.FromLTRB(l, t, r, b);
         }
+        /// <summary>
+        /// Vrátí this zarovnaný na souřadnice Int32 (Round)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static Rectangle Round(RectangleD value)
         {
-            int x = (int)Math.Round(value._X, 0);
-            int y = (int)Math.Round(value._Y, 0);
-            int w = (int)Math.Round(value._Width, 0);
-            int h = (int)Math.Round(value._Height, 0);
-            return new Rectangle(x, y, w, h);
+            int l = (int)Math.Round(value.Left, 0);
+            int t = (int)Math.Round(value.Top, 0);
+            int r = (int)Math.Round(value.Right, 0);
+            int b = (int)Math.Round(value.Bottom, 0);
+            return Rectangle.FromLTRB(l, t, r, b);
         }
+        /// <summary>
+        /// Vrátí this zarovnaný na souřadnice Int32 (Truncate)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static Rectangle Truncate(RectangleD value)
         {
             int x = (int)Math.Truncate(value._X);
@@ -904,20 +930,54 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Operators
+        /// <summary>
+        /// Operace sčítání dvou RectangleD = vrací jejich Union
+        /// </summary>
+        /// <param name="r1"></param>
+        /// <param name="r2"></param>
+        /// <returns></returns>
         public static RectangleD operator +(RectangleD r1, RectangleD r2)
         { return Union(r1, r2); }
+        /// <summary>
+        /// Operace sčítání RectangleD + SizeD = vrací RectangleD s nezměněným počátkem a součtovou velikostí
+        /// </summary>
+        /// <param name="rectangle"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public static RectangleD operator +(RectangleD rectangle, SizeD size)
         { return new RectangleD(rectangle.Location, (rectangle.Size + size)); }
+        /// <summary>
+        /// Operace sčítání dvou RectangleD = vrací jejich Intersect
+        /// </summary>
+        /// <param name="r1"></param>
+        /// <param name="r2"></param>
+        /// <returns></returns>
         public static RectangleD operator *(RectangleD r1, RectangleD r2)
         { return Intersect(r1, r2); }
         #endregion
         #region Implicit & explicit convertors
+        /// <summary>
+        /// Implicitní konverze z Rectangle na RectangleD
+        /// </summary>
+        /// <param name="rectangle"></param>
         public static implicit operator RectangleD(Rectangle rectangle)
         { return new RectangleD(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height); }
+        /// <summary>
+        /// Implicitní konverze z RectangleF na RectangleD
+        /// </summary>
+        /// <param name="rectangle"></param>
         public static implicit operator RectangleD(RectangleF rectangle)
         { return new RectangleD((decimal)rectangle.X, (decimal)rectangle.Y, (decimal)rectangle.Width, (decimal)rectangle.Height); }
+        /// <summary>
+        /// Implicitní konverze z RectangleD na RectangleF
+        /// </summary>
+        /// <param name="rectangle"></param>
         public static explicit operator RectangleF(RectangleD rectangle)
         { return new RectangleF((float)rectangle.X, (float)rectangle.Y, (float)rectangle.Width, (float)rectangle.Height); }
+        /// <summary>
+        /// Implicitní konverze z RectangleD na Rectangle
+        /// </summary>
+        /// <param name="rectangle"></param>
         public static explicit operator Rectangle(RectangleD rectangle)
         { return Round(rectangle); }
         #endregion
@@ -1203,24 +1263,63 @@ namespace Asol.Tools.WorkScheduler.Components
     }
     #endregion
     #region Interval<TValue, TSize>
+    /// <summary>
+    /// Interval daný počátkem a koncem s danou velikostí
+    /// </summary>
+    /// <typeparam name="TValue"></typeparam>
+    /// <typeparam name="TSize"></typeparam>
     public abstract class Interval<TValue, TSize>
         where TValue : IComparable
         where TSize : IComparable
     {
+        /// <summary>
+        /// Konstruktor na základě počátku a konce
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public Interval(TValue begin, TValue end)
         {
             this.Begin = begin;
             this.End = end;
         }
+        /// <summary>
+        /// Privátní konstruktor, např. pro persistenci
+        /// </summary>
         private Interval()
         { }
+        /// <summary>
+        /// Pozice počátku
+        /// </summary>
         public TValue Begin { get; private set; }
+        /// <summary>
+        /// Pozice konce
+        /// </summary>
         public TValue End { get; private set; }
+        /// <summary>
+        /// Vzdálenost od počátku ke konci
+        /// </summary>
         public TSize Size { get { return GetSize(this.Begin, this.End); } }
 
-
+        /// <summary>
+        /// Vrátí počátek = (End - Size)
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
         protected abstract TValue GetBegin(TSize size, TValue end);
+        /// <summary>
+        /// Vrátí velikost = (End - Begin)
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
         protected abstract TSize GetSize(TValue begin, TValue end);
+        /// <summary>
+        /// Vrátí konec = (Begin + Size)
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         protected abstract TValue GetEnd(TValue begin, TSize size);
     }
     #endregion

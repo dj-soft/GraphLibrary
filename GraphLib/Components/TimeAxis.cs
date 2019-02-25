@@ -291,7 +291,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Is called after e.ToolTipData.InfoText is prepared (contain valid text).
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             base.PrepareToolTip(e);
             e.ToolTipData.TitleText = "Time informations";

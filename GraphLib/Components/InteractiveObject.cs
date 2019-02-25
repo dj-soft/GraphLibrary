@@ -399,11 +399,20 @@ namespace Asol.Tools.WorkScheduler.Components
             // this.Host.AddItemToDraw(this, repaintLayers);
 
             this.RepaintToLayers = repaintLayers;
-            if (this.HasParent)
+            if (repaintLayers.HasFlag(GInteractiveDrawLayer.Standard) && this.HasParent)
             {
-                RepaintParentMode repaintParent = this.RepaintParent;
-                if (repaintParent == RepaintParentMode.Always || (repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.A < 255))
-                    this.Parent.Repaint();       // původně Repaint(repaintLayers) : chyby v kreslení Ghost, výrazně pomalé.
+                GInteractiveDrawLayer parentStdDraw = GInteractiveDrawLayer.Standard;
+                if (this.Parent is IInteractiveItem)
+                {
+                    IInteractiveItem parentItem = this.Parent as IInteractiveItem;
+                    parentStdDraw = parentItem.StandardDrawToLayer;
+                }
+                if ((parentStdDraw & repaintLayers) != 0)
+                {
+                    RepaintParentMode repaintParent = this.RepaintParent;
+                    if (repaintParent == RepaintParentMode.Always || (repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.A < 255))
+                        this.Parent.Repaint();       // původně Repaint(repaintLayers) : chyby v kreslení Ghost, výrazně pomalé.
+                }
             }
         }
         /// <summary>
@@ -635,7 +644,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Bázová třída InteractiveObject zde nedělá nic.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e) { }
+        public virtual void PrepareToolTip(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Tato metoda je volána při každé Drag akci
         /// </summary>
@@ -1258,7 +1267,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         this.BoundsDragTarget = e.DragToRelativeBounds.Value;
                         this.DragThisOverPoint(e, e.DragToRelativeBounds.Value);
-                        this.Repaint(this.DragDrawToLayers);
+                        this.Repaint(GInteractiveDrawLayer.Interactive);            // namísto this.Repaint(this.DragDrawToLayers);   to je moc pomalé.
                     }
                     break;
                 case DragActionType.DragThisCancel:

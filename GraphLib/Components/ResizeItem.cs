@@ -97,6 +97,14 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             ((IInteractiveItem)this._InteractiveOwner).Repaint();
         }
+        /// <summary>
+        /// ToolTip nepatří prvku Resize, ale jeho vlastníkovi
+        /// </summary>
+        /// <param name="e"></param>
+        public void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            this._InteractiveOwner.PrepareToolTip(e);
+        }
         #endregion
         #region Interaktivita = změna rozměru Owner prvku
         /// <summary>
@@ -353,7 +361,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._IParent = parent;
             this._Orientation = (((side & RectangleSide.Horizontal) != 0) ? System.Windows.Forms.Orientation.Horizontal : System.Windows.Forms.Orientation.Vertical);
             this.Parent = parent;
-            this.InteractivePadding = (this._Orientation == Orientation.Horizontal ? new Padding(0, 3, 0, 3) : new Padding(3, 0, 3, 0));
         }
         /// <summary>
         /// Metoda vrací okraje pro <see cref="InteractiveObject.InteractivePadding"/> pro danou stranu <see cref="ResizeItem.Side"/>
@@ -384,19 +391,54 @@ namespace Asol.Tools.WorkScheduler.Components
         public override Rectangle Bounds
         {
             get
-            {
+            {   // Tady se určuje viditelná velikost:
                 Size parentSize = this.ParentSize;
                 int size = this.GetCurrentValue(Skin.Splitter.InactiveSize, Skin.Splitter.MouseOnParentSize, Skin.Splitter.MouseOverSize, Skin.Splitter.MouseDownSize);
+                int sizeVisible, sizeOuter, sizeInner;
+                this.DetectMaxSize(size, out sizeVisible, out sizeOuter, out sizeInner);
                 switch (this.Side)
                 {
-                    case RectangleSide.Left: return new Rectangle(0, 0, size, parentSize.Height);
-                    case RectangleSide.Right: return new Rectangle(parentSize.Width - size, 0, size, parentSize.Height);
-                    case RectangleSide.Top: return new Rectangle(0, 0, parentSize.Width, size);
-                    case RectangleSide.Bottom: return new Rectangle(0, parentSize.Height - size, parentSize.Width, size);
+                    case RectangleSide.Left: return new Rectangle(0, 0, sizeVisible, parentSize.Height);
+                    case RectangleSide.Right: return new Rectangle(parentSize.Width - sizeVisible, 0, sizeVisible, parentSize.Height);
+                    case RectangleSide.Top: return new Rectangle(0, 0, parentSize.Width, sizeVisible);
+                    case RectangleSide.Bottom: return new Rectangle(0, parentSize.Height - sizeVisible, parentSize.Width, sizeVisible);
                 }
                 return new Rectangle(0, 0, 0, 0);
             }
             set { }
+        }
+        /// <summary>
+        /// Interaktivní přesah prvku je dán orientací prvku a jeho rozměrem v aktivním směru = tak, aby např. u levého a pravého Resize prvku 
+        /// zůstal mezi nimi i prostor pro interakci pro základní prvek.
+        /// </summary>
+        public override Padding? InteractivePadding
+        {
+            get
+            {   // Tady se určuje přesah aktivní oblasti nad rámec viditelné oblasti:
+                int sizeVisible, sizeOuter, sizeInner;
+                this.DetectMaxSize(Skin.Splitter.InteractivePaddingSize, out sizeVisible, out sizeOuter, out sizeInner);
+                switch (this.Side)
+                {
+                    case RectangleSide.Left: return new Padding(sizeOuter, 0, sizeInner, 0);
+                    case RectangleSide.Right: return new Padding(sizeInner, 0, sizeOuter, 0);
+                    case RectangleSide.Top: return new Padding(0, sizeOuter, 0, sizeInner);
+                    case RectangleSide.Bottom: return new Padding(0, sizeInner, 0, sizeOuter);
+                }
+                return null;
+            }
+            set
+            { }
+        }
+        /// <summary>
+        /// Určí velikosti pro různé části prvku Resize
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="sizeVisible"></param>
+        /// <param name="sizeOuter"></param>
+        /// <param name="sizeInner"></param>
+        protected void DetectMaxSize(int size, out int sizeVisible, out int sizeOuter, out int sizeInner)
+        {
+            sizeVisible = sizeOuter = sizeInner = size;
         }
         /// <summary>
         /// Strana, kde je tento prvek kreslen
@@ -436,6 +478,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true, když parent vizuální objekt má myš
         /// </summary>
         protected bool ParentHasMouse { get { return (this._IParent.InteractiveState.HasAnyFlag(GInteractiveState.MouseOver | GInteractiveState.FlagDown)); } }
+        /// <summary>
+        /// ToolTip nepatří prvku Resize, ale jeho vlastníkovi
+        /// </summary>
+        /// <param name="e"></param>
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            this._ResizeControl.PrepareToolTip(e);
+        }
         #endregion
         #region Interaktivita = myš a Drag
         /// <summary>

@@ -575,7 +575,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDragMoveStep:
                     if (this.ActiveChild != null && this.ActiveChild.CanDrag && e.UserDragPoint.HasValue)
                     {
-                        this.Repaint(GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive);
+                        this.Repaint( /* GInteractiveDrawLayer.Standard | */ GInteractiveDrawLayer.Interactive);
                         Point currentPoint = e.UserDragPoint.Value;
                         this.CalculateNewBounds(this.ActiveChild, e.UserDragPoint.Value);
                         

@@ -1375,7 +1375,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Připraví Tooltip pro toto záhlaví
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             Localizable.TextLoc toolTip = this.ToolTipText;
             if (toolTip != null)

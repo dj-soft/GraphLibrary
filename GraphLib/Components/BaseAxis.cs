@@ -74,7 +74,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Potomek může mít jiný názor.
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
             e.ToolTipData.AnimationType = TooltipAnimationType.Instant;

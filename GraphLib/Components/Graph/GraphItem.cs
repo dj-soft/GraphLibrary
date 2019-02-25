@@ -335,7 +335,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda zajistí přípravu ToolTipu pro zdejší prvek (data) na dané pozici (position).
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             TimeRange timeRange = this._Group.Time;
             string eol = Environment.NewLine;

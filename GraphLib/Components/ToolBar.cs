@@ -2036,7 +2036,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Připraví data pro zobrazení ToolTipu. Metodu volá předek.
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             string toolTip = this.CurrentToolTip;
             if (String.IsNullOrEmpty(toolTip)) return;

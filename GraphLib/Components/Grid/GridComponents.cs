@@ -664,7 +664,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Zobrazení ToolTipu zajišťuje jádro.
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
             if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
@@ -1787,7 +1787,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Zobrazení ToolTipu zajišťuje jádro.
         /// </summary>
         /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             Cell cell = this.OwnerCell;
             Asol.Tools.WorkScheduler.Localizable.TextLoc toolTip = this.OwnerCell.ToolTip;
