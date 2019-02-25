@@ -53,6 +53,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public properties
         /// <summary>
+        /// Interaktivní objekt, který je vlastníkem tohoto kontroleru
+        /// </summary>
+        public InteractiveObject InteractiveOwner { get { return this._InteractiveOwner; } }
+        /// <summary>
         /// Strany, kde se bude nabízet možnost Resize. Výchozí hodnota je None = žádná strana, pokud není použit konstruktor s parametrem <see cref="RectangleSide"/>.
         /// </summary>
         public RectangleSide ResizeSides { get { return _ResizeSides; } set { _SetResizeSides(value); } }
@@ -96,14 +100,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Repaint()
         {
             ((IInteractiveItem)this._InteractiveOwner).Repaint();
-        }
-        /// <summary>
-        /// ToolTip nepatří prvku Resize, ale jeho vlastníkovi
-        /// </summary>
-        /// <param name="e"></param>
-        public void PrepareToolTip(GInteractiveChangeStateArgs e)
-        {
-            this._InteractiveOwner.PrepareToolTip(e);
         }
         #endregion
         #region Interaktivita = změna rozměru Owner prvku
@@ -312,7 +308,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // Má být vidět:
                 if (item == null)
                 {
-                    item = new ResizeItem(this, currentSide, this._InteractiveOwner);
+                    item = new ResizeItem(this, currentSide);
                 }
                 item.Is.Visible = true;
                 realSides |= currentSide;
@@ -352,15 +348,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="resizeControl">Kontroler Resize</param>
         /// <param name="side">Strana</param>
-        /// <param name="parent">Vizuální parent</param>
-        public ResizeItem(ResizeControl resizeControl, RectangleSide side, IInteractiveItem parent)
+        public ResizeItem(ResizeControl resizeControl, RectangleSide side)
             :base()
         {
             this._ResizeControl = resizeControl;
             this._Side = side;
-            this._IParent = parent;
             this._Orientation = (((side & RectangleSide.Horizontal) != 0) ? System.Windows.Forms.Orientation.Horizontal : System.Windows.Forms.Orientation.Vertical);
-            this.Parent = parent;
+            this.Parent = this.InteractiveOwner;
         }
         /// <summary>
         /// Metoda vrací okraje pro <see cref="InteractiveObject.InteractivePadding"/> pro danou stranu <see cref="ResizeItem.Side"/>
@@ -380,10 +374,13 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private ResizeControl _ResizeControl;
         private RectangleSide _Side;
-        private IInteractiveItem _IParent;
         private Orientation _Orientation;
         #endregion
         #region Public properties
+        /// <summary>
+        /// Interaktivní objekt, který je vlastníkem tohoto kontroleru
+        /// </summary>
+        public InteractiveObject InteractiveOwner { get { return this._ResizeControl.InteractiveOwner; } }
         /// <summary>
         /// Souřadnice prvku jsou dány v zásadě jeho parentem, a závisí na nastavení straně prvku a stavu.
         /// Souřadnice nelze setovat, nic se nezmění.
@@ -395,7 +392,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Size parentSize = this.ParentSize;
                 int size = this.GetCurrentValue(Skin.Splitter.InactiveSize, Skin.Splitter.MouseOnParentSize, Skin.Splitter.MouseOverSize, Skin.Splitter.MouseDownSize);
                 int sizeVisible, sizeOuter, sizeInner;
-                this.DetectMaxSize(size, out sizeVisible, out sizeOuter, out sizeInner);
+                this.DetectMaxSize(parentSize, size, out sizeVisible, out sizeOuter, out sizeInner);
                 switch (this.Side)
                 {
                     case RectangleSide.Left: return new Rectangle(0, 0, sizeVisible, parentSize.Height);
@@ -438,7 +435,48 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="sizeInner"></param>
         protected void DetectMaxSize(int size, out int sizeVisible, out int sizeOuter, out int sizeInner)
         {
+            this.DetectMaxSize(this.ParentSize, size, out sizeVisible, out sizeOuter, out sizeInner);
+        }
+        /// <summary>
+        /// Určí velikosti pro různé části prvku Resize
+        /// </summary>
+        /// <param name="parentSize"></param>
+        /// <param name="size"></param>
+        /// <param name="sizeVisible"></param>
+        /// <param name="sizeOuter"></param>
+        /// <param name="sizeInner"></param>
+        protected void DetectMaxSize(Size parentSize, int size, out int sizeVisible, out int sizeOuter, out int sizeInner)
+        {
             sizeVisible = sizeOuter = sizeInner = size;
+
+            // Tady jde o to, kolik pixelů z hlavního controlu může zabírat Resize prvek tak, aby něco zbylo i na hlavní prvek!
+            // Konkrétněji: mějme control o šířce 5 pixelů; kolik z těch 5 pixelů bude mít levý a pravý Resize, a kolik pixelů uprostřed necháme na samotný prvek?
+            // Z controlu musí být vždy interaktivní alspoň 3-4 pixely!
+
+            // Velikost controlu v patřičném směru: pro Horizontal (=horní a dolní Resize) bereme VÝŠKU controlu, protože právě pro výšku určujeme pixely velikosti (a naopak pro Vertical = bereme šířku):
+            int controlSize = (this.Orientation == Orientation.Horizontal ? parentSize.Height : parentSize.Width);
+            if (controlSize <= 6)
+            {   // Do 6px včetně: Resize prvky nejsou Visible, a nejsou interaktivní ve směru dovnitř controlu:
+                sizeVisible = 0;
+                sizeInner = 0;
+            }
+            else if (controlSize <= 9)
+            {   // Pro 7 až 9px včetně platí: Resize prvky jsou Visible s velikostí 1px, a nejsou interaktivní ve směru dovnitř controlu:
+                sizeVisible = 1;
+                sizeInner = 0;
+            }
+            else if (controlSize <= 12)
+            {   // Pro 8 až 12px včetně platí: Resize prvky jsou Visible s velikostí max 2px, a nejsou interaktivní ve směru dovnitř controlu:
+                sizeVisible = (size <= 2 ? size : 2);
+                sizeInner = 0;
+            }
+            else
+            {   // Pro prvek 13px a větší platí: uvnitř musí být nejméně 1/3 prostoru pro prvek samotný, okraje smí zabírat Resize buď viditelně nebo interaktivně:
+                int border = controlSize / 3;                        // Tolik z prvku může nanejvýš zabírat Resize prvek
+                sizeVisible = (size <= border ? size : border);      // Viditelný prostor pro prvek
+                border = border - sizeVisible;
+                sizeInner = (border < 3 ? border : 3);               // Interaktivní prostor dovnitř prvku nad rámec jeho viditelné části
+            }
         }
         /// <summary>
         /// Strana, kde je tento prvek kreslen
@@ -453,7 +491,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Velikost parent objektu
         /// </summary>
-        protected Size ParentSize { get { return this._IParent.Bounds.Size; } }
+        protected Size ParentSize { get { return this.InteractiveOwner.Bounds.Size; } }
         /// <summary>
         /// Při repaint this prvku provést repaint i pro parenta
         /// </summary>
@@ -477,14 +515,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje true, když parent vizuální objekt má myš
         /// </summary>
-        protected bool ParentHasMouse { get { return (this._IParent.InteractiveState.HasAnyFlag(GInteractiveState.MouseOver | GInteractiveState.FlagDown)); } }
+        protected bool ParentHasMouse { get { return (this.InteractiveOwner.InteractiveState.HasAnyFlag(GInteractiveState.MouseOver | GInteractiveState.FlagDown)); } }
         /// <summary>
         /// ToolTip nepatří prvku Resize, ale jeho vlastníkovi
         /// </summary>
         /// <param name="e"></param>
         public override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            this._ResizeControl.PrepareToolTip(e);
+            this.InteractiveOwner.PrepareToolTip(e);
         }
         #endregion
         #region Interaktivita = myš a Drag
