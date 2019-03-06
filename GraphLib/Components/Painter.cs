@@ -995,11 +995,14 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.FilledArea, out graphicSetting))
                 {
-                    Rectangle bounds = center.CreateRectangleFromCenter(size);
-                    using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, Skin.TrackBar.BackColorButton))
-                    using (GPainter.GraphicsUse(graphics, graphicSetting))
+                    if (path != null)
                     {
-                        graphics.FillPath(brush, path);
+                        Rectangle bounds = center.CreateRectangleFromCenter(size);
+                        using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, Skin.TrackBar.BackColorButton))
+                        using (GPainter.GraphicsUse(graphics, graphicSetting))
+                        {
+                            graphics.FillPath(brush, path);
+                        }
                     }
                 }
             }
@@ -1045,6 +1048,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="size"></param>
         /// <param name="pointerType"></param>
         /// <param name="pointerSide"></param>
+        /// <param name="pathPart"></param>
         /// <param name="graphicSetting"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathTrackPointer(Point center, Size size, TrackPointerType pointerType, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)

@@ -12,7 +12,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GTrackBar : InteractiveObject
     {
-        #region Konstruktor
+        #region Konstruktor a privátní proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -20,11 +20,19 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._Value = 0m;
             this._ValueTotal = new DecimalRange(0m, 1m);
-            this._Visualiser = new LinearTrackBar(System.Windows.Forms.Orientation.Horizontal);
-            this._VisualiserType = TrackBarVisualiserType.LinearHorizontal;
+            this._InactiveFrame = new System.Windows.Forms.Padding(5);
+            this._Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this._TrackPointerVisualSize = new Size(8, 15);
             this.Is.MouseMoveOver = true;
+            this.Is.MouseDragMove = true;
             this.BackColor = Skin.TrackBar.BackColorTrack;
         }
+        private Decimal _Value;
+        private DecimalRange _ValueTotal;
+        private System.Windows.Forms.Orientation _Orientation;
+        private Int32? _TickCount;
+        private Size _TrackPointerVisualSize;
+        private System.Windows.Forms.Padding _InactiveFrame;
         #endregion
         #region Data : Value, ValueTotal
         /// <summary>
@@ -34,6 +42,13 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return this._Value; }
             set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
+        }
+        /// <summary>
+        /// Obsahuje relativní hodnotu trackbaru v rozmezí 0 až 1
+        /// </summary>
+        public Decimal? ValueRelative
+        {
+            get { return (this._ValueTotal != null ? this._ValueTotal.GetRelativePositionAtValue(this._Value) : (Decimal?)null); }
         }
         /// <summary>
         /// Aktuálně zobrazená hodnota. 
@@ -66,17 +81,6 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return this._ValueTotal; }
             set { this.SetValueTotal(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
-        }
-        /// <summary>
-        /// Počet kreslených ticků.
-        /// Přesněji = počet úseků TrackBaru, oddělených Ticky.
-        /// Pokud je tedy <see cref="TickCount"/> == 2, pak je vykreslen počáteční a koncový bod TrackBaru, a mezi nimi jeden Tick, oddělující 2 úseky.
-        /// Výchozí rozsah je null = nekreslí se.
-        /// </summary>
-        public Int32? TickCount
-        {
-            get { return this._TickCount; }
-            set { this._TickCount = value; this.Repaint(); }
         }
         /// <summary>
         /// Uloží danou hodnotu do this._Value.
@@ -139,9 +143,45 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return this._ValueTotal.Align(value);
         }
-        private Decimal _Value;
-        private DecimalRange _ValueTotal;
-        private Int32? _TickCount;
+        #endregion
+        #region Public properties pro řízení vzhledu
+        /// <summary>
+        /// Orientace
+        /// </summary>
+        protected System.Windows.Forms.Orientation Orientation
+        {
+            get { return this._Orientation; }
+            set { this._Orientation = value; this.Repaint(); }
+        }
+        /// <summary>
+        /// Počet kreslených ticků.
+        /// Přesněji = počet úseků TrackBaru, oddělených Ticky.
+        /// Pokud je tedy <see cref="TickCount"/> == 2, pak je vykreslen počáteční a koncový bod TrackBaru, a mezi nimi jeden Tick, oddělující 2 úseky.
+        /// Výchozí rozsah je null = nekreslí se.
+        /// </summary>
+        public Int32? TickCount
+        {
+            get { return this._TickCount; }
+            set { this._TickCount = value; this.Repaint(); }
+        }
+        /// <summary>
+        /// Vizuální velikost prvku TrackPointer, nezávislá na orientaci.
+        /// Odpovídá fyzické velikosti při orientaci Horizontal.
+        /// </summary>
+        public Size TrackPointerVisualSize
+        {
+            get { return this._TrackPointerVisualSize; }
+            set { this._TrackPointerVisualSize = value.Max(8, 8); this.Repaint(); }
+        }
+        /// <summary>
+        /// Vnitřní neaktivní okraj (prostor mezi Bounds a prostorem, v němž je aktivní TrackBar)
+        /// </summary>
+        public System.Windows.Forms.Padding InactiveFrame
+        {
+            get { return this._InactiveFrame; }
+            set { this._InactiveFrame = value; this.Repaint(); }
+        }
+
         #endregion
         #region Volání událostí z this (ValueChanging, ValueChanged, ValueTotalChanged, DrawRequest)
         /// <summary>
@@ -238,24 +278,323 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void ChildItemsCheck()
         {
             if (this._Childs != null) return;
-            this._Childs = this.Visualiser.ChildItems;
-            // qqq;
+            this._Childs = new IInteractiveItem[0];
         }
         /// <summary>
         /// Child items
         /// </summary>
         protected IInteractiveItem[] _Childs;
         #endregion
-        #region Interaktivita a Draw
+        #region Interaktivita
         /// <summary>
-        /// Po změně interaktivního stavu
+        /// Řeší interaktivitu
         /// </summary>
         /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-            base.AfterStateChanged(e);
-            this.Visualiser.AfterStateChanged(e);
+            PartType partType = this.GetPartType(e);
+            switch (e.ChangeState)
+            {
+                case GInteractiveChangeState.MouseOver:
+                    this.MouseOver(partType, e);
+                    break;
+                case GInteractiveChangeState.LeftDown:
+                    this.LeftDown(partType, e);
+                    break;
+                case GInteractiveChangeState.LeftDragMoveBegin:
+                    this.LeftDragBegin(partType, e);
+                    break;
+                case GInteractiveChangeState.LeftDragMoveStep:
+                    this.LeftDragMove(partType, e);
+                    break;
+                case GInteractiveChangeState.LeftDragMoveDone:
+                    this.LeftDragDrop(partType, e);
+                    break;
+                case GInteractiveChangeState.MouseLeave:
+                    this.MouseLeave(partType, e);
+                    break;
+            }
         }
+        /// <summary>
+        /// Provede obsluhu MouseOver
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void MouseOver(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            this.MouseOverPoint = e.MouseAbsolutePoint;
+            if (partType != this.LastMouseOverPart)
+                this.LastMouseOverPart = partType;
+            this.Repaint();
+        }
+        /// <summary>
+        /// Provede obsluhu MouseLeave
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void MouseLeave(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            this.LastMouseOverPart = PartType.None;
+            this.MouseDragOffset = null;
+            this.MouseOverPoint = null;
+            this.Repaint();
+        }
+        /// <summary>
+        /// Provede obsluhu LeftDown
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void LeftDown(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            switch (partType)
+            {
+                case PartType.NonActive:
+                case PartType.Area:
+                    // Kliknuto do aktivní plochy, ale ne do oblasti TrackPointeru:
+                    //  => okamžitě přemístíme TrackPointeru na daný bod, a budeme očekávat Drag and Move:
+                    this.ValueDragOriginal = this.Value;
+                    this.ValueDrag = this.GetTrackValue(e);
+                    this.MouseDragOffset = new Point(0, 0);
+                    this.LastMouseOverPart = partType;
+                    this.Repaint();
+                    break;
+                case PartType.Pointer:
+                    // Kliknuto do prostoru TrackPointeru:
+                    //  => TrackPointer nikam nepřemísťujeme, určíme offset pozice myši od TrackPointeru, a počkáme jestli uživatel sám provede Drag and Move:
+                    this.ValueDragOriginal = this.Value;
+                    this.MouseDragOffset = e.MouseRelativePoint.Value.Sub(this.TrackPoint);
+                    this.Repaint();
+                    break;
+            }
+        }
+        /// <summary>
+        /// Provede obsluhu MouseDrag Begin
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void LeftDragBegin(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            this.MouseOverPoint = null;
+            this.Repaint();
+        }
+        /// <summary>
+        /// Provede obsluhu MouseDrag Move
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void LeftDragMove(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            if (!this.MouseDragOffset.HasValue || !e.MouseRelativePoint.HasValue) return;
+
+            Point dragPoint = e.MouseRelativePoint.Value.Sub(this.MouseDragOffset.Value);
+            this.ValueDrag = this.GetValueForPoint(dragPoint);
+            this.Repaint();
+        }
+        /// <summary>
+        /// Provede obsluhu MouseDrag Drop
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void LeftDragDrop(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            this.Value = this.ValueDrag;
+            this.ValueDragOriginal = null;
+            this.MouseDragOffset = null;
+            this.Repaint();
+        }
+        /// <summary>
+        /// Metoda vrátí oblast, ve které se pohybuje myš
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected virtual PartType GetPartType(GInteractiveChangeStateArgs e)
+        {
+            Point? mouseRelativePoint = e.MouseRelativePoint;              // Souřadnice myši relativně k this, tj. hodnota 0/0 znamená levý horní roh TrackBaru
+            if (!mouseRelativePoint.HasValue) return PartType.None;
+            Point mouse = mouseRelativePoint.Value;
+
+            Rectangle trackPointerBounds = this.TrackPointerActiveBounds;
+            if (trackPointerBounds.Contains(mouse)) return PartType.Pointer;
+
+            Rectangle activeBounds = this.ActiveBounds;
+            if (activeBounds.Contains(mouse)) return PartType.Area;
+
+            return PartType.NonActive;
+        }
+        /// <summary>
+        /// Metoda vrátí bod nejbližší k bodu (e.MouseRelativePoint), který leží na dráze posuvníku <see cref="TrackLine"/>.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected virtual decimal GetTrackValue(GInteractiveChangeStateArgs e)
+        {
+            Rectangle trackLine = this.TrackLine;
+            Point trackPoint = (e.MouseRelativePoint.HasValue ? e.MouseRelativePoint.Value.FitInto(trackLine) : trackLine.Location);
+            decimal value = this.GetValueForPoint(trackPoint, trackLine);
+            return value;
+        }
+        /// <summary>
+        /// Bod myši při MouseOver
+        /// </summary>
+        protected Point? MouseOverPoint { get; set; }
+        /// <summary>
+        /// Offset myši proti Pointeru při začátku Drag and Drop = (MousePoint - TrackPoint)
+        /// </summary>
+        protected Point? MouseDragOffset { get; set; }
+        /// <summary>
+        /// Bod přetahování
+        /// </summary>
+        protected Point? MouseDragPoint { get; set; }
+        /// <summary>
+        /// Část prostoru, nad nímž byla myš při posledním MouseOver
+        /// </summary>
+        protected PartType LastMouseOverPart { get; set; }
+        /// <summary>
+        /// Typ pozice v TrackBaru
+        /// </summary>
+        public enum PartType
+        {
+            /// <summary>
+            /// Mimo
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// V neaktivní oblasti
+            /// </summary>
+            NonActive,
+            /// <summary>
+            /// V aktivní oblasti mimo Pointer
+            /// </summary>
+            Area,
+            /// <summary>
+            /// V pointeru
+            /// </summary>
+            Pointer
+        }
+        #endregion
+        #region Výpočty souřadnic jednotlivých částí TrackBaru, relativně k TrackBar.Bounds, podle hodnoty Value
+        /// <summary>
+        /// Vizuální velikost prvku TrackPointer, reálná při aktuální orientaci
+        /// </summary>
+        public Size TrackPointerCurrentVisualSize
+        {
+            get
+            {
+                Size size = this._TrackPointerVisualSize;
+                return (this.Orientation == System.Windows.Forms.Orientation.Horizontal ? size : new Size(size.Height, size.Width));
+            }
+        }
+        /// <summary>
+        /// Vizuální souřadnice TrackPointu
+        /// </summary>
+        protected Rectangle TrackPointerVisualBounds
+        {
+            get
+            {
+                Point point = this.TrackPoint;
+                Size size = this.TrackPointerCurrentVisualSize;
+                return size.CreateRectangleFromCenter(point);
+            }
+        }
+        /// <summary>
+        /// Interaktivní souřadnice TrackPointu = jsou větší o 2px
+        /// </summary>
+        protected Rectangle TrackPointerActiveBounds
+        {
+            get
+            {
+                Rectangle bounds = this.TrackPointerVisualBounds;
+                return bounds.Enlarge(2);
+            }
+        }
+        /// <summary>
+        /// Přesný bod středu TrackPointu, odpovídající aktuální hodnotě TrackBaru.
+        /// Souřadnice je relativní = v souřadnicích TrackBar.Bounds.
+        /// </summary>
+        protected Point TrackPoint { get { return this.GetTrackPoint(this.ValueRelative); } }
+        /// <summary>
+        /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        protected Point GetTrackPoint(Decimal? ratio)
+        {
+            return this.GetTrackPoint(ratio, this.TrackLine);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <param name="trackLine">Souřadnice pohybu TrackPointu</param>
+        /// <returns></returns>
+        protected Point GetTrackPoint(Decimal? ratio, Rectangle trackLine)
+        {
+            decimal r = (ratio.HasValue ? (ratio.Value < 0m ? 0m : (ratio.Value > 1m ? 1m : ratio.Value)) : 0m);
+
+            switch (this.Orientation)
+            {
+                case System.Windows.Forms.Orientation.Horizontal:
+                    // Vodorovný trackbar má větší hodnoty ve směru doprava, tam kde WinForm má souřadnici X větší:
+                    decimal w = trackLine.Width;
+                    int dx = (int)(Math.Round(r * w, 0));
+                    int x = trackLine.X + dx;
+                    return new Point(x, trackLine.Y);
+                case System.Windows.Forms.Orientation.Vertical:
+                    // Svislý trackbar má větší hodnoty ve směru nahoru, tam kde WinForm má souřadnici Y menší:
+                    decimal h = trackLine.Height;
+                    int dy = (int)(Math.Round(r * h, 0));
+                    int y = trackLine.Bottom - dy;
+                    return new Point(trackLine.X, y);
+            }
+
+            return trackLine.Center();
+        }
+        /// <summary>
+        /// Obsahuje souřadnice prostoru, v němž se může pohybovat aktivní bod trackbaru <see cref="TrackPoint"/>, relativní = v souřadnicích TrackBar.Bounds.
+        /// U horizontálního TrackBaru je to vodorovná čára s Height = 0; u vertikálního je to svislá čára s Width = 0.
+        /// </summary>
+        protected Rectangle TrackLine
+        {
+            get
+            {
+                int trackSize = this.TrackPointerVisualSize.Width; // Size.Width se používá jako šířka TrackPointeru i kdyby byl na výšku (pak se použije na ose Y = jako fyzická výška)
+                int s1 = trackSize / 2;                            // Část TrackPointeru před jeho ideální polovinou
+                int s2 = trackSize - s1;                           // Část TrackPointeru za jeho ideální polovinou
+
+                Rectangle activeBounds = this.ActiveBounds;
+                Point center = activeBounds.Center();
+
+                switch (this.Orientation)
+                {
+                    case System.Windows.Forms.Orientation.Horizontal:
+                        int w = activeBounds.Width - 2 - trackSize;
+                        int x0 = activeBounds.X + 1 + s1;
+                        return new Rectangle(x0, center.Y, w, 0);
+                    case System.Windows.Forms.Orientation.Vertical:
+                        int h = activeBounds.Height - 2 - trackSize;
+                        int y0 = activeBounds.Y + 1 + s2;
+                        return new Rectangle(center.X, y0, 0, h);
+                }
+
+                return new Rectangle(center.X, center.Y, 0, 0);
+            }
+        }
+        /// <summary>
+        /// Relativní souřadnice vnitřního aktivního prostoru, relativní = vzhledem k TrackBaru.
+        /// Pokud tedy TrackBar má souřadnice { 100, 20, 200, 40 } a má <see cref="GTrackBar.InactiveFrame"/> = 4, 
+        /// pak <see cref="ActiveBounds"/> = { 104, 24, 192, 32 }.
+        /// </summary>
+        protected Rectangle ActiveBounds
+        {
+            get
+            {
+                Rectangle bounds = this.Bounds;
+                Rectangle innerBounds = new Rectangle(0, 0, bounds.Width, bounds.Height);
+                return innerBounds.Sub(this.InactiveFrame);
+            }
+        }
+        #endregion
+        #region Kreslení
         /// <summary>
         /// Vykreslí TrackBar
         /// </summary>
@@ -267,246 +606,71 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             base.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);               // Vykreslí BackColor
             e.GraphicsClipWith(absoluteVisibleBounds);
-            this.Visualiser.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);    // Vykreslí konkrétní vizualizaci
+            this.DrawTrackBar(e, absoluteBounds, absoluteVisibleBounds, drawMode);
         }
-        #endregion
-        #region Current Visualiser
         /// <summary>
-        /// Typ vizualizeru.
-        /// Nemá význam setovat hodnotu <see cref="TrackBarVisualiserType.Custom"/>, protože ta neurčuje konkrétní vizualizer 
-        /// (taková hodnota bude ignorována).
+        /// Vykreslení
         /// </summary>
-        public TrackBarVisualiserType VisualiserType
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
+        protected virtual void DrawTrackBar(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            get { return this._VisualiserType; }
-            set
+            Point absoluteOrigin = absoluteBounds.Location;
+
+            Rectangle trackBounds = this.ActiveBounds.Add(absoluteOrigin);
+            GPainter.DrawTrackTicks(e.Graphics, trackBounds, System.Windows.Forms.Orientation.Horizontal, this.TickCount);
+
+            Rectangle pointerBounds = this.TrackPointerVisualBounds.Add(absoluteOrigin);
+            Point trackPoint = this.TrackPoint.Add(absoluteOrigin);
+            Size trackSize = this.TrackPointerVisualSize;
+            GPainter.DrawTrackPointer(e.Graphics, trackPoint, trackSize, this.InteractiveState, TrackPointerType.OneSide, RectangleSide.None);
+
+            if (this.MouseOverPoint.HasValue)
             {
-                switch (value)
+                Color pointColor = (this.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.LeftDrag) ? Color.BlueViolet : Color.DimGray);
+                using (GPainter.GraphicsUseSmooth(e.Graphics))
                 {
-                    case TrackBarVisualiserType.LinearHorizontal:
-                        this.Visualiser = new LinearTrackBar(System.Windows.Forms.Orientation.Horizontal);
-                        break;
-                    case TrackBarVisualiserType.LinearVertical:
-                        this.Visualiser = new LinearTrackBar(System.Windows.Forms.Orientation.Vertical);
-                        break;
+                    e.Graphics.FillEllipse(Skin.Brush(pointColor), this.MouseOverPoint.Value.CreateRectangleFromCenter(8));
                 }
             }
+
         }
-        private TrackBarVisualiserType _VisualiserType;
-        /// <summary>
-        /// Aktuální vizualizer. 
-        /// Do této property lze nasetovat i konkrétní <see cref="TrackBarVisualiserType.Custom"/> vizualizer.
-        /// </summary>
-        public ITrackBarVisualiser Visualiser
-        {
-            get { return this._Visualiser; }
-            set
-            {
-                if (value == null) return;
-                if (this._Visualiser != null) this._Visualiser.TrackBar = null;
-                this._Visualiser = value;
-                this._VisualiserType = value.VisualiserType;
-                this._Visualiser.TrackBar = this;
-                this.ChildItemsReset();
-            }
-        }
-        private ITrackBarVisualiser _Visualiser;
+
         #endregion
-        #region Deklarace pro vizualizery : enum TrackBarVisualiserType, interface ITrackBarVisualiser
+        #region Práce s hodnotou trackbaru
         /// <summary>
-        /// Typy vizualizerů : vestavěné plus <see cref="Custom"/>
+        /// Vrací hodnotou pro daný bod a aktuální TrackLine
         /// </summary>
-        public enum TrackBarVisualiserType
+        /// <param name="point"></param>
+        /// <returns></returns>
+        protected virtual Decimal GetValueForPoint(Point point)
         {
-            /// <summary>
-            /// Vodorovný lineární
-            /// </summary>
-            LinearHorizontal,
-            /// <summary>
-            /// Svislý lineární
-            /// </summary>
-            LinearVertical,
-            /// <summary>
-            /// Externě dodaný
-            /// </summary>
-            Custom
+            return this.GetValueForPoint(point, this.TrackLine);
         }
         /// <summary>
-        /// Deklarace rozhraní pro vizualizery pro <see cref="GTrackBar"/>
+        /// Vrací hodnotou pro daný bod a danou TrackLine
         /// </summary>
-        public interface ITrackBarVisualiser
+        /// <param name="point"></param>
+        /// <param name="trackLine"></param>
+        /// <returns></returns>
+        protected virtual Decimal GetValueForPoint(Point point, Rectangle trackLine)
         {
-            /// <summary>
-            /// Vlastník = <see cref="GTrackBar"/>. Pokud je vizualizer aktivně používán, pak tato reference není null.
-            /// </summary>
-            GTrackBar TrackBar { get; set; }
-            /// <summary>
-            /// Typ vizualizeru
-            /// </summary>
-            TrackBarVisualiserType VisualiserType { get; }
-            /// <summary>
-            /// Child interaktivní prvky
-            /// </summary>
-            IInteractiveItem[] ChildItems { get; }
-            /// <summary>
-            /// Umožní vizualizeru reagovat na interaktivitu jeho trackbaru
-            /// </summary>
-            /// <param name="e"></param>
-            void AfterStateChanged(GInteractiveChangeStateArgs e);
-            /// <summary>
-            /// Zajistí vykreslení TrackBaru pomocí daného vizualizeru.
-            /// Pozadí je již vykresleno.
-            /// Pokud aktuální vizualizer využívá ChildItems prvky, pak i ty budou následně vykresleny.
-            /// Pokud ChildItems prvky pokrývají celou plochu (pak budou kresleny i ony), a nic jiného vizualizer nenabízí, pak není třeba kreslit vlastní vizualizer.
-            /// Hodnoty TrackBaru (data) si vizualizer čte přes property <see cref="TrackBar"/>.
-            /// </summary>
-            /// <param name="e"></param>
-            /// <param name="absoluteBounds"></param>
-            /// <param name="absoluteVisibleBounds"></param>
-            /// <param name="drawMode"></param>
-            void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode);
+            Decimal? ratio = ((this.Orientation == System.Windows.Forms.Orientation.Horizontal) ?
+                DecimalRange.CreateFromBeginSize(trackLine.X, trackLine.Width).GetRelativePositionAtValue(point.X) :
+                DecimalRange.CreateFromBeginSize(trackLine.Bottom, trackLine.Height).GetRelativePositionAtValue(point.Y));
+            decimal r = (ratio.HasValue ? (ratio.Value < 0m ? 0m : (ratio.Value > 1m ? 1m : ratio.Value)) : 0m);
+            return this._ValueTotal.GetValueAtRelativePosition(r);
         }
-        #endregion
-        #region LinearTrackBar : konkrétní vizualizer pro vodorovný i svislý trackbar s lineární hodnotou
         /// <summary>
-        /// LinearTrackBar : konkrétní vizualizer pro vodorovný i svislý trackbar s lineární hodnotou
+        /// Vrací bod pro danou hodnotu
         /// </summary>
-        public class LinearTrackBar : ITrackBarVisualiser
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected virtual Point GetPointForValue(Decimal value)
         {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            public LinearTrackBar()
-            {
-                this.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            }
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="orientation"></param>
-            public LinearTrackBar(System.Windows.Forms.Orientation orientation)
-            {
-                this.Orientation = orientation;
-            }
-            /// <summary>
-            /// Orientace
-            /// </summary>
-            protected System.Windows.Forms.Orientation Orientation { get; private set; }
-            /// <summary>
-            /// Reference na TrackBar
-            /// </summary>
-            protected GTrackBar TrackBar { get; set; }
-            /// <summary>
-            /// Typ vizualizeru
-            /// </summary>
-            protected TrackBarVisualiserType VisualiserType { get { return (this.Orientation == System.Windows.Forms.Orientation.Horizontal ? TrackBarVisualiserType.LinearHorizontal : TrackBarVisualiserType.LinearVertical); } }
-            /// <summary>
-            /// Child prvky
-            /// </summary>
-            protected IInteractiveItem[] ChildItems { get { return new IInteractiveItem[0]; } }
-            /// <summary>
-            /// Řeší interaktivitu
-            /// </summary>
-            /// <param name="e"></param>
-            protected void AfterStateChanged(GInteractiveChangeStateArgs e)
-            {
-                switch (e.ChangeState)
-                {
-                    case GInteractiveChangeState.MouseOver:
-                        this.MouseOverPoint = e.MouseAbsolutePoint;
-                        this.TrackBar.Repaint();
-                        break;
-                    case GInteractiveChangeState.LeftDown:
-                        break;
-                    case GInteractiveChangeState.LeftDragMoveBegin:
-                        this.TrackBar.ValueDragOriginal = this.TrackBar.Value;
-                        this.MouseOverPoint = null;
-                        this.MouseDragPoint = e.MouseAbsolutePoint;
-                        this.TrackBar.Repaint();
-                        break;
-                    case GInteractiveChangeState.LeftDragMoveStep:
-                        this.MouseDragPoint = e.MouseAbsolutePoint;
-                        if (this.MouseDragPoint.HasValue)
-                            this.TrackBar.ValueDrag = this.GetValueForPoint(this.MouseDragPoint.Value);
-                        this.TrackBar.Repaint();
-                        break;
-                    case GInteractiveChangeState.LeftDragMoveDone:
-                        this.TrackBar.ValueDragOriginal = null;
-                        this.MouseDragPoint = null;
-                        this.TrackBar.Repaint();
-                        break;
-                    case GInteractiveChangeState.MouseLeave:
-                        this.MouseOverPoint = null;
-                        this.MouseDragPoint = null;
-                        this.TrackBar.Repaint();
-                        break;
-                }
-            }
-            /// <summary>
-            /// Vrací hodnotou pro daný bod
-            /// </summary>
-            /// <param name="point"></param>
-            /// <returns></returns>
-            protected Decimal GetValueForPoint(Point point)
-            {
-                return 0m;
-            }
-            /// <summary>
-            /// Vrací bod pro danou hodnotu
-            /// </summary>
-            /// <param name="value"></param>
-            /// <returns></returns>
-            protected Point GetPointForValue(Decimal value)
-            {
-                return Point.Empty;
-            }
-            /// <summary>
-            /// Boud myši
-            /// </summary>
-            protected Point? MouseOverPoint { get; set; }
-            /// <summary>
-            /// Bod přetahování
-            /// </summary>
-            protected Point? MouseDragPoint { get; set; }
-            /// <summary>
-            /// Vykreslení
-            /// </summary>
-            /// <param name="e"></param>
-            /// <param name="absoluteBounds"></param>
-            /// <param name="absoluteVisibleBounds"></param>
-            /// <param name="drawMode"></param>
-            protected void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
-            {
-                Rectangle trackBounds = absoluteBounds.Enlarge(-6, -5, -7, -5);
-                GPainter.DrawTrackTicks(e.Graphics, trackBounds, System.Windows.Forms.Orientation.Horizontal, this.TrackBar.TickCount);
-
-                decimal value = this.TrackBar.Value;
-                DecimalRange range = this.TrackBar.ValueTotal;
-
-
-                int cy = trackBounds.Center().Y;
-
-                Point valueCenter = new Point(this.MouseDragPoint.HasValue ? this.MouseDragPoint.Value.X : (int)(trackBounds.X + trackBounds.Width / 3), cy);
-                GPainter.DrawTrackPointer(e.Graphics, valueCenter, new Size(14, 16), this.TrackBar.InteractiveState, TrackPointerType.OneSide, RectangleSide.None);
-                
-                decimal? ratio = range.GetRelativePositionAtValue(value);
-                if (this.MouseOverPoint.HasValue)
-                {
-
-                    Color pointColor = (this.TrackBar.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.LeftDrag) ? Color.BlueViolet : Color.DimGray);
-                    using (GPainter.GraphicsUseSmooth(e.Graphics))
-                    {
-                        e.Graphics.FillEllipse(Skin.Brush(pointColor), this.MouseOverPoint.Value.CreateRectangleFromCenter(8));
-                    }
-                }
-
-            }
-
-            GTrackBar ITrackBarVisualiser.TrackBar { get { return this.TrackBar; } set { this.TrackBar = value; } }
-            TrackBarVisualiserType ITrackBarVisualiser.VisualiserType { get { return this.VisualiserType; } }
-            IInteractiveItem[] ITrackBarVisualiser.ChildItems { get { return this.ChildItems; } }
-            void ITrackBarVisualiser.AfterStateChanged(GInteractiveChangeStateArgs e) { this.AfterStateChanged(e); }
-            void ITrackBarVisualiser.Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode) { this.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode); }
+            return Point.Empty;
         }
         #endregion
     }

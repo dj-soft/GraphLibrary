@@ -753,6 +753,18 @@ namespace Asol.Tools.WorkScheduler.Components
                              (one.Height < other.Height ? one.Height : other.Height));
         }
         /// <summary>
+        /// Vrátí Size, jejíž Width i Height jsou ta menší hodnota z this a max
+        /// </summary>
+        /// <param name="one"></param>
+        /// <param name="otherWidth"></param>
+        /// <param name="otherHeight"></param>
+        /// <returns></returns>
+        public static Size Min(this Size one, int otherWidth, int otherHeight)
+        {
+            return new Size((one.Width < otherWidth ? one.Width : otherWidth),
+                             (one.Height < otherHeight ? one.Height : otherHeight));
+        }
+        /// <summary>
         /// Vrátí Size, jejíž Width i Height jsou ta větší hodnota z this a max
         /// </summary>
         /// <param name="one"></param>
@@ -762,6 +774,18 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return new Size((one.Width > other.Width ? one.Width : other.Width),
                              (one.Height > other.Height ? one.Height : other.Height));
+        }
+        /// <summary>
+        /// Vrátí Size, jejíž Width i Height jsou ta větší hodnota z this a max
+        /// </summary>
+        /// <param name="one"></param>
+        /// <param name="otherWidth"></param>
+        /// <param name="otherHeight"></param>
+        /// <returns></returns>
+        public static Size Max(this Size one, int otherWidth, int otherHeight)
+        {
+            return new Size((one.Width > otherWidth ? one.Width : otherWidth),
+                             (one.Height > otherHeight ? one.Height : otherHeight));
         }
         /// <summary>
         /// Vrátí Size, jejíž Width i Height jsou zarovnány do mezí Min - Max.
@@ -2160,7 +2184,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return new SizeF(size.Height, size.Width);
         }
         #endregion
-        #region Rectangle: FitInto()
+        #region Rectangle a Point: FitInto()
         /// <summary>
         /// Zajistí, že this souřadnice budou umístěny do daného prostoru (disponibleBounds).
         /// Pokud daný prostor je menší, než velikost this, pak velikost this může být zmenšena, anebo this může přesahovat doprava/dolů, podle parametru shrinkToFit
@@ -2256,6 +2280,58 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             return new RectangleF(x, y, w, h);
+        }
+        /// <summary>
+        /// Zajistí, že this souřadnice bodu bude umístěny do daného prostoru (disponibleBounds).
+        /// Vrácený bod tedy bude nejblíže výchozímu bodu, v daném prostoru.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="disponibleBounds">Souřadnice prostoru, do něhož má být this souřadnice posunuta</param>
+        /// <returns></returns>
+        public static Point FitInto(this Point point, Rectangle disponibleBounds)
+        {
+            int dx = disponibleBounds.X;
+            int dy = disponibleBounds.Y;
+            int dw = disponibleBounds.Width;
+            int dh = disponibleBounds.Height;
+            int dr = dx + dw;
+            int db = dy + dh;
+
+            int x = point.X;
+            int y = point.Y;
+
+            if (x > dr) x = dr;
+            if (x < dx) x = dx;
+            if (y > db) y = db;
+            if (y < dy) y = dy;
+
+            return new Point(x, y);
+        }
+        /// <summary>
+        /// Zajistí, že this souřadnice bodu bude umístěny do daného prostoru (disponibleBounds).
+        /// Vrácený bod tedy bude nejblíže výchozímu bodu, v daném prostoru.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="disponibleBounds">Souřadnice prostoru, do něhož má být this souřadnice posunuta</param>
+        /// <returns></returns>
+        public static PointF FitInto(this PointF point, RectangleF disponibleBounds)
+        {
+            float dx = disponibleBounds.X;
+            float dy = disponibleBounds.Y;
+            float dw = disponibleBounds.Width;
+            float dh = disponibleBounds.Height;
+            float dr = dx + dw;
+            float db = dy + dh;
+
+            float x = point.X;
+            float y = point.Y;
+
+            if (x > dr) x = dr;
+            if (x < dx) x = dx;
+            if (y > db) y = db;
+            if (y < dy) y = dy;
+
+            return new PointF(x, y);
         }
         #endregion
         #region Padding
