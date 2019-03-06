@@ -17,13 +17,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         public TestOneComponent()
         {
             InitializeComponent();
-            this.InitGComp();
+            this.InitTrackBar();
         }
-
         private void _CloseButton_Click(object sender, EventArgs e)
         {
             this.Close();
         }
+
+        #region Testy TrackBar
+        protected void InitTrackBar()
+        {
+            this._Track1 = new GTrackBar() { Bounds = new Rectangle(50, 20, 250, 50), TickCount = 10, ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
+            this._Control.AddItem(_Track1);
+        }
+        protected GTrackBar _Track1;
+        #endregion
+
+        #region Testy GCtrlTest => ResizeControl
 
         protected void InitGComp()
         {
@@ -37,7 +47,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         protected GCtrlTest _TestV;
         protected GCtrlTest _TestH;
         protected GCtrlTest _TestB;
+        #endregion
     }
+    #region Třída Testy GCtrlTest => pro testy ResizeControl
     public class GCtrlTest : InteractiveContainer, IResizeObject
     {
         public GCtrlTest()
@@ -66,4 +78,5 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this.Parent.Repaint();
         }
     }
+    #endregion
 }
