@@ -926,6 +926,82 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region DrawTrackBar
+        public static void DrawTrackBar(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+            DrawTrackBarBackground(graphics, bounds, paintData);
+            DrawTrackBarTicks(graphics, bounds, paintData);
+            DrawTrackBarTrackLine(graphics, bounds, paintData);
+            DrawTrackBarTrackPoint(graphics, bounds, paintData);
+            DrawTrackBarMousePoint(graphics, bounds, paintData);
+        }
+        private static void DrawTrackBarBackground(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+            DrawButtonBase(graphics, bounds, paintData.BackColor, paintData.InteractiveState, paintData.Orientation, 0, null, null, true, false, Color.Empty);
+        }
+        private static void DrawTrackBarTicks(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+            switch (paintData.Orientation)
+            {
+                case Orientation.Horizontal:
+                    DrawTrackTicksHorizontal(graphics, bounds, paintData);
+                    break;
+                case Orientation.Vertical:
+                    DrawTrackTicksVertical(graphics, bounds, paintData);
+                    break;
+            }
+        }
+        private static void DrawTrackTicksHorizontal(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+            Point trackCenter = bounds.Center();
+            int x0 = bounds.X;
+            int x9 = bounds.Right - 0;
+            int y0 = bounds.Y;
+            int y1 = y0 + 2;
+            int y5 = bounds.Center().Y;
+            int y4 = y5 - 1;
+            int y6 = y5 + 1;
+            int y9 = bounds.Bottom - 0;
+            int y8 = y9 - 2;
+
+            Color colorTrack = Skin.TrackBar.LineColorTrack;
+            Color colorTick = Skin.TrackBar.LineColorTick;
+            Pen pen = Skin.Pen(colorTick);
+            if (tickCount.HasValue && tickCount.Value > 0)
+            {
+                decimal length = bounds.Width;
+                decimal step = length / (int)tickCount.Value;
+                if (step < 3m) step = 3m;
+                for (decimal tick = bounds.X; tick < x9; tick += step)
+                {
+                    int x = (int)Math.Round(tick, 0);
+                    graphics.DrawLine(pen, x, y1, x, y8);
+                }
+            }
+
+            pen = Skin.Pen(colorTick);
+            graphics.DrawLine(pen, x0, y4, x9, y4);
+            graphics.DrawLine(pen, x0, y6, x9, y6);
+
+            pen = Skin.Pen(colorTrack);
+            graphics.DrawLine(pen, x0, y0, x0, y9);
+            graphics.DrawLine(pen, x9, y0, x9, y9);
+            graphics.DrawLine(pen, x0, y5, x9, y5);
+        }
+
+
+        private static void DrawTrackBarTrackLine(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        { }
+        private static void DrawTrackBarTrackPoint(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        { }
+        private static void DrawTrackBarMousePoint(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        { }
+
+
+
+
+
+        #endregion
         #region DrawTrackTicks
         internal static void DrawTrackTicks(Graphics graphics, Rectangle bounds, Orientation orientation, int? tickNumber = null)
         {
@@ -943,13 +1019,13 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Point trackCenter = bounds.Center();
             int x0 = bounds.X;
-            int x9 = bounds.Right - 1;
+            int x9 = bounds.Right - 0;
             int y0 = bounds.Y;
             int y1 = y0 + 2;
             int y5 = bounds.Center().Y;
             int y4 = y5 - 1;
             int y6 = y5 + 1;
-            int y9 = bounds.Bottom - 1;
+            int y9 = bounds.Bottom - 0;
             int y8 = y9 - 2;
 
             Color colorTrack = Skin.TrackBar.LineColorTrack;
@@ -3485,6 +3561,100 @@ namespace Asol.Tools.WorkScheduler.Components
         bool CloseButtonVisible { get; }
         Rectangle CloseButtonBounds { get; }
         void UserDataDraw(Graphics graphics, Rectangle bounds);
+    }
+    #endregion
+    #region interface ITrackBarPaintData : Interface pro vykreslení komplexní struktury TrackBar
+    /// <summary>
+    /// interface ITrackBarPaintData : Interface pro vykreslení komplexní struktury TrackBar
+    /// </summary>
+    public interface ITrackBarPaintData
+    {
+        /// <summary>
+        /// Orientace TrackBaru
+        /// </summary>
+        System.Windows.Forms.Orientation Orientation { get; }
+        /// <summary>
+        /// Interaktivní stav
+        /// </summary>
+        GInteractiveState InteractiveState { get; }
+        /// <summary>
+        /// Základní barva pozadí
+        /// </summary>
+        Color BackColor { get; }
+
+        /// <summary>
+        /// Souřadnice, kde je tracker aktivní na myš.
+        /// Relativní k absolutní souřadnici dodané ke kreslení.
+        /// </summary>
+        Rectangle ActiveBounds { get; }
+        /// <summary>
+        /// Souřadnice, kde se vykreslují track Ticky a linky.
+        /// Relativní k absolutní souřadnici dodané ke kreslení.
+        /// </summary>
+        Rectangle TrackBounds { get; }
+        /// <summary>
+        /// Souřadnice, kde se linie trackeru (neaktivní rozměr má = 0).
+        /// Relativní k absolutní souřadnici dodané ke kreslení.
+        /// </summary>
+        Rectangle TrackLineBounds { get; }
+        /// <summary>
+        /// Souřadnice středu track pointu, leží v souřadnicích <see cref="TrackLineBounds"/>.
+        /// Relativní k absolutní souřadnici dodané ke kreslení.
+        /// </summary>
+        Point TrackPoint { get; }
+        /// <summary>
+        /// Počet vykreslovaných úseků Ticků, null = 0 = žádný.
+        /// Z hlediska logiky zadávání je počet linek ticků = (<see cref="TickCount"/> - 1).
+        /// Jde o počet úseků mezi Ticky, přičemž je nutno uvažovat i krajní linky.
+        /// Zadáme-li tedy <see cref="TickCount"/> = 10, bude vykresleno 10 úseků: linka vlevo, pak 9x úsek + tick, a na konci úsek + linka vpravo.
+        /// </summary>
+        int? TickCount { get; }
+        /// <summary>
+        /// Typ kreslených Ticků
+        /// </summary>
+        TrackBarTickType TickType { get; }
+        /// <summary>
+        /// Barva ticku
+        /// </summary>
+        Color TickColor { get; }
+
+    }
+    /// <summary>
+    /// Kterou část ticků kreslíme
+    /// </summary>
+    [Flags]
+    public enum TrackBarTickType
+    {
+        /// <summary>
+        /// Žádný tick
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Krátká část na začátku (podle orientace: Horizontal = nahoře, Vertical = vlevo)
+        /// </summary>
+        HalfBegin = 0x01,
+        /// <summary>
+        /// Krátká část na konci (podle orientace: Horizontal = dole, Vertical = vpravo)
+        /// </summary>
+        HalfEnd = 0x02,
+        /// <summary>
+        /// Obě krátké části
+        /// </summary>
+        HalfBooth = 0x03,
+        /// <summary>
+        /// Celá linie
+        /// </summary>
+        WholeLine = 0x07
+    }
+    /// <summary>
+    /// Typ linie TrackLine
+    /// </summary>
+    public enum TrackBarLineType
+    {
+        None,
+        SingleLine,
+        DoubleLine,
+        Solid
     }
     #endregion
     #region Enums

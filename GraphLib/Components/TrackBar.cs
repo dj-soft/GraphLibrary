@@ -23,6 +23,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._InactiveFrame = new System.Windows.Forms.Padding(5);
             this._Orientation = System.Windows.Forms.Orientation.Horizontal;
             this._TrackPointerVisualSize = new Size(8, 15);
+            this.ValueRoundMode = MidpointRounding.AwayFromZero;
             this.Is.MouseMoveOver = true;
             this.Is.MouseDragMove = true;
             this.BackColor = Skin.TrackBar.BackColorTrack;
@@ -92,6 +93,12 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void SetValue(Decimal value, ProcessAction actions, EventSourceType eventSource)
         {
             Decimal oldValue = this._Value;
+
+            // Pokud nyní je zdrojem akce událost ValueChange (tj. změna hodnoty je definitivní), a pokud známe ValueDragOriginal, 
+            //  pak jako oldValue bereme tuto ValueDragOriginal:
+            if (eventSource.HasAnyFlag(EventSourceType.ValueChange) && this.ValueDragOriginal.HasValue)
+                oldValue = this.ValueDragOriginal.Value;
+
             Decimal newValue = value;
             if (IsAction(actions, ProcessAction.RecalcValue))
                 newValue = this.ValueAlign(newValue);
@@ -134,21 +141,55 @@ namespace Asol.Tools.WorkScheduler.Components
             if (IsAction(actions, ProcessAction.CallDraw))
                 this.CallDrawRequest(eventSource);
         }
+        #endregion
+        #region Zarovnání a Zaokrouhlování hodnoty
         /// <summary>
         /// Zarovná hodnotu do aktuálního rozmezí
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected decimal ValueAlign(decimal value)
+        protected virtual decimal ValueAlign(decimal value)
         {
-            return this._ValueTotal.Align(value);
+            decimal valueRounded = this.ValueRound(value);
+            decimal valueAligned = this._ValueTotal.Align(valueRounded);
+            return valueAligned;
         }
+        /// <summary>
+        /// Vrací dodanou hodnotu po zaokrouhlení
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected virtual decimal ValueRound(decimal value)
+        {
+            if (this.ValueRoundDecimals.HasValue)
+                value = Math.Round(value, this.ValueRoundDecimals.Value, this.ValueRoundMode);
+            if (this.ValueRounder != null)
+                value = this.ValueRounder(value);
+            return value;
+        }
+        /// <summary>
+        /// Počet desetinných míst pro zaokrouhlování hodnoty, null = bez zaokrouhlení
+        /// </summary>
+        public int? ValueRoundDecimals { get; set; }
+        /// <summary>
+        /// Režim zaokrouhlení hodnoty
+        /// </summary>
+        public MidpointRounding ValueRoundMode { get; set; }
+        /// <summary>
+        /// Externě dodaná metoda, která zaokrouhluje hodnotu.
+        /// Metoda je volána při každé změně hodnoty.
+        /// Metoda dostává hodnotu, kterou interaktivně zadává uživatel / programově vepisuje kód.
+        /// Hodnota je po prvotním zaokrouhlení podle <see cref="ValueRoundDecimals"/> a <see cref="ValueRoundMode"/>.
+        /// Tuto hodnotu zaokrouhluje zdejší metoda <see cref="ValueRounder"/>.
+        /// Její výsledek je zarovnán do mezí <see cref="ValueTotal"/> a vložen do <see cref="Value"/> a zobrazen.
+        /// </summary>
+        public Func<decimal, decimal> ValueRounder;
         #endregion
         #region Public properties pro řízení vzhledu
         /// <summary>
         /// Orientace
         /// </summary>
-        protected System.Windows.Forms.Orientation Orientation
+        public System.Windows.Forms.Orientation Orientation
         {
             get { return this._Orientation; }
             set { this._Orientation = value; this.Repaint(); }
@@ -310,6 +351,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDragMoveDone:
                     this.LeftDragDrop(partType, e);
                     break;
+                case GInteractiveChangeState.LeftUp:
+                    this.LeftUp(partType, e);
+                    break;
                 case GInteractiveChangeState.MouseLeave:
                     this.MouseLeave(partType, e);
                     break;
@@ -346,26 +390,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected virtual void LeftDown(PartType partType, GInteractiveChangeStateArgs e)
         {
+            this.MouseOverPoint = null;
+            this.ValueDragOriginal = this.Value;
             switch (partType)
             {
                 case PartType.NonActive:
                 case PartType.Area:
                     // Kliknuto do aktivní plochy, ale ne do oblasti TrackPointeru:
                     //  => okamžitě přemístíme TrackPointeru na daný bod, a budeme očekávat Drag and Move:
-                    this.ValueDragOriginal = this.Value;
                     this.ValueDrag = this.GetTrackValue(e);
                     this.MouseDragOffset = new Point(0, 0);
-                    this.LastMouseOverPart = partType;
-                    this.Repaint();
                     break;
                 case PartType.Pointer:
                     // Kliknuto do prostoru TrackPointeru:
-                    //  => TrackPointer nikam nepřemísťujeme, určíme offset pozice myši od TrackPointeru, a počkáme jestli uživatel sám provede Drag and Move:
-                    this.ValueDragOriginal = this.Value;
+                    //  => TrackPointer nikam nepřemísťujeme, určíme jenom offset pozice myši od TrackPointeru, a počkáme jestli uživatel sám provede Drag and Move:
                     this.MouseDragOffset = e.MouseRelativePoint.Value.Sub(this.TrackPoint);
-                    this.Repaint();
                     break;
             }
+            this.LastMouseOverPart = partType;
+            this.Repaint();
         }
         /// <summary>
         /// Provede obsluhu MouseDrag Begin
@@ -400,6 +443,21 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Value = this.ValueDrag;
             this.ValueDragOriginal = null;
             this.MouseDragOffset = null;
+            this.MouseOverPoint = e.MouseAbsolutePoint;
+            this.Repaint();
+        }
+        /// <summary>
+        /// Provede obsluhu MouseUp.
+        /// Tato metoda není volaná po skončení procesu Drag and Move, pouze po LeftDown bez následného Drag.
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void LeftUp(PartType partType, GInteractiveChangeStateArgs e)
+        {
+            this.Value = this.ValueDrag;
+            this.ValueDragOriginal = null;
+            this.MouseDragOffset = null;
+            this.MouseOverPoint = e.MouseAbsolutePoint;
             this.Repaint();
         }
         /// <summary>
@@ -422,29 +480,26 @@ namespace Asol.Tools.WorkScheduler.Components
             return PartType.NonActive;
         }
         /// <summary>
-        /// Metoda vrátí bod nejbližší k bodu (e.MouseRelativePoint), který leží na dráze posuvníku <see cref="TrackLine"/>.
+        /// Metoda vrátí bod nejbližší k bodu (e.MouseRelativePoint), který leží na dráze posuvníku <see cref="TrackLineBounds"/>.
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
         protected virtual decimal GetTrackValue(GInteractiveChangeStateArgs e)
         {
-            Rectangle trackLine = this.TrackLine;
+            Rectangle trackLine = this.TrackLineBounds;
             Point trackPoint = (e.MouseRelativePoint.HasValue ? e.MouseRelativePoint.Value.FitInto(trackLine) : trackLine.Location);
             decimal value = this.GetValueForPoint(trackPoint, trackLine);
             return value;
         }
         /// <summary>
-        /// Bod myši při MouseOver
+        /// Bod myši při MouseOver. Toto je absolutní souřadnice myši.
+        /// Může posloužit pro vykreslení "stínu"
         /// </summary>
         protected Point? MouseOverPoint { get; set; }
         /// <summary>
-        /// Offset myši proti Pointeru při začátku Drag and Drop = (MousePoint - TrackPoint)
+        /// Offset myši proti Pointeru při začátku Drag and Drop (= MousePoint - TrackPoint)
         /// </summary>
         protected Point? MouseDragOffset { get; set; }
-        /// <summary>
-        /// Bod přetahování
-        /// </summary>
-        protected Point? MouseDragPoint { get; set; }
         /// <summary>
         /// Část prostoru, nad nímž byla myš při posledním MouseOver
         /// </summary>
@@ -519,7 +574,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Point GetTrackPoint(Decimal? ratio)
         {
-            return this.GetTrackPoint(ratio, this.TrackLine);
+            return this.GetTrackPoint(ratio, this.TrackLineBounds);
         }
         /// <summary>
         /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
@@ -550,10 +605,32 @@ namespace Asol.Tools.WorkScheduler.Components
             return trackLine.Center();
         }
         /// <summary>
+        /// Souřadnice vizuální části = zde se vykresluje podklad TrackBaru.
+        /// Ve směru trackbaru odpovídá <see cref="TrackLineBounds"/>, v neaktivním směru odpovídá <see cref="ActiveBounds"/>.
+        /// </summary>
+        protected Rectangle TrackBounds
+        {
+            get
+            {
+                Rectangle trackLine = this.TrackLineBounds;
+                Rectangle activeBounds = this.ActiveBounds;
+
+                switch (this.Orientation)
+                {
+                    case System.Windows.Forms.Orientation.Horizontal:
+                        return new Rectangle(trackLine.X, activeBounds.Y, trackLine.Width, activeBounds.Height);
+                    case System.Windows.Forms.Orientation.Vertical:
+                        return new Rectangle(activeBounds.X, trackLine.Y, activeBounds.Width, trackLine.Height);
+                }
+
+                return activeBounds;
+            }
+        }
+        /// <summary>
         /// Obsahuje souřadnice prostoru, v němž se může pohybovat aktivní bod trackbaru <see cref="TrackPoint"/>, relativní = v souřadnicích TrackBar.Bounds.
         /// U horizontálního TrackBaru je to vodorovná čára s Height = 0; u vertikálního je to svislá čára s Width = 0.
         /// </summary>
-        protected Rectangle TrackLine
+        protected Rectangle TrackLineBounds
         {
             get
             {
@@ -619,7 +696,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Point absoluteOrigin = absoluteBounds.Location;
 
-            Rectangle trackBounds = this.ActiveBounds.Add(absoluteOrigin);
+            Rectangle trackBounds = this.TrackBounds.Add(absoluteOrigin);
             GPainter.DrawTrackTicks(e.Graphics, trackBounds, System.Windows.Forms.Orientation.Horizontal, this.TickCount);
 
             Rectangle pointerBounds = this.TrackPointerVisualBounds.Add(absoluteOrigin);
@@ -629,15 +706,35 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (this.MouseOverPoint.HasValue)
             {
-                Color pointColor = (this.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.LeftDrag) ? Color.BlueViolet : Color.DimGray);
+                Rectangle mouseBounds = this.MouseOverPoint.Value.CreateRectangleFromCenter(8);
+                Color pointColor = Color.FromArgb(64, (this.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.LeftDrag) ? Color.BlueViolet : Color.YellowGreen));
+                GPainter.DrawRadiance(e.Graphics, this.MouseOverPoint.Value, new Size(14, 14), pointColor);
+
+                /*
                 using (GPainter.GraphicsUseSmooth(e.Graphics))
                 {
-                    e.Graphics.FillEllipse(Skin.Brush(pointColor), this.MouseOverPoint.Value.CreateRectangleFromCenter(8));
+                    e.Graphics.FillEllipse(Skin.Brush(pointColor), mouseBounds);
                 }
+                */
             }
+        }
+        /// <summary>
+        /// Třída pro předání dat o kreslení
+        /// </summary>
+        protected class PaintData : ITrackBarPaintData
+        {
+            public PaintData(GTrackBar trackBar)
+            {
+                this._TrackBar = trackBar;
+            }
+            private GTrackBar _TrackBar;
+
+
+            #region ITrackBarPaintData
+
+            #endregion
 
         }
-
         #endregion
         #region Práce s hodnotou trackbaru
         /// <summary>
@@ -647,7 +744,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected virtual Decimal GetValueForPoint(Point point)
         {
-            return this.GetValueForPoint(point, this.TrackLine);
+            return this.GetValueForPoint(point, this.TrackLineBounds);
         }
         /// <summary>
         /// Vrací hodnotou pro daný bod a danou TrackLine
