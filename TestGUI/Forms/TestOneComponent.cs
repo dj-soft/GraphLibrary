@@ -27,9 +27,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         #region Testy TrackBar
         protected void InitTrackBar()
         {
-            this._Track1 = new GTrackBar() { Bounds = new Rectangle(50, 20, 250, 50), TickCount = 10, ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
+            this._Track1 = new GTrackBar() { Bounds = new Rectangle(50, 20, 250, 50), TickCount = 20, ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
+            this._Track1.ValueChanging += _Track1_ValueChanging;
+            this._Track1.ValueChanged += _Track1_ValueChanged;
+            this._Track1.ValueRounder = TrackValueRound;
             this._Control.AddItem(_Track1);
         }
+        protected static decimal TrackValueRound(decimal value)
+        {
+            decimal r = Math.Round(value / 5m, 0);
+            return 5m * r;
+        }
+        private void _Track1_ValueChanging(object sender, GPropertyChangeArgs<decimal> e)
+        {
+            decimal value = this._Track1.Value;
+            this._Text1.Text = "ValueChanging [" + (++_Count1).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+        }
+        private int _Count1 = 0;
+        private void _Track1_ValueChanged(object sender, GPropertyChangeArgs<decimal> e)
+        {
+            decimal value = this._Track1.Value;
+            this._Text2.Text = "ValueChanged [" + (++_Count2).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+        }
+        private int _Count2 = 0;
+
         protected GTrackBar _Track1;
         #endregion
 

@@ -30,6 +30,8 @@
         {
             this._CloseButton = new System.Windows.Forms.Button();
             this._Control = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
+            this._Text1 = new System.Windows.Forms.TextBox();
+            this._Text2 = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // _CloseButton
@@ -58,17 +60,38 @@
             this._Control.TabIndex = 1;
             this._Control.Text = "_InteractiveControl";
             // 
+            // _Text1
+            // 
+            this._Text1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._Text1.Location = new System.Drawing.Point(13, 256);
+            this._Text1.Name = "_Text1";
+            this._Text1.Size = new System.Drawing.Size(275, 20);
+            this._Text1.TabIndex = 2;
+            // 
+            // _Text2
+            // 
+            this._Text2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._Text2.Location = new System.Drawing.Point(13, 282);
+            this._Text2.Name = "_Text2";
+            this._Text2.Size = new System.Drawing.Size(275, 20);
+            this._Text2.TabIndex = 3;
+            // 
             // TestOneComponent
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(536, 314);
+            this.Controls.Add(this._Text2);
+            this.Controls.Add(this._Text1);
             this.Controls.Add(this._Control);
             this.Controls.Add(this._CloseButton);
             this.MinimumSize = new System.Drawing.Size(372, 151);
             this.Name = "TestOneComponent";
             this.Text = "TestOneComponent";
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -76,5 +99,7 @@
 
         private System.Windows.Forms.Button _CloseButton;
         private Components.GInteractiveControl _Control;
+        private System.Windows.Forms.TextBox _Text1;
+        private System.Windows.Forms.TextBox _Text2;
     }
 }
