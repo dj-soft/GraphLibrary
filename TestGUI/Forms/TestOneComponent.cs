@@ -27,10 +27,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         #region Testy TrackBar
         protected void InitTrackBar()
         {
-            this._TrackH = new GTrackBar() { Bounds = new Rectangle(50, 20, 250, 47), ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
+            this._TrackH = new GTrackBar() { Bounds = new Rectangle(50, 20, 96, 25), ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
             this._TrackH.Layout.Orientation = Orientation.Horizontal;
-            this._TrackH.Layout.TickCount = 20;
-            this._TrackH.Layout.TickType = TrackBarTickType.StandardDouble;
+            this._TrackH.Layout.TickCount = 5;
+            this._TrackH.Layout.TickType = TrackBarTickType.None;
             this._TrackH.Layout.TrackLineType = TrackBarLineType.ColorBlendLine;
 
             this._TrackH.Layout.TrackLineType = TrackBarLineType.Solid;
