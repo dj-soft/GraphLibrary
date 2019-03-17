@@ -260,7 +260,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
             if (!isGhost)
-                GPainter.DrawButtonBase(e.Graphics, absoluteBounds, this.Color, this.InteractiveState, Orientation.Horizontal, this.MouseCenter, null);
+                GPainter.DrawButtonBase(e.Graphics, absoluteBounds, new DrawButtonArgs() { BackColor = this.Color, InteractiveState = this.InteractiveState, MouseTrackPoint = this.MouseCenter });
             else
                 this._DrawNative(e, absoluteBounds);
         }

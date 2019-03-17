@@ -54,7 +54,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
-            this._Track = new GTrackBar() { Bounds = new Rectangle(20, 65, 150, 30), Orientation = Orientation.Horizontal, Value = 0.333m };
+            this._Track = new GTrackBar() { Bounds = new Rectangle(20, 65, 150, 30), Value = 0.333m };
+            this._Track.Layout.Orientation = Orientation.Horizontal;
             this.GControl.AddItem(this._Track);
 
             this._TabContainer = new GTabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };

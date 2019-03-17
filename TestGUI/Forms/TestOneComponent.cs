@@ -27,31 +27,66 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         #region Testy TrackBar
         protected void InitTrackBar()
         {
-            this._Track1 = new GTrackBar() { Bounds = new Rectangle(50, 20, 250, 50), TickCount = 20, ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
-            this._Track1.ValueChanging += _Track1_ValueChanging;
-            this._Track1.ValueChanged += _Track1_ValueChanged;
-            this._Track1.ValueRounder = TrackValueRound;
-            this._Control.AddItem(_Track1);
+            this._TrackH = new GTrackBar() { Bounds = new Rectangle(50, 20, 250, 47), ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
+            this._TrackH.Layout.Orientation = Orientation.Horizontal;
+            this._TrackH.Layout.TickCount = 20;
+            this._TrackH.Layout.TickType = TrackBarTickType.StandardDouble;
+            this._TrackH.Layout.TrackLineType = TrackBarLineType.ColorBlendLine;
+
+            this._TrackH.Layout.TrackLineType = TrackBarLineType.Solid;
+            this._TrackH.Layout.TrackActiveBackColor = Color.FromArgb(240, Color.Green);
+            this._TrackH.Layout.TrackInactiveBackColor = Color.FromArgb(240, Color.LightGray);
+
+            this._TrackH.Layout.TrackPointerVisualSize = new Size(15, 15);
+            this._TrackH.Layout.TrackBackColor = Color.LightBlue;
+            this._TrackH.ValueChanging += _TrackH_ValueChanging;
+            this._TrackH.ValueChanged += _TrackH_ValueChanged;
+            this._TrackH.ValueRounder = TrackValueRound;
+            this._Control.AddItem(_TrackH);
+
+            this._TrackV = new GTrackBar() { Bounds = new Rectangle(320, 20, 47, 250), ValueTotal = new DecimalRange(0m, 100m), Value = 0m };
+            this._TrackV.Layout.Orientation = Orientation.Vertical;
+            this._TrackV.Layout.TickCount = 20;
+            this._TrackV.Layout.TickType = TrackBarTickType.StandardDouble;
+            this._TrackV.Layout.TrackLineType = TrackBarLineType.ColorBlendLine;
+            this._TrackV.Layout.TrackInactiveBackColor = Color.FromArgb(192, Color.DimGray);
+            this._TrackV.Layout.TrackPointerVisualSize = new Size(15, 15);
+            this._TrackV.Layout.TrackBackColor = Color.LightYellow;
+            this._TrackV.ValueChanging += _TrackV_ValueChanging;
+            this._TrackV.ValueChanged += _TrackV_ValueChanged;
+            this._Control.AddItem(_TrackV);
+
         }
         protected static decimal TrackValueRound(decimal value)
         {
             decimal r = Math.Round(value / 5m, 0);
             return 5m * r;
         }
-        private void _Track1_ValueChanging(object sender, GPropertyChangeArgs<decimal> e)
+        private void _TrackH_ValueChanging(object sender, GPropertyChangeArgs<decimal> e)
         {
-            decimal value = this._Track1.Value;
-            this._Text1.Text = "ValueChanging [" + (++_Count1).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+            decimal value = this._TrackH.Value;
+            this._Text1.Text = "ValueChanging H [" + (++_Count1).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+        }
+        private void _TrackV_ValueChanging(object sender, GPropertyChangeArgs<decimal> e)
+        {
+            decimal value = this._TrackV.Value;
+            this._Text1.Text = "ValueChanging V [" + (++_Count1).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
         }
         private int _Count1 = 0;
-        private void _Track1_ValueChanged(object sender, GPropertyChangeArgs<decimal> e)
+        private void _TrackH_ValueChanged(object sender, GPropertyChangeArgs<decimal> e)
         {
-            decimal value = this._Track1.Value;
-            this._Text2.Text = "ValueChanged [" + (++_Count2).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+            decimal value = this._TrackH.Value;
+            this._Text2.Text = "ValueChanged H [" + (++_Count2).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+        }
+        private void _TrackV_ValueChanged(object sender, GPropertyChangeArgs<decimal> e)
+        {
+            decimal value = this._TrackV.Value;
+            this._Text2.Text = "ValueChanged V [" + (++_Count2).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
         }
         private int _Count2 = 0;
 
-        protected GTrackBar _Track1;
+        protected GTrackBar _TrackH;
+        protected GTrackBar _TrackV;
         #endregion
 
         #region Testy GCtrlTest => ResizeControl
