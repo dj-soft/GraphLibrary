@@ -281,120 +281,91 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return true;
         }
+        /// <summary>
+        /// Vrátí danou barvu pozadí modifikovanou pro aktuální stav <see cref="GInteractiveState"/>.
+        /// Volitelně je možno tuto modifikaci korigovat parametrem ratio.
+        /// </summary>
+        /// <param name="backColor"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="ratio">Korekce množství modifikace: 0=nemodifikovat vůbec, 0.25 = modifikovat na 25% standardu, 1 (=null) = modifikovat standardně</param>
+        /// <returns></returns>
+        internal static Color ModifyColorByInteractiveState(Color backColor, GInteractiveState interactiveState, float? ratio = null)
+        {
+            return Skin.Modifiers.GetBackColorModifiedByInteractiveState(backColor, interactiveState, ratio);
+        }
+        /// <summary>
+        /// Vrátí barvu odpovídající interaktivnímu stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <param name="backColor"></param>
+        /// <param name="mouseOverColor"></param>
+        /// <param name="mouseDownColor"></param>
+        /// <param name="mouseDragColor"></param>
+        /// <param name="disabledColor"></param>
+        /// <returns></returns>
+        internal static Color GetColorByInteractiveState(GInteractiveState interactiveState, Color backColor, Color? mouseOverColor = null, Color? mouseDownColor = null, Color? mouseDragColor = null, Color? disabledColor = null)
+        {
+            Color? resultColor = null;
+
+            switch (interactiveState)
+            {
+                case GInteractiveState.Enabled:
+                    resultColor = backColor;
+                    break;
+                case GInteractiveState.Disabled:
+                    resultColor = disabledColor;
+                    break;
+                case GInteractiveState.MouseOver:
+                    resultColor = mouseOverColor;
+                    break;
+                default:
+                    if (interactiveState.HasFlag(GInteractiveState.FlagDown))
+                        resultColor = mouseDownColor;
+                    else if (interactiveState.HasFlag(GInteractiveState.FlagDrag))
+                        resultColor = mouseDragColor ?? mouseDownColor;
+                    break;
+            }
+            return (resultColor ?? backColor);
+        }
         #endregion
         #region DrawButton
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, DrawButtonArgs args)
         {
-            _DrawButtonBase(graphics, bounds, color, GInteractiveState.Enabled, orientation, 2, point, opacity, true, true, null);
+            _DrawButtonBase(graphics, bounds, args);
         }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, int roundCorner, Point? point, Int32? opacity)
-        {
-            _DrawButtonBase(graphics, bounds, color, GInteractiveState.Enabled, orientation, roundCorner, point, opacity, true, true, null);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
-        {
-            _DrawButtonBase(graphics, bounds, color, state, orientation, 2, point, opacity, true, true, null);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity)
-        {
-            _DrawButtonBase(graphics, bounds, color, state, orientation, roundCorner, point, opacity, true, true, null);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders)
-        {
-            _DrawButtonBase(graphics, bounds, color, state, orientation, roundCorner, point, opacity, drawBackground, drawBorders, null);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders, Color colorBorder)
-        {
-            _DrawButtonBase(graphics, bounds, color, state, orientation, roundCorner, point, opacity, drawBackground, drawBorders, colorBorder);
-        }
-        private static void _DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders, Color? colorBorder)
+        private static void _DrawButtonBase(Graphics graphics, Rectangle bounds, DrawButtonArgs args)
         {
             bounds = bounds.Enlarge(0, 0, -1, -1);
             if (bounds.Width <= 0 || bounds.Height <= 0) return;
-            int roundX = roundCorner;
-            int roundY = roundCorner;
+            int roundX = args.RoundCorner;
+            int roundY = args.RoundCorner;
 
-            try
+            using (GPainter.GraphicsUseSmooth(graphics))
             {
-
-                using (GPainter.GraphicsUseSmooth(graphics))
+                if (args.DrawBackground)
                 {
-                    if (drawBackground)
+                    using (GraphicsPath path = CreatePathRoundRectangle(bounds, roundX, roundY))
+                    using (Brush brush = Skin.CreateBrushForBackground(bounds, args.Orientation, args.InteractiveState, true, args.BackColor, args.Opacity, args.MouseTrackPoint))
                     {
-                        using (GraphicsPath path = CreatePathRoundRectangle(bounds, roundX, roundY))
-                        using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, true, color, opacity, point))
-                        {
-                            graphics.FillPath(brush, path);
-                        }
-                    }
-
-                    if (drawBorders)
-                    {
-                        Color borderColor = (colorBorder.HasValue ? colorBorder.Value : Skin.Button.BorderColor);
-                        Color borderColorBegin, borderColorEnd;
-                        Skin.ModifyBackColorByState(Skin.Button.BorderColor, state, true, out borderColorBegin, out borderColorEnd);
-
-                        using (GraphicsPath pathBegin = CreatePathRoundRectangle(bounds, roundX, roundY, p => (p == RelativePosition.BottomLeft || p == RelativePosition.Left || p == RelativePosition.LeftTop || p == RelativePosition.Top)))
-                        {
-                            graphics.DrawPath(Skin.Pen(borderColorBegin), pathBegin);
-                        }
-                        using (GraphicsPath pathEnd = CreatePathRoundRectangle(bounds, roundX, roundY, p => (p == RelativePosition.TopRight || p == RelativePosition.Right || p == RelativePosition.RightBottom || p == RelativePosition.Bottom)))
-                        {
-                            graphics.DrawPath(Skin.Pen(borderColorEnd), pathEnd);
-                        }
+                        graphics.FillPath(brush, path);
                     }
                 }
-            }
 
-            catch (Exception)
-            {   // Only for debug...
-                throw;
+                if (args.DrawBorders)
+                {
+                    Color borderColor = (args.BorderColor.HasValue ? args.BorderColor.Value : Skin.Button.BorderColor);
+                    Color borderColorBegin, borderColorEnd;
+                    Skin.ModifyBackColorByState(Skin.Button.BorderColor, args.InteractiveState, true, out borderColorBegin, out borderColorEnd);
+
+                    using (GraphicsPath pathBegin = CreatePathRoundRectangle(bounds, roundX, roundY, p => (p == RelativePosition.BottomLeft || p == RelativePosition.Left || p == RelativePosition.LeftTop || p == RelativePosition.Top)))
+                    {
+                        graphics.DrawPath(Skin.Pen(borderColorBegin), pathBegin);
+                    }
+                    using (GraphicsPath pathEnd = CreatePathRoundRectangle(bounds, roundX, roundY, p => (p == RelativePosition.TopRight || p == RelativePosition.Right || p == RelativePosition.RightBottom || p == RelativePosition.Bottom)))
+                    {
+                        graphics.DrawPath(Skin.Pen(borderColorEnd), pathEnd);
+                    }
+                }
             }
         }
         #endregion
@@ -520,7 +491,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
-             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
+            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -764,9 +735,9 @@ namespace Asol.Tools.WorkScheduler.Components
             Color color1 = color.Morph(Color.Black, 0.350f).SetOpacity(opacity);
             Color color2 = color.Morph(Color.White, 0.650f).SetOpacity(opacity);
             Color color3 = color.Morph(Color.Black, 0.850f).SetOpacity(opacity);
-            
+
             Rectangle boundsF = new Rectangle(x, y, w, h);
-         
+
             using (SolidBrush brush = new SolidBrush(color0))
             using (LinearGradientBrush lgb = new LinearGradientBrush(boundsF, color1, color2, 90f))
             using (GraphicsPath path = new GraphicsPath())
@@ -927,6 +898,12 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawTrackBar
+        /// <summary>
+        /// Vykreslí TrackBar
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
         public static void DrawTrackBar(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
         {
             DrawTrackBarBackground(graphics, bounds, paintData);
@@ -935,72 +912,444 @@ namespace Asol.Tools.WorkScheduler.Components
             DrawTrackBarTrackPoint(graphics, bounds, paintData);
             DrawTrackBarMousePoint(graphics, bounds, paintData);
         }
+        /// <summary>
+        /// Vykreslí pozadí.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
         private static void DrawTrackBarBackground(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
         {
-            DrawButtonBase(graphics, bounds, paintData.BackColor, paintData.InteractiveState, paintData.Orientation, 0, null, null, true, false, Color.Empty);
+            graphics.FillRectangle(Skin.Brush(paintData.BackColor), bounds);
+            Rectangle activeBounds = paintData.ActiveBounds.Add(bounds.Location);
+            Color activeColor = paintData.BackColor.Morph(Color.White, 0.08f);
+            graphics.FillRectangle(Skin.Brush(activeColor), activeBounds);
         }
+        /// <summary>
+        /// Vykreslí všechny TickLines + Begin a End bar a TrackLine pokud se kreslí stylem Line.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
+        /// <returns></returns>
         private static void DrawTrackBarTicks(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
         {
-            switch (paintData.Orientation)
+            if (paintData.TickType == TrackBarTickType.None) return;
+            var ticks = (paintData.Orientation == Orientation.Horizontal ? DrawTrackBarTicksCalculateH(paintData) : DrawTrackBarTicksCalculateV(paintData));
+            SolidBrush brush = Skin.Brush(Color.Empty);
+            Point origin = bounds.Location;
+            foreach (var tick in ticks)
             {
-                case Orientation.Horizontal:
-                    DrawTrackTicksHorizontal(graphics, bounds, paintData);
-                    break;
-                case Orientation.Vertical:
-                    DrawTrackTicksVertical(graphics, bounds, paintData);
-                    break;
+                brush.Color = tick.Item1;
+                graphics.FillRectangle(brush, tick.Item2.Add(origin));
             }
         }
-        private static void DrawTrackTicksHorizontal(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        /// <summary>
+        /// Vygeneruje všechny TickLines + Begin a End bar a TrackLine pokud se kreslí stylem Line.
+        /// Pro horizontální orientaci.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <returns></returns>
+        private static List<Tuple<Color, Rectangle>> DrawTrackBarTicksCalculateH(ITrackBarPaintData paintData)
         {
-            Point trackCenter = bounds.Center();
-            int x0 = bounds.X;
-            int x9 = bounds.Right - 0;
-            int y0 = bounds.Y;
-            int y1 = y0 + 2;
-            int y5 = bounds.Center().Y;
-            int y4 = y5 - 1;
-            int y6 = y5 + 1;
-            int y9 = bounds.Bottom - 0;
-            int y8 = y9 - 2;
+            List<Tuple<Color, Rectangle>> result = new List<Tuple<Color, Rectangle>>();
 
-            Color colorTrack = Skin.TrackBar.LineColorTrack;
-            Color colorTick = Skin.TrackBar.LineColorTick;
-            Pen pen = Skin.Pen(colorTick);
-            if (tickCount.HasValue && tickCount.Value > 0)
+            Color tickColor;
+
+            // Koordináty:
+            Rectangle bounds = paintData.TrackBounds;
+            int l0 = bounds.X;                   // Délka = ve směru osy. l0 = Begin
+            int l9 = bounds.Right;               // Délka = ve směru osy. l9 = End
+            int t0 = bounds.Y;                   // Thick = kolmo na osu. t0 = Begin
+            int t5 = bounds.Center().Y;          // Thick = kolmo na osu. t5 = Center
+            int t9 = bounds.Bottom;              // Thick = kolmo na osu. t9 = End
+            int l = bounds.Width;                // Délka = ve směru osy. l = Length
+            int t = bounds.Height;               // Thick = kolmo na osu. t = Length
+
+            // Ticky:
+            if ((paintData.TickType & TrackBarTickType.WholeLine) != 0 && paintData.TickCount.HasValue && paintData.TickCount.Value > 1)
             {
-                decimal length = bounds.Width;
-                decimal step = length / (int)tickCount.Value;
+                int trackHeight = paintData.TrackSize.Height;        // Velikost TrackPointu
+                int th = trackHeight / 2;
+                int a1 = t0 + 2;                                     // Počáteční souřadnice HalfBegin a WholeLine
+                int a2 = t5 - th - 1;                                // Koncová souřadnice HalfBegin
+                int at = a2 - a1;                                    // Velikost HalfBegin
+                int b1 = t5 + th + 1;                                // Počáteční souřadnice HalfEnd
+                int b2 = t9 - 2;                                     // Koncová souřadnice HalfEnd
+                int bt = b2 - b1;                                    // Velikost HalfEnd
+                int wt = b2 - a1;                                    // Velikost WholeLine
+
+                bool addW = (((TrackBarTickType)(paintData.TickType & TrackBarTickType.WholeLine)) == TrackBarTickType.WholeLine);
+                bool addA = (at >= 2 && !addW && ((paintData.TickType & TrackBarTickType.HalfBegin) != 0));
+                bool addB = (bt >= 2 && !addW && ((paintData.TickType & TrackBarTickType.HalfEnd) != 0));
+
+                tickColor = paintData.TickColor ?? Skin.TrackBar.LineColorTick;
+
+                decimal length = l;
+                decimal step = length / paintData.TickCount.Value;
                 if (step < 3m) step = 3m;
-                for (decimal tick = bounds.X; tick < x9; tick += step)
+                for (decimal tick = l0; tick < l9; tick += step)
                 {
-                    int x = (int)Math.Round(tick, 0);
-                    graphics.DrawLine(pen, x, y1, x, y8);
+                    int s = (int)Math.Round(tick, 0);
+
+                    if (addA)
+                        result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(s, a1, 1, at)));
+                    if (addB)
+                        result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(s, b1, 1, bt)));
+                    if (addW)
+                        result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(s, a1, 1, wt)));
                 }
             }
 
-            pen = Skin.Pen(colorTick);
-            graphics.DrawLine(pen, x0, y4, x9, y4);
-            graphics.DrawLine(pen, x0, y6, x9, y6);
+            // Krajní Bary:
+            tickColor = paintData.EndBarColor ?? Skin.TrackBar.LineColorTick;
+            if ((paintData.TickType & TrackBarTickType.BeginBar) != 0)
+            {
+                result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(l0, t0, 1, t)));
+            }
+            if ((paintData.TickType & TrackBarTickType.EndBar) != 0)
+            {
+                result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(l9, t0, 1, t)));
+            }
 
-            pen = Skin.Pen(colorTrack);
-            graphics.DrawLine(pen, x0, y0, x0, y9);
-            graphics.DrawLine(pen, x9, y0, x9, y9);
-            graphics.DrawLine(pen, x0, y5, x9, y5);
+            // TrackLine:
+            if (paintData.TrackLineType == TrackBarLineType.Line)
+            {
+                tickColor = paintData.TrackLineColor ?? Skin.TrackBar.LineColorTrack;
+                if ((paintData.TickType & TrackBarTickType.TrackLineDouble) != 0)
+                {
+                    result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(l0, t5 - 1, l, 1)));
+                    result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(l0, t5 + 1, l, 1)));
+                }
+                else if ((paintData.TickType & TrackBarTickType.TrackLineSingle) != 0)
+                {
+                    result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(l0, t5, l, 1)));
+                }
+            }
+
+            return result;
         }
+        /// <summary>
+        /// Vygeneruje všechny TickLines + Begin a End bar a TrackLine pokud se kreslí stylem Line.
+        /// Pro vertikální orientaci.
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <returns></returns>
+        private static List<Tuple<Color, Rectangle>> DrawTrackBarTicksCalculateV(ITrackBarPaintData paintData)
+        {
+            List<Tuple<Color, Rectangle>> result = new List<Tuple<Color, Rectangle>>();
 
+            Color tickColor;
 
+            // Koordináty:
+            Rectangle bounds = paintData.TrackBounds;
+            int l0 = bounds.Bottom;              // Délka = ve směru osy. l0 = Begin (=dole)
+            int l9 = bounds.Top;                 // Délka = ve směru osy. l9 = End   (=nahoře)
+            int t0 = bounds.X;                   // Thick = kolmo na osu. t0 = Begin
+            int t5 = bounds.Center().X;          // Thick = kolmo na osu. t5 = Center
+            int t9 = bounds.Right;               // Thick = kolmo na osu. t9 = End
+            int l = bounds.Height;               // Délka = ve směru osy. l = Length
+            int t = bounds.Width;                // Thick = kolmo na osu. t = Length
+
+            // Ticky:
+            if ((paintData.TickType & TrackBarTickType.WholeLine) != 0 && paintData.TickCount.HasValue && paintData.TickCount.Value > 1)
+            {
+                int trackHeight = paintData.TrackSize.Width;         // Velikost TrackPointu
+                int th = trackHeight / 2;
+                int a1 = t0 + 2;                                     // Počáteční souřadnice HalfBegin a WholeLine
+                int a2 = t5 - th - 1;                                // Koncová souřadnice HalfBegin
+                int at = a2 - a1;                                    // Velikost HalfBegin
+                int b1 = t5 + th + 1;                                // Počáteční souřadnice HalfEnd
+                int b2 = t9 - 2;                                     // Koncová souřadnice HalfEnd
+                int bt = b2 - b1;                                    // Velikost HalfEnd
+                int wt = b2 - a1;                                    // Velikost WholeLine
+
+                bool addW = (((TrackBarTickType)(paintData.TickType & TrackBarTickType.WholeLine)) == TrackBarTickType.WholeLine);
+                bool addA = (at >= 2 && !addW && ((paintData.TickType & TrackBarTickType.HalfBegin) != 0));
+                bool addB = (bt >= 2 && !addW && ((paintData.TickType & TrackBarTickType.HalfEnd) != 0));
+
+                tickColor = paintData.TickColor ?? Skin.TrackBar.LineColorTick;
+
+                decimal length = l;
+                decimal step = length / paintData.TickCount.Value;
+                if (step < 3m) step = 3m;
+                for (decimal tick = l0; tick > l9; tick -= step)     // Ticky dáváme od spodní pozice Y, jdeme nahoru (k nižší hodnotě Y)
+                {
+                    int s = (int)Math.Round(tick, 0);
+
+                    if (addA)
+                        result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(a1, s, at, 1)));
+                    if (addB)
+                        result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(b1, s, bt, 1)));
+                    if (addW)
+                        result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(a1, s, wt, 1)));
+                }
+            }
+
+            // Krajní Bary:
+            tickColor = paintData.EndBarColor ?? Skin.TrackBar.LineColorTick;
+            if ((paintData.TickType & TrackBarTickType.BeginBar) != 0)
+            {
+                result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(t0, l9, t, 1)));
+            }
+            if ((paintData.TickType & TrackBarTickType.EndBar) != 0)
+            {
+                result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(t0, l0, t, 1)));
+            }
+
+            // TrackLine:
+            if (paintData.TrackLineType == TrackBarLineType.Line)
+            {
+                tickColor = paintData.TrackLineColor ?? Skin.TrackBar.LineColorTrack;
+                if ((paintData.TickType & TrackBarTickType.TrackLineDouble) != 0)
+                {
+                    result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(t5 - 1, l9, 1, l)));
+                    result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(t5 + 1, l9, 1, l)));
+                }
+                else if ((paintData.TickType & TrackBarTickType.TrackLineSingle) != 0)
+                {
+                    result.Add(new Tuple<Color, Rectangle>(tickColor, new Rectangle(t5, l9, 1, l)));
+                }
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Vykreslí linii, po které se posunuje TrackPoint
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
         private static void DrawTrackBarTrackLine(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
-        { }
+        {
+            switch (paintData.TrackLineType)
+            {
+                case TrackBarLineType.Solid:
+                    DrawTrackBarTrackLineSolid(graphics, bounds, paintData);
+                    break;
+                case TrackBarLineType.ColorBlendLine:
+                    DrawTrackBarTrackLineColorBlend(graphics, bounds, paintData);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vykreslí linii, po které se posunuje TrackPoint, typ linky = Solid
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
+        private static void DrawTrackBarTrackLineSolid(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+            Rectangle lineBounds = paintData.TrackLineBounds;
+            List<Tuple<Color?, Rectangle>> lineParts = (paintData.Orientation == Orientation.Horizontal ?
+                DrawTrackBarLineCalculateH(paintData, 5) : DrawTrackBarLineCalculateV(paintData, 5));
+
+            Point origin = bounds.Location;
+            for (int i = 0; i < lineParts.Count; i++)
+            {
+                if (lineParts[i].Item1.HasValue)
+                {
+                    Rectangle itemBounds = lineParts[i].Item2.Add(origin);
+                    graphics.FillRectangle(Skin.Brush(lineParts[i].Item1.Value), itemBounds);
+                }
+            }
+        }
+        /// <summary>
+        /// Vykreslí linii, po které se posunuje TrackPoint, typ linky = ColorBlendLine
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
+        private static void DrawTrackBarTrackLineColorBlend(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+            Rectangle lineBounds = paintData.TrackLineBounds;
+            List<Tuple<Color?, Rectangle>> lineParts = (paintData.Orientation == Orientation.Horizontal ?
+                DrawTrackBarLineCalculateH(paintData, 7) : DrawTrackBarLineCalculateV(paintData, 7));
+
+            Point origin = bounds.Location;
+            for (int i = 0; i < lineParts.Count; i++)
+            {
+                Rectangle itemBounds = lineParts[i].Item2.Add(origin);
+                if (i == 0)
+                {   // Fill:
+                    using (var brush = DrawTrackBarTrackGetBrushColorBlend(paintData, itemBounds))
+                        graphics.FillRectangle(brush, itemBounds);
+                }
+                else if (lineParts[i].Item1.HasValue)
+                {   // Borders:
+                    graphics.FillRectangle(Skin.Brush(lineParts[i].Item1.Value), itemBounds);
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí souřadnice pro TrackLine typu Fill, orientace Horizontal
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="trackThick"></param>
+        /// <returns></returns>
+        private static List<Tuple<Color?, Rectangle>> DrawTrackBarLineCalculateH(ITrackBarPaintData paintData, int trackThick)
+        {
+            List<Tuple<Color?, Rectangle>> result = new List<Tuple<Color?, Rectangle>>();
+
+            Rectangle bounds = paintData.TrackLineBounds;
+            int tt = trackThick / 2;
+            int td = 2 * tt;
+            int l0 = bounds.X;
+            int lv = paintData.TrackPoint.X;
+            int l9 = bounds.Right + 1;
+            int l8 = l9 - 1;
+            int ls = l9 - l0;
+            int t0 = bounds.Y - tt;
+            int t1 = t0 + 1;
+            int t8 = t0 + td;
+            int t9 = t8 + 1;
+            int ts = t9 - t0;
+
+            Color backColor = paintData.TrackBackColor ?? Skin.TrackBar.BackColorTrack;
+            Color lineColor = paintData.TrackLineColor ?? Skin.TrackBar.LineColorTrack;
+            Color lineColorL = lineColor.Morph(Skin.Modifiers.Effect3DLight, 0.25f);
+            Color lineColorD = lineColor.Morph(Skin.Modifiers.Effect3DDark, 0.25f);
+
+            result.Add(new Tuple<Color?, Rectangle>(backColor, new Rectangle(l0, t0, ls, ts)));
+            result.Add(new Tuple<Color?, Rectangle>(paintData.TrackActiveBackColor, new Rectangle(l0, t0, lv - l0, ts)));
+            result.Add(new Tuple<Color?, Rectangle>(paintData.TrackInactiveBackColor, new Rectangle(lv, t0, l9 - lv, ts)));
+
+            result.Add(new Tuple<Color?, Rectangle>(lineColorD, new Rectangle(l0, t0, ls, 1)));
+            result.Add(new Tuple<Color?, Rectangle>(lineColorD, new Rectangle(l0, t1, 1, td)));
+            result.Add(new Tuple<Color?, Rectangle>(lineColorL, new Rectangle(l0, t8, ls, 1)));
+            result.Add(new Tuple<Color?, Rectangle>(lineColorL, new Rectangle(l8, t1, 1, td)));
+
+            return result;
+        }
+        /// <summary>
+        /// Vrátí souřadnice pro TrackLine typu Fill, orientace Vertical
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="trackThick"></param>
+        /// <returns></returns>
+        private static List<Tuple<Color?, Rectangle>> DrawTrackBarLineCalculateV(ITrackBarPaintData paintData, int trackThick)
+        {
+            List<Tuple<Color?, Rectangle>> result = new List<Tuple<Color?, Rectangle>>();
+
+            Rectangle bounds = paintData.TrackLineBounds;
+            int tt = trackThick / 2;
+            int td = 2 * tt;
+            int l0 = bounds.Y;
+            int lv = paintData.TrackPoint.Y;
+            int l9 = bounds.Bottom + 1;
+            int l8 = l9 - 1;
+            int ls = l9 - l0;
+            int t0 = bounds.X - tt;
+            int t1 = t0 + 1;
+            int t8 = t0 + td;
+            int t9 = t8 + 1;
+            int ts = t9 - t0;
+
+            Color backColor = paintData.TrackBackColor ?? Skin.TrackBar.BackColorTrack;
+            Color lineColor = paintData.TrackLineColor ?? Skin.TrackBar.LineColorTrack;
+            Color lineColorL = lineColor.Morph(Skin.Modifiers.Effect3DLight, 0.25f);
+            Color lineColorD = lineColor.Morph(Skin.Modifiers.Effect3DDark, 0.25f);
+
+            result.Add(new Tuple<Color?, Rectangle>(backColor, new Rectangle(t0, l0, ts, ls)));
+            result.Add(new Tuple<Color?, Rectangle>(paintData.TrackActiveBackColor, new Rectangle(t0, lv, ts, l9 - lv))); 
+            result.Add(new Tuple<Color?, Rectangle>(paintData.TrackInactiveBackColor, new Rectangle(t0, l0, ts, lv - l0)));
+
+            result.Add(new Tuple<Color?, Rectangle>(lineColorD, new Rectangle(t0, l0, 1, ls)));
+            result.Add(new Tuple<Color?, Rectangle>(lineColorD, new Rectangle(t1, l0, td, 1)));
+            result.Add(new Tuple<Color?, Rectangle>(lineColorL, new Rectangle(t8, l0, 1, ls)));
+            result.Add(new Tuple<Color?, Rectangle>(lineColorL, new Rectangle(t1, l8, td, 1)));
+
+            return result;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí Brush pro TrackLine typu ColorBlendLine
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <param name="itemBounds"></param>
+        /// <returns></returns>
+        private static System.Drawing.Drawing2D.LinearGradientBrush DrawTrackBarTrackGetBrushColorBlend(ITrackBarPaintData paintData, Rectangle itemBounds)
+        {
+            ColorBlend colorBlend = DrawTrackBarTrackGetColorBlend(paintData);
+            Color color1 = colorBlend.Colors[0];
+            Color color2 = colorBlend.Colors[colorBlend.Colors.Length - 1];
+            LinearGradientBrush brush = new LinearGradientBrush(itemBounds, color1, color2, (paintData.Orientation == Orientation.Horizontal ? 0f : 270f));
+            brush.InterpolationColors = colorBlend;
+            return brush;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí <see cref="ColorBlend"/> podle dat v <see cref="ITrackBarPaintData.ColorBlend"/>
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <returns></returns>
+        private static ColorBlend DrawTrackBarTrackGetColorBlend(ITrackBarPaintData paintData)
+        {
+            Tuple<float, Color>[] colors = ((paintData.ColorBlend != null) ? paintData.ColorBlend.ToArray() : null);
+            if (colors == null || colors.Length < 2)
+            {   // Defaultní:
+                colors = new Tuple<float, Color>[]
+                {
+                    new Tuple<float, Color>(0.00f, Color.LightGreen),
+                    new Tuple<float, Color>(0.20f, Color.LightGreen),
+                    new Tuple<float, Color>(0.35f, Color.Yellow),
+                    new Tuple<float, Color>(0.65f, Color.Yellow),
+                    new Tuple<float, Color>(0.80f, Color.Red),
+                    new Tuple<float, Color>(1.00f, Color.Red)
+                };
+            }
+
+            ColorBlend colorBlend = new ColorBlend(colors.Length);
+            colorBlend.Positions = colors.Select(c => c.Item1).ToArray();
+            colorBlend.Colors = colors.Select(c => c.Item2).ToArray();
+
+            return colorBlend;
+        }
+        /// <summary>
+        /// Vykreslí TrackPoint = ovládací jezdec TrackBaru
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
         private static void DrawTrackBarTrackPoint(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
-        { }
+        {
+            Point trackPoint = paintData.TrackPoint.Add(bounds.Location);
+            Rectangle trackPointBounds = trackPoint.CreateRectangleFromCenter(paintData.TrackSize.Height - 1);
+            Color trackBackColor = DrawTrackBarGetTrackBackColor(paintData);
+            Color trackLineColor = paintData.TrackPointLineColor ?? Skin.TrackBar.LineColorButton;
+            using (GraphicsUseSmooth(graphics))
+            {
+                if (paintData.CurrentMouseArea == TrackBarAreaType.Pointer)
+                {
+                    Rectangle trackWideBounds = new Rectangle(trackPointBounds.X - 4, trackPointBounds.Y - 4, trackPointBounds.Width + 8, trackPointBounds.Height + 8);
+                    trackWideBounds = Rectangle.Intersect(bounds, trackWideBounds);
+                    Color trackWideColor = Color.FromArgb(100, trackBackColor);
+                    graphics.FillEllipse(Skin.Brush(trackWideColor), trackWideBounds);
+                }
+                graphics.FillEllipse(Skin.Brush(trackBackColor), trackPointBounds);
+                graphics.DrawEllipse(Skin.Pen(trackLineColor), trackPointBounds);
+            }
+        }
+        /// <summary>
+        /// Vykreslí MouseOver point. Aktuálně nic nedělá
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
         private static void DrawTrackBarMousePoint(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
         { }
-
-
-
-
-
+        /// <summary>
+        /// Vrátí barvu BackColor pro TrackPoint podle dat v <see cref="ITrackBarPaintData"/> pro aktuální stav interaktivity
+        /// </summary>
+        /// <param name="paintData"></param>
+        /// <returns></returns>
+        private static Color DrawTrackBarGetTrackBackColor(ITrackBarPaintData paintData)
+        {
+            Color trackBackColor = paintData.TrackPointBackColor ?? Skin.TrackBar.BackColorButton;
+            Color? mouseOverColor = paintData.TrackPointMouseOverBackColor ?? Skin.TrackBar.BackColorMouseOverButton;
+            Color? mouseDownColor = paintData.TrackPointMouseDownBackColor?? Skin.TrackBar.BackColorMouseDownButton;
+            Color? mouseDragColor = mouseDownColor;
+            Color? disabledColor = trackBackColor.Morph(Skin.Modifiers.BackColorDisable);
+            return GetColorByInteractiveState(paintData.InteractiveState, trackBackColor, mouseOverColor, mouseDownColor, mouseDragColor, disabledColor);
+        }
         #endregion
         #region DrawTrackTicks
         internal static void DrawTrackTicks(Graphics graphics, Rectangle bounds, Orientation orientation, int? tickNumber = null)
@@ -2719,8 +3068,8 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 gp.AddLine(x0, y0, x1, y1);
         }
-    	#endregion
-    	#region RoundRectangleWithArrow
+        #endregion
+        #region RoundRectangleWithArrow
         /// <summary>
         /// Create GraphicsPath containing rounded rectangle with arrow to specific point (tooltip, label, comics, etc).
         /// </summary>
@@ -2761,7 +3110,7 @@ namespace Asol.Tools.WorkScheduler.Components
         internal static RelativePosition FindTargetRelativePosition(Point target, Rectangle bounds, int borderX, int borderY)
         {
             if (bounds.Contains(target)) return RelativePosition.Inside;
-            
+
             // Coordinates of X (left, right) and Y (top, bottom), of bounds + borders:
             int xl = bounds.Left + borderX;
             int xr = bounds.Right - 1 - borderX;
@@ -2803,7 +3152,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (dyb > 0) return RelativePosition.Bottom;     // On Bottom (dtto)
             return RelativePosition.None;
         }
-    	#endregion
+        #endregion
         #region LinearShapeType
         /// <summary>
         /// Returns an GraphicsPath with specified shape, in specified area and border.
@@ -2861,7 +3210,7 @@ namespace Asol.Tools.WorkScheduler.Components
             graphicSetting = GraphicSetting.Smooth;
             return path;
         }
-        private static GraphicsPath _CreatePathLinearShapeUpArrow(Rectangle bounds, out GraphicSetting graphicSetting) 
+        private static GraphicsPath _CreatePathLinearShapeUpArrow(Rectangle bounds, out GraphicSetting graphicSetting)
         {
             int w = (((bounds.Width + 1) / 2) - 1);         // X pixels/2     4       5       9
             int c = (((bounds.Height + 1) / 2) - 1);        // Y center       5       6      10
@@ -2873,7 +3222,7 @@ namespace Asol.Tools.WorkScheduler.Components
             graphicSetting = GraphicSetting.Smooth;
             return path;
         }
-        private static GraphicsPath _CreatePathLinearShapeRightArrow(Rectangle bounds, out GraphicSetting graphicSetting) 
+        private static GraphicsPath _CreatePathLinearShapeRightArrow(Rectangle bounds, out GraphicSetting graphicSetting)
         {
             int h = (((bounds.Height + 1) / 2) - 1);        // Y pixels/2     4       5       9
             int c = ((bounds.Width + 1) / 2);               // X center       5       6      10
@@ -2917,7 +3266,7 @@ namespace Asol.Tools.WorkScheduler.Components
             graphicSetting = GraphicSetting.Sharp;
             return path;
         }
-        private static GraphicsPath _CreatePathLinearShapeVerticalLines(Rectangle bounds, out GraphicSetting graphicSetting) 
+        private static GraphicsPath _CreatePathLinearShapeVerticalLines(Rectangle bounds, out GraphicSetting graphicSetting)
         {
             int ch = ((bounds.Width + 1) / 2);
             int h = (ch - 1);
@@ -3517,6 +3866,33 @@ namespace Asol.Tools.WorkScheduler.Components
         internal static Color InteractiveClipDragColor { get { return Color.Blue; } }
         #endregion
     }
+    #region class DrawButtonArgs : třída argumentů pro kreslení Buttonu
+    public class DrawButtonArgs
+    {
+        public DrawButtonArgs()
+        {
+            this.BackColor = Skin.Button.BackColor;
+            this.BorderColor = Skin.Button.BorderColor;
+            this.InteractiveState = GInteractiveState.Enabled;
+            this.Orientation = Orientation.Horizontal;
+            this.RoundCorner = 0;
+            this.MouseTrackPoint = null;
+            this.Opacity = null;
+            this.DrawBackground = true;
+            this.DrawBorders = true;
+        }
+        public Color BackColor { get; set; }
+        public Color? BorderColor { get; set; }
+        public GInteractiveState InteractiveState { get; set; }
+        public Orientation Orientation { get; set; }
+        public int RoundCorner { get; set; }
+        public Point? MouseTrackPoint { get; set; }
+        public Int32? Opacity { get; set; }
+        public bool DrawBackground { get; set; }
+        public bool DrawBorders { get; set; }
+
+    }
+    #endregion
     #region interface IScrollBarPaintData : Interface pro vykreslení komplexní struktury Scrollbaru
     /// <summary>
     /// Interface pro vykreslení komplexní struktury Scrollbaru
@@ -3578,30 +3954,38 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         GInteractiveState InteractiveState { get; }
         /// <summary>
+        /// Aktuální pozice myši nad trackbarem, konkrétní část
+        /// </summary>
+        TrackBarAreaType CurrentMouseArea { get; }
+        /// <summary>
         /// Základní barva pozadí
         /// </summary>
         Color BackColor { get; }
-
         /// <summary>
         /// Souřadnice, kde je tracker aktivní na myš.
         /// Relativní k absolutní souřadnici dodané ke kreslení.
         /// </summary>
         Rectangle ActiveBounds { get; }
         /// <summary>
-        /// Souřadnice, kde se vykreslují track Ticky a linky.
+        /// Souřadnice, kde se vykreslují track Ticky a linky Begin, End a TrackLine.
         /// Relativní k absolutní souřadnici dodané ke kreslení.
         /// </summary>
         Rectangle TrackBounds { get; }
         /// <summary>
-        /// Souřadnice, kde se linie trackeru (neaktivní rozměr má = 0).
+        /// Souřadnice, kde se nachází řídící linie trackeru (neaktivní rozměr má = 0).
         /// Relativní k absolutní souřadnici dodané ke kreslení.
         /// </summary>
         Rectangle TrackLineBounds { get; }
         /// <summary>
-        /// Souřadnice středu track pointu, leží v souřadnicích <see cref="TrackLineBounds"/>.
+        /// Souřadnice středu TrackPointu, leží v souřadnicích <see cref="TrackLineBounds"/>.
         /// Relativní k absolutní souřadnici dodané ke kreslení.
         /// </summary>
         Point TrackPoint { get; }
+        /// <summary>
+        /// Velikost TrackPointu (ovládací knoflík TrackBaru).
+        /// Velikost je udávána již orientovaná k aktuální <see cref="Orientation"/>, je tedy fyzická = Width je v ose X, Height je v ose Y.
+        /// </summary>
+        Size TrackSize { get; }
         /// <summary>
         /// Počet vykreslovaných úseků Ticků, null = 0 = žádný.
         /// Z hlediska logiky zadávání je počet linek ticků = (<see cref="TickCount"/> - 1).
@@ -3614,10 +3998,54 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         TrackBarTickType TickType { get; }
         /// <summary>
-        /// Barva ticku
+        /// Barva ticků
         /// </summary>
-        Color TickColor { get; }
-
+        Color? TickColor { get; }
+        /// <summary>
+        /// Barva krajních čar
+        /// </summary>
+        Color? EndBarColor { get; }
+        /// <summary>
+        /// Barva TrackLine = čáry okolo linie trackbaru
+        /// </summary>
+        Color? TrackLineColor { get; }
+        /// <summary>
+        /// Barva pozadí TrackLine, pokud je Solid
+        /// </summary>
+        Color? TrackBackColor { get; }
+        /// <summary>
+        /// Barva aktuální (=dosažené) hodnoty pozadí TrackLine, pokud je Solid
+        /// </summary>
+        Color? TrackActiveBackColor { get; }
+        /// <summary>
+        /// Barva aktuální (=od dosažené do nejvyšší) hodnoty pozadí TrackLine, pokud je Solid
+        /// </summary>
+        Color? TrackInactiveBackColor { get; }
+        /// <summary>
+        /// Barva pozadí TrackPointu = ukazatele
+        /// </summary>
+        Color? TrackPointBackColor { get; }
+        /// <summary>
+        /// Barva pozadí TrackPointu = ukazatele, ve stavu MouseOver
+        /// </summary>
+        Color? TrackPointMouseOverBackColor { get; }
+        /// <summary>
+        /// Barva pozadí TrackPointu = ukazatele, ve stavu MouseOver
+        /// </summary>
+        Color? TrackPointMouseDownBackColor { get; }
+        /// <summary>
+        /// Barva linky TrackPointu = ukazatele
+        /// </summary>
+        Color? TrackPointLineColor { get; }
+        /// <summary>
+        /// Typ track line
+        /// </summary>
+        TrackBarLineType TrackLineType { get; }
+        /// <summary>
+        /// Barvy použité pro TrackLine typu <see cref="TrackBarLineType.ColorBlendLine"/>.
+        /// Pokud je null, pak takový TrackLine bude mít defaultní barevný přechod.
+        /// </summary>
+        IEnumerable<Tuple<float, Color>> ColorBlend { get; }
     }
     /// <summary>
     /// Kterou část ticků kreslíme
@@ -3630,31 +4058,89 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         None = 0,
         /// <summary>
-        /// Krátká část na začátku (podle orientace: Horizontal = nahoře, Vertical = vlevo)
+        /// Krátká část Ticku na začátku (podle orientace: Horizontal = nahoře, Vertical = vlevo)
         /// </summary>
-        HalfBegin = 0x01,
+        HalfBegin = 0x0001,
         /// <summary>
-        /// Krátká část na konci (podle orientace: Horizontal = dole, Vertical = vpravo)
+        /// Krátká část Ticku na konci (podle orientace: Horizontal = dole, Vertical = vpravo)
         /// </summary>
-        HalfEnd = 0x02,
+        HalfEnd = 0x0002,
         /// <summary>
-        /// Obě krátké části
+        /// Obě krátké části Ticku 
         /// </summary>
-        HalfBooth = 0x03,
+        HalfBooth = 0x0003,
         /// <summary>
-        /// Celá linie
+        /// Celá linie Ticku 
         /// </summary>
-        WholeLine = 0x07
+        WholeLine = 0x0007,
+        /// <summary>
+        /// Počáteční linie (kolmá u hodnoty Begin)
+        /// </summary>
+        BeginBar = 0x0010,
+        /// <summary>
+        /// Koncová linie (kolmá u hodnoty End)
+        /// </summary>
+        EndBar = 0x0020,
+        /// <summary>
+        /// Průběžná linka jednoduchá
+        /// </summary>
+        TrackLineSingle = 0x0100,
+        /// <summary>
+        /// Průběžná linka dvojitá
+        /// </summary>
+        TrackLineDouble = 0x0200,
+        /// <summary>
+        /// Standardní = HalfBooth | BeginBar | EndBar | TrackLineSingle
+        /// </summary>
+        Standard = HalfBooth | BeginBar | EndBar | TrackLineSingle,
+        /// <summary>
+        /// Standardní s dvojitou linií = HalfBooth | BeginBar | EndBar | TrackLineDouble
+        /// </summary>
+        StandardDouble = HalfBooth | BeginBar | EndBar | TrackLineDouble
     }
     /// <summary>
-    /// Typ linie TrackLine
+    /// Typ kreslení linie TrackLine
     /// </summary>
     public enum TrackBarLineType
     {
-        None,
-        SingleLine,
-        DoubleLine,
-        Solid
+        /// <summary>
+        /// Bez linie
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Jednoduchá nebo dvojitá liniie bez výplně
+        /// </summary>
+        Line,
+        /// <summary>
+        /// Linka s barevnou výplní
+        /// </summary>
+        Solid,
+        /// <summary>
+        /// Linka s barevně proměnlivou výplní
+        /// </summary>
+        ColorBlendLine
+    }
+    /// <summary>
+    /// Typ pozice v TrackBaru
+    /// </summary>
+    public enum TrackBarAreaType
+    {
+        /// <summary>
+        /// Mimo
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// V neaktivní oblasti
+        /// </summary>
+        NonActive,
+        /// <summary>
+        /// V aktivní oblasti mimo Pointer
+        /// </summary>
+        Area,
+        /// <summary>
+        /// V pointeru
+        /// </summary>
+        Pointer
     }
     #endregion
     #region Enums

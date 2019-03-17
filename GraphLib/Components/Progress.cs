@@ -139,7 +139,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             int progressHeight = Application.App.Zoom.ZoomDistance(21);
             Rectangle progBounds = new Rectangle(x + 15, b - progressHeight - 10, w - 30, progressHeight);
-            GPainter.DrawButtonBase(graphics, progBounds, this.DataProgressBackColor, System.Windows.Forms.Orientation.Horizontal, null, null);
+            GPainter.DrawButtonBase(graphics, progBounds, new DrawButtonArgs() { BackColor = this.DataProgressBackColor });
 
             int progressWidth = this.GetDataProgressWidth(progBounds.Width - 4);
             Rectangle dataBounds = new Rectangle(progBounds.X + 2, progBounds.Y + 2, progressWidth, progBounds.Height - 4);

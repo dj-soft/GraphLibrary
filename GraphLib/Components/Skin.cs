@@ -916,6 +916,42 @@ namespace Asol.Tools.WorkScheduler.Components
 
         #endregion
         #region Servis
+        /// <summary>
+        /// Vrátí danou barvu pozadí modifikovanou pro aktuální stav <see cref="GInteractiveState"/>.
+        /// Volitelně je možno tuto modifikaci korigovat parametrem ratio.
+        /// </summary>
+        /// <param name="backColor"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="ratio">Korekce množství modifikace: 0=nemodifikovat vůbec, 0.25 = modifikovat na 25% standardu, 1 (=null) = modifikovat standardně</param>
+        /// <returns></returns>
+        public Color GetBackColorModifiedByInteractiveState(Color backColor, GInteractiveState interactiveState, float? ratio = null)
+        {
+            Color? modifierColor = null;
+            switch (interactiveState)
+            {
+                case GInteractiveState.Enabled:
+                    return backColor;
+                case GInteractiveState.Disabled:
+                    modifierColor = BackColorDisable;
+                    break;
+                case GInteractiveState.MouseOver:
+                    modifierColor = BackColorHotBegin;
+                    break;
+                default:
+                    if (interactiveState.HasFlag(GInteractiveState.FlagDown))
+                        modifierColor = BackColorDownBegin;
+                    else if (interactiveState.HasFlag(GInteractiveState.FlagDrag))
+                        modifierColor = BackColorDragBegin;
+                    break;
+            }
+            if (modifierColor == null) return backColor;
+            float modifierRatio = ((float)modifierColor.Value.A / 255f);
+            if (ratio.HasValue)
+                modifierRatio = ratio.Value * modifierRatio;
+
+            backColor = backColor.Morph(modifierColor.Value, modifierRatio);
+            return backColor;
+        }
         public Color GetColor3DBorderLight(Color borderColor)
         {
             return borderColor.Morph(this.Effect3DLight, this.Effect3DBorderRatio);
@@ -1248,6 +1284,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color LineColorTrack { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTrack", DefaultLineColorTrack); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTrack", value); } }
         public Color LineColorTick { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTick", DefaultLineColorTick); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTick", value); } }
         public Color BackColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButton", value); } }
+        public Color BackColorMouseOverButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorMouseOverButton", DefaultBackColorMouseOverButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorMouseOverButton", value); } }
+        public Color BackColorMouseDownButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorMouseDownButton", DefaultBackColorMouseDownButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorMouseDownButton", value); } }
         public Color LineColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorButton", DefaultLineColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorButton", value); } }
         #endregion
         #region Default colors
@@ -1255,6 +1293,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultLineColorTrack { get { return Color.FromArgb(255, 64, 64, 64); } }
         protected virtual Color DefaultLineColorTick { get { return Color.FromArgb(255, 160, 160, 168); } }
         protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 224, 224, 240); } }
+        protected virtual Color DefaultBackColorMouseOverButton { get { return Color.FromArgb(255, 232, 232, 224); } }
+        protected virtual Color DefaultBackColorMouseDownButton { get { return Color.FromArgb(255, 200, 200, 180); } }
         protected virtual Color DefaultLineColorButton { get { return Color.FromArgb(255, 80, 80, 96); } }
         #endregion
     }

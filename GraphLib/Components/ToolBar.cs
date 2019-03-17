@@ -1884,7 +1884,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (drawBackground || drawBorders)
             {
                 Color backColor = (!isSelected ? Skin.ToolBar.ItemBackColor : Skin.ToolBar.ItemSelectedBackColor);
-                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, backColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, roundCorner, null, null, drawBackground, drawBorders, Skin.ToolBar.ItemBorderColor);
+                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, new DrawButtonArgs() { BackColor = backColor, InteractiveState = this.InteractiveState, RoundCorner = roundCorner, DrawBackground = drawBackground, DrawBorders = drawBorders, BorderColor = Skin.ToolBar.ItemBorderColor });
             }
         }
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
