@@ -682,6 +682,10 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPainter.DrawTrackBar(e.Graphics, absoluteBounds, this.Layout);
         }
+        protected void PaintTextData(Graphics graphics, Rectangle absoluteBounds)
+        {
+            // GPainter.DrawString(graphics, absoluteBounds, "TRACKER", Skin.Brush(Color.Black), FontInfo.DefaultBold, ContentAlignment.BottomCenter);
+        }
         /// <summary>
         /// Třída pro předání dat o Layoutu do kreslení
         /// </summary>
@@ -808,6 +812,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Color? ITrackBarPaintData.TrackPointMouseDownBackColor { get { return this.TrackPointMouseDownBackColor; } }
             TrackBarLineType ITrackBarPaintData.TrackLineType { get { return this.TrackLineType; } }
             IEnumerable<Tuple<float, Color>> ITrackBarPaintData.ColorBlend { get { return this.ColorBlend; } }
+            void ITrackBarPaintData.PaintTextData(Graphics graphics, Rectangle absoluteBounds) { this._TrackBar.PaintTextData(graphics, absoluteBounds); }
             #endregion
 
         }

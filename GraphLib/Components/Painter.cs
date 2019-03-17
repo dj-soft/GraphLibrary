@@ -909,6 +909,7 @@ namespace Asol.Tools.WorkScheduler.Components
             DrawTrackBarBackground(graphics, bounds, paintData);
             DrawTrackBarTicks(graphics, bounds, paintData);
             DrawTrackBarTrackLine(graphics, bounds, paintData);
+            DrawTrackBarTrackData(graphics, bounds, paintData);
             DrawTrackBarTrackPoint(graphics, bounds, paintData);
             DrawTrackBarMousePoint(graphics, bounds, paintData);
         }
@@ -1302,6 +1303,16 @@ namespace Asol.Tools.WorkScheduler.Components
             colorBlend.Colors = colors.Select(c => c.Item2).ToArray();
 
             return colorBlend;
+        }
+        /// <summary>
+        /// Vykreslí TrackData = user draw
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="paintData"></param>
+        private static void DrawTrackBarTrackData(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
+        {
+             paintData.PaintTextData(graphics, bounds);
         }
         /// <summary>
         /// Vykreslí TrackPoint = ovládací jezdec TrackBaru
@@ -4046,6 +4057,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je null, pak takový TrackLine bude mít defaultní barevný přechod.
         /// </summary>
         IEnumerable<Tuple<float, Color>> ColorBlend { get; }
+        /// <summary>
+        /// Tuto metodu volá kreslící algoritmus po vykreslení backgroundu a ticků a TrackLine, před kreslením TrackPointu
+        /// </summary>
+        void PaintTextData(Graphics graphics, Rectangle absoluteBounds);
     }
     /// <summary>
     /// Kterou část ticků kreslíme
