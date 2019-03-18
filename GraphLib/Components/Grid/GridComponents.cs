@@ -1379,7 +1379,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             : base()
         {
             this._OwnerRow = row;
-            this._RowSplitterInit();
+            this.DragDrawInit();
+            this.RowSplitterInit();
         }
         private Row _OwnerRow;
         /// <summary>
@@ -1444,7 +1445,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Splitter je připraven vždy, i když se aktuálně nepoužívá.
         /// To proto, že uživatel (tj. aplikační kód) může změnit názor, a pak bude pozdě provádět inicializaci.
         /// </summary>
-        protected void _RowSplitterInit()
+        protected void RowSplitterInit()
         {
             this._RowSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._RowSplitter.ValueSilent = this.Bounds.Right;
@@ -1510,6 +1511,63 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             return (this.OwnerTable.AllowRowReorder || this.OwnerTable.AllowRowDragMove);
         }
         #endregion
+        #region Drag and Move
+        /// <summary>
+        /// Nastaví parametry pro kreslení objektu v režimu Drag and Move
+        /// </summary>
+        protected void DragDrawInit()
+        {
+            this.Is.DrawDragMoveGhostStandard = false;
+            this.Is.DrawDragMoveGhostInteractive = true;
+        }
+        protected override void DragThisStart(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            base.DragThisStart(e, targetRelativeBounds);
+
+            var columns = this.OwnerGTable.Columns;
+            this.DragCurrentContent = new TableText();
+            TableRowText titleRow = new TableRowText();
+            titleRow.Font = FontInfo.DefaultBold;
+            foreach (var column in columns)
+            {
+                TableOneText textCell = new TableOneText(column.Title, ContentAlignment.MiddleCenter, column.ColumnHeader.Bounds.Width);
+                titleRow.Cells.Add(textCell);
+            }
+            this.DragCurrentContent.Rows.Add(titleRow);
+
+            Row row = this.OwnerRow;
+            TableRowText textRow = new TableRowText();
+            foreach (var column in columns)
+            {
+                Cell dataCell = row[column];
+                TableOneText textCell = new TableOneText(dataCell.Text, column.Alignment, null);
+                textRow.Cells.Add(textCell);
+            }
+            this.DragCurrentContent.Rows.Add(textRow);
+
+        }
+        protected override void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            base.DragThisOverPoint(e, targetRelativeBounds);
+            this.DragCurrentPointAbsolute = e.MouseCurrentAbsolutePoint;
+        }
+        protected override void DragThisDropToPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            // base.DragThisDropToPoint(e, targetRelativeBounds);
+        }
+        protected void DrawDragMoveInteractive(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            if (this.DragCurrentContent == null) return;
+            if (!this.DragCurrentContent.CurrentSize.HasValue) this.DragCurrentContent.TextMeasure(e.Graphics, false);
+
+            Point point = (this.DragCurrentPointAbsolute.HasValue ? this.DragCurrentPointAbsolute.Value : Control.MousePosition);
+            Rectangle bounds = new Rectangle(point.X - 15, point.Y + 10, 250, 80);
+            e.Graphics.FillRectangle(Skin.Brush(Color.FromArgb(160, 180, 240, 180)), bounds);
+
+        }
+        protected TableText DragCurrentContent;
+        protected Point? DragCurrentPointAbsolute;
+        #endregion
         #region Draw - kreslení záhlaví řádku
         /// <summary>
         /// Vykreslí obsah záhlaví řádku
@@ -1520,11 +1578,18 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
-            this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
-            this.DrawMouseHot(e, boundsAbsolute, opacity);
-            this.DrawSelectedRow(e, boundsAbsolute, opacity);
-            this.DrawDebugBorder(e, boundsAbsolute, opacity);
+            if (e.DrawLayer == GInteractiveDrawLayer.Interactive)
+            {
+                this.DrawDragMoveInteractive(e, boundsAbsolute, drawAsGhost, opacity);
+            }
+            else
+            {
+                base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+                this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
+                this.DrawMouseHot(e, boundsAbsolute, opacity);
+                this.DrawSelectedRow(e, boundsAbsolute, opacity);
+                this.DrawDebugBorder(e, boundsAbsolute, opacity);
+            }
         }
         /// <summary>
         /// Vykreslí jen pozadí

@@ -1877,7 +1877,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             public static DragMoveRowsInfo CreateForProperties(MainDataTable table, GuiGridProperties properties)
             {
                 if (properties == null) return DragMoveRowsInfo.Empty;
-
                 return CreateForData(table, properties.RowDragMoveToTarget);
             }
             /// <summary>
