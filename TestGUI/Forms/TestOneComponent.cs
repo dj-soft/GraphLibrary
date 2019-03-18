@@ -18,6 +18,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         {
             InitializeComponent();
             this.InitTrackBar();
+            Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
         }
         private void _CloseButton_Click(object sender, EventArgs e)
         {
@@ -43,6 +44,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this._TrackH.ValueChanged += _TrackH_ValueChanged;
             this._TrackH.ValueRounder = TrackValueRound;
             this._Control.AddItem(_TrackH);
+            PrepareToolTipFor(this._TrackH);
 
             this._TrackV = new GTrackBar() { Bounds = new Rectangle(320, 20, 47, 250), ValueTotal = new DecimalRange(0m, 100m), Value = 0m };
             this._TrackV.Layout.Orientation = Orientation.Vertical;
@@ -55,7 +57,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this._TrackV.ValueChanging += _TrackV_ValueChanging;
             this._TrackV.ValueChanged += _TrackV_ValueChanged;
             this._Control.AddItem(_TrackV);
-
+            PrepareToolTipFor(this._TrackV);
         }
         protected static decimal TrackValueRound(decimal value)
         {
@@ -65,26 +67,37 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         private void _TrackH_ValueChanging(object sender, GPropertyChangeArgs<decimal> e)
         {
             decimal value = this._TrackH.Value;
-            this._Text1.Text = "ValueChanging H [" + (++_Count1).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+            string text = Math.Round(value, 2).ToString("0.00");
+            this._Text1.Text = "ValueChanging H [" + (++_Count1).ToString() + "] = " + text;
+            PrepareToolTipFor(this._TrackH);
         }
         private void _TrackV_ValueChanging(object sender, GPropertyChangeArgs<decimal> e)
         {
             decimal value = this._TrackV.Value;
             this._Text1.Text = "ValueChanging V [" + (++_Count1).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+            PrepareToolTipFor(this._TrackV);
         }
         private int _Count1 = 0;
         private void _TrackH_ValueChanged(object sender, GPropertyChangeArgs<decimal> e)
         {
             decimal value = this._TrackH.Value;
             this._Text2.Text = "ValueChanged H [" + (++_Count2).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+            PrepareToolTipFor(this._TrackH);
         }
         private void _TrackV_ValueChanged(object sender, GPropertyChangeArgs<decimal> e)
         {
             decimal value = this._TrackV.Value;
             this._Text2.Text = "ValueChanged V [" + (++_Count2).ToString() + "] = " + Math.Round(value, 2).ToString("0.00");
+            PrepareToolTipFor(this._TrackV);
         }
         private int _Count2 = 0;
-
+        private static void PrepareToolTipFor(GTrackBar trackBar)
+        {
+            decimal value = trackBar.Value;
+            string text = Math.Round(value, 2).ToString("0.00");
+            trackBar.ToolTipTitle = text + " mm";
+            trackBar.ToolTipText = "Aktuální hodnota TrackBaru";
+        }
         protected GTrackBar _TrackH;
         protected GTrackBar _TrackV;
         #endregion
