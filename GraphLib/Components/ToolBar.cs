@@ -359,7 +359,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public ComponentSize ToolbarSize 
         {
             get { return this._ToolbarSize; }
-            set { this.SetToolbarSize(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); ; }
+            set { this.SetToolbarSize(value, ProcessAction.ChangeAll, EventSourceType.ValueChange | EventSourceType.ApplicationCode); ; }
         }
         /// <summary>
         /// Nastaví velikost toolbaru a zajistí návazné akce

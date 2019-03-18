@@ -82,12 +82,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Souřadnice tohoto prvku v rámci jeho Parenta.
         /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
-        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.All"/>).
+        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.ChangeAll"/>).
         /// </summary>
         public virtual Rectangle Bounds 
         {
             get { return this._Bounds; }
-            set { this.SetBounds(value, ProcessAction.All, EventSourceType.BoundsChange | EventSourceType.ApplicationCode); }
+            set { this.SetBounds(value, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Coordinates of this item in their Parent client area.
@@ -740,7 +740,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int sum = 0;
             foreach (ProcessAction one in remove)
                 sum |= (int)one;
-            return (ProcessAction)(actions & (ProcessAction.All ^ (ProcessAction)sum));
+            return (ProcessAction)(actions & (ProcessAction.ChangeAll ^ (ProcessAction)sum));
         }
         /// <summary>
         /// Returns actions, in which is leaved only specified values (when they was present in input actions).
@@ -1538,7 +1538,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual TValue Value
         {
             get { return this.GetValue(this._Value, this._ValueRange); }
-            set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
+            set { this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Current value of this object.
@@ -1628,7 +1628,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual TRange ValueRange
         {
             get { return this._ValueRange; }
-            set { this.SetValueRange(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
+            set { this.SetValueRange(value, ProcessAction.ChangeAll, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Set this._Value = value (when new value is not equal to current value: value != this._Value).

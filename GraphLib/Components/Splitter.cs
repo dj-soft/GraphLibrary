@@ -398,7 +398,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _LoadFromRun(int? value, Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
         {
-            this.SetSplitter(bounds, value, orientation, splitterVisibleWidth, splitterActiveOverlap, null, null, DragResponseType.None, ProcessAction.All, EventSourceType.ApplicationCode);
+            this.SetSplitter(bounds, value, orientation, splitterVisibleWidth, splitterActiveOverlap, null, null, DragResponseType.None, ProcessAction.ChangeAll, EventSourceType.ApplicationCode);
         }
         #endregion
         #region SetSplitter() and support
@@ -410,7 +410,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         internal bool SetSplitter(DragResponseType moveType)
         {
-            return this.SetSplitter(null, null, null, null, null, null, null, moveType, ProcessAction.All, EventSourceType.BoundsChange | EventSourceType.ApplicationCode);
+            return this.SetSplitter(null, null, null, null, null, null, null, moveType, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode);
         }
         /// <summary>
         /// Calculate new values for Splitter, from all current values (Re-Apply all values).
@@ -439,7 +439,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="locationOriginal"></param>
         internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, DragResponseType moveType)
         {
-            ProcessAction action = ProcessAction.All;            // Contains actions CallChangedEvents and CallChangingEvents. We will now "reset" unappropriated bit:
+            ProcessAction action = ProcessAction.ChangeAll;            // Contains actions CallChangedEvents and CallChangingEvents. We will now "reset" unappropriated bit:
             if (moveType == DragResponseType.InDragMove)
                 action = (ProcessAction)BitStorage.SetBitValue((int)action, (int)ProcessAction.CallChangedEvents, false);        // During "Move" do not call "CallChangedEvents"!
             else if (moveType == DragResponseType.AfterDragEnd)

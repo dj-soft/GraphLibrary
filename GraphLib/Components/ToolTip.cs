@@ -1913,6 +1913,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (force || !_AnimationShowTime.HasValue) _AnimationShowTime = TimeSpan.FromMilliseconds(300000d);
                     if (force || !_AnimationFadeOutTime.HasValue) _AnimationFadeOutTime = TimeSpan.FromMilliseconds(450d);
                     break;
+                case TooltipAnimationType.InstantInFadeOut:
+                    if (force || !_AnimationExists.HasValue) _AnimationExists = false;
+                    if (force || !_AnimationWaitBeforeTime.HasValue) _AnimationWaitBeforeTime = TimeSpan.FromMilliseconds(0d);
+                    if (force || !_AnimationWaitRepeatedBeforeTime.HasValue) _AnimationWaitRepeatedBeforeTime = DefaultAnimationWaitRepeatedBeforeTime;
+                    if (force || !_AnimationFadeInTime.HasValue) _AnimationFadeInTime = TimeSpan.FromMilliseconds(0d);
+                    if (force || !_AnimationShowTime.HasValue) _AnimationShowTime = DefaultAnimationShowTime;
+                    if (force || !_AnimationFadeOutTime.HasValue) _AnimationFadeOutTime = DefaultAnimationFadeOutTime;
+                    break;
             }
         }
         internal static TimeSpan DefaultAnimationWaitBeforeTime { get { return TimeSpan.FromMilliseconds(300d); } }
@@ -1947,7 +1955,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Instant = no animation (immediatelly and indefinitely Show, no Wait, no FadeIn, no FadeOut)
         /// </summary>
-        Instant
+        Instant,
+        /// <summary>
+        /// Okamžitý náběh, defaultní doba Show a FadeOut
+        /// </summary>
+        InstantInFadeOut
     }
     /// <summary>
     /// Tvar Tooltipu

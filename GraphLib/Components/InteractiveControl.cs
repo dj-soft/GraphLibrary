@@ -595,7 +595,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 scope.Result = "MouseDragFrameBegin";
             }
             else if (mouseCurrentItem.SearchForDraggableItem())
-            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuiálním stavu podporuje Drag and Drop):
+            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuálním stavu podporuje Drag and Drop):
                 // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag and Drop začíná:
                 this._MouseDragState = MouseMoveDragState.DragMove;
                 this._MouseDragMoveBegin(e);
@@ -1141,6 +1141,7 @@ namespace Asol.Tools.WorkScheduler.Components
             GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(boundsInfo, realChange, state,
                 this.FindNewItemAtPoint, activePosition.MouseAbsolutePoint, mouseRelativePoint,
                 this._MouseDragMoveItemOriginBounds, dragToArea);
+            stateArgs.ToolTipData = this._FlowToolTipData;
             stateArgs.UserDragPoint = userDragPoint;
 
             if (fillArgs != null)
@@ -1151,13 +1152,24 @@ namespace Asol.Tools.WorkScheduler.Components
                 activePosition.CallAfterStateChanged(stateArgs, recurseToSolver);
                 this._ItemMouseCallDragEvent(activePosition.ActiveItem, stateArgs);
             }
+            this._FlowToolTipData = (stateArgs.HasToolTipData ? stateArgs.ToolTipData : null);
 
             this._CallInteractiveStateChanged(stateArgs);
             this._InteractiveDrawStore(stateArgs);
             this._StoreContextMenu(stateArgs);
+
             return stateArgs;
         }
-
+        /// <summary>
+        /// Úložiště pro data ToolTipu v rámci jedné WinForm události.
+        /// Na začátku každé WinForm události se nuluje.
+        /// Pokud jedna WinForm událost má více logických událostí v <see cref="GInteractiveControl"/>, 
+        /// pak se sem ukládají data ToolTipu po skončení jedné události,
+        /// a odsud se načtou a vkládají do <see cref="GInteractiveChangeStateArgs.ToolTipData"/> do další události.
+        /// Důsledkem je to, že pokud jedna <see cref="GInteractiveControl"/> událost nastaví tooltip,
+        /// pak další událost v <see cref="GInteractiveControl"/> tento tooltip již nemusí řešit a tooltip je stále nastaven.
+        /// </summary>
+        private ToolTipData _FlowToolTipData;
         /// <summary>
         /// Detect Dragging states and call item.DragAction() method.
         /// </summary>
@@ -1475,6 +1487,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ToolTipSet(Point? point, GInteractiveChangeStateArgs e)
         {
             ToolTipData toolTipData = (e.HasToolTipData ? e.ToolTipData : null);
+            if (e.ChangeState == GInteractiveChangeState.MouseOver && toolTipData == null) return; // Pokud je akce MouseOver a tooltip není zadán, není to důvod jej zhasnout.
             this._ToolTipSet(point, toolTipData);
         }
         /// <summary>
@@ -2981,6 +2994,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             try
             {
+                this._FlowToolTipData = null;
                 bool isProcessing = this.InteractiveProcessing;
                 bool isBlocked = this.IsGUIBlocked;
                 using (new InteractiveProcessingScope(this, changeState))

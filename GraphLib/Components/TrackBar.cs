@@ -26,6 +26,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Orientation = System.Windows.Forms.Orientation.Horizontal;
             this._TrackPointerVisualSize = new Size(7, 15);
             this.ValueRoundMode = MidpointRounding.AwayFromZero;
+            this.ToolTipShowOnDraw = true;
             this.Is.MouseMoveOver = true;
             this.Is.MouseDragMove = true;
             this.BackColor = Skin.TrackBar.BackColorTrack;
@@ -45,7 +46,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Decimal Value
         {
             get { return this._Value; }
-            set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
+            set { this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Obsahuje relativní hodnotu trackbaru v rozmezí 0 až 1
@@ -84,7 +85,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public DecimalRange ValueTotal
         {
             get { return this._ValueTotal; }
-            set { this.SetValueTotal(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
+            set { this.SetValueTotal(value, ProcessAction.ChangeAll, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Uloží danou hodnotu do this._Value.
@@ -112,10 +113,10 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (IsAction(actions, ProcessAction.PrepareInnerItems))
                 this.ChildItemsReset();
-            if (IsAction(actions, ProcessAction.CallChangedEvents))
-                this.CallValueChanged(oldValue, newValue, eventSource);
             if (IsAction(actions, ProcessAction.CallChangingEvents))
                 this.CallValueChanging(oldValue, newValue, eventSource);
+            if (IsAction(actions, ProcessAction.CallChangedEvents))
+                this.CallValueChanged(oldValue, newValue, eventSource);
             if (IsAction(actions, ProcessAction.CallDraw))
                 this.CallDrawRequest(eventSource);
         }
@@ -356,6 +357,9 @@ namespace Asol.Tools.WorkScheduler.Components
             TrackBarAreaType partType = this.GetPartType(e);
             switch (e.ChangeState)
             {
+                case GInteractiveChangeState.MouseEnter:
+                    this.MouseEnter(partType, e);
+                    break;
                 case GInteractiveChangeState.MouseOver:
                     this.MouseOver(partType, e);
                     break;
@@ -378,6 +382,17 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.MouseLeave(partType, e);
                     break;
             }
+            base.AfterStateChanged(e);
+        }
+        /// <summary>
+        /// Provede obsluhu MouseEnter
+        /// </summary>
+        /// <param name="partType"></param>
+        /// <param name="e"></param>
+        protected virtual void MouseEnter(TrackBarAreaType partType, GInteractiveChangeStateArgs e)
+        {
+            this.MouseOverPartChange(null, partType, e);
+            this.ToolTipPrepare(e, false, false);
         }
         /// <summary>
         /// Provede obsluhu MouseOver
@@ -388,7 +403,10 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.MouseOverPoint = e.MouseAbsolutePoint;
             if (partType != this.LastMouseOverPart)
+            {
+                this.MouseOverPartChange(this.LastMouseOverPart, partType, e);
                 this.LastMouseOverPart = partType;
+            }
             this.Repaint();
         }
         /// <summary>
@@ -398,10 +416,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected virtual void MouseLeave(TrackBarAreaType partType, GInteractiveChangeStateArgs e)
         {
+            this.MouseOverPartChange(this.LastMouseOverPart, null, e);
             this.LastMouseOverPart = TrackBarAreaType.None;
             this.MouseDragOffset = null;
             this.MouseOverPoint = null;
             this.Repaint();
+        }
+        /// <summary>
+        /// Řeší změnu pozice myši nad prvky TrackBaru
+        /// </summary>
+        /// <param name="oldPartType"></param>
+        /// <param name="newPartType"></param>
+        /// <param name="e"></param>
+        protected virtual void MouseOverPartChange(TrackBarAreaType? oldPartType, TrackBarAreaType? newPartType, GInteractiveChangeStateArgs e)
+        {
+
         }
         /// <summary>
         /// Provede obsluhu LeftDown
@@ -428,6 +457,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
             this.LastMouseOverPart = partType;
+            this.ToolTipPrepare(e, true, true);
             this.Repaint();
         }
         /// <summary>
@@ -438,6 +468,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void LeftDragBegin(TrackBarAreaType partType, GInteractiveChangeStateArgs e)
         {
             this.MouseOverPoint = null;
+            this.ToolTipPrepare(e, true, true);
             this.Repaint();
         }
         /// <summary>
@@ -451,6 +482,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Point dragPoint = e.MouseRelativePoint.Value.Sub(this.MouseDragOffset.Value);
             this.ValueDrag = this.GetValueForPoint(dragPoint);
+            this.ToolTipPrepare(e, true, true);
             this.Repaint();
         }
         /// <summary>
@@ -464,6 +496,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ValueDragOriginal = null;
             this.MouseDragOffset = null;
             this.MouseOverPoint = e.MouseAbsolutePoint;
+            this.ToolTipPrepare(e, false, true);
             this.Repaint();
         }
         /// <summary>
@@ -478,7 +511,27 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ValueDragOriginal = null;
             this.MouseDragOffset = null;
             this.MouseOverPoint = e.MouseAbsolutePoint;
+            this.ToolTipPrepare(e, false, true);
             this.Repaint();
+        }
+        /// <summary>
+        /// Připraví data pro ToolTip
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="isValueDrag"></param>
+        /// <param name="isInstant"></param>
+        protected virtual void ToolTipPrepare(GInteractiveChangeStateArgs e, bool isValueDrag, bool isInstant)
+        {
+            if (isValueDrag && !this.ToolTipShowOnDraw) return;
+
+            string title = this.ToolTipTitle;
+            string text = this.ToolTipText;
+            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text)) return;
+
+            e.ToolTipData.TitleText = title;
+            e.ToolTipData.InfoText = text;
+            if (isInstant)
+                e.ToolTipData.AnimationType = (isValueDrag ? TooltipAnimationType.Instant : TooltipAnimationType.InstantInFadeOut);
         }
         /// <summary>
         /// Metoda vrátí oblast, ve které se pohybuje myš
@@ -525,6 +578,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected TrackBarAreaType LastMouseOverPart { get; set; }
         #endregion
+        #region ToolTip, Text
+        /// <summary>
+        /// Text vypisovaný v dolním okraji prvku
+        /// </summary>
+        public string Text { get; set; }
+        public string ToolTipTitle { get; set; }
+        public string ToolTipText { get; set; }
+        /// <summary>
+        /// true = Zobrazovat text <see cref="ToolTipText"/> celou dobu přetahování (když je myš stisknutá), dynamický;
+        /// false = zobrazovat jen přoi najetí myší, statický
+        /// (Pokud je <see cref="ToolTipText"/> prázdný, nezobrazí se).
+        /// </summary>
+        public bool ToolTipShowOnDraw { get; set; }
+        #endregion
+        #region Ikonky
+
+        #endregion
         #region Výpočty souřadnic jednotlivých částí TrackBaru, relativně k TrackBar.Bounds, podle hodnoty Value
         /// <summary>
         /// Vizuální velikost prvku TrackPointer, reálná při aktuální orientaci
@@ -565,43 +635,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Souřadnice je relativní = v souřadnicích TrackBar.Bounds.
         /// </summary>
         protected Point TrackPoint { get { return this.GetTrackPoint(this.ValueRelative); } }
-        /// <summary>
-        /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
-        /// </summary>
-        /// <param name="ratio"></param>
-        /// <returns></returns>
-        protected Point GetTrackPoint(Decimal? ratio)
-        {
-            return this.GetTrackPoint(ratio, this.TrackLineBounds);
-        }
-        /// <summary>
-        /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
-        /// </summary>
-        /// <param name="ratio"></param>
-        /// <param name="trackLine">Souřadnice pohybu TrackPointu</param>
-        /// <returns></returns>
-        protected Point GetTrackPoint(Decimal? ratio, Rectangle trackLine)
-        {
-            decimal r = (ratio.HasValue ? (ratio.Value < 0m ? 0m : (ratio.Value > 1m ? 1m : ratio.Value)) : 0m);
-
-            switch (this.Orientation)
-            {
-                case System.Windows.Forms.Orientation.Horizontal:
-                    // Vodorovný trackbar má větší hodnoty ve směru doprava, tam kde WinForm má souřadnici X větší:
-                    decimal w = trackLine.Width;
-                    int dx = (int)(Math.Round(r * w, 0));
-                    int x = trackLine.X + dx;
-                    return new Point(x, trackLine.Y);
-                case System.Windows.Forms.Orientation.Vertical:
-                    // Svislý trackbar má větší hodnoty ve směru nahoru, tam kde WinForm má souřadnici Y menší:
-                    decimal h = trackLine.Height;
-                    int dy = (int)(Math.Round(r * h, 0));
-                    int y = trackLine.Bottom - dy;
-                    return new Point(trackLine.X, y);
-            }
-
-            return trackLine.Center();
-        }
         /// <summary>
         /// Souřadnice vizuální části = zde se vykresluje podklad TrackBaru.
         /// Ve směru trackbaru odpovídá <see cref="TrackLineBounds"/>, v neaktivním směru odpovídá <see cref="ActiveBounds"/>.
@@ -670,6 +703,78 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region Převody hodnoty TrackBaru na souřadnice a převody reverzní
+        /// <summary>
+        /// Vrací bod pro danou hodnotu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected virtual Point GetPointForValue(Decimal value)
+        {
+            Decimal? ratio = (this._ValueTotal != null ? this._ValueTotal.GetRelativePositionAtValue(value) : (Decimal?)null);
+            return this.GetTrackPoint(ratio);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        protected Point GetTrackPoint(Decimal? ratio)
+        {
+            return this.GetTrackPoint(ratio, this.TrackLineBounds);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnici bodu (relativní = v souřadnicích TrackBar.Bounds) pro danou relativní hodnotu 0 až 1.
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <param name="trackLine">Souřadnice pohybu TrackPointu</param>
+        /// <returns></returns>
+        protected Point GetTrackPoint(Decimal? ratio, Rectangle trackLine)
+        {
+            decimal r = (ratio.HasValue ? (ratio.Value < 0m ? 0m : (ratio.Value > 1m ? 1m : ratio.Value)) : 0m);
+
+            switch (this.Orientation)
+            {
+                case System.Windows.Forms.Orientation.Horizontal:
+                    // Vodorovný trackbar má větší hodnoty ve směru doprava, tam kde WinForm má souřadnici X větší:
+                    decimal w = trackLine.Width;
+                    int dx = (int)(Math.Round(r * w, 0));
+                    int x = trackLine.X + dx;
+                    return new Point(x, trackLine.Y);
+                case System.Windows.Forms.Orientation.Vertical:
+                    // Svislý trackbar má větší hodnoty ve směru nahoru, tam kde WinForm má souřadnici Y menší:
+                    decimal h = trackLine.Height;
+                    int dy = (int)(Math.Round(r * h, 0));
+                    int y = trackLine.Bottom - dy;
+                    return new Point(trackLine.X, y);
+            }
+
+            return trackLine.Center();
+        }
+        /// <summary>
+        /// Vrací hodnotou pro daný bod a aktuální TrackLine
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        protected virtual Decimal GetValueForPoint(Point point)
+        {
+            return this.GetValueForPoint(point, this.TrackLineBounds);
+        }
+        /// <summary>
+        /// Vrací hodnotou pro daný bod a danou TrackLine
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="trackLine"></param>
+        /// <returns></returns>
+        protected virtual Decimal GetValueForPoint(Point point, Rectangle trackLine)
+        {
+            Decimal? ratio = ((this.Orientation == System.Windows.Forms.Orientation.Horizontal) ?
+                DecimalRange.CreateFromBeginSize(trackLine.X, trackLine.Width).GetRelativePositionAtValue(point.X) :
+                DecimalRange.CreateFromBeginSize(0, trackLine.Height).GetRelativePositionAtValue(trackLine.Bottom - point.Y));
+            decimal r = (ratio.HasValue ? (ratio.Value < 0m ? 0m : (ratio.Value > 1m ? 1m : ratio.Value)) : 0m);
+            return this._ValueTotal.GetValueAtRelativePosition(r);
+        }
+        #endregion
         #region Kreslení
         /// <summary>
         /// Vykreslí TrackBar
@@ -682,6 +787,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPainter.DrawTrackBar(e.Graphics, absoluteBounds, this.Layout);
         }
+        /// <summary>
+        /// Metoda je volána v procesu kreslení TrackBaru. Umožní vykreslit text nebo ikonky.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="absoluteBounds"></param>
         protected void PaintTextData(Graphics graphics, Rectangle absoluteBounds)
         {
             // GPainter.DrawString(graphics, absoluteBounds, "TRACKER", Skin.Brush(Color.Black), FontInfo.DefaultBold, ContentAlignment.BottomCenter);
@@ -815,40 +925,6 @@ namespace Asol.Tools.WorkScheduler.Components
             void ITrackBarPaintData.PaintTextData(Graphics graphics, Rectangle absoluteBounds) { this._TrackBar.PaintTextData(graphics, absoluteBounds); }
             #endregion
 
-        }
-        #endregion
-        #region Práce s hodnotou trackbaru
-        /// <summary>
-        /// Vrací hodnotou pro daný bod a aktuální TrackLine
-        /// </summary>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        protected virtual Decimal GetValueForPoint(Point point)
-        {
-            return this.GetValueForPoint(point, this.TrackLineBounds);
-        }
-        /// <summary>
-        /// Vrací hodnotou pro daný bod a danou TrackLine
-        /// </summary>
-        /// <param name="point"></param>
-        /// <param name="trackLine"></param>
-        /// <returns></returns>
-        protected virtual Decimal GetValueForPoint(Point point, Rectangle trackLine)
-        {
-            Decimal? ratio = ((this.Orientation == System.Windows.Forms.Orientation.Horizontal) ?
-                DecimalRange.CreateFromBeginSize(trackLine.X, trackLine.Width).GetRelativePositionAtValue(point.X) :
-                DecimalRange.CreateFromBeginSize(0, trackLine.Height).GetRelativePositionAtValue(trackLine.Bottom - point.Y));
-            decimal r = (ratio.HasValue ? (ratio.Value < 0m ? 0m : (ratio.Value > 1m ? 1m : ratio.Value)) : 0m);
-            return this._ValueTotal.GetValueAtRelativePosition(r);
-        }
-        /// <summary>
-        /// Vrací bod pro danou hodnotu
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        protected virtual Point GetPointForValue(Decimal value)
-        {
-            return Point.Empty;
         }
         #endregion
     }

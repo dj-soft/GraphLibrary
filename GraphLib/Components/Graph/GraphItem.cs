@@ -62,7 +62,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Souřadnice tohoto prvku v rámci jeho Parenta.
         /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
-        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.All"/>).
+        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.ChangeAll"/>).
         /// Vložení souřadnice nastaví i její platnost: <see cref="BoundsIsValid"/> = true.
         /// </summary>
         public override Rectangle Bounds

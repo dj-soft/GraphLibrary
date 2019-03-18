@@ -121,7 +121,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public AxisOrientation Orientation
         {
             get { return this.OrientationCurrent; }
-            set { this.OrientationUser = value; this.DetectOrientation(ProcessAction.All, EventSourceType.OrientationChange | EventSourceType.ApplicationCode); }
+            set { this.OrientationUser = value; this.DetectOrientation(ProcessAction.ChangeAll, EventSourceType.OrientationChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Aktuální platná orientace osy detekovaná podle <see cref="OrientationUser"/> a souřadnic, v metodě <see cref="DetectOrientation(ProcessAction, EventSourceType)"/>.
@@ -285,7 +285,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public TValue Value
         {
             get { return this._Value; }
-            set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
+            set { this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Value of Axis = Visible Range of data on Axis.
@@ -307,7 +307,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public TValue ValueLimit
         {
             get { return this._ValueLimit; }
-            set { this.SetValueLimit(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
+            set { this.SetValueLimit(value, ProcessAction.ChangeAll, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Current ValueLimit value
@@ -323,7 +323,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public decimal Scale
         {
             get { return this._Scale; }
-            set { this.SetScale(value, ProcessAction.All, EventSourceType.ValueScaleChange | EventSourceType.ApplicationCode); }
+            set { this.SetScale(value, ProcessAction.ChangeAll, EventSourceType.ValueScaleChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Current Scale value = number of axis logical units per one visual pixel.
@@ -341,7 +341,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public DecimalNRange ScaleLimit
         {
             get { return this._ScaleLimit; }
-            set { this.SetScaleLimit(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
+            set { this.SetScaleLimit(value, ProcessAction.ChangeAll, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Current ScaleLimit value

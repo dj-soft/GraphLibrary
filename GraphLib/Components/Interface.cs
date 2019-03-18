@@ -1548,9 +1548,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         CallDraw = 0x0200,
         /// <summary>
-        /// Take all actions
+        /// Všechny akce po změně hodnoty (nikoli ale CallChangingEvents!)
         /// </summary>
-        All = 0xFFFF,
+        ChangeAll = RecalcValue | RecalcScale | RecalcInnerData | PrepareInnerItems | CallChangedEvents | CallSynchronizeSlave | CallDraw,
 
         /// <summary>
         /// Combined value for Silent SetBounds: (RecalcValue | PrepareInnerItems), not CallChangedEvents nor CallDraw

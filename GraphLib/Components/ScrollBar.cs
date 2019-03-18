@@ -46,7 +46,7 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this._Orientation; }
             set
             {
-                this.SetOrientation(value, ProcessAction.All, EventSourceType.BoundsChange | EventSourceType.ApplicationCode);
+                this.SetOrientation(value, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode);
             }
         } private Orientation _Orientation = Orientation.Horizontal;
         /// <summary>
@@ -66,7 +66,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public DecimalNRange Value
         {
             get { return this._Value; }
-            set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
+            set { this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
         /// Logická hodnota.
@@ -95,7 +95,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public DecimalNRange ValueTotal
         {
             get { return this._ValueTotal; }
-            set { this.SetValueTotal(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
+            set { this.SetValueTotal(value, ProcessAction.ChangeAll, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
         }
         private DecimalNRange _Value;
         private DecimalNRange _ValueTotal;
@@ -1114,7 +1114,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (change == 0m) return;
             decimal begin = this._Value.Begin.Value + change;
             DecimalNRange value = DecimalNRange.CreateFromBeginSize(begin, this._Value.Size.Value);
-            this.SetValue(value, ProcessAction.All, EventSourceType.InteractiveChanged);
+            this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Vypočte nové souřadnice a hodnoty v procesu Drag na Thumb prvku, pro Horizontal ScrollBar
