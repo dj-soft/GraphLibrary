@@ -631,6 +631,25 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string ChildRowsCopyClassesMode { get; set; }
         /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků z this tabulky do jiných tabulek.
+        /// Pokud bude tento string patřičně naplněn, bude možno řádky this tabulky brát jako zdroj procesu Drag and Drop,
+        /// přemisťovat myší nad jiné prvky, a puštěním myši pak data z this řádku aplikovat do cíle.
+        /// <para/>
+        /// String má obsahovat: FullName cílové tabulky kam lze řádek přenést, a několik klíčových slov, vše odděleno čárkami nebo mezerami.
+        /// Více tabulek a klíčových slov se odděluje středníkem.
+        /// Klíčová slova: 
+        /// "RowRoot" = pouze do řádku Root;
+        /// "RowChild" = pouze do řádku Root;
+        /// "RowAny" = jakýkoli řádek (tato hodnota je implicitní, pokud nebude použita žádná jiná hodnota "Row*");
+        /// "ToCell" = kamkoliv do buňky (tato hodnota je implicitní, pokud nebude použita žádná jiná hodnota "To*");
+        /// "ToGraph" = kamkoli do grafu;
+        /// "ToItem" = pouze do prvku grafu, kteréhokoli prvku;
+        /// "ToItem12345" = pouze do prvku grafu dané třídy 12345 (prvky více tříd se specifikují jednotlivě) (číslo třídy musí navazovat na klíčové slovo);
+        /// <para/>
+        /// Příklad: "data/page/table1 RowRoot,ToItem1190;data/page/table2 RowRoot,ToItem1190"
+        /// </summary>
+        public string RowDragMoveToTarget { get; set; }
+        /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
         /// <param name="interaction"></param>

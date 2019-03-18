@@ -1138,7 +1138,7 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         } private bool _AllowColumnResize = true;
         /// <summary>
-        /// true pokud je povoleno interaktivně přemisťovat řádky (přetahovat je myší). Default = false;
+        /// true pokud je povoleno interaktivně přeuspořádávat řádky (přetahovat je myší). Default = false;
         /// </summary>
         public bool AllowRowReorder
         {
@@ -1151,6 +1151,15 @@ namespace Asol.Tools.WorkScheduler.Data
                     this.GTable.Invalidate(InvalidateItem.TableItems);
             }
         } private bool _AllowRowReorder = false;
+        /// <summary>
+        /// true pokud je povoleno interaktivně přesouvat řádky na jiné místo v Controlu (Drag and Drop). Default = false;
+        /// </summary>
+        public bool AllowRowDragMove
+        {
+            get { return this._AllowRowDragMove; }
+            set { this._AllowRowDragMove = value; }
+        }
+        private bool _AllowRowDragMove = false;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit výšku řádku (myší). Default = true;
         /// </summary>

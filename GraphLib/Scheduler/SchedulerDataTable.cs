@@ -108,7 +108,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.ActiveCellRightClick += TableRow_ActiveCellRightClick;
             this.TableRow.UserData = this;
-            this._CurrentSearchChildInfo = SearchChildInfo.CreateForProperties(this.GuiGrid.GridProperties);
+            this._PrepareRowDragMove();
+            this._PrepareRowSearchChild();
         }
         /// <summary>
         /// Tabulka s řádky.
@@ -1611,6 +1612,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Režim hledání Childs pro Parent - režim, analýza atd.
         /// <summary>
+        /// Připraví v this tabulce data pro vyhledávání Child řádků
+        /// </summary>
+        private void _PrepareRowSearchChild()
+        {
+            this._CurrentSearchChildInfo = SearchChildInfo.CreateForProperties(this.GuiGrid.GridProperties);
+        }
+        /// <summary>
         /// Analyzovaný režim <see cref="GuiChildRowsEvaluateMode"/>.
         /// Property je autoinicializační, výchozí hodnota je <see cref="SearchChildInfo.Static"/>.
         /// </summary>
@@ -1838,6 +1846,194 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// "SynchronPair" = přenášet, jen když jsou synchronní časy (v Parent řádku existuje shodný prvek s časem společným s prvekm v Child řádku)
             /// </summary>
             SynchronPair
+        }
+        #endregion
+        #region Drag and Move and Drop řádků z this tabulky
+        /// <summary>
+        /// Připraví v this tabulce data pro Drag and Move řádků
+        /// </summary>
+        private void _PrepareRowDragMove()
+        {
+            this.DragMoveRows = DragMoveRowsInfo.CreateForProperties(this, this.GuiGrid.GridProperties);
+            this.TableRow.AllowRowDragMove = this.DragMoveRows.DragMoveEnabled;
+        }
+        /// <summary>
+        /// Analyzovaný režim Drag and Move pro řádky this tabulky.
+        /// Pochází z údajů v <see cref="GuiGridProperties.RowDragMoveToTarget"/>.
+        /// </summary>
+        protected DragMoveRowsInfo DragMoveRows { get; private set; }
+        /// <summary>
+        /// Třída pro analýzu režimu Drag and Move pro řádky this tabulky.
+        /// Pochází z údajů v <see cref="GuiGridProperties.RowDragMoveToTarget"/>.
+        /// </summary>
+        protected class DragMoveRowsInfo
+        {
+            /// <summary>
+            /// Vrací new instanci pro dané zadání <see cref="GuiGridProperties"/>
+            /// </summary>
+            /// <param name="table">Tabulka s daty</param>
+            /// <param name="properties">Zadání</param>
+            /// <returns></returns>
+            public static DragMoveRowsInfo CreateForProperties(MainDataTable table, GuiGridProperties properties)
+            {
+                if (properties == null) return DragMoveRowsInfo.Empty;
+
+                return CreateForData(table, properties.RowDragMoveToTarget);
+            }
+            /// <summary>
+            /// Vrací new instanci pro daný režim
+            /// </summary>
+            /// <param name="table">Tabulka s daty</param>
+            /// <param name="rowDragMoveToTarget">Hodnota <see cref="GuiGridProperties.RowDragMoveToTarget"/></param>
+            /// <returns></returns>
+            public static DragMoveRowsInfo CreateForData(MainDataTable table, string rowDragMoveToTarget)
+            {
+                DragMoveRowsInfo info = new DragMoveRowsInfo();
+
+                info.MainTable = table;
+                if (!String.IsNullOrEmpty(rowDragMoveToTarget))
+                {
+                    string[] items = rowDragMoveToTarget.Split(';');
+                    foreach (string item in items)
+                    {
+                        DragMoveRowsOneTargetInfo target = DragMoveRowsOneTargetInfo.CreateFrom(item);
+                        if (target != null)
+                            info.TargetList.Add(target);
+                    }
+                }
+
+                return info;
+            }
+            /// <summary>
+            /// Obsahuje new instanci definující statickou vazbu
+            /// </summary>
+            public static DragMoveRowsInfo Empty { get { return new DragMoveRowsInfo(); } }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            private DragMoveRowsInfo()
+            {
+                this.TargetList = new List<DragMoveRowsOneTargetInfo>();
+            }
+            /// <summary>
+            /// Datová tabulka
+            /// </summary>
+            public MainDataTable MainTable { get; private set; }
+            /// <summary>
+            /// true = Drag and Move je povoleno
+            /// </summary>
+            public bool DragMoveEnabled { get { return (this.TargetList.Count > 0); } }
+            /// <summary>
+            /// Seznam povolených cílů pro Drag and Move řádků this tabulky
+            /// </summary>
+            public List<DragMoveRowsOneTargetInfo> TargetList { get; private set; }
+        }
+        /// <summary>
+        /// Informace o jednom cíli Drag and Move
+        /// </summary>
+        protected class DragMoveRowsOneTargetInfo
+        {
+            /// <summary>
+            /// Vrátí instanci <see cref="DragMoveRowsOneTargetInfo"/>, naplní ji parsováním textu (data), 
+            /// podle pravidel dle <see cref="GuiGridProperties.RowDragMoveToTarget"/>
+            /// </summary>
+            /// <param name="data"></param>
+            /// <returns></returns>
+            public static DragMoveRowsOneTargetInfo CreateFrom(string data)
+            {
+                if (String.IsNullOrEmpty(data)) return null;
+
+                // 1. Analýza textu:
+                string[] items = data.Split(' ', ',');
+                string fullTable = "";
+                string valueRow = "";
+                string valueTo = "";
+                Dictionary<int, object> classDict = new Dictionary<int, object>();
+
+                foreach (string item in items)
+                {
+                    string value = item.Trim();
+                    if (value.Length == 0) continue;
+                    switch (value)
+                    {
+                        case "RowRoot":
+                            valueRow += "R";
+                            break;
+                        case "RowChild":
+                            valueRow += "C";
+                            break;
+                        case "RowAny":
+                            valueRow += "A";
+                            break;
+                        case "ToCell":
+                            valueTo += "C";
+                            break;
+                        case "ToGraph":
+                            valueTo += "G";
+                            break;
+                        case "ToItem":
+                            valueTo += "I";
+                            break;
+                        default:
+                            if (value.Length > 6 && value.Substring(0, 6) == "ToItem")
+                            {
+                                int classNumber;
+                                if (Int32.TryParse(value.Substring(6), out classNumber) && !classDict.ContainsKey(classNumber))
+                                    classDict.Add(classNumber, null);
+                            }
+                            else
+                            {
+                                if (fullTable.Length == 0)
+                                    fullTable = value;
+                            }
+                            break;
+                    }
+                }
+                if (fullTable.Length == 0) return null;
+
+                // 2. Syntéza výsledku:
+                DragMoveRowsOneTargetInfo target = new DragMoveRowsOneTargetInfo();
+                target.FullTableName = fullTable;
+                target.TargetRowRoot = (valueRow.Length == 0 || valueRow.Contains("R") || valueRow.Contains("A"));
+                target.TargetRowChild = (valueRow.Length == 0 || valueRow.Contains("C") || valueRow.Contains("A"));
+                target.TargetObjectCell = (valueTo.Length == 0 || valueTo.Contains("C"));
+                target.TargetObjectGraph = (valueTo.Contains("G"));
+                target.TargetObjectGraphItemAny = (valueTo.Contains("I"));
+                target.TargetObjectGraphItemClassDict = classDict;
+
+                return target;
+            }
+            private DragMoveRowsOneTargetInfo() { }
+            /// <summary>
+            /// Název cílové tabulky
+            /// </summary>
+            public string FullTableName { get; private set; }
+            /// <summary>
+            /// Cílem může být Root řádek
+            /// </summary>
+            public bool TargetRowRoot { get; private set; }
+            /// <summary>
+            /// Cílem může být Child řádek
+            /// </summary>
+            public bool TargetRowChild { get; private set; }
+
+            /// <summary>
+            /// Cílem může být obecně kterákoli buňka řádku
+            /// </summary>
+            public bool TargetObjectCell { get; private set; }
+            /// <summary>
+            /// Cílem může být graf, jakékoli jeho místo
+            /// </summary>
+            public bool TargetObjectGraph { get; private set; }
+            /// <summary>
+            /// Cílem může být graf, pouze jeho prvek, jakékoli třídy
+            /// </summary>
+            public bool TargetObjectGraphItemAny { get; private set; }
+            /// <summary>
+            /// Cílem může být graf, pouze jeho prvek, jehož třída je uvedena v této Dictionary
+            /// </summary>
+            public Dictionary<int, object> TargetObjectGraphItemClassDict { get; private set; }
+
         }
         #endregion
         #endregion

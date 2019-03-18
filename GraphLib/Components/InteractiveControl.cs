@@ -587,26 +587,34 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MouseDragStartDetect(MouseEventArgs e, ITraceScope scope)
         {
             GActivePosition mouseCurrentItem = this._CurrentActiveItem;
-            if (mouseCurrentItem.ItemIsSelectParent)
-            {   // Aktuální prvek podporuje Select pomocí Frame (tzn. má vlastnost <see cref="IInteractiveItem.IsSelectParent"/>)
-                this._MouseDragState = MouseMoveDragState.DragFrame;
-                this._MouseDragFrameBegin(e);
-                this._MouseDragFrameStep(e);
-                scope.Result = "MouseDragFrameBegin";
-            }
-            else if (mouseCurrentItem.SearchForDraggableItem())
-            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuálním stavu podporuje Drag and Drop):
-                // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag and Drop začíná:
-                this._MouseDragState = MouseMoveDragState.DragMove;
-                this._MouseDragMoveBegin(e);
-                this._MouseDragMoveStep(e);
-                scope.Result = "MouseDragMoveBegin";
-            }
-            else
-            {   // Neexistuje prvek vhodný pro Drag and Drop => nastavíme stav Cancel:
-                this._MouseDragState = MouseMoveDragState.None;
-                this._MouseDragMoveItemOffset = null;
-                this._CurrentMouseDragCanceled = true;
+
+            MouseMoveDragState dragMode = mouseCurrentItem.MouseDragStartDetect();
+            switch (dragMode)
+            {
+                case MouseMoveDragState.DragMove:
+                    // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuálním stavu podporuje Drag and Drop):
+                    // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag and Drop začíná:
+                    this._MouseDragState = MouseMoveDragState.DragMove;
+                    this._MouseDragMoveBegin(e);
+                    this._MouseDragMoveStep(e);
+                    scope.Result = "MouseDragMoveBegin";
+                    break;
+
+                case MouseMoveDragState.DragFrame:
+                    // Nalezený prvek podporuje Select pomocí Frame (tzn. má vlastnost <see cref="IInteractiveItem.IsSelectParent"/>)
+                    this._MouseDragState = MouseMoveDragState.DragFrame;
+                    this._MouseDragFrameBegin(e);
+                    this._MouseDragFrameStep(e);
+                    scope.Result = "MouseDragFrameBegin";
+                    break;
+
+                default:
+                    // Neexistuje prvek vhodný pro Drag and Drop => nastavíme stav Cancel:
+                    this._MouseDragState = MouseMoveDragState.None;
+                    this._MouseDragMoveItemOffset = null;
+                    this._CurrentMouseDragCanceled = true;
+                    break;
+
             }
         }
         /// <summary>
@@ -615,7 +623,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="mousePoint"></param>
         /// <returns></returns>
-        protected MouseMoveDragState _GetMouseMoveDragState(Point mousePoint)
+        private MouseMoveDragState _GetMouseMoveDragState(Point mousePoint)
         {
             // Pokud byl dán Cancel, pak bez ohledu na další vracím None:
             if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;          // Proces Drag and Drop probíhal, ale byl stornován (klávesou Escape)
@@ -675,35 +683,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._MouseOver(null);
                 this._MouseAllReset();
             }
-        }
-        /// <summary>
-        /// Stavy procesu Drag na základě pohybu myši a stavu controlu
-        /// </summary>
-        protected enum MouseMoveDragState
-        {
-            /// <summary>
-            /// Aktuální situace nemá nic společného s MouseDrag, typicky: myš není zmáčknutá
-            /// </summary>
-            None,
-            /// <summary>
-            /// Myš je zmáčknutá, ale její souřadnice jsou uvnitř prostoru v němž se malé pohybi myši ignorují
-            /// </summary>
-            Wait,
-            /// <summary>
-            /// Myš je zmáčknutá, pohybuje se a právě nyní se dostala mimo prostor odpovídající hodnotě <see cref="Wait"/>.
-            /// Aplikace nyní musí určit, zda se jedná o akci <see cref="DragMove"/>, nebo 
-            /// </summary>
-            Start,
-            /// <summary>
-            /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
-            /// a aplikace se rozhodla pro přetahování určitého objektu pomocí myši (DragMove : Drag and Drop).
-            /// </summary>
-            DragMove,
-            /// <summary>
-            /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
-            /// a aplikace se rozhodla pro rámování části prostoru pomocí myši a následné selectování vhodných objektů.
-            /// </summary>
-            DragFrame
         }
         #endregion
         #region Řízení konkrétních aktivit myši, již rozčleněné; volání jednoduchých interaktivních metod (Over, Fell, Raise, Whell)
@@ -1697,6 +1676,8 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this._MouseDragFrameCurrentBounds = null;
             this._MouseDragState = MouseMoveDragState.None;
+
+            this.Repaint();
         }
         /// <summary>
         /// Obsahuje true, pokud se má kreslit FrameBounds = oblast selectování (<see cref="_MouseDragFrameCurrentBounds"/>).
@@ -3069,6 +3050,35 @@ namespace Asol.Tools.WorkScheduler.Components
         void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }
         #endregion
     }
+    /// <summary>
+    /// Stavy procesu Drag na základě pohybu myši a stavu controlu
+    /// </summary>
+    internal enum MouseMoveDragState
+    {
+        /// <summary>
+        /// Aktuální situace nemá nic společného s MouseDrag, typicky: myš není zmáčknutá
+        /// </summary>
+        None,
+        /// <summary>
+        /// Myš je zmáčknutá, ale její souřadnice jsou uvnitř prostoru v němž se malé pohybi myši ignorují
+        /// </summary>
+        Wait,
+        /// <summary>
+        /// Myš je zmáčknutá, pohybuje se a právě nyní se dostala mimo prostor odpovídající hodnotě <see cref="Wait"/>.
+        /// Aplikace nyní musí určit, zda se jedná o akci <see cref="DragMove"/>, nebo 
+        /// </summary>
+        Start,
+        /// <summary>
+        /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
+        /// a aplikace se rozhodla pro přetahování určitého objektu pomocí myši (DragMove : Drag and Drop).
+        /// </summary>
+        DragMove,
+        /// <summary>
+        /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
+        /// a aplikace se rozhodla pro rámování části prostoru pomocí myši a následné selectování vhodných objektů.
+        /// </summary>
+        DragFrame
+    }
     #endregion
     #region class GActivePosition : Pracovní třída pro vyhledání prvku <see cref="IInteractiveItem"/> a seznamu jeho parentů
     /// <summary>
@@ -3165,37 +3175,49 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         internal bool ItemIsSelectParent { get { return (this.HasItem && this.ActiveItem.Is.SelectParent); } }
         /// <summary>
-        /// Metoda najde v this objektu prvek, který podporuje Drag and Drop.
-        /// Hledá počínaje od prvku <see cref="ActiveItem"/> (navrchu), a pokud ten nepodporuje Drag and Drop, tak hledá směrem k jeho Parentům.
-        /// Pokud takový najde, pak vrací true.
-        /// Pokud najde vhodný prvek na pozici "nižší" než je aktuální prvek <see cref="ActiveItem"/>, tak tento "aktivuje" (a poté vrátí true).
-        /// Aktivace = od této chvíle bude aktivním prvkem ten, který podporuje Drag and Drop, a ne prvky "vyšší". Vyšší prvky budou "zapomenuty".
+        /// Najde a vrátí režim, kterým se bude řešit aktuálně začínající proces MouseDrag.
+        /// Najde nejbližší prvek v hierarchii, který je ochoten provádět nějakou vhodnou akci.
         /// </summary>
         /// <returns></returns>
-        internal bool SearchForDraggableItem()
+        internal MouseMoveDragState MouseDragStartDetect()
         {
-            if (!this.HasItem) return false;
+            MouseMoveDragState result = MouseMoveDragState.None;
+            if (!this.HasItem) return result;
+
+            // a) najít ve směru k Parentům vhodná prvek, který je ochotný něco dělat:
             int lastIndex = this.Count - 1;
             int foundIndex = -1;
             for (int i = lastIndex; i >= 0; i--)
-            {
-                if (this.Items[i].Item.Is.Enabled && this.Items[i].Item.Is.MouseDragMove)
+            {   // Projdu prvky od toho navrchu (poslední index v this.Items) směrem k Parentům:
+                IInteractiveItem item = this.Items[i].Item;
+                if (item.Is.Enabled)
                 {
+                    if (item.Is.MouseDragMove)
+                        result = MouseMoveDragState.DragMove;
+                    else if (item.Is.SelectParent)
+                        result = MouseMoveDragState.DragFrame;
+                }
+                if (result != MouseMoveDragState.None)
+                {   // Něco jsme našli:
                     foundIndex = i;
                     break;
                 }
             }
-            if (foundIndex < 0) return false;
+            if (foundIndex < 0) return result;
 
+            // Našli jsme prvek na indexu (foundIndex), který je ochoten provádět akci (result):
+
+            // b) pokud nalezený prvek je hlouběji v hierarchii (tj. není to Top prvek, ale některý z jeho Parentů) => pak nalezený prvek musíme aktivovat:
             if (foundIndex < lastIndex)
-            {   // Nalezený prvek není ten aktuální, je o něco "níže" pod aktuálním => musíme jej aktivovat:
+            {
                 int count = foundIndex + 1;
                 this.Item = this.Items[foundIndex];
                 this.Items = this.Items.Take(count).ToArray();
                 this.Count = count;
                 this.HasItem = true;
             }
-            return true;
+
+            return result;
         }
         /// <summary>
         /// Style of current item contain Mouse?

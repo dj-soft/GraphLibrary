@@ -1505,8 +1505,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected override bool GetMouseDragMove(bool value) { return this.OwnerTable.AllowRowReorder; }
-
+        protected override bool GetMouseDragMove(bool value)
+        {
+            return (this.OwnerTable.AllowRowReorder || this.OwnerTable.AllowRowDragMove);
+        }
         #endregion
         #region Draw - kreslení záhlaví řádku
         /// <summary>
