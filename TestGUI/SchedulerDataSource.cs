@@ -1077,7 +1077,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
-                this.AddPlanUnitCToGrid(gridCenterWorkplace.RowTable, planUnitC);
+                this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC);
 
             // Vztahy prvků (Link):
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
@@ -1115,10 +1115,51 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
-                this.AddPlanUnitCToGrid(gridCenterPersons.RowTable, planUnitC);
+                this.AddPlanUnitCToGridCenter(gridCenterPersons.RowTable, planUnitC);
 
             this.GridCenterPersons = gridCenterPersons;
             this.MainPage.MainPanel.Grids.Add(gridCenterPersons);
+        }
+        /// <summary>
+        /// Vytvoří panel vpravo se zaměstnanci
+        /// </summary>
+        protected void CreateRightPanel()
+        {
+            GuiGrid gridRight = new GuiGrid() { Name = GuiNameGridRight, Title = "Pracovníci" };
+
+            gridRight.GridProperties.TagFilterItemHeight = 26;
+            gridRight.GridProperties.TagFilterItemMaxCount = 60;
+            gridRight.GridProperties.TagFilterRoundItemPercent = 50;
+            gridRight.GridProperties.TagFilterEnabled = true;
+            gridRight.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
+            gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " RowRoot, ToItem";
+
+            gridRight.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
+            gridRight.GraphProperties.BottomMarginPixel = 2;
+            gridRight.GraphProperties.GraphLineHeight = 18;
+            gridRight.GraphProperties.GraphLinePartialHeight = 36;
+            gridRight.GraphProperties.GraphPosition = DataGraphPositionType.OnBackgroundProportional;
+            gridRight.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
+            gridRight.GraphProperties.Opacity = 192;
+            gridRight.GraphProperties.TableRowHeightMax = 40;
+            gridRight.GraphProperties.TableRowHeightMin = 22;
+            gridRight.GraphProperties.UpperSpaceLogical = 0.2f;
+
+            GuiDataTable guiTable = new GuiDataTable() { ClassId = PlanUnitC.ClassNumber };
+            guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = PlanUnitC.ClassNumber });
+            guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
+            guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Jméno", Width = 200 });
+            gridRight.RowTable = guiTable;
+
+            // Data tabulky = Plánovací jednotky Pracovníci:
+            foreach (PlanUnitC planUnitC in this.PersonDict.Values)
+                this.AddPlanUnitCToGridRight(guiTable, planUnitC);
+
+            // this.AddProductOrderTagItems(guiTable);
+
+
+            this.GridRight = gridRight;
+            this.MainPage.RightPanel.Grids.Add(gridRight);
         }
         /// <summary>
         /// Připraví v Gridu podporu pro Center zobrazení
@@ -1335,18 +1376,31 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return false;
         }
         /// <summary>
-        /// Do dodané tabulky přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho operací.
+        /// Do dodané tabulky některého z gridů Center (=Work nebo Employee) přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho operací.
         /// </summary>
         /// <param name="guiTable"></param>
         /// <param name="planUnitC"></param>
-        protected void AddPlanUnitCToGrid(GuiDataTable guiTable, PlanUnitC planUnitC)
+        protected void AddPlanUnitCToGridCenter(GuiDataTable guiTable, PlanUnitC planUnitC)
         {
             GuiId rowGid = planUnitC.RecordGid;
-            GuiIdText mc = new GuiIdText() { GuiId = new GuiId(1365, planUnitC.RecordId), Text = planUnitC.MachinesCount.ToString() };
+            GuiIdText mc = new GuiIdText() { GuiId = new GuiId(PlanUnitC.ClassNumber, planUnitC.RecordId), Text = planUnitC.MachinesCount.ToString() };
             GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, mc);      // planUnitC.MachinesCount
             row.BackColor = planUnitC.RowBackColor;
             row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
-            row.Graph = planUnitC.CreateGuiGraph();
+            row.Graph = planUnitC.CreateGuiGraphWork();
+        }
+        /// <summary>
+        /// Do dodané tabulky gridu Right (=Employee) přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho směn.
+        /// </summary>
+        /// <param name="guiTable"></param>
+        /// <param name="planUnitC"></param>
+        protected void AddPlanUnitCToGridRight(GuiDataTable guiTable, PlanUnitC planUnitC)
+        {
+            GuiId rowGid = planUnitC.RecordGid;
+            GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name);
+            row.BackColor = planUnitC.RowBackColor;
+            row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
+            row.Graph = planUnitC.CreateGuiGraphTime();
         }
         /// <summary>
         /// Do dodané tabulky přidá linky mezi operacemi daného Výrobního příkazu
@@ -1360,8 +1414,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (guiTable.GraphLinks == null) guiTable.GraphLinks = new List<GuiGraphLink>();
             guiTable.GraphLinks.AddRange(links);
         }
-        protected void CreateRightPanel()
-        { }
         /// <summary>
         /// Vygeneruje kontextové funkce
         /// </summary>
@@ -1390,6 +1442,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GuiGrid GridLeft;
         protected GuiGrid GridCenterWorkplace;
         protected GuiGrid GridCenterPersons;
+        protected GuiGrid GridRight;
         protected DateTime DateTimeNow;
         protected DateTime DateTimeFirst;
         protected DateTime DateTimeLast;
@@ -1574,6 +1627,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameGridLeft = "GridLeft";
         protected const string GuiNameGridCenterTop = "GridCenterTop";
         protected const string GuiNameGridCenterBottom = "GridCenterBottom";
+        protected const string GuiNameGridRight = "GridRight";
 
         protected const string GuiNameInteractionSelectOperations = "InteractionSelectOperations";
         protected const string GuiNameInteractionFilterProductOrder = "InteractionFilterProductOrder";
@@ -1588,6 +1642,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiFullNameMainPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameMainPanel + GuiNameDelimiter;
         protected const string GuiFullNameGridCenterTop = GuiFullNameMainPanel + GuiNameGridCenterTop;
         protected const string GuiFullNameGridCenterBottom = GuiFullNameMainPanel + GuiNameGridCenterBottom;
+        protected const string GuiFullNameGridRight = GuiFullNameMainPanel + GuiNameGridRight;
 
         protected const string GuiNameContextFixItem = "CtxFixItem";
 
@@ -2122,9 +2177,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public decimal Qty { get; set; }
     }
     #endregion
-    #region class PlanUnitC : Pracoviště
+    #region class PlanUnitC : Plánovací jednotka kapacit = Pracoviště + Pracovník
     /// <summary>
-    /// PlanUnitC : Pracoviště
+    /// PlanUnitC : Plánovací jednotka kapacit = Pracoviště + Pracovník
     /// </summary>
     public class PlanUnitC : SubjectClass
     {
@@ -2182,19 +2237,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         public GuiTimeRange CurrentWorkTime { get; set; }
         /// <summary>
-        /// Vytvoří a vrátí graf za toto Pracoviště (obsahuje prvky = pracovní směny a prvky práce)
+        /// Vytvoří a vrátí graf práce za toto Pracoviště / Pracovníka (obsahuje prvky = pracovní směny a prvky práce)
         /// </summary>
         /// <returns></returns>
-        public GuiGraph CreateGuiGraph()
+        public GuiGraph CreateGuiGraphWork()
         {
             GuiGraph guiGraph = new GuiGraph();
             guiGraph.RowId = this.RecordGid;
 
             if (this.WorkTimes != null)
-                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem()));
+                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(false)));
 
             if (this.UnitTimes != null)
                 guiGraph.GraphItems.AddRange(this.UnitTimes.Select(unitTime => unitTime.CreateGuiGraphItem()));
+
+            return guiGraph;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí graf času za toto Pracoviště / Pracovníka (obsahuje prvky = pracovní směny a jejich Ratio)
+        /// </summary>
+        /// <returns></returns>
+        public GuiGraph CreateGuiGraphTime()
+        {
+            GuiGraph guiGraph = new GuiGraph();
+            guiGraph.RowId = this.RecordGid;
+
+            if (this.WorkTimes != null)
+                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(true)));
 
             return guiGraph;
         }
@@ -2328,7 +2397,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Vytvoří a vrátí prvek grafu za tuto pracovní směnu.
         /// </summary>
         /// <returns></returns>
-        public GuiGraphItem CreateGuiGraphItem()
+        public GuiGraphItem CreateGuiGraphItem(bool showUseRatio)
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
             {
@@ -2348,6 +2417,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 //RatioEndBackColor = this.RatioEndBackColor,
                 //RatioLineColor = this.RatioLineColor
             };
+
+            if (showUseRatio)
+            {
+                guiGraphItem.RatioBegin = this.RatioBegin;
+                guiGraphItem.RatioBeginBackColor = this.RatioBeginBackColor;
+            }
             return guiGraphItem;
         }
     }
