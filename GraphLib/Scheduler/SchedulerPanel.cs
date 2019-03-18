@@ -31,7 +31,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._MainControl = mainControl;
             this._GuiPage = guiPage;
             this._InitComponents();
-            this.LoadData();
         }
         /// <summary>
         /// Vytvoří GUI objekty potřebné pro tento panel.
@@ -312,7 +311,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda zajistí, že veškeré údaje dodané v <see cref="GuiPage"/> pro tuto stránku budou načteny a budou z nich vytvořeny příslušné tabulky.
         /// </summary>
-        protected void LoadData()
+        internal void LoadData()
         {
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadData", ""))
             {
@@ -321,6 +320,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GuiPage guiPage = this._GuiPage;
                 if (guiPage != null)
                 {
+                    this._LoadTables(guiPage.GraphItemTextTables, ref this._TableTextList);
+                    this._LoadTables(guiPage.GraphItemToolTipTables, ref this._TableToolTipList);
                     this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs);
                     this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid);
                     this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs);
@@ -372,14 +373,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
         /// </summary>
         public IEnumerable<MainDataTable> DataTables { get { return this._DataTableList; } }
-        /// <summary>
-        /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
-        /// </summary>
-        private List<MainDataTable> _DataTableList;
-        /// <summary>
-        /// Souhrn všech grafických gridů této stránky, bez ohledu na to ve kterém panelu se nacházejí
-        /// </summary>
-        private List<GGrid> _GGridList;
         /// <summary>
         /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je do dodaného vizuálního objektu <see cref="GGrid"/>.
         /// Současně je ukládá do <see cref="_DataTableList"/>.
@@ -486,7 +479,47 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             return mainDataTable;
         }
+        /// <summary>
+        /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
+        /// </summary>
+        private List<MainDataTable> _DataTableList;
+        /// <summary>
+        /// Souhrn všech grafických gridů této stránky, bez ohledu na to ve kterém panelu se nacházejí
+        /// </summary>
+        private List<GGrid> _GGridList;
         private const string _GRID_MAIN_NAME = "MainGrid";
+        #endregion
+        #region Společné textové tabulky
+        /// <summary>
+        /// Načte textová data (texty nebo tooltipy) z dodaných GUI tabulek do datových tabulek do this.
+        /// </summary>
+        /// <param name="guiTables"></param>
+        /// <param name="dataTables"></param>
+        private void _LoadTables(List<GuiDataTable> guiTables, ref List<Table> dataTables)
+        {
+            dataTables = null;
+            if (guiTables == null) return;
+            dataTables = new List<Table>();
+            foreach (GuiDataTable guiTable in guiTables)
+            {
+                Table dataTable = Table.CreateFrom(guiTable);
+                if (dataTable == null) continue;
+                dataTable.ReIndex();
+                dataTables.Add(dataTable);
+            }
+        }
+        /// <summary>
+        /// Tabulky, které mohou obsahovat Texty pro prvky grafů
+        /// </summary>
+        internal List<Table> TableTextList { get { return this._TableTextList; } }
+        /// <summary>
+        /// Tabulky, které mohou obsahovat ToolTipy pro prvky grafů
+        /// </summary>
+        internal List<Table> TableToolTipList { get { return this._TableToolTipList; } }
+        /// <summary> Tabulky, které mohou obsahovat Texty pro prvky grafů </summary>
+        private List<Table> _TableTextList;
+        /// <summary> Tabulky, které mohou obsahovat ToolTipy pro prvky grafů </summary>
+        private List<Table> _TableToolTipList;
         #endregion
         #region Child items
         /// <summary>

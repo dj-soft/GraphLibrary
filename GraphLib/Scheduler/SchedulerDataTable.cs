@@ -1111,8 +1111,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (graphItem == null) return null;
             List<Table> sourceTables = this.TableTextList;
+            List<Table> panelTables = this.Panel.TableTextList;
             Dictionary<GId, Row> cacheDict = this.TableTextRowDict;
-            return this.GetTableInfoRow(sourceTables, cacheDict, graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
+            return this.GetTableInfoRow(sourceTables, panelTables, cacheDict, graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
         }
         /// <summary>
         /// Metoda se pokusí najít první řádek z tabulky TOOLTIPŮ, obsahující informace pro daný prvek.
@@ -1124,22 +1125,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (graphItem == null) return null;
             List<Table> sourceTables = (this.TableToolTipList.Count > 0 ? this.TableToolTipList : this.TableTextList);
+            List<Table> panelTables = (this.Panel.TableToolTipList != null && this.Panel.TableToolTipList.Count > 0 ? this.Panel.TableToolTipList : this.Panel.TableTextList);
             Dictionary<GId, Row> cacheDict = this.TableToolTipRowDict;
-            return this.GetTableInfoRow(sourceTables, cacheDict, graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
+            return this.GetTableInfoRow(sourceTables, panelTables, cacheDict, graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
         }
         /// <summary>
         /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro některý GID.
         /// Může vrátit NULL.
         /// </summary>
-        /// <param name="sourceTables">Sada tabulek, kde lze najít potřebné texty</param>
+        /// <param name="sourceTables">Sada tabulek, kde lze najít potřebné texty, pochází přímo z konkrétní tabulky</param>
+        /// <param name="panelTables">Sada tabulek pocházející z úrovně Panel</param>
         /// <param name="cacheDict">Dictionary, kde jsou pro konkrétní GId ukládány dříve již hledané údaje (včetně hodnoty NULL, pokud neexistuje).</param>
         /// <param name="gids">Jednotlivé klíče, pro které se má řádek v tabulce hledat</param>
         /// <returns></returns>
-        protected Row GetTableInfoRow(List<Table> sourceTables, Dictionary<GId, Row> cacheDict, params GId[] gids)
+        protected Row GetTableInfoRow(List<Table> sourceTables, List<Table> panelTables, Dictionary<GId, Row> cacheDict, params GId[] gids)
         {
             foreach (GId gId in gids)
             {
-                Row row = this.GetTableInfoRowForGId(sourceTables, cacheDict, gId);
+                Row row = this.GetTableInfoRowForGId(sourceTables, panelTables, cacheDict, gId);
                 if (row != null) return row;
             }
             return null;
@@ -1148,11 +1151,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný GID.
         /// Může vrátit NULL.
         /// </summary>
-        /// <param name="sourceTables">Sada tabulek, kde lze najít potřebné texty</param>
+        /// <param name="sourceTables">Sada tabulek, kde lze najít potřebné texty, pochází přímo z konkrétní tabulky</param>
+        /// <param name="panelTables">Sada tabulek pocházející z úrovně Panel</param>
         /// <param name="cacheDict">Dictionary, kde jsou pro konkrétní GId ukládány dříve již hledané údaje (včetně hodnoty NULL, pokud neexistuje).</param>
         /// <param name="gId">Hledaný klíč</param>
         /// <returns></returns>
-        protected Row GetTableInfoRowForGId(List<Table> sourceTables, Dictionary<GId, Row> cacheDict, GId gId)
+        protected Row GetTableInfoRowForGId(List<Table> sourceTables, List<Table> panelTables, Dictionary<GId, Row> cacheDict, GId gId)
         {
             Row row = null;
             if (gId == null) return row;
@@ -1161,11 +1165,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (cacheDict.TryGetValue(gId, out row))
                 return row;
 
-            // V cache nic není - budeme hledat v kompletních datech = v soupisu tabulek:
-            foreach (Table table in sourceTables)
+            // V cache nic není - budeme hledat v kompletních datech = v soupisu tabulek na úrovni MainDataTable:
+            if (sourceTables != null && sourceTables.Count > 0)
             {
-                if (table.TryGetRow(gId, out row))
-                    break;
+                foreach (Table table in sourceTables)
+                {
+                    if (table.TryGetRow(gId, out row))
+                        break;
+                }
+            }
+
+            // Pokud jsme nenašli ve zdejší MainDataTable, můžeme se podívat i na úroveň Panelu:
+            if (row == null && (panelTables != null && panelTables.Count > 0))
+            {
+                foreach (Table table in panelTables)
+                {
+                    if (table.TryGetRow(gId, out row))
+                        break;
+                }
             }
 
             // Co jsme našli, dáme do cache (pro příští hledání), i kdyby to bylo NULL, a vrátíme to:

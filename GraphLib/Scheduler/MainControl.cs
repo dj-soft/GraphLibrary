@@ -115,7 +115,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vrací komplexní objekt obsahující reference na veškeré vytvořené instance dané stránky.
         /// </summary>
         /// <param name="guiPage"></param>
-        public SchedulerPanelInfo AddPage(GuiPage guiPage)
+        public MainDataPanel AddPage(GuiPage guiPage)
         {
             return this._SchedulerPanelAdd(guiPage);
         }
@@ -278,35 +278,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._TabContainer.ActivePageChanged += _TabContainerActivePageChanged;
             this.AddItem(this._TabContainer);
 
-            this._SchedulerPanelList = new List<SchedulerPanelInfo>();
+            this._DataPanelsList = new List<MainDataPanel>();
         }
         /// <summary>
         /// Metoda přidá jednu stránku s daty podle dat dodaných v parametru
         /// </summary>
         /// <param name="guiPage"></param>
-        private SchedulerPanelInfo _SchedulerPanelAdd(GuiPage guiPage)
+        private MainDataPanel _SchedulerPanelAdd(GuiPage guiPage)
         {
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "SchedulerPanelAdd", ""))
             {
                 int tabPageIndex = this._TabContainer.TabCount;
                 SchedulerPanel schedulerPanel = new SchedulerPanel(this, guiPage);
                 GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, guiPage.Title, toolTip: guiPage.ToolTip, image: null);
-                SchedulerPanelInfo tspInfo = new SchedulerPanelInfo(guiPage, tabPageIndex, tabPage, schedulerPanel);
-                this._SchedulerPanelList.Add(tspInfo);
+                MainDataPanel tspInfo = new MainDataPanel(guiPage, tabPageIndex, tabPage, schedulerPanel);
+                this._DataPanelsList.Add(tspInfo);
+                schedulerPanel.LoadData();
                 return tspInfo;
             }
         }
         /// <summary>
         /// Soupis všech stránek s daty, zobrazenými v GUI. Typický bývá jedna.
-        /// Stránky (instance <see cref="SchedulerPanelInfo"/>) obsahují referenci na vstupní data <see cref="SchedulerPanelInfo.GuiPage"/>,
-        /// refeenci na vizuální control Scheduleru <see cref="SchedulerPanelInfo.SchedulerPanel"/>
-        /// a refeenci na záložku stránky <see cref="SchedulerPanelInfo.GTabPage"/>.
+        /// Stránky (instance <see cref="MainDataPanel"/>) obsahují referenci na vstupní data <see cref="MainDataPanel.GuiPage"/>,
+        /// refeenci na vizuální control Scheduleru <see cref="MainDataPanel.SchedulerPanel"/>
+        /// a refeenci na záložku stránky <see cref="MainDataPanel.GTabPage"/>.
         /// </summary>
-        public IEnumerable<SchedulerPanelInfo> SchedulerPanels { get { return this._SchedulerPanelList; } }
+        public MainDataPanel[] DataPanels { get { return this._DataPanelsList.ToArray(); } }
         /// <summary>
         /// Instance všech Scheduler panelů a na něj napojených dat.
         /// </summary>
-        private List<SchedulerPanelInfo> _SchedulerPanelList;
+        private List<MainDataPanel> _DataPanelsList;
         /// <summary>
         /// Po změně záložky, která reprezentuje komplexní GUI datového zdroje
         /// </summary>
@@ -322,17 +323,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTabContainer _TabContainer;
         /// <summary>
         /// Aktuálně zobrazená stránka s daty.
-        /// Obsahue (vrací) instanci <see cref="SchedulerPanelInfo"/> ze seznamu <see cref="_SchedulerPanelList"/>, která se týká té stránky <see cref="GTabPage"/>, 
+        /// Obsahue (vrací) instanci <see cref="MainDataPanel"/> ze seznamu <see cref="_DataPanelsList"/>, která se týká té stránky <see cref="GTabPage"/>, 
         /// která je aktivní v <see cref="_TabContainer"/>.
         /// </summary>
-        protected SchedulerPanelInfo SchedulerTabPanelCurrent
+        protected MainDataPanel SchedulerTabPanelCurrent
         {
             get
             {
                 if (this._TabContainer == null) return null;
                 GTabPage activePage = this._TabContainer.ActivePage;
                 if (activePage == null) return null;
-                return this._SchedulerPanelList.FirstOrDefault(p => Object.ReferenceEquals(p.GTabPage, activePage));
+                return this._DataPanelsList.FirstOrDefault(p => Object.ReferenceEquals(p.GTabPage, activePage));
             }
         }
         /// <summary>
@@ -342,7 +343,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Aktuálně zobrazovaný Scheduler panel
         /// </summary>
-        protected SchedulerPanel SchedulerPanelCurrent { get { SchedulerPanelInfo tsp = this.SchedulerTabPanelCurrent;  return (tsp != null ? tsp.SchedulerPanel : null); } }
+        protected SchedulerPanel SchedulerPanelCurrent { get { MainDataPanel tsp = this.SchedulerTabPanelCurrent;  return (tsp != null ? tsp.SchedulerPanel : null); } }
         #endregion
         #region Dialogy
         /// <summary>
@@ -414,46 +415,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public ComponentSize ToolbarSize { get { return this._ToolbarSize; } set { this._ToolbarSize = value; } } private ComponentSize _ToolbarSize = ComponentSize.Medium;
         #endregion
-    }
-    #endregion
-    #region class SchedulerPanelInfo - třída obsahující data o jednom panelu.
-    /// <summary>
-    /// SchedulerPanelInfo - třída obsahující data o jednom panelu.
-    /// Obsahuje referenci na vstupní data <see cref="GuiPage"/>, referenci na záložku <see cref="GTabPage"/> 
-    /// i referenci na vlastní vizuální control <see cref="SchedulerPanel"/>.
-    /// </summary>
-    public class SchedulerPanelInfo
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="guiPage"></param>
-        /// <param name="tabPageIndex"></param>
-        /// <param name="gTabPage"></param>
-        /// <param name="schedulerPanel"></param>
-        public SchedulerPanelInfo(GuiPage guiPage, int tabPageIndex, GTabPage gTabPage, SchedulerPanel schedulerPanel)
-        {
-            this.GuiPage = guiPage;
-            this.TabPageIndex = tabPageIndex;
-            this.GTabPage = gTabPage;
-            this.SchedulerPanel = schedulerPanel;
-        }
-        /// <summary>
-        /// Vstupní data pro tento panel
-        /// </summary>
-        public GuiPage GuiPage { get; private set; }
-        /// <summary>
-        /// Index záložky
-        /// </summary>
-        public int TabPageIndex { get; private set; }
-        /// <summary>
-        /// Objekt záložky obsahující panel
-        /// </summary>
-        public GTabPage GTabPage { get; private set; }
-        /// <summary>
-        /// Data panelu
-        /// </summary>
-        public SchedulerPanel SchedulerPanel { get; private set; }
     }
     #endregion
 }

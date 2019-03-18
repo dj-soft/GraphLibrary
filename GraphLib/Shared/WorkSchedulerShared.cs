@@ -357,6 +357,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiPanel BottomPanel { get; private set; }
         /// <summary>
+        /// Sada tabulek, které mohou obsahovat texty pro prvky grafů.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public List<GuiDataTable> GraphItemTextTables { get; set; }
+        /// <summary>
+        /// Sada tabulek, které mohou obsahovat tooltipy pro prvky grafů.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public List<GuiDataTable> GraphItemToolTipTables { get; set; }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]

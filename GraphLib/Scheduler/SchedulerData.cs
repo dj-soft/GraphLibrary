@@ -1873,8 +1873,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._MainControl.ClearPages();
                 this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
                 this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
-                foreach (GuiPage guiPage in this._GuiPages.Pages)
-                    App.TryRun(() => this._MainControl.AddPage(guiPage));
+                this._LoadPages();
                 this._FillDataTables();
                 this._PrepareAllTablesAfterLoad();
 
@@ -1885,6 +1884,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._MainControl.SynchronizedTime.ValueChanging += _SynchronizedTimeValueChanging;
             }
         }
+        /// <summary>
+        /// Načte data všech datových stránek <see cref="GuiPage"/>: vytvoří pro ně vizuální panely, načte jejich data, tabulky, grafy, atd.
+        /// </summary>
+        private void _LoadPages()
+        {
+            foreach (GuiPage guiPage in this._GuiPages.Pages)
+            {
+                App.TryRun(() =>
+                {
+                    var panel = this._MainControl.AddPage(guiPage);
+                });
+            }
+        }
+        /// <summary>
+        /// Soupis všech stránek s daty, zobrazenými v GUI. Typický bývá jedna.
+        /// Stránky (instance <see cref="MainDataPanel"/>) obsahují referenci na vstupní data <see cref="MainDataPanel.GuiPage"/>,
+        /// refeenci na vizuální control Scheduleru <see cref="MainDataPanel.SchedulerPanel"/>
+        /// a refeenci na záložku stránky <see cref="MainDataPanel.GTabPage"/>.
+        /// </summary>
+        internal MainDataPanel[] DataPanels { get { return this._MainControl.DataPanels; } }
         /// <summary>
         /// Souhrn všech datových tabulek ze všech panelů.
         /// Každá tabulka má své unikátní jméno (alespoň měla by mít), uložené v <see cref="MainDataTable.TableName"/>.
@@ -1898,7 +1917,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillDataTables", ""))
             {
                 List<MainDataTable> tableList = new List<MainDataTable>();
-                foreach (SchedulerPanelInfo panel in this._MainControl.SchedulerPanels)
+                foreach (MainDataPanel panel in this._MainControl.DataPanels)
                     tableList.AddRange(panel.SchedulerPanel.DataTables);
                 this._DataTables = tableList.ToArray();
             }
@@ -1926,16 +1945,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return (this._DataTables != null && !String.IsNullOrEmpty(fullName) ? this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName)) : null);
         }
         /// <summary>
-        /// Souhrn všech datových tabulek ze všech panelů.
-        /// </summary>
-        private MainDataTable[] _DataTables;
-        /// <summary>
         /// Tabulka s daty, která je nyní aktivní.
         /// Obsahuje tabulku, která má nebo měla poslední focus.
         /// Pokud focus odejde na jiný objekt, než tabulka, pak zde zůstává odkaz na poslední tabulku.
         /// Null je zde jen po spuštění, ale je to přípustný stav.
         /// </summary>
         internal MainDataTable ActiveDataTable { get; private set; }
+        /// <summary>
+        /// Souhrn všech datových tabulek ze všech panelů.
+        /// </summary>
+        private MainDataTable[] _DataTables;
         #endregion
         #region Kontextové menu
         /// <summary>
@@ -3002,6 +3021,46 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="guiResponse"></param>
         void ProcessResponse(GuiResponse guiResponse);
+    }
+    #endregion
+    #region class MainDataPanel - třída obsahující data o jednom panelu.
+    /// <summary>
+    /// MainDataPanel - třída obsahující data o jednom panelu.
+    /// Obsahuje referenci na vstupní data <see cref="GuiPage"/>, referenci na záložku <see cref="GTabPage"/> 
+    /// i referenci na vlastní vizuální control <see cref="SchedulerPanel"/>.
+    /// </summary>
+    public class MainDataPanel
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="guiPage"></param>
+        /// <param name="tabPageIndex"></param>
+        /// <param name="gTabPage"></param>
+        /// <param name="schedulerPanel"></param>
+        public MainDataPanel(GuiPage guiPage, int tabPageIndex, GTabPage gTabPage, SchedulerPanel schedulerPanel)
+        {
+            this.GuiPage = guiPage;
+            this.TabPageIndex = tabPageIndex;
+            this.GTabPage = gTabPage;
+            this.SchedulerPanel = schedulerPanel;
+        }
+        /// <summary>
+        /// Vstupní data pro tento panel
+        /// </summary>
+        public GuiPage GuiPage { get; private set; }
+        /// <summary>
+        /// Index záložky
+        /// </summary>
+        public int TabPageIndex { get; private set; }
+        /// <summary>
+        /// Objekt záložky obsahující panel
+        /// </summary>
+        public GTabPage GTabPage { get; private set; }
+        /// <summary>
+        /// Data panelu
+        /// </summary>
+        public SchedulerPanel SchedulerPanel { get; private set; }
     }
     #endregion
     #region class GraphItemDragMoveInfo : Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
