@@ -1094,6 +1094,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterBottom, Title = "Pracovníci" };
 
             this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameRowsCenterBottom);
+            gridCenterPersons.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " RowRoot, ToItem";
 
             gridCenterPersons.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -1111,7 +1112,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
                 UnitTime.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
                 "0:N";                                // 0 = jiné třídy   : nepřenášet
-
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
