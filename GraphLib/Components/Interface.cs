@@ -552,9 +552,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="mouseRelativePoint">Coordinate of mouse relative to CurrentItem.ActiveBounds.Location. Can be a null (in case when ExistsItem is false).</param>
         /// <param name="dragOriginBounds">Original area before current Drag operacion begun (in DragMove events)</param>
         /// <param name="dragToBounds">Target area during Drag operation (in DragMove event)</param>
+        /// <param name="targetPosition">Target prvek při Drag and Move operacích</param>
         public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
             Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
-            Rectangle? dragOriginBounds, Rectangle? dragToBounds)
+            Rectangle? dragOriginBounds, Rectangle? dragToBounds, GActivePosition targetPosition)
               : this()
         {
             this.BoundsInfo = boundsInfo;
@@ -565,6 +566,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.MouseRelativePoint = mouseRelativePoint;
             this.DragMoveOriginBounds = dragOriginBounds;
             this.DragMoveToBounds = dragToBounds;
+            this.DragMoveToTarget = targetPosition;
         }
         /// <summary>
         /// Konstruktor pro událost pocházející z klávesnice
@@ -679,6 +681,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Je vyplněno pouze v Drag and Drop událostech, jinak je null.
         /// </summary>
         public Rectangle? DragMoveToBounds { get; protected set; }
+        /// <summary>
+        /// Prvek, nad kterým se nyní pohybuje myš v procesu Drag and Move (při akci DragStep).
+        /// </summary>
+        public GActivePosition DragMoveToTarget { get; protected set; }
         /// <summary>
         /// Prostor, ve kterém může probíhat výběr pomocí zarámování (DragFrame).
         /// Prostor je smysluplné nastavit pouze v eventu, kdy <see cref="ChangeState"/> == <see cref="GInteractiveChangeState.LeftDragFrameBegin"/> (nebo <see cref="GInteractiveChangeState.RightDragFrameBegin"/>.
@@ -902,9 +908,13 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Find Item at location (explicit, current)
         /// <summary>
-        /// Item, which BoundAbsolute is on (this.MouseCurrentAbsolutePoint).
+        /// Prvek, který je přetahován
         /// </summary>
-        public IInteractiveItem ItemAtCurrentMousePoint { get { return this._ChangeArgs.ItemAtCurrentMousePoint; } }
+        public IInteractiveItem DragSourceItem { get { return this._ChangeArgs.ItemAtCurrentMousePoint; } }
+        /// <summary>
+        /// Prvek, nad kterým se nachází myš při přetahování
+        /// </summary>
+        public IInteractiveItem DragTargetItem { get { return this._ChangeArgs.DragMoveToTarget?.ActiveItem; } }
         /// <summary>
         /// Tato metoda najde první Top-Most objekt, který se nachází na dané absolutní souřadnici.
         /// Může vrátit null, když tam nic není.

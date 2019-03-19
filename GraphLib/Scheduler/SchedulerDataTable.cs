@@ -1856,12 +1856,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.DragMoveRows = DragMoveRowsInfo.CreateForProperties(this, this.GuiGrid.GridProperties);
             this.TableRow.AllowRowDragMove = this.DragMoveRows.DragMoveEnabled;
+            if (this.DragMoveRows.DragMoveEnabled)
+            {   // Pokud je povoleno provádět Drag and Move, zaregistruji se eventhandler pro dvě patřičné události:
+                this.TableRow.TableRowDragMove += TableRow_TableRowDragMove;
+                this.TableRow.TableRowDragDrop += TableRow_TableRowDragDrop;
+            }
+        }
+        /// <summary>
+        /// Eventhandler události Drag and Move, volaný při přetahování řádků this tabulky na jiné místo.
+        /// Eventhandler reaguje na prvek, nad kterým se právě nachází myš (=cíl přetahování),
+        /// a podle pravidel <see cref="DragMoveRowsInfo"/> vyhodnocuje povolení / zákaz pro DragDrop na daném cíli.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void TableRow_TableRowDragMove(object sender, TableRowDragMoveArgs args)
+        {
+            string tt = ((args.TargetItem != null) ? args.TargetItem.GetType().Name : "");
+            args.TargetEnabled = (args.TargetItem != null && args.TargetItem is Components.Graph.GTimeGraphItem);
+        }
+        /// <summary>
+        /// Eventhandler události Drag Drop, volaný při upuštění řádků při přetahování řádků this tabulky na jiné místo.
+        /// Eventhandler by měl zajistit vyvolání aplikační logiky, včetně vyvolání funkce datového zdroje.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void TableRow_TableRowDragDrop(object sender, TableRowDragMoveArgs args)
+        {
         }
         /// <summary>
         /// Analyzovaný režim Drag and Move pro řádky this tabulky.
         /// Pochází z údajů v <see cref="GuiGridProperties.RowDragMoveToTarget"/>.
         /// </summary>
         protected DragMoveRowsInfo DragMoveRows { get; private set; }
+        #region Třídy DragMoveRowsInfo a DragMoveRowsOneTargetInfo : obsahují definice pravidel pro Drag and Move řádků
         /// <summary>
         /// Třída pro analýzu režimu Drag and Move pro řádky this tabulky.
         /// Pochází z údajů v <see cref="GuiGridProperties.RowDragMoveToTarget"/>.
@@ -2034,6 +2061,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             public Dictionary<int, object> TargetObjectGraphItemClassDict { get; private set; }
 
         }
+        #endregion
         #endregion
         #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)

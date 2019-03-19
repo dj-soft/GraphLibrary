@@ -2080,7 +2080,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             base.AfterStateChangedFocusLeave(e);
         }
         #endregion
-        #region Drag and Move řádků tabulky
+        #region Drag and Move řádků tabulky (voláno z GRowHeader a GCell)
         /// <summary>
         /// Řídí proces Drag and Move pro přemístění řádku, všechny fáze (viz argument e, <see cref="GDragActionArgs.DragAction"/>)
         /// </summary>
@@ -2097,10 +2097,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     break;
                 case DragActionType.DragThisMove:
                     this.RowDragMousePointAbsolute = e.MouseCurrentAbsolutePoint;
-                    this.RowDragMouseState = this.RowDragGetState(e);
+                    this.RowDragMouseState = this.RowDragGetCurrentState(e);
                     break;
                 case DragActionType.DragThisDrop:
-
+                    this.RowDragCallDropEvent(e, this.RowDragMouseState);
                     this.RowDragMoveClear();
                     break;
                 case DragActionType.DragThisEnd:
@@ -2132,10 +2132,17 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Point point = (this.RowDragMousePointAbsolute.HasValue ? this.RowDragMousePointAbsolute.Value : System.Windows.Forms.Control.MousePosition).Add(-15, 8);
             Size size = tableText.CurrentSize.Value.Min(500, 350);
             Rectangle bounds = new Rectangle(point, size);
-            Color backColor = Color.FromArgb(210, 180, 240, 180);
-            Color titleColor = Color.FromArgb(210, 180, 200, 250);
+
+            bool targetEnabled = (this.RowDragMouseState != null ? this.RowDragMouseState.TargetEnabled : false);
+
+            Color backColor = (targetEnabled ? Color.FromArgb(230, 180, 240, 180) : Color.FromArgb(110, 160, 160, 160));
+            Color titleColor = (targetEnabled ? Color.FromArgb(230, 180, 200, 250) : Color.FromArgb(110, 160, 160, 160));
+            Color borderColor = (targetEnabled ? Color.FromArgb(230, 130, 130, 20) : Color.FromArgb(170, 60, 60, 60));
+
             tableText.Rows[0].BackColor = titleColor;
-            tableText.Rows[0].BackEffect3D = 0.25f;
+            tableText.Rows[0].BackEffect3D = (targetEnabled ? 0.25f : 0.10f);
+            tableText.BorderColor = borderColor;
+
             GPainter.DrawTableText(e.Graphics, bounds, tableText, backColor);
         }
         /// <summary>
@@ -2155,11 +2162,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     if (currentRow != null)
                         rows = new Row[] { currentRow };
                     break;
+                case TableRowDragMoveSourceMode.ActivePlusSelectedRows:
+                    rows = this.Rows.Where(r => r.IsChecked || (currentRow != null && r.RowId == currentRow.RowId)).ToArray();
+                    break;
+                case TableRowDragMoveSourceMode.SelectedOrActiveRow:
+                    rows = this.Rows.Where(r => r.IsChecked).ToArray();
+                    if (rows.Length == 0)
+                        rows = new Row[] { currentRow };
+                    break;
                 case TableRowDragMoveSourceMode.OnlySelectedRows:
                     rows = this.Rows.Where(r => r.IsChecked).ToArray();
-                    break;
-                case TableRowDragMoveSourceMode.ActiveOrSelectedRows:
-                    rows = this.Rows.Where(r => r.IsChecked || (currentRow != null && r.RowId == currentRow.RowId)).ToArray();
                     break;
             }
             return rows;
@@ -2173,7 +2185,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             TableText tableText = new TableText();
 
-            Column[] columns = this.Columns;
+            Column[] columns = this.Columns.Where(c => !c.UseTimeAxis).ToArray();        // Sloupce zdrojové tabulky vyjma sloupec s grafem
             TableTextRow titleRow = new TableTextRow();
             titleRow.Font = FontInfo.DefaultBold;
             foreach (var column in columns)
@@ -2211,10 +2223,22 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
-        protected TableRowDragMoveArgs RowDragGetState(GDragActionArgs e)
-        { }
-
-        protected TableRowDragMoveArgs RowDragMouseState;
+        protected TableRowDragMoveArgs RowDragGetCurrentState(GDragActionArgs e)
+        {
+            // Vyvoláme případnou aplikační logiku (event navázaný v DataTable), který řeší povolení pro Drop na daném cíli:
+            TableRowDragMoveArgs args = new TableRowDragMoveArgs(e, this.RowDragActiveRows);
+            this.CallTableRowDragMove(args);
+            return args;
+        }
+        protected void RowDragCallDropEvent(GDragActionArgs e, TableRowDragMoveArgs args)
+        {
+            if (args != null)
+                this.CallTableRowDragDrop(args);
+        }
+        /// <summary>
+        /// Data o procesu RowDragMove po poslední změně pozice Target
+        /// </summary>
+        protected TableRowDragMoveArgs RowDragMouseState { get; private set; }
         /// <summary>
         /// Řádky, jichž se týká aktuální Drag and Move řádků
         /// </summary>
@@ -2991,6 +3015,26 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellRightClick(cell, e, !this.IsSuppressedEvent);
+        }
+        /// <summary>
+        /// Vyvolá událost RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        protected void CallTableRowDragMove(TableRowDragMoveArgs args)
+        {
+            ITableInternal target = (this.DataTable as ITableInternal);
+            if (target != null)
+                target.CallTableRowDragMove(args, !this.IsSuppressedEvent);
+        }
+        /// <summary>
+        /// Vyvolá událost RowDragDrop = při ukončení přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        protected void CallTableRowDragDrop(TableRowDragMoveArgs args)
+        {
+            ITableInternal target = (this.DataTable as ITableInternal);
+            if (target != null)
+                target.CallTableRowDragDrop(args, !this.IsSuppressedEvent);
         }
         #endregion
     }

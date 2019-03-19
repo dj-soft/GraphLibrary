@@ -1166,7 +1166,7 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get { return this._RowDragMoveSourceMode; }
             set { this._RowDragMoveSourceMode = value; }
-        } private TableRowDragMoveSourceMode _RowDragMoveSourceMode = TableRowDragMoveSourceMode.ActiveOrSelectedRows;
+        } private TableRowDragMoveSourceMode _RowDragMoveSourceMode = TableRowDragMoveSourceMode.ActivePlusSelectedRows;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit výšku řádku (myší). Default = true;
         /// </summary>
@@ -1609,7 +1609,47 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public event GPropertyEventHandler<Cell> ActiveCellRightClick;
 
-        qqq;
+        /// <summary>
+        /// Obsluha události RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
+        void ITableInternal.CallTableRowDragMove(TableRowDragMoveArgs args, bool callEvents)
+        {
+            this.OnTableRowDragMove(args);
+            if (callEvents && this.TableRowDragMove != null)
+                this.TableRowDragMove(this, args);
+        }
+        /// <summary>
+        /// Háček OnTableRowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableRowDragMove(TableRowDragMoveArgs args) { }
+        /// <summary>
+        /// Událost, která se vyvolá v průběhu RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        public event TableRowDragMoveHandler TableRowDragMove;
+
+        /// <summary>
+        /// Obsluha události RowDragDrop = při ukončení přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
+        void ITableInternal.CallTableRowDragDrop(TableRowDragMoveArgs args, bool callEvents)
+        {
+            this.OnTableRowDragDrop(args);
+            if (callEvents && this.TableRowDragDrop != null)
+                this.TableRowDragDrop(this, args);
+        }
+        /// <summary>
+        /// Háček OnTableRowDragDrop = při ukončení přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableRowDragDrop(TableRowDragMoveArgs args) { }
+        /// <summary>
+        /// Událost, která se vyvolá na konci RowDragDrop = při ukončení přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        public event TableRowDragMoveHandler TableRowDragDrop;
         #endregion
         #region Eventy volané z tabulky na základě logických dat
         /// <summary>
@@ -4404,12 +4444,49 @@ namespace Asol.Tools.WorkScheduler.Data
     }
     #endregion
     #region TableRowDragMoveArgs + TableRowDragMoveHandler : data pro podporu rozhodování o Drag and Move celých řádků tabulky
+    /// <summary>
+    /// Delegát = předpis pro handlery událostí Drag
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
     public delegate void TableRowDragMoveHandler(object sender, TableRowDragMoveArgs args);
     /// <summary>
     /// TableRowDragMoveArgs : data pro podporu rozhodování o Drag and Move celých řádků tabulky
     /// </summary>
     public class TableRowDragMoveArgs : EventArgs
-    { }
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dragArgs"></param>
+        /// <param name="dragRows"></param>
+        public TableRowDragMoveArgs(GDragActionArgs dragArgs, Row[] dragRows)
+        {
+            this._DragArgs = dragArgs;
+            this._DragRows = dragRows;
+        }
+        private GDragActionArgs _DragArgs;
+        private Row[] _DragRows;
+
+
+        /// <summary>
+        /// Grafický prvek aktuálně se nacházející pod myší
+        /// </summary>
+        public IInteractiveItem SourceItem { get { return this._DragArgs.DragSourceItem; } }
+        /// <summary>
+        /// Grafický prvek aktuálně se nacházející pod myší
+        /// </summary>
+        public IInteractiveItem TargetItem { get { return this._DragArgs.DragTargetItem; } }
+        /// <summary>
+        /// Řádky zdrojové tabulky, které jsou přetahovány
+        /// </summary>
+        public IEnumerable<Row> DragRows { get { return this._DragRows; } }
+
+        /// <summary>
+        /// Cíl je povolený = je možno na něm provést Drop
+        /// </summary>
+        public bool TargetEnabled { get; set; }
+    }
     #endregion
     #region Interfaces
     /// <summary>
@@ -4500,6 +4577,18 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
+        void CallTableRowDragMove(TableRowDragMoveArgs args, bool callEvents);
+        /// <summary>
+        /// Událost RowDragDrop = při ukončení přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
+        void CallTableRowDragDrop(TableRowDragMoveArgs args, bool callEvents);
 
         /// <summary>
         /// Invaliduje pole štítků
@@ -5128,7 +5217,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Přesouvat se budou řádky označené kliknutím plus řádek, který chytila myš.
         /// Toto je výchozí nastavení pro tabulku <see cref="Table"/>.
         /// </summary>
-        ActiveOrSelectedRows,
+        ActivePlusSelectedRows,
+        /// <summary>
+        /// Přesouvat se budou řádky označené kliknutím, ale pokud nejsou označeny žádné, 
+        /// tak se přesune řádek, který chytila myš.
+        /// </summary>
+        SelectedOrActiveRow,
         /// <summary>
         /// Přesouvat se budou pouze řádky označené kliknutím. Řádek, který chytila myš, se přesouvat nebude, pokud není označen.
         /// </summary>
