@@ -556,6 +556,72 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region DrawTableText
+        /// <summary>
+        /// Metoda vykreslí danou textovou tabulku
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="tableText"></param>
+        /// <param name="tableBackColor"></param>
+        public static void DrawTableText(Graphics graphics, Rectangle boundsAbsolute, TableText tableText, Color? tableBackColor = null)
+        {
+            using (GraphicsClip(graphics, boundsAbsolute))
+            {
+                Color backColor = tableBackColor ?? tableText.BackColor ?? Skin.Control.ControlBackColor;
+                GPainter.DrawAreaBase(graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled);
+
+                if (tableText != null && tableText.Rows.Count > 0)
+                {
+                    if (tableText.NeedMeasure) tableText.TextMeasure(graphics);
+
+                    List<Data.Int32Range> columns = tableText.ColumnRanges;
+                    int count = columns.Count;
+                    int y = 2;
+                    foreach (var row in tableText.Rows)
+                    {
+                        int height = row.CurrentSize.Value.Height;
+                        int c = row.Cells.Count;
+                        if (c > count) c = count;
+                        for (int i = 0; i < c; i++)
+                        {
+                            Data.Int32Range column = columns[i];
+                            var cell = row.Cells[i];
+                            Rectangle cellBounds = new Rectangle(column.Begin + 2, y, column.Size, height).Add(boundsAbsolute.Location);
+                            DrawTableCell(graphics, cellBounds, cell);
+                        }
+                        y += height;
+                    }
+                }
+
+                Brush brush = Skin.Brush(tableText.CurrentBorderColor);
+                Rectangle[] borders = boundsAbsolute.GetBorders(2, RectangleSide.Left, RectangleSide.Top, RectangleSide.Right, RectangleSide.Bottom);
+                foreach (Rectangle border in borders)
+                    graphics.FillRectangle(brush, border);
+
+            }
+        }
+        private static void DrawTableCell(Graphics graphics, Rectangle cellBounds, TableTextCell cell)
+        {
+            Color? backColor = cell.CurrentBackColor;
+            if (backColor.HasValue)
+                DrawEffect3D(graphics, cellBounds, backColor.Value, Orientation.Horizontal, cell.CurrentBackEffect3D);
+
+            Rectangle textBounds = cell.GetTextBounds(cellBounds);
+            DrawString(graphics, textBounds, cell.Text, cell.CurrentTextColor, cell.CurrentFont, cell.CurrentAlignment);
+
+            Color? lineHColor = cell.CurrentLineHColor;
+            Color? lineVColor = cell.CurrentLineVColor;
+            if (lineHColor.HasValue || lineVColor.HasValue)
+            {
+                Rectangle[] borders = cellBounds.GetBorders(1, RectangleSide.Bottom, RectangleSide.Right);
+                if (lineHColor.HasValue)
+                    graphics.FillRectangle(Skin.Brush(lineHColor.Value), borders[0]);
+                if (lineVColor.HasValue)
+                    graphics.FillRectangle(Skin.Brush(lineVColor.Value), borders[1]);
+            }
+        }
+        #endregion
         #region MeasureString
         /// <summary>
         /// Metoda vrátí rozměry daného textu v daném fontu, rozměr odhadne jen podle vlastností fontu.

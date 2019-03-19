@@ -499,6 +499,8 @@ namespace Asol.Tools.WorkScheduler.Application
             System.Windows.Forms.Form mainForm = MainForm;
             if (mainForm == null)
                 _ShowMsgGui(null, message, icon);
+            else if (mainForm.IsDisposed)
+                _ShowMsgGui(null, message, icon);
             else if (mainForm.InvokeRequired)
                 mainForm.BeginInvoke(new Action<System.Windows.Forms.Form, string, System.Windows.Forms.MessageBoxIcon>(_ShowMsgGui), mainForm, message, icon);
             else

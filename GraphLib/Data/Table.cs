@@ -1158,8 +1158,15 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get { return this._AllowRowDragMove; }
             set { this._AllowRowDragMove = value; }
-        }
-        private bool _AllowRowDragMove = false;
+        } private bool _AllowRowDragMove = false;
+        /// <summary>
+        /// Volba výběru řádků, které se budou přesouvat v procesu Drag and Move.
+        /// </summary>
+        public TableRowDragMoveSourceMode RowDragMoveSourceMode
+        {
+            get { return this._RowDragMoveSourceMode; }
+            set { this._RowDragMoveSourceMode = value; }
+        } private TableRowDragMoveSourceMode _RowDragMoveSourceMode = TableRowDragMoveSourceMode.ActiveOrSelectedRows;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit výšku řádku (myší). Default = true;
         /// </summary>
@@ -1601,6 +1608,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá RightClick na dané buňce tabulky
         /// </summary>
         public event GPropertyEventHandler<Cell> ActiveCellRightClick;
+
+        qqq;
         #endregion
         #region Eventy volané z tabulky na základě logických dat
         /// <summary>
@@ -4394,6 +4403,14 @@ namespace Asol.Tools.WorkScheduler.Data
 
     }
     #endregion
+    #region TableRowDragMoveArgs + TableRowDragMoveHandler : data pro podporu rozhodování o Drag and Move celých řádků tabulky
+    public delegate void TableRowDragMoveHandler(object sender, TableRowDragMoveArgs args);
+    /// <summary>
+    /// TableRowDragMoveArgs : data pro podporu rozhodování o Drag and Move celých řádků tabulky
+    /// </summary>
+    public class TableRowDragMoveArgs : EventArgs
+    { }
+    #endregion
     #region Interfaces
     /// <summary>
     /// Předpis pro tabulku, aby mohla dostávat události napřímo
@@ -5093,6 +5110,29 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Plná čára 2 pixely
         /// </summary>
         Line2px
+    }
+    /// <summary>
+    /// Volba výběru řádků, které se budou přesouvat v procesu Drag and Move.
+    /// </summary>
+    public enum TableRowDragMoveSourceMode
+    {
+        /// <summary>
+        /// Žádný řádek se nebude přesouvat
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Pouze řádek, který chytila myš. Ostatní označené řádky se přesouvat nebudou.
+        /// </summary>
+        OnlyActiveRow,
+        /// <summary>
+        /// Přesouvat se budou řádky označené kliknutím plus řádek, který chytila myš.
+        /// Toto je výchozí nastavení pro tabulku <see cref="Table"/>.
+        /// </summary>
+        ActiveOrSelectedRows,
+        /// <summary>
+        /// Přesouvat se budou pouze řádky označené kliknutím. Řádek, který chytila myš, se přesouvat nebude, pokud není označen.
+        /// </summary>
+        OnlySelectedRows
     }
     #endregion
 }

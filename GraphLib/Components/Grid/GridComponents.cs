@@ -1501,15 +1501,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this.OwnerITable.RowHeaderClick(e, this.OwnerRow);
         }
-        /// <summary>
-        /// Je povoleno provést Drag and Drop
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        protected override bool GetMouseDragMove(bool value)
-        {
-            return (this.OwnerTable.AllowRowReorder || this.OwnerTable.AllowRowDragMove);
-        }
         #endregion
         #region Drag and Move
         /// <summary>
@@ -1520,53 +1511,67 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.Is.DrawDragMoveGhostStandard = false;
             this.Is.DrawDragMoveGhostInteractive = true;
         }
+        /// <summary>
+        /// Je povoleno provést Drag and Drop
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool GetMouseDragMove(bool value)
+        {
+            return (this.OwnerTable.AllowRowReorder || this.OwnerTable.AllowRowDragMove);
+        }
+        /// <summary>
+        /// Proces Drag and Move, akce This:Start
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
         protected override void DragThisStart(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             base.DragThisStart(e, targetRelativeBounds);
-
-            var columns = this.OwnerGTable.Columns;
-            this.DragCurrentContent = new TableText();
-            TableRowText titleRow = new TableRowText();
-            titleRow.Font = FontInfo.DefaultBold;
-            foreach (var column in columns)
-            {
-                TableOneText textCell = new TableOneText(column.Title, ContentAlignment.MiddleCenter, column.ColumnHeader.Bounds.Width);
-                titleRow.Cells.Add(textCell);
-            }
-            this.DragCurrentContent.Rows.Add(titleRow);
-
-            Row row = this.OwnerRow;
-            TableRowText textRow = new TableRowText();
-            foreach (var column in columns)
-            {
-                Cell dataCell = row[column];
-                TableOneText textCell = new TableOneText(dataCell.Text, column.Alignment, null);
-                textRow.Cells.Add(textCell);
-            }
-            this.DragCurrentContent.Rows.Add(textRow);
-
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, targetRelativeBounds);
         }
+        /// <summary>
+        /// Proces Drag and Move, akce This:Move
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
         protected override void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             base.DragThisOverPoint(e, targetRelativeBounds);
-            this.DragCurrentPointAbsolute = e.MouseCurrentAbsolutePoint;
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, targetRelativeBounds);
         }
+        /// <summary>
+        /// Proces Drag and Move, akce This:Drop
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
         protected override void DragThisDropToPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            // base.DragThisDropToPoint(e, targetRelativeBounds);
+            // Neprovádět => fyzicky by se provedlo přesunutí prvku na novou pozici, ale my nechceme přesouvat prvek ale aplikovat jej do cíle.
+            //     base.DragThisDropToPoint(e, targetRelativeBounds);
+
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, targetRelativeBounds);
         }
+        /// <summary>
+        /// Proces Drag and Move, akce This:End
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void DragThisEnd(GDragActionArgs e)
+        {
+            base.DragThisEnd(e);
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, null);
+        }
+        /// <summary>
+        /// Vykreslení objektu Drag and Move
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
         protected void DrawDragMoveInteractive(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            if (this.DragCurrentContent == null) return;
-            if (!this.DragCurrentContent.CurrentSize.HasValue) this.DragCurrentContent.TextMeasure(e.Graphics, false);
-
-            Point point = (this.DragCurrentPointAbsolute.HasValue ? this.DragCurrentPointAbsolute.Value : Control.MousePosition);
-            Rectangle bounds = new Rectangle(point.X - 15, point.Y + 10, 250, 80);
-            e.Graphics.FillRectangle(Skin.Brush(Color.FromArgb(160, 180, 240, 180)), bounds);
-
+            this.OwnerITable.RowDragMoveDraw(e, boundsAbsolute);
         }
-        protected TableText DragCurrentContent;
-        protected Point? DragCurrentPointAbsolute;
         #endregion
         #region Draw - kreslení záhlaví řádku
         /// <summary>
@@ -1579,17 +1584,24 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             if (e.DrawLayer == GInteractiveDrawLayer.Interactive)
-            {
                 this.DrawDragMoveInteractive(e, boundsAbsolute, drawAsGhost, opacity);
-            }
             else
-            {
-                base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
-                this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
-                this.DrawMouseHot(e, boundsAbsolute, opacity);
-                this.DrawSelectedRow(e, boundsAbsolute, opacity);
-                this.DrawDebugBorder(e, boundsAbsolute, opacity);
-            }
+                this.DrawContentStandard(e, boundsAbsolute, drawAsGhost, opacity);
+        }
+        /// <summary>
+        /// Standardní kreslení obsahu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawContentStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawMouseHot(e, boundsAbsolute, opacity);
+            this.DrawSelectedRow(e, boundsAbsolute, opacity);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
         /// Vykreslí jen pozadí
@@ -1890,6 +1902,77 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         #endregion
+        #region Drag and Move
+        /// <summary>
+        /// Nastaví parametry pro kreslení objektu v režimu Drag and Move
+        /// </summary>
+        protected void DragDrawInit()
+        {
+            this.Is.DrawDragMoveGhostStandard = false;
+            this.Is.DrawDragMoveGhostInteractive = true;
+        }
+        /// <summary>
+        /// Je povoleno provést Drag and Drop
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool GetMouseDragMove(bool value)
+        {
+            return (this.OwnerTable.AllowRowDragMove);
+        }
+        /// <summary>
+        /// Proces Drag and Move, akce This:Start
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisStart(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            base.DragThisStart(e, targetRelativeBounds);
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, targetRelativeBounds);
+        }
+        /// <summary>
+        /// Proces Drag and Move, akce This:Move
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            base.DragThisOverPoint(e, targetRelativeBounds);
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, targetRelativeBounds);
+        }
+        /// <summary>
+        /// Proces Drag and Move, akce This:Drop
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisDropToPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            // Neprovádět => fyzicky by se provedlo přesunutí prvku na novou pozici, ale my nechceme přesouvat prvek ale aplikovat jej do cíle.
+            //     base.DragThisDropToPoint(e, targetRelativeBounds);
+
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, targetRelativeBounds);
+        }
+        /// <summary>
+        /// Proces Drag and Move, akce This:End
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void DragThisEnd(GDragActionArgs e)
+        {
+            base.DragThisEnd(e);
+            this.OwnerITable.RowDragMoveAction(e, this.OwnerRow, null);
+        }
+        /// <summary>
+        /// Vykreslení objektu Drag and Move
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawDragMoveInteractive(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            this.OwnerITable.RowDragMoveDraw(e, boundsAbsolute);
+        }
+        #endregion
         #region Childs
         /// <summary>
         /// Child prvky buňky: typicky null nebo pole obsahující jediný prvek typu <see cref="Graph.ITimeInteractiveGraph"/>
@@ -2072,6 +2155,20 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="drawAsGhost"></param>
         /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            if (e.DrawLayer == GInteractiveDrawLayer.Interactive)
+                this.DrawDragMoveInteractive(e, boundsAbsolute, drawAsGhost, opacity);
+            else
+                this.DrawContentStandard(e, boundsAbsolute, drawAsGhost, opacity);
+        }
+        /// <summary>
+        /// Standardní kreslení obsahu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawContentStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             Rectangle boundsValue = boundsAbsolute;
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);

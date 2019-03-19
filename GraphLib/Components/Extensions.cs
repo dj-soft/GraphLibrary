@@ -2334,6 +2334,65 @@ namespace Asol.Tools.WorkScheduler.Components
             return new PointF(x, y);
         }
         #endregion
+        #region Rectangle: GetBorders
+        /// <summary>
+        /// Metoda vrací souřadnice okrajů daného Rectangle.
+        /// Tyto souřadnice lze poté vyplnit (Fill), a budou uvnitř daného Rectangle.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="thick"></param>
+        /// <param name="sides"></param>
+        /// <returns></returns>
+        public static Rectangle[] GetBorders(this Rectangle r, int thick, params RectangleSide[] sides)
+        {
+            int count = sides.Length;
+            Rectangle[] borders = new Rectangle[count];
+
+            int x0 = r.X;
+            int x1 = r.Right;
+            int w = r.Width;
+            int y0 = r.Y;
+            int y1 = r.Bottom;
+            int h = r.Height;
+            int t = (thick >= 0 ? thick : 0);
+            int tx = (t < w ? t : w);
+            int ty = (t < h ? t : h);
+
+            for (int i = 0; i < count; i++)
+            {
+                switch (sides[i])
+                {
+                    case RectangleSide.Left:
+                        borders[i] = new Rectangle(x0, y0, tx, h);
+                        break;
+                    case RectangleSide.Top:
+                        borders[i] = new Rectangle(x0, y0, w, ty);
+                        break;
+                    case RectangleSide.Right:
+                        borders[i] = new Rectangle(x1 - tx, y0, tx, h);
+                        break;
+                    case RectangleSide.Bottom:
+                        borders[i] = new Rectangle(x0, y1 - ty, w, ty);
+                        break;
+
+                    case RectangleSide.TopLeft:
+                        borders[i] = new Rectangle(x0, y0, tx, ty);
+                        break;
+                    case RectangleSide.TopRight:
+                        borders[i] = new Rectangle(x1 - tx, y0, tx, ty);
+                        break;
+                    case RectangleSide.BottomRight:
+                        borders[i] = new Rectangle(x1 - tx, y1 - ty, tx, ty);
+                        break;
+                    case RectangleSide.BottomLeft:
+                        borders[i] = new Rectangle(x0, y1 - ty, tx, ty);
+                        break;
+                }
+            }
+
+            return borders;
+        }
+        #endregion
         #region Padding
         /// <summary>
         /// Returns true, when this Padding all values are Zero.

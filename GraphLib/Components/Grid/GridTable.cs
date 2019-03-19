@@ -2080,6 +2080,154 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             base.AfterStateChangedFocusLeave(e);
         }
         #endregion
+        #region Drag and Move řádků tabulky
+        /// <summary>
+        /// Řídí proces Drag and Move pro přemístění řádku, všechny fáze (viz argument e, <see cref="GDragActionArgs.DragAction"/>)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="currentRow"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected void RowDragMoveAction(GDragActionArgs e, Row currentRow, Rectangle? targetRelativeBounds)
+        {
+            switch (e.DragAction)
+            {
+                case DragActionType.DragThisStart:
+                    this.RowDragActiveRows = this.RowDragGetRows(currentRow);
+                    this.RowDragTableText = this.GetTableText(this.RowDragActiveRows);
+                    break;
+                case DragActionType.DragThisMove:
+                    this.RowDragMousePointAbsolute = e.MouseCurrentAbsolutePoint;
+                    this.RowDragMouseState = this.RowDragGetState(e);
+                    break;
+                case DragActionType.DragThisDrop:
+
+                    this.RowDragMoveClear();
+                    break;
+                case DragActionType.DragThisEnd:
+                    this.RowDragMoveClear();
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vynuluje data používaní v proces Drag and Move pro řádky.
+        /// </summary>
+        protected void RowDragMoveClear()
+        {
+            this.RowDragActiveRows = null;
+            this.RowDragTableText = null;
+            this.RowDragMousePointAbsolute = null;
+            this.RowDragMouseState = null;
+        }
+        /// <summary>
+        /// Provádí vykreslení přesouvaného řádku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        protected void RowDragMoveDraw(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            TableText tableText = this.RowDragTableText;
+            if (tableText == null) return;
+            if (tableText.NeedMeasure) tableText.TextMeasure(e.Graphics, false);
+
+            Point point = (this.RowDragMousePointAbsolute.HasValue ? this.RowDragMousePointAbsolute.Value : System.Windows.Forms.Control.MousePosition).Add(-15, 8);
+            Size size = tableText.CurrentSize.Value.Min(500, 350);
+            Rectangle bounds = new Rectangle(point, size);
+            Color backColor = Color.FromArgb(210, 180, 240, 180);
+            Color titleColor = Color.FromArgb(210, 180, 200, 250);
+            tableText.Rows[0].BackColor = titleColor;
+            tableText.Rows[0].BackEffect3D = 0.25f;
+            GPainter.DrawTableText(e.Graphics, bounds, tableText, backColor);
+        }
+        /// <summary>
+        /// Metoda najde a vrátí pole řádků, jichž se týká proces Drag and Move řádků, podle konfigurace.
+        /// </summary>
+        /// <param name="currentRow"></param>
+        /// <returns></returns>
+        protected Row[] RowDragGetRows(Row currentRow)
+        {
+            TableRowDragMoveSourceMode mode = this.DataTable.RowDragMoveSourceMode;
+            Row[] rows = null;
+            switch (mode)
+            {
+                case TableRowDragMoveSourceMode.None:
+                    break;
+                case TableRowDragMoveSourceMode.OnlyActiveRow:
+                    if (currentRow != null)
+                        rows = new Row[] { currentRow };
+                    break;
+                case TableRowDragMoveSourceMode.OnlySelectedRows:
+                    rows = this.Rows.Where(r => r.IsChecked).ToArray();
+                    break;
+                case TableRowDragMoveSourceMode.ActiveOrSelectedRows:
+                    rows = this.Rows.Where(r => r.IsChecked || (currentRow != null && r.RowId == currentRow.RowId)).ToArray();
+                    break;
+            }
+            return rows;
+        }
+        /// <summary>
+        /// Metoda sestaví a vrátí new instanci <see cref="TableTextRow"/>, která bude obsahovat data z this tabulky pro dané řádky.
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <returns></returns>
+        protected TableText GetTableText(Row[] rows)
+        {
+            TableText tableText = new TableText();
+
+            Column[] columns = this.Columns;
+            TableTextRow titleRow = new TableTextRow();
+            titleRow.Font = FontInfo.DefaultBold;
+            foreach (var column in columns)
+            {
+                TableTextCell textCell = new TableTextCell(column.Title, ContentAlignment.MiddleCenter, column.ColumnHeader.Bounds.Width);
+                titleRow.Cells.Add(textCell);
+            }
+            tableText.Rows.Add(titleRow);
+
+            foreach (Row row in rows)
+                GetTableTextAddRow(tableText, columns, row);
+
+            return tableText;
+        }
+        /// <summary>
+        /// Do dané tabulky textů <see cref="TableText"/> přidá další řádek, obsahující data za dané sloupce z daného datového řádku.
+        /// </summary>
+        /// <param name="tableText"></param>
+        /// <param name="columns"></param>
+        /// <param name="row"></param>
+        protected static void GetTableTextAddRow(TableText tableText, Column[] columns, Row row)
+        {
+            TableTextRow textRow = new TableTextRow();
+            foreach (var column in columns)
+            {
+                Cell dataCell = row[column];
+                TableTextCell textCell = new TableTextCell(dataCell.Text, column.Alignment, null);
+                textRow.Cells.Add(textCell);
+            }
+            tableText.Rows.Add(textRow);
+        }
+        /// <summary>
+        /// Metoda určí, zda je Drag and Move aktuálních řádků this tabulky do určitého místa povolené.
+        /// Využívá k tomu event a aplikační logiku.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected TableRowDragMoveArgs RowDragGetState(GDragActionArgs e)
+        { }
+
+        protected TableRowDragMoveArgs RowDragMouseState;
+        /// <summary>
+        /// Řádky, jichž se týká aktuální Drag and Move řádků
+        /// </summary>
+        protected Row[] RowDragActiveRows { get; private set; }
+        /// <summary>
+        /// Texty používané při Drag and Move, obsahují data ze zdrojové tabulky
+        /// </summary>
+        protected TableText RowDragTableText { get; private set; }
+        /// <summary>
+        /// Souřadnice myši absolutní při jejím pohybu Drag and Move
+        /// </summary>
+        protected Point? RowDragMousePointAbsolute { get; private set; }
+        #endregion
         #region Interaktivita z jednotlivých objektů tabulky do grafické tabulky, a dále
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
@@ -2194,6 +2342,25 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
             this.CallActiveCellRightClick(cell, e);
+        }
+        /// <summary>
+        /// Řídí proces Drag and Move pro přemístění řádku, všechny fáze (viz argument e, <see cref="GDragActionArgs.DragAction"/>)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="currentRow"></param>
+        /// <param name="targetRelativeBounds"></param>
+        void IGTable.RowDragMoveAction(GDragActionArgs e, Row currentRow, Rectangle? targetRelativeBounds)
+        {
+            this.RowDragMoveAction(e, currentRow, targetRelativeBounds);
+        }
+        /// <summary>
+        /// Provádí vykreslení přesouvaného řádku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        void IGTable.RowDragMoveDraw(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            this.RowDragMoveDraw(e, boundsAbsolute);
         }
         #endregion
         #region Draw : kreslení vlastní tabulky
@@ -2967,6 +3134,18 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
         void CellRightClick(GInteractiveChangeStateArgs e, Cell cell);
+        /// <summary>
+        /// Řídí proces Drag and Move pro přemístění řádku, všechny fáze (viz argument e, <see cref="GDragActionArgs.DragAction"/>)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        void RowDragMoveAction(GDragActionArgs e, Row currentRow, Rectangle? targetRelativeBounds);
+        /// <summary>
+        /// Provádí vykreslení přesouvaného řádku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        void RowDragMoveDraw(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
     }
     #endregion
 }
