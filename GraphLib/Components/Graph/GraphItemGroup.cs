@@ -460,7 +460,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public Color _GetColorWithOpacityStandard(Color baseColor, bool forGroup, bool forBackColor, int? interactiveOpacity)
         {
             if (this.AnyItemIsActiveTarget)
-                baseColor = baseColor.Morph(Color.Magenta, 0.666f);
+                baseColor = baseColor.Morph(Skin.Modifiers.BackColorDropTargetItem);
             int? groupOpacity = ((forGroup && forBackColor) ? (int?)170 : (int?)null);
             int? graphOpacity = this.Graph.GraphOpacity;
             if (!groupOpacity.HasValue && !graphOpacity.HasValue && !interactiveOpacity.HasValue) return baseColor;    // Zkratka - bez úprav

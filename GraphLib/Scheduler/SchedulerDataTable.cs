@@ -1857,13 +1857,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.DragMoveRows = DragMoveRowsInfo.CreateForProperties(this, this.GuiGrid.GridProperties);
             this.TableRow.AllowRowDragMove = this.DragMoveRows.DragMoveEnabled;
             if (this.DragMoveRows.DragMoveEnabled)
-            {   // Pokud je povoleno provádět Drag and Move, zaregistruji se eventhandler pro dvě patřičné události:
+            {   // Pokud je povoleno provádět Drag and Move, zaregistruji si eventhandlery pro všechny patřičné události:
+                this.TableRow.TableRowDragStart += TableRow_TableRowDragStart;
                 this.TableRow.TableRowDragMove += TableRow_TableRowDragMove;
                 this.TableRow.TableRowDragDrop += TableRow_TableRowDragDrop;
             }
         }
         /// <summary>
-        /// Eventhandler události Drag and Move, volaný při přetahování řádků this tabulky na jiné místo.
+        /// Eventhandler události Drag and Move, volaný při ZAČÁTKU přetahování řádků this tabulky na jiné místo.
+        /// Eventhandler může omezit řádky, které uživatel vybral do procesu jako zdrojové.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void TableRow_TableRowDragStart(object sender, TableRowDragMoveArgs args)
+        {
+
+        }
+        /// <summary>
+        /// Eventhandler události Drag and Move, volaný při PRŮBĚHU přetahování řádků this tabulky na jiné místo.
         /// Eventhandler reaguje na prvek, nad kterým se právě nachází myš (=cíl přetahování),
         /// a podle pravidel <see cref="DragMoveRowsInfo"/> vyhodnocuje povolení / zákaz pro DragDrop na daném cíli.
         /// </summary>
@@ -1873,15 +1884,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             string tt = ((args.TargetItem != null) ? args.TargetItem.GetType().Name : "");
             args.TargetEnabled = (args.TargetItem != null && args.TargetItem is Components.Graph.GTimeGraphItem);
+            if (args.TargetEnabled)
+                args.ActiveItem = args.TargetItem;
         }
         /// <summary>
-        /// Eventhandler události Drag Drop, volaný při upuštění řádků při přetahování řádků this tabulky na jiné místo.
+        /// Eventhandler události Drag Drop, volaný při DOKONČENÍ přetahování řádků při přetahování řádků this tabulky na jiné místo.
         /// Eventhandler by měl zajistit vyvolání aplikační logiky, včetně vyvolání funkce datového zdroje.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
         private void TableRow_TableRowDragDrop(object sender, TableRowDragMoveArgs args)
         {
+            // Zavoláme hostitele IHost a předáme mu všechna data:
+
+
+
         }
         /// <summary>
         /// Analyzovaný režim Drag and Move pro řádky this tabulky.

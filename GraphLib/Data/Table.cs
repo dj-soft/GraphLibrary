@@ -1610,6 +1610,27 @@ namespace Asol.Tools.WorkScheduler.Data
         public event GPropertyEventHandler<Cell> ActiveCellRightClick;
 
         /// <summary>
+        /// Obsluha události RowDragStart = na začátku přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
+        void ITableInternal.CallTableRowDragStart(TableRowDragMoveArgs args, bool callEvents)
+        {
+            this.OnTableRowDragStart(args);
+            if (callEvents && this.TableRowDragStart != null)
+                this.TableRowDragStart(this, args);
+        }
+        /// <summary>
+        /// Háček OnTableRowDragStart = na začátku přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableRowDragStart(TableRowDragMoveArgs args) { }
+        /// <summary>
+        /// Událost, která se vyvolá v průběhu RowDragStart = na začátku přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        public event TableRowDragMoveHandler TableRowDragStart;
+
+        /// <summary>
         /// Obsluha události RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
         /// </summary>
         /// <param name="args"></param>
@@ -4467,8 +4488,10 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         private GDragActionArgs _DragArgs;
         private Row[] _DragRows;
-
-
+        /// <summary>
+        /// Aktuální akce
+        /// </summary>
+        public DragActionType Action { get { return this._DragArgs.DragAction; } }
         /// <summary>
         /// Grafický prvek aktuálně se nacházející pod myší
         /// </summary>
@@ -4478,10 +4501,27 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public IInteractiveItem TargetItem { get { return this._DragArgs.DragTargetItem; } }
         /// <summary>
-        /// Řádky zdrojové tabulky, které jsou přetahovány
+        /// Grafický prvek, který reálně bude cílem procesu Drag and Drop.
+        /// Vychází z prvku <see cref="TargetItem"/>, ale může to být některý z jeho parentů.
         /// </summary>
-        public IEnumerable<Row> DragRows { get { return this._DragRows; } }
-
+        public IInteractiveItem ActiveItem { get; set; }
+        /// <summary>
+        /// Řádky zdrojové tabulky, které jsou přetahovány.
+        /// V události <see cref="Action"/> == <see cref="DragActionType.DragThisStart"/> jsou v této property uloženy všechny řádky vybrané uživatelem pro Drag and Move,
+        /// ale odpovídající eventhandler může toto pole modifikovat (lze jej setovat) = aplikační logika smí mluvit do toho, které řádky se reálně procesu zúčastní.
+        /// V ostatních eventech nelze tuto property setovat, dojde k chybě.
+        /// </summary>
+        public IEnumerable<Row> DragRows
+        {
+            get { return this._DragRows; }
+            set
+            {
+                if (this.Action == DragActionType.DragThisStart)
+                    this._DragRows = (value != null ? value.ToArray() : null);
+                else
+                    throw new GraphLibCodeException("Property 'TableRowDragMoveArgs.DragRows' is Read-Only for Action = " + this.Action.ToString());
+            }
+        }
         /// <summary>
         /// Cíl je povolený = je možno na něm provést Drop
         /// </summary>
@@ -4577,6 +4617,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost RowDragStart = na začátku přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
+        void CallTableRowDragStart(TableRowDragMoveArgs args, bool callEvents);
         /// <summary>
         /// Událost RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši
         /// </summary>

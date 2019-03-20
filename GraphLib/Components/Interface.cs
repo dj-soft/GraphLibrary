@@ -695,6 +695,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GActivePosition DragMoveToTarget { get; protected set; }
         /// <summary>
+        /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
+        /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
+        /// Control <see cref="GInteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
+        /// Je nastavena hodnota <see cref="IInteractiveItem.Is"/>.ActiveTarget = true / false a je zajištěn Repaint() prvku.
+        /// </summary>
+        public IInteractiveItem DragMoveActiveItem { get; set; }
+        /// <summary>
         /// Prostor, ve kterém může probíhat výběr pomocí zarámování (DragFrame).
         /// Prostor je smysluplné nastavit pouze v eventu, kdy <see cref="ChangeState"/> == <see cref="GInteractiveChangeState.LeftDragFrameBegin"/> (nebo <see cref="GInteractiveChangeState.RightDragFrameBegin"/>.
         /// V jiných eventech jej sice lze nastavit, ale hodnota bude zahozena.
@@ -924,6 +931,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek, nad kterým se nachází myš při přetahování
         /// </summary>
         public IInteractiveItem DragTargetItem { get { return this._ChangeArgs.DragMoveToTarget?.ActiveItem; } }
+        /// <summary>
+        /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
+        /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
+        /// Control <see cref="GInteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
+        /// Je nastavena hodnota <see cref="IInteractiveItem.Is"/>.ActiveTarget = true / false a je zajištěn Repaint() prvku.
+        /// </summary>
+        public IInteractiveItem DragActiveItem { get { return this._ChangeArgs.DragMoveActiveItem; } set { this._ChangeArgs.DragMoveActiveItem = value; } }
         /// <summary>
         /// Tato metoda najde první Top-Most objekt, který se nachází na dané absolutní souřadnici.
         /// Může vrátit null, když tam nic není.

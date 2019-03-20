@@ -879,6 +879,10 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color ShiftBackColorDownEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDownEnd", DefaultShiftBackColorDownEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDownEnd", value); } }
         public Color ShiftBackColorDragBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragBegin", DefaultShiftBackColorDragBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragBegin", value); } }
         public Color ShiftBackColorDragEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragEnd", DefaultShiftBackColorDragEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragEnd", value); } }
+        /// <summary>
+        /// Modifikátor barvy pozadí pro prvek, který je cílovým prvkem v procesu Drag and Drop
+        /// </summary>
+        public Color BackColorDropTargetItem { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDropTargetItem", DefaultBackColorDropTargetItem); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDropTargetItem", value); } }
         #endregion
         #region Default colors
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
@@ -903,6 +907,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
         protected virtual float DefaultEffect3DBackgroundRatio { get { return 0.10f; } }
         protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
+        protected virtual Color DefaultBackColorDropTargetItem { get { return Color.FromArgb(128, Color.Magenta); } }
 
         // Barvy pro provádění Shift = mají ve složká hodnotu posunu základní barvy, kde hodnota 128 = střed = 0:
         protected virtual Color DefaultShiftBackColorBegin { get { return Color.FromArgb(0, 136, 136, 136); } }        //  +8

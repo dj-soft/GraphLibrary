@@ -2092,7 +2092,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             switch (e.DragAction)
             {
                 case DragActionType.DragThisStart:
-                    this.RowDragActiveRows = this.RowDragGetRows(currentRow);
+                    this.RowDragActiveRows = this.RowDragGetRows(e, currentRow);
                     this.RowDragTableText = this.GetTableText(this.RowDragActiveRows);
                     break;
                 case DragActionType.DragThisMove:
@@ -2101,32 +2101,33 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     break;
                 case DragActionType.DragThisDrop:
                     this.RowDragCallDropEvent(e, this.RowDragMouseState);
-                    this.RowDragMoveClear();
+                    this.RowDragMoveClear(e);
                     break;
                 case DragActionType.DragThisEnd:
-                    this.RowDragMoveClear();
+                    this.RowDragMoveClear(e);
                     break;
             }
         }
         /// <summary>
         /// Vynuluje data používaní v proces Drag and Move pro řádky.
         /// </summary>
-        protected void RowDragMoveClear()
+        protected void RowDragMoveClear(GDragActionArgs e)
         {
+            e.DragActiveItem = null;
             this.RowDragActiveRows = null;
             this.RowDragTableText = null;
             this.RowDragMousePointAbsolute = null;
             this.RowDragMouseState = null;
-            this.RowDragCurrentTargetSetActive(null, false);
             this.RowDragCurrentTarget = null;
         }
         /// <summary>
         /// Metoda najde a vrátí pole řádků, jichž se týká proces Drag and Move řádků, podle konfigurace.
         /// Může vrátit pole s počtem 0 řádků.
         /// </summary>
+        /// <param name="e"></param>
         /// <param name="currentRow"></param>
         /// <returns></returns>
-        protected Row[] RowDragGetRows(Row currentRow)
+        protected Row[] RowDragGetRows(GDragActionArgs e, Row currentRow)
         {
             TableRowDragMoveSourceMode mode = this.DataTable.RowDragMoveSourceMode;
             Row[] rows = null;
@@ -2150,6 +2151,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     rows = this.Rows.Where(r => r.IsChecked).ToArray();
                     break;
             }
+
+            // Vyvoláme případnou aplikační logiku (event navázaný v DataTable), který řeší filtrování řádků vybraných pro RowDrag:
+            TableRowDragMoveArgs args = new TableRowDragMoveArgs(e, rows);
+            this.CallTableRowDragStart(args);
+            rows = (args.DragRows != null ? args.DragRows.ToArray() : null);     // Převezmeme buď naše výchozí pole, anebo pole modifikované aplikací
+
             return rows;
         }
         /// <summary>
@@ -2212,7 +2219,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.CallTableRowDragMove(args);
 
             // Zajistíme aktivaci Target prvku, podle hodnoty args.TargetEnabled:
-            this.RowDragCurrentTargetSetActive(args.TargetItem, args.TargetEnabled);
+            if (args.TargetEnabled)
+                e.DragActiveItem = args.ActiveItem;
 
             return args;
         }
@@ -2220,32 +2228,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (args != null)
                 this.CallTableRowDragDrop(args);
-        }
-        /// <summary>
-        /// Metoda zajistí, že dosavadní aktivní cílový prvek <see cref="RowDragCurrentTarget"/> bude deaktivován, 
-        /// a místo toho bude aktivován nově dodaný prvek cílový (targetItem).
-        /// </summary>
-        /// <param name="targetItem"></param>
-        /// <param name="isActive"></param>
-        protected void RowDragCurrentTargetSetActive(IInteractiveItem targetItem, bool isActive)
-        {
-            // Pokud dosud máme v evidenci prvek RowDragCurrentTarget, a nově daný prvek je jiný, pak ten dosavadní deaktivujeme a zapomeneme na něj:
-            if (this.RowDragCurrentTarget != null && (targetItem == null || !Object.ReferenceEquals(this.RowDragCurrentTarget, targetItem)))
-            {
-                if (this.RowDragCurrentTarget.Is.ActiveTarget)
-                {
-                    this.RowDragCurrentTarget.Is.ActiveTarget = false;
-                    this.RowDragCurrentTarget.Repaint();
-                }
-                this.RowDragCurrentTarget = null;
-            }
-
-            this.RowDragCurrentTarget = targetItem;
-            if (this.RowDragCurrentTarget != null && this.RowDragCurrentTarget.Is.ActiveTarget != isActive)
-            {
-                this.RowDragCurrentTarget.Is.ActiveTarget = isActive;
-                this.RowDragCurrentTarget.Repaint();
-            }
         }
         /// <summary>
         /// Provádí vykreslení přesouvaného řádku
@@ -3058,6 +3040,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellRightClick(cell, e, !this.IsSuppressedEvent);
+        }
+        /// <summary>
+        /// Vyvolá událost RowDragStart = na začátku přemísťování řádků tabulky pomocí myši
+        /// </summary>
+        /// <param name="args"></param>
+        protected void CallTableRowDragStart(TableRowDragMoveArgs args)
+        {
+            ITableInternal target = (this.DataTable as ITableInternal);
+            if (target != null)
+                target.CallTableRowDragStart(args, !this.IsSuppressedEvent);
         }
         /// <summary>
         /// Vyvolá událost RowDragMove = v průběhu přemísťování řádků tabulky pomocí myši

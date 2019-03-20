@@ -682,6 +682,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._InteractiveDrawInit(null);
                 this._MouseOver(null);
                 this._MouseAllReset();
+                this._MouseDragStoreActiveItem(null);
             }
         }
         #endregion
@@ -846,6 +847,37 @@ namespace Asol.Tools.WorkScheduler.Components
             this._CurrentTargetItem = null;
             this._MouseDragState = MouseMoveDragState.None;
         }
+        private void _MouseDragStoreActiveItem(GInteractiveChangeStateArgs stateArgs)
+        {
+            IInteractiveItem activeItem = null;
+            if (stateArgs != null)
+            {   // Pokud interaktivní akce nemá nic společného s Drag and Drop, pak jako Aktivní Target prvek bude vždy NULL:
+                DragActionType dragAction = _GetDragActionForState(stateArgs.ChangeState);
+                activeItem = ((dragAction != DragActionType.None) ? stateArgs.DragMoveActiveItem : null);
+            }
+            bool isActive = (activeItem != null);
+
+            // Pokud dosud máme v evidenci prvek _DragMoveActiveItem, a nově daný prvek je jiný, pak ten dosavadní deaktivujeme a zapomeneme na něj:
+            if (this._DragMoveActiveItem != null && (activeItem == null || !Object.ReferenceEquals(this._DragMoveActiveItem, activeItem)))
+            {
+                if (this._DragMoveActiveItem.Is.ActiveTarget)
+                {
+                    this._DragMoveActiveItem.Is.ActiveTarget = false;
+                    this._DragMoveActiveItem.Repaint();
+                }
+                this._DragMoveActiveItem = null;
+            }
+
+            this._DragMoveActiveItem = activeItem;
+            if (this._DragMoveActiveItem != null && this._DragMoveActiveItem.Is.ActiveTarget != isActive)
+            {
+                this._DragMoveActiveItem.Is.ActiveTarget = isActive;
+                this._DragMoveActiveItem.Repaint();
+            }
+
+            // Zapamatujeme si aktivní prvek pro příště:
+            this._DragMoveActiveItem = activeItem;
+        }
         /// <summary>
         /// Stav procesu MouseDrag
         /// </summary>
@@ -885,6 +917,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// This offset will be added to MouseLocation (in control coordinates) during drag, and sent to DragMove events.
         /// </summary>
         private Point? _UserDragPointOffset { get; set; }
+        /// <summary>
+        /// Velikost oblasti <see cref="_MouseDragStartBounds"/> = "No-Drag zone", kde se ignoruje pohyb myši na začátku procesu Drag.
+        /// Je nastaven na hodnotu <see cref="SystemInformation.DragSize"/>, ale může být upraven.
+        /// </summary>
+        private Size _DragStartSize { get; set; }
+        /// <summary>
+        /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
+        /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
+        /// Control <see cref="GInteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
+        /// Je nastavena hodnota <see cref="IInteractiveItem.Is"/>.ActiveTarget = true / false a je zajištěn Repaint() prvku.
+        /// </summary>
+        private IInteractiveItem _DragMoveActiveItem { get; set; }
         #endregion
         #region Metody pro volání interaktivních metod na prvcích IInteractiveItem.AfterStateChanged() atd
         /// <summary>
@@ -1136,7 +1180,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._ItemMouseCallDragEvent(activePosition.ActiveItem, stateArgs);
             }
             this._FlowToolTipData = (stateArgs.HasToolTipData ? stateArgs.ToolTipData : null);
-
+            this._MouseDragStoreActiveItem(stateArgs);
             this._CallInteractiveStateChanged(stateArgs);
             this._InteractiveDrawStore(stateArgs);
             this._StoreContextMenu(stateArgs);
@@ -1296,12 +1340,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Coordinates of mouse, relative to current interactive item bounds.
         /// </summary>
         private Point? _MouseCurrentRelativePoint { get; set; }
-
-        /// <summary>
-        /// Velikost oblasti <see cref="_MouseDragStartBounds"/> = "No-Drag zone", kde se ignoruje pohyb myši na začátku procesu Drag.
-        /// Je nastaven na hodnotu <see cref="SystemInformation.DragSize"/>, ale může být upraven.
-        /// </summary>
-        private Size _DragStartSize { get; set; }
         #endregion
         #endregion
         #region Přenesení informací z interaktivních metod do překreslení části controlu (vizuální reakce na interaktivní události)
