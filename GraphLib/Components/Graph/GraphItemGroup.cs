@@ -438,11 +438,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawLayer drawLayer, DrawItemMode drawMode, bool forGroup, bool forBackColor)
         {
             if (!this.IsDragged)
-            {   // Běžný stav:
+            {   // Běžný stav prvku, kdy tento pvek není přetahován jinam:
                 return this._GetColorWithOpacityStandard(baseColor, forGroup, forBackColor, null);
             }
             else
-            {   // Drag and Drop:
+            {   // Drag and Drop tohoto prvku, kdy prvek je přemisťován jinam:
                 if (drawLayer == GInteractiveDrawLayer.Standard)
                     return this._GetColorWithOpacityDragOriginal(baseColor, forGroup, forBackColor);
                 else
@@ -459,6 +459,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public Color _GetColorWithOpacityStandard(Color baseColor, bool forGroup, bool forBackColor, int? interactiveOpacity)
         {
+            if (this.AnyItemIsActiveTarget)
+                baseColor = baseColor.Morph(Color.Magenta, 0.666f);
             int? groupOpacity = ((forGroup && forBackColor) ? (int?)170 : (int?)null);
             int? graphOpacity = this.Graph.GraphOpacity;
             if (!groupOpacity.HasValue && !graphOpacity.HasValue && !interactiveOpacity.HasValue) return baseColor;    // Zkratka - bez úprav
@@ -558,6 +560,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Obsahuje true, pokud this grupa je nyní přemisťována akcí DragMove.
         /// </summary>
         internal bool IsDragged { get { return this.GControl.InteractiveState.HasFlag(GInteractiveState.FlagDrag); } }
+        /// <summary>
+        /// Obsahuje true, pokud kterýkoli z mých prvků nebo já jsme ActiveTarget
+        /// </summary>
+        internal bool AnyItemIsActiveTarget { get { return this.GControl.Is.ActiveTarget || this._Items.Any(i => i.GControl.Is.ActiveTarget); } }
         /// <summary>
         /// Metoda do sebe vloží nově zadaný čas.
         /// Musí jej vložit i do konkrétních Items, proto aby po jakékoli vizuální invalidaci tento čas byl zachován.

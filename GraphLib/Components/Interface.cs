@@ -396,6 +396,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool KeyboardInput { get { return this.GetBitValue((uint)Bit.KeyboardInput); } set { this.SetBitValue((uint)Bit.KeyboardInput, value); } }
 
+        /// <summary>
+        /// Tento prvek je aktuálně cílem v procesu Drag and Move.
+        /// Hodnotu do této property do konkrétního prvku <see cref="IInteractiveItem"/> vkládá control <see cref="GInteractiveControl"/> v průběhu akce Drag and Move.
+        /// Prvek na tuto hodnotu může reagovat zvýrazněním vykreslení.
+        /// </summary>
+        public bool ActiveTarget { get { return this.GetBitValue((uint)Bit.ActiveTarget); } set { this.SetBitValue((uint)Bit.ActiveTarget, value); } }
+
         #endregion
         #region Enum Bit a jeho defaultní hodnoty
         /// <summary>
@@ -444,6 +451,8 @@ namespace Asol.Tools.WorkScheduler.Components
             DrawDragMoveGhostStandard = 0x00020000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
             KeyboardInput = 0x00040000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            ActiveTarget = 0x00100000,
 
             /// <summary>
             /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti.

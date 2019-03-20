@@ -2117,36 +2117,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.RowDragTableText = null;
             this.RowDragMousePointAbsolute = null;
             this.RowDragMouseState = null;
-        }
-        /// <summary>
-        /// Provádí vykreslení přesouvaného řádku
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected void RowDragMoveDraw(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            TableText tableText = this.RowDragTableText;
-            if (tableText == null) return;
-            if (tableText.NeedMeasure) tableText.TextMeasure(e.Graphics, false);
-
-            Point point = (this.RowDragMousePointAbsolute.HasValue ? this.RowDragMousePointAbsolute.Value : System.Windows.Forms.Control.MousePosition).Add(-15, 8);
-            Size size = tableText.CurrentSize.Value.Min(500, 350);
-            Rectangle bounds = new Rectangle(point, size);
-
-            bool targetEnabled = (this.RowDragMouseState != null ? this.RowDragMouseState.TargetEnabled : false);
-
-            Color backColor = (targetEnabled ? Color.FromArgb(230, 180, 240, 180) : Color.FromArgb(110, 160, 160, 160));
-            Color titleColor = (targetEnabled ? Color.FromArgb(230, 180, 200, 250) : Color.FromArgb(110, 160, 160, 160));
-            Color borderColor = (targetEnabled ? Color.FromArgb(230, 130, 130, 20) : Color.FromArgb(170, 60, 60, 60));
-
-            tableText.Rows[0].BackColor = titleColor;
-            tableText.Rows[0].BackEffect3D = (targetEnabled ? 0.25f : 0.10f);
-            tableText.BorderColor = borderColor;
-
-            GPainter.DrawTableText(e.Graphics, bounds, tableText, backColor);
+            this.RowDragCurrentTargetSetActive(null, false);
+            this.RowDragCurrentTarget = null;
         }
         /// <summary>
         /// Metoda najde a vrátí pole řádků, jichž se týká proces Drag and Move řádků, podle konfigurace.
+        /// Může vrátit pole s počtem 0 řádků.
         /// </summary>
         /// <param name="currentRow"></param>
         /// <returns></returns>
@@ -2178,11 +2154,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         /// <summary>
         /// Metoda sestaví a vrátí new instanci <see cref="TableTextRow"/>, která bude obsahovat data z this tabulky pro dané řádky.
+        /// Pokud je na vstupu prázdné pole, vrací null.
         /// </summary>
         /// <param name="rows"></param>
         /// <returns></returns>
         protected TableText GetTableText(Row[] rows)
         {
+            if (rows == null || rows.Length == 0) return null;
+
             TableText tableText = new TableText();
 
             Column[] columns = this.Columns.Where(c => !c.UseTimeAxis).ToArray();        // Sloupce zdrojové tabulky vyjma sloupec s grafem
@@ -2220,14 +2199,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Metoda určí, zda je Drag and Move aktuálních řádků this tabulky do určitého místa povolené.
         /// Využívá k tomu event a aplikační logiku.
+        /// Pokud pole <see cref="RowDragActiveRows"/> je prázdné, nic nedělá a vrací null.
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
         protected TableRowDragMoveArgs RowDragGetCurrentState(GDragActionArgs e)
         {
+            if (this.RowDragActiveRows == null || this.RowDragActiveRows.Length == 0) return null;
+
             // Vyvoláme případnou aplikační logiku (event navázaný v DataTable), který řeší povolení pro Drop na daném cíli:
             TableRowDragMoveArgs args = new TableRowDragMoveArgs(e, this.RowDragActiveRows);
             this.CallTableRowDragMove(args);
+
+            // Zajistíme aktivaci Target prvku, podle hodnoty args.TargetEnabled:
+            this.RowDragCurrentTargetSetActive(args.TargetItem, args.TargetEnabled);
+
             return args;
         }
         protected void RowDragCallDropEvent(GDragActionArgs e, TableRowDragMoveArgs args)
@@ -2236,9 +2222,58 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this.CallTableRowDragDrop(args);
         }
         /// <summary>
-        /// Data o procesu RowDragMove po poslední změně pozice Target
+        /// Metoda zajistí, že dosavadní aktivní cílový prvek <see cref="RowDragCurrentTarget"/> bude deaktivován, 
+        /// a místo toho bude aktivován nově dodaný prvek cílový (targetItem).
         /// </summary>
-        protected TableRowDragMoveArgs RowDragMouseState { get; private set; }
+        /// <param name="targetItem"></param>
+        /// <param name="isActive"></param>
+        protected void RowDragCurrentTargetSetActive(IInteractiveItem targetItem, bool isActive)
+        {
+            // Pokud dosud máme v evidenci prvek RowDragCurrentTarget, a nově daný prvek je jiný, pak ten dosavadní deaktivujeme a zapomeneme na něj:
+            if (this.RowDragCurrentTarget != null && (targetItem == null || !Object.ReferenceEquals(this.RowDragCurrentTarget, targetItem)))
+            {
+                if (this.RowDragCurrentTarget.Is.ActiveTarget)
+                {
+                    this.RowDragCurrentTarget.Is.ActiveTarget = false;
+                    this.RowDragCurrentTarget.Repaint();
+                }
+                this.RowDragCurrentTarget = null;
+            }
+
+            this.RowDragCurrentTarget = targetItem;
+            if (this.RowDragCurrentTarget != null && this.RowDragCurrentTarget.Is.ActiveTarget != isActive)
+            {
+                this.RowDragCurrentTarget.Is.ActiveTarget = isActive;
+                this.RowDragCurrentTarget.Repaint();
+            }
+        }
+        /// <summary>
+        /// Provádí vykreslení přesouvaného řádku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        protected void RowDragMoveDraw(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            TableText tableText = this.RowDragTableText;
+            if (tableText == null) return;
+            if (tableText.NeedMeasure) tableText.TextMeasure(e.Graphics, false);
+
+            Point point = (this.RowDragMousePointAbsolute.HasValue ? this.RowDragMousePointAbsolute.Value : System.Windows.Forms.Control.MousePosition).Add(-15, 8);
+            Size size = tableText.CurrentSize.Value.Min(500, 350);
+            Rectangle bounds = new Rectangle(point, size);
+
+            bool targetEnabled = (this.RowDragMouseState != null ? this.RowDragMouseState.TargetEnabled : false);
+
+            Color backColor = (targetEnabled ? Color.FromArgb(230, 180, 240, 180) : Color.FromArgb(110, 160, 160, 160));
+            Color titleColor = (targetEnabled ? Color.FromArgb(230, 180, 200, 250) : Color.FromArgb(110, 160, 160, 160));
+            Color borderColor = (targetEnabled ? Color.FromArgb(230, 130, 130, 20) : Color.FromArgb(170, 60, 60, 60));
+
+            tableText.Rows[0].BackColor = titleColor;
+            tableText.Rows[0].BackEffect3D = (targetEnabled ? 0.25f : 0.10f);
+            tableText.BorderColor = borderColor;
+
+            GPainter.DrawTableText(e.Graphics, bounds, tableText, backColor);
+        }
         /// <summary>
         /// Řádky, jichž se týká aktuální Drag and Move řádků
         /// </summary>
@@ -2247,6 +2282,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Texty používané při Drag and Move, obsahují data ze zdrojové tabulky
         /// </summary>
         protected TableText RowDragTableText { get; private set; }
+        /// <summary>
+        /// Data o procesu RowDragMove po poslední změně pozice Target
+        /// </summary>
+        protected TableRowDragMoveArgs RowDragMouseState { get; private set; }
+        /// <summary>
+        /// Aktuální objekt Target, pokud je Enabled
+        /// </summary>
+        protected IInteractiveItem RowDragCurrentTarget { get; private set; }
         /// <summary>
         /// Souřadnice myši absolutní při jejím pohybu Drag and Move
         /// </summary>
