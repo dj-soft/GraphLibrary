@@ -1132,7 +1132,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridRight.GridProperties.TagFilterRoundItemPercent = 50;
             gridRight.GridProperties.TagFilterEnabled = true;
             gridRight.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
-            gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " RowRoot, ToItem";
+            gridRight.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragSelectedThenActiveRow;
+            gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItem;
 
             gridRight.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridRight.GraphProperties.BottomMarginPixel = 2;
