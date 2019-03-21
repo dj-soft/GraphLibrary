@@ -100,7 +100,7 @@
     </Compile>
     <Compile Include="Components\TabHeader.cs" />
     <Compile Include="Components\TagFilter.cs" />
-    <Compile Include="Components\Text.cs" />
+    <Compile Include="Components\TableText.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
     <Compile Include="Components\WinFormControls.cs">

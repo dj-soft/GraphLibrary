@@ -1213,6 +1213,49 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this.Grid.Invalidate(items);
         }
         #endregion
+        #region TableHeader a jeho funkčnost (DeSelect All, TreeViewNode Expand / Collapse All)
+        /// <summary>
+        /// Funkce, kterou aktuálně má objekt TableHeader
+        /// </summary>
+        protected TableHeaderFunctionType TableHeaderFunction
+        {
+            get
+            {
+                if (this.DataTable.HasCheckedRows) return TableHeaderFunctionType.DeselectAll;
+                if (!this.IsTreeView) return TableHeaderFunctionType.None;
+                if (this.Rows.Any(r => r.TreeNode.IsRoot && r.TreeNode.IsExpanded)) return TableHeaderFunctionType.CollapseAll;
+                return TableHeaderFunctionType.ExpandAll;
+            }
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        protected void TableHeaderClick(GInteractiveChangeStateArgs e)
+        {
+            bool repaint = false;
+            switch (this.TableHeaderFunction)
+            {
+                case TableHeaderFunctionType.DeselectAll:
+                    foreach (Row row in this.Rows.Where(r => r.IsChecked))
+                    {
+                        row.IsChecked = false;
+                        repaint = true;
+                    }
+                    break;
+                case TableHeaderFunctionType.ExpandAll:
+                    TreeNode.ExpandAll(this.Rows.Select(r => r.TreeNode).Where(n => n.IsRoot));
+                    break;
+                case TableHeaderFunctionType.CollapseAll:
+                    TreeNode.CollapseAll(this.Rows.Select(r => r.TreeNode).Where(n => n.IsRoot));
+                    repaint = true;
+                    break;
+            }
+
+            if (repaint)
+                this.Repaint();
+        }
+        #endregion
         #region HeaderSplitter : splitter umístěný pod hlavičkou sloupců, je součástí GTable.Items
         /// <summary>
         /// Inicializuje objekt _HeaderSplitter.
@@ -1760,7 +1803,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud this tabulka může zobrazovat stromovou strukturu prvků
         /// </summary>
-        internal bool IsTreeView { get { return this._IsTreeView; } } private bool _IsTreeView;
+        internal bool IsTreeView { get { this._RowsCheck(); return this._IsTreeView; } } private bool _IsTreeView;
         /// <summary>
         /// Metoda vykreslí všechny prvky související s TreeView.
         /// Do argumentu vloží souřadnici prostoru, který má být interaktivní - zde je vykreslena ikona pro Expand/Collapse nodu daného řádku.
@@ -2279,12 +2322,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Interaktivita z jednotlivých objektů tabulky do grafické tabulky, a dále
         /// <summary>
+        /// Funkce, kterou aktuálně má objekt TableHeader
+        /// </summary>
+        TableHeaderFunctionType IGTable.TableHeaderFunction { get { return this.TableHeaderFunction; } }
+        /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
         /// </summary>
         /// <param name="e"></param>
         void IGTable.TableHeaderClick(GInteractiveChangeStateArgs e)
         {
-            // Tady by se asi mohl resetovat filtr, nebo nabídnout reset Rows[].IsSelected, atd...
+            this.TableHeaderClick(e);
         }
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
@@ -3149,6 +3196,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     public interface IGTable
     {
         /// <summary>
+        /// Funkce, kterou aktuálně má objekt TableHeader
+        /// </summary>
+        TableHeaderFunctionType TableHeaderFunction { get; }
+        /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
         /// </summary>
         /// <param name="e"></param>
@@ -3217,6 +3268,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Řídí proces Drag and Move pro přemístění řádku, všechny fáze (viz argument e, <see cref="GDragActionArgs.DragAction"/>)
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="currentRow"></param>
         /// <param name="targetRelativeBounds"></param>
         void RowDragMoveAction(GDragActionArgs e, Row currentRow, Rectangle? targetRelativeBounds);
         /// <summary>

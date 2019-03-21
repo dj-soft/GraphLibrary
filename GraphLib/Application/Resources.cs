@@ -122,9 +122,14 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             if (!System.IO.Directory.Exists(targetPath)) return;
 
+            resourceDate = resourceDate.TrimPart(DateTimePart.Seconds);
             string targetFile = System.IO.Path.Combine(targetPath, "WorkSchedulerResources.cs");
             DateTime? lastCodeDate = _ReadLastCodeDate(targetFile);
-            if (lastCodeDate.HasValue && lastCodeDate.Value.TrimPart(DateTimePart.Miliseconds) >= resourceDate.TrimPart(DateTimePart.Miliseconds)) return;  // Soubor "ResourcesNames.cs" existuje a obsahuje správná (nebo novější) data
+            if (lastCodeDate.HasValue)
+            {
+                DateTime codeDate = lastCodeDate.Value.TrimPart(DateTimePart.Seconds);
+                if (codeDate >= resourceDate) return;      // Soubor "WorkSchedulerResources.cs" existuje a obsahuje správná (nebo novější) data
+            }
 
             if (content == null)
             {
@@ -136,7 +141,10 @@ namespace Asol.Tools.WorkScheduler.Application
             {
                 System.IO.File.WriteAllText(targetFile, content, Encoding.UTF8);
             }
-            catch { }
+            catch (Exception exc)
+            {
+                App.Trace.Exception(exc, "Update resources file " + targetFile);
+            }
         }
         /// <summary>
         /// Metoda vrátí obsah souboru "WorkSchedulerResources.cs", pro dané datum souboru .res a pro jeho obsah (soupis jeho položek = souborů v ZIPu).
@@ -183,6 +191,8 @@ namespace Asol.Tools.WorkScheduler.Application
         /// <param name="resourceDate"></param>
         private static void _SaveResourceAddFileHeader(StringBuilder sb, DateTime resourceDate)
         {
+            resourceDate = resourceDate.TrimPart(DateTimePart.Seconds);
+
             sb.AppendLine("// Supervisor: DAJ");
             sb.AppendLine("// Part of Helios Green, proprietary software, (c) LCS International, a. s.");
             sb.AppendLine("// Redistribution and use in source and binary forms, with or without modification, ");

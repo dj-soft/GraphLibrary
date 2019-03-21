@@ -347,6 +347,29 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this.OwnerITable.TableHeaderClick(e);
         }
+        /// <summary>
+        /// Připraví ToolTip pro TableHeader, na základě aktuální funkcionality
+        /// </summary>
+        /// <param name="e"></param>
+        public override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            base.PrepareToolTip(e);
+            switch (this.OwnerITable.TableHeaderFunction)
+            {
+                case TableHeaderFunctionType.DeselectAll:
+                    e.ToolTipData.TitleText = "Zrušit označení";
+                    e.ToolTipData.InfoText = "Zruší označení hromadně u všech řádků";
+                    break;
+                case TableHeaderFunctionType.ExpandAll:
+                    e.ToolTipData.TitleText = "Rozbalit vše";
+                    e.ToolTipData.InfoText = "Otevře všechny řádky a jejich podřízené řádky v celém stormu";
+                    break;
+                case TableHeaderFunctionType.CollapseAll:
+                    e.ToolTipData.TitleText = "Sbalit vše";
+                    e.ToolTipData.InfoText = "Zavře všechny otevřené řádky a jejich podřízené řádky v celém stormu";
+                    break;
+            }
+        }
         #endregion
         #region Draw - kreslení záhlaví tabulky
         /// <summary>
@@ -373,6 +396,26 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            this.DrawFunctionIcon(e, boundsAbsolute, drawAsGhost, opacity);
+        }
+        protected void DrawFunctionIcon(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            Image image = GetImageForFunction(this.OwnerITable.TableHeaderFunction);
+            if (image == null) return;
+            GPainter.DrawImage(e.Graphics, boundsAbsolute, image, true, alignment: ContentAlignment.MiddleCenter);
+        }
+        protected static Image GetImageForFunction(TableHeaderFunctionType function)
+        {
+            switch (function)
+            {
+                case TableHeaderFunctionType.DeselectAll:
+                    return Skin.Grid.RowHeaderDeselectedAllImage;
+                case TableHeaderFunctionType.ExpandAll:
+                    return Skin.Grid.RowHeaderExpandAllImage;
+                case TableHeaderFunctionType.CollapseAll:
+                    return Skin.Grid.RowHeaderCollapseAllImage;
+            }
+            return null;
         }
         #endregion
     }
@@ -2051,15 +2094,28 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             bool isInIcon = this.TreeViewIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
             if (!isInIcon) return;
 
-            this.TreeViewExpandChange();
+            this.TreeViewExpandChange(e);
         }
         /// <summary>
         /// Zajistí otevření / zavření nodu
         /// </summary>
+        /// <param name="e"></param>
         /// <returns></returns>
-        protected void TreeViewExpandChange()
+        protected void TreeViewExpandChange(GInteractiveChangeStateArgs e)
         {
-            this.OwnerRow.TreeNode.IsExpanded = !this.OwnerRow.TreeNode.IsExpanded;
+            if (this.OwnerRow.TreeNode.IsExpanded)
+            {   // Pokud je node rozbalený, tak jej prostě sbalím:
+                this.OwnerRow.TreeNode.IsExpanded = false;
+            }
+            else
+            {   // Pokud je node sbalený, tak jej rozbalím - ale máme dvě možnosti:
+                if (!e.ModifierKeys.HasFlag(Keys.Control))
+                    // Bez klávesy Ctrl = rozbalím jen jednu úroveň:
+                    this.OwnerRow.TreeNode.IsExpanded = true;
+                else
+                    // S klávesou Ctrl = rozbalím All:
+                    this.OwnerRow.TreeNode.ExpandAll();
+            }
         }
         /// <summary>
         /// Zajistí vykreslení TreeView prvků
@@ -2246,6 +2302,28 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Vodorovný scrollbar dole
         /// </summary>
         HorizontalScrollBar
+    }
+    /// <summary>
+    /// Funkcionalita prvku TableHeader
+    /// </summary>
+    public enum TableHeaderFunctionType
+    {
+        /// <summary>
+        /// Nemá funkci
+        /// </summary>
+        None,
+        /// <summary>
+        /// Zrušit označení všech řádků
+        /// </summary>
+        DeselectAll,
+        /// <summary>
+        /// Rozbalit všechny nody
+        /// </summary>
+        ExpandAll,
+        /// <summary>
+        /// Sbalit všechny nody
+        /// </summary>
+        CollapseAll
     }
     #endregion
     #region interfaces pro podporu grafické tabulky : IGTableMember

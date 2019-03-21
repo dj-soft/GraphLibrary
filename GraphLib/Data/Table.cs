@@ -1788,6 +1788,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Row ActiveRow { get; private set; }
         /// <summary>
+        /// true pokud tabulka obsahuje alespoň jeden řádek IsChecked.
+        /// Tato property je rychlejší než <see cref="CheckedRows"/>.
+        /// </summary>
+        public bool HasCheckedRows { get { return this.Rows.Any(r => r.IsChecked); } }
+        /// <summary>
         /// Souhrn označených řádků tabulky.
         /// Zatím nelze setovat.
         /// </summary>
@@ -3950,6 +3955,79 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Příznak otevření Child nodů
         /// </summary>
         private bool _IsExpanded;
+        #endregion
+        #region ExpandAll, CollapseAll
+        /// <summary>
+        /// Zajistí, že zdejší nody <see cref="Childs"/> budou viditelné.
+        /// Současně provede Expand i na všechny svoje Child nody = tedy tento prvek bude kompletně Expanded.
+        /// </summary>
+        public void ExpandAll()
+        {
+            _ExpandCollapseAll(new TreeNode[] { this }, true);
+        }
+        /// <summary>
+        /// Zajistí, že všechny zadané nody <see cref="Childs"/> budou mít viditelné Childs.
+        /// Současně provede Expand i na všechny jejich Child nody = dané prvky budou tedy kompletně Expanded.
+        /// </summary>
+        public static void ExpandAll(IEnumerable<TreeNode> nodes)
+        {
+            _ExpandCollapseAll(nodes, true);
+        }
+        /// <summary>
+        /// Zajistí, že zdejší nody <see cref="Childs"/> budou viditelné.
+        /// Současně provede Expand i na všechny svoje Child nody = tedy tento prvek bude kompletně Expanded.
+        /// </summary>
+        public void CollapseAll()
+        {
+            _ExpandCollapseAll(new TreeNode[] { this }, false);
+        }
+        /// <summary>
+        /// Zajistí, že všechny zadané nody <see cref="Childs"/> budou mít skryté Childs.
+        /// Současně provede Collapse i na všechny jejich Child nody = dané prvky budou tedy kompletně Collapsed.
+        /// </summary>
+        public static void CollapseAll(IEnumerable<TreeNode> nodes)
+        {
+            _ExpandCollapseAll(nodes, false);
+        }
+        /// <summary>
+        /// Provede ExpandAll nebo CollapseAll pro danou kolekci řádků, bez rekurze
+        /// </summary>
+        /// <param name="nodes"></param>
+        /// <param name="isExpand"></param>
+        private static void _ExpandCollapseAll(IEnumerable<TreeNode> nodes, bool isExpand)
+        {
+            if (nodes == null) return;
+            TreeNode firstNodeForInvalidate = null;
+            Dictionary<int, TreeNode> nodeDict = nodes
+                .GetDictionary(n => n.Owner.RowId, true);                      // Index, pro potlačení duplicitního zpracování
+            Stack<TreeNode> nodeStack = new Stack<TreeNode>(nodeDict.Values);  // Unique seznam vstupních nodů, do zásobníku
+            while (nodeStack.Count > 0)
+            {
+                TreeNode node = nodeStack.Pop();
+                if (!node.HasChilds) continue;
+
+                // Konkrétní node = nastavit jeho Expanded podle požadavku:
+                if (node.IsExpanded != isExpand)
+                {
+                    node.IsExpanded = isExpand;
+                    if (firstNodeForInvalidate == null)
+                        firstNodeForInvalidate = node;
+                }
+                
+                // Jeho Child nody zařadím do zpracování - jen tehdy, když samy mají Childs a ještě nebyly zpracované (viz nodeDict):
+                foreach (TreeNode child in node.ChildList.Select(r => r.TreeNode))
+                {
+                    if (child.HasChilds && !nodeDict.ContainsKey(child.Owner.RowId))
+                    {
+                        nodeDict.Add(child.Owner.RowId, child);
+                        nodeStack.Push(child);
+                    }
+                }
+            }
+
+            if (firstNodeForInvalidate != null)
+                firstNodeForInvalidate.TableRowsInvalidate();
+        }
         #endregion
         #region GetTreeLines
         /// <summary>

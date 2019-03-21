@@ -1192,7 +1192,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultItemTextColor { get { return Color.Black; } }
         protected virtual Size DefaultItemSpacing { get { return new Size(3, 2); } }
         protected virtual int DefaultItemHeight { get { return 24; } }
-        protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Small16.DialogOkApply2Png); } }
+        protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogOkApply2Png); } }
         #endregion
     }
     /// <summary>
@@ -1390,6 +1390,9 @@ namespace Asol.Tools.WorkScheduler.Components
         public Image SortAscendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortAscendingImage", value); } }
         public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
         public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
+        public Image RowHeaderDeselectedAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderDeselectedAllImage", DefaultRowHeaderDeselectedAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderDeselectedAllImage", value); } }
+        public Image RowHeaderExpandAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderExpandAllImage", DefaultRowHeaderExpandAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderExpandAllImage", value); } }
+        public Image RowHeaderCollapseAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderCollapseAllImage", DefaultRowHeaderCollapseAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderCollapseAllImage", value); } }
         public Color TreeViewLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "TreeViewLineColor", DefaultTreeViewLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "TreeViewLineColor", value); } }
         #endregion
         #region Default colors
@@ -1410,9 +1413,12 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultActiveCellTextColor { get { return Color.Black; } }
         protected virtual Color DefaultBorderLineColor { get { return Color.Gray; } }
         protected virtual BorderLinesType DefaultBorderLineType { get { return BorderLinesType.Horizontal3DSunken | BorderLinesType.VerticalSolid; } }
-        protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }
-        protected virtual Image DefaultSortDescendingImage { get { return IconStandard.SortDesc; } }
-        protected virtual Image DefaultRowSelectedImage { get { return IconStandard.RowSelected; } }
+        protected virtual Image DefaultSortAscendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoUp2Png); } }          // { get { return IconStandard.SortAsc; } }
+        protected virtual Image DefaultSortDescendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoDown2Png); } }       // { get { return IconStandard.SortDesc; } }
+        protected virtual Image DefaultRowSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogAccept2Png); } }    // { get { return IconStandard.RowSelected; } }
+        protected virtual Image DefaultRowHeaderDeselectedAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogClose2Png); } }
+        protected virtual Image DefaultRowHeaderExpandAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowRightDouble2Png); } }
+        protected virtual Image DefaultRowHeaderCollapseAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowLeftDouble2Png); } }
         protected virtual Color DefaultTreeViewLineColor { get { return Color.DimGray; } }
         #endregion
         #region Další metody

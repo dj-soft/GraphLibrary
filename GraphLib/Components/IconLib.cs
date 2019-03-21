@@ -806,6 +806,10 @@ namespace Asol.Tools.WorkScheduler.Components
         public static Image SortDesc { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_down_2_16; } }
         public static Image RowSelected { get { return Asol.Tools.WorkScheduler.Properties.Resources.dialog_accept_2_16; } }
 
+
+
+
+
         public static Image IconInfo { get { return Asol.Tools.WorkScheduler.Properties.Resources.help_contents_32; } }
         public static Image IconHelp { get { return Asol.Tools.WorkScheduler.Properties.Resources.help_32; } }
 
