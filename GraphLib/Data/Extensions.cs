@@ -813,6 +813,32 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
+        /// Metoda do this Dictionary přidá nové prvky z pole items (tj. ty, které tam dosud nejsou), na základě klíče prvku, vytvořeného pomocí funkce (keySelector).
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <typeparam name="TData"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="valueSelector"></param>
+        public static void AddNewItems<TKey, TValue, TData>(this Dictionary<TKey, TValue> dictionary, IEnumerable<TData> items, 
+            Func<TData, TKey> keySelector, Func<TData, TValue> valueSelector)
+        {
+            if (dictionary == null || items == null || keySelector == null) return;
+            foreach (TData item in items)
+            {
+                if (item == null) continue;
+                TKey key = keySelector(item);
+                if (key == null) continue;
+                TValue value = valueSelector(item);
+                if (!dictionary.ContainsKey(key))
+                    dictionary.Add(key, value);
+            }
+        }
+
+
+        /// <summary>
         /// Vrací danou kolekci sestavenou do jednoho stringu
         /// </summary>
         /// <param name="collection"></param>

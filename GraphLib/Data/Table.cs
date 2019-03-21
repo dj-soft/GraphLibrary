@@ -4571,6 +4571,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public DragActionType Action { get { return this._DragArgs.DragAction; } }
         /// <summary>
+        /// Absolutní souřadnice myši, kde se nachází nyní.
+        /// Může být null pouze při akci <see cref="Action"/> == <see cref="DragActionType.DragThisCancel"/>.
+        /// </summary>
+        public Point? MouseCurrentAbsolutePoint { get { return this._DragArgs.MouseCurrentAbsolutePoint; } }
+        /// <summary>
         /// Grafický prvek aktuálně se nacházející pod myší
         /// </summary>
         public IInteractiveItem SourceItem { get { return this._DragArgs.DragSourceItem; } }
@@ -5334,7 +5339,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         None = 0,
         /// <summary>
-        /// Pouze řádek, který chytila myš. Ostatní označené řádky se přesouvat nebudou.
+        /// Přesouvat se bude pouze řádek, který chytila myš. Ostatní označené řádky se přesouvat nebudou.
         /// </summary>
         OnlyActiveRow,
         /// <summary>
@@ -5343,14 +5348,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         ActivePlusSelectedRows,
         /// <summary>
-        /// Přesouvat se budou řádky označené kliknutím, ale pokud nejsou označeny žádné, 
-        /// tak se přesune řádek, který chytila myš.
+        /// Přesouvat se budou pouze řádky označené kliknutím. Řádek, který chytila myš, se přesouvat nebude (tedy pokud není označen ikonkou).
         /// </summary>
-        SelectedOrActiveRow,
+        OnlySelectedRows,
         /// <summary>
-        /// Přesouvat se budou pouze řádky označené kliknutím. Řádek, který chytila myš, se přesouvat nebude, pokud není označen.
+        /// Přesouvat se budou primárně řádky označené kliknutím (a ne aktivní). Ale pokud nejsou označeny žádné řádky, tak se přesune řádek, který chytila myš.
+        /// Rozdíl od <see cref="ActivePlusSelectedRows"/> je v tom, že tady se nebude přesouvat aktivní řádek (myší) pokud existují řádky označené (ikonkou).
         /// </summary>
-        OnlySelectedRows
+        SelectedThenActiveRow,
     }
     #endregion
 }

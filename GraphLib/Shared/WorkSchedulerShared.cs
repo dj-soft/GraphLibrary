@@ -628,25 +628,62 @@ namespace Noris.LCS.Base.WorkScheduler
         /// "ExistsPair" = přenášet, jen když v Parent řádku existuje shodný prvek bez ohledu na synchronní čas;
         /// "SynchronPair" = přenášet, jen když jsou synchronní časy (v Parent řádku existuje shodný prvek s časem společným s prvekm v Child řádku).
         /// Chování je case-insensitive, a postačuje zadat první znak.
+        /// <para/>
+        /// Veškerá klíčová slova jsou obsažena v konstantách třídy <see cref="GuiGridProperties"/>.CopyClasses_***
         /// </summary>
         public string ChildRowsCopyClassesMode { get; set; }
         /// <summary>
         /// Specifikace chování pro Drag and Move celých řádků z this tabulky do jiných tabulek.
-        /// Pokud bude tento string patřičně naplněn, bude možno řádky this tabulky brát jako zdroj procesu Drag and Drop,
-        /// přemisťovat myší nad jiné prvky, a puštěním myši pak data z this řádku aplikovat do cíle.
+        /// Tento string určuje, které řádky se mohou účastnit přesouvání.
+        /// Pokud zde bude prázdný string, nebude se moci z této tabulky provádět Drag and Move! To je výchozí stav.
+        /// Pokud chceme specifikovat, do kterých cílových prvků chceme povolit přenesení zdrojové řádky, musíme to zadat do <see cref="RowDragMoveToTarget"/>.
+        /// Zdejší string může obsahovat následující infromace, oddělené mezerou nebo čárkou. Texty musí být zadány přesně, nikoli tedy např. lower-case.
+        /// <para/>
+        /// Klíčová slova: 
+        /// "DragOnlyActiveRow" = Přesouvat se bude pouze řádek, který chytila myš. Ostatní označené řádky se přesouvat nebudou.;
+        /// "DragActivePlusSelectedRows" = Přesouvat se budou řádky označené kliknutím plus řádek, který chytila myš. To je intuitivně nejvhodnější nastavení.;
+        /// "DragOnlySelectedRows" = Přesouvat se budou pouze řádky označené kliknutím. Řádek, který chytila myš, se přesouvat nebude (tedy pokud není označen ikonkou).;
+        /// "DragSelectedThenActiveRow" = Přesouvat se budou primárně řádky označené kliknutím (a ne aktivní). Ale pokud nejsou označeny žádné řádky, tak se přesune řádek, který chytila myš.
+        /// Rozdíl od "DragActivePlusSelectedRows" je v tom, že tady se nebude přesouvat aktivní řádek (myší) pokud existují řádky označené (ikonkou).
+        /// Pokud nebude zadaná žádná hodnota typu "Drag*", pak se nebude přesouvat nic.
+        /// Pokud bude zadáno více hodnot typu "Drag*", pak platí první z nich.
+        /// Typ řádku:
+        /// "Root" = přesouvat pouze řádky na pozici Root ve stromu
+        /// "Child" = přesouvat pouze řádky na pozici Child ve stromu
+        /// "Master" = přesouvat pouze řádky Master (rozpoznává se v <see cref="GuiId"/> řádku, kde <see cref="GuiId.EntryId"/> musí být null);
+        /// "Entry" = přesouvat pouze řádky Entry (rozpoznává se v <see cref="GuiId"/> řádku, kde <see cref="GuiId.EntryId"/> nesmí být null);
+        /// "Class12345" = přesouvat pouze řádky dané třídy;
+        /// "MasterClass12345" = pouze řádky Master z dané třídy;
+        /// "EntryClass12345" = pouze řádky Entry z dané třídy;
+        /// Pokud nebude určeno nic z Class, Master, Entry, pak se budou brát všechny řádky bez omezení.
+        /// <para/>
+        /// Příklad: "DragActiveRow Class1364" bude přesouvat pouze řádek pod myší (ale ne označené řádky), a pouze řádky třídy 1364.
+        /// <para/>
+        /// Veškerá klíčová slova jsou obsažena v konstantách třídy <see cref="GuiGridProperties"/>.RowDragSource_***
+        /// </summary>
+        public string RowDragMoveSource { get; set; }
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků z this tabulky do jiných tabulek, určení cílového prvku kam lze řádek přesunout.
+        /// Pokud tento string nebude naplněn (prázdný = výchozí stav), pak bude proces Drag and Move nabízet všechny cílové objekty jako dostupné.
+        /// To z hlediska logiky není ideální, ale technicky je to v pořádku. Povolení nebo zákaz procesu Drag and Move se řídí v property <see cref="RowDragMoveSource"/>.
+        /// Pokud bude tento string patřičně naplněn, pak budou potenciální cílové objekty filtrovány, a ne každý se bude nabízet jako dostupný cíl.
         /// <para/>
         /// String má obsahovat: FullName cílové tabulky kam lze řádek přenést, a několik klíčových slov, vše odděleno čárkami nebo mezerami.
-        /// Více tabulek a klíčových slov se odděluje středníkem.
+        /// Více tabulek a jejich klíčových slov se odděluje středníkem. Texty musí být zadány přesně, nikoli tedy např. lower-case.
         /// Klíčová slova: 
         /// "RowRoot" = pouze do řádku Root;
-        /// "RowChild" = pouze do řádku Root;
+        /// "RowChild" = pouze do řádku Child;
         /// "RowAny" = jakýkoli řádek (tato hodnota je implicitní, pokud nebude použita žádná jiná hodnota "Row*");
         /// "ToCell" = kamkoliv do buňky (tato hodnota je implicitní, pokud nebude použita žádná jiná hodnota "To*");
         /// "ToGraph" = kamkoli do grafu;
         /// "ToItem" = pouze do prvku grafu, kteréhokoli prvku;
-        /// "ToItem12345" = pouze do prvku grafu dané třídy 12345 (prvky více tříd se specifikují jednotlivě) (číslo třídy musí navazovat na klíčové slovo);
+        /// "ToItemClass12345" = pouze do prvku grafu dané třídy 12345 (prvky více tříd se specifikují jednotlivě) (číslo třídy musí navazovat na klíčové slovo);
         /// <para/>
-        /// Příklad: "data/page/table1 RowRoot,ToItem1190;data/page/table2 RowRoot,ToItem1190"
+        /// Příklad: "data/page/table1 RowRoot,ToItemClass1190;data/page/table2 RowRoot,ToItemClass1190"
+        /// Tento příklad dovoluje přenést zdrojové řádky do dvou tabulek (data/page/table1 a data/page/table2), 
+        /// v obou tabulkách jen do Root řádku a jen do prvku grafu třídy 1190.
+        /// <para/>
+        /// Veškerá klíčová slova jsou obsažena v konstantách třídy <see cref="GuiGridProperties"/>.RowDragTarget_***
         /// </summary>
         public string RowDragMoveToTarget { get; set; }
         /// <summary>
@@ -675,6 +712,121 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Soupis definic interakcí
         /// </summary>
         public List<GuiGridInteraction> InteractionList { get; set; }
+        #region Konstanty pro zadavání chování
+        /// <summary>
+        /// Přenos položek grafu pro Child řádek, pokud se přenáší z jiné tabulky: nepřenášet nikdy
+        /// </summary>
+        public const string CopyClasses_None = "None";
+        /// <summary>
+        /// Přenos položek grafu pro Child řádek, pokud se přenáší z jiné tabulky: přenášet vždy
+        /// </summary>
+        public const string CopyClasses_Always = "Always";
+        /// <summary>
+        /// Přenos položek grafu pro Child řádek, pokud se přenáší z jiné tabulky: přenášet, jen když v Parent řádku existuje shodný prvek bez ohledu na synchronní čas
+        /// </summary>
+        public const string CopyClasses_ExistsPair = "ExistsPair";
+        /// <summary>
+        /// Přenos položek grafu pro Child řádek, pokud se přenáší z jiné tabulky: přenášet, jen když jsou synchronní časy (v Parent řádku existuje shodný prvek s časem společným s prvekm v Child řádku)
+        /// </summary>
+        public const string CopyClasses_SynchronPair = "SynchronPair";
+
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// Přesouvat se bude pouze řádek, který chytila myš. Ostatní označené řádky se přesouvat nebudou.
+        /// </summary>
+        public const string RowDragSource_DragOnlyActiveRow = "DragOnlyActiveRow";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků:
+        /// Přesouvat se budou řádky označené kliknutím plus řádek, který chytila myš. To je intuitivně nejvhodnější nastavení.
+        /// </summary>
+        public const string RowDragSource_DragActivePlusSelectedRows = "DragActivePlusSelectedRows";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// Přesouvat se budou pouze řádky označené kliknutím. Řádek, který chytila myš, se přesouvat nebude (tedy pokud není označen ikonkou).
+        /// </summary>
+        public const string RowDragSource_DragOnlySelectedRows = "DragOnlySelectedRows";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// Přesouvat se budou primárně řádky označené kliknutím (a ne aktivní). Ale pokud nejsou označeny žádné řádky, tak se přesune řádek, který chytila myš.
+        /// Rozdíl od "DragActivePlusSelectedRows" je v tom, že tady se nebude přesouvat aktivní řádek (myší) pokud existují řádky označené (ikonkou).
+        /// </summary>
+        public const string RowDragSource_DragSelectedThenActiveRow = "DragSelectedThenActiveRow";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// přesouvat pouze řádky na pozici Root ve stromu
+        /// </summary>
+        public const string RowDragSource_Root = "Root";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// přesouvat pouze řádky na pozici Child ve stromu
+        /// </summary>
+        public const string RowDragSource_Child = "Child";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// přesouvat pouze řádky Master (rozpoznává se v <see cref="GuiId"/> řádku, kde <see cref="GuiId.EntryId"/> musí být null);
+        /// </summary>
+        public const string RowDragSource_Master = "Master";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// přesouvat pouze řádky Entry (rozpoznává se v <see cref="GuiId"/> řádku, kde <see cref="GuiId.EntryId"/> nesmí být null);
+        /// </summary>
+        public const string RowDragSource_Entry = "Entry";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// přesouvat pouze řádky dané třídy; 
+        /// číslo třídy musí následovat bez mezery hned za tímto prefixem
+        /// </summary>
+        public const string RowDragSource_ClassPrefix = "Class";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// pouze řádky Master z dané třídy;
+        /// číslo třídy musí následovat bez mezery hned za tímto prefixem
+        /// </summary>
+        public const string RowDragSource_MasterClassPrefix = "MasterClass";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, výběr vstupních řádků: 
+        /// pouze řádky Entry z dané třídy;
+        /// číslo třídy musí následovat bez mezery hned za tímto prefixem
+        /// </summary>
+        public const string RowDragSource_EntryClassPrefix = "EntryClass";
+
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// pouze do řádku Root;
+        /// </summary>
+        public const string RowDragTarget_RowRoot = "RowRoot";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// pouze do řádku Child;
+        /// </summary>
+        public const string RowDragTarget_RowChild = "RowChild";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// jakýkoli řádek (tato hodnota je implicitní, pokud nebude použita žádná jiná hodnota "Row*");
+        /// </summary>
+        public const string RowDragTarget_RowAny = "RowAny";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// kamkoliv do buňky (tato hodnota je implicitní, pokud nebude použita žádná jiná hodnota "To*");
+        /// </summary>
+        public const string RowDragTarget_ToCell = "ToCell";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// kamkoli do grafu;
+        /// </summary>
+        public const string RowDragTarget_ToGraph = "ToGraph";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// pouze do prvku grafu, kteréhokoli prvku;
+        /// </summary>
+        public const string RowDragTarget_ToItem = "ToItem";
+        /// <summary>
+        /// Specifikace chování pro Drag and Move celých řádků, omezení cílových prvků:
+        /// pouze do prvku grafu dané třídy 12345 (prvky více tříd se specifikují jednotlivě) (číslo třídy musí navazovat na klíčové slovo);
+        /// </summary>
+        public const string RowDragTarget_ToItemClassPrefix = "ToItemClass";
+
+        #endregion
     }
     /// <summary>
     /// Předpis pro vyhledání Child řádků k danému Parent řádku

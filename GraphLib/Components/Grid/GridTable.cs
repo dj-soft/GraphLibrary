@@ -2185,7 +2185,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 case TableRowDragMoveSourceMode.ActivePlusSelectedRows:
                     rows = this.Rows.Where(r => r.IsChecked || (currentRow != null && r.RowId == currentRow.RowId)).ToArray();
                     break;
-                case TableRowDragMoveSourceMode.SelectedOrActiveRow:
+                case TableRowDragMoveSourceMode.SelectedThenActiveRow:
                     rows = this.Rows.Where(r => r.IsChecked).ToArray();
                     if (rows.Length == 0)
                         rows = new Row[] { currentRow };
