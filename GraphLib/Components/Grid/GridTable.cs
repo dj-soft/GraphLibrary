@@ -2357,14 +2357,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="row">řádek</param>
         void IGTable.RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
         {
-            if (row != null && row.Table.AllowRowSelectByClick)
+            if (row != null && row.Table.AllowRowCheckedByClick)
             {
                 row.Table.RowHeaderClick(row);
-                if (row.Table.AllowRowSelectByClick)
-                {
-                    row.CheckedChange();
-                    this.Repaint();
-                }
+                row.CheckedChange();
+                this.Repaint();
             }
         }
         /// <summary>

@@ -1188,7 +1188,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// true pokud je povoleno označovat řádky (Selected) kliknutím na záhlaví řádku. Default = true;
         /// </summary>
-        public bool AllowRowSelectByClick { get { return this._AllowRowSelectByClick; } set { this._AllowRowSelectByClick = value; } } private bool _AllowRowSelectByClick = true;
+        public bool AllowRowCheckedByClick { get { return this._AllowRowSelectByClick; } set { this._AllowRowSelectByClick = value; } } private bool _AllowRowSelectByClick = true;
         /// <summary>
         /// true pokud je povoleno vybírat jednotlivé buňky tabulky, false pokud celý řádek. Default = false;
         /// </summary>
@@ -3279,6 +3279,7 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             this.ClassId = guiTable.ClassId;
             this.TemplateId = guiTable.TemplateId;
+            this.AllowRowCheckedByClick = guiTable.RowCheckEnabled;
             this.TreeViewNodeOffset = guiTable.TreeViewNodeOffset;
             this.TreeViewLinkMode = _ConvertLinkMode(guiTable.TreeViewLinkMode);
             this.TreeViewLinkColor = guiTable.TreeViewLinkColor;

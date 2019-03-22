@@ -1895,15 +1895,49 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         private void _TableRowDragDrop(object sender, TableRowDragMoveArgs args)
         {
+            if (!this.HasMainData) return;
+
             // Zavoláme hostitele IHost a předáme mu všechna data:
-            // Inspiraci vezmi v metodě :
-            //   protected void ItemDragDropDrop(ItemDragDropArgs args)
-           
+
+            // Vyhledat tabulku - řádek - graf - prvek:
+            DragMoveRowsCurrentDataInfo dataInfo = DragMoveRowsCurrentDataInfo.CreateForTarget(args.TargetItem, args.MouseCurrentAbsolutePoint, true);
+
+            // Sestavit argument pro volání IHost:
+            GuiRequestCurrentState guiCurrentState = (hasMainData ? this.IMainData.CreateGuiCurrentState() : null);
+
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_GraphItemMove;
+            request.ActiveGraphItem = gridItemId;
+            request.GraphItemMove = guiItemMoveData;
+            request.CurrentState = guiCurrentState;
+            this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse, TimeSpan.FromMilliseconds(1500));
+
+            GraphItemChangeInfo moveInfo = this.PrepareSchedulerDragDropInfo(args);
+
+            // GUI data musím vytvořit ještě před tím, než vyvolám ItemDragDropDropGuiResponse(moveInfo), protože tam se data mohou změnit!!!
+            bool hasMainData = this.HasMainData;
+            GuiGridItemId gridItemId = (hasMainData ? this.GetGridItemId(args) : null);
+            GuiRequestGraphItemMove guiItemMoveData = (hasMainData ? this.PrepareRequestGraphItemMove(moveInfo) : null);
+            GuiRequestCurrentState guiCurrentState = (hasMainData ? this.IMainData.CreateGuiCurrentState() : null);
+
+
+            // Následně vyvolám (asynchronní) spuštění aplikační funkce, která zajistí komplexní přepočty a vrátí nová data, 
+            //  její response se řeší v metodě ItemDragDropDropAppResponse():
+            if (hasMainData)
+            {
+                GuiRequest request = new GuiRequest();
+                request.Command = GuiRequest.COMMAND_GraphItemMove;
+                request.ActiveGraphItem = gridItemId;
+                request.GraphItemMove = guiItemMoveData;
+                request.CurrentState = guiCurrentState;
+                this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse, TimeSpan.FromMilliseconds(1500));
+            }
 
         }
         /// <summary>
         /// Analyzovaný režim Drag and Move pro řádky this tabulky.
         /// Pochází z údajů v <see cref="GuiGridProperties.RowDragMoveToTarget"/>.
+        /// Je vytvořen jedenkrát při načítání GUI, od té doby se nemění.
         /// </summary>
         protected DragMoveRowsInfo DragMoveRows { get; private set; }
         #region Třídy DragMoveRowsInfo a DragMoveRowsSourceInfo a DragMoveRowsOneTargetInfo : obsahují definice pravidel pro Drag and Move řádků
@@ -2003,10 +2037,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 foreach (var targetInfo in this.TargetList)
                 {   // Máme definované povolené cíle, jmenovitě podle cílových tabulek => pokud určitá definice povoluje přesun na daný cíl, lze přesun povolit:
-                    if (targetInfo.TryFindValidTarget(targetItem, out activeItem)) return true;
+                    if (targetInfo.TryFindValidTarget(dataInfo))
+                    {
+                        activeItem = dataInfo.ActiveItem;
+                        return true;
+                    }
                 }
 
-                // Žádná definice nepovoluje přesun:
+                // Žádná definice cíle nepovoluje přesun do targetItem:
                 return false;
             }
             #endregion
@@ -2284,8 +2322,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 // 2. Syntéza výsledku:
                 DragMoveRowsOneTargetInfo target = new DragMoveRowsOneTargetInfo();
                 target.FullTableName = fullTable;
-                target.TargetRowRoot = (valueRow.Length == 0 || valueRow.Contains("R") || valueRow.Contains("A"));
-                target.TargetRowChild = (valueRow.Length == 0 || valueRow.Contains("C") || valueRow.Contains("A"));
+                target.IsTargetOnRowRoot = (valueRow.Length == 0 || valueRow.Contains("R") || valueRow.Contains("A"));
+                target.IsTargetOnRowChild = (valueRow.Length == 0 || valueRow.Contains("C") || valueRow.Contains("A"));
                 target.TargetObjectCell = (valueTo.Length == 0 || valueTo.Contains("C"));
                 target.TargetObjectGraph = (valueTo.Contains("G"));
                 target.TargetObjectGraphItemAny = (valueTo.Contains("I"));
@@ -2302,13 +2340,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             protected string FullTableName { get; private set; }
             /// <summary>
-            /// Cílem může být Root řádek
+            /// Cíl může být na Root řádku (graf, nebo prvek grafu).
+            /// Pokud může být cílem plocha řádku i mimo grafy, musí to být povoleno: <see cref="TargetObjectCell"/> = true.
             /// </summary>
-            protected bool TargetRowRoot { get; private set; }
+            protected bool IsTargetOnRowRoot { get; private set; }
             /// <summary>
-            /// Cílem může být Child řádek
+            /// Cíl může být na Child řádku (graf, nebo prvek grafu).
+            /// Pokud může být cílem plocha řádku i mimo grafy, musí to být povoleno: <see cref="TargetObjectCell"/> = true.
             /// </summary>
-            protected bool TargetRowChild { get; private set; }
+            protected bool IsTargetOnRowChild { get; private set; }
 
             /// <summary>
             /// Cílem může být obecně kterákoli buňka řádku
@@ -2331,54 +2371,91 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Metoda vrátí true, pokud aktuální cílový prvek může být cílem pro Drag and Move řádků.
             /// </summary>
-            /// <param name="targetItem"></param>
-            /// <param name="activeItem"></param>
+            /// <param name="targetData">Komplexní popis cílového prvku</param>
             /// <returns></returns>
-            public bool TryFindValidTarget(IInteractiveItem targetItem, out IInteractiveItem activeItem)
+            public bool TryFindValidTarget(DragMoveRowsCurrentDataInfo targetData)
             {
-                activeItem = null;
-                if (targetItem == null) return false;
-
-                // Najdeme tabulku (GridTable), ve které se vyskytuje cílový prvek:
-                GTable parentTable = InteractiveObject.SearchForItem(targetItem, true, typeof(GTable)) as GTable;
-                if (parentTable == null) return false;
-                MainDataTable mainDataTable = parentTable.DataTable.UserData as MainDataTable;
-                if (mainDataTable == null) return false;
+                if (targetData == null || targetData.MainDataTable == null) return false;
 
                 // Pokud nalezená tabulka má jiné FullName než je zde vyžadováno, pak skončíme:
-                if (!String.Equals(mainDataTable.TableName, this.FullTableName)) return false;
+                if (!String.Equals(targetData.MainDataTable.TableName, this.FullTableName)) return false;
 
-                // Najdeme řádek, do kterého se snažíme přetáhnout data:
-                GRowHeader rowHeader = InteractiveObject.SearchForItem(targetItem, true, typeof(GRowHeader)) as GRowHeader;
-                GCell rowCell = InteractiveObject.SearchForItem(targetItem, true, typeof(GCell)) as GCell;
-                Row row = (rowHeader != null ? rowHeader.OwnerRow : (rowCell != null ? rowCell.OwnerRow : null));
+                // Testuji požadavky na typ cílového řádku (Root / Child):
+                if (!this.TestDataRowEnabled(targetData.Row)) return false;
 
-                // Najdeme graf:
-                GTimeGraph timeGraph = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraph)) as GTimeGraph;
-
-                // Najdeme prvek grafu:
-                GTimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
-
-                // Vyhodnotíme vše:
-                bool isRowRoot = (row != null && row.TreeNode.IsRoot);
-                bool isRowChild = (row != null && !isRowRoot);
-                if (isRowRoot && !this.TargetRowRoot) return false;
-                if (isRowChild && !this.TargetRowChild) return false;
-
-                if (timeGraphItem != null)
+                // Pokud target je prvek grafu, pak testuji zda je takový prvek povolen jako cíl:
+                DataGraphItem testGraphItem = targetData.TestGraphItem;
+                if (this.TestDataGraphItem(testGraphItem))
                 {
-                    if (this.TargetObjectGraphItemAny)
-                    {
-                        activeItem = timeGraphItem;
-                        return true;
-                    }
+                    targetData.ActiveItem = targetData.GTimeGraphItem;
+                    return true;
                 }
 
+                // Pokud target je graf, pak testuji zda je povolen graf:
+                GTimeGraph testGraph = targetData.GTimeGraph;
+                if (this.TestDataGraph(testGraph))
+                {
+                    targetData.ActiveItem = testGraph;
+                    return true;
+                }
 
+                // Pokud target je Cell, pak testuji zda je povolena buňka Cell:
+                GCell testCell = targetData.GCell;
+                if (this.TestDataCell(testCell))
+                {
+                    targetData.ActiveItem = testCell;
+                    return true;
+                }
 
-                if (timeGraphItem == null) return false;
-                activeItem = timeGraphItem;
+                return false;
+            }
+            /// <summary>
+            /// Vrátí true, pokud daný řádek smí být použit jako cílový pro Drag and Move - z hlediska Root/Child
+            /// </summary>
+            /// <param name="row"></param>
+            /// <returns></returns>
+            protected bool TestDataRowEnabled(Row row)
+            {
+                if (row == null) return false;
+                bool isRoot = row.TreeNode.IsRoot;
+                if (isRoot && !this.IsTargetOnRowRoot) return false;
+                if (!isRoot && !this.IsTargetOnRowChild) return false;
                 return true;
+            }
+            /// <summary>
+            /// Vrátí true, pokud daný prvek grafu smí být aktivním cílem pro Drag and Move
+            /// </summary>
+            /// <param name="testGraphItem"></param>
+            /// <returns></returns>
+            protected bool TestDataGraphItem(DataGraphItem testGraphItem)
+            {
+                if (testGraphItem == null) return false;
+                if (this.TargetObjectGraphItemAny) return true;
+                if (this.TargetObjectGraphItemClassDict == null || this.TargetObjectGraphItemClassDict.Count == 0) return false;
+                if (testGraphItem.ItemGId != null && this.TargetObjectGraphItemClassDict.ContainsKey(testGraphItem.ItemGId.ClassId)) return true;
+                if (testGraphItem.GroupGId != null && this.TargetObjectGraphItemClassDict.ContainsKey(testGraphItem.GroupGId.ClassId)) return true;
+                if (testGraphItem.DataGId != null && this.TargetObjectGraphItemClassDict.ContainsKey(testGraphItem.DataGId.ClassId)) return true;
+                return false;
+            }
+            /// <summary>
+            /// Vrátí true, pokud daný graf smí být aktivním cílem pro Drag and Move
+            /// </summary>
+            /// <param name="testGraph"></param>
+            /// <returns></returns>
+            protected bool TestDataGraph(GTimeGraph testGraph)
+            {
+                if (testGraph == null) return false;
+                return this.TargetObjectGraph;
+            }
+            /// <summary>
+            /// Vrátí true, pokud daná buňka grafu smí být aktivním cílem pro Drag and Move
+            /// </summary>
+            /// <param name="testCell"></param>
+            /// <returns></returns>
+            protected bool TestDataCell(GCell testCell)
+            {
+                if (testCell == null) return false;
+                return this.TargetObjectCell;
             }
             #endregion
         }
@@ -2387,6 +2464,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected class DragMoveRowsCurrentDataInfo
         {
+            #region Konstruktor a data
             /// <summary>
             /// Vytvoří, naplní a vrátí instanci <see cref="DragMoveRowsCurrentDataInfo"/>, která bude obsahovat veškeré dostupné údaje o cílo přetahování.
             /// Pokud bude zadána pozice myši, bude určen i cílový čas, pokud se myš pohybuje nad časovým grafem. 
@@ -2394,8 +2472,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             /// <param name="targetItem"></param>
             /// <param name="mouseAbsolutePoint"></param>
+            /// <param name="withTime"></param>
             /// <returns></returns>
-            public static DragMoveRowsCurrentDataInfo CreateForTarget(IInteractiveItem targetItem, Point? mouseAbsolutePoint = null)
+            public static DragMoveRowsCurrentDataInfo CreateForTarget(IInteractiveItem targetItem, Point? mouseAbsolutePoint = null, bool withTime = false)
             {
                 DragMoveRowsCurrentDataInfo data = new DragMoveRowsCurrentDataInfo(targetItem);
 
@@ -2414,44 +2493,167 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 // Najdeme graf:
                 data.GTimeGraph = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraph)) as GTimeGraph;
-                if (data.GTimeGraph != null && mouseAbsolutePoint.HasValue)
+                if (data.GTimeGraph != null && mouseAbsolutePoint.HasValue && withTime)
                 {
                     Rectangle graphBounds = data.GTimeGraph.BoundsAbsolute;
                     Point mouseRelativePoint = mouseAbsolutePoint.Value.Sub(graphBounds.Location);
                     data.Time = data.GTimeGraph.GetTimeForPosition(mouseRelativePoint.X, AxisTickType.Pixel);
+                    data.TimeRound = data.GTimeGraph.GetTimeForPosition(mouseRelativePoint.X, AxisTickType.StdTick);
                 }
 
                 // Najdeme prvek grafu:
                 data.GTimeGraphItem = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
                 if (data.GTimeGraphItem != null)
                 {
-                    data.GraphItemPosition = data.GTimeGraphItem.Position;
-                    data.MainDataTable.GetGraphItem();
-                    data.MainDataTable.GetGridItemId();
+                    GGraphControlPosition position = data.GTimeGraphItem.Position;
+                    data.GraphItemPosition = position;
+                    switch (position)
+                    {
+                        case GGraphControlPosition.Item:
+                            data.DataGraphItem = data.GTimeGraphItem.Item as DataGraphItem;
+                            break;
+                        case GGraphControlPosition.Group:
+                            GTimeGraphGroup group = data.GTimeGraphItem.Item as GTimeGraphGroup;
+                            if (group != null)
+                                data.DataGraphGroupItems = group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
+                            break;
+                    }
                 }
-
 
                 return data;
             }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="targetItem"></param>
             private DragMoveRowsCurrentDataInfo(IInteractiveItem targetItem)
             {
                 this.TargetItem = targetItem;
             }
+            /// <summary>
+            /// Fyzický cílový prvek, na který ukazuje myš
+            /// </summary>
             public IInteractiveItem TargetItem { get; private set; }
-            public GGraphControlPosition? GraphItemPosition { get; private set; }
-            public GTimeGraphItem GTimeGraphItem { get; private set; }
-            public DateTime? Time { get; private set; }
-            public GTimeGraph GTimeGraph { get; private set; }
-            public Row Row { get; private set; }
-            public GCell GCell { get; private set; }
-            public GRowHeader GRowHeader { get; private set; }
-            public Table Table { get; private set; }
+            /// <summary>
+            /// Grafická komponenta - Tabulka, do které patří prvek
+            /// </summary>
             public GTable GTable { get; private set; }
+            /// <summary>
+            /// Datová tabulka, do které patří prvek
+            /// </summary>
+            public Table Table { get; private set; }
+            /// <summary>
+            /// Tabulka Scheduler odpovídající datové tabulce
+            /// </summary>
             public MainDataTable MainDataTable { get; private set; }
+            /// <summary>
+            /// Plné jméno cílové tabulky v Scheduleru
+            /// </summary>
             public string FullTableName { get; private set; }
-
+            /// <summary>
+            /// Záhlaví řádku, pokud je myš nad Headerem
+            /// </summary>
+            public GRowHeader GRowHeader { get; private set; }
+            /// <summary>
+            /// Konkrétní buňka, pokud je myš nad buňkou
+            /// </summary>
+            public GCell GCell { get; private set; }
+            /// <summary>
+            /// Datový řádek, na který ukazuje myš
+            /// </summary>
+            public Row Row { get; private set; }
+            /// <summary>
+            /// Časový graf, pokud je myš nad grafem
+            /// </summary>
+            public GTimeGraph GTimeGraph { get; private set; }
+            /// <summary>
+            /// Konkrétní čas na časovém grafu, nebo null
+            /// </summary>
+            public DateTime? Time { get; private set; }
+            /// <summary>
+            /// Zaokrouhlený čas na časovém grafu, nebo null
+            /// </summary>
+            public DateTime? TimeRound { get; private set; }
+            /// <summary>
+            /// Grafická komponenta prvku grafu, kam ukazuje myš.
+            /// Toto může být grafický prvek konkrétní položky grafu (pozice <see cref="GraphItemPosition"/> = Item) anebo grafický prvek reprezentujcí celou grupu (pozice = Group).
+            /// </summary>
+            public GTimeGraphItem GTimeGraphItem { get; private set; }
+            /// <summary>
+            /// Pozice grafické komponenty = zda myš ukazuje na konkrétní prvek grafu, nebo na prostor grupy = spojnice mezi dvěma prvky grafu 
+            /// </summary>
+            public GGraphControlPosition? GraphItemPosition { get; private set; }
+            /// <summary>
+            /// Datový prvek grafu odpovídající cílovému prvku, na který je přímo ukázáno 
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Item"/>).
+            /// Pokud je cílem skupina, pak je zde null.
+            /// </summary>
+            public DataGraphItem DataGraphItem { get; private set; }
+            /// <summary>
+            /// Prvky cílové skupiny, pokud je ukázáno na skupinu = na prostor mezi prvky
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Group"/>).
+            /// </summary>
+            public DataGraphItem[] DataGraphGroupItems { get; private set; }
+            /// <summary>
+            /// Testovací datový prvek. Obsahuje buď <see cref="DataGraphItem"/> (to když je nalezen konkrétní prvek) 
+            /// anebo obsahuje první prvek z pole <see cref="DataGraphGroupItems"/> (to když je nalezena grupa).
+            /// </summary>
+            public DataGraphItem TestGraphItem
+            {
+                get
+                {
+                    if (this.DataGraphItem != null) return this.DataGraphItem;
+                    if (this.DataGraphGroupItems != null && this.DataGraphGroupItems.Length > 0) return this.DataGraphGroupItems[0];
+                    return null;
+                }
+            }
+            /// <summary>
+            /// ID řádku cíle
+            /// </summary>
+            public GuiGridRowId GuiGridRowId
+            {
+                get
+                {
+                    if (this.MainDataTable == null || this.Row == null) return null;
+                    return this.MainDataTable.GetGridRowId(this.Row);
+                }
+            }
+            /// <summary>
+            /// Ukazatel (Pointer) na cílový prvek grafu <see cref="DataGraphItem"/>, na který je přímo ukázáno 
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Item"/>).
+            /// Pokud je cílem skupina, pak je zde null.
+            /// <para/>
+            /// Pozor, tato hodnota se dohledává On-Demand, je vhodno ji vyhodnotit jedenkrát a uchovat výsledek.
+            /// </summary>
+            public GuiGridItemId GuiGridItemId
+            {
+                get
+                {
+                    if (this.MainDataTable == null || this.DataGraphItem == null) return null;
+                    return this.MainDataTable.GetGridItemId(this.DataGraphItem);
+                }
+            }
+            /// <summary>
+            /// ID všech prvků cílové skupiny, pokud je ukázáno na skupinu = na prostor mezi prvky
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Group"/>).
+            /// <para/>
+            /// Pozor, tato hodnota se dohledává On-Demand, je vhodno ji vyhodnotit jedenkrát a uchovat výsledek.
+            /// </summary>
+            public GuiGridItemId[] GuiGridGroupItemIds
+            {
+                get
+                {
+                    if (this.MainDataTable == null || this.DataGraphGroupItems == null) return null;
+                    return this.DataGraphGroupItems.Select(dgi => this.MainDataTable.GetGridItemId(dgi)).ToArray();
+                }
+            }
+            /// <summary>
+            /// Výsledek = cílový prvek, který je ochoten přijmout přemísťované prvky (řádky).
+            /// Metoda sem může vložit referenci na objekt, který bude příjemcem procesu Drag and Move.
+            /// </summary>
+            public IInteractiveItem ActiveItem { get; set; }
+            #endregion
         }
-
         /// <summary>
         /// Metoda detekuje klíčové slovo a jeho třídu.
         /// Pokud hodnota (text) = "MasterClass1188", a (keyWord) = "MasterClass", pak tato metoda rozpozná shodu,
@@ -3585,6 +3787,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (graphItem != null)
                     this.RunOpenRecordForm(graphItem.RecordGId);
             }
+        }
+        /// <summary>
+        /// Metoda sestaví ID pro daný řádek
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        private GuiGridRowId GetGridRowId(Row row)
+        {
+            GuiGridRowId gridRowId = new GuiGridRowId();
+            gridRowId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            if (row != null)
+            {
+                gridRowId.RowId = row.RecordGId;
+            }
+            return gridRowId;
         }
         /// <summary>
         /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném prvku grafu.

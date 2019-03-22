@@ -1312,6 +1312,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public List<GuiGraphLink> GraphLinks { get; set; }
         /// <summary>
+        /// Je povoleno označovat řádky (ikonka v záhlaví řádku)?
+        /// </summary>
+        public bool RowCheckEnabled { get; set; }
+        /// <summary>
         /// Posun jednotlivých úrovní v TreeView, v pixelech. Nezadáno = 14 pixelů. Minimální hodnota = 10px. Maximální hodnota = 40px.
         /// </summary>
         public int? TreeViewNodeOffset { get; set; }
@@ -4684,6 +4688,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Aplikační servisní funkce může zareagovat úpravou svých dat, a případně přeplánováním.
         /// </summary>
         public const string COMMAND_GraphItemResize = "GraphItemResize";
+        /// <summary>
+        /// Byl proveden Drag and Drop pro některé řádky na některé místo.
+        /// 
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétním aktivním prvku grafu v property <see cref="GuiRequest.ActiveGraphItem"/>,
+        /// a informaci o změně prvku v property <see cref="GuiRequest.GraphItemResize"/> (změněný prvek, výchozí výška nebo čas, cílová výška nebo čas).
+        /// Kompletní údaje o stavu GUI jsou v <see cref="GuiRequest.CurrentState"/>.
+        /// Aplikační servisní funkce může zareagovat úpravou svých dat, a případně přeplánováním.
+        /// </summary>
+        public const string COMMAND_RowDragDrop = "RowDragDrop";
+        komentáře;
+
+
 
         /// <summary>
         /// Test před zavřením okna.
