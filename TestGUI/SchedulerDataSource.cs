@@ -1751,6 +1751,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         };
                         break;
 
+                    case GuiRequest.COMMAND_RowDragDrop:
+                        this.DataChanged = true;
+                        time = this.Rand.Next(100, 350);
+                        System.Threading.Thread.Sleep(time);
+                        responseArgs.GuiResponse = new GuiResponse();
+                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
+                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
+                        {
+                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
+                        };
+                        break;
+
                     case GuiRequest.COMMAND_ToolbarClick:
                         responseArgs.GuiResponse = new GuiResponse();
                         switch (requestArgs.Request.ToolbarItem.Name)
