@@ -2387,7 +2387,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected class DragMoveRowsCurrentDataInfo
         {
-            public static DragMoveRowsCurrentDataInfo CreateForTarget(IInteractiveItem targetItem, Point? mouseAbsolutePoint)
+            /// <summary>
+            /// Vytvoří, naplní a vrátí instanci <see cref="DragMoveRowsCurrentDataInfo"/>, která bude obsahovat veškeré dostupné údaje o cílo přetahování.
+            /// Pokud bude zadána pozice myši, bude určen i cílový čas, pokud se myš pohybuje nad časovým grafem. 
+            /// Toto není zapotřebí při prostém pohybu myši, ale je to vhodné při závěrečné akci Drop, kdy chceme předat i cílový čas do aplikační funkce.
+            /// </summary>
+            /// <param name="targetItem"></param>
+            /// <param name="mouseAbsolutePoint"></param>
+            /// <returns></returns>
+            public static DragMoveRowsCurrentDataInfo CreateForTarget(IInteractiveItem targetItem, Point? mouseAbsolutePoint = null)
             {
                 DragMoveRowsCurrentDataInfo data = new DragMoveRowsCurrentDataInfo(targetItem);
 
@@ -2415,6 +2423,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 // Najdeme prvek grafu:
                 data.GTimeGraphItem = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+                if (data.GTimeGraphItem != null)
+                {
+                    data.GraphItemPosition = data.GTimeGraphItem.Position;
+                    data.MainDataTable.GetGraphItem();
+                    data.MainDataTable.GetGridItemId();
+                }
+
 
                 return data;
             }
@@ -2423,6 +2438,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.TargetItem = targetItem;
             }
             public IInteractiveItem TargetItem { get; private set; }
+            public GGraphControlPosition? GraphItemPosition { get; private set; }
             public GTimeGraphItem GTimeGraphItem { get; private set; }
             public DateTime? Time { get; private set; }
             public GTimeGraph GTimeGraph { get; private set; }
