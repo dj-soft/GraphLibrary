@@ -164,7 +164,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             using (Application.App.Trace.Scope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
             {
 
-                table.AllowRowSelectByClick = false;
+                table.AllowRowCheckedByClick = false;
                 table.AllowRowReorder = false;
 
                 table.AddColumns

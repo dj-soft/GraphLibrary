@@ -953,6 +953,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             GuiDataTable guiTable = new GuiDataTable() { ClassId = ProductOrder.ClassNumber };
             guiTable.ClassId = 1188;
+            guiTable.RowCheckEnabled = false;
             guiTable.TreeViewNodeOffset = 14;
             guiTable.TreeViewLinkMode = GuiTreeViewLinkMode.Dot;
             guiTable.TreeViewLinkColor = Color.DarkViolet;
@@ -1035,6 +1036,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiGrid gridCenterWorkplace = new GuiGrid() { Name = GuiNameGridCenterTop, Title = "Pracoviště" };
 
             this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameRowsCenterTop);
+            gridCenterWorkplace.RowTable.RowCheckEnabled = false;
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -1094,7 +1096,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterBottom, Title = "Pracovníci" };
 
             this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameRowsCenterBottom);
-            gridCenterPersons.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " RowRoot, ToItem";
+            gridCenterPersons.RowTable.RowCheckEnabled = false;
+            gridCenterPersons.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragActivePlusSelectedRows + " " + GuiGridProperties.RowDragSource_Root;
+            gridCenterPersons.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + ", " + GuiGridProperties.RowDragTarget_ToItem;
 
             gridCenterPersons.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -1147,6 +1151,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridRight.GraphProperties.UpperSpaceLogical = 0.2f;
 
             GuiDataTable guiTable = new GuiDataTable() { ClassId = PlanUnitC.ClassNumber };
+            guiTable.RowCheckEnabled = true;
             guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = PlanUnitC.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Jméno", Width = 200 });
@@ -1155,9 +1160,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
                 this.AddPlanUnitCToGridRight(guiTable, planUnitC);
-
-            // this.AddProductOrderTagItems(guiTable);
-
 
             this.GridRight = gridRight;
             this.MainPage.RightPanel.Grids.Add(gridRight);
