@@ -1902,37 +1902,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Vyhledat tabulku - řádek - graf - prvek:
             DragMoveRowsCurrentDataInfo dataInfo = DragMoveRowsCurrentDataInfo.CreateForTarget(args.TargetItem, args.MouseCurrentAbsolutePoint, true);
 
+            // Poskládat data pro volání IHost:
+            GuiRequestCurrentState guiCurrentState = this.IMainData.CreateGuiCurrentState();
+            GuiRequestRowDragMove rowDragMove = new GuiRequestRowDragMove();
+            rowDragMove.SourceRows = args.DragRows.Select(r => this.GetGridRowId(r)).ToArray();
+            rowDragMove.TargetRow = dataInfo.GuiGridRowId;
+            rowDragMove.TargetItem = dataInfo.GuiGridItemId;
+            rowDragMove.TargetGroup = dataInfo.GuiGridGroupItemIds;
+            rowDragMove.TargetTime = dataInfo.Time;
+            rowDragMove.TargetTimeRound = dataInfo.TimeRound;
+
             // Sestavit argument pro volání IHost:
-            GuiRequestCurrentState guiCurrentState = (hasMainData ? this.IMainData.CreateGuiCurrentState() : null);
-
             GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_GraphItemMove;
-            request.ActiveGraphItem = gridItemId;
-            request.GraphItemMove = guiItemMoveData;
+            request.Command = GuiRequest.COMMAND_RowDragDrop;
             request.CurrentState = guiCurrentState;
-            this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse, TimeSpan.FromMilliseconds(1500));
+            request.RowDragMove = rowDragMove;
 
-            GraphItemChangeInfo moveInfo = this.PrepareSchedulerDragDropInfo(args);
+            // Zavolat Host:
+            this.IMainData.CallAppHostFunction(request, this.RowDragDropAppResponse, TimeSpan.FromMilliseconds(1500));
+        }
+        /// <summary>
+        /// Metoda, která obdrží odpovědi z aplikační funkce, a podle nich zajistí patřičné změny v tabulkách.
+        /// </summary>
+        /// <param name="response"></param>
+        protected void RowDragDropAppResponse(AppHostResponseArgs response)
+        {
+            if (response == null || response.GuiResponse == null) return;
+            GuiResponse guiResponse = response.GuiResponse;
 
-            // GUI data musím vytvořit ještě před tím, než vyvolám ItemDragDropDropGuiResponse(moveInfo), protože tam se data mohou změnit!!!
-            bool hasMainData = this.HasMainData;
-            GuiGridItemId gridItemId = (hasMainData ? this.GetGridItemId(args) : null);
-            GuiRequestGraphItemMove guiItemMoveData = (hasMainData ? this.PrepareRequestGraphItemMove(moveInfo) : null);
-            GuiRequestCurrentState guiCurrentState = (hasMainData ? this.IMainData.CreateGuiCurrentState() : null);
-
-
-            // Následně vyvolám (asynchronní) spuštění aplikační funkce, která zajistí komplexní přepočty a vrátí nová data, 
-            //  její response se řeší v metodě ItemDragDropDropAppResponse():
-            if (hasMainData)
-            {
-                GuiRequest request = new GuiRequest();
-                request.Command = GuiRequest.COMMAND_GraphItemMove;
-                request.ActiveGraphItem = gridItemId;
-                request.GraphItemMove = guiItemMoveData;
-                request.CurrentState = guiCurrentState;
-                this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse, TimeSpan.FromMilliseconds(1500));
-            }
-
+            this.IMainData.ProcessResponse(guiResponse);
         }
         /// <summary>
         /// Analyzovaný režim Drag and Move pro řádky this tabulky.
@@ -2033,7 +2031,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
 
                 // vyhledat tabulku - řádek - graf - prvek:
-                DragMoveRowsCurrentDataInfo dataInfo = DragMoveRowsCurrentDataInfo.CreateForTarget(targetItem, mouseCurrentAbsolutePoint);
+                DragMoveRowsCurrentDataInfo dataInfo = DragMoveRowsCurrentDataInfo.CreateForTarget(targetItem, mouseCurrentAbsolutePoint, false);
 
                 foreach (var targetInfo in this.TargetList)
                 {   // Máme definované povolené cíle, jmenovitě podle cílových tabulek => pokud určitá definice povoluje přesun na daný cíl, lze přesun povolit:

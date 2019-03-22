@@ -4653,6 +4653,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiRequestGraphItemResize GraphItemResize { get; set; }
         /// <summary>
+        /// Informace o přemísťování řádků na určitý cíl (Drag and Move pro sadu řádků tabulky)
+        /// </summary>
+        public GuiRequestRowDragMove RowDragMove { get; set; }
+        /// <summary>
         /// Aktuální stav okna WorkScheduler
         /// </summary>
         public GuiRequestCurrentState CurrentState { get; set; }
@@ -4690,17 +4694,11 @@ namespace Noris.LCS.Base.WorkScheduler
         public const string COMMAND_GraphItemResize = "GraphItemResize";
         /// <summary>
         /// Byl proveden Drag and Drop pro některé řádky na některé místo.
-        /// 
-        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétním aktivním prvku grafu v property <see cref="GuiRequest.ActiveGraphItem"/>,
-        /// a informaci o změně prvku v property <see cref="GuiRequest.GraphItemResize"/> (změněný prvek, výchozí výška nebo čas, cílová výška nebo čas).
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétních zdrojových řádcích i o cílovém prvku v property <see cref="GuiRequest.RowDragMove"/>,
         /// Kompletní údaje o stavu GUI jsou v <see cref="GuiRequest.CurrentState"/>.
         /// Aplikační servisní funkce může zareagovat úpravou svých dat, a případně přeplánováním.
         /// </summary>
         public const string COMMAND_RowDragDrop = "RowDragDrop";
-        komentáře;
-
-
-
         /// <summary>
         /// Test před zavřením okna.
         /// Nepředávají se žádná upřesňující data.
@@ -4856,6 +4854,64 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud je zde hodnota, pak se může lišit od <see cref="SourceTime"/> buď v hodnotě Begin, nebo End (nelze najednou měnit obě hodnoty, to by bylo Move a ne Resize).
         /// </summary>
         public GuiTimeRange TargetTime { get; set; }
+    }
+    /// <summary>
+    /// Informace o přemísťování řádků na určitý cíl (Drag and Move pro sadu řádků tabulky)
+    /// </summary>
+    public class GuiRequestRowDragMove
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiRequestRowDragMove()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "RowDragMove: ";
+            if (this.SourceRows != null && this.SourceRows.Length > 0)
+                text += "SourceRows: " + this.SourceRows[0].ToString();
+            else
+                text += "SourceRows: {Null}";
+
+            text += "; TargetRow: " + ((this.TargetRow != null) ? this.TargetRow.ToString() : "{Null}");
+            text += "; TargetTime: " + ((this.TargetTime.HasValue) ? this.TargetTime.ToString() : "{Null}");
+
+            return text;
+        }
+        /// <summary>
+        /// Zdrojové řádky, které se pohybují = ty byly vybrány, a s nimi se pohybuje někam...
+        /// </summary>
+        public GuiGridRowId[] SourceRows { get; set; }
+        /// <summary>
+        /// Cílový řádek, kam byly zdrojové řádky přemístěny a kde byla uvolněna myš = cíl
+        /// </summary>
+        public GuiGridRowId TargetRow { get; set; }
+        /// <summary>
+        /// Cílový konkrétní prvek grafu, kam jsou zdrojové řádky přemístěny.
+        /// Aplikace může pracovat s tímto konkrétním prvkem, anebo z něj může odvodit celou grupu.
+        /// Pokud není cílem přetahování konkrétní prvek, ale grupa (= skupina prvků), a uživatel tedy ukázal myší do prostoru mezi prvky (=spojovací linie),
+        /// pak v této property <see cref="TargetItem"/> je null, a celá skupina je uvedena v <see cref="TargetGroup"/>.
+        /// </summary>
+        public GuiGridItemId TargetItem { get; set; }
+        /// <summary>
+        /// Cílová skupina prvků grafu, kam jsou zdrojové řádky přemístěny.
+        /// V grafu se vyskytuje více prvků jedné grupy, a mezi nimi je zobrazena spojovací linie. A právě na tu linii ukázal uživatel jako na cíl při přetahování.
+        /// Pokud by uživatel ukázal (jako na cíl) na konkrétní prvek, pak zde bude null a prvek bude uveden v <see cref="TargetItem"/>.
+        /// </summary>
+        public GuiGridItemId[] TargetGroup { get; set; }
+        /// <summary>
+        /// Čas v rámci grafu, kam byly řádky umístěny. Zde je čas zaokrouhlený na pixely.
+        /// </summary>
+        public DateTime? TargetTime { get; set; }
+        /// <summary>
+        /// Čas v rámci grafu, kam byly řádky umístěny. Zde je čas zaokrouhlený na malé dílky na časové ose.
+        /// </summary>
+        public DateTime? TargetTimeRound { get; set; }
+
     }
     /// <summary>
     /// Informace o stavu při kliknutí na kontextové menu
