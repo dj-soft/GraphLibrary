@@ -1488,10 +1488,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 PersistArgs serArgs = (isCompress ? PersistArgs.Compressed : PersistArgs.Default);
                 serArgs.SavePrimitivesContent = new StringBuilder();
+                serArgs.DataHeapEnabled = true;
                 serial = Persist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
                 scopeS.AddItem("PrimitivesLength: " + serArgs.SavePrimitivesLength.ToString());
-                primitive = serArgs.SavePrimitivesContent.ToString();
+                primitive = ((serArgs.SavePrimitivesRunning && serArgs.SavePrimitivesContent != null)? serArgs.SavePrimitivesContent.ToString() : null);
             }
 
             SerialSaveData(serial, mode);
