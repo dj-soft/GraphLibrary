@@ -146,9 +146,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Stav procesu persistování
         /// </summary>
-        [PersistingEnabled(false)]
         private XmlPersistState _XmlPersistState;
-
         #endregion
     }
     #endregion
@@ -1390,7 +1388,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Fyzické úložiště reference na <see cref="GuiDataTable"/>
         /// </summary>
-        [PersistingEnabled(false)]
         private GuiDataTable _Table;
         /// <summary>
         /// Reference na <see cref="Table"/> typovaná na interface <see cref="IGuiDataTable"/>, pro přístup k vnitřním metodám.
@@ -1756,7 +1753,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Fyzické úložiště reference na <see cref="GuiDataTable"/>
         /// </summary>
-        [PersistingEnabled(false)]
         private GuiDataTable _Table;
         /// <summary>
         /// Reference na <see cref="Table"/> typovaná na interface <see cref="IGuiDataTable"/>, pro přístup k vnitřním metodám.
@@ -2952,6 +2948,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// <summary>
     /// Definice skinu pro grafický prvek
     /// </summary>
+    [PersistingOnHeap]
     public class GuiGraphSkin
     {
         #region Standardní properties
@@ -3591,7 +3588,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Úložiště parenta
         /// </summary>
-        [PersistingEnabled(false)]
         private IGuiItem _Parent;
         /// <summary>
         /// Libovolná aplikační data, která neprochází serializací.
@@ -3655,6 +3651,41 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Náhradní jméno namísto hodnoty null
         /// </summary>
         protected const string NAME_NULL = "{Null}";
+        /// <summary>
+        /// Metoda vrátí nejbližího parenta daného typu. Může vrátit null. 
+        /// Může vrátit sebe, pokud this je daného typu!
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        protected T GetParentOfType<T>() where T : class
+        {
+            IGuiItem item = this;
+            Type type = typeof(T);
+            for (int t = 0; t < 50; t++)
+            {   // Jde jen o timeout...
+                if (item.GetType() == type) return (item as T);
+                item = item.Parent;
+                if (item == null) break;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Kořenový objekt. Nikdy není null. Může být this.
+        /// Má smysl použít až po proběhnutí metody <see cref="Finalise()"/>.
+        /// </summary>
+        protected IGuiItem Root
+        {
+            get
+            {
+                IGuiItem item = this;
+                for (int t = 0; t < 50; t++)
+                {   // Jde jen o timeout...
+                    if (item.Parent == null) return item;
+                    item = item.Parent;
+                }
+                return item;
+            }
+        }
         #endregion
         #region Servis pro potomky: Vložení Parenta do Childs; tvorba Union()
         /// <summary>
@@ -3726,7 +3757,7 @@ namespace Noris.LCS.Base.WorkScheduler
             return result;
         }
         #endregion
-        #region Support pro serializaci
+        #region Support pro serializaci - statické konvertory
         /// <summary>
         /// Metoda vrací Int32 hodnotu z dané buňky daného pole
         /// </summary>
@@ -3779,7 +3810,6 @@ namespace Noris.LCS.Base.WorkScheduler
             if (!Single.TryParse(items[index], out value)) return null;
             return value;
         }
-
         #endregion
         #region Implementace IGuiBase
         /// <summary>

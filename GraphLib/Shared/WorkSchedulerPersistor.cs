@@ -107,8 +107,8 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             if (source == null || target == null) return;
 
-            PersistArgs args = PersistArgs.MinimalXml;
-            string xmlSource = XmlPersist.Serialize(source, args);
+            PersistArgs parameters = PersistArgs.MinimalXml;
+            string xmlSource = XmlPersist.Serialize(source, parameters);
             LoadTo(xmlSource, target);
         }
         /// <summary>
@@ -151,6 +151,9 @@ namespace Noris.LCS.Base.WorkScheduler
             xs.OmitXmlDeclaration = false;
             this.WriterSettings = xs;
             this.CompressMode = XmlCompressMode.None;
+            this.Version = Version200;
+            this.DataHeapEnabled = false;
+            this.DataHeapEnumEnabled = false;
         }
         /// <summary>
         /// Defaultní parametry
@@ -167,6 +170,7 @@ namespace Noris.LCS.Base.WorkScheduler
             get
             {
                 PersistArgs args = new PersistArgs();
+                args.DataHeapEnumEnabled = true;
                 args.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
                 args.WriterSettings.Encoding = Encoding.UTF8;
                 args.WriterSettings.CheckCharacters = false;
@@ -187,6 +191,7 @@ namespace Noris.LCS.Base.WorkScheduler
             get
             {
                 PersistArgs args = new PersistArgs();
+                args.DataHeapEnumEnabled = true;
                 args.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
                 args.WriterSettings.Encoding = Encoding.UTF8;
                 args.WriterSettings.CheckCharacters = false;
@@ -226,6 +231,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string Version { get; set; }
         /// <summary>
+        /// Je povoleno ukládat vhodná data do Heap?
+        /// Výchozí hodnota = false. Pokud aplikace chce používat, musí explicitně povolit.
+        /// Má vliv pouze na serializaci. Při deserializaci je dáno přítomností dat Heap v serializovaných datech.
+        /// </summary>
+        public bool DataHeapEnabled { get; set; }
+        /// <summary>
+        /// Je povoleno ukládat hodnoty použitých enumů do Heap?
+        /// </summary>
+        public bool DataHeapEnumEnabled { get; set; }
+        /// <summary>
         /// Verze 1.00
         /// </summary>
         public const string Version100 = XmlPersist.XmlPersistV1.Version;
@@ -243,6 +258,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public XmlDeserializeStatus DeserializeStatus { get; set; }
         /// <summary>
+        /// true pokud byly ukládány primitivní záznamy do <see cref="SavePrimitivesContent"/>
+        /// </summary>
+        public bool SavePrimitivesRunning { get; set; }
+        /// <summary>
         /// Počet uložených primitivních hodnot
         /// </summary>
         public int SavePrimitivesCount { get; set; }
@@ -252,7 +271,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public int SavePrimitivesLength { get; set; }
         /// <summary>
         /// Kompletní obsah všech uložených Primitives, oddělený Cr+Lf.
-        /// Pokud je null, nevytváří se.
+        /// Pokud je null (=defaultní hodnota), nevytváří se.
+        /// Pokud tedy aplikace chce evidovat primární primitivní obsah (=jen data bez formátu), musí nastavit <see cref="SavePrimitivesContent"/> na new instanci.
+        /// Nicméně, primitivy se ukládají pouze pokud je připojen debugger = v debug režimu. V Run režimu (=ostrý provoz) se neukládají nikdy.
         /// </summary>
         public StringBuilder SavePrimitivesContent { get; set; }
         /// <summary>
@@ -386,17 +407,31 @@ namespace Noris.LCS.Base.WorkScheduler
         string XmlSerialData { get; set; }
     }
     #endregion
-    #region Attribute classes: PropertyNameAttribute, CollectionItemNameAttribute, PersistingEnabledAttribute
+    #region Attribute classes:  PropertyNameAttribute, PersistingEnabledAttribute
     /// <summary>
     /// Abstraktní předek atributů XmlPersistoru
     /// </summary>
     public abstract class PersistAttribute : Attribute
     { }
     /// <summary>
+    /// Definuje třídu, jejíž jednotlivé instance se mají ukládat na haldu dat a indexovat tam.
+    /// Používá se u tříd, jejichž výskyt je velice častý, a jejichž obsah je často identický.
+    /// Pak je vhodné uložit do haldy jednu instanci, a získat její ID, a toto ID uložit namísto hodnoty instance.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
+    public class PersistingOnHeapAttribute : PersistAttribute
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public PersistingOnHeapAttribute() { }
+    }
+    /// <summary>
     /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
     /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
     /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public class PropertyNameAttribute : PersistAttribute
     {
         /// <summary>
@@ -423,6 +458,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// V některých případech je vhodné hodnotu neukládat (a nenačítat), například pokud property při setování hodnotu ukládá do dalších property.
     /// Rozhodně je nutno potlačit persistenci property, které referencují globální (systémové) objekty, ty by se jinak persistovaly také!!!
     /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public class PersistingEnabledAttribute : PersistAttribute
     {
         /// <summary>
@@ -597,6 +633,11 @@ namespace Noris.LCS.Base.WorkScheduler
             catch { }
             return DateTime.MinValue;
         }
+        /// <summary>
+        /// Vrátí typ času podle prefixu
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
         private static DateTimeKind _GetDateTimeKind(ref string serial)
         {
             switch (serial[0])
@@ -1940,55 +1981,6 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             }
         }
         #endregion
-        #region Adapter na konkrétní formátovací algoritmy
-        /// <summary>
-        /// Připraví adapter <see cref="PersistAdapter"/> podle zadané verze. Implicitní je V2.
-        /// Používá se při Serializaci (=Save).
-        /// </summary>
-        /// <param name="version"></param>
-        private void PreparePersistAdapter(string version = null)
-        {
-            if (!String.IsNullOrEmpty(version))
-            {
-                if (version == XmlPersistV1.Version)
-                    this.PersistAdapter = new XmlPersistV1(this);
-                else if (version == PersistArgs.Version200)
-                    this.PersistAdapter = new XmlPersistV2(this);
-            }
-            if (this.PersistAdapter == null)
-                this.PersistAdapter = new XmlPersistV2(this);
-        }
-        /// <summary>
-        /// Najde a připraví adapter <see cref="PersistAdapter"/> pro daný dokument. Detekuje obsah dokumentu.
-        /// Pokud nelze detekovat, vrací false (=BadFormat).
-        /// </summary>
-        /// <param name="xmDoc"></param>
-        private bool PreparePersistAdapter(XmDocument xmDoc)
-        {
-            if (xmDoc == null) return false;
-            IXmlPersistVersion persistAdapter = null;
-
-            persistAdapter = new XmlPersistV2(this);
-            if (persistAdapter.IsValidFormat(xmDoc))
-            {
-                this.PersistAdapter = persistAdapter;
-                return true;
-            }
-
-            persistAdapter = new XmlPersistV1(this);
-            if (persistAdapter.IsValidFormat(xmDoc))
-            {
-                this.PersistAdapter = persistAdapter;
-                return true;
-            }
-
-            return false;
-        }
-        /// <summary>
-        /// Adapter na konkrétní persistor dané verze
-        /// </summary>
-        private IXmlPersistVersion PersistAdapter;
-        #endregion
         #region class ArrayIndices
         /// <summary>
         /// Třída pro analýzu rozměrů pole, serializaci a deserializaci rozměrů, a pro enumeraci přes všechny buňky pole
@@ -2339,23 +2331,6 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// <param name="data"></param>
             /// <param name="objectName"></param>
             /// <param name="estimatedType"></param>
-            /// <param name="xmlElement"></param>
-            /// <param name="typeLibrary"></param>
-            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, XmlElement xmlElement, TypeLibrary typeLibrary)
-            {
-                this.Data = data;
-                this.ObjectName = objectName;
-                this.EstimatedType = estimatedType;
-                this.TargetName = null;
-                this.XmlElement = xmlElement;
-                this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
-            }
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="data"></param>
-            /// <param name="objectName"></param>
-            /// <param name="estimatedType"></param>
             /// <param name="targetName"></param>
             /// <param name="xmlElement"></param>
             /// <param name="typeLibrary"></param>
@@ -2380,6 +2355,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// true pokud je zadané jméno <see cref="ObjectName"/>
             /// </summary>
             internal bool HasObjectName { get { return !String.IsNullOrEmpty(this.ObjectName); } }
+            /// <summary>
+            /// true pokud je zadané jméno <see cref="TargetName"/>
+            /// </summary>
+            internal bool HasTargetName { get { return !String.IsNullOrEmpty(this.TargetName); } }
             /// <summary>
             /// Název objektu
             /// </summary>
@@ -2490,6 +2469,55 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         }
         #endregion
         #region Výměnné algoritmy konkrétní verze persistence - dovolují načítat XML dokumenty autodetectem z různých verzí
+        #region Adapter na konkrétní formátovací algoritmy
+        /// <summary>
+        /// Připraví adapter <see cref="PersistAdapter"/> podle zadané verze. Implicitní je V2.
+        /// Používá se při Serializaci (=Save).
+        /// </summary>
+        /// <param name="version"></param>
+        private void PreparePersistAdapter(string version = null)
+        {
+            if (!String.IsNullOrEmpty(version))
+            {
+                if (version == XmlPersistV1.Version)
+                    this.PersistAdapter = new XmlPersistV1(this);
+                else if (version == PersistArgs.Version200)
+                    this.PersistAdapter = new XmlPersistV2(this);
+            }
+            if (this.PersistAdapter == null)
+                this.PersistAdapter = new XmlPersistV2(this);
+        }
+        /// <summary>
+        /// Najde a připraví adapter <see cref="PersistAdapter"/> pro daný dokument. Detekuje obsah dokumentu.
+        /// Pokud nelze detekovat, vrací false (=BadFormat).
+        /// </summary>
+        /// <param name="xmDoc"></param>
+        private bool PreparePersistAdapter(XmDocument xmDoc)
+        {
+            if (xmDoc == null) return false;
+            IXmlPersistVersion persistAdapter = null;
+
+            persistAdapter = new XmlPersistV2(this);
+            if (persistAdapter.IsValidFormat(xmDoc))
+            {
+                this.PersistAdapter = persistAdapter;
+                return true;
+            }
+
+            persistAdapter = new XmlPersistV1(this);
+            if (persistAdapter.IsValidFormat(xmDoc))
+            {
+                this.PersistAdapter = persistAdapter;
+                return true;
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Adapter na konkrétní persistor dané verze
+        /// </summary>
+        private IXmlPersistVersion PersistAdapter;
+        #endregion
         #region Algoritmy verze 1.0
         internal class XmlPersistV1 : XmlPersistVBase, IXmlPersistVersion
         {
@@ -2516,7 +2544,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
 
                 XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
-                XmlPersistSaveArgs saveArgs = new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this.TypeLibrary);
+                XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xDataElement);
                 this.SaveObject(saveArgs);
             }
             bool IXmlPersistVersion.IsValidFormat(XmDocument xmDoc)
@@ -2854,7 +2882,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                         CreateAttribute(_ArrayNameItemIndices, ArrayIndices.SerialIndices(indices), xmlItemElement);
 
                         // Vypíšu obsah itemu:
-                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -2943,7 +2971,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
                     if (item != null)
                     {
-                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -3021,8 +3049,8 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
                     XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
 
-                    this.SaveObject(new XmlPersistSaveArgs(entry.Key, _DictNameKey, keyType, xmlItemElement, this.TypeLibrary));
-                    this.SaveObject(new XmlPersistSaveArgs(entry.Value, _DictNameValue, valueType, xmlItemElement, this.TypeLibrary));
+                    this.SaveObject(CreateSaveArgs(entry.Key, _DictNameKey, keyType, null, xmlItemElement));
+                    this.SaveObject(CreateSaveArgs(entry.Value, _DictNameValue, valueType, null, xmlItemElement));
                 }
             }
             /// <summary>
@@ -3101,7 +3129,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 {
                     args.CurrentProperty = propInfo.Name;
                     object value = propInfo.Property.GetValue(args.Data, null);
-                    this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, this.TypeLibrary));
+                    this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement));
                 }
                 args.CurrentProperty = null;
 
@@ -3190,41 +3218,57 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             public const string Version = "2.00";
             #endregion
             #region Řízení serializace/deserializace
-            void IXmlPersistVersion.Save(object data, PersistArgs parameters, XmlDocument xDoc)
+            void IXmlPersistVersion.Save(object data, PersistArgs parameters, XmlDocument xmlDocument)
             {
                 this.SaveBegin(parameters);
                 parameters.SavePrimitivesCount = 0;
                 this.Parameters = parameters;
 
-                XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
-                xDoc.AppendChild(xRootElement);
-                CreateAttribute("Version", Version, xRootElement);
-                CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
-                CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
+                XmlElement xmlElementRoot = xmlDocument.CreateElement(_DocumentNamePersist);
+                xmlDocument.AppendChild(xmlElementRoot);
+                CreateAttribute("Version", Version, xmlElementRoot);
+                CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xmlElementRoot);
+                CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xmlElementRoot);
 
-                XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
-                this.SaveObject(new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this.TypeLibrary));
+                XmlElement xmlElementHeap = (parameters.DataHeapEnabled ? CreateElement(_DocumentNameHeap, xmlElementRoot) : null);
+
+                XmlElement xmlElementData = CreateElement(_DocumentNameData, xmlElementRoot);
+                XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xmlElementData);
+                this.SaveObject(saveArgs);
+
+                this.HeapSave(xmlElementHeap);
 
                 this.Parameters = null;
             }
             bool IXmlPersistVersion.IsValidFormat(XmDocument xmDoc)
             {
                 string version;
+                XmElement elHeap;
                 XmAttribute atValue;
                 XmElement elValue;
-                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out atValue, out elValue);
+                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out elHeap, out atValue, out elValue);
                 return (elData != null && version != null && version == Version);
             }
             object IXmlPersistVersion.Load(PersistArgs parameters, XmDocument xmDoc)
             {
-                string version;
-                XmAttribute atValue;
-                XmElement elValue;
-                XmElement elData = this.SearchRootDataElement(xmDoc, out version, out atValue, out elValue);
-                if (!(elData != null && version != null && version == Version)) return null;
+                this.Parameters = parameters;
 
-                XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, elValue, atValue);
-                return this.LoadObject(itemArgs);
+                string version;
+                XmElement xmElementHeap;
+                XmAttribute xmAttributeValue;
+                XmElement xmElementValue;
+                XmElement xmElementData = this.SearchRootDataElement(xmDoc, out version, out xmElementHeap, out xmAttributeValue, out xmElementValue);
+                if (!(xmElementData != null && version != null && version == Version)) return null;
+
+                this.HeapLoad(xmElementHeap);
+                parameters.DataHeapEnabled = this.HeapExists;   // Při deserializaci je povolena práce s Heap tehdy, když ve vstupních datech byla data nalezena.
+
+                XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, xmElementValue, xmAttributeValue);
+                object data = this.LoadObject(itemArgs);
+
+                this.Parameters = null;
+
+                return data;
             }
             /// <summary>
             /// Uloží předaný objekt do XML.
@@ -3286,9 +3330,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                         exc);
                 }
             }
-            private XmElement SearchRootDataElement(XmDocument xmDoc, out string version, out XmAttribute atValue, out XmElement elValue)
+            private XmElement SearchRootDataElement(XmDocument xmDoc, out string version, out XmElement elHeap, out XmAttribute atValue, out XmElement elValue)
             {
                 version = null;
+                elHeap = null;
                 atValue = null;
                 elValue = null;
 
@@ -3298,6 +3343,9 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                 version = xmPers.FindAttributeValue("Version", "");
                 if (!String.Equals(version, Version)) return null;
+
+                // Najdu element "heap":
+                elHeap = xmDoc.FindElement(_DocumentNamePersist + "/" + _DocumentNameHeap);
 
                 // Najdu element "data", v něm bude uložen objekt:
                 XmElement elData = xmDoc.FindElement(_DocumentNamePersist + "/" + _DocumentNameData);
@@ -3373,7 +3421,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() neobsahuje TypeConvertor.");
                 if (args.DataTypeInfo.TypeConvert.Serializator == null)
                     throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() obsahuje TypeConvertor, který nemá serializátor.");
+
                 string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
+                if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
+                    value = this.DataToHeap(args.DataTypeInfo.DataType, value);
 
                 this.SavePrimitive(value);
 
@@ -3401,7 +3452,11 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 if (args.DataTypeInfo.TypeConvert.Deserializator == null)
                     throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() obsahuje TypeConvertor, který nemá deserializátor.");
 
-                return args.DataTypeInfo.TypeConvert.Deserializator(args.XmAttribute.ValueFirstOrDefault);
+                string xmlData = args.XmAttribute.ValueFirstOrDefault;
+                if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
+                    xmlData = this.StringFromHeap(xmlData);
+
+                return args.DataTypeInfo.TypeConvert.Deserializator(xmlData);
             }
             #endregion
             #region Self typy: Save, Create
@@ -3420,7 +3475,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     args.CurrentOperation = "SerializeValue";
                     if (!(args.Data is IXmlSerializer))
                         throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SelfTypeSave() neimplementuje interface IXmlSerializer.");
+
                     string value = ((IXmlSerializer)args.Data).XmlSerialData;
+                    if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
+                        value = this.DataToHeap(args.DataTypeInfo.DataType, value);
 
                     this.SavePrimitive(value);
 
@@ -3445,6 +3503,9 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 string xmlData = args.XmAttribute.ValueFirstOrDefault;
                 if (xmlData == null)
                     return null;
+
+                if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
+                    xmlData = this.StringFromHeap(xmlData);
 
                 args.CurrentOperation = "CreateInstance";
                 object data = this._ObjectCreate(args.DataType);
@@ -3471,7 +3532,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             private void EnumTypeSave(XmlPersistSaveArgs args)
             {
                 args.CurrentOperation = "SerializeValue";
+
                 string value = Enum.Format(args.DataType, args.Data, "F");
+                if (this.Parameters.DataHeapEnabled && this.Parameters.DataHeapEnumEnabled)
+                    value = this.DataToHeap(args.DataTypeInfo.DataType, value);
 
                 this.SavePrimitive(value);
 
@@ -3493,6 +3557,8 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 string xmlData = args.XmAttribute.ValueFirstOrDefault;
                 if (xmlData == null)
                     return null;
+                if (this.Parameters.DataHeapEnabled && this.Parameters.DataHeapEnumEnabled)
+                    xmlData = this.StringFromHeap(xmlData);
 
                 object data = null;
                 try
@@ -3549,7 +3615,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                         CreateAttribute(_ArrayNameItemIndices, ArrayIndices.SerialIndices(indices), xmlItemElement);
 
                         // Do XML elementu pro prvek pole vložím hodnoty z objektu:
-                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -3638,7 +3704,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
                     if (item != null)
                     {
-                        XmlPersistSaveArgs nextArgs = new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this.TypeLibrary);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -3719,8 +3785,8 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
                     XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
 
-                    this.SaveObject(new XmlPersistSaveArgs(entry.Key, _DictNameKey, keyType, xmlItemElement, this.TypeLibrary));
-                    this.SaveObject(new XmlPersistSaveArgs(entry.Value, _DictNameValue, valueType, xmlItemElement, this.TypeLibrary));
+                    this.SaveObject(CreateSaveArgs(entry.Key, _DictNameKey, keyType, null, xmlItemElement));
+                    this.SaveObject(CreateSaveArgs(entry.Value, _DictNameValue, valueType, null, xmlItemElement));
                 }
             }
             /// <summary>
@@ -3790,24 +3856,51 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 args.CurrentProperty = null;
                 NotifyData(args.Data, XmlPersistState.SaveBegin);
 
-                args.CurrentOperation = "SaveType";
-                XmlElement xmlCurrElement = CreateElement(_ElementNameValue, args.XmlElement);
-                SaveTypeAttribute(args, _ElementNameValue, xmlCurrElement);
-
-                args.CurrentOperation = "SaveValues";
-                if (args.HasObjectName)
-                    CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.ObjectName, xmlCurrElement);
-                foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
-                {   // V jednom cyklu zapisujeme data z jednoduhých i složitých propeties (tzn. do XmlAtributů i do XmlElementů),
-                    //  to řeší až metoda SaveObject() podle typu persistence konkrétního objektu.
-                    args.CurrentProperty = propInfo.Name;
-                    object value = propInfo.Property.GetValue(args.Data, null);
-                    this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, this.TypeLibrary));
+                if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
+                {   // Data persistujeme do Heap, a zde do elementu (args.XmlElement) jen umístíme ID záznamu v Heap:
+                    XmlElement xmlAloneElement = CreateElementAlone(_ElementNameValue, args.XmlElement);
+                    this.CompoundTypeSaveTo(args, false, xmlAloneElement);
+                    string id = this.DataToHeap(args.DataTypeInfo.DataType, xmlAloneElement);
+                    string name = (args.HasTargetName ? args.TargetName : args.ObjectName);
+                    CreateAttribute(name, id, args.XmlElement);
                 }
-                args.CurrentProperty = null;
+                else
+                {   // Data persistujeme přímo do elementu args.XmlElement:
+                    XmlElement xmlCurrElement = CreateElement(_ElementNameValue, args.XmlElement);
+                    this.CompoundTypeSaveTo(args, true, xmlCurrElement);
+
+                }
 
                 args.CurrentOperation = "NotifyData.End";
                 NotifyData(args.Data, XmlPersistState.SaveDone);
+            }
+            /// <summary>
+            /// Uloží Compound data do daného XML elementu.
+            /// </summary>
+            /// <param name="args"></param>
+            /// <param name="addTargetName"></param>
+            /// <param name="xmlCurrElement"></param>
+            private void CompoundTypeSaveTo(XmlPersistSaveArgs args, bool addTargetName, XmlElement xmlCurrElement)
+            {
+                args.CurrentOperation = "SaveType";
+                SaveTypeAttribute(args, _ElementNameValue, xmlCurrElement);
+
+                args.CurrentOperation = "SaveValues";
+                /*
+                if (args.HasObjectName)
+                    CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.ObjectName, xmlCurrElement);
+                */
+                if (addTargetName && args.HasTargetName)
+                    CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.TargetName, xmlCurrElement);
+
+                foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
+                {   // V jednom cyklu zapisujeme data z jednoduchých i složitých properties (tzn. do XmlAtributů i do XmlElementů),
+                    //  to řeší až metoda SaveObject() podle typu persistence konkrétního objektu.
+                    args.CurrentProperty = propInfo.Name;
+                    object value = propInfo.Property.GetValue(args.Data, null);
+                    this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement));
+                }
+                args.CurrentProperty = null;
             }
             /// <summary>
             /// Vytvoří a vrátí objekt typu Compound z dat XML
@@ -3867,9 +3960,225 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 return data;
             }
             #endregion
+            #region Heap
+            /// <summary>
+            /// true pokud existují data v Heap
+            /// </summary>
+            public bool HeapExists { get { return (this._HeapDataDict != null && this._HeapDataDict.Count > 0); } }
+            public string DataToHeap(Type dataType, XmlElement xmlElement)
+            {
+                HeapData heapData = new HeapData(dataType, xmlElement);   // Nová instance, použije se nejprve jako klíč do Dictionary. Má nevyplněné Id.
+                int id;
+                if (!this.HeapDataDict.TryGetValue(heapData, out id))     // Pokud dosud nemáme v Heap identická data, pak tuto novou instanci zařadíme do Heap:
+                {
+                    this._DataAddToHeap(heapData);
+                    id = heapData.Id;
+                }
+                return HeapIdToKey(id);
+            }
+            /// <summary>
+            /// Metoda uloží do Heap daná data pro daný typ. Vrací ID pro daná data.
+            /// Pokud budou do Heap opakovaně ukládána identická data (shodný typ a obsah), pak se do Heap uloží jen jedna instance, a vrátí se vždy shodný ID.
+            /// Tím se zmenšuje objem dat. Používá se při serializaci (data do stringu).
+            /// </summary>
+            /// <param name="dataType"></param>
+            /// <param name="text"></param>
+            /// <returns></returns>
+            public string DataToHeap(Type dataType, string text)
+            {
+                HeapData heapData = new HeapData(dataType, text);         // Nová instance, použije se nejprve jako klíč do Dictionary. Má nevyplněné Id.
+                int id;
+                if (!this.HeapDataDict.TryGetValue(heapData, out id))     // Pokud dosud nemáme v Heap identická data, pak tuto novou instanci zařadíme do Heap:
+                {
+                    this._DataAddToHeap(heapData);
+                    id = heapData.Id;
+                }
+                return HeapIdToKey(id);
+            }
+            /// <summary>
+            /// Vyzvedne z Heap string uložený tam pod daným ID.
+            /// Používá se při deserializaci (string na data).
+            /// </summary>
+            /// <param name="key"></param>
+            /// <returns></returns>
+            public string StringFromHeap(string key)
+            {
+                HeapData heapData;
+                int id = HeapKeyToId(key);
+                if (id > 0 && this.HeapIdDict.TryGetValue(id, out heapData)) return heapData.Text;
+                return key;
+            }
+            /// <summary>
+            /// Uloží celý obsah Heap do daného XML elementu.
+            /// </summary>
+            /// <param name="xmlElementHeap"></param>
+            public void HeapSave(XmlElement xmlElementHeap)
+            {
+                if (!this.HeapExists) return;
+                foreach (HeapData heapData in this.HeapDataDict.Keys)
+                    heapData.SaveToElement(xmlElementHeap);
+            }
+            /// <summary>
+            /// Načte celý obsah Heap z dodaného XML elementu.
+            /// </summary>
+            /// <param name="xmElementHeap"></param>
+            public void HeapLoad(XmElement xmElementHeap)
+            {
+                this._HeapPrepare();
+                if (xmElementHeap == null) return;
+                foreach (XmElement xmElementItem in xmElementHeap.XmElements)
+                {
+                    HeapData heapData = HeapData.CreateFrom(xmElementItem);
+                    if (heapData != null)
+                        this._DataAddToHeap(heapData);
+                }
+            }
+            private void _DataAddToHeap(HeapData heapData)
+            {
+                int id = 0;
+                if (heapData.Id <= 0)
+                {
+                    id = ++this._HeapIdLast;
+                    heapData.Id = id;
+                }
+                else
+                {
+                    id = heapData.Id;
+                    if (id > this._HeapIdLast)
+                        this._HeapIdLast = id;
+                }
+                this.HeapDataDict.Add(heapData, id);
+                this.HeapIdDict.Add(id, heapData);
+            }
+            internal static string HeapIdToKey(int id)
+            {
+                return "#" + id.ToString();
+            }
+            internal static int HeapKeyToId(string key)
+            {
+                if (String.IsNullOrEmpty(key) || key.Length <= 1 || key[0] != '#') return 0;
+                int id = 0;
+                if (Int32.TryParse(key.Substring(1), out id)) return id;
+                return 0;
+            }
+            private Dictionary<int, HeapData> HeapIdDict
+            {
+                get
+                {
+                    if (this._HeapIdDict == null)
+                        this._HeapPrepare();
+                    return this._HeapIdDict;
+                }
+            }
+            private Dictionary<HeapData, int> HeapDataDict
+            {
+                get
+                {
+                    if (this._HeapDataDict == null)
+                        this._HeapPrepare();
+                    return this._HeapDataDict;
+                }
+            }
+            private void _HeapPrepare()
+            {
+                this._HeapIdDict = new Dictionary<int, HeapData>();
+                this._HeapDataDict = new Dictionary<HeapData, int>();
+                this._HeapIdLast = 0;
+            }
+            private Dictionary<int, HeapData> _HeapIdDict;
+            private Dictionary<HeapData, int> _HeapDataDict;
+            private int _HeapIdLast;
+            /// <summary>
+            /// Jeden záznam dat pro uložení na Heap.
+            /// Záznam lze použít i jako Key v Dictionary: porovnává hodnoty Type a Serial.
+            /// </summary>
+            internal class HeapData
+            {
+                #region Konstrukce
+                public HeapData(Type type, string text)
+                {
+                    this._Type = type;
+                    this._Text = text;
+                    this._HashCode = type.GetHashCode() ^ text.GetHashCode();
+                }
+                public HeapData(Type type, XmlElement xmlElement)
+                {
+                    this._Type = type;
+                    this._XmlElement = xmlElement;
+                    this._Text = xmlElement.OuterXml;
+                    this._HashCode = type.GetHashCode() ^ this._Text.GetHashCode();
+                }
+                public HeapData(int id, string text)
+                {
+                    this.Id = id;
+                    this._Type = null;
+                    this._Text = text;
+                    this._HashCode = id.GetHashCode() ^ text.GetHashCode();
+                }
+                public override int GetHashCode()
+                {
+                    return this._HashCode;
+                }
+                public override bool Equals(object obj)
+                {
+                    HeapData other = obj as HeapData;
+                    if (other == null) return false;
+                    if (this._Type == null)
+                        return (this._HashCode == other._HashCode && this.Id == other.Id && String.Equals(this._Text, other._Text, StringComparison.Ordinal));
+                    return (this._HashCode == other._HashCode && this._Type == other._Type && String.Equals(this._Text, other._Text, StringComparison.Ordinal));
+                }
+                public override string ToString()
+                {
+                    return this._Type.Name + ": " + this._Text;
+                }
+                private int _HashCode;
+                private Type _Type;
+                private XmlElement _XmlElement;
+                private string _Text;
+                #endregion
+                #region Public data
+                /// <summary>
+                /// ID této položky
+                /// </summary>
+                public int Id { get; set; }
+                /// <summary>
+                /// Textový obsah této položky
+                /// </summary>
+                public string Text { get { return this._Text; } }
+                #endregion
+                #region Persistence
+                public void SaveToElement(XmlElement xmlElementHeap)
+                {
+                    XmlElement xmlElementItem = CreateElement(_ArrayNameItem, xmlElementHeap);
+                    CreateAttribute(_DictNameKey, HeapIdToKey(this.Id), xmlElementItem);
+                    if (this._XmlElement != null)
+                        xmlElementItem.AppendChild(this._XmlElement);
+                    else if (this.Text != null)
+                        CreateAttribute(_DictNameValue, this.Text, xmlElementItem);
+                }
+                public static HeapData CreateFrom(XmElement xmElementItem)
+                {
+                    if (xmElementItem == null) return null;
+                    if (xmElementItem.Name != _ArrayNameItem) return null;
+                    XmAttribute xmAttributeKey;
+                    XmAttribute xmAttributeValue;
+                    if (!xmElementItem.TryGetAttribute(_DictNameKey, out xmAttributeKey)) return null;
+                    int id = HeapKeyToId(xmAttributeKey.ValueFirstOrDefault);
+                    if (id <= 0) return null;
+
+                    if (!xmElementItem.TryGetAttribute(_DictNameValue, out xmAttributeValue)) return null;
+                    string value = xmAttributeValue.ValueFirstOrDefault;
+                    if (String.IsNullOrEmpty(value)) return null;
+
+                    return new HeapData(id, value);
+                }
+                #endregion
+            }
+            #endregion
             #region Konstanty
             private const string _DocumentNamePersist = "id-persistent";
             private const string _DocumentNameData = "id-data";
+            private const string _DocumentNameHeap = "id-heap";
             private const string _DocumentNameValue = "id-value";
             private const string _ElementNameValue = "id-value";
             private const string _ArrayName = "id-array";
@@ -3882,7 +4191,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             #endregion
         }
         #endregion
-        #region Algoritmy verze - bázová třída
+        #region Bázová třída pro algoritmy konkrétních verzí
         internal class XmlPersistVBase
         {
             #region Konsrtuktor, Owner, TypeLibrary
@@ -3894,6 +4203,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             {
                 this.Owner = owner;
                 this.TypeLibrary = owner._TypeLibrary;
+                this.WorkWithPrimitives = System.Diagnostics.Debugger.IsAttached;
             }
             /// <summary>
             /// Majitel
@@ -3904,6 +4214,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// </summary>
             protected TypeLibrary TypeLibrary { get; private set; }
             /// <summary>
+            /// true = střádat Primitives?
+            /// </summary>
+            protected bool WorkWithPrimitives { get; private set; }
+            /// <summary>
             /// Začátek ukládání dat
             /// </summary>
             /// <param name="parameters"></param>
@@ -3912,6 +4226,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 parameters.SavePrimitivesCount = 0;
                 parameters.SavePrimitivesLength = 0;
                 this.Parameters = parameters;
+                if (this.Parameters != null) this.Parameters.SavePrimitivesRunning = this.WorkWithPrimitives;
             }
             /// <summary>
             /// Konec ukládání dat
@@ -3926,7 +4241,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// <param name="content"></param>
             protected void SavePrimitive(string content)
             {
-                if (this.Parameters != null)
+                if (this.WorkWithPrimitives && this.Parameters != null)
                 {
                     this.Parameters.SavePrimitivesCount++;
                     if (content != null)
@@ -3986,7 +4301,20 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 return false;
             }
             /// <summary>
-            /// Vytvoří argument pro načítání dat.
+            /// Vytvoří a vrátí argument pro ukládání dat
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="objectName"></param>
+            /// <param name="targetName"></param>
+            /// <param name="estimatedType"></param>
+            /// <param name="xmlElement"></param>
+            /// <returns></returns>
+            protected XmlPersistSaveArgs CreateSaveArgs(object data, string objectName, Type estimatedType, string targetName, XmlElement xmlElement)
+            {
+                return new XmlPersistSaveArgs(data, objectName,  estimatedType, targetName, xmlElement, this.TypeLibrary);
+            }
+            /// <summary>
+            /// Vytvoří a vrátí argument pro načítání dat.
             /// </summary>
             /// <param name="parameters"></param>
             /// <param name="propInfo"></param>
@@ -4083,6 +4411,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             #region Xml prvky - tvorba, zápisy, nalezení
             /// <summary>
             /// Založí nový element do elementu předaného. Nic do něj nevpisuje. Vrátí tento nově založený element.
+            /// Element je vložen do daného elementu xParentElement jako jeho Child.
             /// </summary>
             /// <param name="elementName">Název elementu (typicky jde o název property, nebo klíčové slovo pro element za položku listu, atd)</param>
             /// <param name="xParentElement"></param>
@@ -4092,6 +4421,20 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 string name = WorkScheduler.InternalPersistor.TypeLibrary.CreateXmlName(elementName);
                 XmlElement xElement = xParentElement.OwnerDocument.CreateElement(name);
                 xParentElement.AppendChild(xElement);
+                return xElement;
+            }
+            /// <summary>
+            /// Založí nový element do elementu předaného. Nic do něj nevpisuje. Vrátí tento nově založený element.
+            /// Element není vložen do parent elementu, pouze z něj využívá vztah na OwnerDocument.
+            /// </summary>
+            /// <param name="elementName">Název elementu (typicky jde o název property, nebo klíčové slovo pro element za položku listu, atd)</param>
+            /// <param name="xParentElement"></param>
+            /// <returns></returns>
+            protected static XmlElement CreateElementAlone(string elementName, XmlElement xParentElement)
+            {
+                string name = WorkScheduler.InternalPersistor.TypeLibrary.CreateXmlName(elementName);
+                XmlElement xElement = xParentElement.OwnerDocument.CreateElement(name);
+                // Nevkládat: xParentElement.AppendChild(xElement);
                 return xElement;
             }
             /// <summary>
@@ -4426,7 +4769,7 @@ anebo neprázdný objekt:
             // Co by se stalo? Type1 se vytváří, najde property typu Type2, začal by ji mapovat ještě před uložením Type1,
             //   takže by se v tu chvíli začal mapovat opět Type1, atd...
             // Toto řešení (uložit nezmapovaný Type1 do Library a teprve potom jej zmapovat) tomu zabrání:
-            info.Fill();
+            info.DetectType();
             return info;
         }
         /// <summary>
@@ -4459,28 +4802,36 @@ anebo neprázdný objekt:
         /// <summary>
         /// Připraví seznam datových typů, které se ukládají Simple
         /// </summary>
+        private void _PrepareTypes()
+        {
+            this._PresetTypes = new Dictionary<Type, TypeConvertor>();
+            this._SimpleTypePrepare();
+        }
+        /// <summary>
+        /// Připraví seznam datových typů, které se ukládají Simple
+        /// </summary>
         private void _SimpleTypePrepare()
         {
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Boolean), XmlPersistenceType.Simple, Convertor.BooleanToString, Convertor.StringToBoolean));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Byte), XmlPersistenceType.Simple, Convertor.ByteToString, Convertor.StringToByte));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTime), XmlPersistenceType.Simple, Convertor.DateTimeToString, Convertor.StringToDateTime));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTimeOffset), XmlPersistenceType.Simple, Convertor.DateTimeOffsetToString, Convertor.StringToDateTimeOffset));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Decimal), XmlPersistenceType.Simple, Convertor.DecimalToString, Convertor.StringToDecimal));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Double), XmlPersistenceType.Simple, Convertor.DoubleToString, Convertor.StringToDouble));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Guid), XmlPersistenceType.Simple, Convertor.GuidToString, Convertor.StringToGuid));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Char), XmlPersistenceType.Simple, Convertor.CharToString, Convertor.StringToChar));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int16), XmlPersistenceType.Simple, Convertor.Int16ToString, Convertor.StringToInt16));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int32), XmlPersistenceType.Simple, Convertor.Int32ToString, Convertor.StringToInt32));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int64), XmlPersistenceType.Simple, Convertor.Int64ToString, Convertor.StringToInt64));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.IntPtr), XmlPersistenceType.Simple, Convertor.IntPtrToString, Convertor.StringToIntPtr));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.SByte), XmlPersistenceType.Simple, Convertor.SByteToString, Convertor.StringToSByte));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Single), XmlPersistenceType.Simple, Convertor.SingleToString, Convertor.StringToSingle));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.String), XmlPersistenceType.Simple, Convertor.StringToString, Convertor.StringToString));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.TimeSpan), XmlPersistenceType.Simple, Convertor.TimeSpanToString, Convertor.StringToTimeSpan));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt16), XmlPersistenceType.Simple, Convertor.UInt16ToString, Convertor.StringToUInt16));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt32), XmlPersistenceType.Simple, Convertor.UInt32ToString, Convertor.StringToUInt32));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt64), XmlPersistenceType.Simple, Convertor.UInt64ToString, Convertor.StringToUInt64));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UIntPtr), XmlPersistenceType.Simple, Convertor.UIntPtrToString, Convertor.StringToUIntPtr));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Boolean), Convertor.BooleanToString, Convertor.StringToBoolean, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Byte), Convertor.ByteToString, Convertor.StringToByte, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTime), Convertor.DateTimeToString, Convertor.StringToDateTime, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTimeOffset), Convertor.DateTimeOffsetToString, Convertor.StringToDateTimeOffset, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Decimal), Convertor.DecimalToString, Convertor.StringToDecimal, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Double), Convertor.DoubleToString, Convertor.StringToDouble, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Guid), Convertor.GuidToString, Convertor.StringToGuid, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Char), Convertor.CharToString, Convertor.StringToChar, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int16), Convertor.Int16ToString, Convertor.StringToInt16, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int32), Convertor.Int32ToString, Convertor.StringToInt32, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int64), Convertor.Int64ToString, Convertor.StringToInt64, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.IntPtr), Convertor.IntPtrToString, Convertor.StringToIntPtr, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.SByte), Convertor.SByteToString, Convertor.StringToSByte, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Single), Convertor.SingleToString, Convertor.StringToSingle, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.String), Convertor.StringToString, Convertor.StringToString, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.TimeSpan), Convertor.TimeSpanToString, Convertor.StringToTimeSpan, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt16), Convertor.UInt16ToString, Convertor.StringToUInt16, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt32), Convertor.UInt32ToString, Convertor.StringToUInt32, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt64), Convertor.UInt64ToString, Convertor.StringToUInt64, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UIntPtr), Convertor.UIntPtrToString, Convertor.StringToUIntPtr, XmlPersistenceType.Simple));
 
             /*
             this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlBinary), XmlPersistenceType.Simple, Convertor.SqlBinaryToString, Convertor.StringToSqlBinary));
@@ -4498,28 +4849,16 @@ anebo neprázdný objekt:
             this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlString), XmlPersistenceType.Simple, Convertor.SqlStringToString, Convertor.StringToSqlString));
             */
 
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Color), XmlPersistenceType.Simple, Convertor.ColorToString, Convertor.StringToColor));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Color), Convertor.ColorToString, Convertor.StringToColor, XmlPersistenceType.Simple, true));
             // this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.CharacterRange), XmlPersistenceType.Simple, null, null));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Point), XmlPersistenceType.Simple, Convertor.PointToString, Convertor.StringToPoint));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.PointF), XmlPersistenceType.Simple, Convertor.PointFToString, Convertor.StringToPointF));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Rectangle), XmlPersistenceType.Simple, Convertor.RectangleToString, Convertor.StringToRectangle));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.RectangleF), XmlPersistenceType.Simple, Convertor.RectangleFToString, Convertor.StringToRectangleF));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Size), XmlPersistenceType.Simple, Convertor.SizeToString, Convertor.StringToSize));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.SizeF), XmlPersistenceType.Simple, Convertor.SizeFToString, Convertor.StringToSizeF));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Point), Convertor.PointToString, Convertor.StringToPoint, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.PointF), Convertor.PointFToString, Convertor.StringToPointF, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Rectangle), Convertor.RectangleToString, Convertor.StringToRectangle, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.RectangleF), Convertor.RectangleFToString, Convertor.StringToRectangleF, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Size), Convertor.SizeToString, Convertor.StringToSize, XmlPersistenceType.Simple));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.SizeF), Convertor.SizeFToString, Convertor.StringToSizeF, XmlPersistenceType.Simple));
 
             // Pokud zařadím další typy, musím k nim přidat jejich konvertory.
-        }
-        /// <summary>
-        /// Několik vybraných typů, které se ukládají Simple
-        /// </summary>
-        private Dictionary<Type, TypeConvertor> _PresetTypes;
-        /// <summary>
-        /// Připraví seznam datových typů, které se ukládají Simple
-        /// </summary>
-        private void _PrepareTypes()
-        {
-            this._PresetTypes = new Dictionary<Type, TypeConvertor>();
-            this._SimpleTypePrepare();
         }
         /// <summary>
         /// Přidá/modifikuje daný TypeConvertor
@@ -4532,6 +4871,10 @@ anebo neprázdný objekt:
             else
                 this._PresetTypes[typeConvertor.DataType] = typeConvertor;
         }
+        /// <summary>
+        /// Několik vybraných typů, které se ukládají Simple
+        /// </summary>
+        private Dictionary<Type, TypeConvertor> _PresetTypes;
         private void _DisposeTypes()
         {
             this._PresetTypes.Clear();
@@ -4763,21 +5106,28 @@ anebo neprázdný objekt:
         /// </summary>
         internal class TypeInfo
         {
+            /// <summary>
+            /// Konstruktor. V něm se neprovádí mapování typu, na to je třeba zavolat metodu <see cref="DetectType()"/>.
+            /// </summary>
+            /// <param name="typeLibrary"></param>
+            /// <param name="dataType"></param>
             internal TypeInfo(TypeLibrary typeLibrary, Type dataType)
             {
                 this.TypeLibrary = typeLibrary;
                 this.DataType = dataType;
+                this.PersistOnHeap = false;
             }
             public override string ToString()
             {
                 return this.DataType.Name + ": " + this.PersistenceType.ToString();
             }
-            internal void Fill()
+            internal void DetectType()
             {
                 // Základní režim persistence (primitiv / datový objekt / soupis), plus najdu TypeConvertor:
                 TypeConvertor typeConvert;
                 this.PersistenceType = this.TypeLibrary.GetPersistenceType(this.DataType, out typeConvert);
                 this.TypeConvert = typeConvert;
+                if (typeConvert != null) this.PersistOnHeap = typeConvert.PersistOnHeap;
 
                 // Detekce property do seznamu properties:
                 switch (this.PersistenceType)
@@ -4789,7 +5139,7 @@ anebo neprázdný objekt:
                     case XmlPersistenceType.IDictionary:
                         break;
                     case XmlPersistenceType.Compound:
-                        this._DetectProperties();
+                        this._DetectCompoundInfo();
                         break;
                 }
 
@@ -4810,7 +5160,14 @@ anebo neprázdný objekt:
             /// </summary>
             internal XmlPersistenceType PersistenceType { get; private set; }
             /// <summary>
+            /// Instance tohoto typu se má persistovat na haldu = do indexu. 
+            /// Do konkrétní datové instance se pak namísto dat property vkládá jen číslo ID položky na haldě.
+            /// </summary>
+            internal bool PersistOnHeap { get; private set; }
+            /// <summary>
             /// Type convertor, pokud pro tento typ existuje.
+            /// Type converter obsahuje referenci na metody, které převádějí hodnotu typovou na string a nazpět.
+            /// Může být null pro složitější objekty.
             /// </summary>
             internal TypeConvertor TypeConvert { get; private set; }
             /// <summary>
@@ -4828,9 +5185,31 @@ anebo neprázdný objekt:
             private Dictionary<string, PropInfo> _PropertyDict;
             #region Properties
             /// <summary>
+            /// Detekuje data Compound typů
+            /// </summary>
+            private void _DetectCompoundInfo()
+            {
+                this._DetectClassPersistInfo();
+                this._DetectCompoundProperties();
+            }
+            /// <summary>
+            /// Detekuje globální vlastnosti tříd/struktury persistované jak Compound
+            /// </summary>
+            private void _DetectClassPersistInfo()
+            {
+                // Pokud najdu alespoň jeden atribut PersistingOnHeapAttribute na daném typu (třída nebo struktura), nastavím si pro tento typ Heap = true:
+                var atts = this.DataType.GetCustomAttributes<PersistingOnHeapAttribute>();
+                if (atts != null)
+                {
+                    var att = atts.FirstOrDefault();
+                    if (att != null)
+                        this.PersistOnHeap = true;
+                }
+            }
+            /// <summary>
             /// Detekuje PropertyInfo zdejšího typu a vytváří seznam this.PropertyList s prvky třídy PropInfo
             /// </summary>
-            private void _DetectProperties()
+            private void _DetectCompoundProperties()
             {
                 this._PropertyList = new List<PropInfo>();
                 this._PropertyDict = new Dictionary<string, PropInfo>();
@@ -4840,7 +5219,8 @@ anebo neprázdný objekt:
                 foreach (PropertyInfo prop in properties)
                 {
                     PropInfo propData = PropInfo.Create(this, prop, accessorsDict);
-                    if (propData == null) continue;
+                    if (propData == null) continue;                  // Nevytvořeno = nebude se persistovat
+                    if (!propData.PersistEnabled) continue;          // Tato property se nemá persistovat...
 
                     if (this._PropertyDict.ContainsKey(propData.XmlName))
                         throw new ArgumentException("Chyba při persistenci typu " + this.DataType.Namespace + "." + this.DataType.Name + ": duplicitní název property: " + propData.XmlName + " (zkontrolujte atributy [PropertyName(string)])");
@@ -5317,41 +5697,25 @@ anebo neprázdný objekt:
         internal class TypeConvertor
         {
             /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="dataType">Datový typ, pro který platá tato deklarace</param>
-            /// <param name="serializator">Metoda, která provede serializaci (z objektu na string). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-            /// <param name="deserializator">Metoda, která provede deserializaci (ze stringu na objekt). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-            public TypeConvertor(Type dataType, Func<object, string> serializator, Func<string, object> deserializator)
-            {
-                this.DataType = dataType;
-                this.PersistenceType = XmlPersistenceType.Self;
-                this.Serializator = serializator;
-                this.Deserializator = deserializator;
-            }
-            /// <summary>
             /// Konstruktor interní
             /// </summary>
             /// <param name="dataType">Datový typ, pro který platá tato deklarace</param>
-            /// <param name="persistenceType">Druh uložení. Pokud se bude používat serializátor</param>
             /// <param name="serializator">Metoda, která provede serializaci (z objektu na string). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
             /// <param name="deserializator">Metoda, která provede deserializaci (ze stringu na objekt). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-            internal TypeConvertor(Type dataType, XmlPersistenceType persistenceType, Func<object, string> serializator, Func<string, object> deserializator)
+            /// <param name="persistenceType">Druh uložení. Pokud se bude používat serializátor</param>
+            /// <param name="persistOnHeap">Persistovat na hromadu</param>
+            internal TypeConvertor(Type dataType, Func<object, string> serializator, Func<string, object> deserializator, XmlPersistenceType persistenceType, bool persistOnHeap = false)
             {
                 this.DataType = dataType;
-                this.PersistenceType = persistenceType;
                 this.Serializator = serializator;
                 this.Deserializator = deserializator;
+                this.PersistenceType = persistenceType;
+                this.PersistOnHeap = persistOnHeap;
             }
             /// <summary>
             /// Datový typ, pro který platá tato deklarace
             /// </summary>
             public Type DataType { get; private set; }
-            /// <summary>
-            /// Druh uložení. Pokud bude zadána hodnota XmlPersistenceType.Simple, musí se vyplnit i Serializator a Deserializator.
-            /// Pokud aplikace chce některé typy serializovat vlastními silami, uvede XmlPersistenceType.Simple a naplní svoje metody Serializator a Deserializator.
-            /// </summary>
-            internal XmlPersistenceType PersistenceType { get; private set; }
             /// <summary>
             /// Metoda, která provede serializaci (z objektu na string)
             /// </summary>
@@ -5360,6 +5724,16 @@ anebo neprázdný objekt:
             /// Metoda, která provede deserializaci (ze stringu na objekt)
             /// </summary>
             public Func<string, object> Deserializator { get; private set; }
+            /// <summary>
+            /// Druh uložení. Pokud bude zadána hodnota XmlPersistenceType.Simple, musí se vyplnit i Serializator a Deserializator.
+            /// Pokud aplikace chce některé typy serializovat vlastními silami, uvede XmlPersistenceType.Simple a naplní svoje metody Serializator a Deserializator.
+            /// </summary>
+            internal XmlPersistenceType PersistenceType { get; private set; }
+            /// <summary>
+            /// Instance tohoto typu se má persistovat na haldu = do indexu. 
+            /// Do konkrétní datové instance se pak namísto dat property vkládá jen číslo ID položky na haldě.
+            /// </summary>
+            internal bool PersistOnHeap { get; private set; }
         }
         #endregion
         #region enum XmlPersistenceType
