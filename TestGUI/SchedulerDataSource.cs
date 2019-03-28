@@ -1464,6 +1464,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // return guiData;
             // if (!System.Diagnostics.Debugger.IsAttached) return guiData;
 
+            Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
+
             GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
             GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
             return guiDataP;
