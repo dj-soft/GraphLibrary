@@ -1465,7 +1465,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // if (!System.Diagnostics.Debugger.IsAttached) return guiData;
 
             GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
-            // GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
+            GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
             return guiDataP;
         }
         /// <summary>
