@@ -3915,18 +3915,56 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());             // Reálný Type + jeho property
 
                 if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
-                { qqq; }
+                {   // Data byla persistována do Heap, a zde v elementu (args.XmElement a args.XmAttribute) je jen odkaz ID na záznam v Heap:
+                    // Poznámka k persistenci do Heap: pokud v určité property (propInfo) je reference na další Compound objekt, který se persistuje do Heap,
+                    //  pak namísto vložení XML elementu (obsahujícího celá data vnořeného objektu) je tento XML element umístěn do Heap, a místo něj je zde Atribut obsahující Key do Heap.
+                    // Konkrétně: 
+                    //     Mějme třídu Xxx, která se ukládá standardně jako Compound.
+                    //     V třídě Xxx je property s názvem Aaa typu Yyy.
+                    //     V třídě Xxx je dále property s názvem Bbb typu Zzz.
+                    //     Třída Yyy se ukládá opět standardně jako Compound.
+                    //     Třída Zzz se sice ukládá jako Compound, ale do Heap.
+                    //     Pak v elementu za třídu Xxx bude vnořen Child XML Element, jehož TargetName = "Aaa" (data tohoto elementu se mají vložit do property "Aaa" v instanci třídy Xxx)
+                    //     Ale v elementu za třídu Xxx bude umístěn XML Atribut (ne Element), kde Name atributu je "Bbb" = data se vloží do property "Bbb" v instanci třídy Xxx,
+                    //      a hodnotou tohoto atributu bude klíč do Heap, například #12345.
+                    //     Tedy ukázka: <id-value Bbb="#1234"><id-value TargetName="Aaa" PropZzz1="1" PropZzz2="Obsah dat" PropZzz3="2018-12-31 12:00:00"/></id-value>
+                    //      kde Bbb="#1234" je atribut, který říká že property Bbb má obsah v Heap pod klíčem #1234, 
+                    //      a vnořený element id-value TargetName="Aaa" říká, že do property Aaa se má vložit nový objekt (očekávaného typu, protože tu není atribut id-value.Type="TypeName"),
+                    //        jehož hodnoty do jednotlivých properties PropZzz1 až PropZzz3 jsou zde citovány přímo (=objekt bez umístění do Heap).
+                    string key = args.XmAttribute.ValueFirstOrDefault;         // Klíč do Heap, dle příkladu "#1234"
+                    XmElement xmElement = this.XmlFromHeap(key);               // Získám XML element z Heap, obsahuje kompletní data 
 
+                    // Naplnit datový objekt (data) hodnotami z dodaného XML elementu:
+                    this.CompoundTypeLoadFrom(args, xmElement, data);
+                }
+                else
+                {   // Naplnit datový objekt (data) hodnotami z dodaného XML elementu:
+                    this.CompoundTypeLoadFrom(args, args.XmElement, data);
+                }
+
+                args.CurrentOperation = "NotifyData.End";
+                NotifyData(data, XmlPersistState.LoadDone);
+                return data;
+            }
+            /// <summary>
+            /// Naplní hodnoty do daného objektu
+            /// </summary>
+            /// <param name="args"></param>
+            /// <param name="xmElement"></param>
+            /// <param name="data"></param>
+            private void CompoundTypeLoadFrom(XmlPersistLoadArgs args, XmElement xmElement, object data)
+            {
                 // 1. Projdeme atributy, ty obsahují jednoduché datové typy. Uložíme je do property našeho objektu:
                 args.CurrentOperation = "ReadAttributes";
-                foreach (XmAttribute xmAtt in args.XmElement.XmAttributes)
+                foreach (XmAttribute xmAtt in xmElement.XmAttributes)
                 {
                     if (xmAtt.Values.Count == 0) continue;          // Atribut bez hodnoty = nese jen suffixy, například: Type, Indices, Assembly. Takové nelze zpracovávat zde.
                     TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmAtt.Name);
                     if (propInfo != null)
-                    {
+                    {   // Pokud některá property aktuální třídy je persistována do Heap, pak v XML elementu této třídy je XML Atribut se jménem dané property, a jeho hodnota je Key do Heap.
+                        //  Metoda LoadObject detekuje typ persistence "Compound" a odešle , 
                         args.CurrentProperty = propInfo.Name;
-                        XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
+                        XmlPersistLoadArgs nextArgs = this.CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmElement, xmAtt);
                         object value = this.LoadObject(nextArgs);
                         propInfo.SetValue(data, value);
                     }
@@ -3934,7 +3972,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                 // 2. Projdeme si sub-elementy našeho elementu. Pro každý z nich určíme, zda máme cílovou property, a pak načtu jejich hodnotu do této property:
                 args.CurrentOperation = "ReadElements";
-                foreach (XmElement xmEle in args.XmElement.XmElements)
+                foreach (XmElement xmEle in xmElement.XmElements)
                 {
                     string name = xmEle.Name;
                     if (name == _ElementNameValue)
@@ -3954,10 +3992,6 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                         propInfo.SetValue(data, value);
                     }
                 }
-
-                args.CurrentOperation = "NotifyData.End";
-                NotifyData(data, XmlPersistState.LoadDone);
-                return data;
             }
             #endregion
             #region Heap
@@ -3965,6 +3999,14 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// true pokud existují data v Heap
             /// </summary>
             public bool HeapExists { get { return (this._HeapDataDict != null && this._HeapDataDict.Count > 0); } }
+            /// <summary>
+            /// Metoda uloží do Heap daná data pro daný typ. Vrací ID pro daná data.
+            /// Pokud budou do Heap opakovaně ukládána identická data (shodný typ a obsah), pak se do Heap uloží jen jedna instance, a vrátí se vždy shodný ID.
+            /// Tím se zmenšuje objem dat. Používá se při serializaci (data do stringu).
+            /// </summary>
+            /// <param name="dataType"></param>
+            /// <param name="xmlElement"></param>
+            /// <returns></returns>
             public string DataToHeap(Type dataType, XmlElement xmlElement)
             {
                 HeapData heapData = new HeapData(dataType, xmlElement);   // Nová instance, použije se nejprve jako klíč do Dictionary. Má nevyplněné Id.
@@ -3974,6 +4016,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     this._DataAddToHeap(heapData);
                     id = heapData.Id;
                 }
+                this._HeapAddCount(id);
                 return HeapIdToKey(id);
             }
             /// <summary>
@@ -3993,20 +4036,34 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     this._DataAddToHeap(heapData);
                     id = heapData.Id;
                 }
+                this._HeapAddCount(id);
                 return HeapIdToKey(id);
             }
             /// <summary>
             /// Vyzvedne z Heap string uložený tam pod daným ID.
-            /// Používá se při deserializaci (string na data).
+            /// Používá se při deserializaci (string na Simple data).
             /// </summary>
             /// <param name="key"></param>
             /// <returns></returns>
             public string StringFromHeap(string key)
             {
-                HeapData heapData;
                 int id = HeapKeyToId(key);
-                if (id > 0 && this.HeapIdDict.TryGetValue(id, out heapData)) return heapData.Text;
+                HeapData heapData;
+                if (id > 0 && this.HeapIdDict.TryGetValue(id, out heapData)) return heapData.SimpleText;
                 return key;
+            }
+            /// <summary>
+            /// Vyzvedne z Heap XML element uložený tam pod daným ID.
+            /// Používá se při deserializaci (string na Compound data).
+            /// </summary>
+            /// <param name="key"></param>
+            /// <returns></returns>
+            public XmElement XmlFromHeap(string key)
+            {
+                int id = HeapKeyToId(key);
+                HeapData heapData;
+                if (id > 0 && this.HeapIdDict.TryGetValue(id, out heapData)) return heapData.XmlElement;
+                return null;
             }
             /// <summary>
             /// Uloží celý obsah Heap do daného XML elementu.
@@ -4015,8 +4072,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             public void HeapSave(XmlElement xmlElementHeap)
             {
                 if (!this.HeapExists) return;
+                bool saveCount = this._HeapUseCount;
+
                 foreach (HeapData heapData in this.HeapDataDict.Keys)
-                    heapData.SaveToElement(xmlElementHeap);
+                    heapData.SaveToElement(xmlElementHeap, saveCount);
             }
             /// <summary>
             /// Načte celý obsah Heap z dodaného XML elementu.
@@ -4029,10 +4088,15 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 foreach (XmElement xmElementItem in xmElementHeap.XmElements)
                 {
                     HeapData heapData = HeapData.CreateFrom(xmElementItem);
+                    var s = heapData.ToString();
                     if (heapData != null)
                         this._DataAddToHeap(heapData);
                 }
             }
+            /// <summary>
+            /// Daný objekt přidá do zdejších dat Heap, v případě potřeby mu přiřadí nové Id
+            /// </summary>
+            /// <param name="heapData"></param>
             private void _DataAddToHeap(HeapData heapData)
             {
                 int id = 0;
@@ -4050,10 +4114,32 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 this.HeapDataDict.Add(heapData, id);
                 this.HeapIdDict.Add(id, heapData);
             }
+            /// <summary>
+            /// Metoda přičte 1 do počitadla použití položky Heap pro dané Id
+            /// </summary>
+            /// <param name="id"></param>
+            private void _HeapAddCount(int id)
+            {
+                if (this._HeapUseCount && id > 0)
+                {
+                    HeapData heapData;
+                    if (this.HeapIdDict.TryGetValue(id, out heapData)) heapData.AddCount();
+                }
+            }
+            /// <summary>
+            /// Vrátí stringovou reprezentaci klíče Heap
+            /// </summary>
+            /// <param name="id"></param>
+            /// <returns></returns>
             internal static string HeapIdToKey(int id)
             {
                 return "#" + id.ToString();
             }
+            /// <summary>
+            /// Vrátí numerickou hodnotou klíče Heap
+            /// </summary>
+            /// <param name="key"></param>
+            /// <returns></returns>
             internal static int HeapKeyToId(string key)
             {
                 if (String.IsNullOrEmpty(key) || key.Length <= 1 || key[0] != '#') return 0;
@@ -4084,10 +4170,12 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 this._HeapIdDict = new Dictionary<int, HeapData>();
                 this._HeapDataDict = new Dictionary<HeapData, int>();
                 this._HeapIdLast = 0;
+                this._HeapUseCount = System.Diagnostics.Debugger.IsAttached;
             }
             private Dictionary<int, HeapData> _HeapIdDict;
             private Dictionary<HeapData, int> _HeapDataDict;
             private int _HeapIdLast;
+            private bool _HeapUseCount;
             /// <summary>
             /// Jeden záznam dat pro uložení na Heap.
             /// Záznam lze použít i jako Key v Dictionary: porovnává hodnoty Type a Serial.
@@ -4095,82 +4183,191 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             internal class HeapData
             {
                 #region Konstrukce
+                /// <summary>
+                /// Konstruktor použitý při ukládání objektu do XML pro simple data
+                /// </summary>
+                /// <param name="type"></param>
+                /// <param name="text"></param>
                 public HeapData(Type type, string text)
                 {
+                    this._ItemType = ItemType.SaveSimple;
+                    this._Id = 0;
                     this._Type = type;
-                    this._Text = text;
+                    this._SimpleText = text;
                     this._HashCode = type.GetHashCode() ^ text.GetHashCode();
                 }
+                /// <summary>
+                /// Konstruktor použitý při ukládání objektu do XML pro Compound data
+                /// </summary>
+                /// <param name="type"></param>
+                /// <param name="xmlElement"></param>
                 public HeapData(Type type, XmlElement xmlElement)
                 {
+                    this._ItemType = ItemType.SaveCompound;
+                    this._Id = 0;
                     this._Type = type;
                     this._XmlElement = xmlElement;
-                    this._Text = xmlElement.OuterXml;
-                    this._HashCode = type.GetHashCode() ^ this._Text.GetHashCode();
+                    this._XmlContent = xmlElement.OuterXml;
+                    this._HashCode = type.GetHashCode() ^ this._XmlContent.GetHashCode();
                 }
+                /// <summary>
+                /// Konstruktor použitý při načítání objektu z XML pro simple data
+                /// </summary>
+                /// <param name="id"></param>
+                /// <param name="text"></param>
                 public HeapData(int id, string text)
                 {
-                    this.Id = id;
+                    this._ItemType = ItemType.LoadSimple;
+                    this._Id = id;
                     this._Type = null;
-                    this._Text = text;
+                    this._SimpleText = text;
                     this._HashCode = id.GetHashCode() ^ text.GetHashCode();
                 }
+                /// <summary>
+                /// Konstruktor použitý při načítání objektu z XML pro compound data
+                /// </summary>
+                /// <param name="id"></param>
+                /// <param name="xmElement"></param>
+                public HeapData(int id, XmElement xmElement)
+                {
+                    this._ItemType = ItemType.LoadCompound;
+                    this._Id = id;
+                    this._Type = null;
+                    this._XmElement = xmElement;
+                    this._XmlContent = xmElement.XmlContent;
+                    this._HashCode = id.GetHashCode() ^ this._XmlContent.GetHashCode();
+                }
+                /// <summary>
+                /// Vrátí hashcode (=konstanta), je odvozen z typu nebo ID a z obsahu
+                /// </summary>
+                /// <returns></returns>
                 public override int GetHashCode()
                 {
                     return this._HashCode;
                 }
+                /// <summary>
+                /// Porovná this a dodaný obj
+                /// </summary>
+                /// <param name="obj"></param>
+                /// <returns></returns>
                 public override bool Equals(object obj)
                 {
                     HeapData other = obj as HeapData;
                     if (other == null) return false;
-                    if (this._Type == null)
-                        return (this._HashCode == other._HashCode && this.Id == other.Id && String.Equals(this._Text, other._Text, StringComparison.Ordinal));
-                    return (this._HashCode == other._HashCode && this._Type == other._Type && String.Equals(this._Text, other._Text, StringComparison.Ordinal));
+                    if (this._HashCode != other._HashCode) return false;
+                    switch (this._ItemType)
+                    {
+                        case ItemType.SaveSimple:
+                            return (this._Type == other._Type && String.Equals(this._SimpleText, other._SimpleText, StringComparison.Ordinal));
+                        case ItemType.LoadSimple:
+                            return (this.Id == other.Id && String.Equals(this._SimpleText, other._SimpleText, StringComparison.Ordinal));
+                        case ItemType.SaveCompound:
+                            return (this._Type == other._Type && String.Equals(this._XmlContent, other._XmlContent, StringComparison.Ordinal));
+                        case ItemType.LoadCompound:
+                            return (this.Id == other.Id && String.Equals(this._XmlContent, other._XmlContent, StringComparison.Ordinal));
+                    }
+                    return false;
                 }
+                /// <summary>
+                /// Vizualizace
+                /// </summary>
+                /// <returns></returns>
                 public override string ToString()
                 {
-                    return this._Type.Name + ": " + this._Text;
+                    switch (this._ItemType)
+                    {
+                        case ItemType.SaveSimple:
+                            return this._Type.Name + ": " + this.SimpleText;
+                        case ItemType.LoadSimple:
+                            return this.Id.ToString() + ": " + this.SimpleText;
+                        case ItemType.SaveCompound:
+                            return this._Type.Name + ": " + this._XmlContent;
+                        case ItemType.LoadCompound:
+                            return this.Id.ToString() + ": " + this._XmlContent;
+                    }
+                    return this._ItemType.ToString();
                 }
+                private ItemType _ItemType;
+                private int _Id;
                 private int _HashCode;
                 private Type _Type;
+                private string _SimpleText;
+                private string _XmlContent;
                 private XmlElement _XmlElement;
-                private string _Text;
+                private XmElement _XmElement;
+                private int _Counter;
+                /// <summary>
+                /// Druh prvku v Heap
+                /// </summary>
+                private enum ItemType { None, SaveSimple, SaveCompound, LoadSimple, LoadCompound }
                 #endregion
                 #region Public data
                 /// <summary>
-                /// ID této položky
+                /// ID této položky. Setovat lze pouze kladnou hodnotu a to jen tehdy, když dosavadní <see cref="Id"/> == 0.
                 /// </summary>
-                public int Id { get; set; }
+                public int Id { get { return this._Id; } set { if (this._Id == 0 && value > 0) this._Id = value; } }
                 /// <summary>
                 /// Textový obsah této položky
                 /// </summary>
-                public string Text { get { return this._Text; } }
+                public string SimpleText { get { return this._SimpleText; } }
+                /// <summary>
+                /// XML element této položky
+                /// </summary>
+                public XmElement XmlElement { get { return this._XmElement; } }
+                /// <summary>
+                /// Počítadlo výskytů, ukládá se jen v Debug režimu
+                /// </summary>
+                public int Counter { get { return this._Counter; } }
+                /// <summary>
+                /// Přičte 1 k hodnotě <see cref="Counter"/>
+                /// </summary>
+                public void AddCount()
+                {
+                    this._Counter++;
+                }
                 #endregion
                 #region Persistence
-                public void SaveToElement(XmlElement xmlElementHeap)
+                public void SaveToElement(XmlElement xmlElementHeap, bool saveCount)
                 {
                     XmlElement xmlElementItem = CreateElement(_ArrayNameItem, xmlElementHeap);
                     CreateAttribute(_DictNameKey, HeapIdToKey(this.Id), xmlElementItem);
+                    if (saveCount)
+                        CreateAttribute(_HeapNameCount, this.Counter.ToString(), xmlElementItem);
+
                     if (this._XmlElement != null)
                         xmlElementItem.AppendChild(this._XmlElement);
-                    else if (this.Text != null)
-                        CreateAttribute(_DictNameValue, this.Text, xmlElementItem);
+                    else if (this.SimpleText != null)
+                        CreateAttribute(_DictNameValue, this.SimpleText, xmlElementItem);
                 }
                 public static HeapData CreateFrom(XmElement xmElementItem)
                 {
                     if (xmElementItem == null) return null;
                     if (xmElementItem.Name != _ArrayNameItem) return null;
+
+                    // Atribut "id-key" musí být přítomen, nese číslo prvku:
                     XmAttribute xmAttributeKey;
-                    XmAttribute xmAttributeValue;
                     if (!xmElementItem.TryGetAttribute(_DictNameKey, out xmAttributeKey)) return null;
                     int id = HeapKeyToId(xmAttributeKey.ValueFirstOrDefault);
                     if (id <= 0) return null;
 
-                    if (!xmElementItem.TryGetAttribute(_DictNameValue, out xmAttributeValue)) return null;
-                    string value = xmAttributeValue.ValueFirstOrDefault;
-                    if (String.IsNullOrEmpty(value)) return null;
+                    // Atribut "id-value" může být přítomen, pak jde o textový prvek:
+                    XmAttribute xmAttributeValue;
+                    if (xmElementItem.TryGetAttribute(_DictNameValue, out xmAttributeValue))
+                    {
+                        string value = xmAttributeValue.ValueFirstOrDefault;
+                        if (String.IsNullOrEmpty(value)) return null;
+                        return new HeapData(id, value);
+                    }
 
-                    return new HeapData(id, value);
+                    // Anebo daný element může obsahovat jakýkoli sub-element:
+                    if (xmElementItem.HasElements)
+                    {
+                        XmElement value = xmElementItem.XmElements.FirstOrDefault();
+                        if (value == null) return null;
+                        return new HeapData(id, value);
+                    }
+
+                    return null;
                 }
                 #endregion
             }
@@ -4186,6 +4383,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             private const string _DictNamePair = "id-pair";
             private const string _DictNameKey = "id-key";
             private const string _DictNameValue = "id-value";
+            private const string _HeapNameCount = "id-count";
             private const string _ArrayNameArrayRange = _ArrayName + "." + XmAttribute.SuffixNameRange;
             private const string _ArrayNameItemIndices = _ArrayNameItem + "." + XmAttribute.SuffixNameIndices;
             #endregion
@@ -5968,6 +6166,10 @@ anebo neprázdný objekt:
         /// Aktuální XElement = přímý přístup k objektu System.Xml.Linq.XElement, pro který je tento XmElement vytvořen
         /// </summary>
         internal XElement XElement { get { return this._XElement; } }
+        /// <summary>
+        /// Obsah elementu (Value)
+        /// </summary>
+        internal string XmlContent { get { return this._XElement.ToString(); } }
         #endregion
         #region Atributy elementu
         /// <summary>
@@ -6055,6 +6257,18 @@ anebo neprázdný objekt:
         private Dictionary<string, XmAttribute> _XmAttributes;
         #endregion
         #region Sub-elementy this elementu
+        /// <summary>
+        /// Obsahuje true, pokud this element má nějaké Child elementy (přinejmenším jeden).
+        /// </summary>
+        internal bool HasElements
+        {
+            get
+            {
+                if (this._XmElements == null)
+                    this._ReadElements();
+                return (this._XmElements.Length > 0);
+            }
+        }
         /// <summary>
         /// Sada vnořených elementů tohoto elementu
         /// </summary>
