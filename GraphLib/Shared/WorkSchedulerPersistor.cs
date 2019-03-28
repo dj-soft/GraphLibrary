@@ -1792,6 +1792,14 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             ((IDisposable)this._TypeLibrary).Dispose();
             this._TypeLibrary = null;
         }
+        /// <summary>
+        /// Zápis do trace
+        /// </summary>
+        /// <param name="text"></param>
+        protected static void TraceInfo(string text)
+        {
+            Asol.Tools.WorkScheduler.Application.App.Trace.Info(Asol.Tools.WorkScheduler.Application.TracePriority.Priority2_Lowest, "XmlPersist", "Info", "", text);
+        }
         #endregion
         #region Statické internal metody = jediný veřejný přístup
         /// <summary>
@@ -1803,14 +1811,20 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// <returns></returns>
         internal static string Serialize(object data, PersistArgs parameters)
         {
+            TraceInfo("Serialize.Init");
             using (XmlPersist xmlPersist = new XmlPersist())
             {
                 parameters.XmlContent = xmlPersist._Serialize(data, parameters);
+                TraceInfo("Serialize.Done");
                 _PrepareDataFromXml(parameters);
+                TraceInfo("Prepare.Done");
             }
             if (parameters.XmlFile != null)
+            {
+                TraceInfo("Save.Start");
                 SaveXmlToFile(parameters.DataContent, parameters.XmlFile);
-
+                TraceInfo("Save.Done");
+            }
             return parameters.DataContent;
         }
         /// <summary>
@@ -1831,11 +1845,17 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// <returns></returns>
         internal static object Deserialize(PersistArgs parameters)
         {
+            object data = null;
+            TraceInfo("DeSerialize.Init");
             using (XmlPersist xmlPersist = new XmlPersist())
             {
+                TraceInfo("Prepare.Start");
                 _PrepareXmlFromData(parameters);
-                return xmlPersist._Deserialize(parameters);
+                TraceInfo("Deserialize.Start");
+                data = xmlPersist._Deserialize(parameters);
+                TraceInfo("Deserialize.Done");
             }
+            return data;
         }
         /// <summary>
         /// Určená data rekonstruuje a naplní je do předaného objektu.
@@ -1845,11 +1865,16 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// <param name="data"></param>
         internal static void LoadTo(PersistArgs parameters, object data)
         {
+            TraceInfo("LoadTo.Init");
             using (XmlPersist xmlPersist = new XmlPersist())
             {
+                TraceInfo("Prepare.Start");
                 _PrepareXmlFromData(parameters);
+                TraceInfo("Deserialize.Start");
                 object result = xmlPersist._Deserialize(parameters);
+                TraceInfo("Deserialize.Done");
                 xmlPersist._CloneProperties(result, data);
+                TraceInfo("Clone.Done");
             }
         }
         #endregion
@@ -1863,22 +1888,28 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// <returns></returns>
         private string _Serialize(object data, PersistArgs parameters)
         {
+            TraceInfo("PrepareAdapter.Start");
             this.PreparePersistAdapter(parameters.Version);
+            TraceInfo("PrepareAdapter.Done");
 
             XmlDocument xDoc = new System.Xml.XmlDocument();
             xDoc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
 
+            TraceInfo("SerializeData.Start");
             this.PersistAdapter.Save(data, parameters, xDoc);
+            TraceInfo("SerializeData.Done");
 
             //parameters.WriterSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
             //parameters.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
             //parameters.WriterSettings.OmitXmlDeclaration = false;
             //parameters.WriterSettings.WriteEndDocumentOnClose = true;
 
+            TraceInfo("WriteString.Start");
             StringBuilder sb = new StringBuilder();
             XmlWriter xw = XmlWriter.Create(sb, parameters.WriterSettings);
             xDoc.WriteTo(xw);
             xw.Flush();
+            TraceInfo("WriteString.Done");
 
             return sb.ToString();
         }
@@ -1893,8 +1924,10 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             parameters.DeserializeStatus = XmlDeserializeStatus.Processing;
 
             XmDocument xmDoc = null;
+            TraceInfo("PrepareXml.Start");
             if (!String.IsNullOrEmpty(parameters.XmlContent))
                 xmDoc = XmDocument.CreateFromString(parameters.XmlContent);
+            TraceInfo("PrepareXml.Done");
             if (xmDoc == null)
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.NotInput;
@@ -1908,7 +1941,11 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             }
 
             parameters.DeserializeStatus = XmlDeserializeStatus.Done;
-            return this.PersistAdapter.Load(parameters, xmDoc);
+            TraceInfo("Deserialize.Run");
+            object data = this.PersistAdapter.Load(parameters, xmDoc);
+            TraceInfo("Deserialize.End");
+
+            return data;
         }
         /// <summary>
         /// Přenese hodnoty (objekty z properties) ze source do target, provede Shallow Copy (MemberwiseClone)
