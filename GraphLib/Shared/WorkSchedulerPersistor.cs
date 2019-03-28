@@ -3128,7 +3128,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
                 {
                     args.CurrentProperty = propInfo.Name;
-                    object value = propInfo.Property.GetValue(args.Data, null);
+                    object value = propInfo.GetValue(args.Data);
                     this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement));
                 }
                 args.CurrentProperty = null;
@@ -3875,7 +3875,8 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 NotifyData(args.Data, XmlPersistState.SaveDone);
             }
             /// <summary>
-            /// Uloží Compound data do daného XML elementu.
+            /// Uloží Compound data do explicitně daného XML elementu.
+            /// Volitelně uloží i TargetName.
             /// </summary>
             /// <param name="args"></param>
             /// <param name="addTargetName"></param>
@@ -3886,18 +3887,14 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 SaveTypeAttribute(args, _ElementNameValue, xmlCurrElement);
 
                 args.CurrentOperation = "SaveValues";
-                /*
-                if (args.HasObjectName)
-                    CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.ObjectName, xmlCurrElement);
-                */
                 if (addTargetName && args.HasTargetName)
                     CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.TargetName, xmlCurrElement);
 
                 foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
                 {   // V jednom cyklu zapisujeme data z jednoduchých i složitých properties (tzn. do XmlAtributů i do XmlElementů),
-                    //  to řeší až metoda SaveObject() podle typu persistence konkrétního objektu.
+                    //  konkrétní roztřídění řeší až metoda SaveObject() - podle druhu persistence dle typu konkrétního objektu.
                     args.CurrentProperty = propInfo.Name;
-                    object value = propInfo.Property.GetValue(args.Data, null);
+                    object value = propInfo.GetValue(args.Data);
                     this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement));
                 }
                 args.CurrentProperty = null;
@@ -3916,6 +3913,9 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 args.CurrentOperation = "NotifyData.Begin";
                 NotifyData(data, XmlPersistState.LoadBegin);
                 args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());             // Reálný Type + jeho property
+
+                if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
+                { qqq; }
 
                 // 1. Projdeme atributy, ty obsahují jednoduché datové typy. Uložíme je do property našeho objektu:
                 args.CurrentOperation = "ReadAttributes";
@@ -5294,6 +5294,13 @@ anebo neprázdný objekt:
             }
             #endregion
             #region Vyhledání dle názvu
+            /// <summary>
+            /// Vrátí objekt <see cref="PropInfo"/> pro daný název property.
+            /// Může vrátit null.
+            /// Využívá Dictionary.
+            /// </summary>
+            /// <param name="propName"></param>
+            /// <returns></returns>
             internal PropInfo FindPropertyByXmlName(string propName)
             {
                 if (String.IsNullOrEmpty(propName)) return null;
@@ -5543,6 +5550,16 @@ anebo neprázdný objekt:
             internal string XmlName { get; private set; }
             #endregion
             #region Podpora pro ukládání hodnoty
+            /// <summary>
+            /// Metoda načte obsah this property z dodaného objektu.
+            /// </summary>
+            /// <param name="data"></param>
+            /// <returns></returns>
+            internal object GetValue(object data)
+            {
+                object value = this.Property.GetValue(data, null);
+                return value;
+            }
             /// <summary>
             /// Zajistí uložení hodnoty (value) do objektu (data) do jeho property this.
             /// </summary>
