@@ -2451,10 +2451,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiRequestCurrentState _CreateGuiCurrentState()
         {
             GuiRequestCurrentState currentState = new GuiRequestCurrentState();
+            currentState.ActivePage = this._MainControl.ActiveGuiPage?.FullName;
             currentState.TimeAxisValue = this.SynchronizedTime;
+            currentState.CheckedRows = this._CreateGuiCurrentCheckedRows();
             currentState.SelectedGraphItems = this._CreateGuiCurrentSelectedGraphItems();
-
             return currentState;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí pole identifikátorů řádků ze všech tabulek, které jsou aktuálně označené.
+        /// </summary>
+        /// <returns></returns>
+        private GuiGridRowId[] _CreateGuiCurrentCheckedRows()
+        {
+            List<GuiGridRowId> selectedRowList = new List<GuiGridRowId>();
+            foreach (var mainTable in this.DataTables)
+                selectedRowList.AddRange(mainTable.CheckedRowsId);
+            return selectedRowList.ToArray();
         }
         /// <summary>
         /// Metoda najde všechny aktuálně vybrané prvky grafů v GUI (s pomocí instance <see cref="Selector"/>),

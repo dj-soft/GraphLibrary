@@ -4973,6 +4973,11 @@ namespace Noris.LCS.Base.WorkScheduler
     public class GuiRequestCurrentState
     {
         /// <summary>
+        /// Aktuálně zobrazení záložka s daty (<see cref="GuiPage"/>).FullName.
+        /// Plugin může nabízet jednu nebo více stránek (záložek) s daty, zde je uvedeno jméno té právě aktivní.
+        /// </summary>
+        public string ActivePage { get; set; }
+        /// <summary>
         /// Aktuální hodnota časové osy
         /// </summary>
         public GuiTimeRange TimeAxisValue { get; set; }
@@ -4981,10 +4986,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGridRowId ActiveRow { get; set; }
         /// <summary>
-        /// Aktuálně označené řádky tabulek v aktuálním okně.
-        /// Řádky tabulek lze označovat ikonkou.
+        /// Aktuálně označené (IsChecked) řádky tabulek v aktuálním okně.
+        /// Řádky tabulek lze interaktivně označovat ikonkou.
+        /// V této property jsou uvedeny ID řádků, ze všech tabulek které obsahují nějaké řádky IsChecked.
+        /// bay bylo možno v tabulce označit řádky, musí mít tabulka nastaveno <see cref="GuiDataTable.RowCheckEnabled"/> = true
         /// </summary>
-        public GuiGridRowId[] SelectedRows { get; set; }
+        public GuiGridRowId[] CheckedRows { get; set; }
         /// <summary>
         /// Aktuálně označené prvky grafů tabulek v aktuálním okně.
         /// Prvky grafů lze označovat klikáním nebo framováním.

@@ -1796,9 +1796,9 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// Zápis do trace
         /// </summary>
         /// <param name="text"></param>
-        protected static void TraceInfo(string text)
+        internal static void TraceInfo(string text)
         {
-            Asol.Tools.WorkScheduler.Application.App.Trace.Info(Asol.Tools.WorkScheduler.Application.TracePriority.Priority2_Lowest, "XmlPersist", "Info", "", text);
+            // Asol.Tools.WorkScheduler.Application.App.Trace.Info(Asol.Tools.WorkScheduler.Application.TracePriority.Priority2_Lowest, "XmlPersist", "Info", "", text);
         }
         #endregion
         #region Statické internal metody = jediný veřejný přístup

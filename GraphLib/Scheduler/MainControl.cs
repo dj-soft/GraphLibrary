@@ -127,6 +127,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._TabContainer.ClearItems();
         }
         /// <summary>
+        /// Obsahuje data <see cref="GuiPage"/> aktuální viditelné stránky s daty.
+        /// </summary>
+        public GuiPage ActiveGuiPage { get { return this.ActiveDataPanel?.GuiPage; } }
+        /// <summary>
+        /// Data aktivní stránky. Může být null.
+        /// </summary>
+        protected MainDataPanel ActiveDataPanel { get { return (this._TabContainer.ActivePage?.UserData as MainDataPanel); } }
+        /// <summary>
         /// Synchronizační element časové osy
         /// </summary>
         public ValueTimeRangeSynchronizer SynchronizedTime
@@ -293,6 +301,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, guiPage.Title, toolTip: guiPage.ToolTip, image: null);
                 MainDataPanel tspInfo = new MainDataPanel(guiPage, tabPageIndex, tabPage, schedulerPanel);
                 this._DataPanelsList.Add(tspInfo);
+                tabPage.UserData = tspInfo;
                 schedulerPanel.LoadData();
                 return tspInfo;
             }
