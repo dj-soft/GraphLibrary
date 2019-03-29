@@ -670,7 +670,9 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <returns></returns>
             public LayoutSettingTItemInfo GetInfoForSize(FunctionGlobalItemSize itemSize)
             {
-                return this.ItemDict[itemSize];
+                LayoutSettingTItemInfo info;
+                if (this.ItemDict.TryGetValue(itemSize, out info)) return info;
+                return this.ItemDict[FunctionGlobalItemSize.Small];
             }
             /// <summary>
             /// Returns Size for Image of specified itemSize
@@ -679,7 +681,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <returns></returns>
             public Size GetIconSize(FunctionGlobalItemSize itemSize)
             {
-                LayoutSettingTItemInfo info = this.ItemDict[itemSize];
+                LayoutSettingTItemInfo info = this.GetInfoForSize(itemSize);
                 return info.ImageSize;
             }
             /// <summary>
@@ -691,7 +693,7 @@ namespace Asol.Tools.WorkScheduler.Components
             public FontInfo GetFontInfo(FunctionGlobalItemSize itemSize, FontInfo fontInfo)
             {
                 FontInfo fontCurr = (fontInfo != null ? fontInfo : FontInfo.Menu).Clone;
-                float zoom = this.ItemDict[itemSize].TextZoom;
+                float zoom = this.GetInfoForSize(itemSize).TextZoom;
                 fontCurr.ApplyZoom(zoom);
                 return fontCurr;
             }
