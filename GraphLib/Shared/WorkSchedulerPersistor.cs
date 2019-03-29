@@ -144,7 +144,7 @@ namespace Noris.LCS.Base.WorkScheduler
             xs.Encoding = Encoding.UTF8;
             xs.CheckCharacters = false;
             xs.Indent = true;
-            xs.IndentChars = "  ";
+            xs.IndentChars = " ";
             xs.NewLineHandling = NewLineHandling.Entitize;
             xs.NewLineChars = Environment.NewLine;
             xs.NewLineOnAttributes = false;
@@ -3299,9 +3299,11 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                 this.HeapLoad(xmElementHeap);
                 parameters.DataHeapEnabled = this.HeapExists;   // Při deserializaci je povolena práce s Heap tehdy, když ve vstupních datech byla data nalezena.
-
+          
                 XmlPersistLoadArgs itemArgs = CreateLoadArgs(parameters, null, null, xmElementValue, xmAttributeValue);
+                TraceInfo("LoadData.Start");
                 object data = this.LoadObject(itemArgs);
+                TraceInfo("LoadData.Done");
 
                 this.Parameters = null;
 
@@ -3461,7 +3463,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                 string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
                 if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
-                    value = this.DataToHeap(args.DataTypeInfo.DataType, value);
+                    value = this.SaveDataToHeap(args.DataTypeInfo.DataType, value);
 
                 this.SavePrimitive(value);
 
@@ -3491,7 +3493,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                 string xmlData = args.XmAttribute.ValueFirstOrDefault;
                 if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
-                    xmlData = this.StringFromHeap(xmlData);
+                    xmlData = this.LoadFromHeapString(xmlData);
 
                 return args.DataTypeInfo.TypeConvert.Deserializator(xmlData);
             }
@@ -3515,7 +3517,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                     string value = ((IXmlSerializer)args.Data).XmlSerialData;
                     if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
-                        value = this.DataToHeap(args.DataTypeInfo.DataType, value);
+                        value = this.SaveDataToHeap(args.DataTypeInfo.DataType, value);
 
                     this.SavePrimitive(value);
 
@@ -3542,7 +3544,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     return null;
 
                 if (this.Parameters.DataHeapEnabled && args.DataTypeInfo.PersistOnHeap)
-                    xmlData = this.StringFromHeap(xmlData);
+                    xmlData = this.LoadFromHeapString(xmlData);
 
                 args.CurrentOperation = "CreateInstance";
                 object data = this._ObjectCreate(args.DataType);
@@ -3572,7 +3574,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
 
                 string value = Enum.Format(args.DataType, args.Data, "F");
                 if (this.Parameters.DataHeapEnabled && this.Parameters.DataHeapEnumEnabled)
-                    value = this.DataToHeap(args.DataTypeInfo.DataType, value);
+                    value = this.SaveDataToHeap(args.DataTypeInfo.DataType, value);
 
                 this.SavePrimitive(value);
 
@@ -3594,8 +3596,8 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 string xmlData = args.XmAttribute.ValueFirstOrDefault;
                 if (xmlData == null)
                     return null;
-                if (this.Parameters.DataHeapEnabled && this.Parameters.DataHeapEnumEnabled)
-                    xmlData = this.StringFromHeap(xmlData);
+                if (this.Parameters.DataHeapEnabled)       // Nebudu řešit this.Parameters.DataHeapEnumEnabled, protože jsme v Load metodě (ta je Autodetect) a metoda LoadFromHeapString() vrací buď co najde v Heap, nebo vstupní hodnotu.
+                    xmlData = this.LoadFromHeapString(xmlData);      // Takže pokud vstup je v Heap, pak vstupní xmlData = "#1234" (což nikdy není hodnota Enumu), anebo vstupní xmlData = "EnumName", což nikdy není klíč do Heap.
 
                 object data = null;
                 try
@@ -3606,7 +3608,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 catch
                 {
                     args.CurrentOperation = "DefaultEnum";
-                    data = _ObjectCreate(args.DataType);                  // Vytvoří objekt, prázdný (hodnota = 0)
+                    data = _ObjectCreate(args.DataType);             // Vytvoří objekt, prázdný (hodnota = 0)
                 }
                 return data;
             }
@@ -3897,7 +3899,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 {   // Data persistujeme do Heap, a zde do elementu (args.XmlElement) jen umístíme ID záznamu v Heap:
                     XmlElement xmlAloneElement = CreateElementAlone(_ElementNameValue, args.XmlElement);
                     this.CompoundTypeSaveTo(args, false, xmlAloneElement);
-                    string id = this.DataToHeap(args.DataTypeInfo.DataType, xmlAloneElement);
+                    string id = this.SaveDataToHeap(args.DataTypeInfo.DataType, xmlAloneElement);
                     string name = (args.HasTargetName ? args.TargetName : args.ObjectName);
                     CreateAttribute(name, id, args.XmlElement);
                 }
@@ -3969,7 +3971,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     //      a vnořený element id-value TargetName="Aaa" říká, že do property Aaa se má vložit nový objekt (očekávaného typu, protože tu není atribut id-value.Type="TypeName"),
                     //        jehož hodnoty do jednotlivých properties PropZzz1 až PropZzz3 jsou zde citovány přímo (=objekt bez umístění do Heap).
                     string key = args.XmAttribute.ValueFirstOrDefault;         // Klíč do Heap, dle příkladu "#1234"
-                    XmElement xmElement = this.XmlFromHeap(key);               // Získám XML element z Heap, obsahuje kompletní data 
+                    XmElement xmElement = this.LoadFromHeapXml(key);               // Získám XML element z Heap, obsahuje kompletní data 
 
                     // Naplnit datový objekt (data) hodnotami z dodaného XML elementu:
                     this.CompoundTypeLoadFrom(args, xmElement, data);
@@ -4044,7 +4046,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// <param name="dataType"></param>
             /// <param name="xmlElement"></param>
             /// <returns></returns>
-            public string DataToHeap(Type dataType, XmlElement xmlElement)
+            public string SaveDataToHeap(Type dataType, XmlElement xmlElement)
             {
                 HeapData heapData = new HeapData(dataType, xmlElement);   // Nová instance, použije se nejprve jako klíč do Dictionary. Má nevyplněné Id.
                 int id;
@@ -4064,7 +4066,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// <param name="dataType"></param>
             /// <param name="text"></param>
             /// <returns></returns>
-            public string DataToHeap(Type dataType, string text)
+            public string SaveDataToHeap(Type dataType, string text)
             {
                 HeapData heapData = new HeapData(dataType, text);         // Nová instance, použije se nejprve jako klíč do Dictionary. Má nevyplněné Id.
                 int id;
@@ -4082,7 +4084,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// </summary>
             /// <param name="key"></param>
             /// <returns></returns>
-            public string StringFromHeap(string key)
+            public string LoadFromHeapString(string key)
             {
                 int id = HeapKeyToId(key);
                 HeapData heapData;
@@ -4095,7 +4097,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// </summary>
             /// <param name="key"></param>
             /// <returns></returns>
-            public XmElement XmlFromHeap(string key)
+            public XmElement LoadFromHeapXml(string key)
             {
                 int id = HeapKeyToId(key);
                 HeapData heapData;
@@ -4109,10 +4111,14 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             public void HeapSave(XmlElement xmlElementHeap)
             {
                 if (!this.HeapExists) return;
-                bool saveCount = this._HeapUseCount;
 
+                TraceInfo("SaveHeap.Start");
+
+                bool saveCount = this._HeapUseCount;
                 foreach (HeapData heapData in this.HeapDataDict.Keys)
                     heapData.SaveToElement(xmlElementHeap, saveCount);
+
+                TraceInfo("SaveHeap.Done");
             }
             /// <summary>
             /// Načte celý obsah Heap z dodaného XML elementu.
@@ -4120,6 +4126,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             /// <param name="xmElementHeap"></param>
             public void HeapLoad(XmElement xmElementHeap)
             {
+                TraceInfo("LoadHeap.Start");
                 this._HeapPrepare();
                 if (xmElementHeap == null) return;
                 foreach (XmElement xmElementItem in xmElementHeap.XmElements)
@@ -4129,6 +4136,7 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                     if (heapData != null)
                         this._DataAddToHeap(heapData);
                 }
+                TraceInfo("LoadHeap.Done");
             }
             /// <summary>
             /// Daný objekt přidá do zdejších dat Heap, v případě potřeby mu přiřadí nové Id
