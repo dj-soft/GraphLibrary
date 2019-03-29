@@ -1466,9 +1466,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 
-            GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
-            GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
-            return guiDataP;
+            GuiData result = null;
+
+            result = SerialDeserialData(guiData, XmlCompressMode.Compress);
+            //    result = SerialDeserialData(guiData, XmlCompressMode.None);
+            return result;
         }
         /// <summary>
         /// Metoda provede test serializace v daném režimu komprese
