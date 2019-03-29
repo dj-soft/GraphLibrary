@@ -1467,9 +1467,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 
             GuiData result = null;
-
+            // result = SerialDeserialData(guiData, XmlCompressMode.None);
             result = SerialDeserialData(guiData, XmlCompressMode.Compress);
-            //    result = SerialDeserialData(guiData, XmlCompressMode.None);
             return result;
         }
         /// <summary>
@@ -1501,9 +1500,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             SerialSaveData(serial, mode);
             SerialSaveData(primitive, ".txt");
-
-            // Test formátu verze 1.00 (načítání starších souborů):
-            // serial = System.IO.File.ReadAllText(@"c:\Users\David\AppData\Local\Asseco Solutions\WorkScheduler\Data\WorkScheduler.setting", Encoding.UTF8);
 
             using (var scopeD = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Deserialize", compress, runMode))
             {
