@@ -1464,7 +1464,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // return guiData;
             // if (!System.Diagnostics.Debugger.IsAttached) return guiData;
 
-            Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
+            // Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 
             GuiData result = null;
             // result = SerialDeserialData(guiData, XmlCompressMode.None);
@@ -1494,7 +1494,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 serArgs.DataHeapEnabled = true;
                 serial = Persist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
-                scopeS.AddItem("PrimitivesLength: " + serArgs.SavePrimitivesLength.ToString());
+                if (serArgs.SavePrimitivesLength > 0)
+                    scopeS.AddItem("PrimitivesLength: " + serArgs.SavePrimitivesLength.ToString());
                 primitive = ((serArgs.SavePrimitivesRunning && serArgs.SavePrimitivesContent != null)? serArgs.SavePrimitivesContent.ToString() : null);
             }
 
