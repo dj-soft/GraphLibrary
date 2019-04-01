@@ -1140,8 +1140,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridRight.GridProperties.TagFilterRoundItemPercent = 50;
             gridRight.GridProperties.TagFilterEnabled = true;
             gridRight.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
+
             gridRight.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragSelectedThenActiveRow;
-            gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItem;
+            // gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItem;
+            gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItemClassPrefix + "1190";
 
             gridRight.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridRight.GraphProperties.BottomMarginPixel = 2;
@@ -1770,6 +1772,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         break;
 
                     case GuiRequest.COMMAND_RowDragDrop:
+                        var rdm = requestArgs.Request.RowDragMove;
+                        var ti = (rdm.TargetItem != null ? rdm.TargetItem : (rdm.TargetGroup != null && rdm.TargetGroup.Length > 0 ? rdm.TargetGroup[0] : null));
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
