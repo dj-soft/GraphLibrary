@@ -2086,6 +2086,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 case GInteractiveChangeState.KeyboardPreviewKeyDown:           // Sem chodí i klávesy Kurzor, Tab
                     this.KeyboardPreviewKeyDown(e);        // Pokud se ani Cell, a ani Row nepřihlásí ke zpracování Keyboard událostí, musí to provést Table.
                     break;
+                case GInteractiveChangeState.KeyboardKeyUp:
+                    this.KeyboardKeyUp(e);
+                    break;
+
             }
         }
         /// <summary>
@@ -2101,6 +2105,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 e.KeyboardPreviewArgs.IsInputKey = isProcessed;
                 e.ActionIsSolved = isProcessed;
             }
+        }
+        /// <summary>
+        /// Obsluha standardní klávesy
+        /// </summary>
+        /// <param name="e"></param>
+        private void KeyboardKeyUp(GInteractiveChangeStateArgs e)
+        {
+            this.CallKeyboardKeyUp(this.ActiveRow, this.ActiveCell, e);
         }
         /// <summary>
         /// Jakmile myš opouští tabulku, pak resetuje informaci o HotRow a HotCell:
@@ -2982,6 +2994,18 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSuppressedEvent);
+        }
+        /// <summary>
+        /// Vyvolá událost CallKeyboardKeyUp
+        /// </summary>
+        /// <param name="activeRow"></param>
+        /// <param name="activeCell"></param>
+        /// <param name="e"></param>
+        protected void CallKeyboardKeyUp(Row activeRow, Cell activeCell, GInteractiveChangeStateArgs e)
+        {
+            ITableInternal target = (this.DataTable as ITableInternal);
+            if (target != null)
+                target.CallKeyboardKeyUp(activeRow, activeCell, e, !this.IsSuppressedEvent);
         }
         /// <summary>
         /// Vyvolá událost CallHotRowChanged

@@ -552,6 +552,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Vrací true, pokud daný prvek může být přemísťován.
         /// Rozhoduje o tom Group, protože jednotlivé Items přemisťovat nelze.
         /// </summary>
+        internal bool IsSelectable
+        {
+            get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnySelectable); }
+        }
+        /// <summary>
+        /// Vrací true, pokud daný prvek může být přemísťován.
+        /// Rozhoduje o tom Group, protože jednotlivé Items přemisťovat nelze.
+        /// </summary>
         internal bool IsDragEnabled
         {
             get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnyMove); }

@@ -368,13 +368,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected GInteractiveState? _GroupState;
         /// <summary>
         /// Hodnota Selectable :
-        /// Selectovat lze jen Group prvky, nikoli Item;
+        /// Selectovat lze jen Group prvky, nikoli Item.
+        /// A to jen tehdy, pokud první prvek grupy má ve svém BehaviorMode hodnotu AnyMove nebo CanSelect.
+        /// Get metoda použitá v <see cref="InteractiveProperties"/> objektu pro získání hodnoty Selectable.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         private bool _GetSelectable(bool value)
         {
-            return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled);
+            return (this._Position == GGraphControlPosition.Group && this._Group.IsSelectable);
         }
         /// <summary>
         /// Metoda vrátí true, pokud událost MouseLeave opouští skutečně datovou skupinu grafu.
@@ -709,7 +711,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 Color color = this._Group.GetColorWithOpacity(itemBackColor.Value, e.DrawLayer, drawMode, true, true);
 
                 Rectangle[] boundsParts = GPainter.GraphItemCreateBounds(boundsAbsolute, true, false, false, false);
-                float? effect3D = this._GetEffect3D(false);
+                float? effect3D = this.CurrentEffect3DGroup;
                 GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
             }
         }
@@ -800,7 +802,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GPainter.GraphItemArgs graphItemArgs = new GPainter.GraphItemArgs(e.Graphics, boundsAbsolute);
             graphItemArgs.IsGroup = false;
             graphItemArgs.BackColor = this._Group.GetColorWithOpacity(this.ItemBackColor, e.DrawLayer, drawMode, false, true);
-            graphItemArgs.Effect3D = this._GetEffect3D(true);
+            graphItemArgs.Effect3D = this.CurrentEffect3DItem;
             graphItemArgs.IsFirstItem = this.IsFirstItem;
             graphItemArgs.IsLastItem = this.IsLastItem;
             graphItemArgs.HatchStyle = this._Owner.BackStyle;
@@ -859,19 +861,47 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return boundsParts;
         }
         /// <summary>
-        /// Vrátí úroveň 3D efektu pro this prvek
+        /// 3D efekt pro prvek za aktuálního stavu
         /// </summary>
-        /// <param name="forItem"></param>
-        /// <returns></returns>
-        private float? _GetEffect3D(bool forItem)
+        protected float? CurrentEffect3DItem
         {
-            GraphItemBehaviorMode behavior = this._Owner.BehaviorMode;
-            bool isEditable = behavior.HasAnyFlag(GraphItemBehaviorMode.AnyMove | GraphItemBehaviorMode.ResizeTime | GraphItemBehaviorMode.ResizeHeight);
-            GInteractiveState state = this.GroupInteractiveState;
-            float? effect3D = (isEditable ? GPainter.GetEffect3D(state) : (float?)-0.10f);
-            if (effect3D.HasValue && effect3D.Value != 0f)
-                effect3D = effect3D.Value * (forItem ? 1.25f : 0.90f);
-            return effect3D;
+            get
+            {
+                float? effect3D = (IsInteractive ? GPainter.GetEffect3D(GroupInteractiveState) : (float?)-0.10f);
+                return ((effect3D.HasValue && effect3D.Value != 0f) ? (float?)effect3D.Value * 1.25f : (float?)null);
+            }
+        }
+        /// <summary>
+        /// 3D efekt pro grupu za aktuálního stavu
+        /// </summary>
+        protected float? CurrentEffect3DGroup
+        {
+            get
+            {
+                float? effect3D = (IsInteractive ? GPainter.GetEffect3D(GroupInteractiveState) : (float?)-0.10f);
+                return ((effect3D.HasValue && effect3D.Value != 0f) ? (float?)effect3D.Value * 0.90f : (float?)null);
+            }
+        }
+        /// <summary>
+        /// true = prvek je editovatelný
+        /// </summary>
+        protected bool IsEditable
+        {
+            get { return (this._Owner.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnyMove | GraphItemBehaviorMode.ResizeTime | GraphItemBehaviorMode.ResizeHeight)); }
+        }
+        /// <summary>
+        /// true = prvek je selectovatelný
+        /// </summary>
+        protected bool IsSelectable
+        {
+            get { return (this._Owner.BehaviorMode.HasFlag(GraphItemBehaviorMode.CanSelect)); }
+        }
+        /// <summary>
+        /// true = prvek je interaktivní (=editovatelný nebo selectovatelný)
+        /// </summary>
+        protected bool IsInteractive
+        {
+            get { return (this._Owner.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnyMove | GraphItemBehaviorMode.ResizeTime | GraphItemBehaviorMode.ResizeHeight | GraphItemBehaviorMode.CanSelect)); }
         }
         /// <summary>
         /// Obsahuje true, pokud this prvek reprezentuje Item, který je prvním v grupě

@@ -1421,6 +1421,30 @@ namespace Asol.Tools.WorkScheduler.Data
         public event GPropertyChangedHandler<Row> ActiveRowChanged;
 
         /// <summary>
+        /// Obsluha klávesnice: KeyUp
+        /// </summary>
+        /// <param name="activeRow"></param>
+        /// <param name="activeCell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
+        void ITableInternal.CallKeyboardKeyUp(Row activeRow, Cell activeCell, GInteractiveChangeStateArgs e, bool callEvents)
+        {
+            GPropertyEventArgs<Table> args = new GPropertyEventArgs<Table>(this, EventSourceType.InteractiveChanged, e);
+            this.OnKeyboardKeyUp(args);
+            if (callEvents && this.KeyboardKeyUp != null)
+                this.KeyboardKeyUp(this, args);
+        }
+        /// <summary>
+        /// Háček Obsluha klávesnice: KeyUp
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnKeyboardKeyUp(GPropertyEventArgs<Table> args) { }
+        /// <summary>
+        /// Event Obsluha klávesnice: KeyUp
+        /// </summary>
+        public event GPropertyEventHandler<Table> KeyboardKeyUp;
+
+        /// <summary>
         /// Obsluha události Změna aktivní buňky
         /// </summary>
         /// <param name="oldActiveCell"></param>
@@ -4642,6 +4666,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
         void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
+        /// <summary>
+        /// Obsluha klávesnice
+        /// </summary>
+        /// <param name="activeRow"></param>
+        /// <param name="activeCell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
+        void CallKeyboardKeyUp(Row activeRow, Cell activeCell, GInteractiveChangeStateArgs e, bool callEvents);
         /// <summary>
         /// Změna aktivní buňky
         /// </summary>

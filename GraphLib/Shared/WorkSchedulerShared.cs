@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Windows.Forms;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -522,6 +523,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tabulka obsahující ToolTipy pro grafy
         /// </summary>
         public GuiDataTable GraphToolTipTable { get; set; }
+        /// <summary>
+        /// Pole obsahující seznam aktivních kláves v této tabulce.
+        /// Jakmile uživatel stiskne některou klávesu z tohoto seznamu, bude vyvolána událost <see cref="GuiRequest.COMMAND_KeyPress"/>.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public List<GuiKeyAction> ActiveKeys { get; set; }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
@@ -3211,6 +3218,59 @@ namespace Noris.LCS.Base.WorkScheduler
         PrevCenterToNextCenter
     }
     #endregion
+    #region GuiKeyAction : Akce spojená s klávesou
+    /// <summary>
+    /// GuiKeyAction : Akce spojená s klávesou
+    /// </summary>
+    public class GuiKeyAction
+    {
+        /// <summary>
+        /// Definice klávesy, pro kterou je tato akce definovaná
+        /// </summary>
+        public Keys KeyData { get; set; }
+        /// <summary>
+        /// Čas, po který maximálně bude blokován GUI, po dobu běhu této funkce.
+        /// Pokud je zde null, pak běh funkce neblokuje GUI.
+        /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu bude GUI okna blokováno, do doby doběhnutí funkce nebo do doběhnutí tohoto Timeoutu.
+        /// Po dobu blokování může být zobrazena hláška <see cref="BlockGuiMessage"/>.
+        /// </summary>
+        public TimeSpan? BlockGuiTime { get; set; }
+        /// <summary>
+        /// Zpráva zobrazená uživateli po dobu blokování GUI.
+        /// Zpráva může obsahovat více řádků, oddělené CrLf.
+        /// První řádek bude zobrazen výrazně (jako titulek), další řádky standardně.
+        /// Zpráva bude zobrazena pouze tehdy, když <see cref="BlockGuiTime"/> bude obsahovat čas timeoutu, bez něj je message nepoužitá.
+        /// </summary>
+        public string BlockGuiMessage { get; set; }
+        /// <summary>
+        /// Předpis pro akce, které na základě aktivace tohoto prvku má provést vrstva GUI.
+        /// Lze deklarovat více než jednu akci.
+        /// Lze potlačit volání servisní funkce aplikačního serveru : <see cref="GuiActionType.SuppressCallAppHost"/>.
+        /// </summary>
+        public GuiActionType? GuiActions { get; set; }
+        /// <summary>
+        /// Jména akcí, které se mají provést, pokud <see cref="GuiActions"/> bude obsahovat <see cref="GuiActionType.RunInteractions"/>.
+        /// Jde o seznam oddělený středníky nebo čárkami, jehož jednotlivé položky určují názvy tabulek Source a názvy interakcí <see cref="GuiGridInteraction"/>, které se na základě tohoto tlačítka mají provést.
+        /// Název tabulky a název interakce je oddělen dvojtečkou (nebo tečkou);
+        /// Název tabulky musí být FullName (například Data\pages\MainPage\mainPanel\GridCenter);
+        /// interakce jako data jsou totiž definovány v rámci <see cref="GuiGrid.GridProperties"/>, v <see cref="GuiGridProperties.InteractionList"/>.
+        /// Příklad: pokud toto tlačítko Toolbaru obsahuje <see cref="RunInteractionNames"/> = "GridLeft:SelectOperations", pak se provede:
+        /// a) najde se tabulka (<see cref="GuiGrid"/>) s Name = "GridLeft", a
+        /// b) provede se její interakce "SelectOperations".
+        /// <para/>
+        /// Za názvem interakce může být středník a parametr dané interakce. například: GridLeft:ShowColor:1,GridCenter:ShowColor:1
+        /// <para/>
+        /// Pokud bude požadována akce <see cref="GuiActions"/> : <see cref="GuiActionType.RunInteractions"/>, ale <see cref="RunInteractionNames"/>, 
+        /// žádná interakce se neprovede.
+        /// </summary>
+        public string RunInteractionNames { get; set; }
+        /// <summary>
+        /// Zdrojové akce, které se mají po stisknutí tohoto tlačítka provést v rámci interakcí.
+        /// Vyhodnocuje se pouze pokud v <see cref="GuiActions"/> je hodnota <see cref="GuiActionType.RunInteractions"/>.
+        /// </summary>
+        public SourceActionType? RunInteractionSource { get; set; }
+    }
+    #endregion
     #region GuiToolbarPanel : Celý Toolbar
     /// <summary>
     /// GuiToolbarPanel : Celý Toolbar, obsahuje položky v seznamu <see cref="Items"/> 
@@ -4650,6 +4710,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string Command { get; set; }
         /// <summary>
+        /// Data pro požadavek KeyPress
+        /// </summary>
+        public GuiRequestKeyPress KeyPress { get; set; }
+        /// <summary>
         /// Pole záznamů k otevření
         /// </summary>
         public GuiId[] RecordsToOpen { get; set; }
@@ -4691,6 +4755,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiRequestCurrentState CurrentState { get; set; }
         #region Konstanty - commandy
+        /// <summary>
+        /// Uživatel stiskl některou ze zadaných aktivních kláves.
+        /// Objekt <see cref="GuiRequest"/> nese data o klávese a o objektu v property <see cref="GuiRequest.KeyPress"/>.
+        /// </summary>
+        public const string COMMAND_KeyPress = "KeyPress";
         /// <summary>
         /// Otevřít záznamy.
         /// Objekt <see cref="GuiRequest"/> nese záznamy k otevření v property <see cref="GuiRequest.RecordsToOpen"/>.
@@ -4760,6 +4829,29 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string COMMAND_CloseWindow = "CloseWindow";
         #endregion
+    }
+    /// <summary>
+    /// Data pro požadavek KeyPress
+    /// </summary>
+    public class GuiRequestKeyPress
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiRequestKeyPress()
+        { }
+        /// <summary>
+        /// Stisknutá klávesa plus modifikátory (Shift, Control, Alt)
+        /// </summary>
+        public Keys KeyData { get; set; }
+        /// <summary>
+        /// Fullname objektu, kde došlo ke stisknutí klávesy (typicky Tabulka)
+        /// </summary>
+        public string ObjectFullName { get; set; }
+        /// <summary>
+        /// ID objektu, kde došlo ke stisknutí klávesy (typicky ID řádku)
+        /// </summary>
+        public GuiId ObjectGuiId { get; set; }
     }
     /// <summary>
     /// Informace o přesunu prvku (který je přesouván procesem Drag and Drop) na jiné místo: prvek, původní a nové umístění v čase a prostoru
@@ -4941,7 +5033,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Čas v rámci grafu, kam byly řádky umístěny. Zde je čas zaokrouhlený na malé dílky na časové ose.
         /// </summary>
         public DateTime? TargetTimeRound { get; set; }
-
     }
     /// <summary>
     /// Informace o stavu při kliknutí na kontextové menu
@@ -5749,6 +5840,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         MoveToAnotherTable = 0x40,
         /// <summary>
+        /// Prvek lze označit myší (například pro nějakou funkci nebo pro klávesu Delete)
+        /// </summary>
+        CanSelect = 0x80,
+        /// <summary>
         /// Nezobrazovat text v prvku nikdy.
         /// Toto je explicitní hodnota; ale shodné chování bude použito i když nebude specifikována žádná jiná hodnota ShowCaption*.
         /// </summary>
@@ -5815,15 +5910,22 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         DefaultText = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn,
         /// <summary>
-        /// Souhrn příznaků, povolujících Drag and Drop prvku = <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/>
+        /// Souhrn příznaků, povolujících Drag and Drop prvku = 
+        /// <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/>
         /// </summary>
         AnyMove = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable,
+        /// <summary>
+        /// Souhrn příznaků, povolujících Select prvku = 
+        /// <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/> | <see cref="CanSelect"/>
+        /// </summary>
+        AnySelectable = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable | CanSelect,
         /// <summary>
         /// Souhrn příznaků, které smí mít prvek grafu, který je umístěn v Child řádku v tabulce.
         /// </summary>
         AllEnabledForChildRows = 
             ShowCaptionNone | ShowCaptionInMouseOver | ShowCaptionInSelected | ShowCaptionAllways |
-            ShowToolTipNone | ShowToolTipFadeIn | ShowToolTipImmediatelly
+            ShowToolTipNone | ShowToolTipFadeIn | ShowToolTipImmediatelly |
+            CanSelect
     }
     /// <summary>
     /// Režim přepočtu DateTime na osu X.

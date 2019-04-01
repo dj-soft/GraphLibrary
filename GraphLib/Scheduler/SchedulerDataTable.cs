@@ -105,8 +105,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow = Table.CreateFrom(this.GuiGrid.RowTable);
             this.TableRow.CalculateBoundsForAllRows = true;
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
+            this.TableRow.KeyboardKeyUp += TableRow_KeyboardKeyUp;
             this.TableRow.ActiveCellRightClick += TableRow_ActiveCellRightClick;
             this.TableRow.UserData = this;
+            this._PrepareActiveKeys();
             this._PrepareRowDragMove();
             this._PrepareRowSearchChild();
         }
@@ -2471,6 +2473,41 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             public DataGraphItem[] SourceGraphItems { get; private set; }
         }
         #endregion
+        #endregion
+        #region Klávesnice - eventhandler z tabulky, řešení, vyvolání IHost
+        /// <summary>
+        /// Metoda načte a připraví si informace o tom, zda jsou aktivní některé klávesy, a které to jsou
+        /// </summary>
+        private void _PrepareActiveKeys()
+        {
+            this._ActiveKeyDict = new Dictionary<Keys, GuiKeyAction>();
+            var activeKeys = this.GuiGrid.ActiveKeys;
+            if (activeKeys == null || activeKeys.Count == 0) return;
+            this._ActiveKeyDict = activeKeys.GetDictionary(k => k.KeyData, true);
+        }
+        /// <summary>
+        /// Eventhandler události KeyboardKeyUp z tabulky
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TableRow_KeyboardKeyUp(object sender, GPropertyEventArgs<Table> e)
+        {
+            if (!this._ActiveKeyExists || e == null || e.InteractiveArgs == null || e.InteractiveArgs.KeyboardEventArgs == null) return;
+            System.Windows.Forms.Keys keyData = e.InteractiveArgs.KeyboardEventArgs.KeyData;
+            GuiKeyAction guiKeyAction;
+            if (!this._ActiveKeyDict.TryGetValue(keyData, out guiKeyAction)) return;
+
+            GuiId rowId = e.Value.ActiveRow?.RecordGId;
+            this.IMainData.RunKeyAction(guiKeyAction, this, this.TableName, rowId);
+        }
+        /// <summary>
+        /// true pokud máme nějaké aktivní klávesy
+        /// </summary>
+        private bool _ActiveKeyExists { get { return (this._ActiveKeyDict != null && this._ActiveKeyDict.Count > 0); } }
+        /// <summary>
+        /// Dictionary aktivních kláves
+        /// </summary>
+        private Dictionary<Keys, GuiKeyAction> _ActiveKeyDict;
         #endregion
         #region Otevření formuláře záznamu
         /// <summary>

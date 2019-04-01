@@ -17,7 +17,6 @@ using R = Noris.LCS.Base.WorkScheduler.Resources;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
-    #region class MainData : hlavní řídící prvek dat zobrazovaných v controlu <see cref="MainControl"/>.
     /// <summary>
     /// MainData : hlavní řídící prvek dat zobrazovaných v controlu <see cref="MainControl"/>.
     /// </summary>
@@ -294,6 +293,41 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (requestArgs.OriginalCallBackAction != null)
                     requestArgs.OriginalCallBackAction(responseArgs);
             }
+        }
+        #endregion
+        #region Klávesnice
+        /// <summary>
+        /// Provede akci po stisku klávesy
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="table"></param>
+        /// <param name="objectFullName"></param>
+        /// <param name="objectId"></param>
+        private void _RunKeyAction(GuiKeyAction action, MainDataTable table, string objectFullName, GuiId objectId)
+        {
+            if (action == null) return;
+            this._RunKeyActionCallAppHost(action, objectFullName, objectId);
+        }
+        /// <summary>
+        /// Zavolá AppHost pro danou klávesu
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="objectFullName"></param>
+        /// <param name="objectId"></param>
+        private void _RunKeyActionCallAppHost(GuiKeyAction action, string objectFullName, GuiId objectId)
+        {
+            if (action.GuiActions.HasValue && action.GuiActions.Value.HasAnyFlag(GuiActionType.SuppressCallAppHost)) return;
+
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_KeyPress;
+            request.CurrentState = this._CreateGuiCurrentState();
+            request.KeyPress = new GuiRequestKeyPress()
+            {
+                KeyData = action.KeyData,
+                ObjectFullName = objectFullName,
+                ObjectGuiId = objectId
+            };
+            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, action.BlockGuiTime, action.BlockGuiMessage);
         }
         #endregion
         #region Toolbar
@@ -2919,6 +2953,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         TimeRange IMainDataInternal.SynchronizedTime { get { return this.SynchronizedTime; } set { this.SynchronizedTime = value; } }
         /// <summary>
+        /// Provede akci po stisku klávesy
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="table"></param>
+        /// <param name="objectFullName"></param>
+        /// <param name="objectId"></param>
+        void IMainDataInternal.RunKeyAction(GuiKeyAction action, MainDataTable table, string objectFullName, GuiId objectId) { this._RunKeyAction(action, table, objectFullName, objectId); }
+        /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>
         /// <param name="request"></param>
@@ -2970,6 +3012,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         void IMainDataInternal.ProcessResponse(GuiResponse guiResponse) { this._ProcessResponse(guiResponse); }
         #endregion
     }
+    #region interface IMainDataInternal
     /// <summary>
     /// Interface pro zpřístupnění vnitřních metod třídy <see cref="MainData"/>
     /// </summary>
@@ -2983,6 +3026,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Aktuální synchronizovaný časový interval
         /// </summary>
         TimeRange SynchronizedTime { get; set; }
+        /// <summary>
+        /// Provede akci po stisku klávesy
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="table"></param>
+        /// <param name="objectFullName"></param>
+        /// <param name="objectId"></param>
+        void RunKeyAction(GuiKeyAction action, MainDataTable table, string objectFullName, GuiId objectId);
         /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>
