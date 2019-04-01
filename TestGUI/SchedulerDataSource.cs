@@ -1077,6 +1077,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 TargetAction = TargetActionType.ActivateGraphSkin
             });
 
+            // Chci zavolat, když uživatel zmáčkne Delete:
+            gridCenterWorkplace.ActiveKeys = new List<GuiKeyAction>();
+            gridCenterWorkplace.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
+
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
                 this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC);
@@ -1729,6 +1733,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 switch (requestArgs.Request.Command)
                 {
+                    case GuiRequest.COMMAND_KeyPress:
+                        this.DataChanged = true;
+                        time = this.Rand.Next(100, 350);
+                        System.Threading.Thread.Sleep(time);
+                        responseArgs.GuiResponse = new GuiResponse();
+                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
+                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
+                        {
+                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
+                        };
+                        break;
+
                     case GuiRequest.COMMAND_GraphItemMove:
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
@@ -2343,11 +2359,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Time = this.Time
             };
 
-            // Aktivita se liší pro Pracoviště a pro Osobu:
-            if (this.PlanUnitC != null && this.PlanUnitC.PlanUnitType == PlanUnitType.Workplace)
-                guiGraphItem.BehaviorMode |=
-                    GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
-                    GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
+            // Aktivita (režim chování BehaviorMode) se liší pro Pracoviště a pro Osobu:
+            if (this.PlanUnitC != null)
+            {
+                switch (this.PlanUnitC.PlanUnitType)
+                {
+                    case PlanUnitType.Workplace:
+                        guiGraphItem.BehaviorMode |=
+                            GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
+                            GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
+                        break;
+                    case PlanUnitType.Person:
+                        guiGraphItem.BehaviorMode |=
+                            GraphItemBehaviorMode.CanSelect;
+                        break;
+                }
+            }
 
             // Fixed:
             if (this.Operation != null && this.Operation.IsFixed)
