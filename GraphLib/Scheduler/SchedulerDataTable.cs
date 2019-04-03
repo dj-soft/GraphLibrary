@@ -2876,10 +2876,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (!this.HasMainData) return;
 
+            // Hodnoty v args sem přichází již připravené z metody _TableRowDragMove(), tedy obsahují údaje o schváleném cíli.
+            // Anebo pokud vizuální cíl není povolen (dle údajů v this.DragMoveRows), pak nemá cenu volat AppHost, protože o daný cíl nemá zájem:
+            if (!args.TargetEnabled) return;
+
             // Připravíme data o aktuálním stavu a o pohybu, a pak zavoláme hostitele IHost a předáme mu všechna ta data:
 
             // Vyhledat tabulku - řádek - graf - prvek:
-            DragMoveRowsCurrentDataInfo dataInfo = DragMoveRowsCurrentDataInfo.CreateForTarget(args.TargetItem, args.MouseCurrentAbsolutePoint, true);
+            DragMoveRowsCurrentDataInfo dataInfo = DragMoveRowsCurrentDataInfo.CreateForTarget(args.ActiveItem, args.MouseCurrentAbsolutePoint, true);
 
             // Poskládat data pro volání IHost:
             GuiRequestRowDragMove rowDragMove = new GuiRequestRowDragMove();
@@ -3300,7 +3304,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 target.FullTableName = fullTable;
                 target.IsTargetOnRowRoot = (valueRow.Length == 0 || valueRow.Contains("R") || valueRow.Contains("A"));
                 target.IsTargetOnRowChild = (valueRow.Length == 0 || valueRow.Contains("C") || valueRow.Contains("A"));
-                target.TargetObjectCell = (valueTo.Length == 0 || valueTo.Contains("C"));
+                target.TargetObjectCell = (valueTo.Contains("C") || (valueTo.Length == 0 && classDict.Count == 0));
                 target.TargetObjectGraph = (valueTo.Contains("G"));
                 target.TargetObjectGraphItemAny = (valueTo.Contains("I"));
                 target.TargetObjectGraphItemClassDict = classDict;
