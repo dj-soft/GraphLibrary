@@ -1143,7 +1143,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             gridRight.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragSelectedThenActiveRow;
             // gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItem;
-            gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItemClassPrefix + "1190";
+            gridRight.GridProperties.RowDragMoveToTarget = 
+                GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItemClassPrefix + "1190";
 
             gridRight.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridRight.GraphProperties.BottomMarginPixel = 2;
