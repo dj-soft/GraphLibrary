@@ -678,6 +678,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             productOperation.PlanTimeOperation(ref recordId, ref flowTime, Direction.Positive, workplace, person);
         }
         #endregion
+        #region Malá podpora editace pro testy Response
+        protected void DataDeleteItems(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Smažeme z GUI cokoliv, co je vybrané:
+            if (guiRequest == null || guiRequest.CurrentState == null || guiRequest.CurrentState.SelectedGraphItems == null) return;
+            List<GuiGridItemId> removedList = new List<GuiGridItemId>();
+
+            foreach (var item in guiRequest.CurrentState.SelectedGraphItems)
+            {
+                removedList.Add(item);
+            }
+
+            guiResponse.RemoveItems = removedList.ToArray();
+
+            this.DataChanged = true;
+        }
+        #endregion
         #endregion
         #region Generátor náhodných dat
         /// <summary>
@@ -1077,10 +1094,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 TargetAction = TargetActionType.ActivateGraphSkin
             });
 
-            // Chci zavolat, když uživatel zmáčkne Delete:
-            gridCenterWorkplace.ActiveKeys = new List<GuiKeyAction>();
-            gridCenterWorkplace.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
-
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
                 this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC);
@@ -1088,6 +1101,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Vztahy prvků (Link):
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
                 this.AddGraphLinkToGrid(gridCenterWorkplace.RowTable, productOrder);
+
+            // Chci zavolat, když uživatel zmáčkne Delete:
+            gridCenterWorkplace.ActiveKeys = new List<GuiKeyAction>();
+            gridCenterWorkplace.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
 
             this.GridCenterWorkplace = gridCenterWorkplace;
             this.MainPage.MainPanel.Grids.Add(gridCenterWorkplace);
@@ -1124,6 +1141,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
                 this.AddPlanUnitCToGridCenter(gridCenterPersons.RowTable, planUnitC);
+
+            // Chci zavolat, když uživatel zmáčkne Delete:
+            gridCenterPersons.ActiveKeys = new List<GuiKeyAction>();
+            gridCenterPersons.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
 
             this.GridCenterPersons = gridCenterPersons;
             this.MainPage.MainPanel.Grids.Add(gridCenterPersons);
@@ -1730,6 +1751,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void AppHostExecCommand(AppHostRequestArgs requestArgs)
         {
             AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
+            responseArgs.GuiResponse = new GuiResponse();
             int time;
             GuiTimeRange timeRange = requestArgs.Request?.CurrentState?.TimeAxisValue;
             if (requestArgs != null)
@@ -1737,10 +1759,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 switch (requestArgs.Request.Command)
                 {
                     case GuiRequest.COMMAND_KeyPress:
-                        this.DataChanged = true;
+                        if (requestArgs.Request.KeyPress != null && requestArgs.Request.KeyPress.KeyData == Keys.Delete)
+                            this.DataDeleteItems(requestArgs.Request, responseArgs.GuiResponse);
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse = new GuiResponse();
                         responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
                         responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
                         {
@@ -1752,7 +1774,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse = new GuiResponse();
                         responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
                         responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
                         {
@@ -1764,7 +1785,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse = new GuiResponse();
                         responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
                         responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
                         {
@@ -1778,7 +1798,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse = new GuiResponse();
                         responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
                         responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
                         {
@@ -1787,7 +1806,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         break;
 
                     case GuiRequest.COMMAND_ToolbarClick:
-                        responseArgs.GuiResponse = new GuiResponse();
                         switch (requestArgs.Request.ToolbarItem.Name)
                         {
                             case "TlbSubDay":
@@ -1834,11 +1852,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                             // Chci si otestovat malou prodlevu před zobrazením dialogu:
                             time = this.Rand.Next(100, 750);
                             System.Threading.Thread.Sleep(time);
-                            responseArgs.GuiResponse = new GuiResponse()
-                            {
-                                Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, GuiDialog.DialogIconQuestion),
-                                CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze.\r\nJakmile budou uložena, dostanete od nás spěšnou sovu." }
-                            };
+                            responseArgs.GuiResponse.Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, GuiDialog.DialogIconQuestion);
+                            responseArgs.GuiResponse.CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze.\r\nJakmile budou uložena, dostanete od nás spěšnou sovu." };
                         }
                         break;
 
@@ -1851,10 +1866,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         else
                             responseArgs.Result = AppHostActionResult.Failure;
 
-                        responseArgs.GuiResponse = new GuiResponse()
-                        {
-                            Dialog = GetDialog("Došlo k chybě. Přejete si skončit i bez uložení dat?", GuiDialogButtons.YesNo)
-                        };
+                        responseArgs.GuiResponse.Dialog = GetDialog("Došlo k chybě. Přejete si skončit i bez uložení dat?", GuiDialogButtons.YesNo);
                         break;
 
                 }
