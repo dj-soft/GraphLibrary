@@ -327,7 +327,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 ObjectFullName = objectFullName,
                 ObjectGuiId = objectId
             };
-            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, action.BlockGuiTime, action.BlockGuiMessage);
+            this._CallAppHostFunction(request, this._RunKeyActionApplicationResponse, action.BlockGuiTime, action.BlockGuiMessage);
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost RunKeyAction
+        /// </summary>
+        /// <param name="response"></param>
+        private void _RunKeyActionApplicationResponse(AppHostResponseArgs response)
+        {
+            this._ProcessResponse(response.GuiResponse);
         }
         #endregion
         #region Toolbar
@@ -2549,6 +2557,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, refreshGraphDict);
             this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
             this._ProcessResponseRefreshParentChilds(refreshGraphDict.Values);
+            this._ProcessResponseRefreshControl(refreshGraphDict.Values);
         }
         /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.Common"/>
@@ -2688,6 +2697,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="refreshGraphs"></param>
         private void _ProcessResponseRefreshParentChilds(IEnumerable<GTimeGraph> refreshGraphs)
         {
+            this.DataTables.ForEachItem(t => t.PrepareDynamicChilds(true));
+
+            /*   Následující kód je slabý, protože provede PrepareDynamicChilds jen pro tabulky, kde došlo ke změně.
+                 Ale změna v tabulce "A" se může promítat do Child řádků tabulky "B", takže raději provedu PrepareDynamicChilds pro všechny tabulky:
+                
             // Z objektů grafů, kde došlo ke změně, s pomocí GTimeGraph.UserData, což je reference na MainDataTable, získám distinct seznam tabulek:
             MainDataTable[] tables = refreshGraphs
                 .Where(g => g.UserData != null && g.UserData is MainDataTable)
@@ -2698,6 +2712,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Pro každou z tabulek zavolám metodu pro vyhodnocení jejich Parent - Child:
             tables.ForEachItem(t => t.PrepareDynamicChilds());
+            */
+        }
+        /// <summary>
+        /// Provede fyzický Refresh celého Controlu
+        /// </summary>
+        /// <param name="refreshGraphs"></param>
+        private void _ProcessResponseRefreshControl(IEnumerable<GTimeGraph> refreshGraphs)
+        {
+            this._MainControl.Refresh();
         }
         #endregion
         #region Zpracování dialogu

@@ -25,6 +25,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Inicializace, reference na GGrid, IGridMember
         internal GTable(GGrid grid, Table table)
         {
+            this._ValidityLock = new object();
             this._Grid = grid;
             this._DataTable = table;
             IGTableMember igtm = table as IGTableMember;
@@ -470,63 +471,88 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Pole všech řádků této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
-        public Row[] Rows { get { this._RowsCheck(); return this._Rows.ToArray(); } }
+        public Row[] Rows { get { return this._GetRows().ToArray(); } }
         /// <summary>
-        /// Pole viditelných řádků této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
+        /// Ověří a zajistí připravenost pole Rows, pole vrátí.
         /// </summary>
-        public Row[] VisibleRows { get { this._VisibleRowsCheck(); return this._VisibleRows.ToArray(); } }
-        /// <summary>
-        /// Ověří a zajistí připravenost pole Rows
-        /// </summary>
-        private void _RowsCheck()
+        private List<Row> _GetRows()
         {
             List<Row> rows = this._Rows;
             bool heightValid = this._RowListHeightValid;
-            if (rows == null)
+            if (rows == null || !heightValid)
             {
-                rows = this.DataTable.RowsSorted.ToList();           // Získat zobrazitelné řádky, setříděné podle zvoleného třídícího sloupce
-                this._Rows = rows;
-                this._IsTreeView = this.DataTable.IsTreeViewTable;   // true = z běžné tabulky se stane TreeView
-                heightValid = false;
-            }
-            if (!heightValid)
-            {
-                SequenceLayout.SequenceLayoutCalculate(rows.Select(r => r.Control));     // Napočítat jejich ISequenceLayout.Begin a .End
-                this._RowListHeightValid = true;
-                this._VisibleRows = null;
-            }
-        }
-        /// <summary>
-        /// Ověří a zajistí připravenost pole VisibleRows.
-        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice do row.RowHeader.VisualRange, neviditelné mají RowHeader.VisualRange == null.
-        /// </summary>
-        private void _VisibleRowsCheck()
-        {
-            if (this._VisibleRows != null) return;
-
-            // Připravím data, které budeme potřebovat pro každý řádek:
-            Rectangle rowAreaBounds = this.RowAreaBounds;
-            Rectangle rowDataBounds = new Rectangle(new Point(0, 0), rowAreaBounds.Size);          // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
-            bool calcBoundsAll = this.DataTable.CalculateBoundsForAllRows;
-
-            List<Row> visibleRows = new List<Row>();
-            GridPosition rowsPositions = this.RowsPositions;
-            Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
-            foreach (Row row in this.Rows)
-            {
-                GRow gRow = row.Control;
-                gRow.VisualRange = null;
-                ISequenceLayout isl = gRow as ISequenceLayout;
-                bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
-                if (isRowVisible || calcBoundsAll)
+                lock (this._ValidityLock)
                 {
-                    gRow.VisualRange = rowsPositions.GetVisualPosition(isl);
-                    this.PrepareRowDataBounds(row, false, rowAreaBounds, rowDataBounds);           // Připravit Bounds pro Row i jeho Cell, ale nedávat do ChilList
-                    if (isRowVisible)
-                        visibleRows.Add(row);
+                    rows = this._Rows;
+                    if (rows == null)
+                    {
+                        rows = this.DataTable.RowsSorted.ToList();           // Získat zobrazitelné řádky, setříděné podle zvoleného třídícího sloupce
+                        this._Rows = rows;
+                        this._IsTreeView = this.DataTable.IsTreeViewTable;   // true = z běžné tabulky se stane TreeView
+                        heightValid = false;
+                    }
+                    if (!heightValid)
+                    {
+                        SequenceLayout.SequenceLayoutCalculate(rows.Select(r => r.Control)); // Napočítat jejich ISequenceLayout.Begin a ISequenceLayout.End
+                        this._RowListHeightValid = true;
+                        this._VisibleRows = null;
+                    }
                 }
             }
-            this._VisibleRows = visibleRows;
+            return rows;
+        }
+        /// <summary>
+        /// Pole viditelných řádků této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
+        /// </summary>
+        public Row[] VisibleRows { get { return this._GetVisibleRows().ToArray(); } }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole VisibleRows, připravené pole vrátí.
+        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice do row.RowHeader.VisualRange, neviditelné mají RowHeader.VisualRange == null.
+        /// </summary>
+        private List<Row> _GetVisibleRows()
+        {
+            List<Row> visibleRows = this._VisibleRows;
+            if (visibleRows == null)
+            {
+                lock (this._ValidityLock)
+                {
+                    var rows = this._GetRows();
+                    visibleRows = new List<Row>();
+
+                    // Připravím data, které budeme potřebovat pro každý řádek:
+                    Rectangle rowAreaBounds = this.RowAreaBounds;
+                    Rectangle rowDataBounds = new Rectangle(new Point(0, 0), rowAreaBounds.Size);  // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
+                    bool calcBoundsAll = this.DataTable.CalculateBoundsForAllRows;
+
+                    GridPosition rowsPositions = this.RowsPositions;
+                    Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                  // Rozmezí datových pixelů, které jsou viditelné
+                    foreach (Row row in rows)
+                    {
+                        GRow gRow = row.Control;
+                        gRow.VisualRange = null;
+                        ISequenceLayout isl = gRow as ISequenceLayout;
+                        bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);   // Tento řádek je vidět?
+                        if (isRowVisible || calcBoundsAll)
+                        {
+                            gRow.VisualRange = rowsPositions.GetVisualPosition(isl);
+                            this.PrepareRowDataBounds(row, false, rowAreaBounds, rowDataBounds);   // Připravit Bounds pro Row i jeho Cell, ale nedávat do ChilList
+                            if (isRowVisible)
+                                visibleRows.Add(row);
+                        }
+                    }
+                    this._VisibleRows = visibleRows;
+                }
+            }
+            return visibleRows;
+        }
+        /// <summary>
+        /// Ověří a zajistí platnost hodnoty <see cref="IsTreeView"/>, hodnotu vrátí.
+        /// </summary>
+        /// <returns></returns>
+        private bool _GetIsTreeView()
+        {
+            this._GetRows();
+            return this._IsTreeView;
         }
         /// <summary>
         /// Metoda zajistí změnu výšky daného řádku, a návazné změny v interních strukturách plus překreslení
@@ -562,6 +588,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
         /// </summary>
         private List<Row> _VisibleRows;
+        /// <summary>
+        /// Uložená hodnota <see cref="IsTreeView"/>
+        /// </summary>
+        private bool _IsTreeView;
+        /// <summary>
+        /// Zámek pro validaci/invalidaci
+        /// </summary>
+        private object _ValidityLock;
         #endregion
         #region Pozicování řádků svislé - pozicioner pro řádky, svislý scrollbar vpravo
         /// <summary>
@@ -1085,6 +1119,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
+        /// Zajistí invalidaci všech dat tabulky.
+        /// </summary>
+        public void Invalidate()
+        {
+            this.Invalidate(InvalidateItem.All);
+        }
+        /// <summary>
         /// Zajistí invalidaci položek po určité akci, která právě skončila.
         /// Volající v podstatě specifikuje, co změnil, a pošle tuto žádost s přiměřeným parametrem.
         /// Tabulka sama nejlíp ví, kam se daný údaj promítá, a co bude potřebovat přepočítat.
@@ -1096,116 +1137,119 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (items.HasFlag(InvalidateItem.OnlyForGrid)) return;
 
             bool callGrid = false;
+            lock (this._ValidityLock)
+            {
 
-            if ((items & (InvalidateItem.TablePosition)) != 0)
-            {   // Po změně umístění tabulky (nejde o změnu vnitřní velikosti) invalidujeme pouze tabulkový splitter:
-                this._TableOuterLayoutValid = false;
-            }
+                if ((items & (InvalidateItem.TablePosition)) != 0)
+                {   // Po změně umístění tabulky (nejde o změnu vnitřní velikosti) invalidujeme pouze tabulkový splitter:
+                    this._TableOuterLayoutValid = false;
+                }
 
-            if ((items & (InvalidateItem.TableSize)) != 0)
-            {   // Po změně vnitřních rozměrů tabulky invalidujeme všechny viditelné prvky i tabulkový splitter:
-                this._TableInnerLayoutValid = false;
-                this._TableOuterLayoutValid = false;
-                this._VisibleColumns = null;
-                this._VisibleRows = null;
-                this._RowsScrollBarDataValid = false;
-                this._HeaderSplitterDataValid = false;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-            }
+                if ((items & (InvalidateItem.TableSize)) != 0)
+                {   // Po změně vnitřních rozměrů tabulky invalidujeme všechny viditelné prvky i tabulkový splitter:
+                    this._TableInnerLayoutValid = false;
+                    this._TableOuterLayoutValid = false;
+                    this._VisibleColumns = null;
+                    this._VisibleRows = null;
+                    this._RowsScrollBarDataValid = false;
+                    this._HeaderSplitterDataValid = false;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                }
 
-            if ((items & (InvalidateItem.TableTagFilter)) != 0)
-            {   // Po změně v TagFilteru v tabulce invalidujeme i rozložení tabulky:
-                this._TagFilterExists = null;
-                this._TagFilterHeight = null;
-                this._TableInnerLayoutValid = false;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-            }
+                if ((items & (InvalidateItem.TableTagFilter)) != 0)
+                {   // Po změně v TagFilteru v tabulce invalidujeme i rozložení tabulky:
+                    this._TagFilterExists = null;
+                    this._TagFilterHeight = null;
+                    this._TableInnerLayoutValid = false;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                }
 
-            if ((items & (InvalidateItem.TableHeight)) != 0)
-            {   // Po změně výšky tabulky invalidujeme vnitřní prvky, ale ne viditelné řádky:
-                this._TableInnerLayoutValid = false;
-                this._VisibleColumns = null;
-                this._VisibleRows = null;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-            }
+                if ((items & (InvalidateItem.TableHeight)) != 0)
+                {   // Po změně výšky tabulky invalidujeme vnitřní prvky, ale ne viditelné řádky:
+                    this._TableInnerLayoutValid = false;
+                    this._VisibleColumns = null;
+                    this._VisibleRows = null;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                }
 
-            if ((items & (InvalidateItem.RowHeader)) != 0)
-            {   // Po změně šířky RowHeader pozice (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (RowHeader, ColumnHeader):
-                this._TableInnerLayoutValid = false;
-                this._VisibleColumns = null;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-                callGrid = true;
-            }
-
-            if ((items & (InvalidateItem.ColumnHeader)) != 0)
-            {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (ColumnHeader):
-                this._TableInnerLayoutValid = false;
-                this._VisibleColumns = null;
-                this._VisibleRows = null;
-                this._RowsScrollBarDataValid = false;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-                // Změna RowHeader by mohla zajímat i ostatní tabulky:
                 if ((items & (InvalidateItem.RowHeader)) != 0)
+                {   // Po změně šířky RowHeader pozice (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (RowHeader, ColumnHeader):
+                    this._TableInnerLayoutValid = false;
+                    this._VisibleColumns = null;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
                     callGrid = true;
-            }
+                }
 
-            if ((items & (InvalidateItem.ColumnsCount | InvalidateItem.ColumnOrder)) != 0)
-            {   // Po změně počtu nebo pořadí sloupců: zrušíme pole sloupců, vygeneruje se znovu:
-                this._Columns = null;
-                this._VisibleColumns = null;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-                callGrid = true;
-            }
+                if ((items & (InvalidateItem.ColumnHeader)) != 0)
+                {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (ColumnHeader):
+                    this._TableInnerLayoutValid = false;
+                    this._VisibleColumns = null;
+                    this._VisibleRows = null;
+                    this._RowsScrollBarDataValid = false;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                    // Změna RowHeader by mohla zajímat i ostatní tabulky:
+                    if ((items & (InvalidateItem.RowHeader)) != 0)
+                        callGrid = true;
+                }
 
-            if ((items & (InvalidateItem.ColumnWidth | InvalidateItem.ColumnScroll)) != 0)
-            {   // Po změně šířky sloupce nebo scrollu sloupců: zrušíme pole viditelných sloupců, vygeneruje se znovu:
-                this._ColumnListWidthValid = false;
-                this._VisibleColumns = null;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-                callGrid = true;
-            }
+                if ((items & (InvalidateItem.ColumnsCount | InvalidateItem.ColumnOrder)) != 0)
+                {   // Po změně počtu nebo pořadí sloupců: zrušíme pole sloupců, vygeneruje se znovu:
+                    this._Columns = null;
+                    this._VisibleColumns = null;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                    callGrid = true;
+                }
 
-            if ((items & (InvalidateItem.RowsCount | InvalidateItem.RowOrder)) != 0)
-            {   // Po změně počtu nebo pořadí řádků: zrušíme pole řádků, vygeneruje se znovu:
-                this._Rows = null;
-                this._RowListHeightValid = false;
-                this._VisibleRows = null;
-                this._RowsScrollBarDataValid = false;
-                this._ChildArrayValid = false;
-                this._TableInnerLayoutValid = false;                 // Přepočítáme vnitřní prvky, protože se může měnit viditelnost Scrollbaru od řádků...
-                items |= InvalidateItem.Paint;
-            }
+                if ((items & (InvalidateItem.ColumnWidth | InvalidateItem.ColumnScroll)) != 0)
+                {   // Po změně šířky sloupce nebo scrollu sloupců: zrušíme pole viditelných sloupců, vygeneruje se znovu:
+                    this._ColumnListWidthValid = false;
+                    this._VisibleColumns = null;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                    callGrid = true;
+                }
 
-            if ((items & (InvalidateItem.RowHeight)) != 0)
-            {   // Po změně výšky řádku: zrušíme příznak platnosti výšky v řádcích, a zrušíme pole viditelných řádků, vygeneruje se znovu:
-                this._RowListHeightValid = false;
-                this._VisibleRows = null;
-                this._RowsScrollBarDataValid = false;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-            }
-            if ((items & (InvalidateItem.RowScroll)) != 0)
-            {   // Po scrollu řádků: zrušíme pole viditelných řádků, vygeneruje se znovu:
-                this._VisibleRows = null;
-                this._RowsScrollBarDataValid = false;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-            }
-            if ((items & (InvalidateItem.TableItems)) != 0)
-            {   // Po změně obsahu tabulky: zrušíme platnost pro pole ChildArray, vygeneruje se znovu:
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.Paint;
-            }
-            if ((items & (InvalidateItem.Paint)) != 0)
-            {   // Požadavek na kreslení tabulky:
-                this.Repaint();
+                if ((items & (InvalidateItem.RowsCount | InvalidateItem.RowOrder)) != 0)
+                {   // Po změně počtu nebo pořadí řádků: zrušíme pole řádků, vygeneruje se znovu:
+                    this._Rows = null;
+                    this._RowListHeightValid = false;
+                    this._VisibleRows = null;
+                    this._RowsScrollBarDataValid = false;
+                    this._ChildArrayValid = false;
+                    this._TableInnerLayoutValid = false;                 // Přepočítáme vnitřní prvky, protože se může měnit viditelnost Scrollbaru od řádků...
+                    items |= InvalidateItem.Paint;
+                }
+
+                if ((items & (InvalidateItem.RowHeight)) != 0)
+                {   // Po změně výšky řádku: zrušíme příznak platnosti výšky v řádcích, a zrušíme pole viditelných řádků, vygeneruje se znovu:
+                    this._RowListHeightValid = false;
+                    this._VisibleRows = null;
+                    this._RowsScrollBarDataValid = false;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                }
+                if ((items & (InvalidateItem.RowScroll)) != 0)
+                {   // Po scrollu řádků: zrušíme pole viditelných řádků, vygeneruje se znovu:
+                    this._VisibleRows = null;
+                    this._RowsScrollBarDataValid = false;
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                }
+                if ((items & (InvalidateItem.TableItems)) != 0)
+                {   // Po změně obsahu tabulky: zrušíme platnost pro pole ChildArray, vygeneruje se znovu:
+                    this._ChildArrayValid = false;
+                    items |= InvalidateItem.Paint;
+                }
+                if ((items & (InvalidateItem.Paint)) != 0)
+                {   // Požadavek na kreslení tabulky:
+                    this.Repaint();
+                }
             }
 
             // Předáme to šéfovi, pokud ho máme, a pokud to pro něj může být zajímavé, a pokud událost není určena jen pro naše (OnlyForTable) potřeby:
@@ -1803,7 +1847,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud this tabulka může zobrazovat stromovou strukturu prvků
         /// </summary>
-        internal bool IsTreeView { get { this._RowsCheck(); return this._IsTreeView; } } private bool _IsTreeView;
+        internal bool IsTreeView { get { return this._GetIsTreeView(); } } 
         /// <summary>
         /// Metoda vykreslí všechny prvky související s TreeView.
         /// Do argumentu vloží souřadnici prostoru, který má být interaktivní - zde je vykreslena ikona pro Expand/Collapse nodu daného řádku.

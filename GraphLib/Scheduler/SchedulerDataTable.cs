@@ -1237,9 +1237,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času.
         /// Volá se z metod, které změní obsah grafů v této tabulce, po provedení všech změn.
         /// </summary>
-        public void PrepareDynamicChilds()
+        public void PrepareDynamicChilds(bool invalidateTable = false)
         {
             this.PrepareDynamicChilds(this.SynchronizedTime, true);
+            if (invalidateTable)
+                this.GTableRow.Invalidate();
         }
         /// <summary>
         /// Metoda připraví Childs řádky pro řádky Root, podle zadaného viditelného času

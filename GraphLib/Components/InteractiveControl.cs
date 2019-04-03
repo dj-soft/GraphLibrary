@@ -38,6 +38,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Init, Dispose, ItemsList
         private void Init()
         {
+            this.InteractiveLock = new object();
             this._ItemsList = new List<IInteractiveItem>();
             this.SetStyle(ControlStyles.Selectable | ControlStyles.UserMouse | ControlStyles.ResizeRedraw, true);
             this._StopWatchInit();
@@ -500,20 +501,36 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zajistí provedení téže akce, jako by myš vstoupila na control: Enter + Move, podle aktuálního stavu myši
         /// </summary>
-        private void _OnMouseEnterMove()
+        protected void OnMouseEnterMove(bool runDraw = false)
         {
             // Do této metody vstupuje řízení za různého stavu controlu, může být v podstatě i po skončení života controlu.
             // V takové situaci ale nechceme nic dělat:
             if (this.Disposing || this.IsDisposed) return;
 
-            this._OnMouseEnter(new EventArgs());
-
+            EventArgs arg1 = new EventArgs();
+            MouseEventArgs arg2 = this.CreateMouseEventArgs();
+            if (!runDraw)
+                this.InteractiveAction(GInteractiveChangeState.MouseEnter, () => this._OnMouseEnter(arg1), () => this._OnMouseMove(arg2), null);
+            else
+                this.InteractiveAction(GInteractiveChangeState.MouseEnter, () => this._OnMouseEnter(arg1), () => this._OnMouseMove(arg2), () => this._InteractiveDrawRun());
+        }
+        /// <summary>
+        /// Metoda vrátí argument typu <see cref="MouseEventArgs"/> pro this control, a aktuální stav myši, a explicitně dodaný počet Clicks a hodnotu Delta.
+        /// </summary>
+        /// <param name="clicks"></param>
+        /// <param name="delta"></param>
+        /// <returns></returns>
+        protected MouseEventArgs CreateMouseEventArgs(int clicks = 0, int delta = 0)
+        {
             MouseButtons mouseButtons = Control.MouseButtons;        // Stisknutá tlačítka myši
             Point mousePoint = Control.MousePosition;                // Souřadnice myši v koordinátech Screenu
             mousePoint = this.PointToClient(mousePoint);             //  -""- v koordinátech Controlu
-            MouseEventArgs mouseEventArgs = new MouseEventArgs(mouseButtons, 0, mousePoint.X, mousePoint.Y, 0);
-            this._OnMouseMove(mouseEventArgs);
+            return new MouseEventArgs(mouseButtons, clicks, mousePoint.X, mousePoint.Y, delta);
         }
+        /// <summary>
+        /// Myš vstoupila na control
+        /// </summary>
+        /// <param name="e"></param>
         private void _OnMouseEnter(EventArgs e)
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
@@ -529,6 +546,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Myš se pohybuje
+        /// </summary>
+        /// <param name="e"></param>
         private void _OnMouseMove(MouseEventArgs e)
         {
             using (ITraceScope scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
@@ -2721,7 +2742,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.BlockedGuiCursor = null;
                         this.BlockedGuiMsgTextInfos = null;
                         this.BlockedGuiMsgBackgroundBounds = null;
-                        this._OnMouseEnterMove();
+                        this.OnMouseEnterMove();
                         if (hasBlockedGuiMessage)
                             this.Refresh();
                         this.BlockGuiAnimatorRunning = false;
@@ -3021,28 +3042,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="final">Akce finální, volá se i po chybě v akcích 1 a 2.</param>
         protected void InteractiveAction(GInteractiveChangeState changeState, Action action1, Action action2, Action final = null)
         {
-            try
+            lock (this.InteractiveLock)
             {
-                this._FlowToolTipData = null;
-                bool isProcessing = this.InteractiveProcessing;
-                bool isBlocked = this.IsGUIBlocked;
-                using (new InteractiveProcessingScope(this, changeState))
+                try
                 {
-                    if (!isBlocked && !isProcessing)
-                    {   // Akce 1 se provádí jen na neblokovaném GUI, které aktuálně nezpracovává jinou akci:
-                        if (action1 != null) action1();
+                    this._FlowToolTipData = null;
+                    bool isProcessing = this.InteractiveProcessing;
+                    bool isBlocked = this.IsGUIBlocked;
+                    using (new InteractiveProcessingScope(this, changeState))
+                    {
+                        if (!isBlocked && !isProcessing)
+                        {   // Akce 1 se provádí jen na neblokovaném GUI, které aktuálně nezpracovává jinou akci:
+                            if (action1 != null) action1();
+                        }
+                        if (action2 != null) action2();
                     }
-                    if (action2 != null) action2();
                 }
-            }
-            catch (Exception exc)
-            {
-                App.Trace.Exception(exc, "InteractiveAction error; changeState = " + changeState.ToString());
-            }
-            finally
-            {
-                if (final != null)
-                    final();
+                catch (Exception exc)
+                {
+                    App.Trace.Exception(exc, "InteractiveAction error; changeState = " + changeState.ToString());
+                }
+                finally
+                {
+                    if (final != null)
+                        final();
+                }
             }
         }
         /// <summary>
@@ -3088,6 +3112,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._Control = null;
             }
         }
+        /// <summary>
+        /// Objekt sloužící jako zámek pro interaktivní procesy
+        /// </summary>
+        protected object InteractiveLock;
         #endregion
         #region Implementace IInteractiveParent : on totiž GInteractiveControl je umístěn jako Parent ve svých IInteractiveItem
         UInt32 IInteractiveParent.Id { get { return 0; } }
