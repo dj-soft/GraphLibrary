@@ -1120,10 +1120,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Invalidace, resety, refreshe
         /// <summary>
         /// Zajistí invalidaci všech dat tabulky.
+        /// Neřeší invalidaci nadřízeného Gridu.
         /// </summary>
         public void Invalidate()
         {
-            this.Invalidate(InvalidateItem.All);
+            this.Invalidate(InvalidateItem.Table);
         }
         /// <summary>
         /// Zajistí invalidaci položek po určité akci, která právě skončila.

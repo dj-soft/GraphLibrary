@@ -62,7 +62,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="guiGraph"></param>
         private void _Init(GuiGraph guiGraph)
-        { 
+        {
+            this._ValidityLock = new object();
             this._ItemDict = new Dictionary<int, ITimeGraphItem>();
             this._GuiGraph = (guiGraph != null ? guiGraph.GetDefinitionData() : new GuiGraph());
             this.Is.SelectParent = true;
@@ -76,6 +77,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Zdroj dat, nepovinný
         /// </summary>
         private ITimeGraphDataSource _DataSource;
+        /// <summary>
+        /// Zámek pro validaci/invalidaci
+        /// </summary>
+        private object _ValidityLock;
         #endregion
         #region Parametry tohoto grafu (GraphParameters): lokální nebo z parenta nebo defaultní
         /// <summary>
@@ -221,7 +226,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ignoreDuplicity">Ignorovat duplicity</param>
         public bool AddGraphItem(ITimeGraphItem graphItem, bool ignoreDuplicity = false)
         {
-            return this._AddGraphItems(graphItem, ignoreDuplicity);
+            bool isAdded = false;
+            bool result = this._AddGraphItem(graphItem, ignoreDuplicity, ref isAdded, true);
+            return result;
         }
         /// <summary>
         /// Vloží daný prvek do this grafu.
@@ -232,14 +239,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void AddGraphItems(IEnumerable<ITimeGraphItem> graphItems, bool ignoreDuplicity = false)
         {
             if (graphItems == null) return;
-            graphItems.ForEachItem(i => this._AddGraphItems(i, ignoreDuplicity));
+            bool isAdded = false;
+            graphItems.ForEachItem(i => this._AddGraphItem(i, ignoreDuplicity, ref isAdded, false));
+            if (isAdded)
+                this.Invalidate(InvalidateItems.AllGroups);
         }
         /// <summary>
         /// Fyzicky vloží daný prvek do this grafu
         /// </summary>
         /// <param name="graphItem">Položka</param>
         /// <param name="ignoreDuplicity">Ignorovat duplicity</param>
-        private bool _AddGraphItems(ITimeGraphItem graphItem, bool ignoreDuplicity)
+        /// <param name="isAdded">Nastaví se na true po skutečné změně Dictionary <see cref="_ItemDict"/></param>
+        /// <param name="callInvalidate">Zavolat Invalidaci. Snažme se ji volat jen jednou, po posledním prvku, pokud to víme.</param>
+        private bool _AddGraphItem(ITimeGraphItem graphItem, bool ignoreDuplicity, ref bool isAdded, bool callInvalidate)
         {
             if (graphItem == null) return false;
             if (this._ItemDict.ContainsKey(graphItem.ItemId))
@@ -249,7 +261,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             graphItem.OwnerGraph = this;
             this._ItemDict.Add(graphItem.ItemId, graphItem);
-            this.Invalidate(InvalidateItems.AllGroups);
+            isAdded = true;
+            if (callInvalidate)
+                this.Invalidate(InvalidateItems.AllGroups);
             return true;
         }
         /// <summary>
@@ -270,7 +284,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ignoreMissing">Ignorovat chybějící prvek podle daného klíče</param>
         public bool RemoveGraphItem(ITimeGraphItem graphItem, bool ignoreMissing = false)
         {
-            return this._RemoveGraphItem(graphItem, ignoreMissing);
+            bool isRemoved = false;
+            return this._RemoveGraphItem(graphItem, ignoreMissing, ref isRemoved, true);
         }
         /// <summary>
         /// Odebere z grafu prvek s daným klíčem ItemId.
@@ -280,7 +295,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ignoreMissing">Ignorovat chybějící prvek podle daného klíče</param>
         public bool RemoveGraphItem(int itemId, bool ignoreMissing = false)
         {
-            return this._RemoveGraphItem(itemId, ignoreMissing);
+            bool isRemoved = false;
+            return this._RemoveGraphItem(itemId, ignoreMissing, ref isRemoved, true);
         }
         /// <summary>
         /// Odebere z grafu dané prvky (podle jejich ItemId).
@@ -291,7 +307,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void RemoveGraphItems(IEnumerable<ITimeGraphItem> graphItems, bool ignoreMissing = false)
         {
             if (graphItems == null) return;
-            graphItems.ForEachItem(i => this._RemoveGraphItem(i, ignoreMissing));
+            bool isRemoved = false;
+            graphItems.ForEachItem(i => this._RemoveGraphItem(i, ignoreMissing, ref isRemoved, false));
+            if (isRemoved)
+                this.Invalidate(InvalidateItems.AllGroups);         // Invalidaci dáme až po poslední položce, pokud byla nějaká změna
         }
         /// <summary>
         /// Odebere z grafu prvky s danými klíči ItemId.
@@ -302,24 +321,31 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void RemoveGraphItems(IEnumerable<int> itemIds, bool ignoreMissing = false)
         {
             if (itemIds == null) return;
-            itemIds.ForEachItem(i => this._RemoveGraphItem(i, ignoreMissing));
+            bool isRemoved = false;
+            itemIds.ForEachItem(i => this._RemoveGraphItem(i, ignoreMissing, ref isRemoved, false));
+            if (isRemoved)
+                this.Invalidate(InvalidateItems.AllGroups);         // Invalidaci dáme až po poslední položce, pokud byla nějaká změna
         }
         /// <summary>
         /// Fyzicky odebere daný prvek z this grafu
         /// </summary>
         /// <param name="graphItem">Prvek, jehož ItemId bude použito jako klíč prvku, který se bude odebírat</param>
-        /// <param name="ignoreMissing"></param>
-        private bool _RemoveGraphItem(ITimeGraphItem graphItem, bool ignoreMissing)
+        /// <param name="ignoreMissing">true = ignorovat chybějící prvek (nehlásit chybu)</param>
+        /// <param name="isRemoved">Nastaví se na true po skutečné změně Dictionary <see cref="_ItemDict"/></param>
+        /// <param name="callInvalidate">Zavolat Invalidaci. Snažme se ji volat jen jednou, po posledním prvku, pokud to víme.</param>
+        private bool _RemoveGraphItem(ITimeGraphItem graphItem, bool ignoreMissing, ref bool isRemoved, bool callInvalidate)
         {
             if (graphItem == null) return false;
-            return this._RemoveGraphItem(graphItem.ItemId, ignoreMissing);
+            return this._RemoveGraphItem(graphItem.ItemId, ignoreMissing, ref isRemoved, callInvalidate);
         }
         /// <summary>
         /// Fyzicky odebere daný prvek z this grafu
         /// </summary>
         /// <param name="itemId"></param>
-        /// <param name="ignoreMissing"></param>
-        private bool _RemoveGraphItem(int itemId, bool ignoreMissing)
+        /// <param name="ignoreMissing">true = ignorovat chybějící prvek (nehlásit chybu)</param>
+        /// <param name="isRemoved">Nastaví se na true po skutečné změně Dictionary <see cref="_ItemDict"/></param>
+        /// <param name="callInvalidate">Zavolat Invalidaci. Snažme se ji volat jen jednou, po posledním prvku, pokud to víme.</param>
+        private bool _RemoveGraphItem(int itemId, bool ignoreMissing, ref bool isRemoved, bool callInvalidate)
         {
             ITimeGraphItem graphItem;
             if (!this._ItemDict.TryGetValue(itemId, out graphItem))
@@ -328,8 +354,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 throw new GraphLibDataException("Z grafu nelze odebrat prvek s klíčem ITimeGraphItem.ItemId: " + itemId.ToString() + ", prvek v něm není přítomen.");
             }
             this._ItemDict.Remove(itemId);
+            isRemoved = true;
             graphItem.OwnerGraph = null;
-            this.Invalidate(InvalidateItems.AllGroups);
+            if (callInvalidate)
+                this.Invalidate(InvalidateItems.AllGroups);
             return true;
         }
         /// <summary>
@@ -388,51 +416,56 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 int groups = 0;
                 int items = this.ItemCount;
 
-                this._AllGroupList = new List<List<GTimeGraphGroup>>();
-                Interval<float> totalLogicalY = new Interval<float>(0f, 0f, true);
-                float minimalFragmentHeight = 1f;
+                lock (this._ValidityLock)
+                {
+                    var allGroupList = new List<List<GTimeGraphGroup>>();
+                    Interval<float> totalLogicalY = new Interval<float>(0f, 0f, true);
+                    float minimalFragmentHeight = 1f;
 
-                // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
-                List<IGrouping<int, ITimeGraphItem>> layerGroups = this.VisibleGraphItems.GroupBy(i => i.Layer).ToList();
-                if (layerGroups.Count > 1)
-                    layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
-                layers = layerGroups.Count;
+                    // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
+                    List<IGrouping<int, ITimeGraphItem>> layerGroups = this.VisibleGraphItems.GroupBy(i => i.Layer).ToList();
+                    if (layerGroups.Count > 1)
+                        layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
+                    layers = layerGroups.Count;
 
-                foreach (IGrouping<int, ITimeGraphItem> layerGroup in layerGroups)
-                {   // Každá vrstva (layerGroup) má svoje vlastní pole využití prostoru, toto pole je společné pro všechny ITimeGraphItem.Level
-                    PointArray<DateTime, IntervalArray<float>> layerUsing = new PointArray<DateTime, IntervalArray<float>>();
+                    foreach (IGrouping<int, ITimeGraphItem> layerGroup in layerGroups)
+                    {   // Každá vrstva (layerGroup) má svoje vlastní pole využití prostoru, toto pole je společné pro všechny ITimeGraphItem.Level
+                        PointArray<DateTime, IntervalArray<float>> layerUsing = new PointArray<DateTime, IntervalArray<float>>();
 
-                    // Hodnota Layer pro tuto skupinu. 
-                    // Jedna vrstva Layer je ekvivalentní jedné grafické vrstvě, položky z různých vrstev jsou kresleny jedna přes druhou.
-                    int layer = layerGroup.Key;
+                        // Hodnota Layer pro tuto skupinu. 
+                        // Jedna vrstva Layer je ekvivalentní jedné grafické vrstvě, položky z různých vrstev jsou kresleny jedna přes druhou.
+                        int layer = layerGroup.Key;
 
-                    // V rámci jedné vrstvy: další grupování jejích prvků podle jejich hodnoty ITimeGraphItem.Level, vzestupně:
-                    List<IGrouping<int, ITimeGraphItem>> levelGroups = layerGroup.GroupBy(i => i.Level).ToList();
-                    if (levelGroups.Count > 1)
-                        levelGroups.Sort((a, b) => a.Key.CompareTo(b.Key));    // Hladiny setřídit podle Key = ITimeGraphItem.Level, vzestupně
-                    levels += levelGroups.Count;
+                        // V rámci jedné vrstvy: další grupování jejích prvků podle jejich hodnoty ITimeGraphItem.Level, vzestupně:
+                        List<IGrouping<int, ITimeGraphItem>> levelGroups = layerGroup.GroupBy(i => i.Level).ToList();
+                        if (levelGroups.Count > 1)
+                            levelGroups.Sort((a, b) => a.Key.CompareTo(b.Key));    // Hladiny setřídit podle Key = ITimeGraphItem.Level, vzestupně
+                        levels += levelGroups.Count;
 
-                    // Hladina (Level) má význam "vodorovného pásu" pro více prvků stejné hladiny.
-                    // Záporné hladiny jsou kresleny dolů (jako záporné hodnoty na ose Y).
+                        // Hladina (Level) má význam "vodorovného pásu" pro více prvků stejné hladiny.
+                        // Záporné hladiny jsou kresleny dolů (jako záporné hodnoty na ose Y).
 
-                    // Nyní zpracuji grafické prvky dané vrstvy (layerGroup) po jednotlivých skupinách za hladiny Level (levelGroups),
-                    // vypočtu jejich logické souřadnice Y a přidám je do ItemGroupList:
-                    Interval<float> layerUsedLogicalY = new Interval<float>(0f, 0f, true);
-                    List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();
-                    foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
-                    {
-                        layerUsing.Clear();
-                        this.RecalculateAllGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref minimalFragmentHeight, ref groups);
+                        // Nyní zpracuji grafické prvky dané vrstvy (layerGroup) po jednotlivých skupinách za hladiny Level (levelGroups),
+                        // vypočtu jejich logické souřadnice Y a přidám je do ItemGroupList:
+                        Interval<float> layerUsedLogicalY = new Interval<float>(0f, 0f, true);
+                        List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();
+                        foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
+                        {
+                            layerUsing.Clear();
+                            this.RecalculateAllGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref minimalFragmentHeight, ref groups);
+                        }
+                        totalLogicalY.MergeWith(layerUsedLogicalY);
+
+                        allGroupList.Add(layerGroupList);
                     }
-                    totalLogicalY.MergeWith(layerUsedLogicalY);
+                    this._AllGroupList = allGroupList;
 
-                    this._AllGroupList.Add(layerGroupList);
+                    this.SetMinimalFragmentHeight(minimalFragmentHeight);
+                    this.Invalidate(InvalidateItems.CoordinateX | InvalidateItems.CoordinateYVirtual);
+
+                    this.CalculatorY.Prepare(totalLogicalY, this.CurrentLineLogicalHeight);
+                    this.RecalculateCoordinateYVirtual();
                 }
-                this.SetMinimalFragmentHeight(minimalFragmentHeight);
-                this.Invalidate(InvalidateItems.CoordinateX | InvalidateItems.CoordinateYVirtual);
-
-                this.CalculatorY.Prepare(totalLogicalY, this.CurrentLineLogicalHeight);
-                this.RecalculateCoordinateYVirtual();
 
                 scope.AddItem("Layers Count: " + layers.ToString());
                 scope.AddItem("Levels Count: " + levels.ToString());
@@ -927,40 +960,45 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected void RecalculateCoordinateX()
         {
-            this._VisibleGroupList = new List<GTimeGraphGroup>();
             if (this._TimeConvertor == null) return;
             TimeGraphTimeAxisMode timeAxisMode = this.CurrentGraphProperties.TimeAxisMode;
 
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
+            lock (this._ValidityLock)
             {
-                int offsetX = this._TimeConvertor.FirstPixel;
-                int[] counters = new int[3];
-                foreach (List<GTimeGraphGroup> layerList in this.AllGroupList)
-                {   // Jedna vizuální vrstva za druhou:
-                    counters[0]++;
-                    switch (timeAxisMode)
-                    {
-                        case TimeGraphTimeAxisMode.ProportionalScale:
-                            foreach (GTimeGraphGroup groupItem in layerList)
-                                this.RecalculateCoordinateXProportional(groupItem, offsetX, counters);
-                            break;
-                        case TimeGraphTimeAxisMode.LogarithmicScale:
-                            foreach (GTimeGraphGroup groupItem in layerList)
-                                this.RecalculateCoordinateXLogarithmic(groupItem, offsetX, counters);
-                            break;
-                        case TimeGraphTimeAxisMode.Standard:
-                        default:
-                            foreach (GTimeGraphGroup groupItem in layerList)
-                                this.RecalculateCoordinateXStandard(groupItem, offsetX, counters);
-                            break;
+                List<GTimeGraphGroup> visibleGroupList = new List<GTimeGraphGroup>();
+
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
+                {
+                    int offsetX = this._TimeConvertor.FirstPixel;
+                    int[] counters = new int[3];
+                    foreach (List<GTimeGraphGroup> layerList in this.AllGroupList)
+                    {   // Jedna vizuální vrstva za druhou:
+                        counters[0]++;
+                        switch (timeAxisMode)
+                        {
+                            case TimeGraphTimeAxisMode.ProportionalScale:
+                                foreach (GTimeGraphGroup groupItem in layerList)
+                                    this.RecalculateCoordinateXProportional(visibleGroupList, groupItem, offsetX, counters);
+                                break;
+                            case TimeGraphTimeAxisMode.LogarithmicScale:
+                                foreach (GTimeGraphGroup groupItem in layerList)
+                                    this.RecalculateCoordinateXLogarithmic(visibleGroupList, groupItem, offsetX, counters);
+                                break;
+                            case TimeGraphTimeAxisMode.Standard:
+                            default:
+                                foreach (GTimeGraphGroup groupItem in layerList)
+                                    this.RecalculateCoordinateXStandard(visibleGroupList, groupItem, offsetX, counters);
+                                break;
+                        }
                     }
+
+                    this._ValidatedWidth = this.ClientSize.Width;
+                    this._ValidatedAxisMode = timeAxisMode;
+                    this._IsValidCoordinateX = true;
+
+                    scope.AddValues(counters, "Visual Layers Count: ", "Visual Groups Count: ", "Visual Items Count: ");
                 }
-
-                this._ValidatedWidth = this.ClientSize.Width;
-                this._ValidatedAxisMode = timeAxisMode;
-                this._IsValidCoordinateX = true;
-
-                scope.AddValues(counters, "Visual Layers Count: ", "Visual Groups Count: ", "Visual Items Count: ");
+                this._VisibleGroupList = visibleGroupList;
             }
             this.Invalidate(InvalidateItems.Bounds);
         }
@@ -983,10 +1021,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.Standard"/>
         /// </summary>
+        /// <param name="visibleGroupList">Seznam viditelných prvků</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXStandard(GTimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXStandard(List<GTimeGraphGroup> visibleGroupList, GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
@@ -995,17 +1034,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 counters[1]++;
-                this._VisibleGroupList.Add(groupItem);
+                visibleGroupList.Add(groupItem);
             }
         }
         /// <summary>
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.ProportionalScale"/>
         /// </summary>
+        /// <param name="visibleGroupList">Seznam viditelných prvků</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXProportional(GTimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXProportional(List<GTimeGraphGroup> visibleGroupList, GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
@@ -1014,17 +1054,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 counters[1]++;
-                this._VisibleGroupList.Add(groupItem);
+                visibleGroupList.Add(groupItem);
             }
         }
         /// <summary>
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/>
         /// </summary>
+        /// <param name="visibleGroupList">Seznam viditelných prvků</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXLogarithmic(GTimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXLogarithmic(List<GTimeGraphGroup> visibleGroupList, GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
@@ -1035,7 +1076,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (groupItem.IsValidRealTime)
             {   // ... ale prvek musí mít kladný čas od Begin do End:
                 counters[1]++;
-                this._VisibleGroupList.Add(groupItem);
+                visibleGroupList.Add(groupItem);
             }
         }
         /// <summary>
@@ -1648,41 +1689,44 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="items"></param>
         internal void Invalidate(InvalidateItems items)
         {
-            if ((items & InvalidateItems.AllGroups) != 0)
+            lock (this._ValidityLock)
             {
-                this._AllGroupList = null;
-                items |= (InvalidateItems.CoordinateX | InvalidateItems.CoordinateYReal);
-            }
-            if ((items & InvalidateItems.CoordinateX) != 0)
-            {
-                this._IsValidCoordinateX = false;
-                items |= (InvalidateItems.Bounds | InvalidateItems.Childs);
-            }
-            if ((items & InvalidateItems.CoordinateYVirtual) != 0)
-            {
-                this._IsValidCoordinateYVirtual = false;
-                items |= (InvalidateItems.CoordinateYReal);
-            }
-            if ((items & InvalidateItems.CoordinateYReal) != 0)
-            {
-                this._ValidatedHeight = 0;
-                items |= (InvalidateItems.Bounds | InvalidateItems.Childs);
-            }
-            if ((items & InvalidateItems.Bounds) != 0)
-            {
-                this._IsValidBounds = false;
-                items |= InvalidateItems.Childs;
-            }
-            if ((items & InvalidateItems.Childs) != 0)
-            {
-                this._Childs = null;
-                this.IsValidAll = false;
-                // O invalidaci Repaint si musí volající explicitně požádat:
-                // items |= InvalidateItems.Repaint;
-            }
-            if ((items & InvalidateItems.Repaint) != 0)
-            {
-                this.Repaint();
+                if ((items & InvalidateItems.AllGroups) != 0)
+                {
+                    this._AllGroupList = null;
+                    items |= (InvalidateItems.CoordinateX | InvalidateItems.CoordinateYReal);
+                }
+                if ((items & InvalidateItems.CoordinateX) != 0)
+                {
+                    this._IsValidCoordinateX = false;
+                    items |= (InvalidateItems.Bounds | InvalidateItems.Childs);
+                }
+                if ((items & InvalidateItems.CoordinateYVirtual) != 0)
+                {
+                    this._IsValidCoordinateYVirtual = false;
+                    items |= (InvalidateItems.CoordinateYReal);
+                }
+                if ((items & InvalidateItems.CoordinateYReal) != 0)
+                {
+                    this._ValidatedHeight = 0;
+                    items |= (InvalidateItems.Bounds | InvalidateItems.Childs);
+                }
+                if ((items & InvalidateItems.Bounds) != 0)
+                {
+                    this._IsValidBounds = false;
+                    items |= InvalidateItems.Childs;
+                }
+                if ((items & InvalidateItems.Childs) != 0)
+                {
+                    this._Childs = null;
+                    this.IsValidAll = false;
+                    // O invalidaci Repaint si musí volající explicitně požádat:
+                    // items |= InvalidateItems.Repaint;
+                }
+                if ((items & InvalidateItems.Repaint) != 0)
+                {
+                    this.Repaint();
+                }
             }
         }
         /// <summary>
@@ -1977,6 +2021,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             GTimeGraph gTimeGraph = new GTimeGraph(this._GuiGraph);
 
+            bool isAdded = false;
             if (cloneArgs == null || cloneArgs.CloneGraphItems)
             {
                 foreach (ITimeGraphItem sourceItem in this._ItemDict.Values)
@@ -1984,11 +2029,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     if (cloneArgs == null || cloneArgs.CloneGraphsFilter == null || cloneArgs.CloneGraphsFilter(sourceItem))
                     {
                         ITimeGraphItem targetItem = ((ICloneable)sourceItem.Clone()) as ITimeGraphItem;
-                        gTimeGraph._AddGraphItems(targetItem, false);
+                        gTimeGraph._AddGraphItem(targetItem, false, ref isAdded, false);
                     }
                 }
             }
-
+            if (isAdded)
+                gTimeGraph.Invalidate(InvalidateItems.AllGroups);
             return gTimeGraph;
         }
         #endregion

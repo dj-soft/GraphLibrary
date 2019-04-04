@@ -156,25 +156,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnEnter(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnEnter(e), () => base.OnEnter(e));
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnEnter(e), () => base.OnEnter(e), () => this._InteractiveDrawRun());
         }
-        private void _OnEnter(EventArgs e)
+        /// <summary>
+        /// Provede OnEnter
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnEnter(EventArgs e)
         {
+            bool runFinal = false;
             if (this._KeyboardLeavedItem != null)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
                 {
-                    try
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardExchange(null, this._KeyboardLeavedItem, false);
-                    }
-                    finally
-                    {
-                        this._InteractiveDrawRun();
-                    }
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardExchange(null, this._KeyboardLeavedItem, false);
+                    runFinal = true;
                 }
             }
+            return runFinal;
         }
         /// <summary>
         /// Focus vstupuje do controlu
@@ -184,8 +185,15 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnGotFocus(e), () => base.OnGotFocus(e));
         }
-        private void _OnGotFocus(EventArgs e)
-        { }
+        /// <summary>
+        /// Provede OnGetFocus
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnGotFocus(EventArgs e)
+        {
+            return true;
+        }
         /// <summary>
         /// Focus odchází z controlu
         /// </summary>
@@ -194,31 +202,34 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLostFocus(e), () => base.OnLostFocus(e));
         }
-        private void _OnLostFocus(EventArgs e)
-        { }
+        /// <summary>
+        /// Provede OnLostFocus
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnLostFocus(EventArgs e)
+        {
+            return true;
+        }
         /// <summary>
         /// Focus odchází z controlu
         /// </summary>
         /// <param name="e"></param>
         protected override void OnLeave(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLeave(e), () => base.OnLeave(e));
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLeave(e), () => base.OnLeave(e), () => this._InteractiveDrawRun());
         }
-        private void _OnLeave(EventArgs e)
+        private bool _OnLeave(EventArgs e)
         {
+            bool runFinal = false;
             this._KeyboardLeavedItem = this._KeyboardCurrentItem;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(null);
-                    this._ItemKeyboardExchange(this._KeyboardCurrentItem, null, true);
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
+                this._InteractiveDrawInit(null);
+                this._ItemKeyboardExchange(this._KeyboardCurrentItem, null, true);
+                runFinal = true;
             }
+            return runFinal;
         }
         /// <summary>
         /// Akce PreviewKeyDown
@@ -226,25 +237,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardPreviewKeyDown, () => this._OnPreviewKeyDown(e), () => base.OnPreviewKeyDown(e));
+            this.InteractiveAction(GInteractiveChangeState.KeyboardPreviewKeyDown, () => this._OnPreviewKeyDown(e), () => base.OnPreviewKeyDown(e), () => this._InteractiveDrawRun());
         }
-        private void _OnPreviewKeyDown(PreviewKeyDownEventArgs e)
+        /// <summary>
+        /// Provede OnPreviewKeyDown
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
+            bool runFinal = false;
             if (this._KeyboardCurrentItemCanKeyboard)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", ""))
                 {
-                    try
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardPreviewKeyDown, e, null, null);
-                    }
-                    finally
-                    {
-                        this._InteractiveDrawRun();
-                    }
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardPreviewKeyDown, e, null, null);
+                    runFinal = true;
                 }
             }
+            return runFinal;
         }
         /// <summary>
         /// Akce KeyDown
@@ -252,10 +264,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyDown, () => this._OnKeyDown(e), () => base.OnKeyDown(e));
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyDown, () => this._OnKeyDown(e), () => base.OnKeyDown(e), () => this._InteractiveDrawRun());
         }
-        private void _OnKeyDown(KeyEventArgs e)
+        /// <summary>
+        /// Provede OnKeyDown
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyDown(KeyEventArgs e)
         {
+            bool runFinal = false;
             if (e.KeyCode == Keys.Escape && ((this._MouseDragState == MouseMoveDragState.DragMove && this._MouseDragMoveItem != null) || this._MouseDragState == MouseMoveDragState.DragFrame))
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
@@ -264,11 +282,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         case MouseMoveDragState.DragMove:
                             this._MouseDragMoveCancel();
-                            this._InteractiveDrawRun();
+                            runFinal = true;
                             break;
                         case MouseMoveDragState.DragFrame:
                             this._MouseDragFrameCancel();
-                            this._InteractiveDrawRun();
+                            runFinal = true;
                             break;
                     }
                 }
@@ -277,17 +295,12 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
                 {
-                    try
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyDown, null, e, null);
-                    }
-                    finally
-                    {
-                        this._InteractiveDrawRun();
-                    }
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyDown, null, e, null);
+                    runFinal = true;
                 }
             }
+            return runFinal;
         }
         /// <summary>
         /// Akce KeyUp
@@ -295,25 +308,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnKeyUp(KeyEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyUp, () => this._OnKeyUp(e), () => base.OnKeyUp(e));
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyUp, () => this._OnKeyUp(e), () => base.OnKeyUp(e), () => this._InteractiveDrawRun());
         }
-        private void _OnKeyUp(KeyEventArgs e)
+        /// <summary>
+        /// Provede OnKeyUp
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyUp(KeyEventArgs e)
         {
+            bool runFinal = false;
             if (this._KeyboardCurrentItemCanKeyboard)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyUp", ""))
                 {
-                    try
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyUp, null, e, null);
-                    }
-                    finally
-                    {
-                        this._InteractiveDrawRun();
-                    }
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyUp, null, e, null);
+                    runFinal = true;
                 }
             }
+            return runFinal;
         }
         /// <summary>
         /// Akce KeyPress
@@ -321,25 +335,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyPress, () => this._OnKeyPress(e), () => base.OnKeyPress(e));
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyPress, () => this._OnKeyPress(e), () => base.OnKeyPress(e), () => this._InteractiveDrawRun());
         }
-        private void _OnKeyPress(KeyPressEventArgs e)
+        /// <summary>
+        /// Provede OnKeyPress
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyPress(KeyPressEventArgs e)
         {
+            bool runFinal = false;
             if (this._KeyboardCurrentItemCanKeyboard)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyPress", ""))
                 {
-                    try
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyPress, null, null, e);
-                    }
-                    finally
-                    {
-                        this._InteractiveDrawRun();
-                    }
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyPress, null, null, e);
+                    runFinal = true;
                 }
             }
+            return runFinal;
         }
         #endregion
         #region Privátní výkonné metody pro podporu Focus a Keyboard
@@ -456,7 +471,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseEnter(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.MouseEnter, () => this._OnMouseEnter(e), () => base.OnMouseEnter(e));
+            this.InteractiveAction(GInteractiveChangeState.MouseEnter, () => this._OnMouseEnter(e), () => base.OnMouseEnter(e), () => this._InteractiveDrawRun());
         }
         /// <summary>
         /// Akce MouseMove
@@ -531,27 +546,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Myš vstoupila na control
         /// </summary>
         /// <param name="e"></param>
-        private void _OnMouseEnter(EventArgs e)
+        private bool _OnMouseEnter(EventArgs e)
         {
+            bool runFinal = true;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(null);
-                    this._MouseAllReset();
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
+                this._InteractiveDrawInit(null);
+                this._MouseAllReset();
             }
+            return runFinal;
         }
         /// <summary>
         /// Myš se pohybuje
         /// </summary>
         /// <param name="e"></param>
-        private void _OnMouseMove(MouseEventArgs e)
+        private bool _OnMouseMove(MouseEventArgs e)
         {
+            bool runFinal = true;
             using (ITraceScope scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
             {
                 this._InteractiveDrawInit(e);
@@ -571,6 +582,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._OnMouseDrag(e, scope);
                 }
             }
+            return runFinal;
         }
         /// <summary>
         /// Myš je zmáčknutá a pohybuje se. Může to být Select, může to být Drag, může to být Nic...
@@ -660,16 +672,29 @@ namespace Asol.Tools.WorkScheduler.Components
 
             return MouseMoveDragState.Start;
         }
-        private void _OnMouseDown(MouseEventArgs e)
+        /// <summary>
+        /// Provede OnMouseDown
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnMouseDown(MouseEventArgs e)
         {
+            bool runFinal = true;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseDown", ""))
             {
                 this._InteractiveDrawInit(e);
                 this._MouseFell(e);
             }
+            return runFinal;
         }
-        private void _OnMouseUp(MouseEventArgs e)
+        /// <summary>
+        /// Provede OnMouseUp
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnMouseUp(MouseEventArgs e)
         {
+            bool runFinal = true;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
             {
                 this._InteractiveDrawInit(e);
@@ -678,26 +703,42 @@ namespace Asol.Tools.WorkScheduler.Components
                 else if (this._MouseDragState == MouseMoveDragState.DragFrame) this._MouseDragFrameDone(e);
                 else this._MouseRaise(e);
             }
+            return runFinal;
         }
-        private void _OnMouseWheel(MouseEventArgs e)
+        /// <summary>
+        /// Provede OnMouseWheel
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnMouseWheel(MouseEventArgs e)
         {
+            bool runFinal = true;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseWheel", ""))
             {
                 this._InteractiveDrawInit(e);
                 this._MouseOneWheel(e);
                 this._OnMouseMove(e);            // Poté, co se provedla akce MouseWheel nasimulujeme ještě akci MouseMove, protože se mohl pohnout obraz controlu
             }
+            return runFinal;
         }
         /// <summary>
         /// Zajistí provedení téže akce, jako by myš opustila control
         /// </summary>
-        private void _OnMouseLeave()
+        private bool _OnMouseLeave()
         {
+            bool runFinal = true;
             EventArgs e = new EventArgs();
             this.InteractiveAction(GInteractiveChangeState.MouseLeave, () => this._OnMouseLeave(e), null, () => this._InteractiveDrawRun());
+            return runFinal;
         }
-        private void _OnMouseLeave(EventArgs e)
+        /// <summary>
+        /// Provede OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnMouseLeave(EventArgs e)
         {
+            bool runFinal = true;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseLeave", ""))
             {
                 this._InteractiveDrawInit(null);
@@ -705,6 +746,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._MouseAllReset();
                 this._MouseDragStoreActiveItem(null);
             }
+            return runFinal;
         }
         #endregion
         #region Řízení konkrétních aktivit myši, již rozčleněné; volání jednoduchých interaktivních metod (Over, Fell, Raise, Whell)
@@ -1991,8 +2033,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public override void Refresh()
         {
-            if (this.InteractiveProcessing) return;
-            base.Refresh();
+            if (this.InteractiveProcessing)
+            {   // Chtěli bychom Refresh, ale běží nám Interactive proces => nelze dát Refresh, musí to počkat až skončí interaktivita:
+                this._PendingRefresh = true;
+            }
+            else
+            {   // Neběží nám žádný Interactive proces => zavoláme Refresh, a ještě před tím shodíme případný příznak čekajícího Refreshe:
+                this._PendingRefresh = false;
+                base.Refresh();
+            }
         }
         #region class DrawRequest + DrawRequestItem
         /// <summary>
@@ -3037,13 +3086,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Akce action2 se provede vždy.
         /// </summary>
         /// <param name="changeState"></param>
-        /// <param name="action1">Akce 1, provádí se pouze pokud aktuálně neběží jiná interaktivní akce a pokud není blokováno GUI. Typicky je to volání zdejší výkonné metody.</param>
+        /// <param name="action1">Akce 1, provádí se pouze pokud aktuálně neběží jiná interaktivní akce a pokud není blokováno GUI. Typicky je to volání zdejší výkonné metody.
+        /// Jejím výstupem je true = má se provádět finální akce / false = má se vynechat.</param>
         /// <param name="action2">Akce 2, provádí se vždy. Typicky je to volání base metody.</param>
         /// <param name="final">Akce finální, volá se i po chybě v akcích 1 a 2.</param>
-        protected void InteractiveAction(GInteractiveChangeState changeState, Action action1, Action action2, Action final = null)
+        protected void InteractiveAction(GInteractiveChangeState changeState, Func<bool> action1, Action action2, Action final = null)
         {
             lock (this.InteractiveLock)
             {
+                bool runFinal = true;
                 try
                 {
                     this._FlowToolTipData = null;
@@ -3053,7 +3104,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         if (!isBlocked && !isProcessing)
                         {   // Akce 1 se provádí jen na neblokovaném GUI, které aktuálně nezpracovává jinou akci:
-                            if (action1 != null) action1();
+                            if (action1 != null)
+                                runFinal = action1();
                         }
                         if (action2 != null) action2();
                     }
@@ -3064,7 +3116,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 finally
                 {
-                    if (final != null)
+                    if (runFinal && final != null)
                         final();
                 }
             }
@@ -3072,11 +3124,38 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje false v běžném (mrtvém) stavu, obsahuje true pokud právě probíhá obsluha jakékoli interaktivní události
         /// </summary>
-        protected bool InteractiveProcessing { get { return this._InteractiveProcessing; } set { this._InteractiveProcessing = value; } } private bool _InteractiveProcessing;
+        protected bool InteractiveProcessing
+        {
+            get { return this._InteractiveProcessing; }
+            set
+            {
+                bool oldValue = this._InteractiveProcessing;
+                bool newValue = value;
+                if (newValue == oldValue)
+                {
+                    this._InteractiveProcessing = newValue;
+                    if (oldValue == true && this.PendingRefresh)
+                        this.Refresh();
+                }
+            }
+        }
+        private bool _InteractiveProcessing;
         /// <summary>
         /// Akce, která se právě zpracovává
         /// </summary>
         protected GInteractiveChangeState? InteractiveProcessingAction { get; set; }
+        /// <summary>
+        /// Obsahuje false po proběhnutí metody Refresh(), obsahuje true poté, kdy byl Refresh() požadován ale nebyl proveden -
+        /// protože při požadavku na něj byl stav <see cref="InteractiveProcessing"/> = true.
+        /// Pak se Refresh provádí ihned po uvolnění <see cref="InteractiveProcessing"/> na false.
+        /// Pozor, nastavit lze pouze na true! Resetování na false se provádí jinde.
+        /// </summary>
+        protected bool PendingRefresh
+        {
+            get { return this._PendingRefresh; }
+            set { if (value && !this._PendingRefresh) this._PendingRefresh = true; }
+        }
+        private bool _PendingRefresh;
         /// <summary>
         /// Třída zajišťující scope zpracování jedné události v controlu <see cref="GInteractiveControl"/>.
         /// Po dobu tohoto scope je nastaveno <see cref="GInteractiveControl.InteractiveProcessing"/> = true.

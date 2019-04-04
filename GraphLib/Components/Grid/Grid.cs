@@ -1884,7 +1884,7 @@ namespace Asol.Tools.WorkScheduler.Components
         GridItems = GridColumnsScroll << 1,
         /// <summary>Souřadnice Tabulky (pouze její umístění, ale ne velikost = bez vlivu na vnitřní prvky)</summary>
         TablePosition = GridItems << 1,
-        /// <summary>Velikost vnitřního prostoru Tabulky (má vlivu na vnitřní prvky)</summary>
+        /// <summary>Velikost vnitřního prostoru Tabulky (má vliv na vnitřní prvky)</summary>
         TableSize = TablePosition << 1,
         /// <summary>Změna ve viditelnosti některého splitteru mezi sloupci nebo mezi řádky (po změně Table.AllowResize*): nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o invalidaci Child prvků tabulky</summary>
         TableItems = TableSize << 1,
@@ -1937,10 +1937,13 @@ namespace Asol.Tools.WorkScheduler.Components
         AnyRow = RowsCount | RowOrder | RowHeight | RowScroll | RowHeader,
 
         /// <summary>Invalidovat všechny prvky, ale neprovádět nové vykreslení (to se provede po dokončení aktuální aktivity automaticky)</summary>
-        AnyInvalidate = AnyGrid| AnyTable | AnyColumn | AnyRow,
+        AnyInvalidate = AnyGrid | AnyTable | AnyColumn | AnyRow,
 
-        /// <summary>Invalidovat všechny prvky, a na závěr vyžádat nové vykreslení (změna byla provedena z jiné části kódu, která neprovádí automatické vykreslení)</summary>
-        All = 0x0FFFFF,
+        /// <summary>Invalidovat všechny prvky jedné tabulky, a na závěr vyžádat nové vykreslení (změna byla provedena z jiné části kódu, která neprovádí automatické vykreslení)</summary>
+        Table = TablePosition | TableSize | TableTagFilter | TableHeight | TableItems | TableOrder | 
+                ColumnsCount | ColumnOrder | ColumnWidth | ColumnScroll | ColumnHeader |
+                RowsCount | RowOrder | RowHeight | RowScroll | RowHeader |
+                Paint
     }
     #endregion
 }

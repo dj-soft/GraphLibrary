@@ -335,7 +335,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="response"></param>
         private void _RunKeyActionApplicationResponse(AppHostResponseArgs response)
         {
-            this._ProcessResponse(response.GuiResponse);
+            this.ProcessGuiResponse(response.GuiResponse);
         }
         #endregion
         #region Toolbar
@@ -588,7 +588,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="response"></param>
         private void _ToolBarItemClickApplicationResponse(AppHostResponseArgs response)
         {
-            this._ProcessResponse(response.GuiResponse);
+            this.ProcessGuiResponse(response.GuiResponse);
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na Systémové položce ToolBaru
@@ -2100,7 +2100,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="response"></param>
         private void _ContextMenuItemClickApplicationResponse(AppHostResponseArgs response)
         {
-            this._ProcessResponse(response.GuiResponse);
+            this.ProcessGuiResponse(response.GuiResponse);
         }
         /// <summary>
         /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
@@ -2531,7 +2531,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
-        private GuiDialogButtons _ProcessResponse(GuiResponse guiResponse)
+        protected GuiDialogButtons ProcessGuiResponse(GuiResponse guiResponse)
         {
             if (guiResponse == null) return GuiDialogButtons.None;
 
@@ -2840,7 +2840,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
 
             // Zpracujeme odpověď z aplikace, mj. může být proveden uživatelský dialog a vrácena odpověď na něj:
-            GuiDialogButtons dialogResult = this._ProcessResponse(responseArgs.GuiResponse);
+            GuiDialogButtons dialogResult = this.ProcessGuiResponse(responseArgs.GuiResponse);
 
             // Zpracujeme odpověď uživatele na dotaz, pokud byl:
             switch (dialogResult)
@@ -2903,7 +2903,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Pokud se nám vrátila chyba, pak zavírání okna zrušíme:
             if (responseArgs != null && responseArgs.Result == AppHostActionResult.Failure)
             {   // Po chybě dáme dialog:
-                GuiDialogButtons response = this._ProcessResponse(responseArgs.GuiResponse);
+                GuiDialogButtons response = this.ProcessGuiResponse(responseArgs.GuiResponse);
                 if (response == GuiDialogButtons.None || response == GuiDialogButtons.Yes || response == GuiDialogButtons.Ignore)
                     this._ClosingProcessCloseNow();
                 else
@@ -3032,7 +3032,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
-        void IMainDataInternal.ProcessResponse(GuiResponse guiResponse) { this._ProcessResponse(guiResponse); }
+        void IMainDataInternal.ProcessResponse(GuiResponse guiResponse) { this.ProcessGuiResponse(guiResponse); }
         #endregion
     }
     #region interface IMainDataInternal
