@@ -1762,7 +1762,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         if (requestArgs.Request.KeyPress != null && requestArgs.Request.KeyPress.KeyData == Keys.Delete)
                             this.DataDeleteItems(requestArgs.Request, responseArgs.GuiResponse);
                         time = this.Rand.Next(100, 350);
-                        System.Threading.Thread.Sleep(time);
+                        // System.Threading.Thread.Sleep(time);
                         responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
                         responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
                         {
