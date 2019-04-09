@@ -37,7 +37,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Table : jedna tabulka s daty (sada Column + Row)
     /// </summary>
-    public partial class Table : IGTableMember, IVisualMember, IContentValidity, ITableInternal
+    public partial class Table : IGTableMember, IContentValidity, ITableInternal
     {
         #region Konstruktor, Inicializace
         /// <summary>
@@ -1319,25 +1319,67 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Visual style
         /// <summary>
-        /// Všechny vizuální vlastnosti dat v této tabulce.
-        /// Tato property je autoinicializační = nikdy není null.
+        /// Vizuální styl základní
         /// </summary>
-        public VisualStyle VisualStyle
+        public GuiVisualStyle DefaultVisualStyle { get; set; }
+        /// <summary>
+        /// Vizuální styl základní pro Child řádky
+        /// </summary>
+        public GuiVisualStyle DefaultChildVisualStyle { get; set; }
+        /// <summary>
+        /// Knihovna explicitních vizuálních stylů, použitých v buňkách / řádcích / sloupcích...
+        /// Každý prvek tabulky má property StyleName, která se odkazuje na jméno <see cref="GuiVisualStyle"/>.Name do tohoto seznamu.
+        /// Prvek tabulky sám nemá svůj objekt <see cref="GuiVisualStyle"/>, fyzické definice stylů jsou v tomto seznamu <see cref="VisualStyles"/>.
+        /// </summary>
+        public IEnumerable<GuiVisualStyle> VisualStyles
         {
-            get
-            {
-                if (this._VisualStyle == null)
-                    this._VisualStyle = new VisualStyle();
-                return this._VisualStyle;
-            }
-            set { this._VisualStyle = value; }
+            get { return (this.VisualStyleDict != null ? this.VisualStyleDict.Values : null); }
+            set { if (value != null) this.VisualStyleDict = value.Where(s => s != null && !String.IsNullOrEmpty(s.Name)).GetDictionary(s => s.Name, true); }
         }
-        private VisualStyle _VisualStyle = null;
-        VisualStyle IVisualMember.Style
+        /// <summary>
+        /// Dictionary obsahující vizuální styly indexované dle jejich Name
+        /// </summary>
+        internal Dictionary<string, GuiVisualStyle> VisualStyleDict { get; private set; }
+        /// <summary>
+        /// Metoda vrátí <see cref="GuiVisualStyle"/> pro explicitně dané jméno stylu
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        internal GuiVisualStyle GetVisualStyle(string name)
+        {
+            GuiVisualStyle style = null;
+            if (!String.IsNullOrEmpty(name) && this.VisualStyleDict != null && this.VisualStyleDict.TryGetValue(name, out style)) return style;
+            return null;
+        }
+        /// <summary>
+        /// Implicitní vizuální styl, který se použije tehdy, když nic dalšího není zadáno.
+        /// Vždy bude vytvořen nový styl.
+        /// Definuje vzhled běžné tabulky.
+        /// </summary>
+        internal static GuiVisualStyle ImplicitStyle
         {
             get
             {
-                return VisualStyle.CreateFrom(this.VisualStyle);
+                GuiVisualStyle style = new GuiVisualStyle()
+                {
+                    FontType = GuiFontSetType.DefaultFont,
+                    FontRelativeSize = 100,
+                    FontBold = false,
+                    FontItalic = false,
+                    FontUnderline = false,
+
+                    BackColor = Skin.Grid.RowBackColor,
+                    TextColor = Skin.Grid.RowTextColor,
+                    SelectedBackColor = Skin.Grid.SelectedRowBackColor,
+                    SelectedTextColor = Skin.Grid.SelectedRowTextColor,
+                    ActiveBackColor = Skin.Grid.ActiveCellBackColor,
+                    ActiveTextColor = Skin.Grid.ActiveCellTextColor,
+
+                    GridLines = GuiBorderSideType.Right | GuiBorderSideType.Bottom,
+                    HorizontalLineColor = Skin.Grid.BorderLineColor,
+                    VerticalLineColor = Skin.Grid.BorderLineColor
+                };
+                return style;
             }
         }
         #endregion
@@ -2025,7 +2067,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Column : informace o jednom sloupci tabulky
     /// </summary>
-    public partial class Column : ITableMember, /* ISequenceLayout, */ IVisualMember, IIdKey
+    public partial class Column : ITableMember, /* ISequenceLayout, */ IIdKey
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -2305,6 +2347,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vizuální pořadí tohoto sloupce, 0 má první vizuálně dostupný sloupec (tzn. po přemístění jiného sloupce na první pozici bude ten nový mít Order = 0)
         /// </summary>
         public int VisualOrder { get { return this.ColumnSize.Order; } }
+        /// <summary>
+        /// Explicitně definovaný styl pro tento sloupec. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
+        /// </summary>
+        public GuiVisualStyle Style { get; set; }
+        /// <summary>
+        /// Název stylu pro tento sloupec. Odkazuje se na <see cref="Table.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
+        /// </summary>
+        public string StyleName { get; set; }
         #endregion
         #region Třídění podle sloupce
         /// <summary>
@@ -2380,7 +2430,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return a.ColumnOrder.CompareTo(b.ColumnOrder);
         }
         #endregion
-        #region Implementace interface ISequenceLayout (Layout šířky sloupce), IVisualMember (vizuální vlastnosti), IIdKey (dvojitý klíč)
+        #region Implementace interface ISequenceLayout (Layout šířky sloupce), IIdKey (dvojitý klíč)
         /// <summary>
         /// Koordinátor šířky sloupce.
         /// Hodnota může být čtena i jako Int32 (implicitní konverze) = přímo výška řádku.
@@ -2390,19 +2440,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         internal ItemSizeInt ColumnSize { get { if (this._ColumnSize == null) this._ColumnSize = new ItemSizeInt(this.Table?.ColumnSize); return this._ColumnSize; } }
         private ItemSizeInt _ColumnSize;
-        /// <summary>
-        /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
-        /// Default hodnota je null.
-        /// </summary>
-        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
-        private VisualStyle _VisualStyle;
-        VisualStyle IVisualMember.Style
-        {
-            get
-            {
-                return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
-            }
-        }
         int IIdKey.Id { get { return this.ColumnId; } }
         string IIdKey.Key { get { return this.ColumnName; } }
         #endregion
@@ -2412,7 +2449,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public partial class Row : ITableMember, ITagItemOwner, IVisualMember, IVisualParent, IContentValidity, IComparableItem
+    public partial class Row : ITableMember, ITagItemOwner, IVisualParent, IContentValidity, IComparableItem
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -2496,7 +2533,8 @@ namespace Asol.Tools.WorkScheduler.Data
             target.RecordGId = source.RecordGId;
             target.ParentRecordGId = source.ParentRecordGId;
             target.SelectedRowImage = source.SelectedRowImage;
-            target.BackColor = source.BackColor;
+            target.Style = source.Style;
+            target.StyleName = source.StyleName;
             target.UserData = source.UserData;
 
             target._TagItemDict = null;
@@ -2771,6 +2809,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Image SelectedRowImage { get { return this._SelectedRowImage ?? this.Table.SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = null;
         /// <summary>
+        /// Explicitně definovaný styl pro tento řádek. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
+        /// </summary>
+        public GuiVisualStyle Style { get; set; }
+        /// <summary>
+        /// Název stylu pro tento řádek. Odkazuje se na <see cref="Table.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
+        /// </summary>
+        public string StyleName { get; set; }
+        /// <summary>
         /// Grafická instance reprezentující prostor řádku, grafický prvek, auitoinicializační
         /// </summary>
         public GRow Control
@@ -2811,20 +2857,6 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         private TreeNode _TreeNode;
-        #endregion
-        #region Visual style
-        /// <summary>
-        /// Všechny vizuální vlastnosti dat v tomto řádku (nikoli buňky ani tabulky).
-        /// Default hodnota je null.
-        /// </summary>
-        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } } private VisualStyle _VisualStyle;
-        VisualStyle IVisualMember.Style
-        {
-            get
-            {
-                return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
-            }
-        }
         #endregion
         #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
@@ -2951,6 +2983,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Barva pozadí tohoto řádku, null = výchozí
         /// </summary>
+        [Obsolete("Přejdeme na Table.Style", true)]
         public Color? BackColor { get; set; }
         /// <summary>
         /// Libovolná aplikační data.
@@ -2991,7 +3024,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// Cell : informace v jedné buňce tabulky (jeden sloupec v jednom řádku).
     /// Obsahuje data a formátovací informace.
     /// </summary>
-    public partial class Cell : IVisualMember
+    public partial class Cell
     {
         #region Konstruktor, reference na parenty této buňky
         internal Cell(Row dRow, int columnId)
@@ -3161,6 +3194,14 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
+        /// Explicitně definovaný styl pro tuto buňku. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
+        /// </summary>
+        public GuiVisualStyle Style { get; set; }
+        /// <summary>
+        /// Název stylu pro tuto buňku. Odkazuje se na <see cref="Table.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
+        /// </summary>
+        public string StyleName { get; set; }
+        /// <summary>
         /// Grafická instance reprezentující tuto buňku, grafický prvek, auitoinicializační
         /// </summary>
         public GCell Control
@@ -3174,26 +3215,6 @@ namespace Asol.Tools.WorkScheduler.Data
             set { this._Control = value; }
         }
         private GCell _Control;
-        #endregion
-        #region Visual style
-        /// <summary>
-        /// Všechny vizuální vlastnosti dat v této buňce.
-        /// Default hodnota je null.
-        /// </summary>
-        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
-        private VisualStyle _VisualStyle;
-        VisualStyle IVisualMember.Style
-        {
-            get
-            {
-                Column column = this.Column;
-                return VisualStyle.CreateFrom(
-                    this.VisualStyle,
-                    (this.HasRow ? this.Row.VisualStyle : null),
-                    (this.HasColumn ? this.Column.VisualStyle : null),
-                    (this.HasTable ? this.Table.VisualStyle : null));
-            }
-        }
         #endregion
         #region Datové služby buňky
         /// <summary>
@@ -3292,6 +3313,10 @@ namespace Asol.Tools.WorkScheduler.Data
                 table.Columns.AddRange(Column.CreateFrom(guiTable.Columns));   // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
                 table.Rows.AddRange(Row.CreateFrom(guiTable.Rows));            // Vytvoří řádky
                 table.AddTagItems(guiTable.TagItems);                          // Přidá TagItems z úrovně tabulky do jednotlivých řádků
+
+                table.DefaultVisualStyle = guiTable.DefaultVisualStyle?.GetClone();
+                table.DefaultChildVisualStyle = guiTable.DefaultChildVisualStyle?.GetClone();
+                table.VisualStyles = guiTable.VisualStyles;
             }
             return table;
         }
@@ -3416,6 +3441,8 @@ namespace Asol.Tools.WorkScheduler.Data
             column.Width = GetWidth(guiColumn.Width);                           // Na vstupu je šířka Noris, v této metodě to lze upravit
             column.RecordClassNumber = GetClassNumber(guiColumn);
             column.RelatedRecordColumnName = guiColumn.RelationRecordIdColumnName;
+            column.Style = guiColumn.Style;
+            column.StyleName = guiColumn.StyleName;
 
             return column;
         }
@@ -3619,8 +3646,9 @@ namespace Asol.Tools.WorkScheduler.Data
             Row row = new Row(guiRow.Cells.ToArray());
             row.RecordGId = guiRow.RowGuiId;
             row.ParentRecordGId = guiRow.ParentRowGuiId;
-            row.BackColor = guiRow.BackColor;
             row.TagItems = TagItem.CreateFrom(guiRow.TagItems);
+            row.Style = guiRow.Style;
+            row.StyleName = guiRow.StyleName;
             row.UserData = guiRow;
             return row;
         }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Asol.Tools.WorkScheduler.Data;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Components.Grid
 {
@@ -835,7 +836,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             // Je tu změna:
 
             // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
-            RepaintItems((oldHotRow != null ? oldHotRow.Control : null), 
+            RepaintItems((oldHotRow != null ? oldHotRow.Control : null),
                          (oldHotRow != null ? oldHotRow.RowHeader : null),
                          (newHotRow != null ? newHotRow.Control : null),
                          (newHotRow != null ? newHotRow.RowHeader : null));
@@ -902,7 +903,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         public int? ActiveRowIndex
         {
-            get 
+            get
             {
                 Row row = this.ActiveRow;
                 if (row == null) return null;
@@ -1490,7 +1491,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private void _TagFilterHeightCheck()
         {
             if (this._TagFilterHeight.HasValue) return;
-            
+
             if (this.TagFilterVisible)
             {
                 this._TagFilter.ItemHeight = this._DataTable.TagItemsRowHeight ?? Skin.TagFilter.ItemHeight;
@@ -1532,11 +1533,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Instance prvku <see cref="GRowHeader"/>. Vždy má správné souřadnice.
         /// </summary>
-        protected GTagLine TagHeaderL { get { this._TagHeaderL.Bounds = this.TagHeaderLBounds ; return this._TagHeaderL; } }
+        protected GTagLine TagHeaderL { get { this._TagHeaderL.Bounds = this.TagHeaderLBounds; return this._TagHeaderL; } }
         /// <summary>
         /// Instance prvku <see cref="TagFilter"/>. Vždy má správné souřadnice.
         /// </summary>
-        protected GTagFilter TagFilter { get { if (this._TagFilter.CurrentHeightState == GTagFilterHeightState.OneRow) this._TagFilter.Bounds = this.TagFilterBounds ; return this._TagFilter; } }
+        protected GTagFilter TagFilter { get { if (this._TagFilter.CurrentHeightState == GTagFilterHeightState.OneRow) this._TagFilter.Bounds = this.TagFilterBounds; return this._TagFilter; } }
         /// <summary>
         /// Instance prvku <see cref="GRowHeader"/>. Vždy má správné souřadnice.
         /// </summary>
@@ -1848,7 +1849,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud this tabulka může zobrazovat stromovou strukturu prvků
         /// </summary>
-        internal bool IsTreeView { get { return this._GetIsTreeView(); } } 
+        internal bool IsTreeView { get { return this._GetIsTreeView(); } }
         /// <summary>
         /// Metoda vykreslí všechny prvky související s TreeView.
         /// Do argumentu vloží souřadnici prostoru, který má být interaktivní - zde je vykreslena ikona pro Expand/Collapse nodu daného řádku.
@@ -2324,6 +2325,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             return args;
         }
+        /// <summary>
+        /// Metoda vyvolá událost <see cref="CallTableRowDragDrop(TableRowDragMoveArgs)"/>
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="args"></param>
         protected void RowDragCallDropEvent(GDragActionArgs e, TableRowDragMoveArgs args)
         {
             if (args != null)
@@ -2555,7 +2561,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             return isVisible;
         }
         #endregion
-        #region Draw : podpora pro kreslení obsahu řádků (pozadí, gridlines, hodnota)
+        #region Draw : podpora pro kreslení obsahu řádků (styl, pozadí, gridlines, hodnota)
         /// <summary>
         /// Metoda zajistí vykreslení pasivního obsahu dané buňky nebo řádku daného typu.
         /// Aktivní obsah (v současné době <see cref="Graph.ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
@@ -2569,8 +2575,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="cell">Buňka tabulky, anebo null pokud se kreslí pozadí pod řádkem</param>
         internal void DrawValue(GInteractiveDrawArgs e, Rectangle boundsAbsolute, object value, TableValueType valueType, Row row, Cell cell)
         {
+            this.GVisualStyle.PrepareFor(row, cell);
             this.DrawBackground(e, boundsAbsolute, row, cell);
-
             switch (valueType)
             {
                 case TableValueType.Null:
@@ -2609,6 +2615,20 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this.DrawRowBackColor(e, boundsAbsolute, row, cell);
         }
         /// <summary>
+        /// Metoda vykreslí pozadí (background) pro danou buňku jednoho řádku.
+        /// Metoda nekreslí GridLines.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        private void DrawRowBackColor(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
+        {
+            float? effect3d = null;
+            Color backColor = this._GetBackColor(row, cell, ref effect3d);
+            GPainter.DrawEffect3D(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, effect3d);
+        }
+        /// <summary>
         /// Vykreslí prázdnou buňku / řádek (jen pozadí)
         /// </summary>
         /// <param name="e"></param>
@@ -2636,15 +2656,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Obsah a zarovnání řádku:
             string formatString = cell.Column.FormatString;
+            ContentAlignment? columnAlignment = cell.Column.Alignment;
             ContentAlignment defaultAlignment;
             string text = GetText(value, valueType, formatString, out defaultAlignment);
             if (cell.Column.Alignment.HasValue) defaultAlignment = cell.Column.Alignment.Value;
+            ContentAlignment alignment = (columnAlignment ?? defaultAlignment);
 
-            VisualStyle style = ((IVisualMember)cell).Style;
-            ContentAlignment alignment = (cell.Column.Alignment.HasValue ? cell.Column.Alignment.Value :
-                                         (style.ContentAlignment.HasValue ? style.ContentAlignment.Value : defaultAlignment));
-            FontInfo font = style.Font ?? FontInfo.Default;
-            Color textColor = this.GetTextColor(row, cell);
+            // Font, barva textu:
+            FontInfo font = this.GVisualStyle.CurrentFontInfo;
+            Color textColor = this._GetTextColor(row, cell);
 
             Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
             GPainter.DrawString(e.Graphics, boundsContent, text, textColor, font, alignment);
@@ -2808,20 +2828,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             return Rectangle.Empty;
         }
         /// <summary>
-        /// Metoda vykreslí pozadí (background) pro danou buňku jednoho řádku.
-        /// Metoda nekreslí GridLines.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        /// <param name="row"></param>
-        /// <param name="cell"></param>
-        private void DrawRowBackColor(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
-        {
-            float? effect3d = null;
-            Color backColor = this.GetBackColor(row, cell, ref effect3d);
-            GPainter.DrawEffect3D(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, effect3d);
-        }
-        /// <summary>
         /// Metoda vykreslí linky ohraničující danou buňku jednoho řádku.
         /// Vykresluje se v podstatě jen dolní linka (jako Horizontal) a linka vpravo (Vertical).
         /// Horní a levá linka se nekreslí, protože u prvního řádku / sloupce postačí Header, a u dalších řádků / sloupců je vykreslená linka z předešlého řádku.
@@ -2831,31 +2837,32 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="boundsAbsolute"></param>
         internal void DrawRowGridLines(GInteractiveDrawArgs e, Cell cell, Rectangle boundsAbsolute)
         {
-            VisualStyle style = ((IVisualMember)this.DataTable).Style;
-            Color color = style.BorderColor ?? Skin.Grid.BorderLineColor;
-            BorderLinesType linesType = style.BorderLines ?? Skin.Grid.BorderLineType;
-            RectangleSide side = GetSidesFromLines(linesType);
-            GPainter.DrawBorder(e.Graphics, boundsAbsolute, side, null, color, null);
+            RectangleSide side = GetSidesFromLines(this.GVisualStyle.GridLines);
+            Color horizontalColor = this.GVisualStyle.HorizontalLineColor;
+            Color verticalColor = this.GVisualStyle.VerticalLineColor;
+            GPainter.DrawBorder(e.Graphics, boundsAbsolute, side, null, null, verticalColor, horizontalColor, null);
             if (cell.Row.IsActive)
             {
                 Rectangle boundsActive = boundsAbsolute.Enlarge(0, 0, 0, -1);
-                Color colorTop = Skin.Modifiers.GetColor3DBorderDark(color);
-                Color colorBottom = Skin.Modifiers.GetColor3DBorderLight(color);
-                GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, colorTop, null, colorBottom, null);
+                Color topColor = Skin.Modifiers.GetColor3DBorderDark(horizontalColor);
+                Color bottomColor = Skin.Modifiers.GetColor3DBorderLight(horizontalColor);
+                GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, topColor, null, bottomColor, null);
             }
         }
         /// <summary>
         /// Vrátí strany z typu borderu
         /// </summary>
-        /// <param name="linesType"></param>
+        /// <param name="gridLines"></param>
         /// <returns></returns>
-        protected static RectangleSide GetSidesFromLines(BorderLinesType linesType)
+        protected static RectangleSide GetSidesFromLines(GuiBorderSideType gridLines)
         {
             RectangleSide side = RectangleSide.None;
-            if (((linesType & (BorderLinesType.HorizontalSolid | BorderLinesType.HorizontalDotted | BorderLinesType.Horizontal3DSunken | BorderLinesType.Horizontal3DRisen))) != 0)
-                side |= RectangleSide.Bottom;
-            if (((linesType & (BorderLinesType.VerticalSolid | BorderLinesType.VerticalDotted | BorderLinesType.Vertical3DSunken | BorderLinesType.Vertical3DRisen))) != 0)
-                side |= RectangleSide.Right;
+
+            if (gridLines.HasFlag(GuiBorderSideType.Left)) side |= RectangleSide.Left;
+            if (gridLines.HasFlag(GuiBorderSideType.Top)) side |= RectangleSide.Top;
+            if (gridLines.HasFlag(GuiBorderSideType.Right)) side |= RectangleSide.Right;
+            if (gridLines.HasFlag(GuiBorderSideType.Bottom)) side |= RectangleSide.Bottom;
+
             return side;
         }
         /// <summary>
@@ -2871,30 +2878,42 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (row == null && cell == null) return Skin.Grid.RowBackColor;
 
-            // Explicitní barva zadaná v řádku (ale i na ni se aplikuje barva daná aktivitou buňky i řádku, a selectováním):
-            Color? rowColor = row.BackColor;
-
-            // Vizuální styl z buňky - z řádku - z tabulky:
-            VisualStyle style = (cell != null ? ((IVisualMember)cell).Style : (row != null ? ((IVisualMember)row).Style : ((IVisualMember)this.DataTable).Style));
-
-            // Základní barva pozadí prvku vychází z barvy standardní, nebo Selected, podle stavu row.IsSelected; primárně z dodaného vizuálního stylu, sekundárně z palety:
-            bool isRowChecked = row.IsChecked;
-            bool isTreeRoot = row.TreeNode.IsRoot;
-            Color? styleColor = ((style != null) ? style.GetBackColor(isTreeRoot, isRowChecked) : null);
-            Color baseColor = rowColor ?? styleColor ?? Skin.Grid.GetBackColor(isTreeRoot, isRowChecked);
+            this.GVisualStyle.PrepareFor(row, cell);
+            return this._GetBackColor(row, cell, ref effect3D);
+        }
+        /// <summary>
+        /// Vrátí aktuální barvu pozadí.
+        /// Před voláním této metody je třeba připravit vizuální styl v <see cref="GVisualStyle"/>, voláním <see cref="GTableVisualStyle.PrepareFor(Row, Cell)"/>.
+        /// </summary>
+        /// <param name="row">Řádek</param>
+        /// <param name="cell">Buňka</param>
+        /// <returns></returns>
+        private Color _GetBackColor(Row row, Cell cell)
+        {
+            float? effect3d = null;
+            return this._GetBackColor(row, cell, ref effect3d);
+        }
+        /// <summary>
+        /// Vrátí aktuální barvu pozadí.
+        /// Před voláním této metody je třeba připravit vizuální styl v <see cref="GVisualStyle"/>, voláním <see cref="GTableVisualStyle.PrepareFor(Row, Cell)"/>.
+        /// </summary>
+        /// <param name="row">Řádek</param>
+        /// <param name="cell">Buňka</param>
+        /// <param name="effect3D"></param>
+        /// <returns></returns>
+        private Color _GetBackColor(Row row, Cell cell, ref float? effect3D)
+        {
+            // Základní barva pozadí, daná stavem řádku Active, Selected, Root:
+            Color backColor = this.GVisualStyle.CurrentBackColor;
 
             // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
             float ratio = this.GetMorphRatio(row, cell, ref effect3D);
 
             // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez morphování:
-            if (ratio == 0f) return baseColor;
+            if (ratio == 0f) return backColor;
 
             // Pokud je aktuální prvek v nějakém aktivním stavu (má kladné ratio pro morfing barvy):
-            Color activeColor = ((style == null) ?
-                Skin.Grid.ActiveCellBackColor : 
-                style.ActiveBackColor ?? Skin.Grid.ActiveCellBackColor);
-
-            return baseColor.Morph(activeColor, ratio);
+            return backColor.Morph(this.GVisualStyle.ActiveBackColor, ratio);
         }
         /// <summary>
         /// Vrátí barvu pro vykreslení textu dané buňky a řádku, pro jejich vizuální styl.
@@ -2908,26 +2927,29 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (row == null && cell == null) return Skin.Grid.RowTextColor;
 
-            // Vizuální styl z buňky - z řádku - z tabulky:
-            VisualStyle style = (cell != null ? ((IVisualMember)cell).Style : (row != null ? ((IVisualMember)row).Style : ((IVisualMember)this.DataTable).Style));
-
-            // Základní barva prvku je podle jeho stavu isSelected, primárně ze stylu prvku, při nezadání barvy pak z odpovídající položky Skinu pro Grid:
-            Color baseColor = ((style == null) ?
-                (row.IsChecked ? Skin.Grid.SelectedRowTextColor : Skin.Grid.RowTextColor) :
-                (row.IsChecked ? (style.SelectedTextColor ?? Skin.Grid.SelectedRowTextColor) : (style.TextColor ?? Skin.Grid.RowTextColor)));
+            this.GVisualStyle.PrepareFor(row, cell);
+            return this._GetTextColor(row, cell);
+        }
+        /// <summary>
+        /// Vrátí aktuální barvu textu.
+        /// Před voláním této metody je třeba připravit vizuální styl v <see cref="GVisualStyle"/>, voláním <see cref="GTableVisualStyle.PrepareFor(Row, Cell)"/>.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        private Color _GetTextColor(Row row, Cell cell)
+        {
+            // Základní barva pozadí, daná stavem řádku Active, Selected, Root:
+            Color textColor = this.GVisualStyle.CurrentTextColor;
 
             // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
             float ratio = this.GetMorphRatio(row, cell);
 
             // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez morphování:
-            if (ratio == 0f) return baseColor;
+            if (ratio == 0f) return textColor;
 
             // Pokud je aktuální prvek v nějakém aktivním stavu (má kladné ratio pro morfing barvy):
-            Color activeColor = ((style == null) ?
-                Skin.Grid.ActiveCellTextColor :
-                (style.ActiveTextColor ?? Skin.Grid.ActiveCellTextColor));
-
-            return baseColor.Morph(activeColor, ratio);
+            return textColor.Morph(this.GVisualStyle.ActiveTextColor, ratio);
         }
         /// <summary>
         /// Vrátí ratio pro morphing základní barvy (BackColor, TextColor) pro daný řádek a buňku, v závislosti na jejich stavu Hot, Active a Focus.
@@ -3016,6 +3038,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected const float EFFECT_3D_ACTIVE_ROW = 0.45f;
         /// <summary>Konstanta pro Morphing</summary>
         protected const float EFFECT_3D_MOUSEHOT_ROW = 0.30f;
+        /// <summary>
+        /// Adapter na vizuální styl kreslení konkrétní buňky/řádku/sloupce
+        /// </summary>
+        internal GTableVisualStyle GVisualStyle
+        {
+            get
+            {
+                if (this._GVisualStyle == null)
+                    this._GVisualStyle = new GTableVisualStyle(this);
+                return this._GVisualStyle;
+            }
+        }
+        private GTableVisualStyle _GVisualStyle;
         #endregion
         #region Defaultní hodnoty
         /// <summary>
@@ -3186,6 +3221,244 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
     }
+    #region class GTableVisualStyle : adapter na styl kreslení pro konkrétní buňku/řádek v rámci tabulky
+    /// <summary>
+    /// GTableVisualStyle : adapter na styl kreslení pro konkrétní buňku/řádek v rámci tabulky
+    /// </summary>
+    internal class GTableVisualStyle
+    {
+        #region Konstruktor a věci trvalého charakteru (tabulka a implicitní styl)
+        /// <summary>
+        /// Konstruktor pro tabulku
+        /// </summary>
+        /// <param name="gTable"></param>
+        public GTableVisualStyle(GTable gTable)
+        {
+            this.GTable = gTable;
+            this.ImplicitStyle = Data.Table.ImplicitStyle;
+        }
+        /// <summary>
+        /// Tabulka, v jejímž rámci se kreslí
+        /// </summary>
+        protected GTable GTable { get; private set; }
+        /// <summary>
+        /// Datová tabulka, zdroj dat a stylů
+        /// </summary>
+        protected Table DataTable { get { return this.GTable.DataTable; } }
+        /// <summary>
+        /// Defaultní hodnoty, když jiné nebudou definovány.
+        /// V této property jsou vyplněny všechny hodnoty, žádná není null.
+        /// Použijí se tehdy, když konkrétnější styly nejsou zadány.
+        /// </summary>
+        protected GuiVisualStyle ImplicitStyle { get; private set; }
+        #endregion
+        #region Styly připravené ad-hoc pro kreslení jedné buňky
+        /// <summary>
+        /// Metoda si připraví hodnoty pro následné kreslení v rámci daného řádku a buňky.
+        /// Buňka může být null, řádek by neměl být null.
+        /// Metoda do sebe vloží styly odpovídající definici.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        internal void PrepareFor(Row row, Cell cell)
+        {
+            Column column = cell?.Column;
+
+            this.TableDefaultStyle = this.DataTable.DefaultVisualStyle;
+            this.TableDefaultChildStyle = this.DataTable.DefaultChildVisualStyle;
+            this.RowStyle = (row != null ? this.GetVisualStyle(row.Style, row.StyleName) : null);
+            this.RowIsActive = (row != null ? row.IsActive : false);
+            this.RowIsChild = (row != null ? row.TreeNode.IsChild : false);
+            this.RowIsChecked = (row != null ? row.IsChecked : false);
+            this.ColumnStyle = (column != null ? this.GetVisualStyle(column.Style, column.StyleName) : null);
+            this.CellStyle = (cell != null ? this.GetVisualStyle(cell.Style, cell.StyleName) : null);
+        }
+        /// <summary>
+        /// Vrátí dodaný explicitní styl, anebo styl odpovídající danému jménu
+        /// </summary>
+        /// <param name="style"></param>
+        /// <param name="styleName"></param>
+        /// <returns></returns>
+        protected GuiVisualStyle GetVisualStyle(GuiVisualStyle style, string styleName)
+        {
+            if (style != null) return style;
+            if (!String.IsNullOrEmpty(styleName)) return this.DataTable.GetVisualStyle(styleName);
+            return null;
+        }
+        /// <summary>
+        /// Tabulka: Vizuální styl základní
+        /// <see cref="Table.DefaultVisualStyle"/>
+        /// </summary>
+        protected GuiVisualStyle TableDefaultStyle { get; private set; }
+        /// <summary>
+        /// Tabulka: Vizuální styl základní pro Child řádky
+        /// <see cref="Table.DefaultChildVisualStyle"/>
+        /// </summary>
+        protected GuiVisualStyle TableDefaultChildStyle { get; private set; }
+        /// <summary>
+        /// Řádek: styl definovaný na účovni řádku
+        /// </summary>
+        protected GuiVisualStyle RowStyle { get; private set; }
+        /// <summary>
+        /// true pokud řádek je Aktivním řádkem, false pro ostatná řádky
+        /// </summary>
+        protected bool RowIsActive { get; private set; }
+        /// <summary>
+        /// true pokud řádek je Child řádkem, false pro Root řádek
+        /// </summary>
+        protected bool RowIsChild { get; private set; }
+        /// <summary>
+        /// true pokud řádek je IsChecked, false pro nezaškrtnutý řádek
+        /// </summary>
+        protected bool RowIsChecked { get; private set; }
+        /// <summary>
+        /// Sloupec: styl definovaný na účovni sloupce
+        /// </summary>
+        protected GuiVisualStyle ColumnStyle { get; private set; }
+        /// <summary>
+        /// Buňka: styl definovaný na účovni buňky
+        /// </summary>
+        protected GuiVisualStyle CellStyle { get; private set; }
+        #endregion
+        #region Hodnoty konkrétních vizuálních vlastností, získané z vhodného stylu
+        /// <summary>
+        /// Typ fontu.
+        /// Konkrétní typ použitý na počítači je dán přiřazením fontu v rámci Windows na počítači, kde aplikace běží.
+        /// </summary>
+        public GuiFontSetType FontType { get { return GetFirst(this.CellStyle?.FontType, this.RowStyle?.FontType, this.ColumnStyle?.FontType, (this.RowIsChild ? this.TableDefaultChildStyle?.FontType : null), this.TableDefaultStyle?.FontType, this.ImplicitStyle.FontType); } }
+        /// <summary>
+        /// Relativní velikost fontu v procentech. Null = 100 = 100%
+        /// </summary>
+        public int FontRelativeSize { get { return GetFirst(this.CellStyle?.FontRelativeSize, this.RowStyle?.FontRelativeSize, this.ColumnStyle?.FontRelativeSize, (this.RowIsChild ? this.TableDefaultChildStyle?.FontRelativeSize : null), this.TableDefaultStyle?.FontRelativeSize, this.ImplicitStyle.FontRelativeSize); } }
+        /// <summary>
+        /// Font je Bold?
+        /// </summary>
+        public bool FontBold { get { return GetFirst(this.CellStyle?.FontBold, this.RowStyle?.FontBold, this.ColumnStyle?.FontBold, (this.RowIsChild ? this.TableDefaultChildStyle?.FontBold : null), this.TableDefaultStyle?.FontBold, this.ImplicitStyle.FontBold); } }
+        /// <summary>
+        /// Font je Italic?
+        /// </summary>
+        public bool FontItalic { get { return GetFirst(this.CellStyle?.FontItalic, this.RowStyle?.FontItalic, this.ColumnStyle?.FontItalic, (this.RowIsChild ? this.TableDefaultChildStyle?.FontItalic : null), this.TableDefaultStyle?.FontItalic, this.ImplicitStyle.FontItalic); } }
+        /// <summary>
+        /// Font je Underlined?
+        /// </summary>
+        public bool FontUnderline { get { return GetFirst(this.CellStyle?.FontUnderline, this.RowStyle?.FontUnderline, this.ColumnStyle?.FontUnderline, (this.RowIsChild ? this.TableDefaultChildStyle?.FontUnderline : null), this.TableDefaultStyle?.FontUnderline, this.ImplicitStyle.FontUnderline); } }
+
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
+        /// </summary>
+        public Color BackColor
+        {
+            get
+            {
+                /*
+                Color? c1 = this.CellStyle?.BackColor;
+                Color? c2 = this.RowStyle?.BackColor;
+                Color? c3 = this.ColumnStyle?.BackColor;
+                Color? c4 = (this.RowIsChild ? this.TableDefaultChildStyle?.BackColor : null);
+                Color? c5 = this.TableDefaultStyle?.BackColor;
+                Color? c6 = this.ImplicitStyle.BackColor;
+                Color c0 = GetFirst(c1, c2, c3, c4, c5, c6);
+                return c0;
+                */
+                return GetFirst(this.CellStyle?.BackColor, this.RowStyle?.BackColor, this.ColumnStyle?.BackColor, (this.RowIsChild ? this.TableDefaultChildStyle?.BackColor : null), this.TableDefaultStyle?.BackColor, this.ImplicitStyle.BackColor);
+            }
+        }
+        /// <summary>
+        /// Barva textu v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
+        /// </summary>
+        public Color TextColor { get { return GetFirst(this.CellStyle?.TextColor, this.RowStyle?.TextColor, this.ColumnStyle?.TextColor, (this.RowIsChild ? this.TableDefaultChildStyle?.TextColor : null), this.TableDefaultStyle?.TextColor, this.ImplicitStyle.TextColor); } }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
+        /// </summary>
+        public Color SelectedBackColor { get { return GetFirst(this.CellStyle?.SelectedBackColor, this.RowStyle?.SelectedBackColor, this.ColumnStyle?.SelectedBackColor, (this.RowIsChild ? this.TableDefaultChildStyle?.SelectedBackColor : null), this.TableDefaultStyle?.SelectedBackColor, this.ImplicitStyle.SelectedBackColor); } }
+        /// <summary>
+        /// Barva textu v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
+        /// </summary>
+        public Color SelectedTextColor { get { return GetFirst(this.CellStyle?.SelectedTextColor, this.RowStyle?.SelectedTextColor, this.ColumnStyle?.SelectedTextColor, (this.RowIsChild ? this.TableDefaultChildStyle?.SelectedTextColor : null), this.TableDefaultStyle?.SelectedTextColor, this.ImplicitStyle.SelectedTextColor); } }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je tento prvek aktivní (řádek je vybraný) a v jeho controlu je focus.
+        /// Po odchodu focusu z tohoto prvku je barva prvku změněna na 50% směrem k barvě BackColor nebo SelectedBackColor.
+        /// </summary>
+        public Color ActiveBackColor { get { return GetFirst(this.CellStyle?.ActiveBackColor, this.RowStyle?.ActiveBackColor, this.ColumnStyle?.ActiveBackColor, (this.RowIsChild ? this.TableDefaultChildStyle?.ActiveBackColor : null), this.TableDefaultStyle?.ActiveBackColor, this.ImplicitStyle.ActiveBackColor); } }
+        /// <summary>
+        /// Barva písma v prvku (řádek, buňka) pokud je tento prvek aktivní (řádek je vybraný) a v jeho controlu je focus.
+        /// Po odchodu focusu z tohoto prvku je barva prvku změněna na 50% směrem k barvě TextColor nebo SelectedTextColor.
+        /// </summary>
+        public Color ActiveTextColor { get { return GetFirst(this.CellStyle?.ActiveTextColor, this.RowStyle?.ActiveTextColor, this.ColumnStyle?.ActiveTextColor, (this.RowIsChild ? this.TableDefaultChildStyle?.ActiveTextColor : null), this.TableDefaultStyle?.ActiveTextColor, this.ImplicitStyle.ActiveTextColor); } }
+        /// <summary>
+        /// Obsahuje aktuální barvu pozadí.
+        /// Barva reaguje na hodnoty aktuálního řádku: <see cref="Row.IsActive"/>, <see cref="Row.IsChecked"/>, <see cref="Row.TreeNode"/>.IsRoot
+        /// </summary>
+        public Color CurrentBackColor
+        {
+            get
+            {
+                if (this.RowIsActive) return this.ActiveBackColor;
+                if (this.RowIsChecked) return this.SelectedBackColor;
+                return this.BackColor;
+            }
+        }
+        /// <summary>
+        /// Obsahuje aktuální barvu textu.
+        /// Barva reaguje na hodnoty aktuálního řádku: <see cref="Row.IsActive"/>, <see cref="Row.IsChecked"/>, <see cref="Row.TreeNode"/>.IsRoot
+        /// </summary>
+        public Color CurrentTextColor
+        {
+            get
+            {
+                if (this.RowIsActive) return this.ActiveTextColor;
+                if (this.RowIsChecked) return this.SelectedTextColor;
+                return this.TextColor;
+            }
+        }
+        /// <summary>
+        /// Strany kreslené okolo buňky
+        /// </summary>
+        public GuiBorderSideType GridLines { get { return GetFirst(this.CellStyle?.GridLines, this.RowStyle?.GridLines, this.ColumnStyle?.GridLines, (this.RowIsChild ? this.TableDefaultChildStyle?.GridLines : null), this.TableDefaultStyle?.GridLines, this.ImplicitStyle.GridLines); } }
+        /// <summary>
+        /// Barva vodorovných linek
+        /// </summary>
+        public Color HorizontalLineColor { get { return GetFirst(this.CellStyle?.HorizontalLineColor, this.RowStyle?.HorizontalLineColor, this.ColumnStyle?.HorizontalLineColor, (this.RowIsChild ? this.TableDefaultChildStyle?.HorizontalLineColor : null), this.TableDefaultStyle?.HorizontalLineColor, this.ImplicitStyle.HorizontalLineColor); } }
+        /// <summary>
+        /// Barva svislých linek
+        /// </summary>
+        public Color VerticalLineColor { get { return GetFirst(this.CellStyle?.VerticalLineColor, this.RowStyle?.VerticalLineColor, this.ColumnStyle?.VerticalLineColor, (this.RowIsChild ? this.TableDefaultChildStyle?.VerticalLineColor : null), this.TableDefaultStyle?.VerticalLineColor, this.ImplicitStyle.VerticalLineColor); } }
+
+        /// <summary>
+        /// Aktuální font
+        /// </summary>
+        public FontInfo CurrentFontInfo
+        {
+            get
+            {
+                return new FontInfo()
+                {
+                    FontType = (FontSetType)((int)this.FontType),
+                    RelativeSize = this.FontRelativeSize,
+                    Bold = this.FontBold,
+                    Italic = this.FontItalic,
+                    Underline = this.FontUnderline
+                };
+            }
+        }
+        /// <summary>
+        /// Vrátí první not null hodnotu z dodaných parametrů.
+        /// Pokud jsou všechny null, vrací se default(T).
+        /// </summary>
+        /// <typeparam name="T">Typ, který se má vracet (obsah nullable parametru)</typeparam>
+        /// <param name="values">Seznam dodaných hodnot</param>
+        /// <returns></returns>
+        protected static T GetFirst<T>(params T?[] values) where T : struct
+        {
+            foreach (T? value in values)
+            {
+                if (value.HasValue) return value.Value;
+            }
+            return default(T);
+        }
+        #endregion
+    }
+    #endregion
     #region class TreeViewDrawArgs : Argumenty pro kreslení TreeView struktury
     /// <summary>
     /// TreeViewDrawArgs : Argumenty pro kreslení TreeView struktury

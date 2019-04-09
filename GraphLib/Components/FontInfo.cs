@@ -193,14 +193,15 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Get font from cache; Create new font
         /// <summary>
-        /// Real font. 
-        /// Return re-usable font from cache.
-        /// Do not use as Dispose object (in using { ... } pattern), font is re-usable!!!
+        /// Fyzický font odpovídající aktuálním datům.
+        /// Tento objekt se NESMÍ používat v using patternu, je to opakovaně použitelný objekt (získaný z interní cache).
+        /// Pokud po získání hodnoty <see cref="Font"/> dojde ke změně hodnot v this objektu, 
+        /// pak nové čtení hodnoty <see cref="Font"/> vrátí fyzicky jinou instanci, které bude mít patřičné hodnoty.
         /// </summary>
         public Font Font { get { return _GetFontFromCache(this); } }
         /// <summary>
-        /// Create new font by this descriptor.
-        /// Result must be used in using { } pattern. This is not font from cache!!!
+        /// Metoda vygeneruje fyzický font odpovídající aktuálním datům.
+        /// Tento objekt se MUSÍ používat v using patternu, je to new instance vytvořená výhradně pro účel této metody (nejde o objekt z cache).
         /// </summary>
         /// <returns></returns>
         public Font CreateNewFont()
@@ -334,23 +335,23 @@ namespace Asol.Tools.WorkScheduler.Components
     public enum FontSetType
     {
         /// <summary>Konkrétní typ písma</summary>
-        DefaultFont,
+        DefaultFont = 0,
         /// <summary>Konkrétní typ písma</summary>
-        DialogFont,
+        DialogFont = 1,
         /// <summary>Konkrétní typ písma</summary>
-        MenuFont,
+        MenuFont = 2,
         /// <summary>Konkrétní typ písma</summary>
-        CaptionFont,
+        CaptionFont = 3,
         /// <summary>Konkrétní typ písma</summary>
-        IconTitleFont,
+        IconTitleFont = 4,
         /// <summary>Konkrétní typ písma</summary>
-        MessageBoxFont,
+        MessageBoxFont = 5,
         /// <summary>Konkrétní typ písma</summary>
-        SmallCaptionFont,
+        SmallCaptionFont = 6,
         /// <summary>Konkrétní typ písma</summary>
-        StatusFont,
+        StatusFont = 7,
         /// <summary>Konkrétní typ písma</summary>
-        ExplicitFont
+        ExplicitFont = 8
     }
     #endregion
 }

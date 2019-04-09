@@ -1332,6 +1332,20 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál.
         /// </summary>
         public Color? TreeViewLinkColor { get; set; }
+        /// <summary>
+        /// Vizuální styl základní
+        /// </summary>
+        public GuiVisualStyle DefaultVisualStyle { get; set; }
+        /// <summary>
+        /// Vizuální styl základní pro Child řádky
+        /// </summary>
+        public GuiVisualStyle DefaultChildVisualStyle { get; set; }
+        /// <summary>
+        /// Knihovna explicitních vizuálních stylů, použitých v buňkách / řádcích / sloupcích...
+        /// Každý prvek tabulky má property StyleName, která se odkazuje na jméno <see cref="GuiVisualStyle"/>.Name do tohoto seznamu.
+        /// Prvek tabulky sám nemá svůj objekt <see cref="GuiVisualStyle"/>, fyzické definice stylů jsou v tomto seznamu <see cref="VisualStyles"/>.
+        /// </summary>
+        public List<GuiVisualStyle> VisualStyles { get; set; }
         #endregion
         #region Vytvoření instance GuiDataTable z System.Data.DataTable
         /// <summary>
@@ -1483,6 +1497,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int? RelationClassId { get; set; }
 
+        /// <summary>
+        /// Explicitně definovaný styl pro tento sloupec. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
+        /// </summary>
+        public GuiVisualStyle Style { get; set; }        /// <summary>
+                                                         /// Název stylu pro tento sloupec. Odkazuje se na <see cref="GuiDataTable.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
+                                                         /// </summary>
+        public string StyleName { get; set; }
         #endregion
         #region Vytvoření instance GuiDataColumn z System.Data.DataColumn
         /// <summary>
@@ -1877,7 +1898,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Barva pozadí tohoto řádku, null = výchozí
         /// </summary>
+        [Obsolete("Přejdeme na Table.Style", true)]
         public Color? BackColor { get; set; }
+        /// <summary>
+        /// Explicitně definovaný styl pro tento řádek. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
+        /// </summary>
+        public GuiVisualStyle Style { get; set; }
+        /// <summary>
+        /// Název stylu pro tento řádek. Odkazuje se na <see cref="GuiDataTable.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
+        /// </summary>
+        public string StyleName { get; set; }
         #endregion
         #region Servis
         /// <summary>
@@ -4105,8 +4135,134 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     #endregion
-    #region GuiColorN : Třída pro zkrácené předávání nullable barvy
+    #region GuiVisualStyle : Třída pro definici vizuálního vzhledu grafického prvku
+    /// <summary>
+    /// GuiVisualStyle : Třída pro definici vizuálního vzhledu grafického prvku
+    /// </summary>
+    public class GuiVisualStyle : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiVisualStyle() { }
 
+        /// <summary>
+        /// Typ fontu.
+        /// Konkrétní typ použitý na počítači je dán přiřazením fontu v rámci Windows na počítači, kde aplikace běží.
+        /// </summary>
+        public GuiFontSetType? FontType { get; set; }
+        /// <summary>
+        /// Relativní velikost fontu v procentech. Null = 100 = 100%
+        /// </summary>
+        public int? FontRelativeSize { get; set; }
+        /// <summary>
+        /// Font je Bold?
+        /// </summary>
+        public bool? FontBold { get; set; }
+        /// <summary>
+        /// Font je Italic?
+        /// </summary>
+        public bool? FontItalic { get; set; }
+        /// <summary>
+        /// Font je Underlined?
+        /// </summary>
+        public bool? FontUnderline { get; set; }
+
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva textu v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
+        /// </summary>
+        public Color? TextColor { get; set; }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
+        /// </summary>
+        public Color? SelectedBackColor { get; set; }
+        /// <summary>
+        /// Barva textu v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
+        /// </summary>
+        public Color? SelectedTextColor { get; set; }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je tento prvek aktivní (řádek je vybraný) a v jeho controlu je focus.
+        /// Po odchodu focusu z tohoto prvku je barva prvku změněna na 50% směrem k barvě BackColor nebo SelectedBackColor.
+        /// </summary>
+        public Color? ActiveBackColor { get; set; }
+        /// <summary>
+        /// Barva písma v prvku (řádek, buňka) pokud je tento prvek aktivní (řádek je vybraný) a v jeho controlu je focus.
+        /// Po odchodu focusu z tohoto prvku je barva prvku změněna na 50% směrem k barvě TextColor nebo SelectedTextColor.
+        /// </summary>
+        public Color? ActiveTextColor { get; set; }
+        /// <summary>
+        /// Strany kreslené okolo buňky
+        /// </summary>
+        public GuiBorderSideType? GridLines { get; set; }
+        /// <summary>
+        /// Barva vodorovných linek
+        /// </summary>
+        public Color? HorizontalLineColor { get; set; }
+        /// <summary>
+        /// Barva svislých linek
+        /// </summary>
+        public Color? VerticalLineColor { get; set; }
+
+        /// <summary>
+        /// Vrátí shallow copy sebe sama
+        /// </summary>
+        /// <returns></returns>
+        public GuiVisualStyle GetClone()
+        {
+            return this.MemberwiseClone() as GuiVisualStyle;
+        }
+    }
+    /// <summary>
+    /// Typ použitého fontu, reálný typ se odvozuje od aktuální sady na počítači
+    /// </summary>
+    public enum GuiFontSetType
+    {
+        /// <summary>Konkrétní typ písma</summary>
+        DefaultFont = 0,
+        /// <summary>Konkrétní typ písma</summary>
+        DialogFont = 1,
+        /// <summary>Konkrétní typ písma</summary>
+        MenuFont = 2,
+        /// <summary>Konkrétní typ písma</summary>
+        CaptionFont = 3,
+        /// <summary>Konkrétní typ písma</summary>
+        IconTitleFont = 4,
+        /// <summary>Konkrétní typ písma</summary>
+        MessageBoxFont = 5,
+        /// <summary>Konkrétní typ písma</summary>
+        SmallCaptionFont = 6,
+        /// <summary>Konkrétní typ písma</summary>
+        StatusFont = 7,
+        /// <summary>Konkrétní typ písma</summary>
+        ExplicitFont = 8
+    }
+    /// <summary>
+    /// Strany kreslené okolo prvku
+    /// </summary>
+    [Flags]
+    public enum GuiBorderSideType
+    {
+        /// <summary>Žádná</summary>
+        None = 0,
+        /// <summary>Vlevo</summary>
+        Left = 0x01,
+        /// <summary>Vpravo</summary>
+        Right = 0x02,
+        /// <summary>Nahoře</summary>
+        Top = 0x10,
+        /// <summary>Dole</summary>
+        Bottom = 0x20,
+        /// <summary>Vodorovné = nahoře + dole</summary>
+        Horizontal = Top | Bottom,
+        /// <summary>Svislé = vlevo + vpravo</summary>
+        Vertical = Left | Right,
+        /// <summary>Všechny</summary>
+        All = Horizontal | Vertical
+    }
     #endregion
     #region GuiIdText : třída pro předání odkazu na záznam (GuiId) plus vizuální text
     /// <summary>
