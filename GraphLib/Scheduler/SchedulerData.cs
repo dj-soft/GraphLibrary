@@ -656,7 +656,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             protected ToolBarItem(IFunctionProvider provider, GuiToolbarItem guiToolBarItem) : base(provider)
             {
                 this._GuiToolBarItem = guiToolBarItem;
-                this.ItemType = FunctionGlobalItemType.Button;
+                this.ItemType = guiToolBarItem.ItemType ?? FunctionGlobalItemType.Button;
             }
             /// <summary>
             /// Obsahuje true v situaci, kdy existuje <see cref="_GuiToolBarItem"/>

@@ -3382,6 +3382,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiImage ImageChecked { get; set; }
         /// <summary>
+        /// Druh prvku
+        /// </summary>
+        public FunctionGlobalItemType? ItemType { get; set; }
+        /// <summary>
         /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
         /// Výchozí hodnota = null, bude interpretována jako Half.
         /// </summary>
@@ -5754,7 +5758,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Obrázek
         /// </summary>
-        Image
+        Image,
+        /// <summary>
+        /// TrackBar
+        /// </summary>
+        TrackBar
     }
     /// <summary>
     /// Velikost prvku na toolbaru. Lze chápat jako počet prvků dané velikosti, které zaplní toolbar na výšku.

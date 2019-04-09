@@ -1318,7 +1318,6 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            string name = this.DataItem.Name;
             this.DrawItemBackground(e, absoluteBounds, this.Is.Checked);
             this.DrawItemImage(e, absoluteBounds);
             this.DrawItemText(e, absoluteBounds);
@@ -1475,6 +1474,30 @@ namespace Asol.Tools.WorkScheduler.Components
         }
     }
     /// <summary>
+    /// Konkrétní položka Toolbaru: TrackBar
+    /// </summary>
+    internal class GToolBarTrackBar : GToolBarItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        internal GToolBarTrackBar(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
+        {
+        }
+        internal override void PrepareLayout(Graphics graphics)
+        {
+            this.PrepareBoundsCommon(graphics);
+        }
+        protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            this.DrawItemBackground(e, absoluteBounds);
+            this.DrawItemImage(e, absoluteBounds);
+            this.DrawItemText(e, absoluteBounds);
+        }
+    }
+    /// <summary>
     /// Bázová abstraktní třída pro konkrétní položky Toolbaru
     /// </summary>
     internal abstract class GToolBarItem : InteractiveContainer, ILayoutItem
@@ -1521,7 +1544,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case FunctionGlobalItemType.Image: return new GToolBarImage(toolbarGroup, dataItem);
                 case FunctionGlobalItemType.Button: return new GToolBarButton(toolbarGroup, dataItem);
                 case FunctionGlobalItemType.ComboBox: return new GToolBarComboBox(toolbarGroup, dataItem);
-
+                case FunctionGlobalItemType.TrackBar: return new GToolBarTrackBar(toolbarGroup, dataItem);
             }
             return null;
         }
