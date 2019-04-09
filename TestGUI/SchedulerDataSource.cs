@@ -1054,6 +1054,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameRowsCenterTop);
             gridCenterWorkplace.RowTable.RowCheckEnabled = false;
+            gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
+            gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -1117,6 +1119,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterBottom, Title = "Pracovníci" };
 
             this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameRowsCenterBottom);
+            gridCenterPersons.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
+            gridCenterPersons.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
             gridCenterPersons.RowTable.RowCheckEnabled = false;
             gridCenterPersons.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragActivePlusSelectedRows + " " + GuiGridProperties.RowDragSource_Root;
             gridCenterPersons.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + ", " + GuiGridProperties.RowDragTarget_ToItem;
