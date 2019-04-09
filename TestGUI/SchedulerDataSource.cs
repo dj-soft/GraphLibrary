@@ -855,9 +855,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
+                ItemType = FunctionGlobalItemType.TrackBar,
+                Size = FunctionGlobalItemSize.Whole,
+                Image = RES.Images.Actions.DbAdd2Png
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
                 Name = GuiNameToolbarShowColorSet1,
                 Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.NextItemOnSameRow,
+                LayoutHint = LayoutHint.ThisItemSkipToNextTable | LayoutHint.NextItemOnSameRow,
                 GroupName = "OZNAČIT OPERACE",
                 Title = "Barva 1",
                 ToolTip = "Aktivuje barvy skupiny 1.",
