@@ -1416,7 +1416,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiId rowGid = planUnitC.RecordGid;
             GuiIdText mc = new GuiIdText() { GuiId = new GuiId(PlanUnitC.ClassNumber, planUnitC.RecordId), Text = planUnitC.MachinesCount.ToString() };
             GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, mc);      // planUnitC.MachinesCount
-            row.BackColor = planUnitC.RowBackColor;
+            row.Style = new GuiVisualStyle() { BackColor = planUnitC.RowBackColor };
             row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
             row.Graph = planUnitC.CreateGuiGraphWork();
         }
@@ -1429,7 +1429,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GuiId rowGid = planUnitC.RecordGid;
             GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name);
-            row.BackColor = planUnitC.RowBackColor;
+            row.Style = new GuiVisualStyle() { BackColor = planUnitC.RowBackColor };
             row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
             row.Graph = planUnitC.CreateGuiGraphTime();
         }

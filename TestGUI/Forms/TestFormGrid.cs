@@ -202,15 +202,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     cim.UseImageAsToolTip = true;
 
                     Cell cellKey = row["key"];
-                    cellKey.VisualStyle = new VisualStyle();
-                    cellKey.VisualStyle.Font = new FontInfo();
-                    cellKey.VisualStyle.Font.RelativeSize = 120;
                     if ((r % 5) == 0)
-                    {
-                        cellKey.VisualStyle.Font.Bold = true;
-                        cellKey.VisualStyle.BackColor = Color.LightYellow;
-                    }
-
+                        cellKey.StyleName = "Bold";
 
                     imgPointer = (++imgPointer) % imgCount;
                 }
@@ -333,9 +326,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 table.GraphParameters.LogarithmicRatio = 0.70f;
                 table.GraphParameters.LogarithmicGraphDrawOuterShadow = 0.30f;
 
-                table.VisualStyle.BorderLines = BorderLinesType.HorizontalSolid;
-
-
+                table.DefaultVisualStyle = new GuiVisualStyle() { GridLines = GuiBorderSideType.Bottom };
             }
             return table;
         }
