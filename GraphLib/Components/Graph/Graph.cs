@@ -1394,14 +1394,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (this.IsValidAll) return;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
             {
-                this.CheckValidAllGroupList();
-                this.CheckValidTimeAxis();
-                this.CheckValidCoordinateYVirtual();
-                this.CheckValidCoordinateYReal();
-                this.CheckValidCoordinateX();
-                this.CheckValidBounds();
-                this.CheckValidChildList();
-                this.IsValidAll = true;
+                lock (this._ValidityLock)
+                {
+                    this.CheckValidAllGroupList();
+                    this.CheckValidTimeAxis();
+                    this.CheckValidCoordinateYVirtual();
+                    this.CheckValidCoordinateYReal();
+                    this.CheckValidCoordinateX();
+                    this.CheckValidBounds();
+                    this.CheckValidChildList();
+                    this.IsValidAll = true;
+                }
             }
         }
         /// <summary>

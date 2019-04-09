@@ -185,13 +185,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._IsValidBounds = true;
         }
         /// <summary>
-        /// Souřadnice na ose S, vizuální (tzn. v pixelech)
+        /// Souřadnice na ose Y, vizuální (tzn. v pixelech)
         /// </summary>
         protected Int32Range CoordinateYVisual
         {
             get
             {
                 Int32Range yReal = this.CoordinateYReal;
+                if (yReal == null) return new Int32Range();
                 int yDMax = (yReal.Size / 3);
                 int yDiff = this._FirstItem.Layer;
                 yDiff = ((yDiff < 0) ? 0 : (yDiff > yDMax ? yDMax : yDiff));
