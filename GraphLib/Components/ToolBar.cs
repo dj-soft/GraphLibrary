@@ -609,11 +609,11 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public ComponentSize ToolbarSize { get; private set; }
             /// <summary>
-            /// Height in modules = number of module units in toolbar
+            /// Výška toolbaru v počtu modulů
             /// </summary>
             public int HeightModule { get; private set; }
             /// <summary>
-            /// Number of pixel per one module
+            /// Počet pixelů v jednom modulu
             /// </summary>
             public int PixelPerModule { get; private set; }
             /// <summary>
@@ -1502,7 +1502,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int x = 0;
 
 
-
+            int w = 100;
             int modulesWidth = tBarSetting.GetModuleCount(w + 4);
             int modulesHeight = this.TBarSetting.HeightModule;
             this.ModuleSize = new Size(modulesWidth, modulesHeight);
