@@ -120,7 +120,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Pergola zahradní 4x5 m", Color.DarkCyan, 3, "stavba", ProductTpv.Simple);
 
             // DÍLNY:
-            Color colorLak = Color.FromArgb(224, 240, 255);
+            Color? colorLak = null;         // Color.FromArgb(224, 240, 255);
             recordId = 10000;
             this.WorkplaceDict = new Dictionary<GuiId, PlanUnitC>();
             this.CreatePlanUnitCWp(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
@@ -1061,8 +1061,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameRowsCenterTop);
             gridCenterWorkplace.RowTable.RowCheckEnabled = false;
-            gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
-            gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
+            // gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
+            // gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
+            gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 100 };
+            gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 100 };
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
