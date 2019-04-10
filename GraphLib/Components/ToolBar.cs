@@ -685,7 +685,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return info.ImageSize;
             }
             /// <summary>
-            /// Returns FontInfo for item in size
+            /// Vrací <see cref="FontInfo"/> pro danou velikost prvku a daný font (=upraví velikost)
             /// </summary>
             /// <param name="itemSize"></param>
             /// <param name="fontInfo"></param>
@@ -698,7 +698,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return fontCurr;
             }
             /// <summary>
-            /// Returns number of modules for specified pixel size
+            /// Vrací počet modulů pro daný počet pixelů (=zarovnaný nahoru)
             /// </summary>
             /// <param name="pixels"></param>
             /// <returns></returns>
@@ -709,7 +709,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return (int)modules;
             }
             /// <summary>
-            /// Returns size in pixels from size in modules
+            /// Vrací velikost v pixelech na základě velikosti v modulech
             /// </summary>
             /// <param name="size"></param>
             /// <returns></returns>
@@ -762,7 +762,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public int ModulePixel { get { return _ModulePixel; } }
             /// <summary>
-            /// Mezera mezi prvky v pixelech, typicky odsazené textu od ikony, atd.
+            /// Mezera mezi vnitřními bloky v prvky, v pixelech = typicky odsazení textu od Image, atd.
             /// </summary>
             public int OffsetPixel { get { return _OffsetPixel; } }
             /// <summary>
@@ -1485,10 +1485,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="dataItem"></param>
         internal GToolBarTrackBar(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
         {
+            this._TrackBar = new GTrackBar(this);
+            this.ChildList.Add(this._TrackBar);
         }
         internal override void PrepareLayout(Graphics graphics)
         {
-            this.PrepareBoundsCommon(graphics);
+            // this.PrepareBoundsCommon(graphics);
+
+
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+
+            int h = itemSetting.ModulePixel;
+            int s = itemSetting.OffsetPixel;
+            int c = (h / 2);
+            int x = 0;
+
+
+
+            int modulesWidth = tBarSetting.GetModuleCount(w + 4);
+            int modulesHeight = this.TBarSetting.HeightModule;
+            this.ModuleSize = new Size(modulesWidth, modulesHeight);
+            this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
+
         }
         protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
@@ -1496,7 +1515,12 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DrawItemImage(e, absoluteBounds);
             this.DrawItemText(e, absoluteBounds);
         }
+        private GTrackBar _TrackBar;
+        protected Rectangle ImageBeforeBounds { get; set; }
+        protected Rectangle TrackBarBounds { get; set; }
+        protected Rectangle ImageAfterBounds { get; set; }
     }
+    
     /// <summary>
     /// Bázová abstraktní třída pro konkrétní položky Toolbaru
     /// </summary>
@@ -1685,15 +1709,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual string PersistValue { get { return null; } set { } }
         #endregion
-        #region Prepare layout of this item in ToolbarGroup. ILayoutItem explicit members
+        #region Příprava rozvržení obsahu v tomto prvku, pro korektní rozvržení ToolbarGroup. Explicitní implementace ILayoutItem
         /// <summary>
-        /// Potomek v této metodě Určí minimální velikost pro tento prvek.
+        /// Potomek v této metodě určí minimální velikost pro tento prvek.
         /// Nepočítá konkrétní Bounds, protože to počítá engine Layout.
         /// </summary>
         /// <param name="graphics"></param>
         internal abstract void PrepareLayout(Graphics graphics);
         /// <summary>
-        /// Připraví data pro layout aktuálního prvku, společná metoda
+        /// Připraví data pro layout aktuálního prvku, společná metoda.
+        /// Jejím úkolem je změřit svůj obsah (typicky velikost textu), reagovat na <see cref="ItemSize"/>, 
+        /// a připravit si na základě výsledků souřadnice virtuální i fyzické.
+        /// Bázová metoda pracuje pro typický Button, a plní properties: 
+        /// <see cref="BoundsImage"/>, <see cref="BoundsText"/>, <see cref="BoundsIcon"/>, 
+        /// <see cref="ModuleSize"/>, <see cref="PixelSizeMin"/>.
+        /// <para/>
+        /// Tyto hodnoty následně využívají metody pro kreslení:
+        /// <see cref="DrawItemBackground(GInteractiveDrawArgs, Rectangle, bool, int, bool)"/>,
+        /// <see cref="DrawItemImage(GInteractiveDrawArgs, Rectangle, FunctionItem)"/>,
+        /// <see cref="DrawItemText(GInteractiveDrawArgs, Rectangle, FunctionItem)"/>,
+        /// <see cref="DrawItemIcon(GInteractiveDrawArgs, Rectangle)"/>.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="getImageSize"></param>
@@ -1900,6 +1935,14 @@ namespace Asol.Tools.WorkScheduler.Components
         Rectangle? ILayoutItem.ItemBounds { get { return this.ModuleBounds; } set { this.ModuleBounds = value; } }
         #endregion
         #region Společné podpůrné metody pro potomky
+        /// <summary>
+        /// Metoda vykreslí pozadí aktuálního prvku, reaguje na stavy: Enabled, Selected, MouseActive, MouseDown.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="isSelected"></param>
+        /// <param name="roundCorner"></param>
+        /// <param name="forceBorder"></param>
         protected void DrawItemBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool isSelected = false, int roundCorner = 2, bool forceBorder = false)
         {
             bool isEnabled = this.Is.Enabled;
@@ -1912,10 +1955,21 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, new DrawButtonArgs() { BackColor = backColor, InteractiveState = this.InteractiveState, RoundCorner = roundCorner, DrawBackground = drawBackground, DrawBorders = drawBorders, BorderColor = Skin.ToolBar.ItemBorderColor });
             }
         }
+        /// <summary>
+        /// Metoda vykreslí Image = hlavní obrázek prvku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             this.DrawItemImage(e, boundsAbsolute, this._DataItem);
         }
+        /// <summary>
+        /// Metoda vykreslí Image = hlavní obrázek prvku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="activeItem"></param>
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, FunctionItem activeItem)
         {
             if (this.BoundsImage.Width <= 0) return;
@@ -1930,10 +1984,21 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawImage(e.Graphics, boundsImageAbsolute, (imageHot ?? image), activeItem.IsEnabled, ContentAlignment.MiddleCenter);
             }
         }
+        /// <summary>
+        /// Metoda vykreslí Text
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         protected void DrawItemText(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             this.DrawItemText(e, boundsAbsolute, this._DataItem);
         }
+        /// <summary>
+        /// Metoda vykreslí Text
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="activeItem"></param>
         protected void DrawItemText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, FunctionItem activeItem)
         {
             if (this.BoundsText.Width <= 0) return;
@@ -1947,6 +2012,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter);
             }
         }
+        /// <summary>
+        /// Metoda vykreslí Ikonu vpravo od textu, která znázorňuje DropDown 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         protected void DrawItemIcon(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             if (this.BoundsIcon.Width <= 0) return;

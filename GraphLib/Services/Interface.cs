@@ -345,7 +345,8 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public virtual LayoutHint LayoutHint { get; set; }
         /// <summary>
-        /// Explicitně požadovaná šířka prvku v počtu modulů
+        /// Explicitně požadovaná šířka prvku v počtu modulů.
+        /// Výška prvku je dána jeho velikostí <see cref="Size"/>.
         /// </summary>
         public virtual int? ModuleWidth { get; set; }
         /// <summary>

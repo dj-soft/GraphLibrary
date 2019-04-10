@@ -31,6 +31,14 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Is.MouseDragMove = true;
             this.BackColor = Skin.TrackBar.BackColorTrack;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        public GTrackBar(IInteractiveParent parent) : this()
+        {
+            this.Parent = parent;
+        }
         private Decimal _Value;
         private DecimalRange _ValueTotal;
         private System.Windows.Forms.Orientation _Orientation;

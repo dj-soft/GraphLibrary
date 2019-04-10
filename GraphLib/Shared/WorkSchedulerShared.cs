@@ -3382,7 +3382,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiImage ImageChecked { get; set; }
         /// <summary>
-        /// Druh prvku
+        /// Druh prvku. Implicitní typ (pokud je zadáno null) = <see cref="FunctionGlobalItemType.Button"/>.
+        /// Některé typy prvku mají rozšířené nastavení ve speciálním objektu:
+        /// <para>Pro typ <see cref="FunctionGlobalItemType.TrackBar"/>: <see cref="TrackBarSettings"/></para>
         /// </summary>
         public FunctionGlobalItemType? ItemType { get; set; }
         /// <summary>
@@ -3488,6 +3490,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Vyhodnocuje se pouze pokud v <see cref="GuiActions"/> je hodnota <see cref="GuiActionType.RunInteractions"/>.
         /// </summary>
         public SourceActionType? RunInteractionSource { get; set; }
+        /// <summary>
+        /// Vlastnosti pro TrackBar. 
+        /// POužije se jen tehdy, když <see cref="ItemType"/> == <see cref="FunctionGlobalItemType.TrackBar"/>
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public GuiTrackBarSettings TrackBarSettings { get; set; }
+    }
+    /// <summary>
+    /// Definice vlastností trackbaru
+    /// </summary>
+    public class GuiTrackBarSettings
+    {
+
     }
     /// <summary>
     /// Akce, které má provést vrstva Gui po aktivaci tlačítka / funkce
