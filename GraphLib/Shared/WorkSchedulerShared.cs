@@ -5071,6 +5071,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Zdrojový řádek, před přesouváním.
         /// </summary>
+        public GuiGridRowId SourceRowId { get; set; }
+        /// <summary>
+        /// Zdrojový řádek, před přesouváním.
+        /// </summary>
         public GuiId SourceRow { get; set; }
         /// <summary>
         /// Výchozí čas prvku, před přesouváním.
@@ -5085,6 +5089,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// "Pevný bod" je například ten čas (Begin nebo End), který při interaktivním pohybu byl "Přichycen" k sousednímu prvku.
         /// </summary>
         public GuiSide MoveFixedPoint { get; set; }
+        /// <summary>
+        /// Cílový řádek (tam by to uživatel rád umístil)
+        /// </summary>
+        public GuiGridRowId TargetRowId { get; set; }
         /// <summary>
         /// Cílový řádek (tam by to uživatel rád umístil)
         /// </summary>

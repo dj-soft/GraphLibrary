@@ -2663,9 +2663,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiRequestGraphItemMove guiData = new GuiRequestGraphItemMove();
             guiData.MoveItems = moveInfo.DragGroupItems.Select(i => this.GetGridItemId(i)).ToArray();
+            guiData.SourceRowId = new GuiGridRowId() { TableName = this.TableName, RowId = moveInfo.SourceRow };
             guiData.SourceRow = moveInfo.SourceRow;
             guiData.SourceTime = moveInfo.SourceTime;
             guiData.MoveFixedPoint = GetGuiSide(moveInfo.AttachedSide);
+            guiData.TargetRowId = new GuiGridRowId() { TableName = this.TableName, RowId = moveInfo.TargetRow };
             guiData.TargetRow = moveInfo.TargetRow;
             guiData.TargetTime = moveInfo.TimeRangeFinal;
             return guiData;
