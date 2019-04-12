@@ -460,6 +460,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (dataGraphItem != null)
                 {
                     isChange = dataGraphItem.UpdateFrom(updateItem);
+                    this.ApplyCurrentSkinIndexTo(dataGraphItem);     // Nastavíme zdejší aktuální Skin, aby prvek barevně zapadl mezi své kolegy
                     return isChange;                       // Pokud došlo ke změně obsahu prvku grafu, vracím true => později (hromadně) se provede refresh grafu gTimeGraph.
                 }
             }
@@ -467,6 +468,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Pokud jej nemáme, pak jej vložíme jako nový:
             dataGraphItem = DataGraphItem.CreateFrom(this, updateItem);
             if (dataGraphItem == null) return false;
+
+            this.ApplyCurrentSkinIndexTo(dataGraphItem);   // Nastavíme zdejší aktuální Skin, aby prvek barevně zapadl mezi své kolegy
 
             isChange = gTimeGraph.AddGraphItem(dataGraphItem);
             if (isChange)
@@ -2350,22 +2353,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             int? skinIndex = args.RunInteraction.GetParameterInt32N(0);
             if (skinIndex.HasValue)
-            {
-                this.TimeGraphDict.Values.ForEachItem(graph => graph.ModifyGraphItems(item => InteractionThisProcessActivateGraphSkin(args, item, skinIndex.Value)));
-                this.GTableRow.Refresh();
-            }
-        }
-        /// <summary>
-        /// Metoda provede interakci typu <see cref="TargetActionType.ActivateGraphSkin"/> v pro daný prvek grafu.
-        /// </summary>
-        /// <param name="args"></param>
-        /// <param name="item"></param>
-        /// <param name="skinIndex"></param>
-        protected void InteractionThisProcessActivateGraphSkin(InteractionArgs args, ITimeGraphItem item, int skinIndex)
-        {
-            DataGraphItem graphItem = item as DataGraphItem;
-            if (graphItem != null)
-                graphItem.SkinCurrentIndex = skinIndex;
+                this.SkinCurrentIndex = skinIndex;
         }
         /// <summary>
         /// Metoda v this instanci připraví pracovní řádkový filtr <see cref="InteractionRowFilterDict"/>;
@@ -2426,6 +2414,48 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pracovní řádkový filtr pro přípravu interakcí
         /// </summary>
         protected Dictionary<GId, GRow> InteractionRowFilterDict;
+        /// <summary>
+        /// Aktuálně platný index Skinu pro grafické prvky.
+        /// Setování hodnoty způsobéí změnu Skinu ve všech prvcích všech grafů.
+        /// Po inicializaci je hodnota <see cref="SkinCurrentIndex"/> = null (nové pouze inicalizované prvky grafu mají aktivní skin 0).
+        /// </summary>
+        public int? SkinCurrentIndex
+        {
+            get { return this._SkinCurrentIndex; }
+            set
+            {
+                if (value.HasValue)
+                {
+                    int skin = value.Value;
+                    this.TimeGraphDict.Values.ForEachItem(graph => graph.ModifyGraphItems(item => _SetSkinCurrentIndex(item, skin)));
+                    this.GTableRow.Refresh();
+                }
+                this._SkinCurrentIndex = value;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí vložení aktuálního SkinIndexu <see cref="SkinCurrentIndex"/> do daného prvku grafu <see cref="DataGraphItem.SkinCurrentIndex"/>.
+        /// Používá se při vkládání nových / aktualizovaných prvků grafu do this tabulky, k tomu aby nový prvek měl shodnou barevnost a skin jako má celá tabulka.
+        /// Jinak by prvek byl do tabulky vložen se skinem = 0.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        protected void ApplyCurrentSkinIndexTo(DataGraphItem graphItem)
+        {
+            if (graphItem != null && this.SkinCurrentIndex.HasValue)
+                graphItem.SkinCurrentIndex = this.SkinCurrentIndex.Value;
+        }
+        /// <summary>
+        /// Metoda do daného prvku grafu do jeho <see cref="DataGraphItem.SkinCurrentIndex"/> vloží danou hodnotu indexu.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="skinIndex"></param>
+        protected void _SetSkinCurrentIndex(ITimeGraphItem item, int skinIndex)
+        {
+            DataGraphItem graphItem = item as DataGraphItem;
+            if (graphItem != null)
+                graphItem.SkinCurrentIndex = skinIndex;
+        }
+        private int? _SkinCurrentIndex;
         #endregion
         #region class InteractionArgs : Data, předávaná při interakci mezi tabulkami z tabulky Source do tabulky Target
         /// <summary>
