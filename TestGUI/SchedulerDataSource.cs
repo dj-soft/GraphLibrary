@@ -71,6 +71,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.DateTimeLast = this.DateTimeFirst.AddMonths(3);
             this.TimeRangeCurrent = new GuiTimeRange(this.DateTimeNow, this.DateTimeNow.AddDays(7d));
             this.TimeRangeTotal = new GuiTimeRange(this.DateTimeFirst, this.DateTimeLast);
+            this.DataChanged = false;
         }
         #region Vlastní vytvoření dat k zobrazení
         /// <summary>
@@ -82,6 +83,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int recordId;
 
             this.ProductOrderDict = new Dictionary<GuiId, ProductOrder>();
+            this.ProductOperationDict = new Dictionary<GuiId, ProductOperation>();
+            this.ProductStructureDict = new Dictionary<GuiId, ProductStructure>();
 
             // VÝROBA:
             recordId = 10000;
@@ -118,6 +121,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Stříška před vchodem", Color.DarkRed, 3, "stavba", ProductTpv.Simple);
             this.CreateProductOrder(++recordId, "Krmítko pro menší ptactvo", Color.DarkViolet, 42, "outdoor", ProductTpv.Simple);
             this.CreateProductOrder(++recordId, "Pergola zahradní 4x5 m", Color.DarkCyan, 3, "stavba", ProductTpv.Simple);
+
+            // Pracvovní doby, Jednotky práce:
+            this.WorkTimeDict = new Dictionary<GuiId, WorkTime>();
+            this.WorkUnitDict = new Dictionary<GuiId, WorkUnit>();
 
             // DÍLNY:
             Color? colorLak = null;         // Color.FromArgb(224, 240, 255);
@@ -253,6 +260,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     break;
 
             }
+
+            foreach (ProductOperation operation in operations)
+                this.ProductOperationDict.Add(operation.RecordGid, operation);
+
             return operations;
         }
         /// <summary>
@@ -297,10 +308,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
 
             // Komponenty:
+            int structId = 100 * recordId;
             if (!String.IsNullOrEmpty(components))
             {
                 foreach (char c in components)
-                    CreateProductStructure(++recordId, operation, c, qty);
+                    CreateProductStructure(ref structId, operation, c, qty);
             }
 
             return operation;
@@ -312,47 +324,53 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="operation"></param>
         /// <param name="component"></param>
         /// <param name="qty"></param>
-        protected void CreateProductStructure(int recordId, ProductOperation operation, char component, decimal qty)
+        protected void CreateProductStructure(ref int recordId, ProductOperation operation, char component, decimal qty)
         {
-            ProductStructure structure = null;
+            List<ProductStructure> structures = new List<ProductStructure>();
             switch (component)
             {
                 case 'D':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "DTD", Name = "Dřevo", Qty = 0.25m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "DTD", Name = "Dřevo", Qty = 0.25m * qty });
                     break;
                 case 'Š':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6š", Name = "Šroub M6", Qty = 6m * qty });
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6p", Name = "Podložka M6", Qty = 12m * qty });
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6m", Name = "Matka M6", Qty = 6m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "M6š", Name = "Šroub M6", Qty = 6m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "M6p", Name = "Podložka M6", Qty = 12m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "M6m", Name = "Matka M6", Qty = 6m * qty });
                     break;
                 case 'L':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Cx1000", Name = "Lak Celox 1000", Qty = 0.1m * qty });
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "C006", Name = "Nitroředidlo", Qty = 0.1m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Cx1000", Name = "Lak Celox 1000", Qty = 0.1m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "C006", Name = "Nitroředidlo", Qty = 0.1m * qty });
                     break;
                 case 'Č':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Č6x20", Name = "Čep dřevo 6 x 20", Qty = 6m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Č6x20", Name = "Čep dřevo 6 x 20", Qty = 6m * qty });
                     break;
                 case 'K':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Kh12", Name = "Klíh 12MPa", Qty = 0.1m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Kh12", Name = "Klíh 12MPa", Qty = 0.1m * qty });
                     break;
                 case 'l':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Sx1050", Name = "Lak syntetic 1050", Qty = 0.1m * qty });
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "S006", Name = "Syntetické ředidlo", Qty = 0.1m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Sx1050", Name = "Lak syntetic 1050", Qty = 0.1m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "S006", Name = "Syntetické ředidlo", Qty = 0.1m * qty });
                     break;
                 case 'B':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "BA95", Name = "Benzin Natural95", Qty = 0.04m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "BA95", Name = "Benzin Natural95", Qty = 0.04m * qty });
                     break;
                 case 'O':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Kt6", Name = "Karton 6\"", Qty = 1.00m * qty });
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Fb2", Name = "Folie bublinková", Qty = 0.10m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Kt6", Name = "Karton 6\"", Qty = 1.00m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Fb2", Name = "Folie bublinková", Qty = 0.10m * qty });
                     break;
                 case 'Z':
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "ZL", Name = "Záruční list 2roky", Qty = 1.00m * qty });
-                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Nobs", Name = "Návod k použití", Qty = 0.10m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "ZL", Name = "Záruční list 2roky", Qty = 1.00m * qty });
+                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Nobs", Name = "Návod k použití", Qty = 0.10m * qty });
                     break;
             }
-            if (structure != null)
-                operation.StructureList.Add(structure);
+
+            if (structures.Count > 0)
+            {
+                operation.StructureList.AddRange(structures);
+
+                foreach (ProductStructure structure in structures)
+                    this.ProductStructureDict.Add(structure.RecordGid, structure);
+            }
         }
         /// <summary>
         /// Vrátí výšku operace
@@ -473,6 +491,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 list.Add(workTime);
             }
+
+            foreach (WorkTime workTime in list)
+                this.WorkTimeDict.Add(workTime.RecordGid, workTime);
+
             return list;
         }
         protected static Color GetRatioColor(Color backColor, Color targetColor, float ratio)
@@ -625,6 +647,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         protected Dictionary<GuiId, ProductOrder> ProductOrderDict;
         /// <summary>
+        /// Dictionary s Operacemi
+        /// </summary>
+        protected Dictionary<GuiId, ProductOperation> ProductOperationDict;
+        /// <summary>
+        /// Dictionary s Komponentami
+        /// </summary>
+        protected Dictionary<GuiId, ProductStructure> ProductStructureDict;
+        /// <summary>
         /// Dictionary s Pracovišti
         /// </summary>
         protected Dictionary<GuiId, PlanUnitC> WorkplaceDict;
@@ -632,6 +662,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Dictionary s Dělníky
         /// </summary>
         protected Dictionary<GuiId, PlanUnitC> PersonDict;
+        /// <summary>
+        /// Dictionary s Pracovními směnami
+        /// </summary>
+        protected Dictionary<GuiId, WorkTime> WorkTimeDict;
+        /// <summary>
+        /// Dictionary s Pracovními časy
+        /// </summary>
+        protected Dictionary<GuiId, WorkUnit> WorkUnitDict;
         protected const string WP_PILA = "Pila";
         protected const string WP_DILN = "Dílna";
         protected const string WP_LAKO = "Lakovna";
@@ -676,6 +714,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (Pbb(25))
                 flowTime = flowTime + TimeSpan.FromHours(Rand.Next(1, 9));        // Random pauza mezi operacemi 1 až 8 hodin, zařadím v 25% případů
             productOperation.PlanTimeOperation(ref recordId, ref flowTime, Direction.Positive, workplace, person);
+
+            foreach (WorkUnit workUnit in productOperation.WorkUnitDict.Values)   // Sumarizuji WorkUnit z operace do globální Dictionary
+                this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
         }
         #endregion
         #region Malá podpora editace pro testy Response
@@ -693,6 +734,174 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiResponse.RemoveItems = removedList.ToArray();
 
             this.DataChanged = true;
+        }
+
+        /// <summary>
+        /// Vyhledá a vrátí informace o zadaných prvcích
+        /// </summary>
+        /// <param name="itemIds"></param>
+        /// <returns></returns>
+        protected CompoundDataInfo[] SearchForData(IEnumerable<GuiGridItemId> itemIds)
+        {
+            List<CompoundDataInfo> dataItemList = new List<CompoundDataInfo>();
+            if (itemIds != null)
+            {
+                foreach (GuiGridItemId itemId in itemIds)
+                {
+                    CompoundDataInfo dataItem = this.SearchForData(itemId);
+                    if (dataItem != null)
+                        dataItemList.Add(dataItem);
+                }
+            }
+            return dataItemList.ToArray();
+        }
+        /// <summary>
+        /// Vyhledá a vrátí informace o zadaném prvku
+        /// </summary>
+        /// <param name="rowId"></param>
+        /// <returns></returns>
+        protected CompoundDataInfo SearchForData(GuiGridRowId rowId)
+        {
+            if (rowId == null) return null;
+
+            GridPositionType type = this.SearchGridType(rowId.TableName);
+            RecordClass row = this.SearchForData(rowId.RowId);
+
+            CompoundDataInfo dataInfo = new CompoundDataInfo(type, row);
+
+            return dataInfo;
+        }
+        /// <summary>
+        /// Vyhledá a vrátí informace o zadaném prvku
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        protected CompoundDataInfo SearchForData(GuiGridItemId itemId)
+        {
+            if (itemId == null) return null;
+
+            GridPositionType type = this.SearchGridType(itemId.TableName);
+            RecordClass row = this.SearchForData(itemId.RowId);
+            RecordClass group = this.SearchForData(itemId.GroupId);
+            RecordClass item = this.SearchForData(itemId.ItemId);
+            RecordClass data = this.SearchForData(itemId.DataId);
+
+            CompoundDataInfo dataInfo = new CompoundDataInfo(type, row, group, item, data);
+
+            return dataInfo;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí typové označení gridu podle jeho jména
+        /// </summary>
+        /// <param name="gridName"></param>
+        /// <returns></returns>
+        internal GridPositionType SearchGridType(string gridName)
+        {
+            switch (gridName)
+            {
+                case GuiFullNameGridLeft: return GridPositionType.ProductOrder;
+                case GuiFullNameGridCenterTop: return GridPositionType.Workplace;
+                case GuiFullNameGridCenterBottom: return GridPositionType.Person;
+                case GuiFullNameGridRight: return GridPositionType.Employee;
+            }
+            return GridPositionType.None;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí datový objekt pro daný klíč
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        internal RecordClass SearchForData(GuiId id)
+        {
+            if (id == null) return null;
+            switch (id.ClassId)
+            {
+                case ProductOrder.ClassNumber:
+                    ProductOrder productOrder;
+                    if (this.ProductOrderDict.TryGetValue(id, out productOrder)) return productOrder;
+                    break;
+                case ProductOperation.ClassNumber:
+                    ProductOperation productOperation;
+                    if (this.ProductOperationDict.TryGetValue(id, out productOperation)) return productOperation;
+                    break;
+                case ProductStructure.ClassNumber:
+                    ProductStructure productStructure;
+                    if (this.ProductStructureDict.TryGetValue(id, out productStructure)) return productStructure;
+                    break;
+                case PlanUnitC.ClassNumber:
+                    PlanUnitC planUnitC;
+                    if (this.WorkplaceDict.TryGetValue(id, out planUnitC)) return planUnitC;
+                    if (this.PersonDict.TryGetValue(id, out planUnitC)) return planUnitC;
+                    break;
+                case WorkTime.ClassNumber:
+                    WorkTime workTime;
+                    if (this.WorkTimeDict.TryGetValue(id, out workTime)) return workTime;
+                    break;
+                case WorkUnit.ClassNumber:
+                    WorkUnit workUnit;
+                    if (this.WorkUnitDict.TryGetValue(id, out workUnit)) return workUnit;
+                    break;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Třída obsahující maximum datových záznamů dohledaných k určitému prvku GUI
+        /// </summary>
+        protected class CompoundDataInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="type"></param>
+            /// <param name="row"></param>
+            /// <param name="group"></param>
+            /// <param name="item"></param>
+            /// <param name="data"></param>
+            internal CompoundDataInfo(GridPositionType type, RecordClass row, RecordClass group = null, RecordClass item = null, RecordClass data = null)
+            {
+                this.Type = type;
+                this.Row = row;
+                this.Group = group;
+                this.Item = item;
+                this.Data = data;
+
+                this.ProductOrder = First<ProductOrder>(this.Row, this.Group, this.Data, this.Item);
+                this.ProductOperation = First<ProductOperation>(this.Row, this.Group, this.Data, this.Item);
+                this.ProductStructure = First<ProductStructure>(this.Row, this.Group, this.Data, this.Item);
+                this.PlanUnitC = First<PlanUnitC>(this.Row, this.Group, this.Data, this.Item);
+                this.WorkTime = First<WorkTime>(this.Item, this.Group, this.Data, this.Row);
+                this.WorkUnit = First<WorkUnit>(this.Item, this.Group, this.Data, this.Row);
+
+                if (this.ProductOperation == null && this.ProductStructure != null) this.ProductOperation = this.ProductStructure.ProductOperation;
+                if (this.ProductOrder == null && this.ProductOperation != null) this.ProductOrder = this.ProductOperation.ProductOrder;
+            }
+            /// <summary>
+            /// Vrátí první z dodaných objektů, který není null a je odpovídajícího typu T
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="items"></param>
+            /// <returns></returns>
+            protected T First<T>(params object[] items) where T:class
+            {
+                foreach (object item in items)
+                {
+                    if (item != null && item is T) return item as T;
+                }
+                return null;
+            }
+            internal GridPositionType Type { get; private set; }
+            public RecordClass Row { get; private set; }
+            public RecordClass Group { get; private set; }
+            public RecordClass Item { get; private set; }
+            public RecordClass Data { get; private set; }
+
+            public ProductOrder ProductOrder { get; private set; }
+            public ProductOperation ProductOperation { get; private set; }
+            public ProductStructure ProductStructure { get; private set; }
+            public PlanUnitC PlanUnitC { get; private set; }
+            public WorkTime WorkTime { get; private set; }
+            public WorkUnit WorkUnit { get; private set; }
+
         }
         #endregion
         #endregion
@@ -858,6 +1067,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ItemType = FunctionGlobalItemType.TrackBar,
                 Size = FunctionGlobalItemSize.Whole,
                 Image = RES.Images.Actions.DbAdd2Png
+
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1080,7 +1290,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenterWorkplace.GridProperties.ChildRowsTableName = GuiFullNameGridCenterBottom;
             gridCenterWorkplace.GridProperties.ChildRowsCopyClassesMode =
                 WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
-                UnitTime.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
+                WorkUnit.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
                 "0:N";                                // 0 = jiné třídy   : nepřenášet
 
             gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
@@ -1148,7 +1358,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenterPersons.GridProperties.ChildRowsTableName = GuiFullNameGridCenterTop;
             gridCenterPersons.GridProperties.ChildRowsCopyClassesMode =
                 WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
-                UnitTime.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
+                WorkUnit.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
                 "0:N";                                // 0 = jiné třídy   : nepřenášet
 
             // Data tabulky = Plánovací jednotky Pracovníci:
@@ -1470,7 +1680,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Title = "Nastav FIXOVÁNÍ",
                 Image = RES.Images.Actions24.Lock4Png,
                 ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + UnitTime.ClassNumber.ToString()
+                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
             });
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
@@ -1492,6 +1702,34 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected DateTime DateTimeLast;
         protected GuiTimeRange TimeRangeTotal;
         protected GuiTimeRange TimeRangeCurrent;
+        #endregion
+        #region Přeplánování
+        protected void MoveGraphItem(GuiRequest request, GuiResponse response)
+        {
+            CompoundDataInfo[] dataInfos = this.SearchForData(request.GraphItemMove.MoveItems);
+            CompoundDataInfo sourceRow = this.SearchForData(request.GraphItemMove.SourceRowId);
+            CompoundDataInfo targetRow = this.SearchForData(request.GraphItemMove.TargetRowId);
+
+            this.DataChanged = true;
+            int time = this.Rand.Next(100, 350);
+            System.Threading.Thread.Sleep(time);
+            this.ApplyCommonToResponse(response);
+        }
+        /// <summary>
+        /// Do dané <see cref="GuiResponse"/> vloží hodnoty ClearLinks, ClearSelected a ToolbarItems[SaveData].Enable
+        /// </summary>
+        /// <param name="response"></param>
+        /// <param name="clearLinks"></param>
+        /// <param name="clearSelected"></param>
+        /// <param name="saveEnabled"></param>
+        protected void ApplyCommonToResponse(GuiResponse response, bool clearLinks = true, bool clearSelected = true, bool saveEnabled = true)
+        {
+            response.Common = new GuiResponseCommon() { ClearLinks = clearLinks, ClearSelected = clearSelected };
+            response.ToolbarItems = new GuiToolbarItem[]
+            {
+                new GuiToolbarItem() { Name = "SaveData", Enable = saveEnabled }
+            };
+        }
         #endregion
         #region Test Serializace + Deserializace
         /// <summary>
@@ -1594,10 +1832,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (resGrid.RowTable.Rows.Length != guiGrid.RowTable.Rows.Length)
                 throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Rows count.");
 
-            // Najdu první GraphItem pro třídu UnitTime = kus práce
+            // Najdu první GraphItem pro třídu WorkUnit = kus práce
             var guiItems = guiGrid.RowTable.Rows[0].Graph.GraphItems;
             var resItems = resGrid.RowTable.Rows[0].Graph.GraphItems;
-            int index = guiItems.FindIndex(i => i.ItemId.ClassId == UnitTime.ClassNumber);
+            int index = guiItems.FindIndex(i => i.ItemId.ClassId == WorkUnit.ClassNumber);
             GuiGraphBaseItem guiItem = (index >= 0 ? guiItems[index] : null);
             GuiGraphBaseItem resItem = (index >= 0 ? resItems[index] : null);
 
@@ -1700,63 +1938,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameBottomPanel = "bottomPanel";
         #endregion
         #region IAppHost : vyvolání funkce z Pluginu do AppHost
-        AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
-        {
-            this.AppHostAddRequest(requestArgs);
-            return null;              // Jsme asynchronní AppHost, vracíme null.
-        }
-        protected void IAppHostInit()
-        {
-            this.AppHostThread = new System.Threading.Thread(this.AppHostMainLoop);
-            this.AppHostThread.Name = "AppHost_BackThread";
-            this.AppHostThread.IsBackground = true;
-
-            this.AppHostSemaphore = new System.Threading.AutoResetEvent(false);
-
-            this.AppHostQueue = new Queue<AppHostRequestArgs>();
-            this.AppHostRunning = true;
-            this.AppHostThread.Start();
-        }
-        /// <summary>
-        /// Main smyčka threadu AppHost, v této metodě běží celý thread na pozadí.
-        /// Metoda je ukočena nastavením <see cref="AppHostRunning"/> na false (a budíčkem pomocí semaforu <see cref="AppHostSemaphore"/>.
-        /// </summary>
-        protected void AppHostMainLoop()
-        {
-            while (this.AppHostRunning)
-            {
-                AppHostRequestArgs requestArgs = null;
-                lock (this.AppHostQueue)
-                {
-                    if (this.AppHostQueue.Count > 0)
-                        requestArgs = this.AppHostQueue.Dequeue();
-                }
-
-                if (requestArgs != null)
-                {   // Máme-li požadavek, pak jej zpracujeme:
-                    this.AppHostExecCommand(requestArgs);
-                    // A ani nechodíme spát, rovnou zjistíme, zda nemáme alší požadavek...
-                }
-                else
-                {   // Nemáme žádný požadavek na práci => jdeme si na moment zdřímnout, a pak se zase podíváme.
-                    this.AppHostSemaphore.WaitOne(500);
-                    // Když by mezitím přišla nová práce, tak nás její přícho probudí (viz konec metody AppHostAddRequest())
-                }
-            }
-        }
-        /// <summary>
-        /// Metoda přidá dodaný požadavek do fronty ke zpracování v threadu na pozadí
-        /// </summary>
-        /// <param name="requestArgs"></param>
-        protected void AppHostAddRequest(AppHostRequestArgs requestArgs)
-        {
-            if (requestArgs == null) return;
-            lock (this.AppHostQueue)
-            {
-                this.AppHostQueue.Enqueue(requestArgs);
-            }
-            this.AppHostSemaphore.Set();
-        }
         /// <summary>
         /// Metoda je volána v threadu na pozadí, má za úkol zpracovat daný požadavek (parametr).
         /// </summary>
@@ -1777,33 +1958,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         time = this.Rand.Next(100, 350);
                         // Bez čekání: důkladně otestujeme multithread práci v GUI vrstvě (protože jsme v background threadu a posíláme do GUI výsledky):
                         //     System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
-                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
-                        {
-                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
-                        };
+                        this.ApplyCommonToResponse(responseArgs.GuiResponse);
                         break;
 
                     case GuiRequest.COMMAND_GraphItemMove:
-                        this.DataChanged = true;
-                        time = this.Rand.Next(100, 350);
-                        System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
-                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
-                        {
-                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
-                        };
+                        this.MoveGraphItem(requestArgs.Request, responseArgs.GuiResponse);
                         break;
 
                     case GuiRequest.COMMAND_GraphItemResize:
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
-                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
-                        {
-                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
-                        };
+                        this.ApplyCommonToResponse(responseArgs.GuiResponse);
                         break;
 
                     case GuiRequest.COMMAND_RowDragDrop:
@@ -1812,11 +1978,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
-                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
-                        {
-                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
-                        };
+                        this.ApplyCommonToResponse(responseArgs.GuiResponse);
                         break;
 
                     case GuiRequest.COMMAND_ToolbarClick:
@@ -1875,7 +2037,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         // Chci si otestovat malou prodlevu před skončením:
                         time = this.Rand.Next(1500, 12000);
                         System.Threading.Thread.Sleep(time);
-                        if (this.Rand.Next(0,100) <= 65)
+                        if (this.Rand.Next(0, 100) <= 65)
                             responseArgs.Result = AppHostActionResult.Success;
                         else
                             responseArgs.Result = AppHostActionResult.Failure;
@@ -1888,7 +2050,79 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (requestArgs.CallBackAction != null)
                 requestArgs.CallBackAction(responseArgs);
         }
-        protected bool DataChanged = false;
+        /// <summary>
+        /// Vstupní metoda pro řešení requestů z GUI vrstvy
+        /// </summary>
+        /// <param name="requestArgs"></param>
+        /// <returns></returns>
+        AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
+        {
+            this.AppHostAddRequest(requestArgs);
+            return null;              // Jsme asynchronní AppHost, vracíme null.
+        }
+        /// <summary>
+        /// Prvotní inicializace výkonného threadu OnBackground, v němž se fyzicky provádí zpracování requestů z GUI vrstvy
+        /// </summary>
+        protected void IAppHostInit()
+        {
+            this.AppHostThread = new System.Threading.Thread(this.AppHostMainLoop);
+            this.AppHostThread.Name = "AppHost_BackThread";
+            this.AppHostThread.IsBackground = true;
+
+            this.AppHostSemaphore = new System.Threading.AutoResetEvent(false);
+
+            this.AppHostQueue = new Queue<AppHostRequestArgs>();
+            this.AppHostRunning = true;
+            this.AppHostThread.Start();
+        }
+        /// <summary>
+        /// Main smyčka threadu AppHost, v této metodě běží celý thread na pozadí.
+        /// Metoda je ukočena nastavením <see cref="AppHostRunning"/> na false (a budíčkem pomocí semaforu <see cref="AppHostSemaphore"/>.
+        /// </summary>
+        protected void AppHostMainLoop()
+        {
+            while (this.AppHostRunning)
+            {
+                AppHostRequestArgs requestArgs = null;
+                lock (this.AppHostQueue)
+                {
+                    if (this.AppHostQueue.Count > 0)
+                        requestArgs = this.AppHostQueue.Dequeue();
+                }
+
+                if (requestArgs != null)
+                {   // Máme-li požadavek, pak jej zpracujeme:
+                    this.AppHostExecCommand(requestArgs);
+                    // A ani nechodíme spát, rovnou zjistíme, zda nemáme alší požadavek...
+                }
+                else
+                {   // Nemáme žádný požadavek na práci => jdeme si na moment zdřímnout, a pak se zase podíváme.
+                    this.AppHostSemaphore.WaitOne(500);
+                    // Když by mezitím přišla nová práce, tak nás její přícho probudí (viz konec metody AppHostAddRequest())
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda přidá dodaný požadavek do fronty ke zpracování v threadu na pozadí
+        /// </summary>
+        /// <param name="requestArgs"></param>
+        protected void AppHostAddRequest(AppHostRequestArgs requestArgs)
+        {
+            if (requestArgs == null) return;
+            lock (this.AppHostQueue)
+            {
+                this.AppHostQueue.Enqueue(requestArgs);
+            }
+            this.AppHostSemaphore.Set();
+        }
+        /// <summary>
+        /// true = data obsahují změnu
+        /// </summary>
+        protected bool DataChanged { get; private set; }
+        /// <summary>
+        /// Vrací RTF text pro zprávu "Ukončujete aplikaci, ale neuložili jste svoje změny v datech..."
+        /// </summary>
+        /// <returns></returns>
         protected static string GetMessageSaveData()
         {
             string rtf = @"{\rtf1\ansi\ansicpg1250\deff0\nouicompat\deflang1029{\fonttbl{\f0\fnil\fcharset238 Calibri;}{\f1\fnil\fcharset0 Calibri;}}
@@ -1899,7 +2133,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 \fs22 M\f1\lang1033\'e1\f0\lang1029  b\f1\lang1033\'fd\f0\lang1029 t p\'f8ed ukon\'e8en\f1\lang1033\'ed\f0\lang1029 m \cf1\b provedeno ulo\'9een\f1\lang1033\'ed\f0\lang1029  dat\cf0\b0 ?\line\i (Ano = ulo\'9eit a skon\'e8it, Ne = neukl\f1\lang1033\'e1\f0\lang1029 dat a skon\'e8it, Storno = neukl\f1\lang1033\'e1\f0\lang1029 dat a neskoon\'e8it)\i0\par
 }
  ";
-
             return rtf;
         }
         /// <summary>
@@ -1989,6 +2222,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.Height = 1f;
             this.BackColor = Color.FromArgb(64, 64, 160);
             this.StructureList = new List<ProductStructure>();
+            this.WorkUnitDict = new Dictionary<GuiId, WorkUnit>();
         }
         public const int ClassNumber = 1190;
         public override int ClassId { get { return ClassNumber; } }
@@ -2015,6 +2249,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public GuiTimeRange TimeTAc { get; set; }
         public GuiTimeRange TimeTEc { get; set; }
         public Color BackColor { get; set; }
+        /// <summary>
+        /// Dictionary obsahující jednotky práce za tuto operaci
+        /// </summary>
+        public Dictionary<GuiId, WorkUnit> WorkUnitDict { get; private set; }
+
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto operaci.
         /// </summary>
@@ -2178,9 +2417,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="time"></param>
         /// <param name="backColor"></param>
         /// <returns></returns>
-        protected UnitTime CreateUnitTime(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
+        protected WorkUnit CreateUnitTime(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
         {
-            UnitTime unitTime = new UnitTime()
+            WorkUnit workUnit = new WorkUnit()
             {
                 RecordId = ++recordId,
                 Operation = this,
@@ -2191,8 +2430,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsEditable = true,
                 ToolTip = this.ToolTip
             };
-            unitTime.Text = (unitTime.Height <= 1f ? this.ReferName : this.ReferName + "\r\n" + this.ProductOrder.ReferName);
-            return unitTime;
+            workUnit.Text = (workUnit.Height <= 1f ? this.ReferName : this.ReferName + "\r\n" + this.ProductOrder.ReferName);
+            this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
+            return workUnit;
         }
         /// <summary>
         /// Vygeneruje a vrátí vztah mezi dvěma operacemi (Link)
@@ -2256,16 +2496,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public Color? RowBackColor { get; set; }
         public int MachinesCount { get; set; }
         public List<WorkTime> WorkTimes { get; set; }
-        public void AddUnitTime(UnitTime unitTime)
+        public void AddUnitTime(WorkUnit unitTime)
         {
             if (unitTime != null)
             {
                 if (this.UnitTimes == null)
-                    this.UnitTimes = new List<UnitTime>();
+                    this.UnitTimes = new List<WorkUnit>();
                 this.UnitTimes.Add(unitTime);
             }
         }
-        public List<UnitTime> UnitTimes { get; set; }
+        public List<WorkUnit> UnitTimes { get; set; }
         /// <summary>
         /// Metoda umístí do <see cref="CurrentWorkTime"/> nejbližší vyhovující pracovní čas, počínaje daným časem, v daném směru.
         /// Směr Positive: Jeho Begin bude buď rovný nebo vyšší než požadavek (nikdy nebude menší), jeho End bude vyšší.
@@ -2348,11 +2588,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Person
     }
     #endregion
-    #region class UnitTime : Pracovní jednotka = kus práce na pracovišti
+    #region class WorkUnit : Pracovní jednotka = kus práce na pracovišti
     /// <summary>
-    /// UnitTime : Pracovní jednotka = kus práce na pracovišti
+    /// WorkUnit : Pracovní jednotka = kus práce na pracovišti
     /// </summary>
-    public class UnitTime : RecordClass
+    public class WorkUnit : RecordClass
     {
         public override string ToString()
         {
@@ -2587,6 +2827,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Do budoucnosti, dopředně, na časové ose doprava
         /// </summary>
         ToFuture
+    }
+    /// <summary>
+    /// Typové označení gridu
+    /// </summary>
+    internal enum GridPositionType
+    {
+        None,
+        ProductOrder,
+        Workplace,
+        Person,
+        Employee
     }
     #endregion
     #endregion
