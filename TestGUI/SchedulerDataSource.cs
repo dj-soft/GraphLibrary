@@ -719,191 +719,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
         }
         #endregion
-        #region Malá podpora editace pro testy Response
-        protected void DataDeleteItems(GuiRequest guiRequest, GuiResponse guiResponse)
-        {
-            // Smažeme z GUI cokoliv, co je vybrané:
-            if (guiRequest == null || guiRequest.CurrentState == null || guiRequest.CurrentState.SelectedGraphItems == null) return;
-            List<GuiGridItemId> removedList = new List<GuiGridItemId>();
-
-            foreach (var item in guiRequest.CurrentState.SelectedGraphItems)
-            {
-                removedList.Add(item);
-            }
-
-            guiResponse.RemoveItems = removedList.ToArray();
-
-            this.DataChanged = true;
-        }
-
-        /// <summary>
-        /// Vyhledá a vrátí informace o zadaných prvcích
-        /// </summary>
-        /// <param name="itemIds"></param>
-        /// <returns></returns>
-        protected CompoundDataInfo[] SearchForData(IEnumerable<GuiGridItemId> itemIds)
-        {
-            List<CompoundDataInfo> dataItemList = new List<CompoundDataInfo>();
-            if (itemIds != null)
-            {
-                foreach (GuiGridItemId itemId in itemIds)
-                {
-                    CompoundDataInfo dataItem = this.SearchForData(itemId);
-                    if (dataItem != null)
-                        dataItemList.Add(dataItem);
-                }
-            }
-            return dataItemList.ToArray();
-        }
-        /// <summary>
-        /// Vyhledá a vrátí informace o zadaném prvku
-        /// </summary>
-        /// <param name="rowId"></param>
-        /// <returns></returns>
-        protected CompoundDataInfo SearchForData(GuiGridRowId rowId)
-        {
-            if (rowId == null) return null;
-
-            GridPositionType type = this.SearchGridType(rowId.TableName);
-            RecordClass row = this.SearchForData(rowId.RowId);
-
-            CompoundDataInfo dataInfo = new CompoundDataInfo(type, row);
-
-            return dataInfo;
-        }
-        /// <summary>
-        /// Vyhledá a vrátí informace o zadaném prvku
-        /// </summary>
-        /// <param name="itemId"></param>
-        /// <returns></returns>
-        protected CompoundDataInfo SearchForData(GuiGridItemId itemId)
-        {
-            if (itemId == null) return null;
-
-            GridPositionType type = this.SearchGridType(itemId.TableName);
-            RecordClass row = this.SearchForData(itemId.RowId);
-            RecordClass group = this.SearchForData(itemId.GroupId);
-            RecordClass item = this.SearchForData(itemId.ItemId);
-            RecordClass data = this.SearchForData(itemId.DataId);
-
-            CompoundDataInfo dataInfo = new CompoundDataInfo(type, row, group, item, data);
-
-            return dataInfo;
-        }
-        /// <summary>
-        /// Metoda najde a vrátí typové označení gridu podle jeho jména
-        /// </summary>
-        /// <param name="gridName"></param>
-        /// <returns></returns>
-        internal GridPositionType SearchGridType(string gridName)
-        {
-            switch (gridName)
-            {
-                case GuiFullNameGridLeft: return GridPositionType.ProductOrder;
-                case GuiFullNameGridCenterTop: return GridPositionType.Workplace;
-                case GuiFullNameGridCenterBottom: return GridPositionType.Person;
-                case GuiFullNameGridRight: return GridPositionType.Employee;
-            }
-            return GridPositionType.None;
-        }
-        /// <summary>
-        /// Metoda najde a vrátí datový objekt pro daný klíč
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        internal RecordClass SearchForData(GuiId id)
-        {
-            if (id == null) return null;
-            switch (id.ClassId)
-            {
-                case ProductOrder.ClassNumber:
-                    ProductOrder productOrder;
-                    if (this.ProductOrderDict.TryGetValue(id, out productOrder)) return productOrder;
-                    break;
-                case ProductOperation.ClassNumber:
-                    ProductOperation productOperation;
-                    if (this.ProductOperationDict.TryGetValue(id, out productOperation)) return productOperation;
-                    break;
-                case ProductStructure.ClassNumber:
-                    ProductStructure productStructure;
-                    if (this.ProductStructureDict.TryGetValue(id, out productStructure)) return productStructure;
-                    break;
-                case PlanUnitC.ClassNumber:
-                    PlanUnitC planUnitC;
-                    if (this.WorkplaceDict.TryGetValue(id, out planUnitC)) return planUnitC;
-                    if (this.PersonDict.TryGetValue(id, out planUnitC)) return planUnitC;
-                    break;
-                case WorkTime.ClassNumber:
-                    WorkTime workTime;
-                    if (this.WorkTimeDict.TryGetValue(id, out workTime)) return workTime;
-                    break;
-                case WorkUnit.ClassNumber:
-                    WorkUnit workUnit;
-                    if (this.WorkUnitDict.TryGetValue(id, out workUnit)) return workUnit;
-                    break;
-            }
-            return null;
-        }
-        /// <summary>
-        /// Třída obsahující maximum datových záznamů dohledaných k určitému prvku GUI
-        /// </summary>
-        protected class CompoundDataInfo
-        {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="type"></param>
-            /// <param name="row"></param>
-            /// <param name="group"></param>
-            /// <param name="item"></param>
-            /// <param name="data"></param>
-            internal CompoundDataInfo(GridPositionType type, RecordClass row, RecordClass group = null, RecordClass item = null, RecordClass data = null)
-            {
-                this.Type = type;
-                this.Row = row;
-                this.Group = group;
-                this.Item = item;
-                this.Data = data;
-
-                this.ProductOrder = First<ProductOrder>(this.Row, this.Group, this.Data, this.Item);
-                this.ProductOperation = First<ProductOperation>(this.Row, this.Group, this.Data, this.Item);
-                this.ProductStructure = First<ProductStructure>(this.Row, this.Group, this.Data, this.Item);
-                this.PlanUnitC = First<PlanUnitC>(this.Row, this.Group, this.Data, this.Item);
-                this.WorkTime = First<WorkTime>(this.Item, this.Group, this.Data, this.Row);
-                this.WorkUnit = First<WorkUnit>(this.Item, this.Group, this.Data, this.Row);
-
-                if (this.ProductOperation == null && this.ProductStructure != null) this.ProductOperation = this.ProductStructure.ProductOperation;
-                if (this.ProductOrder == null && this.ProductOperation != null) this.ProductOrder = this.ProductOperation.ProductOrder;
-            }
-            /// <summary>
-            /// Vrátí první z dodaných objektů, který není null a je odpovídajícího typu T
-            /// </summary>
-            /// <typeparam name="T"></typeparam>
-            /// <param name="items"></param>
-            /// <returns></returns>
-            protected T First<T>(params object[] items) where T:class
-            {
-                foreach (object item in items)
-                {
-                    if (item != null && item is T) return item as T;
-                }
-                return null;
-            }
-            internal GridPositionType Type { get; private set; }
-            public RecordClass Row { get; private set; }
-            public RecordClass Group { get; private set; }
-            public RecordClass Item { get; private set; }
-            public RecordClass Data { get; private set; }
-
-            public ProductOrder ProductOrder { get; private set; }
-            public ProductOperation ProductOperation { get; private set; }
-            public ProductStructure ProductStructure { get; private set; }
-            public PlanUnitC PlanUnitC { get; private set; }
-            public WorkTime WorkTime { get; private set; }
-            public WorkUnit WorkUnit { get; private set; }
-
-        }
-        #endregion
         #endregion
         #region Generátor náhodných dat
         /// <summary>
@@ -1703,18 +1518,55 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GuiTimeRange TimeRangeTotal;
         protected GuiTimeRange TimeRangeCurrent;
         #endregion
-        #region Přeplánování
-        protected void MoveGraphItem(GuiRequest request, GuiResponse response)
+        #region Přeplánování dat na základě požadavků z GUI
+        protected void MoveGraphItem(GuiRequest guiRequest, GuiResponse guiResponse)
         {
-            CompoundDataInfo[] dataInfos = this.SearchForData(request.GraphItemMove.MoveItems);
-            CompoundDataInfo sourceRow = this.SearchForData(request.GraphItemMove.SourceRowId);
-            CompoundDataInfo targetRow = this.SearchForData(request.GraphItemMove.TargetRowId);
+            CompoundDataInfo[] dataInfos = this.SearchForData(guiRequest.GraphItemMove.MoveItems);
+            CompoundDataInfo sourceRow = this.SearchForData(guiRequest.GraphItemMove.SourceRowId);
+            CompoundDataInfo targetRow = this.SearchForData(guiRequest.GraphItemMove.TargetRowId);
 
             this.DataChanged = true;
             int time = this.Rand.Next(100, 350);
             System.Threading.Thread.Sleep(time);
-            this.ApplyCommonToResponse(response);
+
+            this.ApplyCommonToResponse(guiResponse);
         }
+        /// <summary>
+        /// Vymazání dat plánu
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void DeleteGraphItems(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Najdeme prvky práce, odpovídající označeným prvkům grafů:
+            CompoundDataInfo[] dataInfos = this.SearchForData(guiRequest.CurrentState?.SelectedGraphItems);
+            List<GuiGridItemId> removedList = new List<GuiGridItemId>();
+            foreach (CompoundDataInfo dataInfo in dataInfos)
+            {
+                if (this.DeleteGraphItem(dataInfo))
+                    removedList.Add(dataInfo.GuiGridItemId);
+
+            }
+            if (removedList.Count > 0)
+                this.DataChanged = true;
+
+            guiResponse.RemoveItems = removedList.ToArray();
+            this.ApplyCommonToResponse(guiResponse);
+        }
+        /// <summary>
+        /// Metoda zjistí, zda daný datový prvek obsahuje údaje, které lze 
+        /// </summary>
+        /// <param name="dataInfo"></param>
+        /// <returns></returns>
+        protected bool DeleteGraphItem(CompoundDataInfo dataInfo)
+        {
+            if (dataInfo == null || dataInfo.WorkUnit == null) return false;
+            if (dataInfo.WorkUnit.PlanUnitC == null || dataInfo.WorkUnit.PlanUnitC.PlanUnitType != PlanUnitType.Person) return false;
+            return this.DeleteData(dataInfo.WorkUnit.RecordGid);
+        }
+
+
+
         /// <summary>
         /// Do dané <see cref="GuiResponse"/> vloží hodnoty ClearLinks, ClearSelected a ToolbarItems[SaveData].Enable
         /// </summary>
@@ -1730,6 +1582,290 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 new GuiToolbarItem() { Name = "SaveData", Enable = saveEnabled }
             };
         }
+        #region Vyhledání typových dat (CompoundDataInfo) na základě dat z GUI (GuiGridItemId)
+        /// <summary>
+        /// Vyhledá a vrátí informace o zadaných prvcích
+        /// </summary>
+        /// <param name="itemIds"></param>
+        /// <returns></returns>
+        protected CompoundDataInfo[] SearchForData(IEnumerable<GuiGridItemId> itemIds, Func<GuiGridItemId, bool> filterId = null, Func<CompoundDataInfo, bool> filterData = null)
+        {
+            List<CompoundDataInfo> dataItemList = new List<CompoundDataInfo>();
+            if (itemIds != null)
+            {
+                bool hasFilterId = (filterId != null);
+                bool hasFilterData = (filterData != null);
+                foreach (GuiGridItemId itemId in itemIds)
+                {
+                    if (itemId != null && (!hasFilterId || (hasFilterId && filterId(itemId))))
+                    {
+                        CompoundDataInfo dataItem = this.SearchForData(itemId);
+                        if (dataItem != null && (!hasFilterData || (hasFilterData && filterData(dataItem))))
+                            dataItemList.Add(dataItem);
+                    }
+                }
+            }
+            return dataItemList.ToArray();
+        }
+        /// <summary>
+        /// Vyhledá a vrátí informace o zadaném prvku
+        /// </summary>
+        /// <param name="rowId"></param>
+        /// <returns></returns>
+        protected CompoundDataInfo SearchForData(GuiGridRowId rowId)
+        {
+            if (rowId == null) return null;
+
+            GridPositionType type = this.SearchGridType(rowId.TableName);
+            RecordClass row = this.SearchForData(rowId.RowId);
+
+            CompoundDataInfo dataInfo = new CompoundDataInfo(rowId, type, row);
+
+            return dataInfo;
+        }
+        /// <summary>
+        /// Vyhledá a vrátí informace o zadaném prvku
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        protected CompoundDataInfo SearchForData(GuiGridItemId itemId)
+        {
+            if (itemId == null) return null;
+
+            GridPositionType type = this.SearchGridType(itemId.TableName);
+            RecordClass row = this.SearchForData(itemId.RowId);
+            RecordClass group = this.SearchForData(itemId.GroupId);
+            RecordClass item = this.SearchForData(itemId.ItemId);
+            RecordClass data = this.SearchForData(itemId.DataId);
+
+            CompoundDataInfo dataInfo = new CompoundDataInfo(itemId, type, row, group, item, data);
+
+            return dataInfo;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí typové označení gridu podle jeho jména
+        /// </summary>
+        /// <param name="gridName"></param>
+        /// <returns></returns>
+        internal GridPositionType SearchGridType(string gridName)
+        {
+            switch (gridName)
+            {
+                case GuiFullNameGridLeft: return GridPositionType.ProductOrder;
+                case GuiFullNameGridCenterTop: return GridPositionType.Workplace;
+                case GuiFullNameGridCenterBottom: return GridPositionType.Person;
+                case GuiFullNameGridRight: return GridPositionType.Employee;
+            }
+            return GridPositionType.None;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí datový objekt pro daný klíč
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        internal RecordClass SearchForData(GuiId id)
+        {
+            if (id == null) return null;
+            switch (id.ClassId)
+            {
+                case ProductOrder.ClassNumber:
+                    ProductOrder productOrder;
+                    if (this.ProductOrderDict.TryGetValue(id, out productOrder)) return productOrder;
+                    break;
+                case ProductOperation.ClassNumber:
+                    ProductOperation productOperation;
+                    if (this.ProductOperationDict.TryGetValue(id, out productOperation)) return productOperation;
+                    break;
+                case ProductStructure.ClassNumber:
+                    ProductStructure productStructure;
+                    if (this.ProductStructureDict.TryGetValue(id, out productStructure)) return productStructure;
+                    break;
+                case PlanUnitC.ClassNumber:
+                    PlanUnitC planUnitC;
+                    if (this.WorkplaceDict.TryGetValue(id, out planUnitC)) return planUnitC;
+                    if (this.PersonDict.TryGetValue(id, out planUnitC)) return planUnitC;
+                    break;
+                case WorkTime.ClassNumber:
+                    WorkTime workTime;
+                    if (this.WorkTimeDict.TryGetValue(id, out workTime)) return workTime;
+                    break;
+                case WorkUnit.ClassNumber:
+                    WorkUnit workUnit;
+                    if (this.WorkUnitDict.TryGetValue(id, out workUnit)) return workUnit;
+                    break;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Zajistí smazání jednoho záznamu z interních struktur.
+        /// Tato metoda neřeší návaznosti = pokud smazaný záznam obsahoval podřízené záznamy, nejsou touto metodou smazány.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        internal bool DeleteData(GuiId id)
+        {
+            bool result = false;
+            if (id == null) return result;
+            switch (id.ClassId)
+            {
+                case ProductOrder.ClassNumber:
+                    result = (this.ProductOrderDict.ContainsKey(id));
+                    if (result) this.ProductOrderDict.Remove(id);
+                    break;
+                case ProductOperation.ClassNumber:
+                    result = (this.ProductOperationDict.ContainsKey(id));
+                    if (result) this.ProductOperationDict.Remove(id);
+                    break;
+                case ProductStructure.ClassNumber:
+                    result = (this.ProductStructureDict.ContainsKey(id));
+                    if (result) this.ProductStructureDict.Remove(id);
+                    break;
+                case PlanUnitC.ClassNumber:
+                    bool resultW = (this.WorkplaceDict.ContainsKey(id));
+                    if (resultW) this.WorkplaceDict.Remove(id);
+                    bool resultP = (this.PersonDict.ContainsKey(id));
+                    if (resultP) this.PersonDict.Remove(id);
+                    result = (resultW || resultP);
+                    break;
+                case WorkTime.ClassNumber:
+                    result = (this.WorkTimeDict.ContainsKey(id));
+                    if (result) this.WorkTimeDict.Remove(id);
+                    break;
+                case WorkUnit.ClassNumber:
+                    result = (this.WorkUnitDict.ContainsKey(id));
+                    if (result) this.WorkUnitDict.Remove(id);
+                    break;
+            }
+            return result;
+        }
+        #region class CompoundDataInfo : Třída obsahující maximum datových záznamů dohledaných k určitému prvku GUI
+        /// <summary>
+        /// CompoundDataInfo : Třída obsahující maximum datových záznamů dohledaných k určitému prvku GUI
+        /// </summary>
+        protected class CompoundDataInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="guiGridItemId"></param>
+            /// <param name="type"></param>
+            /// <param name="row"></param>
+            internal CompoundDataInfo(GuiGridRowId rowId, GridPositionType type, RecordClass row)
+            {
+                this.GuiGridRowId = rowId;
+                this.FillData(type, row, null, null, null);
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="guiGridItemId"></param>
+            /// <param name="type"></param>
+            /// <param name="row"></param>
+            /// <param name="group"></param>
+            /// <param name="item"></param>
+            /// <param name="data"></param>
+            internal CompoundDataInfo(GuiGridItemId guiGridItemId, GridPositionType type, RecordClass row, RecordClass group = null, RecordClass item = null, RecordClass data = null)
+            {
+                this.GuiGridItemId = guiGridItemId;
+                this.FillData(type, row, group, item, data);
+
+            }
+            /// <summary>
+            /// Dodaná data do sebe naplní a dopočítá další data
+            /// </summary>
+            /// <param name="type"></param>
+            /// <param name="row"></param>
+            /// <param name="group"></param>
+            /// <param name="item"></param>
+            /// <param name="data"></param>
+            private void FillData(GridPositionType type, RecordClass row, RecordClass group, RecordClass item, RecordClass data)
+            {
+                this.Type = type;
+                this.Row = row;
+                this.Group = group;
+                this.Item = item;
+                this.Data = data;
+
+                this.ProductOrder = First<ProductOrder>(this.Row, this.Group, this.Data, this.Item);
+                this.ProductOperation = First<ProductOperation>(this.Row, this.Group, this.Data, this.Item);
+                this.ProductStructure = First<ProductStructure>(this.Row, this.Group, this.Data, this.Item);
+                this.PlanUnitC = First<PlanUnitC>(this.Row, this.Group, this.Data, this.Item);
+                this.WorkTime = First<WorkTime>(this.Item, this.Group, this.Data, this.Row);
+                this.WorkUnit = First<WorkUnit>(this.Item, this.Group, this.Data, this.Row);
+
+                if (this.ProductOperation == null && this.ProductStructure != null) this.ProductOperation = this.ProductStructure.ProductOperation;
+                if (this.ProductOrder == null && this.ProductOperation != null) this.ProductOrder = this.ProductOperation.ProductOrder;
+            }
+            /// <summary>
+            /// Vrátí první z dodaných objektů, který není null a je odpovídajícího typu T
+            /// </summary>
+            /// <typeparam name="T"></typeparam>
+            /// <param name="items"></param>
+            /// <returns></returns>
+            protected T First<T>(params object[] items) where T : class
+            {
+                foreach (object item in items)
+                {
+                    if (item != null && item is T) return item as T;
+                }
+                return null;
+            }
+            /// <summary>
+            /// Identifikátor řádku
+            /// </summary>
+            public GuiGridRowId GuiGridRowId { get; private set; }
+            /// <summary>
+            /// Identifikátor prvku grafu
+            /// </summary>
+            public GuiGridItemId GuiGridItemId { get; private set; }
+            /// <summary>
+            /// Typ tabulky
+            /// </summary>
+            internal GridPositionType Type { get; private set; }
+            /// <summary>
+            /// Záznam primární - odpovídá řádku tabulky
+            /// </summary>
+            public RecordClass Row { get; private set; }
+            /// <summary>
+            /// Záznam primární - odpovídá skupině grafického prvku
+            /// </summary>
+            public RecordClass Group { get; private set; }
+            /// <summary>
+            /// Záznam primární - odpovídá jednotlivému prvku
+            /// </summary>
+            public RecordClass Item { get; private set; }
+            /// <summary>
+            /// Záznam primární - odpovídá datovému záznamu prvku
+            /// </summary>
+            public RecordClass Data { get; private set; }
+
+            /// <summary>
+            /// Záznam typový - nalezený Výrobní příkaz
+            /// </summary>
+            public ProductOrder ProductOrder { get; private set; }
+            /// <summary>
+            /// Záznam typový - nalezená Operace VP
+            /// </summary>
+            public ProductOperation ProductOperation { get; private set; }
+            /// <summary>
+            /// Záznam typový - nalezená Komponenta VP
+            /// </summary>
+            public ProductStructure ProductStructure { get; private set; }
+            /// <summary>
+            /// Záznam typový - nalezená Kapacitní jednotka
+            /// </summary>
+            public PlanUnitC PlanUnitC { get; private set; }
+            /// <summary>
+            /// Záznam typový - nalezený čas směny
+            /// </summary>
+            public WorkTime WorkTime { get; private set; }
+            /// <summary>
+            /// Záznam typový - nalezený pracovní úsek
+            /// </summary>
+            public WorkUnit WorkUnit { get; private set; }
+        }
+        #endregion
+        #endregion
         #endregion
         #region Test Serializace + Deserializace
         /// <summary>
@@ -1954,7 +2090,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 {
                     case GuiRequest.COMMAND_KeyPress:
                         if (requestArgs.Request.KeyPress != null && requestArgs.Request.KeyPress.KeyData == Keys.Delete)
-                            this.DataDeleteItems(requestArgs.Request, responseArgs.GuiResponse);
+                            this.DeleteGraphItems(requestArgs.Request, responseArgs.GuiResponse);
                         time = this.Rand.Next(100, 350);
                         // Bez čekání: důkladně otestujeme multithread práci v GUI vrstvě (protože jsme v background threadu a posíláme do GUI výsledky):
                         //     System.Threading.Thread.Sleep(time);
