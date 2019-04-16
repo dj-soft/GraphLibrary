@@ -1545,7 +1545,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 if (this.DeleteGraphItem(dataInfo))
                     removedList.Add(dataInfo.GuiGridItemId);
-
             }
             if (removedList.Count > 0)
                 this.DataChanged = true;
@@ -2091,10 +2090,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     case GuiRequest.COMMAND_KeyPress:
                         if (requestArgs.Request.KeyPress != null && requestArgs.Request.KeyPress.KeyData == Keys.Delete)
                             this.DeleteGraphItems(requestArgs.Request, responseArgs.GuiResponse);
-                        time = this.Rand.Next(100, 350);
-                        // Bez čekání: důkladně otestujeme multithread práci v GUI vrstvě (protože jsme v background threadu a posíláme do GUI výsledky):
-                        //     System.Threading.Thread.Sleep(time);
-                        this.ApplyCommonToResponse(responseArgs.GuiResponse);
                         break;
 
                     case GuiRequest.COMMAND_GraphItemMove:
