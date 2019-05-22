@@ -1,0 +1,4291 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Asol.Tools.WorkScheduler.Application.App">
+    <Position X="99.75" Y="0.5" Width="1.5" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Application.App.InitialisationStatus" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Application\App.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>UiMIQgkAaXojALKq1QQG0JAZUyBAClRGwwwIAAZEAAQ=</HashCode>
+      <FileName>Application\App.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.GraphLibException">
+    <Position X="113.75" Y="3.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Application\App.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.GraphLibDataException">
+    <Position X="112" Y="3.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Application\App.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.GraphLibCodeException">
+    <Position X="110.25" Y="3.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Application\App.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.GraphLibUserException">
+    <Position X="115.5" Y="3.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Application\App.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.Icons">
+    <Position X="96.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAQAACAAAACAAgAAUQAAAAgAAAAAAAAAAAAAE=</HashCode>
+      <FileName>Application\Icons.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.Plugin">
+    <Position X="113.75" Y="7.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Application.Plugin.PluginInfoList" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Application\Plugin.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Application.Plugin.PluginInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Application\Plugin.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>EAAAgABAAAAAABBAAAAAACAAAQAAGAAAQgAAAAAAAAA=</HashCode>
+      <FileName>Application\Plugin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.Resources">
+    <Position X="101.5" Y="8.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Application.Resources.ResourceItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Application\Resources.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Application.Resources.ResourceType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Application\Resources.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AQAAAAgACAAAQEAAAAAAQEAQAAACAkADIAAAAAEBAAA=</HashCode>
+      <FileName>Application\Resources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.TestEngine">
+    <Position X="112" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Application\Test.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.TestArgs">
+    <Position X="108.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAIAAAAAQAAAAAAIAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>Application\Test.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.TestResultItem">
+    <Position X="115.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAABAAAACgAAAAAAAAAAA=</HashCode>
+      <FileName>Application\Test.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.Trace">
+    <Position X="108.5" Y="11.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Application.Trace.TraceScope" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Application\Trace.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>EBIIBAACBgAAASGIEAAIYFAAiAB0gAFwioTAQGBYAgA=</HashCode>
+      <FileName>Application\Trace.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.Worker">
+    <Position X="98" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIQAAAAEAAMCAAABAAAAAAGAMIAAQEAAkAAA=</HashCode>
+      <FileName>Application\Worker.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.WorkItemRequest&lt;TRequest&gt;">
+    <Position X="21.5" Y="19.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>ABACAAAAAAAAAAAAAQAAAAAAAYAAAEAAAAABAAAIAAA=</HashCode>
+      <FileName>Application\Worker.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.WorkItemRequestResponse&lt;TRequest, TResponse&gt;">
+    <Position X="23.75" Y="19.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>ABACAAAAAAAAAAAAAQAAAAAAAYAAAEAAAAABAAAIAAA=</HashCode>
+      <FileName>Application\Worker.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.WorkItemBase">
+    <Position X="22.75" Y="18.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAEAAAAICAAAAAAAAAAIAAACCAEAAA=</HashCode>
+      <FileName>Application\Worker.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Application.Zoom">
+    <Position X="108.5" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAABAAAAAAAAAAEAAAAAAAgAAgAABAEAA=</HashCode>
+      <FileName>Application\Zoom.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.AnimationControl&lt;T&gt;">
+    <Position X="98" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>IAAAIAEAAAAAAAAAIAAAGABAABAAAAAAAAABAQBAQAA=</HashCode>
+      <FileName>Components\AnimationControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GBaseAxis&lt;TTick, TSize, TValue&gt;">
+    <Position X="12.5" Y="8.75" Width="2.25" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GBaseAxis&lt;TTick, TSize, TValue&gt;.ArrangementSet" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\BaseAxis.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GBaseAxis&lt;TTick, TSize, TValue&gt;.ArrangementOne" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\BaseAxis.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GBaseAxis&lt;TTick, TSize, TValue&gt;.ArrangementItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\BaseAxis.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GBaseAxis&lt;TTick, TSize, TValue&gt;.Segment" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\BaseAxis.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+      <Interface Name="Asol.Tools.WorkScheduler.Components.GBaseAxis&lt;TTick, TSize, TValue&gt;.ISegment" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\BaseAxis.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Interface>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>OlJlPgyWKxCPGj28D27ua1nLhGVomRHcmHYlJkeHQ0s=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GBaseAxisTickPainter" BaseTypeListCollapsed="true">
+    <Position X="113.75" Y="2.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAKHoAAACQQEBBgAAAAAAAKEkAAAAAAAAgABAAAAAmA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.BaseTick&lt;T&gt;">
+    <Position X="11.5" Y="25.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.VisualTick">
+    <Position X="11.5" Y="24.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAEACAAAEBAAAAAAAAAAAAACCAAAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.BitStorage">
+    <Position X="8.5" Y="24.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEAAAAAAAAAABAAAAAAAAAAABBAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Components\BitStorage.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.BoundsInfo">
+    <Position X="106.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EQESoBBAKCLFmBxEGAEEAAUggAjnAUAEQCCAxQAEAAE=</HashCode>
+      <FileName>Components\BoundsInfo.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GDocumentArea">
+    <Position X="52" Y="11.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>IIAAAAYACCQAAgAIcQoRCAABEAAggAAIAAAQAABAAMI=</HashCode>
+      <FileName>Components\DocumentArea.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GDocumentEditor">
+    <Position X="5.75" Y="24.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GDocumentEditor._SuppressedEvents" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\DocumentEditor.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AUSAAAAEAIADAAAAgAAAAAACAAAAAmAACAAAABAEBKA=</HashCode>
+      <FileName>Components\DocumentEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Interval&lt;TValue, TSize&gt;">
+    <Position X="103.25" Y="6.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AQIAAAAAAAAAgACAAAAAAAAAAAAAEAAAAAAAAAAACAA=</HashCode>
+      <FileName>Components\DrawingD.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GVirtualMovableItem">
+    <Position X="58.75" Y="11.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAIgAAAEAAAAAAAQAAACgoAAAAAAAAAAAAAgA=</HashCode>
+      <FileName>Components\EditableArea.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GMovableItem">
+    <Position X="58.75" Y="10.25" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GMovableItem.ChildItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\EditableArea.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.GMovableItem.ChildItemType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\EditableArea.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>ABhgAADECSgACoAAAIQUIgBABABBgBACgEsAAYAQIAA=</HashCode>
+      <FileName>Components\EditableArea.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.DrawingExtensions">
+    <Position X="113.75" Y="1.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>ArIAIkAABZIEVgiCVAABAVDAAGARAILAEAJIEAsJAHQ=</HashCode>
+      <FileName>Components\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SysCursors">
+    <Position X="92.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>Components\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.FontInfo">
+    <Position X="96.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gQYAQgEMAQAhACAEgIAAIIAAQAAIl6AAGIUABABSIBE=</HashCode>
+      <FileName>Components\FontInfo.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.FormMoveSupport">
+    <Position X="101.5" Y="2.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>gAIAAAAIAAACAQBAAAAAAAAgBAABgAAAAIAAAAAAEAQ=</HashCode>
+      <FileName>Components\FormMoveSupport.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.FormMoveNotificationArgs">
+    <Position X="99.75" Y="2.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>Components\FormMoveSupport.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GControl" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>xACAAAAAAAIBYgAEAAAAAAAAAAAIAAAAACAjQAABAFA=</HashCode>
+      <FileName>Components\GControl.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GControlLayered">
+    <Position X="4.75" Y="21.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AACAAAAAAABZYlAEARAAgIAAAABIAUBBIAABgAABAAI=</HashCode>
+      <FileName>Components\GControl.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GraphicLayer" BaseTypeListCollapsed="true">
+    <Position X="106.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgAIEAAAAAgQAICAgAgAIAAACAAAAAAAEBCBAAhAA=</HashCode>
+      <FileName>Components\GControl.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.LayeredPaintEventArgs">
+    <Position X="108.5" Y="6.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAAAAAAAQAAAAAACAAAAAAAIBQAAQgACaAAA=</HashCode>
+      <FileName>Components\GControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.oldLayeredPaintEventArgs">
+    <Position X="99.75" Y="7.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAEEEAAAAAEAAACAABAACAAAEAAAAAAAAAgBAIAAA=</HashCode>
+      <FileName>Components\GControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GGrid">
+    <Position X="56.5" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>HlERMgXOrBSqAuRcDACMUGUiZkYgoLALDXMCoEkkcWI=</HashCode>
+      <FileName>Components\Grid\Grid.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GridColumn" BaseTypeListCollapsed="true">
+    <Position X="94.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAgAAAyACEgAAAEAEABEAAAAAAABIAAoAAAAAEkA=</HashCode>
+      <FileName>Components\Grid\Grid.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GridPosition" BaseTypeListCollapsed="true">
+    <Position X="98" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAECgAAAAEFBPAAEAkBAAQKAAAAABCJAAAIAABQAABA=</HashCode>
+      <FileName>Components\Grid\Grid.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GridArray">
+    <Position X="18.25" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAAABAAAAQAACYAAAAYAAIgAABQAACAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Grid\GridArray.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.IconLib">
+    <Position X="92.75" Y="6.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.IconLib.FileList" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\IconLib.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.IconLib.IconImages" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\IconLib.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.IconLib.IconImageSize" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\IconLib.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AFkgAAAAAEAAAAAAAAEgAAAAAACAgDAAQSgAACAEABA=</HashCode>
+      <FileName>Components\IconLib.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.IconLibrary">
+    <Position X="94.5" Y="6.5" Width="1.5" />
+    <NestedTypes>
+      <Delegate Name="Asol.Tools.WorkScheduler.Components.IconLibrary._GetStringDelegate" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\IconLib.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AQBAgAQAAAACBAAAACAAAAAAAAAAAAAQAAAAAAABAgA=</HashCode>
+      <FileName>Components\IconLib.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.IconStandard">
+    <Position X="98" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAQEAEAkABSRA0EFNEkgAOAAEBQAwAgAgYAAFgAAQE=</HashCode>
+      <FileName>Components\IconLib.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveContainer">
+    <Position X="36.25" Y="8.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAiEBBmqA0AAAACAAAwACAAAACAAAQACgAAAA=</HashCode>
+      <FileName>Components\InteractiveContainer.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl">
+    <Position X="4.75" Y="23" Width="1.75" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.InteractiveDrawState" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.DrawRequest" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.DrawRequestItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.BlockedGuiTextInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.InteractiveProcessingScope" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>Yv1xI+go7X34v1erudt9r7BMj58cdBrTvouzOt0uB3U=</HashCode>
+      <FileName>Components\InteractiveControl.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GActivePosition">
+    <Position X="112" Y="2.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GActivePosition.GActiveItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>ICQAwhGQQAAAmBAAACUECgQEDIAECoAAQAgQgEoAIwA=</HashCode>
+      <FileName>Components\InteractiveControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveObject">
+    <Position X="47.5" Y="7.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveObject.SuppressEventClass" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\InteractiveObject.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>IDiStA2QiBp8NtKnaRGbW+7BCUtFzJQqLEQCQMgdy1w=</HashCode>
+      <FileName>Components\InteractiveObject.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveDragObject">
+    <Position X="68.75" Y="8.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CEAAAAACCAAAAgACEIACAACAAAgAgAAQGAAAAAAAgAA=</HashCode>
+      <FileName>Components\InteractiveObject.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveValue&lt;TValue, TRange&gt;">
+    <Position X="81.25" Y="8.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAMAAAIIRAIhAAAQCIgAAACEAABAEAEAAgAAAAAEA=</HashCode>
+      <FileName>Components\InteractiveObject.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveProperties">
+    <Position X="8.5" Y="25.75" Width="1.75" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.InteractiveProperties.Bit" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Interface.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAEFFRZIBAIBJCAQQgBEAAAAEBBAAQIAoAIAFAAAIA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GPropertyEventArgs&lt;T&gt;">
+    <Position X="103.25" Y="3.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAQAAAAAAAAAAAAAAAIAAAAAAAAAAwAIAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveChangeStateArgs">
+    <Position X="98" Y="3.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>ACgQACAAAgUABDAgAIBAEKEhAARAAQABgBlCAAoAQAg=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GDragActionArgs">
+    <Position X="92.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>KCgAACACAAAABAAAAAAAAAEAAABAEAAgAAACAIoAjIA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveDrawArgs">
+    <Position X="96.25" Y="3.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAgAAAAAAQAEAACAAAAABAYAAAABCQAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GUserDrawArgs">
+    <Position X="115.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAACAAAAAAAIAAAAAAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.LayoutEngine" BaseTypeListCollapsed="true">
+    <Position X="110.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QABAAIAAIAAACAGAIwABAAAAgQAQIAAAAAAFCQgAAAA=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.LayoutEngineArgs">
+    <Position X="112" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAQAAEAAAAAAAEAAAIAACAAAAIkAiAAAAAAA=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.LayoutEngineResultRow">
+    <Position X="113.75" Y="6.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAEAAAEAiAAAAAoAAAAAgAAAAAAAgAAAAAAAAgA=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SequenceLayout" BaseTypeListCollapsed="true">
+    <Position X="92.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACQAAIAyABkAAAAAAEAAIAABQAACAIAAAgEAACAAQ=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.LayoutTest" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="6.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.LayoutTest.LayoutTestItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Layout.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAQAAAEAAAAYAAAAAABAAAAAAAA=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.PageMargins">
+    <Position X="49.75" Y="11.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\PageMargins.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GPainter">
+    <Position X="101.5" Y="3.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GPainter.GraphItemArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Painter.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GPainter.GraphicsStateRestore" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Painter.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>IR1Fd0aVL5qPUUJGOIHwKUXRJTRKXqQm7bBDyEakCcY=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.DrawButtonArgs">
+    <Position X="112" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAQAgAAAAAQAAAAACAAAAAAACAAAEAEABAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ProgressItem">
+    <Position X="47.5" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CABABQIAAACEEkAAAJAAAAAIAAAAggEAAKgIAAAEACQ=</HashCode>
+      <FileName>Components\Progress.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ProgressData">
+    <Position X="94.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAE4AAACACFAAAAAICACAAAAAAEKAQAgAAoAIBAAQ=</HashCode>
+      <FileName>Components\Progress.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ResizeControl">
+    <Position X="98" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ASAQACABAQBgQIIBAMIAOAACAAAJCAkACA4KBIpIBiA=</HashCode>
+      <FileName>Components\ResizeItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ResizeItem">
+    <Position X="79" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAREAQAAokAASAoAAAAAIABACAAAAAFAAAAggwA=</HashCode>
+      <FileName>Components\ResizeItem.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ResizeObjectArgs">
+    <Position X="99.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAADAAAAAEQEAAAAAAAAAAAAAAABAQ=</HashCode>
+      <FileName>Components\ResizeItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GScrollBar">
+    <Position X="4.75" Y="8.75" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GScrollBar.ChildItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ScrollBar.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.GScrollBar.ChildItemType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ScrollBar.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>rDkUAgNkdcoAOpVEtZKPRlBhwGxLkAEQFpIoQKCmSEw=</HashCode>
+      <FileName>Components\ScrollBar.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Selector" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAoABAAAAQhQEACAAQAAAAIgAEBAAAEAQIGAABASBAg=</HashCode>
+      <FileName>Components\Selector.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GSizeAxis">
+    <Position X="11.5" Y="10.25" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAABEAAAIAAAAAQACAAAAAAAAAAAEACAAAAAAAAEAAA=</HashCode>
+      <FileName>Components\SizeAxis.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Skin">
+    <Position X="106.75" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QGIBBkAUIgEACwKR2AAkIAiBADhMQCgBQUiADEDABoI=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinModifierSet">
+    <Position X="7.25" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AcEEGTCSLYthAwBglAFUBAQCAAFhmkBAiQQBggKYAAU=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinShadowSet">
+    <Position X="9.5" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAEAAAAAAAAAAAAAAAAAAAAgAAQAAAAAAAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinControlSet">
+    <Position X="11.75" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ggACAAACSAEAAAIAAAAAAAACBAAAAAAAAAACAQAggAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinSplitterSet">
+    <Position X="14" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAAQAAAAAAIgCAAAIIBAAAAEAACAEAoAAAIBCAAABAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinBlockedGuiSet">
+    <Position X="16.25" Y="5.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAASgAAACBAAAAAAgAAAAAAAAAAAAAACA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinToolTipSet">
+    <Position X="18.5" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAAAAAAAAAACQACAAAAAAAAEEAABAAQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinToolBarSet">
+    <Position X="20.75" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>MAAAIgAACAAAAAAIgAWAgAACFAAAAIAACAAAAAABAQQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinTagFilterSet">
+    <Position X="23" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAIgAAAAABGAAhEAAAAAAAkAABAIBEAEAAQAABAAQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinButtonSet">
+    <Position X="25.25" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAAIAAAAAAACBAAAAAAAAAAAAAABAAQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinTabHeaderSet">
+    <Position X="27.5" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAoQAAACAAACAAKAEACAACiBAAAAAAAAAAAAAARAAQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinScrollBarSet">
+    <Position X="29.75" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAWAAAAAAAAADAAAAAAAAAAAAAQAAAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinTrackBarSet">
+    <Position X="32" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAgAAcAAAAAAAAAAAAAUAAABAIQQACRAAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinProgressSet">
+    <Position X="34.25" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAQAAAAAAAAAAAAEQAAIAAEAAAAABACAACAAAQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinAxisSet">
+    <Position X="36.5" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIAAAIAAAAAIQAAAAAAAAAAAIAAAAAAAAAABCgCBAAw=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinGridSet">
+    <Position X="38.75" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>iBExYRCEAACAmgCCYUsIAAABKQICBgARACAIAKAABBA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinGraphSet">
+    <Position X="41" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAgAAQgAAAgKAAAUIAAAEGAAiAJAAAQABAEAAAkVAAQ=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinRelationSet">
+    <Position X="43.25" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAAAAABAAEQAAAAAICAAAAAAAAgAAAAAAARgAAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SkinSet">
+    <Position X="25.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIAAAAAAAAAAAAmAAAAAAABAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.InitialiserAttribute">
+    <Position X="101.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Skin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GSplitter">
+    <Position X="7" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>eCKACFCkIaDGYoGGEATMQAFgAExAgEmAShAggIqkIkA=</HashCode>
+      <FileName>Components\Splitter.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SyntaxEditorPanel">
+    <Position X="112" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>DAAAQASCACCARgIAAAIEBgAAAQAEAEADEADAQbUo4AA=</HashCode>
+      <FileName>Components\SyntaxEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SyntaxEditorTextBox">
+    <Position X="113.75" Y="9.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AACAAAgAAAAAEAAgAAAAAAAAAEAAAAAAAAAAQAAAIAA=</HashCode>
+      <FileName>Components\SyntaxEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.SyntaxEditorTreeView">
+    <Position X="115.5" Y="9.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AgCAQAAAAAAAAAAAAAAAAiAAAUIEENRAAACAQJRAAJA=</HashCode>
+      <FileName>Components\SyntaxEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GuiConst">
+    <Position X="105" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>Components\SyntaxEditor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTabContainer">
+    <Position X="27.25" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>KZSAAACgUAE4K8AAAUICAAiQwBAQcRAEAAgABQBADAw=</HashCode>
+      <FileName>Components\TabHeader.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTabHeader">
+    <Position X="29.5" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AZACCACgACAYA4AkAEIAoBAwwkAABgwAIAoAApqbCQI=</HashCode>
+      <FileName>Components\TabHeader.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTabPage">
+    <Position X="45.25" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IEEAWAgDAAAAomZmEKGQAQCogAAQCBQkWTBBiAAhACE=</HashCode>
+      <FileName>Components\TabHeader.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.TableText">
+    <Position X="101.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEIgAAAAAAAFAIAAgAAwACBAAAAgAAhAAAgAiTAAA=</HashCode>
+      <FileName>Components\TableText.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.TableTextRow">
+    <Position X="105" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAIAAABAAAAAAMAAICAAAEBAAAAgAAhEAAAAqDAAA=</HashCode>
+      <FileName>Components\TableText.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.TableTextCell">
+    <Position X="103.25" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgBAIgAAAEEAABAMAiACAEQABAgAAgIAhEAAiAiDAAA=</HashCode>
+      <FileName>Components\TableText.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTagFilter">
+    <Position X="83.5" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QDAQIBKqBNIouIzxUCGIACIQEJBRgGgVmEgAQ8hcAEI=</HashCode>
+      <FileName>Components\TagFilter.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTagItem">
+    <Position X="90.25" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAICCigAACigA0AACAAkIAFQAgAICIBEAACQAAAQA=</HashCode>
+      <FileName>Components\TagFilter.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTimeAxis">
+    <Position X="13.75" Y="10.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>EUQFEAAAIoAAECwACAgAAAAAEIDgEEGFAEAgBRIEAAA=</HashCode>
+      <FileName>Components\TimeAxis.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.TimeAxisConvertor" BaseTypeListCollapsed="true">
+    <Position X="99.75" Y="11.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAQQAAAAIQABATAEEAgAIAIAABCACAAAAUAgCAQAAKA=</HashCode>
+      <FileName>Components\TimeAxis.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBar">
+    <Position X="16" Y="10.25" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GToolBar.LayoutSettingTBarInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ToolBar.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GToolBar.LayoutSettingTItemInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ToolBar.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>aIQgAAAJQIBQMoAAcQgoAKAxI2AsASAGmAYAAEQiBqA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarGroup">
+    <Position X="20.5" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>iQQAAgAAAGAcAgCAAgAAAAQGIAAACBQAAAAQAAAgAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarSeparator">
+    <Position X="31.75" Y="11.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarLabel">
+    <Position X="34" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarImage">
+    <Position X="36.25" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarButton">
+    <Position X="38.5" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAYAAAAAAAAAAECBAQAIAAAAABAAAEAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarComboBox">
+    <Position X="40.75" Y="11.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAAAAAAAAECAAAAAAAAAAAAAAAoAAAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarTrackBar">
+    <Position X="43" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAIEAAAAAAEAAAAAAAAABAAAABAAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GToolBarItem">
+    <Position X="37.25" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>FgQAEQEBAAwWIwYMAlIJAAQOKEAAzAIAIAKJIBBgQgk=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ToolBarStatus">
+    <Position X="103.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAACgAAAAAgAAAAAAIAAAAAAAAAAAIAAAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ToolTipItem">
+    <Position X="106.75" Y="11.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.ToolTipItem.AnimationState" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ToolTip.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.ToolTipItem.AnimationPhase" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ToolTip.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Asol.Tools.WorkScheduler.Components.ToolTipItem.TextCell" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\ToolTip.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>aFhWF0QezgxnnocVFMwDwEJKwCJQkRYlamwlEEFYCTY=</HashCode>
+      <FileName>Components\ToolTip.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.ToolTipData" BaseTypeListCollapsed="true">
+    <Position X="105" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAEUgCRCFBjEILgIIggAEIKgIABQBQACAQhIBMhQDQ=</HashCode>
+      <FileName>Components\ToolTip.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.GTrackBar">
+    <Position X="85.75" Y="8.75" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.GTrackBar.PaintData" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\TrackBar.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>MgAhgQAIgQNUsvYAEhCAhFBIUUBAoAEZUBAoCCQgJVg=</HashCode>
+      <FileName>Components\TrackBar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.VirtualInteractiveContainer">
+    <Position X="50.75" Y="10.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAEAIA=</HashCode>
+      <FileName>Components\VirtualControl.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.VirtualInteractiveItem">
+    <Position X="88" Y="8.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAMAAAAAAEAAAACgoAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\VirtualControl.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinFormDialog">
+    <Position X="18.75" Y="21.5" Width="1.5" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.WinFormDialog.TextMode" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\WinFormControls.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAQhAAAAAAQBAwAAAABAAgFAEAQQAGAAAAAAAAAAQAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinFormButtons">
+    <Position X="17.75" Y="20" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AXQQAkgAQAAhCygltAAQQAAAAAQhAgIYADDAAAgAAAg=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinFormBase">
+    <Position X="17.75" Y="18.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAICAAAABAwAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinButtonImage">
+    <Position X="94.5" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAABAQIBABgEQAAAABAghIAAAASAABAIAAAIACCAAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinButtonBase">
+    <Position X="92.75" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinHorizontalLine">
+    <Position X="19.25" Y="13" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AACggAAAAAABgQAICAAAUAIAcAAAAABACACCAgAgAAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinPanel">
+    <Position X="21.5" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAAABAQAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.WinConstants">
+    <Position X="96.25" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>Components\WinFormControls.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraph">
+    <Position X="22.75" Y="10.25" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraph.PositionCalculatorInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Graph\Graph.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraph.InvalidateItems" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Graph\Graph.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraph._SearchNearItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Graph\Graph.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>MMAwYRE3IgjCMthoMoZ02Yxhri6TRTfrlBVMAAx8ETk=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.TimeGraphProperties">
+    <Position X="101.5" Y="11.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>BAAEEQAQAAwAEAWQyAgAOAKgEgABAIUIAIAQoAICEkA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.CreateTextArgs">
+    <Position X="10" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAEAAAAgAAAgAAAAAAAAAAAAAJAAAAACAACAgA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.CreateToolTipArgs">
+    <Position X="1" Y="17.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAQAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.CreateLinksArgs">
+    <Position X="12.25" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAAAAAQAIAAAAAAAAAAAAAAAAAAACAAAAAAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.ItemDragDropArgs">
+    <Position X="3.25" Y="17.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>QQzACQABgABAAABBThhAAAEQDQDhAAAEUEAQkCAAgIY=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.ItemResizeArgs">
+    <Position X="5.5" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAGAABAAAAAAAFThBAAgEQAACgAIAAUAAAAAQAAIA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.ItemActionArgs">
+    <Position X="7.75" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.ItemChangeArgs">
+    <Position X="105" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.ItemInteractiveArgs">
+    <Position X="4.25" Y="15.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAIAAAAAAAEAAAAAAAEAAAAAAAAIAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.ItemArgs">
+    <Position X="6.5" Y="14.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAgAAAAgAAAAAAAEAAAAAAgAAAAEAAAAAAE=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphItem">
+    <Position X="61" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABQoMEgAKQAEOtolYEWCoYjmBB3QpEgQtAEBBBZJB5A=</HashCode>
+      <FileName>Components\Graph\GraphItem.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphLinkArray">
+    <Position X="9.25" Y="8.75" Width="1.75" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphLinkArray.LinkInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Graph\GraphItem.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACBAAEgIIAAAAAAAAAAAAAEQgKAAAAARCAAA=</HashCode>
+      <FileName>Components\Graph\GraphItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphLinkItem">
+    <Position X="103.25" Y="4.5" Width="1.75" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphLinkItem.RelationState" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Components\Graph\GraphItem.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAQBIQAAAQgAxkQEABAAECwCAAIAAAAAACBAIEIAAAA=</HashCode>
+      <FileName>Components\Graph\GraphItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphGroup" BaseTypeListCollapsed="true">
+    <Position X="101.5" Y="4.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>C5gIgAFFBDTJGgAMkFQiiYIAFRLFAkpdCZAAF6lDyRA=</HashCode>
+      <FileName>Components\Graph\GraphItemGroup.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GComponent">
+    <Position X="70" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAAAAEAQAgQAYAAgAAAAAAAFAAAAgBgABBAIAgA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GTableHeader">
+    <Position X="63.25" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAEBkgBAAQAABGAACAAAAAAAAAABAgAAgAgBgAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GColumnHeader">
+    <Position X="65.5" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>RAACGDEkDyBREYBGQAKEEACQgAhABgBIDKoIkBgAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GTagLine">
+    <Position X="67.75" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAkAAAAQgABEAAAAAAAAAAAAAAAAAAgAABAAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GRowArea">
+    <Position X="70" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>wAAAAAkAAgBYgIAEAAAAAAAAAAgAAAAAAAgAADAAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GRow">
+    <Position X="72.25" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>RAAAAAEAAyQQEYgEAAAEAAAAAAAABIAAgAiAABggAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GRowHeader">
+    <Position X="74.5" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QEAAQAAACAQQAgjEQACIAACAAAgAgAIAEBhQJBAAAQA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GCell">
+    <Position X="76.75" Y="11.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>SAAAEEgACAAQJIgkQBCYQADBCRpBpgAQFBpABBAGCQE=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GTable">
+    <Position X="54.25" Y="10.25" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+      <Compartment Name="Properties" Collapsed="true" />
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>X/j31y1ep3lme+3+uDJ/r1+2sO1rpfm/btd/+69XXyw=</HashCode>
+      <FileName>Components\Grid\GridTable.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.GTableVisualStyle">
+    <Position X="99.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gQAEBCAAigAkABAIAAAAAEQQBgAEAAIEBAKEQwRBAAA=</HashCode>
+      <FileName>Components\Grid\GridTable.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Components.Grid.TreeViewDrawArgs">
+    <Position X="112" Y="11.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>WAAAQAAAQAACAAAAAhkAAAAACAAAgAQAAAIAAAAAAAA=</HashCode>
+      <FileName>Components\Grid\GridTable.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Test.TestData">
+    <Position X="110.25" Y="10.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Data.Test.TestData.TestPersist" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\_Test.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Data.Test.TestData.TestDictionary" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\_Test.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Data.Test.TestData.XmlResponse" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\_Test.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>gAAACAhAAQBAAACAAAAAAAAAIAAACAAAAAAAAAAAAAQ=</HashCode>
+      <FileName>Data\_Test.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Test.TestSimpleClass">
+    <Position X="94.5" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Data\_Test.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.BaseRange&lt;TEdge, TSize&gt;">
+    <Position X="6.5" Y="11.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>QAJAIAAMAQAAxgIGAxABECAAAINAGFQESAEEICAYAQY=</HashCode>
+      <FileName>Data\BaseRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.BaseVector&lt;TPoint&gt;">
+    <Position X="0.5" Y="22.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CABAAAAMAAAAwAAAASIAAAAAAAAAAAAAAAAAACAAAAA=</HashCode>
+      <FileName>Data\BaseRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.CollectIdx&lt;T&gt;" BaseTypeListCollapsed="true">
+    <Position X="112" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>GCIAAAAAACAECAAECAAADQYAAAAAAAAAAAEBAABEAQI=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.EDictionary&lt;TKey, TValue&gt;" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="1.5" Width="2.25" />
+    <NestedTypes>
+      <Delegate Name="Asol.Tools.WorkScheduler.Data.EDictionary&lt;TKey, TValue&gt;.EDictionaryEventBeforeHandler" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Delegate Name="Asol.Tools.WorkScheduler.Data.EDictionary&lt;TKey, TValue&gt;.EDictionaryEventAfterHandler" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Class Name="Asol.Tools.WorkScheduler.Data.EDictionary&lt;TKey, TValue&gt;.EDictionaryBeforeEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Data.EDictionary&lt;TKey, TValue&gt;.EDictionaryAfterEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Data.EDictionary&lt;TKey, TValue&gt;.EDictionaryEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>CAIQAIBwiBCGgDAECAAADCQgEAAAAhAEACAwQGJABzA=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.EList&lt;T&gt;" BaseTypeListCollapsed="true">
+    <Position X="94.5" Y="2.5" Width="1.5" />
+    <NestedTypes>
+      <Delegate Name="Asol.Tools.WorkScheduler.Data.EList&lt;T&gt;.EListEventBeforeHandler" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Delegate Name="Asol.Tools.WorkScheduler.Data.EList&lt;T&gt;.EListEventAfterHandler" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Delegate>
+      <Class Name="Asol.Tools.WorkScheduler.Data.EList&lt;T&gt;.EListBeforeEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Data.EList&lt;T&gt;.EListAfterEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Data.EList&lt;T&gt;.EListEventArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Collections.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>gOIQCEhAxADCgDAECAAUHAQCAKAKAAAEKAkDAONUJSI=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.DictionaryList&lt;TKey, TValue&gt;">
+    <Position X="110.25" Y="1.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>CAJAAAAAAAAGAAEACAAGBAYBBAAAQAAAIAAgAABEAAA=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.KeyValueArray&lt;TKey, TValue&gt;">
+    <Position X="106.75" Y="6.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAABAAAIACAAABAQAEABAAAAAAAAAAABAAAA=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Collection&lt;T&gt;" BaseTypeListCollapsed="true">
+    <Position X="113.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAACAAAgAQAAAAAAAAEAAAAAAAAAQA=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.DataPersistValue">
+    <Position X="103.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIQAAAAAAAAAAAEqgoAJQYAAIAAgISQIJAAoAYEMAA=</HashCode>
+      <FileName>Data\DataPersist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.DataExtensions">
+    <Position X="98" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>SAAAgiAkIEBTgAAGChAkkAAICAAAJRIAAJQKAEgGACQ=</HashCode>
+      <FileName>Data\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.GId">
+    <Position X="94.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAgIACAAAAEgAIAAAQCAAAAAIgAAAAAAAIBAyA=</HashCode>
+      <FileName>Data\GId.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Index&lt;TKey&gt;">
+    <Position X="99.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAwAAAAAEEBEUCABEQAQAAAAAgA4IAAAEAABAAAA=</HashCode>
+      <FileName>Data\Index.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.GPropertyChangeArgs&lt;T&gt;">
+    <Position X="105" Y="3.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AASAAAAAQAAAAAAgAAAAEAAAIAAAAAABAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.GObjectPropertyChangeArgs&lt;TObject, TValue&gt;">
+    <Position X="99.75" Y="3.5" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AASAAAAAQAAAAAAgAAAAEAAAIAAAAAABAAAAAgAAAAA=</HashCode>
+      <FileName>Data\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.IntervalArray&lt;TValue&gt;">
+    <Position X="8.5" Y="22.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AKLQAAAAAAAABQAEQAAAACIAAIAAQAIEAAAACAAEwAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Interval&lt;TValue&gt;">
+    <Position X="10.75" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CCIAAAAUAAQAUBIEAQAAIEBACABgEABAABBgAAAQICE=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.IntervalBase">
+    <Position X="9.75" Y="21.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAQAAAAAAAAAAEBAAAAAAAAAAAAgAAAQAAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.PointArray&lt;TPoint, TValue&gt;">
+    <Position X="115.5" Y="7.5" Width="2.25" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Data.PointArray&lt;TPoint, TValue&gt;.PointItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\IntervalArray.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAEABAAABgAAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.PrevNextItem&lt;TItem&gt;" BaseTypeListCollapsed="true">
+    <Position X="92.75" Y="8.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AgAGIAAAAAAACQAGAABAAAEAAIQwQEIAMAAmQABEAAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.RegexSupport">
+    <Position X="96.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAhAAEQAAAAAAAAAAAACAAAAAIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Regex.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.DecimalNRange">
+    <Position X="3.25" Y="12.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAJAAgAIAQAAAAAE4AKBACAAgBAAAIACSAgEKAAAAjY=</HashCode>
+      <FileName>Data\SizeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.DecimalRange">
+    <Position X="5.5" Y="12.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAJAAgAIAQAAAAAE4AKBACAAgBAAAIACSAgEKAAAAjY=</HashCode>
+      <FileName>Data\SizeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Int32NRange">
+    <Position X="7.75" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAJAAgAIAQAAAAAE4AKBACAAgBAACIACSAhEKAAAAjY=</HashCode>
+      <FileName>Data\SizeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Int32Range">
+    <Position X="10" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAJAAhAIIQABAAAE4AMBAGAAABAACJAASAgEKAACAjY=</HashCode>
+      <FileName>Data\SizeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.DoubleRange">
+    <Position X="12.25" Y="12.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAJAAgAIAQAAAAAE4AKBAGAAgBAAAIACyAgEKAoAAzY=</HashCode>
+      <FileName>Data\SizeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Table" BaseTypeListCollapsed="true">
+    <Position X="94.5" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>yh4Y2bF1JpI/vvb3sorxjx+hP5l4uxdvfkb7aUlc0x8=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Column" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAIBQACQABAAO8QVCiJURlhAGoV2koBgBAOoBUAGCAg=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Row" BaseTypeListCollapsed="true">
+    <Position X="105" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAIQgHAEBCQQDECEmhIASxCwVwgYOgiKVAUMCEkNwBA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Cell">
+    <Position X="110.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAIAAAAEJBABChQEGABBQAiABgQAEgACJAHgCIAAkBA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TreeNode">
+    <Position X="110.25" Y="11.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Data.TreeNode.NodeNext&lt;T&gt;" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Table.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>USUIiRHgCgBCAIIAAEgA2RAAAAAAAAIDAQQEISAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TagItem" BaseTypeListCollapsed="true">
+    <Position X="106.75" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEGAACBAABgACMAgAAgAICEBAAAASIAAAACAAJADQ=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TableFilter">
+    <Position X="96.25" Y="10.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAQAQAABAAAAAAAAAAAAAIAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TableRowCloneArgs">
+    <Position X="98" Y="10.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAAAAAAAAAAAAAQAAAABAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TableRowDragMoveArgs">
+    <Position X="99.75" Y="10.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAAAACAAAAAAAAABgAAAAAAAAIAACgAAIQ=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.ItemSizeInt">
+    <Position X="16.5" Y="23.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAkAAAAAACAAAAAAgAAACAAAAAAAAIgAACAAEABAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.ItemSize&lt;T&gt;">
+    <Position X="16.5" Y="22.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAACEAAAAGARhACEAAQCSAKCADAAAAAIgBAgkABACAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TextComparable" BaseTypeListCollapsed="true">
+    <Position X="96.25" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAAAAAAEAAAAAAAAAgAAAAAAAAAgCAAAACA=</HashCode>
+      <FileName>Data\Text.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TimeRange">
+    <Position X="1" Y="12.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAJBgwAIQwAgEIAE4AKBQiAAhRQAFIACSEgEKAAAQjY=</HashCode>
+      <FileName>Data\TimeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TimeVector">
+    <Position X="0.5" Y="23.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CABAAAAAAAAAAAAEoAIAAAAAAAAAAIAAAAgCCAAAAjA=</HashCode>
+      <FileName>Data\TimeRange.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.TypeArray&lt;TKey1, TKey2, TValue&gt;">
+    <Position X="113.75" Y="11.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>CAAAIAAAAAAGAAAACAAEAAAAAAAAAAAAAAAgAABAAAA=</HashCode>
+      <FileName>Data\TypeArray.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.ValueTimeRangeSynchronizer">
+    <Position X="21.5" Y="22.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAAAAAAAAAAACAAQAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\ValueSynchronizer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.ValueSynchronizer&lt;T&gt;">
+    <Position X="21.5" Y="21.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAIEQEAAhEEAQAAAAAAAAhAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Data\ValueSynchronizer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.Parser" BaseTypeListCollapsed="true">
+    <Position X="108.5" Y="7.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.Parser.SettingSegmentCompiled" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Parser.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.Parser.SegmentCurrentType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Parser.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAQASAAAAAQAAAEAAAgAAAggAAAAAAAgQABAAAAAAI=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.ParsedItem" BaseTypeListCollapsed="true">
+    <Position X="103.25" Y="7.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.ParsedItem.ScanItemInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Parser.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.ParsedItem.TextMode" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Parser.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>YRUAEgEABBciCDgdAwYA0KEEjo1aIAADIQUQrgDYAgM=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.ParsedItemBuffer">
+    <Position X="105" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAREEAqFgQAWBQkAAUgUQAACEhBAAAiAAkACBAAEAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.ParsedItemScanArray">
+    <Position X="106.75" Y="7.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AACAAQAAAAAACAAAAAAAEAQAAABAAAABAAEAAAAAEAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.Setting">
+    <Position X="94.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAEACAFAAAAAAQAACAAAEAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.SettingSegment" BaseTypeListCollapsed="true">
+    <Position X="98" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BDAAQAAAAEAACghEACAAQAABAAAiwJAAAAEQAACQgAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.SpecialTexts">
+    <Position X="108.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.DefaultSettings">
+    <Position X="108.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ATIGKROBgF48RpAy3CCIkAHBkEEABggBEnHLJECAUII=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatCodeKey">
+    <Position X="13.5" Y="21.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAEgAAAAAAAAAAAAIAAAAAAAAgQEiA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatCodePair">
+    <Position X="13.5" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAgAQAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatCode">
+    <Position X="98" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgDQAAAIAAIAAgAEACAhAgggAACQAAAAACBGiBAAAgA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.RtfCoder" BaseTypeListCollapsed="true">
+    <Position X="106.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>JAIAAAIIKABAAAACAAAAIAAEBgAIgAAAAEAJAIDEAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.RtfFont">
+    <Position X="112" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAABAAAEAAAAAAAAAAAAIAAAAAAAAAAAECAABAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Data.Parsing.RtfColor">
+    <Position X="108.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAAAAAAAAAEAAAAAIAAAAAAAAAAECAAACAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Forms.EditorForm">
+    <Position X="92.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAAIACAAAACAAAAAAAAAAAACAAAAAA=</HashCode>
+      <FileName>Forms\EditorForm.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Localizable.TextLoc">
+    <Position X="98" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAACAAAAAAEAAAAAAAAAAAAAAgAAAAACAAAACA=</HashCode>
+      <FileName>Localizable\Text.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Properties.Resources">
+    <Position X="103.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ByymrEjTIQ/wVp91nkpPtLtwa12zKjH2OFwDnd+oXJw=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Properties.Settings">
+    <Position X="96.25" Y="9.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAIAAAAAABAAAAAAAAAAAAAAA=</HashCode>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Rtf.RtfDocument">
+    <Position X="110.25" Y="8.5" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="Asol.Tools.WorkScheduler.Rtf.RtfDocument.NameValue" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Rtf\RtfDocument.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Class Name="Asol.Tools.WorkScheduler.Rtf.RtfDocument.RtfContent" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Rtf\RtfDocument.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Rtf.RtfDocument.RtfFont" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Rtf\RtfDocument.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Rtf.RtfDocument.RtfColor" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Rtf\RtfDocument.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>IAEEAgAAAACEACRgEAIiAAgAEACAAQQEAEJAlgAAAAM=</HashCode>
+      <FileName>Rtf\RtfDocument.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Rtf.RtfPaint">
+    <Position X="113.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Rtf\RtfPaint.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.DataSourceRequest">
+    <Position X="105" Y="1.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.DataSourceResponse">
+    <Position X="106.75" Y="1.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionGlobalPrepareGuiRequest">
+    <Position X="106.75" Y="2.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionGlobalCheckGuiRequest">
+    <Position X="105" Y="2.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionGlobalPrepareResponse">
+    <Position X="108.5" Y="2.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionGlobalGroup">
+    <Position X="103.25" Y="2.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CAECAAQAwBAEGECAIAAAAIAIAAACCAEAAAAAgAQMAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionGlobalItem">
+    <Position X="0.5" Y="8.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAgUAAAAAAgAAEAAAAAABAAAAAAAAAAAAAAAAAAgA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionItem">
+    <Position X="0.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IEECgAAgACAEECCFAAGgQA6CAEAICHAIACAkKAAOCiI=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.FunctionItemEventArgs">
+    <Position X="110.25" Y="2.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Services.TestGlobalFunctions" BaseTypeListCollapsed="true">
+    <Position X="113.75" Y="10.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAABAAAAEAAAgAAAAAEAAAABACAABAAAAAAAAAA=</HashCode>
+      <FileName>Services\TestGlobalFunctions.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Persist">
+    <Position X="110.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAIAAAAAAAAAAAAAAAAAgAACBAAAAAAAQAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.PersistArgs">
+    <Position X="112" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAIAAAAAAgACBAgAABKQAAAAQAAAAoACEgQAgEAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.PersistAttribute">
+    <Position X="11" Y="18.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.PersistingOnHeapAttribute">
+    <Position X="8.75" Y="20" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.PropertyNameAttribute">
+    <Position X="11" Y="20" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.PersistingEnabledAttribute">
+    <Position X="13.25" Y="20" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Convertor">
+    <Position X="92.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>RhBAAIAkIWRBgEwFsQiOEAAgKBYACFnzEgKA5KgA4Cg=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiData">
+    <Position X="50.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAgAAIEgQAABAEAAAwAAAEAAAAIgIAACgAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiProperties">
+    <Position X="54.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAEAgACAAAAAAAQCEAAAAAAAAACAAAEAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiPages">
+    <Position X="3" Y="1.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAIAkCBAAAAQAAAAAAAAAAAAAAAAEgAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiPage">
+    <Position X="27.75" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAACACAQIIAEAEAAACAAAAAAAAAAAQAAABAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiPanel">
+    <Position X="9.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAIAESAAAAAQAAAAAAAAAAAAAAAgEBAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGrid">
+    <Position X="30" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAQABAIAAAAIAEBIACAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiParentChild">
+    <Position X="94.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAIAEAAAAQAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGridProperties">
+    <Position X="14.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQBBAQBABAJgIEACiAAEYxgAAAAAACBAIkAIAACAJAE=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGridInteraction">
+    <Position X="18.75" Y="1.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAAAAAAAiAEBAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiDataTable">
+    <Position X="21" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>GAAAAAAgAIACBMSIDAAhIAQASAgQgAFAsAIAAQgAAgA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiDataColumn">
+    <Position X="34.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABACCAAABAAWACEAGgQQFAAAAgBQgIAJAEACAAgAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiDataRow">
+    <Position X="25.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAEAAAAADIDECAIQQAQARAAQAggAJAEAAAABARA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiTableKeyColumns">
+    <Position X="112" Y="5.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAABAIAAgAAIAEAAAAAEAAEAAAAABAAAAAAAAQEAI=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiTagItem">
+    <Position X="41.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAFAAQAAAAAAAAAAAAAIAAAAAABABA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraph">
+    <Position X="43.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AKIAAAAAAAAAAAAEAAASAAQACAAAAQAgAACIAAAEARA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraphProperties">
+    <Position X="45.75" Y="1.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AQAAEQAYAAgAAAEwAAAAEAAIAAAAAIAAIIAAAAAAEkA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiTimeAxisSegment">
+    <Position X="48" Y="1.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAMAAIAAAgAAABAAAAAAAAAAAABAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraphTable">
+    <Position X="52.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAgAAAAAAIAECAAAAAQAAAAAAAAAAACAAAAEAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraphItem">
+    <Position X="7.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAACAAAAAAAAIAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraphBaseItem">
+    <Position X="6.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CQEIAAAEBgAAEBAEgCACEA4AAAFgIAAFCAEACAABhRA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraphSkin">
+    <Position X="110.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAIAAAABAAAEAAAAAAAEAAAAAEAIAAAAAEAAAABBAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGraphLink">
+    <Position X="12" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAgAgBAEAFAAEAAAAAIAAAAAAAAAIAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiKeyAction">
+    <Position X="92.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAQIAAAAAAAAACAAAAAAABAAAAAABAAAQAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiToolbarPanel">
+    <Position X="16.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAABAAACIAACAAAAAQAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiToolbarItem">
+    <Position X="32.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAgAAAACIAgAAAAAIACAJAAAAABkAIAAABAAAQAgE=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiTrackBarSettings">
+    <Position X="113.75" Y="5.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiContextMenuSet">
+    <Position X="23.25" Y="1.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAACIAACAAAAAQAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiContextMenuItem">
+    <Position X="36.75" Y="3.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAIAAAAAAAAAAAAACBAAAAAAAAAAAAAABAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiTextItem">
+    <Position X="32.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAEAAAAAAgAAAAAABAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiBase">
+    <Position X="28.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABgEAAAAAAAAAKAEAEAA4AQAAABCQEAABAAAAQAaAEA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiImage" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAJAAAEAAAAAAAAkBAIAAAAAAIAAAjAAAAAAAAAAAFA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiVisualStyle">
+    <Position X="39" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gQAAAAAAggAQAAAIAAAAAAQAAAAAAAAEAACAQgRBAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiIdText" BaseTypeListCollapsed="true">
+    <Position X="113.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAEAAAAAAAAEAIAAAAQAAAAAAAAAAAAACAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiId" BaseTypeListCollapsed="true">
+    <Position X="112" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAAEgIAAAAAAEgAIAAAQAAAAAAICAAAAAAAIAAyA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRange&lt;T&gt;">
+    <Position X="19" Y="15.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAEAIAAAAAAEgAAAAAAAAAAAEIgQAAARAABAAiA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiTimeRange">
+    <Position X="22.5" Y="16.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiDoubleRange">
+    <Position X="15.75" Y="16.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiSingleRange">
+    <Position X="18" Y="16.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiInt32Range">
+    <Position X="20.25" Y="16.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRequest">
+    <Position X="96.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACBAAABABAAAAIAGgAAABGAAAAAAAkQABAUIAASABAg=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRequestKeyPress">
+    <Position X="103.25" Y="5.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAAQAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRequestGraphItemMove">
+    <Position X="99.75" Y="5.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAaAAAAAAAEAABAAADAAAAAAAAIAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRequestGraphItemResize">
+    <Position X="101.5" Y="5.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAYAAAAAAAEAAAggACAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRequestRowDragMove">
+    <Position X="105" Y="5.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAECABIAACEAAAAAAAAAAAAACAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiContextMenuRunArgs">
+    <Position X="106.75" Y="4.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AACAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiRequestCurrentState">
+    <Position X="98" Y="5.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAgCAAAAAAAACAAAAAAAAAAAAAEAAAAAAAAAAI=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGridItemId">
+    <Position X="0.5" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAEgAAAAAIAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiGridRowId">
+    <Position X="0.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAQAAABA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiResponse">
+    <Position X="106.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAgCEAAAQAQAAAAAFAAAgAAAAAAEAACAAIBABA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiDialog">
+    <Position X="108.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AARAAAAEAAAgAUAAAAAAABAAAACAEAAAAAAAIEEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiSaveData">
+    <Position X="110.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAABAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiResponseCommon">
+    <Position X="108.5" Y="5.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAQAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiResponseGraph">
+    <Position X="43.5" Y="3.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAACAQAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiResponseGraphItem">
+    <Position X="5.25" Y="3.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.GuiResponseGraphLink">
+    <Position X="12" Y="3.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.WorkSchedulerSupport">
+    <Position X="99.75" Y="12.5" Width="2" />
+    <NestedTypes>
+      <Class Name="Noris.LCS.Base.WorkScheduler.WorkSchedulerSupport.ColumnInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerShared.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>CwgMAAAAEDAAEAAIBAiBgAkAZCAAAIMgAAFCHAgBAIA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.DataColumnExtendedInfo">
+    <Position X="94.5" Y="1.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AABAGgAAERIEVAAIAGlAJFAAAIgJBAEABBkAAACEAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.DataColumnsExtendedInfo">
+    <Position X="96.25" Y="1.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAACAAAAAQAAJAAAAAAAAABAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist" BaseTypeListCollapsed="true">
+    <Position X="106.75" Y="12.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.ArrayIndices" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.XmlPersistSaveArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.XmlPersistLoadArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.XmlElementDepthType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.XmlPersistV1" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.XmlPersistV2" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.XmlPersistVBase" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Interface Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmlPersist.IXmlPersistVersion" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Interface>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAEACEABACAAAAAQCAgAgAAKBBBAAgAAABAQAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.TypeLibrary" BaseTypeListCollapsed="true">
+    <Position X="115.5" Y="11.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.TypeLibrary.TypeInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.TypeLibrary.PropInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.TypeLibrary.TypeConvertor" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.TypeLibrary.XmlPersistenceType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Shared\WorkSchedulerPersistor.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>QQAAACAAggEAAAAIAgQAEAAAkAYAAEAAABAVhCAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmDocument">
+    <Position X="103.25" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAgEAAABBEAAAAAAAAIAEAQAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmElement">
+    <Position X="105" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAIgBEAAiAAYQAAAgCBEAAACAAAIBAAAg=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.InternalPersistor.XmAttribute">
+    <Position X="101.5" Y="12.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAEAACAAEAAAgACQBAABIBIAAgQAwAgCAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Actions">
+    <Position X="92.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>//////////////////////////9//9////////////8=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Asol">
+    <Position X="105" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IEBAAAAQHgAAgAAIAgACAAAABgAACAIIAARAiCAIMAE=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Categories">
+    <Position X="108.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QggCACAMDkAoAQEQQATCghGEHjKBAJyEoAFSSByKIBw=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Status">
+    <Position X="110.25" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>Zu//3Ra3vJ+d8T7/41/81sXe+4/R1nm23X2v26//r/0=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24">
+    <Position X="96.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>//////////////////////////9///////////////8=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Actions16">
+    <Position X="94.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>//////////////////////////////////////////8=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Noris.LCS.Base.WorkScheduler.Resources.Images.Others16">
+    <Position X="101.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>kRwS4GAyDMcLQyox4q1awwAVaBmYYZRCGUycCSAgJgg=</HashCode>
+      <FileName>Shared\WorkSchedulerResources.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.TestScheduler">
+    <Position X="92.75" Y="11.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Scheduler\_Test.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.GreenClasses">
+    <Position X="92.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>0lwBQDQskUlAm8KAxybTbEpv0c3daI40SQUSEHLU3qA=</HashCode>
+      <FileName>Scheduler\Constants.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainControl">
+    <Position X="3.5" Y="24.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AACByABBAgAnJICAAQKUhAEDABEAgEiAEACAiEBAYAw=</HashCode>
+      <FileName>Scheduler\MainControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainControlLayout">
+    <Position X="92.75" Y="7.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAQAAAAAAAIAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Scheduler\MainControl.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerConfig" BaseTypeListCollapsed="true">
+    <Position X="99.75" Y="9.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerConfig.EditingScope" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerConfig.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerConfig.MoveSnapInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerConfig.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerConfig.MoveSnapKeyType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerConfig.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>EAAGwIBAIUIwAIAAw0CtIgAAAoAAEQQiSCYlICEAAaA=</HashCode>
+      <FileName>Scheduler\SchedulerConfig.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerConfigUserPair">
+    <Position X="101.5" Y="9.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAQEAAAAAAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfig.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerEditorItem">
+    <Position X="103.25" Y="9.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAAAAAAAAAAAAEAAAAAAAAAQAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerConfigForm">
+    <Position X="16.5" Y="21.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AOAAAAACAgBAA0ABAFAAgAkgAAIAEAIAAgEAAAgIAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.ConfigSnapSetPanel">
+    <Position X="16" Y="14.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>CCQACAAAAACAAQAAAEAAAAAAAAAAABAggAkSRAQAAgA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.ConfigSnapOnePanel">
+    <Position X="18.25" Y="14.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AgQQAAEkAAhACQCQJgAgACAAAABgCAAAQAAAIIAAAIg=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.ConfigSnapSamplePanel">
+    <Position X="25" Y="13" Width="2" />
+    <TypeIdentifier>
+      <HashCode>QgDAAEEgAADKRRBaNACAACACAAAgCQAAEAAAIAAAAAE=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.ConfigLinkLinesSetPanel">
+    <Position X="20.5" Y="14.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>CAQAAAAABAAAAQAABAAAIAAAAAACABAgAAkABAAAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.ConfigLinkLineOnePanel">
+    <Position X="22.75" Y="14.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>SQQQAAAABCAgAQAQJQDIAAAhAAAgACAgAAAAQAAAQAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.ConfigLinkLineSamplePanel">
+    <Position X="27.25" Y="13" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AQDAAAAABBCAQQBYJQAYAAAgAAAgAAAgAAAAIAACAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainData" BaseTypeListCollapsed="true">
+    <Position X="94.5" Y="7.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainData.ToolBarItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerData.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Scheduler.MainData.SearchNearItemMode" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerData.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainData.ContextFunctionItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerData.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainData.ContextFunctionValidInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerData.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Scheduler.MainData.MainFormClosingState" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerData.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>mueQ82HNdoyRf0RnJArEwI9ilRoTLAgIOumHjWmkgY8=</HashCode>
+      <FileName>Scheduler\SchedulerData.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataPanel">
+    <Position X="96.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAAAAAAAAAAAEAgAAAAAAAAAABA=</HashCode>
+      <FileName>Scheduler\SchedulerData.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.GraphItemChangeInfo">
+    <Position X="108.5" Y="3.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>QICYAQgZRAgAAAgIQABAQAAAAACAAIAAWAAgACAAgAA=</HashCode>
+      <FileName>Scheduler\SchedulerData.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable" BaseTypeListCollapsed="true">
+    <Position X="98" Y="7.5" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.SearchChildInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Enum Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.ItemClassCopyBehavior" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.InteractionArgs" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.DragMoveRowsInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.DragMoveRowsSourceInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.DragMoveRowsOneTargetInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="Asol.Tools.WorkScheduler.Scheduler.MainDataTable.DragMoveRowsCurrentDataInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>c5kLbMt0RoK5pBGXEjTvjfehCaARvzVZXoTbv1Kal+c=</HashCode>
+      <FileName>Scheduler\SchedulerDataTable.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.DataGraphItem" BaseTypeListCollapsed="true">
+    <Position X="99.75" Y="1.5" Width="1.5" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Scheduler.DataGraphItem.IdType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Scheduler\SchedulerDataTable.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AoAIgABABCABEgIPwjWEA6IAABjEgEoASKBAHigCgYA=</HashCode>
+      <FileName>Scheduler\SchedulerDataTable.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.DataGraphProperties">
+    <Position X="101.5" Y="1.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAAAAAAAAAAAAgAAAAAAAABgAAAAAAAAAAAAEIg=</HashCode>
+      <FileName>Scheduler\SchedulerDataTable.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.GridInteractionRunInfo">
+    <Position X="96.25" Y="4.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>IAQAAFAAAAAAAAiEFBAAAAAAAAIAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerDataTable.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerPanel">
+    <Position X="25" Y="10.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gFDJKEAIAgBQGMECkACAAOgACBAAADRoEMgAwBUAAEE=</HashCode>
+      <FileName>Scheduler\SchedulerPanel.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.Scheduler.SchedulerPanelLayout">
+    <Position X="105" Y="9.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>0gAQAAbVBAIhCABAAHEQWCUABAACJAQAAWAIFA4iAAA=</HashCode>
+      <FileName>Scheduler\SchedulerPanel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.AppHostRequestArgs">
+    <Position X="101.5" Y="0.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAEAAAQAAAAAAAAIAAAAgBAAAAAEAAAIAAE=</HashCode>
+      <FileName>Scheduler\SchedulerInterface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Asol.Tools.WorkScheduler.AppHostResponseArgs">
+    <Position X="103.25" Y="0.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABIAAAAAgAAAAAAAAQCAAAAwBAAAAAEAAAACAA=</HashCode>
+      <FileName>Scheduler\SchedulerInterface.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="Asol.Tools.WorkScheduler.Components.PointD">
+    <Position X="94.5" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAJAAAAAIAAAAAAEwgMCAAAAAAQAAIAAAAAAAAAAYiA=</HashCode>
+      <FileName>Components\DrawingD.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Asol.Tools.WorkScheduler.Components.SizeD">
+    <Position X="98" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAJAAAAABAAAAAAE4gcCAEAABACAAIAAAAAAIIAAAjA=</HashCode>
+      <FileName>Components\DrawingD.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Asol.Tools.WorkScheduler.Components.RectangleD">
+    <Position X="96.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEBAAAAApIAAoAAU4AIUAEEAAAQIEoACCACCAcYYYjA=</HashCode>
+      <FileName>Components\DrawingD.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Asol.Tools.WorkScheduler.Components.Vector">
+    <Position X="99.75" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAAQAEAAAAAEE4AMQCABKAAABAIAAAEABAAAAAiA=</HashCode>
+      <FileName>Components\DrawingD.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Asol.Tools.WorkScheduler.Data.Fraction">
+    <Position X="92.75" Y="13.75" Width="1.5" />
+    <NestedTypes>
+      <Enum Name="Asol.Tools.WorkScheduler.Data.Fraction.SimplifyIntegralMode" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Data\Fraction.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAEEBABAgAEAQG4CUAAAAgAQUAAIgAIAAgABCBQzA=</HashCode>
+      <FileName>Data\Fraction.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Asol.Tools.WorkScheduler.Data.XDateTime">
+    <Position X="101.5" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQJFAEpBLUoAAEAEwIKCMgIgASQJjuYFEAA0SgEELyg=</HashCode>
+      <FileName>Data\XTime.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Asol.Tools.WorkScheduler.Data.XTimeSpan">
+    <Position X="103.25" Y="13.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAJBAgJACQAQAAAEwIKCIgAgAAQBBqAEQAQlABCAByg=</HashCode>
+      <FileName>Data\XTime.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Interface Name="Asol.Tools.WorkScheduler.Application.IPlugin">
+    <Position X="3" Y="18.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAA=</HashCode>
+      <FileName>Application\Plugin.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Application.ITest">
+    <Position X="3" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Application\Test.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Application.ITraceScope">
+    <Position X="113.75" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAEAAAAAAAQAgAAQAgAAAAAAAAQAAAAAAAAA=</HashCode>
+      <FileName>Application\Trace.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Application.IWorkItem">
+    <Position X="98" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAgAAAAEAAAAAAAAIAAAAAAAAAI=</HashCode>
+      <FileName>Application\Worker.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IFormMoveNotification">
+    <Position X="105" Y="15" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAA=</HashCode>
+      <FileName>Components\FormMoveSupport.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IGridMember">
+    <Position X="106.75" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAA=</HashCode>
+      <FileName>Components\Grid\Grid.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IInteractiveItem">
+    <Position X="0.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAhAQAAAAgEoKAAAACAIIAAABAgAAgAAAAAEAIggA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IInteractiveParent">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAAAAAIAAAAAQAAAAAgACAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IVisualParent">
+    <Position X="96.25" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAEA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IDrawItem">
+    <Position X="101.5" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ILayoutItem">
+    <Position X="94.5" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAAAAAAAAAAAgAAAAAEAAAAAAAAAAAAAAAAE=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ISequenceLayout">
+    <Position X="113.75" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAMCAAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IScrollBarPaintData">
+    <Position X="110.25" Y="15.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAQAAAAQBQAAAAAAEQACAAAREQAIAABAAAIRAAAAg=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ITabHeaderItemPaintData">
+    <Position X="96.25" Y="16.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAgEAGQAAAAAAAAABAABAAAiEADAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ITrackBarPaintData">
+    <Position X="115.5" Y="16.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AACAAAIEAUEAEEQCAAIIAAIAEAEAAgQBAAAAAmABBAg=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IResizeObject">
+    <Position X="106.75" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\ResizeItem.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IScrollBarData">
+    <Position X="108.5" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAEAAAAAAAAAAAAAAAAAAAAAAAABBAAAA=</HashCode>
+      <FileName>Components\ScrollBar.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ISelectorInternal">
+    <Position X="112" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAAAACAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Selector.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ITabHeaderInternal">
+    <Position X="94.5" Y="16.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAgAAAAAAAgAAAAAAAAAAAAAgiAAAA=</HashCode>
+      <FileName>Components\TabHeader.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ITagFilter">
+    <Position X="103.25" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgAAAAAAACAAAQAAAAAAAEAAAAAAAAAEAAIQAAAQA=</HashCode>
+      <FileName>Components\TagFilter.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.ITimeAxisConvertor">
+    <Position X="106.75" Y="16.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAACAAAAgAIAIAAACACAAAAUAgAAQAACA=</HashCode>
+      <FileName>Components\TimeAxis.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.IVirtualConvertor">
+    <Position X="94.5" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAIAAQAAAAAAAgAAAAAEAAAAAAAAA=</HashCode>
+      <FileName>Components\VirtualControl.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.Graph.ITimeInteractiveGraph">
+    <Position X="0.5" Y="3.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAQgAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.Graph.ITimeGraph">
+    <Position X="108.5" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAIAAAIAAAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.Graph.ITimeGraphItem">
+    <Position X="112" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QQEIAAAEBgAAEgAAgAAAEAgAAAHgIAAFAAEACAABBQA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.Graph.ITimeGraphDataSource">
+    <Position X="110.25" Y="16.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AIAgAAAAAACAAABggAAAAAAAAAAEAAIAIACAAAAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.Grid.IGTableMember">
+    <Position X="110.25" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Components.Grid.IGTable">
+    <Position X="108.5" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAIAEAAAACAAKAEAAAQAAAAAgAAAAIACAAAAAAAAg=</HashCode>
+      <FileName>Components\Grid\GridTable.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IIdKey">
+    <Position X="92.75" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IDataPersistent">
+    <Position X="98" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAA=</HashCode>
+      <FileName>Data\DataPersist.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IOwnerProperty&lt;T&gt;">
+    <Position X="101.5" Y="15.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IMergeable">
+    <Position X="99.75" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IValueCloneable">
+    <Position X="92.75" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IDeepCloneable">
+    <Position X="99.75" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.ITableInternal">
+    <Position X="99.75" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AACAAAACAgAgAAAQEAAAiAEEAAAAAAAABEAgwAABAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.ITagItemOwner">
+    <Position X="105" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAABAAAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IContentValidity">
+    <Position X="96.25" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAAAAAACIAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.ITableMember">
+    <Position X="101.5" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.IComparableItem">
+    <Position X="94.5" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAIAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.ITableFilter">
+    <Position X="98" Y="16.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAQAABAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.Parsing.IParsedItemExtended">
+    <Position X="105" Y="15.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>YAAAAAAABAAAACAAAAQAQAEECIgQAAACAQAAAADAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.Parsing.IParsedItemCreate">
+    <Position X="103.25" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAIAIAAAABAAAAAAAAAAABAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.Parsing.ISettingSegmentInternal">
+    <Position X="115.5" Y="15.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Data.Parsing.IFormattedTextAssembler">
+    <Position X="103.25" Y="15" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACABEAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Services.IDataSource">
+    <Position X="5.25" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Services.IFunctionGlobal">
+    <Position X="0.75" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Services.IFunctionProvider">
+    <Position X="0.75" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Noris.LCS.Base.WorkScheduler.IXmlPersistNotify">
+    <Position X="99.75" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Noris.LCS.Base.WorkScheduler.IXmlSerializer">
+    <Position X="101.5" Y="17.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Noris.LCS.Base.WorkScheduler.IGuiDataTable">
+    <Position X="112" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAI=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Noris.LCS.Base.WorkScheduler.IGuiDataTableMember">
+    <Position X="113.75" Y="15" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Noris.LCS.Base.WorkScheduler.IGuiItem">
+    <Position X="115.5" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAIAAAAAAQAQAAAAAAEAAAAAAAAAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Scheduler.ISchedulerEditorControlItem">
+    <Position X="92.75" Y="16.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAkAAAAAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Scheduler.IMainDataInternal">
+    <Position X="96.25" Y="15.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIIAsAAAAAAAAAAAAAAAABAAgAAAAAAAAAAAggAAAIQ=</HashCode>
+      <FileName>Scheduler\SchedulerData.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.Scheduler.IMainDataTableInternal">
+    <Position X="98" Y="15.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAQAAAAAAIAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerDataTable.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Asol.Tools.WorkScheduler.IAppHost">
+    <Position X="92.75" Y="15" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerInterface.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="Asol.Tools.WorkScheduler.Application.PluginActivity">
+    <Position X="96.25" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAAAAAIAAAAgAAAAAAAEAAAA=</HashCode>
+      <FileName>Application\Plugin.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Application.TestResultType">
+    <Position X="105" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAABAAAAAAAgAAAAAAAEAAAAA=</HashCode>
+      <FileName>Application\Test.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Application.TestType">
+    <Position X="106.75" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAIAAAQAAAAAACAAAAAAgAAAIAAAAEAAAA=</HashCode>
+      <FileName>Application\Test.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Application.TracePriority">
+    <Position X="94.5" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAkAAAAAAAAAAAEAAAACAAAAAACBAAAA=</HashCode>
+      <FileName>Application\Trace.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Application.WorkState">
+    <Position X="110.25" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAAAACAAAAAAABAAAAQAEAAAA=</HashCode>
+      <FileName>Application\Worker.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.AxisTickType">
+    <Position X="106.75" Y="18.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgACAAAAAAABAAAAAAAAAAAAAAgAAAUgAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.AxisTickAlignment">
+    <Position X="105" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAEIAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.AxisOrientation">
+    <Position X="99.75" Y="18.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAACAAAAABAAAAAAAAQAAAAAAAIAAAAEAAAAAAAAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.AxisSynchronizeMode">
+    <Position X="103.25" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACAAAAAIAAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.AxisInteractiveState">
+    <Position X="98" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAAAAAIAAAAAAAAAAAAAAAAAAAAgAAAEAAAA=</HashCode>
+      <FileName>Components\BaseAxis.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.DragDrawGhostMode">
+    <Position X="106.75" Y="19" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAQAAEAAAAAAAEAACA=</HashCode>
+      <FileName>Components\EditableArea.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.RectangleSide">
+    <Position X="105" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAgAIAABAABAAGCAQAQIAAAAIAAAACICACAkIAEA=</HashCode>
+      <FileName>Components\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.RectangleCorner">
+    <Position X="103.25" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAACEAEAAEA=</HashCode>
+      <FileName>Components\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.InteractivePositionAction">
+    <Position X="101.5" Y="21.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAIIAIAAAEAAIEAIAAAAAAAGAAQREAAECADAAAEBAAA=</HashCode>
+      <FileName>Components\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.SysCursorType">
+    <Position X="94.5" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAABBAACQoAIAkCAAAIGMBACAAAAAAQQqgYAJEAAg=</HashCode>
+      <FileName>Components\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.FontSetType">
+    <Position X="113.75" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAggAAAAIIAAAAAAAAAAAAQAAAAACAAAAAAAACBg=</HashCode>
+      <FileName>Components\FontInfo.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.FormMoveNotificationState">
+    <Position X="98" Y="19.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAEAAAAAAAIAAABAAEAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\FormMoveSupport.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.InvalidateItem">
+    <Position X="105" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAIAAQAABAAgAABQCEECShAQBACAIAAAEBBEAIO4QAA=</HashCode>
+      <FileName>Components\Grid\Grid.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.IconSize">
+    <Position X="94.5" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAAAAAAAAAAAgAAAAIAAAAAEAAQgAAA=</HashCode>
+      <FileName>Components\IconLib.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.IconState">
+    <Position X="96.25" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAIAAAAAAAAAgAAAEAAA=</HashCode>
+      <FileName>Components\IconLib.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.MouseMoveDragState">
+    <Position X="94.5" Y="22" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAAAAAAAAAAAAQAAAAAACgAAAEAAAA=</HashCode>
+      <FileName>Components\InteractiveControl.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.DrawItemMode">
+    <Position X="110.25" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAQAAAAAAAAAAAAAAAIAAgAAAAAgEAAEAAAA=</HashCode>
+      <FileName>Components\InteractiveObject.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.ZOrder">
+    <Position X="92.75" Y="24.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACQAAAAAAAAAAABAAAAAIAAAAAAAAAAAAgAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GInteractiveState">
+    <Position X="108.5" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQCiAAAAAAAAIAAEACABAAoAAAkAgAAUAAAAAEAAAg=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GInteractiveChangeState">
+    <Position X="106.75" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>hBAIiAAYBAZgAIAEAwAIAARCAAAEEIAFEECIQAESACA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GInteractiveDrawLayer">
+    <Position X="105" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAABAAAAAAAAAIAAAAAAAAAAABEAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.DragActionType">
+    <Position X="105" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAABAAICAAAAAAAAAAAAAAgAAAAAEAAAQAEAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.DragResponseType">
+    <Position X="108.5" Y="19" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAGAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.ProcessAction">
+    <Position X="99.75" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CCAAAAAAAAgAAABAAAIAQIAAAUAAAQAAAAAACAHAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.RepaintParentMode">
+    <Position X="110.25" Y="22" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAkAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.AnimationResult">
+    <Position X="92.75" Y="18.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAIAAAAAEAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.BorderLinesType">
+    <Position X="108.5" Y="18.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAgAAAQAIAAAAAkAAAAAAIAAAACEAAAAAEEBAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.ImplicitAutoSizeType">
+    <Position X="98" Y="21.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\Layout.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.TrackBarTickType">
+    <Position X="99.75" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAACAAQAAAACAAAABAAAAAAAIAEAAQAAAIAQAEAAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.TrackBarLineType">
+    <Position X="98" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAEBAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.TrackBarAreaType">
+    <Position X="96.25" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAQEAAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GraphicSetting">
+    <Position X="110.25" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAACAEAAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.RelativePosition">
+    <Position X="108.5" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AkAAAAAIAAACQBAAAAEQAAAAAAAIAQAACACDEAUAAEA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.LinearShapeType">
+    <Position X="115.5" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAQAAAAAAgAAIAAAAABAAAAACAAAAIAAAEAAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.TrackPointerType">
+    <Position X="101.5" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAQ=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GraphicsPathPart">
+    <Position X="112" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAABAQgAAAAAAAAEAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.MatrixTransformationType">
+    <Position X="92.75" Y="22" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAEAAAAIAAAAAQAIAAAAAAAAACAAAAAAAAACAAAAAAA=</HashCode>
+      <FileName>Components\Painter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.SplitterResizeMode">
+    <Position X="92.75" Y="22.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAQEAAAA=</HashCode>
+      <FileName>Components\Splitter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.ShowTabHeaderMode">
+    <Position X="113.75" Y="22" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAQAAAAAAACIAAAAAAAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>Components\TabHeader.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GTagFilterSelectionMode">
+    <Position X="96.25" Y="20.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAQAAAAQ=</HashCode>
+      <FileName>Components\TagFilter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GTagFilterHeightState">
+    <Position X="94.5" Y="20.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAIAAAAAAAAAAAAAAAAAABAAAAAAAAEhAAA=</HashCode>
+      <FileName>Components\TagFilter.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.GToolBarRefreshMode">
+    <Position X="99.75" Y="20.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAQAEAAAA=</HashCode>
+      <FileName>Components\ToolBar.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.TooltipAnimationType">
+    <Position X="113.75" Y="22.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>EAQAAAACAAAAAAAABAAAAAAAAEAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolTip.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.TooltipShapeType">
+    <Position X="92.75" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAACAAAAAAAAAAAAAAAAAgAgAAAAAAAACAEAAAA=</HashCode>
+      <FileName>Components\ToolTip.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.ToolTipLayoutType">
+    <Position X="115.5" Y="22.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAQAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\ToolTip.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.WM">
+    <Position X="108.5" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>V8EvsyX+e7xPinJHj6pn3WL+/o7Apf1t0N9/EWeaB84=</HashCode>
+      <FileName>Components\WinMsgCode.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.TimeGraphElementShape">
+    <Position X="108.5" Y="22.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAIAAAAAAgAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.CreateLinksItemEventType">
+    <Position X="96.25" Y="19" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.ItemDragTargetType">
+    <Position X="106.75" Y="21.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAABAAAAAAACABIAAAAACAAEAAAAAAAAAAAAkAAAA=</HashCode>
+      <FileName>Components\Graph\Graph.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.GTimeGraphLinkMode">
+    <Position X="98" Y="20.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAIAAQAEAAAA=</HashCode>
+      <FileName>Components\Graph\GraphItem.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Graph.GGraphControlPosition">
+    <Position X="103.25" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\Graph\GraphItem.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Grid.TableAreaType">
+    <Position X="96.25" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAkAAAAAAAQADgQAAIAAAAggAABAAAIQEAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Components.Grid.TableHeaderFunctionType">
+    <Position X="98" Y="22.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAAAAACAAAAAAACAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Components\Grid\GridComponents.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Direction">
+    <Position X="103.25" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAA=</HashCode>
+      <FileName>Data\BaseRange.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.RangeSide">
+    <Position X="101.5" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgIAAAAAAAAAAAAAAAAAAAAAAAAAEEAAAAAAAAEAAAA=</HashCode>
+      <FileName>Data\BaseRange.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.RoundMode">
+    <Position X="112" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAQAEAAAAA=</HashCode>
+      <FileName>Data\BaseRange.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.CollectionChangeType">
+    <Position X="112" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAEAAABABAAAAABAAAAAAAAAAAIAAAAAFEAAA=</HashCode>
+      <FileName>Data\Collections.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.DateTimePart">
+    <Position X="101.5" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAJAAQAAAAQAAAAAAAIAEAAAAEAAAhAIEQAAA=</HashCode>
+      <FileName>Data\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.DateTimeFormat">
+    <Position X="99.75" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAACAAAAAAAAAAAAIAAAAAAACAAAAAIBAAEAARA=</HashCode>
+      <FileName>Data\Extensions.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.RelationMasterSide">
+    <Position X="106.75" Y="22" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACACAAAAAAAA=</HashCode>
+      <FileName>Data\GId.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.IndexScopeType">
+    <Position X="99.75" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAQAAAAAEBAAA=</HashCode>
+      <FileName>Data\Index.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.EventSourceType">
+    <Position X="112" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAACAACwAAABAAAAAAAAAAAEgAAAAAAAAAAAGCAAA=</HashCode>
+      <FileName>Data\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.IntervalRelation">
+    <Position X="103.25" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIAAAAAAgIEAAgAIAAQEGAAAAAAAAAAAQAAAAIEAAAI=</HashCode>
+      <FileName>Data\IntervalArray.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.TreeNodeOrderType">
+    <Position X="105" Y="23.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAAAAAAQAAAAAAAACAAAAAAAAAAAACAAEAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.TreeNodeLineType">
+    <Position X="103.25" Y="23.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAIAAAAAAAACAAAAAAAAAAAAEBAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.ColumnContentType">
+    <Position X="113.75" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAIAAAAAAAAAAAAEAAIAAAgEAAAQAAAAAEIAQA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.ItemSortType">
+    <Position X="110.25" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAAAABAAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.TableValueType">
+    <Position X="101.5" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAQAAEAAAAAAAAAABABABIACAEAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.TreeViewLinkMode">
+    <Position X="106.75" Y="23.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAACAAAAEAAAAAAAAEBAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.TableRowDragMoveSourceMode">
+    <Position X="99.75" Y="22.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAIAAAAAAAAgAAAAAAAAAAAAAQAAAAAAAAAAEAQAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.ItemType">
+    <Position X="112" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAEAAAAAAACAAAAAAAAAAAAAAAAQAAAAAACAEAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.ItemExpressionState">
+    <Position X="108.5" Y="21.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAAAAAAAAAABCAAAIAAAAAAAAAAAAgAAEAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatItemType">
+    <Position X="96.25" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAQAAAAAAAgAAAAAgAgAAAAAAAEIgAAAACAEBAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatAlignment">
+    <Position X="115.5" Y="19" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAACAAAAAAAAAAAAAAAAACACAAAEIAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatFontStyle">
+    <Position X="92.75" Y="19.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IABAAgAAAAAAACgAAMAAAEAAEBAACAAAAAAAAAEAQAE=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Data.Parsing.FormatHighlightColor">
+    <Position X="94.5" Y="19.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>ACAHAARBAAAAAgAEQBAAABAAAAAAAAAAAAAIADEAAAA=</HashCode>
+      <FileName>Data\Parser.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Services.ComponentSize">
+    <Position X="115.5" Y="18.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAEEAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.XmlDeserializeStatus">
+    <Position X="113.75" Y="23.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AQBAAAAAAAAAAAAAAAAAQAAKAAAAAAAAAAAAAAEAAAI=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.XmlCompressMode">
+    <Position X="112" Y="23.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAACEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.XmlPersistState">
+    <Position X="115.5" Y="23.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAQIAAAAAAAAACAAAAAAQAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerPersistor.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiChildRowsEvaluateMode">
+    <Position X="112" Y="20.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAACACAAKAiAAAAAAAAAAICAAAACAQAEAAAAAAIAEAI=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.SourceActionType">
+    <Position X="115.5" Y="22" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAAgAAAAAAAAAAgEAAAAACAAAAACAAAAAAAUAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.TargetActionType">
+    <Position X="103.25" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAEIEAAEAGAEAAAAAAAgAgAAIAAgIAECAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiTreeViewLinkMode">
+    <Position X="92.75" Y="21.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAACAAAAEAAAAAAAAEBAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiGraphItemLinkRelation">
+    <Position X="108.5" Y="20.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAEgAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiGraphItemLinkType">
+    <Position X="110.25" Y="20.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAAAAAAAIAAAAAAAAAAAAAAACAAAAAAAQEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiActionType">
+    <Position X="101.5" Y="20.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAAAAAAAAAEAIAAIAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiFontSetType">
+    <Position X="106.75" Y="20.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAggAAAAIIAAAAAAAAAAAAQAAAAACAAAAAAAACBg=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiBorderSideType">
+    <Position X="103.25" Y="20.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAABAAAAAAAAQAAIAAAAIAAAACICAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiSide">
+    <Position X="115.5" Y="20.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgIAAAAAAAAAAAAAAAAAAAAAAAAAEEAAAAAAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiResponseState">
+    <Position X="113.75" Y="20.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAABAAAgAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GuiDialogButtons">
+    <Position X="105" Y="20.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAASAEQACBAAAACAAAAACAgAAAACIABAAECQAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.FunctionGlobalItemType">
+    <Position X="101.5" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAEAAAAAAAAAAAEAAAAAAAABAAAAAAAAEAAAI=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.FunctionGlobalItemSize">
+    <Position X="99.75" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAAAAAAAABABggAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.LayoutHint">
+    <Position X="113.75" Y="21.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAQAAAAAAAIAAACAAAAAIQAAAACgAAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.ToolbarSystemItem">
+    <Position X="112" Y="22.75" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAIAUQYCIAAIAAIAAAAAIIEAAEAAAAACAIAoEAEAAAI=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.AxisResizeContentMode">
+    <Position X="101.5" Y="18.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAEACAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.AxisInteractiveChangeMode">
+    <Position X="96.25" Y="18.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAgAEAAAAAAAAAAAAAAAAIAAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GraphItemBehaviorMode">
+    <Position X="113.75" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AVAAAIIgQAAAAACRAAAqAAAAEAFIAAAAAAAgEAEAAGQ=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.TimeGraphTimeAxisMode">
+    <Position X="110.25" Y="22.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAIAAAAIAAAAAAAAAAAAAACAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.DataGraphPositionType">
+    <Position X="98" Y="19" Width="2" />
+    <TypeIdentifier>
+      <HashCode>CAAAAAAAAAAAIAAAAAAAAQAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.PluginFormBorderStyle">
+    <Position X="98" Y="22" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAEEgAAAAAQAAAAAAAQAAEAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.GraphItemMoveAlignY">
+    <Position X="115.5" Y="19.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAACAAABAAAAAAAEAAEA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Noris.LCS.Base.WorkScheduler.BrowseColumnType">
+    <Position X="110.25" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAQEAACAAIAAAAAAIAAAAMAAAA=</HashCode>
+      <FileName>Shared\WorkSchedulerShared.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Scheduler.ConfigSnapImageType">
+    <Position X="94.5" Y="19" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAgAAAAAAAIAAIAAAAAAEAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Scheduler.ConfigLinkLineSettingType">
+    <Position X="92.75" Y="19" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAQAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAE=</HashCode>
+      <FileName>Scheduler\SchedulerConfigGui.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.Scheduler.GraphItemMoveMode">
+    <Position X="92.75" Y="20.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAAAAAABAAAAAAIAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerData.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Asol.Tools.WorkScheduler.AppHostActionResult">
+    <Position X="94.5" Y="18.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAIgAAIACAAAAAAQEAAAA=</HashCode>
+      <FileName>Scheduler\SchedulerInterface.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Delegate Name="Asol.Tools.WorkScheduler.Components.LayeredPaintEventHandler">
+    <Position X="105" Y="25.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\GControl.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Components.GInteractiveChangeStateHandler">
+    <Position X="96.25" Y="25.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAgAAAAAAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Components.GInteractiveDrawHandler">
+    <Position X="94.5" Y="25.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAQAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Components.GPropertyEventHandler&lt;T&gt;">
+    <Position X="99.75" Y="25.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAEAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Components.GUserDrawHandler">
+    <Position X="103.25" Y="25.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAEA=</HashCode>
+      <FileName>Components\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Data.GPropertyChangedHandler&lt;T&gt;">
+    <Position X="101.5" Y="25.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Data.GObjectPropertyChangedHandler&lt;TObject, TValue&gt;">
+    <Position X="98" Y="25.25" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQAAAIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Data.TableRowDragMoveHandler">
+    <Position X="106.75" Y="25.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Data\Table.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Delegate Name="Asol.Tools.WorkScheduler.Services.FunctionItemEventHandler">
+    <Position X="92.75" Y="25.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\Interface.cs</FileName>
+    </TypeIdentifier>
+  </Delegate>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
