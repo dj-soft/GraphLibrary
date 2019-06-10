@@ -2296,7 +2296,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected Queue<AppHostRequestArgs> AppHostQueue;
         #endregion
     }
-    #region Třídy pro datové prvky
     #region class ProductOrder : Výrobní příkaz
     /// <summary>
     /// ProductOrder : Výrobní příkaz
@@ -2769,7 +2768,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     case PlanUnitType.Workplace:
                         guiGraphItem.BehaviorMode |=
                             GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
-                            GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
+                            GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
+                        if (this.Operation != null)
+                        {
+                            if (!this.Operation.IsFixed)
+                                guiGraphItem.BehaviorMode |= GraphItemBehaviorMode.MoveToAnotherRow;
+                        }
                         break;
                     case PlanUnitType.Person:
                         guiGraphItem.BehaviorMode |=
@@ -2970,6 +2974,5 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Person,
         Employee
     }
-    #endregion
     #endregion
 }
