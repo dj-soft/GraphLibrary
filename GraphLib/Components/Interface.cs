@@ -920,7 +920,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Absolutní souřadnice myši, kde se nachází nyní.
         /// Může být null pouze při akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/>.
         /// </summary>
-        public Point? MouseCurrentAbsolutePoint { get; protected set; }
+        public Point? MouseCurrentAbsolutePoint { get; set; }
         #endregion
         #region Find Item at location (explicit, current)
         /// <summary>

@@ -2774,7 +2774,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (hasMainData)
             {
                 GuiRequest request = new GuiRequest();
-                request.Command = GuiRequest.COMMAND_GraphItemMove;
+                request.Command = GuiRequest.COMMAND_GraphItemResize;
                 request.ActiveGraphItem = gridItemId;
                 request.GraphItemResize = guiItemResizeData;
                 request.CurrentState = guiCurrentState;

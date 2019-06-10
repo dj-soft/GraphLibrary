@@ -436,6 +436,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="targetRelativeBounds"></param>
         protected override void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
+            this.DragThisRestrictByBehavior(e, ref targetRelativeBounds);
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
             base.DragThisOverPoint(e, targetRelativeBounds);
         }
@@ -446,6 +447,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="targetRelativeBounds"></param>
         protected override void DragThisDropToPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
+            this.DragThisRestrictByBehavior(e, ref targetRelativeBounds);
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
             base.DragThisDropToPoint(e, targetRelativeBounds);
         }
@@ -460,6 +462,46 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
             base.DragThisEnd(e);
             this._Group.DragDropDrawInteractiveOpacity = null;
+        }
+        /// <summary>
+        /// Metoda je volána před zahájením zpracování operace Drag and Drop, a slouží k omezení souřadnic přetahovaného prvku dle definice chování prvku.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected void DragThisRestrictByBehavior(GDragActionArgs e, ref Rectangle targetRelativeBounds)
+        {
+            if (e.DragOriginRelativeBounds.HasValue)
+            {
+                GraphItemBehaviorMode behaviorMode = this.Group.BehaviorMode;
+                if (!behaviorMode.HasAnyFlag(GraphItemBehaviorMode.MoveToAnotherTime))
+                {   // Nejsou povoleny přesuny v čase:
+                    targetRelativeBounds.X = e.DragOriginRelativeBounds.Value.X;
+                }
+                if (!behaviorMode.HasAnyFlag(GraphItemBehaviorMode.MoveToAnotherRow))
+                {   // Nejsou povoleny přesuny na jiný řádek:
+                    targetRelativeBounds.Y = e.DragOriginRelativeBounds.Value.Y;
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda je volána v procesu hledání cílového prvku pod souřadnicí myši v procesu Drag and Drop.
+        /// Vrací souřadnici, odpovídající souřadnici myši Target, ale s omezením dle definice <see cref="GraphItemBehaviorMode"/> (=zákaz změny času nebo zákaz změny řádku)
+        /// </summary>
+        /// <param name="mouseDownAbsolutePoint"></param>
+        /// <param name="targetAbsolutePoint"></param>
+        protected Point DragThisRestrictByBehavior(Point mouseDownAbsolutePoint, Point targetAbsolutePoint)
+        {
+            Point resultPoint = targetAbsolutePoint;
+            GraphItemBehaviorMode behaviorMode = this.Group.BehaviorMode;
+            if (!behaviorMode.HasAnyFlag(GraphItemBehaviorMode.MoveToAnotherTime))
+            {   // Nejsou povoleny přesuny v čase:
+                resultPoint.X = mouseDownAbsolutePoint.X;
+            }
+            if (!behaviorMode.HasAnyFlag(GraphItemBehaviorMode.MoveToAnotherRow))
+            {   // Nejsou povoleny přesuny na jiný řádek:
+                resultPoint.Y = mouseDownAbsolutePoint.Y;
+            }
+            return resultPoint;
         }
         /// <summary>
         /// Klíčová metoda, která v procesu Drag and Drop určuje, zda, jak a kam se právě přesouvá grafický prvek.
@@ -487,13 +529,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             */
 
             // Najdu prvek, nad nímž se aktuálně pohybuji:
+            Point targetAbsolutePoint = this.DragThisRestrictByBehavior(e.MouseDownAbsolutePoint, e.MouseCurrentAbsolutePoint.Value);
+            e.MouseCurrentAbsolutePoint = targetAbsolutePoint;
 
             // Sestavím argument (pro this prvek) a doplním do něj údaje o dalších prvcích:
             Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
             ItemDragDropArgs args = new ItemDragDropArgs(e, this.Graph, this._Group, this._Owner, this._Position, targetAbsoluteBounds);
             args.ParentGraph = this.Graph;
             args.ParentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
-            args.SearchForTargets(e.MouseCurrentAbsolutePoint.Value);
+            args.SearchForTargets(targetAbsolutePoint);
 
             args.IsFinalised = true;
 
