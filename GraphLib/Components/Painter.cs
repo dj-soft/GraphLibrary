@@ -3550,6 +3550,119 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #endregion
+        #region CreateMenu
+        /// <summary>
+        /// Vytvoří a vrátí menu s danými vlastnostmi, volitelně obsahující položku pro titulek (plus separátor pod ním)
+        /// </summary>
+        /// <param name="dropShadowEnabled"></param>
+        /// <param name="showCheckMargin"></param>
+        /// <param name="showImageMargin"></param>
+        /// <param name="showItemToolTips"></param>
+        /// <param name="renderMode"></param>
+        /// <param name="backColor"></param>
+        /// <param name="opacity"></param>
+        /// <param name="imageScalingSize"></param>
+        /// <param name="title"></param>
+        /// <param name="titleToolTip"></param>
+        /// <returns></returns>
+        public static ToolStripDropDownMenu CreateDropDownMenu(
+            bool dropShadowEnabled = true,
+            bool showCheckMargin = false,
+            bool showImageMargin = true,
+            bool showItemToolTips = true,
+            ToolStripRenderMode renderMode = ToolStripRenderMode.Professional,
+            Color? backColor = null,
+            float? opacity = null,
+            Size? imageScalingSize = null,
+            string title = null,
+            string titleToolTip = null)
+        {
+            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+            menu.DropShadowEnabled = dropShadowEnabled;
+            menu.ShowCheckMargin = showCheckMargin;
+            menu.ShowImageMargin = showImageMargin;
+            menu.ShowItemToolTips = showItemToolTips;
+            menu.RenderMode = renderMode;
+            if (backColor.HasValue) menu.BackColor = backColor.Value;
+            if (opacity.HasValue) menu.Opacity = opacity.Value;
+            if (imageScalingSize.HasValue) menu.ImageScalingSize = imageScalingSize.Value;
+
+            if (!String.IsNullOrEmpty(title))
+            {
+                ToolStripLabel titleItem = new ToolStripLabel(title);
+                titleItem.ToolTipText = titleToolTip;
+                if (imageScalingSize.HasValue)
+                    titleItem.Size = new Size(100, imageScalingSize.Value.Height + 4);
+                titleItem.Font = new Font(titleItem.Font, FontStyle.Bold);
+                titleItem.TextAlign = ContentAlignment.MiddleCenter;
+                menu.Items.Add(titleItem);
+
+                menu.Items.Add(new ToolStripSeparator());
+            }
+
+            return menu;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí položku menu
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="image"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="isEnabled"></param>
+        /// <param name="isCheckable"></param>
+        /// <param name="isChecked"></param>
+        /// <param name="backColor"></param>
+        /// <param name="fontStyle"></param>
+        /// <param name="name"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        public static ToolStripMenuItem CreateDropDownItem(
+            string text,
+            Image image = null,
+            string toolTip = null,
+            bool isEnabled = true,
+            bool isCheckable = false,
+            bool isChecked = false,
+            Color? backColor = null,
+            FontStyle? fontStyle = null,
+            string name = null,
+            object tag = null
+            )
+        {
+            System.Windows.Forms.ToolStripMenuItem item = new ToolStripMenuItem(text, image);
+            item.Name = name;
+            if (backColor.HasValue)
+                item.BackColor = backColor.Value;
+
+            if (!String.IsNullOrEmpty(toolTip))
+            {
+                item.ToolTipText = toolTip;
+                item.AutoToolTip = true;
+            }
+            if (fontStyle.HasValue)
+                item.Font = new Font(item.Font, fontStyle.Value);
+
+            item.Enabled = isEnabled;
+            item.CheckOnClick = isCheckable;
+            item.Checked = isChecked;
+            item.Tag = tag;
+
+            return item;
+        }
+        /// <summary>
+        /// Vrátí separátor do DropDown menu
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        public static ToolStripSeparator CreateDropDownSeparator(string name = null, object tag = null)
+        {
+            ToolStripSeparator item = new ToolStripSeparator();
+            item.Name = name;
+            item.Tag = tag;
+            return item;
+        }
+        #endregion
         #region Set Graphics, restore previous state
         /// <summary>
         /// Prepare Graphics for Smooth / Text / Sharp drawing, by graphicSetting value.

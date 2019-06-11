@@ -611,11 +611,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <returns></returns>
         public static System.Windows.Forms.ToolStripDropDownMenu CreateDropDownMenuFrom(IEnumerable<FunctionItem> functionItems, Action<System.Windows.Forms.ToolStripDropDownMenu> modifyMenu = null)
         {
-            System.Windows.Forms.ToolStripDropDownMenu menu = new System.Windows.Forms.ToolStripDropDownMenu();
-            menu.DropShadowEnabled = true;
-            menu.ShowImageMargin = true;
-            menu.ShowItemToolTips = true;
-            menu.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
+            System.Windows.Forms.ToolStripDropDownMenu menu = GPainter.CreateDropDownMenu();
 
             if (modifyMenu != null)
                 modifyMenu(menu);
@@ -644,20 +640,10 @@ namespace Asol.Tools.WorkScheduler.Services
             }
             else
             {
-                System.Windows.Forms.ToolStripMenuItem item = new System.Windows.Forms.ToolStripMenuItem(this.TextText, this.Image);
-                item.Name = this.Name;
-                if (backColor.HasValue)
-                    item.BackColor = backColor.Value;
-
-                string toolTip = this.ToolTipText;
-                if (!String.IsNullOrEmpty(toolTip))
-                {
-                    item.ToolTipText = toolTip;
-                    item.AutoToolTip = true;
-                }
-                item.Enabled = this.IsEnabled;
-                item.CheckOnClick = this.IsCheckable;
-                item.Checked = this.IsChecked;
+                // Systémová tvorba položky menu:
+                System.Windows.Forms.ToolStripMenuItem item = GPainter.CreateDropDownItem(text, image: this.Image,
+                    toolTip: this.ToolTipText, isEnabled: this.IsEnabled, isCheckable: this.IsCheckable, isChecked: this.IsChecked,
+                    backColor: this.BackColor, name: this.Name);
 
                 // SubItems dáme rekurzivně:
                 var subItems = CreateWinFormItems(this.SubItems);

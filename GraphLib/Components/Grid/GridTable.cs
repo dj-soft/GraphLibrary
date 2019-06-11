@@ -5,6 +5,7 @@ using System.Text;
 using System.Drawing;
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
+using WinForm = System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.Components.Grid
 {
@@ -467,6 +468,90 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Viditelné sloupce mají nastavenu hodnotu column.ColumnHeader.VisualRange na vizuální pixely, neviditelné sloupce mají VisualRange = null.
         /// </summary>
         private Column[] _VisibleColumns;
+        #endregion
+        #region Sloupce tabulky - uživatelem řízená viditelnost sloupců, kontextové menu
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne pravou (=kontextovou) myší na záhlaví sloupce.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="column"></param>
+        protected void ColumnContextMenu(GInteractiveChangeStateArgs e, Column column)
+        {
+            WinForm.ToolStripDropDownMenu menu = this.ColumnContextMenuCreate(column);
+            menu.AutoClose = false;
+            menu.ItemClicked += ColumnContextMenuClicked;
+            menu.MouseLeave += ColumnContextMenuMouseLeave;
+            Point point = (e.MouseAbsolutePoint.HasValue ? e.MouseAbsolutePoint.Value : WinForm.Control.MousePosition).Add(-20, -5);
+            menu.Show(this.Host, point, WinForm.ToolStripDropDownDirection.BelowRight);
+        }
+        /// <summary>
+        /// Vygeneruje Popup menu s nabídkou sloupců pro řízení viditelnosti
+        /// </summary>
+        /// <param name="currentColumn"></param>
+        /// <returns></returns>
+        private WinForm.ToolStripDropDownMenu ColumnContextMenuCreate(Column currentColumn)
+        {
+            WinForm.ToolStripDropDownMenu menu = GPainter.CreateDropDownMenu(showImageMargin: false, showCheckMargin: true, title: "Zobrazit sloupce");
+
+            foreach (GridColumn gridColumn in this.Grid.AllColumns)
+            {
+                if (!gridColumn.MasterColumn.CanBeVisible) continue;           // To jsou sloupce typu Primární klíč nebo Číslo vztaženého záznamu atd
+                if (gridColumn.UseTimeAxis) continue;                          // Časovou osu nedovolíme skrýt
+                Column masterColumn = gridColumn.MasterColumn;
+                bool isCurrent = (currentColumn != null && currentColumn.ColumnId == masterColumn.ColumnId);
+                FontStyle? fontStyle = (isCurrent ? (FontStyle?)FontStyle.Bold : (FontStyle?)null);
+                WinForm.ToolStripMenuItem item = GPainter.CreateDropDownItem(masterColumn.Title, toolTip: masterColumn.ToolTip, isCheckable: true, isChecked: gridColumn.IsVisible, fontStyle: fontStyle, tag: gridColumn);
+                item.CheckedChanged += ColumnContextMenuItemCheckedChanged;
+                menu.Items.Add(item);
+            }
+            menu.Items.Add(GPainter.CreateDropDownSeparator());
+            menu.Items.Add(GPainter.CreateDropDownItem("Zavřít", tag: "C"));
+
+            return menu;
+        }
+        /// <summary>
+        /// Obsluha kliknutí na položku menu s nabídkou sloupců pro řízení viditelnosti
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ColumnContextMenuClicked(object sender, WinForm.ToolStripItemClickedEventArgs e)
+        {
+            WinForm.ToolStripDropDownMenu menu = sender as WinForm.ToolStripDropDownMenu;
+            WinForm.ToolStripMenuItem item = e.ClickedItem as WinForm.ToolStripMenuItem;
+            object tag = item?.Tag;
+            if (tag is string && ((string)tag) == "C")
+            {
+                if (menu != null)
+                    menu.Close();
+            }
+        }
+        /// <summary>
+        /// Obsluha změny <see cref="WinForm.ToolStripMenuItem.Checked"/> na položce menu s nabídkou sloupců pro řízení viditelnosti
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ColumnContextMenuItemCheckedChanged(object sender, EventArgs e)
+        {
+            WinForm.ToolStripMenuItem item = sender as WinForm.ToolStripMenuItem;
+            object tag = item?.Tag;
+            if (tag is GridColumn)
+            {
+                GridColumn gridColumn = tag as GridColumn;
+                this.Grid.ColumnSetVisible(gridColumn.ColumnId, item.Checked);
+                this.Grid.Refresh();
+            }
+        }
+        /// <summary>
+        /// Jakmile myš opustí menu, tak menu zhasne
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ColumnContextMenuMouseLeave(object sender, EventArgs e)
+        {
+            WinForm.ToolStripDropDownMenu menu = sender as WinForm.ToolStripDropDownMenu;
+            if (menu != null)
+                menu.Close();
+        }
         #endregion
         #region Řádky tabulky - dvě oddělená pole řádků: a) všechny aktuálně dostupné řádky - pro práci s kolekcí řádků, b) pouze viditelné řádky - pro kreslení
         /// <summary>
@@ -2414,6 +2499,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         /// <summary>
+        /// Provede se poté, kdy uživatel klikne pravou (=kontextovou) myší na záhlaví sloupce.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="column"></param>
+        void IGTable.ColumnHeaderContextMenu(GInteractiveChangeStateArgs e, Column column)
+        {
+            this.ColumnContextMenu(e, column);
+        }
+        /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
         /// </summary>
         /// <param name="e"></param>
@@ -3544,11 +3638,17 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         void TableHeaderClick(GInteractiveChangeStateArgs e);
         /// <summary>
-        /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
+        /// Provede se poté, kdy uživatel klikne levou (=standardní) myší na záhlaví sloupce.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="column"></param>
         void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column);
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne pravou (=kontextovou) myší na záhlaví sloupce.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="column"></param>
+        void ColumnHeaderContextMenu(GInteractiveChangeStateArgs e, Column column);
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
         /// </summary>

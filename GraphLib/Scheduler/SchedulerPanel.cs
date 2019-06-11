@@ -431,16 +431,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             List<GGrid> gridList = this._GGridList;
             foreach (GGrid grid in gridList)
             {
-                grid.ColumnWidthChanged += GGrid_ColumnLayoutChanged;
-                grid.ColumnOrderChanged += GGrid_ColumnLayoutChanged;
+                grid.ColumnWidthChanged += GGrid_ColumnLayoutIntChanged;
+                grid.ColumnOrderChanged += GGrid_ColumnLayoutIntChanged;
+                grid.ColumnVisibleChanged += GGrid_ColumnLayoutBooleanChanged;
             }
         }
         /// <summary>
-        /// Eventhandler události, kdy grafický <see cref="GGrid"/> provedl změnu šířky sloupce
+        /// Eventhandler události, kdy grafický <see cref="GGrid"/> provedl změnu šířky nebo pořadí sloupce (hodnota Int32)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void GGrid_ColumnLayoutChanged(object sender, GObjectPropertyChangeArgs<GridColumn, int> e)
+        private void GGrid_ColumnLayoutIntChanged(object sender, GObjectPropertyChangeArgs<GridColumn, int> e)
+        {
+            this._SaveGridLayout(e.CurrentObject?.Grid);
+        }
+        /// <summary>
+        /// Eventhandler události, kdy grafický <see cref="GGrid"/> provedl změnu viditelnosti sloupce (hodnota Boolean)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void GGrid_ColumnLayoutBooleanChanged(object sender, GObjectPropertyChangeArgs<GridColumn, bool> e)
         {
             this._SaveGridLayout(e.CurrentObject?.Grid);
         }

@@ -380,7 +380,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private EList<GTable> _Tables;
         #endregion
-        #region Sloupce Gridu
+        #region Sloupce Gridu a ColumnLayout (persistence nastavení sloupců)
         /// <summary>
         /// Obsahuje všechny viditelné sloupce ze všech viditelných tabulek celého gridu.
         /// Pole je v tom pořadí, v jakém se sloupce mají zobrazovat.
@@ -391,6 +391,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GridColumn[] Columns { get { this._ColumnsCheck(); return this._Columns; } }
         /// <summary>
+        /// Obsahuje všechny sloupce ze všech tabulek celého gridu, včetně těch sloupců, co zrovna nejsou viditelné (ale jen z viditelných tabulek).
+        /// </summary>
+        public GridColumn[] AllColumns { get { this._ColumnsCheck(); return this._AllColumns; } }
+        /// <summary>
         /// Rozložení sloupců tohoto gridu. Používá se pro uložení layoutu. 
         /// Get i Set jsou přímo napojeny na živé sloupce; obsah <see cref="ColumnLayout"/> se nikde izolovaně neukládá.
         /// </summary>
@@ -398,7 +402,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                GridColumn[] columns = this.Columns;
+                GridColumn[] columns = this.AllColumns;
                 if (columns == null || columns.Length == 0) return null;
                 StringBuilder sb = new StringBuilder();
                 foreach (var column in columns)
@@ -406,14 +410,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     string name = column.MasterColumn.ColumnName;
                     if (String.IsNullOrEmpty(name)) continue;
                     if (sb.Length > 0) sb.Append(";");
-                    sb.Append(name + ":" + column.ColumnOrder.ToString() + ":" + column.ColumnWidth.ToString());
+                    sb.Append($"{name}:{column.ColumnOrder}:{column.ColumnWidth}:{(column.IsVisible ? "1" : "0")}");
                 }
                 return sb.ToString();
             }
             set
             {
                 if (String.IsNullOrEmpty(value)) return;
-                GridColumn[] columns = this.Columns;
+                GridColumn[] columns = this.AllColumns;
                 if (columns == null || columns.Length == 0) return;
                 Dictionary<string, GridColumn> colDict = columns
                     .Where(c => !String.IsNullOrEmpty(c.MasterColumn.ColumnName))
@@ -428,6 +432,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (String.IsNullOrEmpty(name) || !colDict.TryGetValue(name, out column)) continue;
                     column.ColumnOrder = _ToInt(row[1]);
                     column.ColumnWidth = _ToInt(row[2]);
+                    if (row.Length >= 4 && (row[3] == "1" || row[3] == "0"))
+                        column.IsVisible = (row[3] == "1");
                 }
             }
         }
@@ -447,29 +453,39 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _ColumnsCheck()
         {
-            bool needContent = (this._ColumnDict == null || this._Columns == null);
+            bool needContent = (this._ColumnDict == null || this._Columns == null || this._AllColumns == null);
             bool needRecalc = !this._ColumnsLayoutValid;
             if (needContent || needRecalc)
             {
                 Dictionary<int, GridColumn> columnDict = this._ColumnDict;
+                GridColumn[] allColumns = this._AllColumns;
                 if (needContent)
                 {    // Je nutné vygenerovat obsah těchto polí:
                      // Vytvořím index, kde klíčem je ColumnId, a hodnotou je instance GridColumn.
                      // každá jedna instance GridColumn bude obsahovat souhrn všech viditelných sloupců shodného ColumnId, ze všech viditelných tabulek.
                     columnDict = new Dictionary<int, GridColumn>();
+                    Dictionary<int, GridColumn> allColumnDict = new Dictionary<int, GridColumn>();        // Všechny sloupce z viditelných tabulek
                     foreach (GTable table in this._Tables)
                     {
-                        if (table.DataTable == null || !table.DataTable.IsVisible) continue;
-                        foreach (Column column in table.DataTable.Columns.Where(c => c.IsVisible))
+                        if (table.DataTable == null || !table.DataTable.IsVisible) continue;              // Neviditelné tabulky nebudu vůbec řešit
+                        foreach (Column column in table.DataTable.Columns)
                         {
                             int columnId = column.ColumnId;
-                            GridColumn gridColumn;
-                            if (columnDict.TryGetValue(columnId, out gridColumn))
-                                gridColumn.AddColumn(column);
-                            else
-                                columnDict.Add(columnId, new GridColumn(this, column));
+                            
+                            // a) Souhrn všech sloupců:
+                            GridColumn gridColumn = allColumnDict.GetAdd(columnId, k => new GridColumn(this, columnId));
+                            gridColumn.AddColumn(column);
+
+                            // b) Souhrn jen viditelných sloupců:
+                            if (column.IsVisible && !columnDict.ContainsKey(columnId))
+                                columnDict.Add(columnId, gridColumn);
+                            //{
+                            //    gridColumn = columnDict.GetAdd(columnId, k => new GridColumn(this, columnId));
+                            //    gridColumn.AddColumn(column);
+                            //}
                         }
                     }
+                    allColumns = allColumnDict.Values.ToArray();
                 }
 
                 // Nyní vytvořím lineární soupis GridColumn, a setřídím jej podle pořadí dle sloupce Master (z první tabulky):
@@ -482,6 +498,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Na závěr je nutno uložit vypočtená data:
                 this._ColumnDict = columnDict;
                 this._Columns = columnList.ToArray();
+                this._AllColumns = allColumns;
                 this._ColumnsLayoutValid = true;
             }
         }
@@ -503,9 +520,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private Dictionary<int, GridColumn> _ColumnDict;
         /// <summary>
-        /// Seznam sloupců podle jejich pořadí
+        /// Seznam viditelných sloupců podle jejich pořadí
         /// </summary>
         private GridColumn[] _Columns;
+        /// <summary>
+        /// Seznam všech sloupců (tj. včetně neviditelných) podle jejich pořadí
+        /// </summary>
+        private GridColumn[] _AllColumns;
         /// <summary>
         /// true pokud obsah pole _Columns má správné souřadnice, false pokud ne
         /// </summary>
@@ -654,6 +675,31 @@ namespace Asol.Tools.WorkScheduler.Components
             return isChanged;
         }
         /// <summary>
+        /// Metoda zajistí nastavení hodnoty isVisible do daného sloupce plus vyvolání další logiky (event)
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="isVisible"></param>
+        /// <returns></returns>
+        public bool ColumnSetVisible(int columnId, bool isVisible)
+        {
+            GridColumn sourceColumn = this.AllColumns.FirstOrDefault(c => c.ColumnId == columnId);    // Sloupec hledám v AllColumns, protože může být neviditelný.
+            if (sourceColumn == null) return false;        // Daný sloupec neznáme
+
+            bool oldVisible = sourceColumn.IsVisible;
+            sourceColumn.IsVisible = isVisible;
+            bool newVisible = sourceColumn.IsVisible;
+
+            bool isChanged = (newVisible != oldVisible);
+            if (isChanged)
+            {
+                this.CallColumnVisibleChanged(sourceColumn, oldVisible, newVisible, EventSourceType.ValueChange);
+                // Zajistit invalidaci a překresení:
+                this.Invalidate(InvalidateItem.GridColumnsScroll);
+            }
+
+            return isChanged;
+        }
+        /// <summary>
         /// Metoda vyvolá háček <see cref="OnColumnWidthChanged"/> a event <see cref="ColumnWidthChanged"/>
         /// </summary>
         /// <param name="column"></param>
@@ -697,6 +743,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Událost <see cref="ColumnOrderChanged"/> = změna šířky sloupce
         /// </summary>
         public event GObjectPropertyChangedHandler<GridColumn, int> ColumnOrderChanged;
+        /// <summary>
+        /// Metoda vyvolá háček <see cref="OnColumnVisibleChanged"/> a event <see cref="ColumnVisibleChanged"/>
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="oldVisible"></param>
+        /// <param name="newVisible"></param>
+        /// <param name="eventSource"></param>
+        protected void CallColumnVisibleChanged(GridColumn column, bool oldVisible, bool newVisible, EventSourceType eventSource)
+        {
+            GObjectPropertyChangeArgs<GridColumn, bool> args = new GObjectPropertyChangeArgs<GridColumn, bool>(column, oldVisible, newVisible, eventSource);
+            this.OnColumnVisibleChanged(args);
+            if (!this.IsSuppressedEvent && this.ColumnVisibleChanged != null)
+                this.ColumnVisibleChanged(this, args);
+        }
+        /// <summary>
+        /// Háček volaný před událostí <see cref="ColumnVisibleChanged"/> = změna viditelnosti sloupce
+        /// </summary>
+        protected virtual void OnColumnVisibleChanged(GObjectPropertyChangeArgs<GridColumn, bool> args) { }
+        /// <summary>
+        /// Událost <see cref="ColumnVisibleChanged"/> = změna viditelnosti sloupce
+        /// </summary>
+        public event GObjectPropertyChangedHandler<GridColumn, bool> ColumnVisibleChanged;
         #endregion
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
@@ -1125,6 +1193,14 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
+        /// Zajistí invalidaci dat this prvku, a jeho vykreslení včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
+        /// </summary>
+        public override void Refresh()
+        {
+            this.Invalidate(InvalidateItem.GridBounds | InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange);
+            base.Refresh();
+        }
+        /// <summary>
         /// Zajistí invalidaci položek po určité akci, která právě skončila
         /// </summary>
         /// <param name="items"></param>
@@ -1331,12 +1407,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vytvoří novou instanci pro daný Master column
         /// </summary>
         /// <param name="gGrid"></param>
-        /// <param name="column"></param>
-        public GridColumn(GGrid gGrid, Column column)
+        /// <param name="columnId"></param>
+        public GridColumn(GGrid gGrid, int columnId)
         {
             this._Grid = gGrid;
             this._ColumnList = new List<Column>();
-            this.AddColumn(column);
+            this._ColumnId = columnId;
         }
         /// <summary>
         /// Vztah na Grid, v němž je tento sloupec doma
@@ -1363,7 +1439,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// ColumnId, synchronizační klíč všech sloupců v této tabulce
         /// </summary>
-        public int ColumnId { get { return this._MasterColumn.ColumnId; } }
+        public int ColumnId { get { return this._ColumnId; } } private int _ColumnId;
         /// <summary>
         /// Pořadí tohoto sloupce při zobrazování. 
         /// Načítá se z MasterColumn.ColumnOrder.
@@ -1387,11 +1463,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Šířka tohoto sloupce při zobrazování. 
         /// Načítá se z MasterColumn.Size.
         /// Hodnotu lze i vložit, pak se vkládá do všech sloupců!
+        /// Rozdíl: hodnota <see cref="ISequenceLayout.Size"/> reaguje na <see cref="IsVisible"/>, tedy pro <see cref="IsVisible"/> = false obsahuje <see cref="ISequenceLayout.Size"/> = 0.
+        /// Naproti tomu <see cref="ColumnWidth"/> vrací šířku sloupce jako zadanou hodnotu i pro <see cref="IsVisible"/> = false, tedy ne 0.
         /// </summary>
         public int ColumnWidth
         {
-            get { return ((ISequenceLayout)this).Size; }
-            set { ((ISequenceLayout)this).Size = value; }
+            get { return ((ISequenceLayout)this.MasterColumn.ColumnHeader).Size; }
+            set
+            {
+                foreach (Column column in this._ColumnList)
+                    ((ISequenceLayout)column.ColumnHeader).Size = value;
+            }
+        }
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool IsVisible
+        {
+            get { return this._MasterColumn.IsVisible; }
+            set
+            {
+                foreach (Column column in this._ColumnList)
+                    column.IsVisible = value;
+            }
         }
         /// <summary>
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
@@ -1476,15 +1570,8 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         int ISequenceLayout.Size
         {
-            get
-            {
-                return ((ISequenceLayout)this.MasterColumn.ColumnHeader).Size;
-            }
-            set
-            {
-                foreach (Column column in this._ColumnList)
-                    ((ISequenceLayout)column.ColumnHeader).Size = value;
-            }
+            get { return (this.IsVisible ? this.ColumnWidth : 0); }
+            set { this.ColumnWidth = value; }
         }
         int ISequenceLayout.End
         {

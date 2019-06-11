@@ -340,14 +340,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Interaktivita
         /// <summary>
-        /// Interaktivita
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
-        {
-            this.OwnerITable.TableHeaderClick(e);
-        }
-        /// <summary>
         /// Připraví ToolTip pro TableHeader, na základě aktuální funkcionality
         /// </summary>
         /// <param name="e"></param>
@@ -369,6 +361,22 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     e.ToolTipData.InfoText = "Zavře všechny otevřené řádky a jejich podřízené řádky v celém stormu";
                     break;
             }
+        }
+        /// <summary>
+        /// Interaktivita
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            this.OwnerITable.TableHeaderClick(e);
+        }
+        /// <summary>
+        /// Po kliknutí RightMouse na záhlaví
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
+        {
+            this.OwnerITable.ColumnHeaderContextMenu(e, null);
         }
         #endregion
         #region Draw - kreslení záhlaví tabulky
@@ -719,12 +727,20 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         /// <summary>
-        /// Po kliknutí na záhlaví
+        /// Po kliknutí LeftMouse na záhlaví
         /// </summary>
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             this.OwnerITable.ColumnHeaderClick(e, this.OwnerColumn);
+        }
+        /// <summary>
+        /// Po kliknutí RightMouse na záhlaví
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
+        {
+            this.OwnerITable.ColumnHeaderContextMenu(e, this.OwnerColumn);
         }
         #endregion
         #region Drag - Proces přesouvání sloupce
