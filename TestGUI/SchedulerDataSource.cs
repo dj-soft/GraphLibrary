@@ -231,7 +231,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 30, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
@@ -242,7 +242,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 20, 0, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0));
@@ -881,8 +881,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 ItemType = FunctionGlobalItemType.TrackBar,
                 Size = FunctionGlobalItemSize.Whole,
-                Image = RES.Images.Actions.DbAdd2Png
-
+                Image = RES.Images.Actions.DbComit2Png,
+                Title = "DbCommit"
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1489,6 +1489,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void CreateContextFunctions()
         {
             this.MainData.ContextMenuItems = new GuiContextMenuSet();
+            this.MainData.ContextMenuItems.Title = "Nabídka funkcí";
+            this.MainData.ContextMenuItems.BackColor = Color.FromArgb(220, 230, 255);
+            this.MainData.ContextMenuItems.ImageScalingSize = new Size(24, 24);
+
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
                 Name = GuiNameContextFixItem,
@@ -1499,10 +1503,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             });
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
-                Name = "test",
+                Name = GuiNameContextUnFixItem,
+                Title = "Zrušit FIXOVÁNÍ",
+                Image = RES.Images.Actions24.Lock2Png,
+                ToolTip = "Tato funkce zruší fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
+                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
+            });
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextShowTime,
                 Title = "Zobrazit čas",
                 Image = RES.Images.Actions24.ViewCalendarTimeSpentPng,
-                ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Pouze zobrazí čas.",
                 VisibleFor = GuiFullNameGridCenterTop + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
             });
         }
@@ -2064,6 +2077,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiFullNameGridRight = GuiFullNameMainPanel + GuiNameGridRight;
 
         protected const string GuiNameContextFixItem = "CtxFixItem";
+        protected const string GuiNameContextUnFixItem = "CtxUnFixItem";
+        protected const string GuiNameContextShowTime = "CtxShowTimeItem";
 
         protected const string GuiNameDelimiter = "\\";
         protected const string GuiNamePages = "pages";
