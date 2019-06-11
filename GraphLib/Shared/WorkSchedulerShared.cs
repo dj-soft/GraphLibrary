@@ -3535,9 +3535,10 @@ namespace Noris.LCS.Base.WorkScheduler
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu
     /// <summary>
-    /// GuiContextMenuSet : Všechny položky všech Kontextových menu
+    /// GuiContextMenuSet : Všechny položky všech Kontextových menu.
+    /// Titulek menu se zadává do <see cref="GuiTextItem.Title"/>
     /// </summary>
-    public sealed class GuiContextMenuSet : GuiBase
+    public sealed class GuiContextMenuSet : GuiTextItem
     {
         /// <summary>
         /// Konstruktor
@@ -3546,6 +3547,22 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             this.Items = new List<GuiContextMenuItem>();
         }
+        /// <summary>
+        /// Barva pozadí menu
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Menu bude mít stín?
+        /// </summary>
+        public bool? DropShadowEnabled { get; set; }
+        /// <summary>
+        /// Průhlednost menu
+        /// </summary>
+        public float? Opacity { get; set; }
+        /// <summary>
+        /// Velikost ikon v menu; určuje velikost položek v menu
+        /// </summary>
+        public Size? ImageScalingSize { get; set; }
         /// <summary>
         /// Všechny položky obsažené v Toolbaru
         /// </summary>
@@ -3588,6 +3605,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiContextMenuItem()
         { }
+        /// <summary>
+        /// Barva pozadí položky menu: má přednost před barvou menu pokud je zadána
+        /// </summary>
+        public Color? BackColor { get; set; }
         /// <summary>
         /// Definice prvků, pro které se má tato funkce zobrazovat.
         /// <para/>

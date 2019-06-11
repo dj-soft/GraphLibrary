@@ -645,8 +645,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (args.BoundsFinal.HasValue)
             {
                 this.Bounds = args.BoundsFinal.Value;
-                if (e.ResizeAction == DragActionType.DragThisDrop)
-                    this.Time = args.TimeRangeFinal;
+
+                // Vložit nový čas do grupy: při ukončení (DragThisDrop) povinně, při pohybu (DragThisMove) jen pro grupu s 1 prvkem:
+                bool setTime =
+                    ((e.ResizeAction == DragActionType.DragThisDrop) ||
+                     (e.ResizeAction == DragActionType.DragThisMove && this.Position == GGraphControlPosition.Group && this.Group.ItemCount == 1));
+                if (setTime)
+                    this.Time = args.TimeRangeFinal;       // Změna času u prvku typu Group provede vhodné rozmístění vnitřních prvků typu Item!
                 this.Parent.Repaint();
             }
         }

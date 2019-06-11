@@ -2047,12 +2047,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (items.Length == 0) return null;         // Nic se nehodí => nic se nezobrazí
 
             // Celkové menu:
-            ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m =>
-            {   // Tuto akci vyvolá metoda CreateDropDownMenuFrom() po vytvoření menu, ale před přidáním položek:
-                m.Tag = menuRunArgs;
-                m.Items.Add(new ToolStripLabel("NABÍDKA FUNKCÍ"));
-                m.Items.Add(new ToolStripSeparator());
-            });
+            ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m => this.CreateContextMenuSetParams(m, menuRunArgs));
 
             // Kdo bude řešit kliknutí na položku: externí nebo interní handler?
             if (itemClickedHandler != null)
@@ -2061,6 +2056,41 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 menu.ItemClicked += this.ContextMenuItemClicked;
 
             return menu;
+        }
+        /// <summary>
+        /// Do předaného menu vloží parametry a titulkový řádek
+        /// </summary>
+        /// <param name="menu"></param>
+        /// <param name="menuRunArgs"></param>
+        protected void CreateContextMenuSetParams(ToolStripDropDownMenu menu, GuiContextMenuRunArgs menuRunArgs)
+        {
+            // 1. Data:
+            menu.Tag = menuRunArgs;
+
+            // 2. Parametry menu:
+            GuiContextMenuSet cmSet = this._GuiContextMenuSet;
+            if (cmSet.BackColor.HasValue)
+                menu.BackColor = cmSet.BackColor.Value;
+            if (cmSet.DropShadowEnabled.HasValue)
+                menu.DropShadowEnabled = cmSet.DropShadowEnabled.Value;
+            if (cmSet.Opacity.HasValue)
+                menu.Opacity = cmSet.Opacity.Value;
+            if (cmSet.ImageScalingSize.HasValue)
+                menu.ImageScalingSize = cmSet.ImageScalingSize.Value;
+
+            // 3. Titulek menu:
+            if (!String.IsNullOrEmpty(cmSet.Title))
+            {
+                ToolStripLabel title = new ToolStripLabel(cmSet.Title);
+                title.ToolTipText = cmSet.ToolTip;
+                if (cmSet.ImageScalingSize.HasValue)
+                    title.Size = new Size(100, cmSet.ImageScalingSize.Value.Height + 4);
+                title.Font = new Font(title.Font, FontStyle.Bold);
+                title.TextAlign = ContentAlignment.MiddleCenter;
+                menu.Items.Add(title);
+
+                menu.Items.Add(new ToolStripSeparator());
+            }
         }
         /// <summary>
         /// Obsluha kliknutí na položku kontextového menu
@@ -2151,6 +2181,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
             /// </summary>
             public override string Name { get { return (this._HasItem ? this._GuiContextMenuItem.Name : base.Name); } set { if (this._HasItem) this._GuiContextMenuItem.Name = value; else base.Name = value; } }
+            /// <summary>
+            /// Barva pozadí prvku
+            /// </summary>
+            public override Color? BackColor { get { return this._GuiContextMenuItem.BackColor; } }
             /// <summary>
             /// Text do funkce
             /// </summary>

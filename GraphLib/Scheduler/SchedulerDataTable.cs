@@ -2747,7 +2747,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             args.BoundsFinalAbsolute = moveInfo.BoundsFinalAbsolute;
             args.TimeRangeFinal = moveInfo.TimeRangeFinal;
             args.ToolTipData.AnimationType = TooltipAnimationType.Instant;
-            args.ToolTipData.TitleText = (moveInfo.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
+            args.ToolTipData.TitleText = (args.ResizeSide == RectangleSide.Left ? "Změna času zahájení" : (args.ResizeSide == RectangleSide.Right ? "Změna času dokončení" : "Změna času " + args.ResizeSide.ToString()));
             args.ToolTipData.InfoText = "Čas: " + moveInfo.TimeRangeFinal.ToString();
         }
         /// <summary>

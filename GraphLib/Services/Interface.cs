@@ -410,6 +410,10 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public Type ProviderType { get { return (this._Provider != null ? this._Provider.GetType() : null); } }
         /// <summary>
+        /// Background color for this item
+        /// </summary>
+        public virtual Color? BackColor { get; set; }
+        /// <summary>
         /// Text of this item, localizable.
         /// </summary>
         public virtual TextLoc Text { get; set; }
@@ -632,6 +636,8 @@ namespace Asol.Tools.WorkScheduler.Services
         {
             System.Windows.Forms.ToolStripItem result = null;
             string text = this.TextText;
+            Color? backColor = this.BackColor;
+
             if (String.IsNullOrEmpty(text))
             {
                 result = new System.Windows.Forms.ToolStripSeparator();
@@ -640,6 +646,8 @@ namespace Asol.Tools.WorkScheduler.Services
             {
                 System.Windows.Forms.ToolStripMenuItem item = new System.Windows.Forms.ToolStripMenuItem(this.TextText, this.Image);
                 item.Name = this.Name;
+                if (backColor.HasValue)
+                    item.BackColor = backColor.Value;
 
                 string toolTip = this.ToolTipText;
                 if (!String.IsNullOrEmpty(toolTip))
@@ -654,7 +662,11 @@ namespace Asol.Tools.WorkScheduler.Services
                 // SubItems dáme rekurzivně:
                 var subItems = CreateWinFormItems(this.SubItems);
                 if (subItems != null)
+                {
+                    if (backColor.HasValue)
+                        item.DropDown.BackColor = backColor.Value;   // Barva SubMenu = barva this položky
                     item.DropDownItems.AddRange(subItems);
+                }
 
                 result = item;
             }

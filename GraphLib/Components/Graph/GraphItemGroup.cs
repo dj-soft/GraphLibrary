@@ -698,7 +698,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             foreach (var item in this._Items)
                 item.Time = item.Time.ShiftByTime(shift);
         }
-
         /// <summary>
         /// Změna intervalu: zmenšení intervalu, zajištění že všechny prvky budou mít čas posunutý nebo zmenšený do daného nového intervalu
         /// </summary>
