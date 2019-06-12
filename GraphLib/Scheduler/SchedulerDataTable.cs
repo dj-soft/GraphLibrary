@@ -402,7 +402,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row row;
             if (refreshRow.RowData != null)
             {   // Máme zadaná data řádku - půjde o Insert nebo Update:
-                rowGId = (refreshRow.RowData?.RowGuiId ?? refreshRow.GridRowId?.RowId);    // ID řádku: primárně z grafu, sekundárně z ID
+                rowGId = (refreshRow.RowData?.RowGuiId ?? refreshRow.GridRowId?.RowId);    // ID řádku: primárně z dat řádku, sekundárně z ID
                 if (!this.TableRow.TryGetRow(rowGId, out row))
                 {   // Insert: V tabulce nebyl nalezen řádek pro daný GId => vytvoříme nový řádek a přidáme do tabulky:
                     row = Row.CreateFrom(refreshRow.RowData);
@@ -415,6 +415,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TableRow.TryGetRow(refreshRow.GridRowId.RowId, out row))
             {   // Delete:
+                this.TableRow.Rows.Remove(row);
             }
 
             return modifiedGraph;

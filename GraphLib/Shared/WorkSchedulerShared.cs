@@ -3870,7 +3870,10 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiTrackBarSettings
     {
-
+        /// <summary>
+        /// Počet linek trackbaru
+        /// </summary>
+        public int? TrackLines { get; set; }
     }
     /// <summary>
     /// Akce, které má provést vrstva Gui po aktivaci tlačítka / funkce
