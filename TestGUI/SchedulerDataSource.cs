@@ -879,10 +879,37 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
+                Name = GuiNameToolbarResetFilters,
+                Size = FunctionGlobalItemSize.Half,
+                GroupName = "NASTAVENÍ",
+                Title = "Zruš filtry",
+                Image = RES.Images.Actions24.TabClose2Png,
+                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.SuppressCallAppHost
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarTrackBar,
                 ItemType = FunctionGlobalItemType.TrackBar,
-                Size = FunctionGlobalItemSize.Whole,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.ThisItemSkipToNextTable | LayoutHint.ThisItemSkipToNextRow,
+                ModuleWidth = 4,
+                GroupName = "NASTAVENÍ",
                 Image = RES.Images.Actions.DbComit2Png,
-                Title = "DbCommit"
+                Title = "TrackBar",
+                ToolTip = "TrackBar",
+                TrackBarSettings = new GuiTrackBarSettings() { TrackLines = 20 }
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarResetTrackBar,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextTable,
+                GroupName = "NASTAVENÍ",
+                Title = "Reset trackbaru",
+                Image = RES.Images.Actions24.TabClose2Png,
+                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.SuppressCallAppHost
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -949,13 +976,26 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = GuiNameToolbarResetFilters,
+                Name = GuiNameToolbarAddRow1,
                 Size = FunctionGlobalItemSize.Half,
-                GroupName = "NASTAVENÍ",
-                Title = "Zruš filtry",
-                Image = RES.Images.Actions24.TabClose2Png,
-                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.SuppressCallAppHost
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                GroupName = "MODIFIKACE",
+                Title = "Nový řádek",
+                ToolTip = "Do grafu přidá další řádek s Výrobním příkazem",
+                Image = RES.Images.Actions.ListAdd4Png
             });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarDelRow1,
+                Size = FunctionGlobalItemSize.Half,
+                GroupName = "MODIFIKACE",
+                Title = "Smaž řádek",
+                ToolTip = "Z grafu odebere náhodně řádek s Výrobním příkazem",
+                Image = RES.Images.Actions.ListRemove4Png
+            });
+
+            
+
         }
         /// <summary>
         /// Vygeneruje hlavní (a jedinou) stránku pro data, zatím bez dat
@@ -1562,7 +1602,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (removedList.Count > 0)
                 this.DataChanged = true;
 
-            guiResponse.RemoveItems = removedList.ToArray();
+            guiResponse.RefreshGraphItems = removedList.Select(g => new GuiRefreshGraphItem() { GridItemId = g }).ToArray();
             this.ApplyCommonToResponse(guiResponse);
         }
         /// <summary>
@@ -1984,8 +2024,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             var guiItems = guiGrid.RowTable.Rows[0].Graph.GraphItems;
             var resItems = resGrid.RowTable.Rows[0].Graph.GraphItems;
             int index = guiItems.FindIndex(i => i.ItemId.ClassId == WorkUnit.ClassNumber);
-            GuiGraphBaseItem guiItem = (index >= 0 ? guiItems[index] : null);
-            GuiGraphBaseItem resItem = (index >= 0 ? resItems[index] : null);
+            GuiGraphItem guiItem = (index >= 0 ? guiItems[index] : null);
+            GuiGraphItem resItem = (index >= 0 ? resItems[index] : null);
 
             if (guiItem != null)
             {
@@ -2050,10 +2090,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameToolbarSaveData = "SaveData";
         protected const string GuiNameToolbarFilterLeft = "TlbApplyFilterMainToLeft";
         protected const string GuiNameToolbarResetFilters = "TlbResetAllFilters";
+        protected const string GuiNameToolbarTrackBar = "TlbTrackBar";
+        protected const string GuiNameToolbarResetTrackBar = "TlbResetTrackBar";
         protected const string GuiNameToolbarShowColorSet1 = "TlbShowColorSet1";
         protected const string GuiNameToolbarShowColorSet2 = "TlbShowColorSet2";
         protected const string GuiNameToolbarShowColorSet3 = "TlbShowColorSet3";
         protected const string GuiNameToolbarShowColorSet4 = "TlbShowColorSet4";
+        protected const string GuiNameToolbarAddRow1 = "TlbAddRow1";
+        protected const string GuiNameToolbarDelRow1 = "TlbDelRow1";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
@@ -2130,20 +2174,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     case GuiRequest.COMMAND_ToolbarClick:
                         switch (requestArgs.Request.ToolbarItem.Name)
                         {
-                            case "TlbSubDay":
+                            case GuiNameToolbarSubDay:
                                 timeRange = new GuiTimeRange(timeRange.Begin.AddDays(-1d), timeRange.End.AddDays(-1d));
                                 responseArgs.GuiResponse.Common = new GuiResponseCommon() { TimeAxisValue = timeRange };
                                 break;
-                            case "TlbAddDay":
+                            case GuiNameToolbarAddDay:
                                 timeRange = new GuiTimeRange(timeRange.Begin.AddDays(1d), timeRange.End.AddDays(1d));
                                 responseArgs.GuiResponse.Common = new GuiResponseCommon() { TimeAxisValue = timeRange };
                                 break;
-                            case "RePlan":
+                            case GuiNameToolbarRePlan:
                                 time = this.Rand.Next(500, 5000);
                                 System.Threading.Thread.Sleep(time);
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou zaplánovaná.", GuiDialogButtons.Ok);
                                 break;
-                            case "SaveData":
+                            case GuiNameToolbarSaveData:
                                 time = this.Rand.Next(500, 5000);
                                 System.Threading.Thread.Sleep(time);
                                 this.DataChanged = false;
@@ -2153,6 +2197,39 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                                     new GuiToolbarItem() { Name = "SaveData", Enable = false }
                                 };
 
+                                break;
+                            case GuiNameToolbarAddRow1:
+                                List<GuiRefreshRow> addRows = new List<GuiRefreshRow>();
+
+                                int recIdM = Rand.Next(1000, 10000);
+                                GuiId rowIdM = new GuiId(ProductOrder.ClassNumber, recIdM);
+                                GuiGridRowId gridRowIdM = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowIdM };
+                                GuiDataRow rowDataM = new GuiDataRow();
+                                rowDataM.Cells = new List<object> { rowIdM, "NVP_" + recIdM.ToString(), "Název nového VP: " + DateTime.Now.ToString("HH:mm:ss"), Rand.Next(2,100) };
+                                rowDataM.RowGuiId = rowIdM;
+                                addRows.Add(new GuiRefreshRow() { GridRowId = gridRowIdM, RowData = rowDataM });
+
+                                int recIdS = Rand.Next(1000, 10000);
+                                GuiId rowIdS = new GuiId(ProductOperation.ClassNumber, recIdS);
+                                GuiGridRowId gridRowIdS = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowIdS };
+                                GuiDataRow rowDataS = new GuiDataRow();
+                                rowDataS.Cells = new List<object> { rowIdS, "Op_" + recIdS.ToString(), "Operace: " + DateTime.Now.ToString("HH:mm:ss"), Rand.Next(2, 100) };
+                                rowDataS.RowGuiId = rowIdS;
+                                rowDataS.ParentRowGuiId = rowIdM;
+                                addRows.Add(new GuiRefreshRow() { GridRowId = gridRowIdS, RowData = rowDataS });
+
+                                responseArgs.GuiResponse.RefreshRows = addRows.ToArray();
+                                break;
+
+                            case GuiNameToolbarDelRow1:
+                                List<GuiRefreshRow> remRows = new List<GuiRefreshRow>();
+
+                                int recVp = Rand.Next(10000, 10030);
+                                GuiId rowVp = new GuiId(ProductOrder.ClassNumber, recVp);
+                                GuiGridRowId gridVp = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowVp };
+                                remRows.Add(new GuiRefreshRow() { GridRowId = gridVp, RowData = null });
+
+                                responseArgs.GuiResponse.RefreshRows = remRows.ToArray();
                                 break;
                         }
                         break;
