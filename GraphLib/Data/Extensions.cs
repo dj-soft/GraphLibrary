@@ -1061,9 +1061,6 @@ namespace Asol.Tools.WorkScheduler.Data
             if (dictionary2.Count == 0)
                 dictionary.Remove(key1);
         }
-
-
-
         #endregion
         #region Data.Direction
         /// <summary>

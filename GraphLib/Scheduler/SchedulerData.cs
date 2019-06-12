@@ -2581,17 +2581,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ProcessResponseData(GuiResponse guiResponse)
         {
             Dictionary<string, MainDataTable> mainTableDict = this.DataTables.Where(t => t.TableName != null).GetDictionary(t => t.TableName, true);
-            Dictionary<uint, GTimeGraph> refreshGraphDict = new Dictionary<uint, GTimeGraph>();
+            Dictionary<uint, GTimeGraph> repaintGraphDict = new Dictionary<uint, GTimeGraph>();
             this._ProcessResponseCommon(guiResponse.Common, mainTableDict);
             this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
             this._ProcessResponseTime(guiResponse.TimeAxisValue);
-            this._ProcessResponseRemoveItems(guiResponse.RemoveItems, mainTableDict, refreshGraphDict);
-            this._ProcessResponseUpdateGraphs(guiResponse.UpdateGraphs, mainTableDict, refreshGraphDict);
-            this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
-            this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, refreshGraphDict);
-            this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
-            this._ProcessResponseRefreshParentChilds(refreshGraphDict.Values);
-            this._ProcessResponseRefreshControl(refreshGraphDict.Values);
+            this._ProcessResponseRefreshRows(guiResponse.RefreshRows, mainTableDict, repaintGraphDict);
+            this._ProcessResponseRefreshGraphs(guiResponse.RefreshGraphs, mainTableDict, repaintGraphDict);
+            this._ProcessResponseRefreshGraphItems(guiResponse.RefreshGraphItems, mainTableDict, repaintGraphDict);
+            this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, repaintGraphDict);
+            this._ProcessResponseRepaintGraphs(repaintGraphDict.Values);
+            this._ProcessResponseRepaintParentChilds(repaintGraphDict.Values);
+            this._ProcessResponseRepaintControl(repaintGraphDict.Values);
         }
         /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.Common"/>
@@ -2650,54 +2650,54 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._MainControl.SynchronizedTime.Value = timeRange;
         }
         /// <summary>
-        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.RemoveItems"/>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.RefreshRows"/>
         /// </summary>
-        /// <param name="removeItems"></param>
+        /// <param name="refreshRows"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
-        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseRemoveItems(GuiGridItemId[] removeItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseRefreshRows(GuiRefreshRow[] refreshRows, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
         {
-            if (removeItems == null) return;
-            foreach (GuiGridItemId removeItem in removeItems)
+            if (refreshRows == null) return;
+            foreach (GuiRefreshRow refreshRow in refreshRows)
             {
-                if (removeItem == null || removeItem.TableName == null) continue;
+                if (refreshRow == null || refreshRow.GridRowId == null || refreshRow.GridRowId.TableName == null) continue;
                 MainDataTable mainDataTable;
-                if (mainTableDict.TryGetValue(removeItem.TableName, out mainDataTable))
-                    mainDataTable.RemoveGraphItem(removeItem, refreshGraphDict);
+                if (mainTableDict.TryGetValue(refreshRow.GridRowId.TableName, out mainDataTable))
+                    mainDataTable.RefreshRow(refreshRow, repaintGraphDict);
             }
         }
         /// <summary>
-        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.UpdateGraphs"/>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.RefreshGraphs"/>
         /// </summary>
-        /// <param name="updateGraphs"></param>
+        /// <param name="refreshGraphs"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
-        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseUpdateGraphs(GuiResponseGraph[] updateGraphs, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseRefreshGraphs(GuiRefreshGraph[] refreshGraphs, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
         {
-            if (updateGraphs == null) return;
-            foreach (GuiResponseGraph updateGraph in updateGraphs)
+            if (refreshGraphs == null) return;
+            foreach (GuiRefreshGraph refreshGraph in refreshGraphs)
             {
-                if (updateGraph == null || updateGraph.TableName == null) continue;
+                if (refreshGraph == null || refreshGraph.GridRowId == null || refreshGraph.GridRowId.TableName == null) continue;
                 MainDataTable mainDataTable;
-                if (mainTableDict.TryGetValue(updateGraph.TableName, out mainDataTable))
-                    mainDataTable.UpdateGraph(updateGraph, refreshGraphDict);
+                if (mainTableDict.TryGetValue(refreshGraph.GridRowId.TableName, out mainDataTable))
+                    mainDataTable.RefreshGraph(refreshGraph, repaintGraphDict);
             }
         }
         /// <summary>
-        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.AddItems"/>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.RefreshGraphItems"/>
         /// </summary>
-        /// <param name="addItems">Přidávané položky do grafů</param>
+        /// <param name="refreshGraphItems"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
-        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseAddItems(GuiResponseGraphItem[] addItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseRefreshGraphItems(GuiRefreshGraphItem[] refreshGraphItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
         {
-            if (addItems == null) return;
-            foreach (GuiResponseGraphItem addItem in addItems)
+            if (refreshGraphItems == null) return;
+            foreach (GuiRefreshGraphItem refreshGraphItem in refreshGraphItems)
             {
-                if (addItem == null || addItem.TableName == null) continue;
+                if (refreshGraphItem == null || refreshGraphItem.GridItemId == null || refreshGraphItem.GridItemId.TableName == null) continue;
                 MainDataTable mainDataTable;
-                if (mainTableDict.TryGetValue(addItem.TableName, out mainDataTable))
-                    mainDataTable.UpdateGraphItem(addItem, refreshGraphDict);
+                if (mainTableDict.TryGetValue(refreshGraphItem.GridItemId.TableName, out mainDataTable))
+                    mainDataTable.RefreshGraphItem(refreshGraphItem, repaintGraphDict);
             }
         }
         /// <summary>
@@ -2705,8 +2705,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="changeLinks">Změněné vztahy</param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
-        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseUpdateLinks(GuiResponseGraphLink[] changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseUpdateLinks(GuiResponseGraphLink[] changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
         {
             if (changeLinks == null) return;
             var changeGroups = changeLinks.Where(l => l.TableName != null).GroupBy(l => l.TableName);
@@ -2720,16 +2720,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda provede Refresh na všech grafech, které se nacházejí v parametru refreshGraphDict.
         /// </summary>
-        /// <param name="refreshGraphs"></param>
-        private void _ProcessResponseRefreshGraphs(IEnumerable<GTimeGraph> refreshGraphs)
+        /// <param name="repaintGraphs"></param>
+        private void _ProcessResponseRepaintGraphs(IEnumerable<GTimeGraph> repaintGraphs)
         {
-            refreshGraphs.ForEachItem(g => g.Refresh());
+            repaintGraphs.ForEachItem(g => g.Refresh());
         }
         /// <summary>
         /// Metoda zajistí nové vyhodnocení vztahů Parent - Child v těch tabulkách, kde došlo ke změně v grafech
         /// </summary>
-        /// <param name="refreshGraphs"></param>
-        private void _ProcessResponseRefreshParentChilds(IEnumerable<GTimeGraph> refreshGraphs)
+        /// <param name="repaintGraphs"></param>
+        private void _ProcessResponseRepaintParentChilds(IEnumerable<GTimeGraph> repaintGraphs)
         {
             this.DataTables.ForEachItem(t => t.PrepareDynamicChilds(true));
 
@@ -2751,8 +2751,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Provede fyzický Refresh celého Controlu
         /// </summary>
-        /// <param name="refreshGraphs"></param>
-        private void _ProcessResponseRefreshControl(IEnumerable<GTimeGraph> refreshGraphs)
+        /// <param name="repaintGraphs"></param>
+        private void _ProcessResponseRepaintControl(IEnumerable<GTimeGraph> repaintGraphs)
         {
             this._MainControl.Refresh();
         }

@@ -220,6 +220,7 @@
     <None Include="pic\select-rectangular.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="_UkolyProVyvoj.txt" />
     <None Include="pic\pic64\document-export_64.png" />
     <None Include="pic\pic64\document-save-5_64.png" />
     <None Include="pic\pic64\document-save-7_64.png" />

@@ -2610,6 +2610,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// 2. <see cref="GuiResponseGraphItem"/> pro předávání změnových dat, 
     /// obsahuje navíc <see cref="GuiResponseGraphItem.TableName"/> pro určení tabulky, kam se má prvek přidat.
     /// </summary>
+    [Obsolete("Použijme pouze finální třídu GuiGraphItem", true)]
     public abstract class GuiGraphBaseItem : GuiBase
     {
         #region Standardní public properties a konstruktor
@@ -5414,21 +5415,42 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiTimeRange TimeAxisValue { get; set; }
         /// <summary>
+        /// Pole řádků v tabulkách, které se mají aktualizovat.
+        /// Záznamy obsahují kompletní klíč řádku (=tabulka + RowId), a data řádku pro aktualizaci, anebo null pro smazání řádku.
+        /// </summary>
+        public GuiRefreshRow[] RefreshRows { get; set; }
+        /// <summary>
+        /// Pole grafů, které se mají aktualizovat.
+        /// Záznamy obsahují kompletní klíč řádku grafu (=tabulka + RowId), a data grafu pro aktualizaci, anebo null pro smazání grafu (?).
+        /// </summary>
+        public GuiRefreshGraph[] RefreshGraphs { get; set; }
+        /// <summary>
+        /// Pole prvků grafů, které se mají aktualizovat.
+        /// Záznamy obsahují kompletní klíč prvku grafu (=tabulka + RowId + ItemId), a data prvku grafu pro aktualizaci, anebo null pro smazání prvku grafu.
+        /// </summary>
+        public GuiRefreshGraphItem[] RefreshGraphItems { get; set; }
+
+
+        /// <summary>
         /// Pole grafů, které se mají aktualizovat.
         /// </summary>
+        [Obsolete("Použijme property RefreshGraphs", true)]
         public GuiResponseGraph[] UpdateGraphs { get; set; }
         /// <summary>
         /// Pole prvků grafů, které se mají z GUI odebrat.
         /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiGridRowId.TableName"/>.
         /// V tomto seznamu tedy mohou být prvky pocházející z kterékoli tabulky GUI.
         /// </summary>
+        [Obsolete("Použijme property RefreshGraphItems", true)]
         public GuiGridItemId[] RemoveItems { get; set; }
         /// <summary>
         /// Pole prvků grafů, které se mají do GUI nově vložit.
         /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiResponseGraphItem.TableName"/>.
         /// V tomto seznamu tedy mohou být prvky do kterékoli tabulky GUI.
         /// </summary>
+        [Obsolete("Použijme property RefreshGraphItems", true)]
         public GuiResponseGraphItem[] AddItems { get; set; }
+
         /// <summary>
         /// Pole změn linků.
         /// Link, který má být vyřazen, bude mít nastaveno <see cref="GuiGraphLink.LinkType"/> = null, a musí mít řádně naplněny obě strany vztahu (Prev i Next).
@@ -5615,6 +5637,65 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     /// <summary>
+    /// Třída pro přenesení informace v rámci <see cref="GuiResponse"/> o změně řádku.
+    /// Může přinést nový řádek (pokud <see cref="GridRowId"/> obsahuje dosud neexistující klíč <see cref="GuiGridRowId.RowId"/>,
+    /// nebo nový obsah do stávajícího řádku, anebo smazat existující řádek, to když <see cref="RowData"/> je null.
+    /// </summary>
+    public class GuiRefreshRow
+    {
+        /// <summary>
+        /// ID řádku, obsahuje Fullname tabulky a ID řádku
+        /// </summary>
+        public GuiGridRowId GridRowId { get; set; }
+        /// <summary>
+        /// Obsah řádku. Pokud je null, pak se má uvedený řádek odebrat z tabulky.
+        /// </summary>
+        public GuiDataRow RowData { get; set; }
+    }
+    /// <summary>
+    /// Třída pro přenesení informace v rámci <see cref="GuiResponse"/> o změně celého grafu.
+    /// Může přinést nový prvek (pokud <see cref="GridRowId"/> obsahuje řádek, kde dosud graf není,
+    /// nebo nová data do stávajícího grafu, anebo může smazat existující prvek, to když <see cref="GraphData"/> je null.
+    /// </summary>
+    public class GuiRefreshGraph
+    {
+        /// <summary>
+        /// ID řádku, obsahuje Fullname tabulky a ID řádku, kde se má graf aktualizovat
+        /// </summary>
+        public GuiGridRowId GridRowId { get; set; }
+        /// <summary>
+        /// Data grafu. 
+        /// Pokud není null, pak se pro daný řádek má graf vytvořit nebo aktualizovat daty z tohoto grafu.
+        /// Pokud je null, pak se má uvedený graf odebrat z řádku.
+        /// </summary>
+        public GuiGraph GraphData { get; set; }
+        /// <summary>
+        /// ID starých prvků cílového grafu, které se mají nejprve odstranit
+        /// </summary>
+        public GuiGridItemId[] RemoveItems { get; set; }
+        /// <summary>
+        /// Režim práce s položkami grafů: pokud je zadán řádek, kde již graf existuje, pak tato property řídí chování vzhledem ke stávajícím prvkům.
+        /// </summary>
+        public GuiMergeMode ItemsMergeMode { get; set; }
+    }
+    /// <summary>
+    /// Třída pro přenesení informace v rámci <see cref="GuiResponse"/> o změně prvku grafu.
+    /// Může přinést nový prvek (pokud <see cref="GridItemId"/> obsahuje dosud neexistující klíč <see cref="GuiGridItemId.ItemId"/>,
+    /// nebo nová data do stávajícího prvku, anebo může smazat existující prvek, to když <see cref="ItemData"/> je null.
+    /// </summary>
+    public class GuiRefreshGraphItem
+    {
+        /// <summary>
+        /// ID prvku, obsahuje Fullname tabulky a ID prvku pro jeho vyhledání v tabulce a řádku
+        /// </summary>
+        public GuiGridItemId GridItemId { get; set; }
+        /// <summary>
+        /// Data prvku grafu. Pokud je null, pak se má uvedený prvek odebrat z grafu.
+        /// </summary>
+        public GuiGraphItem ItemData { get; set; }
+    }
+
+    /// <summary>
     /// GuiResponseGraph : třída sloužící pro přenos grafů (data z <see cref="GuiGraph"/> z aplikace do GUI v nestrukturovaném seznamu.
     /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
     /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
@@ -5623,6 +5704,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// Původní prvky v grafu v GUI, pokud nejsou uvedeny v těchto tabulkách, zůstávají nezměněny, 
     /// pokud není nastaveno true do <see cref="GuiResponseGraph.ResetGraphItems"/>.
     /// </summary>
+    [Obsolete("Použijme novou třídu GuiRefreshGraph", true)]
     public class GuiResponseGraph : GuiGraph
     {
         /// <summary>
@@ -5649,6 +5731,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
     /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
     /// </summary>
+    [Obsolete("Použijme novou třídu GuiRefreshGraphItem", true)]
     public class GuiResponseGraphItem : GuiGraphBaseItem
     {
         /// <summary>
@@ -5675,6 +5758,29 @@ namespace Noris.LCS.Base.WorkScheduler
         /// FullName tabulky, do které se má tento prvek vložit.
         /// </summary>
         public string TableName { get; set; }
+    }
+    /// <summary>
+    /// Režim spojení stávajích dat v prvku s daty novými
+    /// </summary>
+    public enum GuiMergeMode
+    {
+        /// <summary>
+        /// Nezadáno, provede se Update
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Nejprve odebrat všechny stávající prvky, teprve pak vložit všechny nové prvky
+        /// </summary>
+        RemoveAllOld,
+        /// <summary>
+        /// Stávající prvky ponechat, ale pokud v nových datech je údaj pro klíč, který již existuje ve starých datech, pak stará data přepsat novými.
+        /// Toto je implicitní chování.
+        /// </summary>
+        Update,
+        /// <summary>
+        /// Stávající prvky ponechat, a pokud v nových datech je předán údaj pro klíč, který již existuje ve starých datech, pak nová data ignorovat a ponechat data stará.
+        /// </summary>
+        InsertOnly
     }
     /// <summary>
     /// Stav dokončení funkce

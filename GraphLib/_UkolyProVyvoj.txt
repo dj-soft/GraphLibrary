@@ -1,0 +1,4 @@
+﻿ColumnsPopup		: +položka Zobraz vše
+GuiRequest			: Status obsahuje prvky grafu, kde RowId = null
+GuiResponse			: Přidat refresh řádků
+
