@@ -383,7 +383,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Refresh obsahu tabulky na základě dat z GuiResponse : přidání/aktualizace/odebrání : řádků/grafů/prvků grafu
         #region Refresh řádků
         /// <summary>
-        /// Aktualizuje obsah daného řádku tabulky.
+        /// Metoda přidá/aktualizuje/odebere daný řádek this tabulky.
         /// </summary>
         /// <param name="refreshRow"></param>
         /// <param name="repaintGraphDict"></param>
@@ -392,14 +392,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTimeGraph modifiedGraph = this._UpdateRow(refreshRow);
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
+
         private GTimeGraph _UpdateRow(GuiRefreshRow refreshRow)
         {
-            return null;
+            if (refreshRow == null || (refreshRow.GridRowId == null && refreshRow.RowData == null)) return null;
+
+            GTimeGraph modifiedGraph = null;
+            GId rowGId;
+            Row row;
+            if (refreshRow.RowData != null)
+            {   // Máme zadaná data řádku - půjde o Insert nebo Update:
+                rowGId = (refreshRow.RowData?.RowGuiId ?? refreshRow.GridRowId?.RowId);    // ID řádku: primárně z grafu, sekundárně z ID
+                if (!this.TableRow.TryGetRow(rowGId, out row))
+                {   // Insert: V tabulce nebyl nalezen řádek pro daný GId => vytvoříme nový řádek a přidáme do tabulky:
+                    row = Row.CreateFrom(refreshRow.RowData);
+                    this.TableRow.AddRow(row);
+                }
+                else
+                {   // Update:
+
+                }
+            }
+            else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TableRow.TryGetRow(refreshRow.GridRowId.RowId, out row))
+            {   // Delete:
+            }
+
+            return modifiedGraph;
         }
         #endregion
         #region Refresh grafů
         /// <summary>
-        /// Aktualizuje obsah daného řádku tabulky.
+        /// Metoda přidá/aktualizuje/odebere daný graf.
         /// </summary>
         /// <param name="refreshGraph"></param>
         /// <param name="repaintGraphDict"></param>
@@ -538,7 +561,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return modifiedGraph;
         }
         /// <summary>
-        /// Metoda zajistí vytvoření řady prvků grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphBaseItem"/>),
+        /// Metoda zajistí vytvoření řady prvků grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphItem"/>),
         /// dále pak přidání vytvořených prvků <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/> a do <see cref="TimeGraphGroupDict"/>.
         /// Vrací true = došlo k přidání / false = nebyla změna.
         /// </summary>
@@ -581,7 +604,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return isChange;
         }
         /// <summary>
-        /// Metoda zajistí vytvoření prvku grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphBaseItem"/>),
+        /// Metoda zajistí vytvoření prvku grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphItem"/>),
         /// dále pak přidání prvku <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/> a <see cref="TimeGraphGroupDict"/>.
         /// Vrací true = došlo ke změně / false = nebyla změna.
         /// Pokud je vráceno true, později (hromadně) se provede refresh grafu gTimeGraph.
@@ -4173,7 +4196,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (sourceItem.SkinDefault != null) UpdateSkinFrom(targetItem.SkinDefault, sourceItem.SkinDefault);     // Defaultní skin
             if (sourceItem.SkinDict != null) UpdateSkinsFrom(targetItem, sourceItem);                               // Explicitní skiny
 
-            // Tyto property budeme aktualizovat do zdejšího datového prvku GuiGraphBaseItem _GuiGraphItem, 
+            // Tyto property budeme aktualizovat do zdejšího datového prvku GuiGraphItem _GuiGraphItem, 
             //   i do this.*, protože tyto hodnoty zde máme jako pracovní (=editovatelné):
             if (sourceItem.Time != null)
             {
@@ -4190,7 +4213,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return true;
         }
         /// <summary>
-        /// Zajistí aktualizaci skinů v this instanci daty z dodané instance, kde <see cref="GuiGraphBaseItem.SkinDict"/> není null.
+        /// Zajistí aktualizaci skinů v this instanci daty z dodané instance, kde <see cref="GuiGraphItem.SkinDict"/> není null.
         /// </summary>
         /// <param name="targetItem"></param>
         /// <param name="sourceItem"></param>
@@ -4453,10 +4476,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// s parametrem odpovídajícím číslu skinu.
         /// <para/>
         /// Skin ovlivňuje hodnoty v těchto properties:
-        /// <see cref="GuiGraphBaseItem.BackColor"/>, <see cref="GuiGraphBaseItem.HatchColor"/>, <see cref="GuiGraphBaseItem.LineColor"/>, 
-        /// <see cref="GuiGraphBaseItem.BackStyle"/>, <see cref="GuiGraphBaseItem.RatioBeginBackColor"/>, <see cref="GuiGraphBaseItem.RatioEndBackColor"/>, 
-        /// <see cref="GuiGraphBaseItem.RatioLineColor"/>, <see cref="GuiGraphBaseItem.RatioLineWidth"/>, 
-        /// <see cref="GuiGraphBaseItem.ImageBegin"/>, <see cref="GuiGraphBaseItem.ImageEnd"/>.
+        /// <see cref="GuiGraphItem.BackColor"/>, <see cref="GuiGraphItem.HatchColor"/>, <see cref="GuiGraphItem.LineColor"/>, 
+        /// <see cref="GuiGraphItem.BackStyle"/>, <see cref="GuiGraphItem.RatioBeginBackColor"/>, <see cref="GuiGraphItem.RatioEndBackColor"/>, 
+        /// <see cref="GuiGraphItem.RatioLineColor"/>, <see cref="GuiGraphItem.RatioLineWidth"/>, 
+        /// <see cref="GuiGraphItem.ImageBegin"/>, <see cref="GuiGraphItem.ImageEnd"/>.
         /// </summary>
         public int SkinCurrentIndex
         {
@@ -4467,7 +4490,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Prvek je viditelný?
         /// Hodnota je mj. setována na true/false v procesu klonování řádků a grafu, při hledání párových prvků grafu 
         /// v metodě <see cref="MainDataTable.SynchronizeChildGraphItems(Dictionary{GId, TimeRange}, MainDataTable.SearchChildInfo, TimeRange, Row, Row)"/>.
-        /// Hodnota ale pochází i z <see cref="GuiGraphBaseItem.IsVisible"/>
+        /// Hodnota ale pochází i z <see cref="GuiGraphItem.IsVisible"/>
         /// </summary>
         public bool IsVisible
         {

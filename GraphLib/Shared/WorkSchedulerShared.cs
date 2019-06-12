@@ -619,7 +619,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Specifikace chování pro přenos položek grafu pro Child řádek, pokud se přenáší z jiné tabulky <see cref="ChildRowsTableName"/>.
         /// V takovém přenosu lze zajistit přenášení položek ze zdrojového grafu (v tabulce <see cref="ChildRowsTableName"/>) do cílového grafu v this tabulce
-        /// v závislosti na čísle třídy, z níž pochází prvek grafu (podle jeho <see cref="GuiGraphBaseItem.ItemId"/>, hodnota <see cref="GuiId.ClassId"/>).
+        /// v závislosti na čísle třídy, z níž pochází prvek grafu (podle jeho <see cref="GuiGraphItem.ItemId"/>, hodnota <see cref="GuiId.ClassId"/>).
         /// Prvky různých tříd tak mohou být přenášeny různým způsobem.
         /// Typické je, že "Pracovní doba" se bude přenášet vždy bez dalších podmínek, 
         /// "Pracovní úkol" se bude přenášet jen tehdy, když spadá do zobrazeného času a má synchronní prvek v Parent řádku, a ostatní prvky se přenášet nebudou.
@@ -856,36 +856,36 @@ namespace Noris.LCS.Base.WorkScheduler
         ParentChildIntersectTimeOnly = 0x0002,
 
         /// <summary>
-        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.ItemId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphItem.ItemId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
         /// </summary>
         OnParentItem = 0x0010,
         /// <summary>
-        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.GroupId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphItem.GroupId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
         /// </summary>
         OnParentGroup = 0x0020,
         /// <summary>
-        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.DataId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphItem.DataId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
         /// </summary>
         OnParentData = 0x0040,
         /// <summary>
-        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.RowId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphItem.RowId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
         /// </summary>
         OnParentRow = 0x0080,
 
         /// <summary>
-        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.ItemId"/>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphItem.ItemId"/>
         /// </summary>
         ToChildItem = 0x0100,
         /// <summary>
-        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.GroupId"/>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphItem.GroupId"/>
         /// </summary>
         ToChildGroup = 0x0200,
         /// <summary>
-        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.DataId"/>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphItem.DataId"/>
         /// </summary>
         ToChildData = 0x0400,
         /// <summary>
-        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.RowId"/>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphItem.RowId"/>
         /// </summary>
         ToChildRow = 0x0800,
 
@@ -1056,7 +1056,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Aktivuje sadu barev ve všech prvcích cílové tabulky. 
         /// Číslo sady barev je dáno parametrem interakce (v definici <see cref="GuiToolbarItem.RunInteractionNames"/>, za jménem interakce, za dvojtečkou jako první číselný parametr).
         /// Tato interakce se volá výhradně tlačítkem toolbaru.
-        /// Barevné sady prvků grafu viz <see cref="GuiGraphBaseItem.SkinCurrentIndex"/>
+        /// Barevné sady prvků grafu viz <see cref="GuiGraphItem.SkinCurrentIndex"/>
         /// </summary>
         ActivateGraphSkin = 0x00200000
     }
@@ -2374,14 +2374,14 @@ namespace Noris.LCS.Base.WorkScheduler
         public DataGraphPositionType GraphPosition { get; set; }
         /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
-        /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphBaseItem.Height"/> = 1.0f.
+        /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphItem.Height"/> = 1.0f.
         /// Výchozí hodnota je 20.
-        /// Tato hodnota <see cref="GraphLineHeight"/> platí pro řádky, v nichž se vyskytují pouze prvky s celočíselnou výškou v <see cref="GuiGraphBaseItem.Height"/>.
-        /// Pro řádky, kde se vyskytne výška prvku <see cref="GuiGraphBaseItem.Height"/> desetinná, se použije údaj <see cref="GraphLinePartialHeight"/>.
+        /// Tato hodnota <see cref="GraphLineHeight"/> platí pro řádky, v nichž se vyskytují pouze prvky s celočíselnou výškou v <see cref="GuiGraphItem.Height"/>.
+        /// Pro řádky, kde se vyskytne výška prvku <see cref="GuiGraphItem.Height"/> desetinná, se použije údaj <see cref="GraphLinePartialHeight"/>.
         /// </summary>
         public int GraphLineHeight { get; set; }
         /// <summary>
-        /// Fyzická výška jedné logické linky grafu v pixelech, pro řádky obsahující prvky s výškou <see cref="GuiGraphBaseItem.Height"/> desetinnou.
+        /// Fyzická výška jedné logické linky grafu v pixelech, pro řádky obsahující prvky s výškou <see cref="GuiGraphItem.Height"/> desetinnou.
         /// V takových řádcích je vhodné použít větší hodnotu výšky logické linky, aby byly lépe viditelné prvky s malou výškou (např. výška prvku 0.25).
         /// Výchozí hodnota je 40.
         /// </summary>
@@ -2573,17 +2573,383 @@ namespace Noris.LCS.Base.WorkScheduler
         protected override IEnumerable<IGuiItem> Childs { get { return this.GraphItems; } }
     }
     #endregion
-    #region GuiGraphItem : Jeden obdélníček v grafu na časové ose; GuiGraphBaseItem + GuiGraphSkin
+    #region GuiGraphItem : Jeden obdélníček v grafu na časové ose; GuiGraphSkin
     /// <summary>
     /// GuiGraphItem : Jeden obdélníček v grafu na časové ose
     /// </summary>
-    public sealed class GuiGraphItem : GuiGraphBaseItem
+    public sealed class GuiGraphItem : GuiBase
     {
-        #region Data nad rámec GuiGraphBaseItem (struktury pro data povinná a vhodná)
+        #region Standardní public properties a konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GuiGraphItem() : base() { }
+        public GuiGraphItem()
+            : base()
+        {
+            this.Height = 1f;
+            this.BehaviorMode = GraphItemBehaviorMode.DefaultText;
+        }
+        /// <summary>
+        /// Jméno prvku GuiGraphItem je vždy rovno textu z <see cref="ItemId"/>. Property Name zde nemá význam setovat.
+        /// </summary>
+        public override string Name
+        {
+            get { return (this.ItemId != null ? this.ItemId.Name : "NULL"); }
+            set { }
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "RowId: " + this.RowId?.ToString() + "; ItemId: " + this.ItemId?.ToString() + "; Time: " + this.Time;
+        }
+        /// <summary>
+        /// ID položky časového grafu (ID obdélníčku).
+        /// Z databáze se načítá ze sloupců: "item_class_id", "item_record_id", je POVINNÝ.
+        /// </summary>
+        [PropertyName("Item")]
+        public GuiId ItemId { get; set; }
+        /// <summary>
+        /// ID řádku, v jehož grafu se má tento prvek zobrazovat.
+        /// Z databáze se načítá ze sloupců: "row_class_id", "row_record_id", je POVINNÝ.
+        /// </summary>
+        [PropertyName("Row")]
+        public GuiId RowId { get; set; }
+        /// <summary>
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky grafu se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
+        /// Z databáze se načítá ze sloupců: "group_class_id", "group_record_id", je NEPOVINNÝ.
+        /// </summary>
+        [PropertyName("Group")]
+        public GuiId GroupId { get; set; }
+        /// <summary>
+        /// ID datového záznamu, jehož formulář se má rozkliknout po Ctrl + DoubleKliknutí na záznam.
+        /// Z databáze se načítá ze sloupců: "data_class_id", "data_record_id", je NEPOVINNÝ.
+        /// </summary>
+        [PropertyName("Rec")]
+        public GuiId DataId { get; set; }
+        /// <summary>
+        /// Datum a čas počátku tohoto prvku.
+        /// Z databáze se načítá ze sloupce: "begin" a "end", je POVINNÝ.
+        /// </summary>
+        public GuiTimeRange Time { get; set; }
+        /// <summary>
+        /// Režim chování položky grafu (editovatelnost, texty, atd).
+        /// Tato hodnota se nenačítá z SQL SELECTU, musí se naplnit ručně.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public GraphItemBehaviorMode BehaviorMode { get; set; }
+        /// <summary>
+        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
+        /// Nižší hodnota je kreslena dříve.
+        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
+        /// Z databáze se načítá ze sloupce: "layer", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public int Layer { get; set; }
+        /// <summary>
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
+        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
+        /// Z databáze se načítá ze sloupce: "level", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public int Level { get; set; }
+        /// <summary>
+        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
+        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
+        /// Z databáze se načítá ze sloupce: "order", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public int Order { get; set; }
+        /// <summary>
+        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
+        /// <see cref="Height"/> * <see cref="GuiGraphProperties.GraphLineHeight"/>
+        /// Prvky s výškou 0 a menší nebudou vykresleny.
+        /// Z databáze se načítá ze sloupce: "height", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public float Height { get; set; }
+        /// <summary>
+        /// Text pro zobrazení uvnitř tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "text", je NEPOVINNÝ.
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// ToolTip pro zobrazení u tohoto tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "tooltip", je NEPOVINNÝ.
+        /// </summary>
+        public string ToolTip { get; set; }
+        /// <summary>
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_begin", je NEPOVINNÝ.
+        /// </summary>
+        public float? RatioBegin { get; set; }
+        /// <summary>
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_end", je NEPOVINNÝ.
+        /// </summary>
+        public float? RatioEnd { get; set; }
+        #endregion
+        #region Skiny: SkinCurrent, SkinDefault, SkinDict, SkinCurrentIndex
+        /// <summary>
+        /// Aktuální Skin, může to být buď <see cref="SkinDefault"/> (pokud <see cref="SkinCurrentIndex"/> == 0), nebo některý z <see cref="SkinDict"/>.
+        /// Nikdy není null.
+        /// Přímý přístup k této property se příliš nepoužívá.
+        /// </summary>
+        [PersistingEnabled(false)]               // Neprovádí se persistence.
+        public GuiGraphSkin SkinCurrent
+        {
+            get
+            {
+                if (this._SkinCurrent == null)
+                    this._SkinCurrent = this.SkinDefault;
+                return this._SkinCurrent;
+            }
+        }
+        private GuiGraphSkin _SkinCurrent;
+        /// <summary>
+        /// Defaultní skin, nikdy není null.
+        /// Přímý přístup k hodnotám se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
+        /// </summary>
+        public GuiGraphSkin SkinDefault
+        {
+            get
+            {
+                if (this._SkinDefault == null)
+                    this._SkinDefault = new GuiGraphSkin();
+                return this._SkinDefault;
+            }
+            private set
+            {
+                this._SkinDefault = value;
+            }
+        }
+        private GuiGraphSkin _SkinDefault;
+        /// <summary>
+        /// Kolekce skinů pro jiné hodnoty klíče <see cref="SkinCurrentIndex"/> než 0.
+        /// Může být null, dokud není použit skin s indexem jiným než 0.
+        /// Přímý přístup k hodnotám se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
+        /// </summary>
+        public Dictionary<int, GuiGraphSkin> SkinDict { get; private set; }
+        /// <summary>
+        /// Index aktuálního Skinu. Výchozí hodnota = 0, ta odkazuje na defaultní skin.
+        /// Lze setovat libovolnou numerickou hodnotu, tím se aktivuje daný skin. Skin pro novou hodnotu bude automaticky vytvořen jako prázdný.
+        /// Čtení konkrétní hodnoty se provádí z explicitně deklarovaného skinu, a pokud v konkrétní property je null, pak se čte z defaultního skinu.
+        /// Zápis hodnoty se provádí výhradně do aktuálního skinu (explicitní / defaultní).
+        /// Je tak zajištěno, že bude existovat defaultní sada grafických hodnot (=defaultní skin) 
+        /// plus libovolně široká řada explicitních skinů, které mohou přepisovat (tj. definovat vlastní) hodnotu jen u některé property.
+        /// Aplikace deklaruje nejprve kompletní defaultní skin, a poté deklaruje potřebnou sadu skinů.
+        /// <para/>
+        /// Konkrétní skiny si aktivuje uživatel v GUI, typicky nějakým tlačítkem v toolbaru, které má definovanou akci <see cref="TargetActionType.ActivateGraphSkin"/>,
+        /// s parametrem odpovídajícím číslu skinu.
+        /// <para/>
+        /// Aplikační kód při definici grafického prvku postupuje takto:
+        /// a) nastaví index <see cref="SkinCurrentIndex"/> na 0 (lze vynechat, to je default);
+        /// b) naplní hodnoty do properties typu Color;
+        /// c) nastaví index <see cref="SkinCurrentIndex"/> na další hodnoty, podle toho které skiny chce používat;
+        /// d) naplní hodnoty do properties typu Color;
+        /// <para/>
+        /// Skin ovlivňuje hodnoty v těchto properties:
+        /// <see cref="GuiGraphItem.BackColor"/>, <see cref="GuiGraphItem.HatchColor"/>, <see cref="GuiGraphItem.LineColor"/>, 
+        /// <see cref="GuiGraphItem.BackStyle"/>, <see cref="GuiGraphItem.RatioBeginBackColor"/>, <see cref="GuiGraphItem.RatioEndBackColor"/>, 
+        /// <see cref="GuiGraphItem.RatioLineColor"/>, <see cref="GuiGraphItem.RatioLineWidth"/>, 
+        /// <see cref="GuiGraphItem.ImageBegin"/>, <see cref="GuiGraphItem.ImageEnd"/>.
+        /// </summary>
+        [PersistingEnabled(false)]               // Neprovádí se persistence. Aktuální hodnota SkinCurrentIndex (ze strany zdroje) nemá po persistenci význam (na straně cíle).
+        public int SkinCurrentIndex
+        {
+            get { return this._SkinCurrentIndex; }
+            set
+            {
+                int key = value;
+                GuiGraphSkin skin = null;
+                if (key == 0)
+                {   // Aktivujeme výchozí skin:
+                    skin = this.SkinDefault;
+                }
+                else
+                {   // Aktivujeme explicitní skin:
+                    if (this.SkinDict == null)
+                        this.SkinDict = new Dictionary<int, GuiGraphSkin>();
+                    if (!this.SkinDict.TryGetValue(key, out skin))
+                    {
+                        skin = new GuiGraphSkin();
+                        this.SkinDict.Add(key, skin);
+                    }
+                }
+                this._SkinCurrent = skin;
+                this._SkinCurrentIndex = value;
+            }
+        }
+        private int _SkinCurrentIndex;
+        #endregion
+        #region Aktuální hodnoty Skinu načtené z SkinCurrent a SkinDefault. Tyto property se nepersistují (to zajišťuje SkinDefault a SkinDict)
+        /// <summary>
+        /// Prvek je viditelný?
+        /// Defaultní hodnota je null, tato hodnota se interpretuje jako true (v metodách, kde je třeba binární výstup)
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public bool? IsVisible { get { return this.SkinCurrent.IsVisible ?? this.SkinDefault.IsVisible; } set { this.SkinCurrent.IsVisible = value; } }
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
+        /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
+        /// <see cref="RatioBeginBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
+        /// Z databáze se načítá ze sloupce: "back_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? BackColor { get { return this.SkinCurrent.BackColor ?? this.SkinDefault.BackColor; } set { this.SkinCurrent.BackColor = value; } }
+        /// <summary>
+        /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
+        /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
+        /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
+        /// Pokud bude definován styl <see cref="BackStyle"/> a nebude daná barva <see cref="HatchColor"/>,
+        /// použije se barva <see cref="LineColor"/>.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? HatchColor { get { return this.SkinCurrent.HatchColor ?? this.SkinDefault.HatchColor; } set { this.SkinCurrent.HatchColor = value; } }
+        /// <summary>
+        /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
+        /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? LineColor { get { return this.SkinCurrent.LineColor ?? this.SkinDefault.LineColor; } set { this.SkinCurrent.LineColor = value; } }
+        /// <summary>
+        /// Styl vzorku kresleného v pozadí.
+        /// null = Solid.
+        /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this.SkinCurrent.BackStyle ?? this.SkinDefault.BackStyle; } set { this.SkinCurrent.BackStyle = value; } }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
+        /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
+        /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+        /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? RatioBeginBackColor { get { return this.SkinCurrent.RatioBeginBackColor ?? this.SkinDefault.RatioBeginBackColor; } set { this.SkinCurrent.RatioBeginBackColor = value; } }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
+        /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
+        /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? RatioEndBackColor { get { return this.SkinCurrent.RatioEndBackColor ?? this.SkinDefault.RatioEndBackColor; } set { this.SkinCurrent.RatioEndBackColor = value; } }
+        /// <summary>
+        /// Barva linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? RatioLineColor { get { return this.SkinCurrent.RatioLineColor ?? this.SkinDefault.RatioLineColor; } set { this.SkinCurrent.RatioLineColor = value; } }
+        /// <summary>
+        /// Šířka linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_width", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public int? RatioLineWidth { get { return this.SkinCurrent.RatioLineWidth ?? this.SkinDefault.RatioLineWidth; } set { this.SkinCurrent.RatioLineWidth = value; } }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího začátku.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude první ve směru času.
+        /// <para/>
+        /// Informace pro aktualizaci dat, při tvorbě dat do <see cref="GuiResponse"/>:
+        /// Pokud dřívější grafický prvek obsahoval obrázek, a nový jej obsahovat nemá (=je třeba zhasnout obrázek), 
+        /// pak se jako <see cref="ImageBegin"/> má vložit <see cref="GuiImage.Empty"/>
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public GuiImage ImageBegin { get { return this.SkinCurrent.ImageBegin ?? this.SkinDefault.ImageBegin; } set { this.SkinCurrent.ImageBegin = value; } }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího konce.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude poslední ve směru času.
+        /// <para/>
+        /// Informace pro aktualizaci dat, při tvorbě dat do <see cref="GuiResponse"/>:
+        /// Pokud dřívější grafický prvek obsahoval obrázek, a nový jej obsahovat nemá (=je třeba zhasnout obrázek), 
+        /// pak se jako <see cref="ImageEnd"/> má vložit <see cref="GuiImage.Empty"/>
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public GuiImage ImageEnd { get { return this.SkinCurrent.ImageEnd ?? this.SkinDefault.ImageEnd; } set { this.SkinCurrent.ImageEnd = value; } }
+        #endregion
+        #region Optimalizace pro persistenci dat : protected properties s menší velikosti v serializaci, nahrazující standardní serializaci některých public properties
+        /// <summary>
+        /// Property která slouží k serializaci hodnot z <see cref="BehaviorMode"/>, <see cref="Layer"/>, 
+        /// <see cref="Level"/>, <see cref="Order"/>, <see cref="Height"/>
+        /// </summary>
+        [PropertyName("Spec")]
+        private string Specification
+        {
+            get
+            {
+                string result = ((int)this.BehaviorMode).ToString() + ";" +
+                                (((this.Height % 1f) == 0f) ? ((int)this.Height).ToString() : this.Height.ToString()) + ";" +
+                                this.Layer.ToString() + ";" +
+                                this.Level.ToString() + ";" +
+                                this.Order.ToString();
+                return result;
+            }
+            set
+            {
+                GraphItemBehaviorMode behaviorMode = GraphItemBehaviorMode.None;
+                float height = 1f;
+                int layer = 0;
+                int level = 0;
+                int order = 0;
+
+                if (!String.IsNullOrEmpty(value))
+                {
+                    string[] items = value.Split(';');
+                    behaviorMode = (GraphItemBehaviorMode)ConvertToInt32(items, 0);
+                    height = ConvertToSingle(items, 1);
+                    layer = ConvertToInt32(items, 2);
+                    level = ConvertToInt32(items, 3);
+                    order = ConvertToInt32(items, 4);
+                }
+
+                this.BehaviorMode = behaviorMode;
+                this.Height = height;
+                this.Layer = layer;
+                this.Level = level;
+                this.Order = order;
+            }
+        }
+        #endregion
+        #region Data pro tvorbu záznamu
         /// <summary>
         /// Obsahuje sloupce, které jsou povinné.
         /// Pokud dodaná data nebudou obsahovat některý z uvedených sloupců, načítání se neprovede.
@@ -2611,13 +2977,14 @@ namespace Noris.LCS.Base.WorkScheduler
     /// obsahuje navíc <see cref="GuiResponseGraphItem.TableName"/> pro určení tabulky, kam se má prvek přidat.
     /// </summary>
     [Obsolete("Použijme pouze finální třídu GuiGraphItem", true)]
-    public abstract class GuiGraphBaseItem : GuiBase
+    public class GuiGraphBaseItem : GuiBase
     {
         #region Standardní public properties a konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
         public GuiGraphBaseItem()
+            : base()
         {
             this.Height = 1f;
             this.BehaviorMode = GraphItemBehaviorMode.DefaultText;
@@ -3021,9 +3388,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public System.Drawing.Drawing2D.HatchStyle? BackStyle { get; set; }
         /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
-        /// Použije se tehdy, když hodnota <see cref="GuiGraphBaseItem.RatioBegin"/> a/nebo <see cref="GuiGraphBaseItem.RatioEnd"/> má hodnotu větší než 0f.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
-        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="GuiGraphBaseItem.RatioBegin"/>, pravý okraj má výšku <see cref="GuiGraphBaseItem.RatioEnd"/>.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="GuiGraphItem.RatioBegin"/>, pravý okraj má výšku <see cref="GuiGraphItem.RatioEnd"/>.
         /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
         /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
         /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
@@ -3033,9 +3400,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? RatioBeginBackColor { get; set; }
         /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
-        /// Použije se tehdy, když hodnota <see cref="GuiGraphBaseItem.RatioBegin"/> a/nebo <see cref="GuiGraphBaseItem.RatioEnd"/> má hodnotu větší než 0f.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
-        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="GuiGraphBaseItem.RatioBegin"/>, pravý okraj má výšku <see cref="GuiGraphBaseItem.RatioEnd"/>.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="GuiGraphItem.RatioBegin"/>, pravý okraj má výšku <see cref="GuiGraphItem.RatioEnd"/>.
         /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
         /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
         /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
@@ -3044,17 +3411,17 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? RatioEndBackColor { get; set; }
         /// <summary>
         /// Barva linky, kreslená v úrovni Ratio.
-        /// Použije se tehdy, když hodnota <see cref="GuiGraphBaseItem.RatioBegin"/> a/nebo <see cref="GuiGraphBaseItem.RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
         /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
-        /// a spojuje body Begin = { <see cref="GuiGraphBaseItem.Time"/>.Begin, <see cref="GuiGraphBaseItem.RatioBegin"/> } a { <see cref="GuiGraphBaseItem.Time"/>.End, <see cref="GuiGraphBaseItem.RatioEnd"/> }.
+        /// a spojuje body Begin = { <see cref="GuiGraphItem.Time"/>.Begin, <see cref="GuiGraphItem.RatioBegin"/> } a { <see cref="GuiGraphItem.Time"/>.End, <see cref="GuiGraphItem.RatioEnd"/> }.
         /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
         /// </summary>
         public Color? RatioLineColor { get; set; }
         /// <summary>
         /// Šířka linky, kreslená v úrovni Ratio.
-        /// Použije se tehdy, když hodnota <see cref="GuiGraphBaseItem.RatioBegin"/> a/nebo <see cref="GuiGraphBaseItem.RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
         /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
-        /// a spojuje body Begin = { <see cref="GuiGraphBaseItem.Time"/>.Begin, <see cref="GuiGraphBaseItem.RatioBegin"/> } a { <see cref="GuiGraphBaseItem.Time"/>.End, <see cref="GuiGraphBaseItem.RatioEnd"/> }.
+        /// a spojuje body Begin = { <see cref="GuiGraphItem.Time"/>.Begin, <see cref="GuiGraphItem.RatioBegin"/> } a { <see cref="GuiGraphItem.Time"/>.End, <see cref="GuiGraphItem.RatioEnd"/> }.
         /// Z databáze se načítá ze sloupce: "ratio_line_width", je NEPOVINNÝ.
         /// </summary>
         public int? RatioLineWidth { get; set; }
@@ -3103,18 +3470,18 @@ namespace Noris.LCS.Base.WorkScheduler
         }
         /// <summary>
         /// ID prvku předchozího v tomto vztahu.
-        /// ID může pocházet buď <see cref="GuiGraphBaseItem.ItemId"/>, nebo <see cref="GuiGraphBaseItem.GroupId"/>.
+        /// ID může pocházet buď <see cref="GuiGraphItem.ItemId"/>, nebo <see cref="GuiGraphItem.GroupId"/>.
         /// Podle toho se Link chová a vykresluje.
-        /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphBaseItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
+        /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
         /// a pokud by se Linky vykreslovaly z jednotlivého Itemu (=někde z prostředka grupy), vypadalo by to divoce.
         /// </summary>
         [PropertyName("Prev")]
         public GuiId ItemIdPrev { get; set; }
         /// <summary>
         /// ID prvku následujícího v tomto vztahu.
-        /// ID může pocházet buď <see cref="GuiGraphBaseItem.ItemId"/>, nebo <see cref="GuiGraphBaseItem.GroupId"/>.
+        /// ID může pocházet buď <see cref="GuiGraphItem.ItemId"/>, nebo <see cref="GuiGraphItem.GroupId"/>.
         /// Podle toho se Link chová a vykresluje.
-        /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphBaseItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
+        /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
         /// a pokud by se Linky vykreslovaly z jednotlivého Itemu (=někde z prostředka grupy), vypadalo by to divoce.
         /// </summary>
         [PropertyName("Next")]
@@ -3621,7 +3988,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Text pro definici <see cref="VisibleFor"/> i <see cref="EnableFor"/> obsahuje FullName gridu, volitelně pak dvojtečku a číslo třídy prvku grafu, pro který je funkce určená.
         /// Číslo třídy: může jich být uvedeno více, oddělené čárkami.
         /// Pokud nebude zadáno číslo třídy, pak definice platí pro všechny třídy. Jakmile bude zadáno alespoň jedno nebo více číslo třídy, pak bude platit definice jen pro zadané třídu.
-        /// Číslo třídy se testuje z grafického prvku z jeho <see cref="GuiGraphBaseItem.ItemId"/> a z <see cref="GuiGraphBaseItem.GroupId"/> a z <see cref="GuiGraphBaseItem.DataId"/>.
+        /// Číslo třídy se testuje z grafického prvku z jeho <see cref="GuiGraphItem.ItemId"/> a z <see cref="GuiGraphItem.GroupId"/> a z <see cref="GuiGraphItem.DataId"/>.
         /// Jedna definice může obsahovat více výše popsaných prvků, oddělených středníkem.
         /// Definice může v rámci FullName obsahovat hvězdičku, která nahrazuje část FullName (nebo i celou hodnotu FullName). Hvězdičku lze použít namísto tříd, anebo se čísla tříd nemusí zadávat.
         /// <para/>
@@ -5086,8 +5453,8 @@ namespace Noris.LCS.Base.WorkScheduler
         }
         /// <summary>
         /// Soubor prvků, které jsou přesouvány.
-        /// V této property se nacházejí všechny prvky jedné skupiny <see cref="GuiGraphBaseItem.GroupId"/>, neboť přesouvání se provádí vždy pro celé skupiny.
-        /// Pokud prvek grafu nepatří do žádné skupiny (jeho <see cref="GuiGraphBaseItem.GroupId"/> je null), pak tvoří svoji vlastní soukromou skupinu, a přesouvá se sám.
+        /// V této property se nacházejí všechny prvky jedné skupiny <see cref="GuiGraphItem.GroupId"/>, neboť přesouvání se provádí vždy pro celé skupiny.
+        /// Pokud prvek grafu nepatří do žádné skupiny (jeho <see cref="GuiGraphItem.GroupId"/> je null), pak tvoří svoji vlastní soukromou skupinu, a přesouvá se sám.
         /// </summary>
         public GuiGridItemId[] MoveItems { get; set; }
         /// <summary>
@@ -5320,15 +5687,15 @@ namespace Noris.LCS.Base.WorkScheduler
             return text;
         }
         /// <summary>
-        /// <see cref="GuiId"/> prvku grafu, jeho GroupId, pochází z <see cref="GuiGraphBaseItem.GroupId"/>
+        /// <see cref="GuiId"/> prvku grafu, jeho GroupId, pochází z <see cref="GuiGraphItem.GroupId"/>
         /// </summary>
         public GuiId GroupId { get; set; }
         /// <summary>
-        /// <see cref="GuiId"/> prvku grafu, jeho ItemId, pochází z <see cref="GuiGraphBaseItem.ItemId"/>
+        /// <see cref="GuiId"/> prvku grafu, jeho ItemId, pochází z <see cref="GuiGraphItem.ItemId"/>
         /// </summary>
         public GuiId ItemId { get; set; }
         /// <summary>
-        /// <see cref="GuiId"/> prvku grafu, jeho DataId, pochází z <see cref="GuiGraphBaseItem.DataId"/>
+        /// <see cref="GuiId"/> prvku grafu, jeho DataId, pochází z <see cref="GuiGraphItem.DataId"/>
         /// </summary>
         public GuiId DataId { get; set; }
     }
@@ -5429,7 +5796,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Záznamy obsahují kompletní klíč prvku grafu (=tabulka + RowId + ItemId), a data prvku grafu pro aktualizaci, anebo null pro smazání prvku grafu.
         /// </summary>
         public GuiRefreshGraphItem[] RefreshGraphItems { get; set; }
-
 
         /// <summary>
         /// Pole grafů, které se mají aktualizovat.
