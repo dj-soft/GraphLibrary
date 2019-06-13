@@ -1558,7 +1558,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (removedList.Count > 0)
                 this.DataChanged = true;
 
-            guiResponse.RefreshGraphItems = removedList.Select(g => new GuiRefreshGraphItem() { GridItemId = g }).ToArray();
+            guiResponse.RefreshGraphItems = removedList.Select(g => new GuiRefreshGraphItem() { GridItemId = g }).ToList();
             this.ApplyCommonToResponse(guiResponse);
         }
         /// <summary>
@@ -1582,7 +1582,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void ApplyCommonToResponse(GuiResponse response, bool clearLinks = true, bool clearSelected = true, bool saveEnabled = true)
         {
             response.Common = new GuiResponseCommon() { ClearLinks = clearLinks, ClearSelected = clearSelected };
-            response.ToolbarItems = new GuiToolbarItem[]
+            response.ToolbarItems = new List<GuiToolbarItem>()
             {
                 new GuiToolbarItem() { Name = "SaveData", Enable = saveEnabled }
             };
@@ -1893,7 +1893,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Řádky přidáme do response tak, aby se zařadily do tabulky vlevo:
             guiResponse.RefreshRows = rowList
                 .Select(row => new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = row.RowGuiId }, RowData = row })
-                .ToArray();
+                .ToList();
         }
         protected void RemoveRowFromGraph(GuiRequest guiRequest, GuiResponse guiResponse)
         {
@@ -1904,7 +1904,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GuiGridRowId gridId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = productOrder.RecordGid };
                 GuiRefreshRow refreshRow = new GuiRefreshRow() { GridRowId = gridId, RowData = null };
 
-                guiResponse.RefreshRows = new GuiRefreshRow[] { refreshRow };
+                guiResponse.RefreshRows = new List<GuiRefreshRow>() { refreshRow };
 
                 this.ProductOrderDict.Remove(productOrder.RecordGid);
             }
@@ -2253,7 +2253,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                                 System.Threading.Thread.Sleep(time);
                                 this.DataChanged = false;
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou uložena.", GuiDialogButtons.Ok);
-                                responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
+                                responseArgs.GuiResponse.ToolbarItems = new List<GuiToolbarItem>()
                                 {
                                     new GuiToolbarItem() { Name = "SaveData", Enable = false }
                                 };
