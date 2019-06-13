@@ -36,7 +36,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.AppHostStop();
         }
         #endregion
-        #region Tvorba výchozích dat, plánování operací do pracovišť
+        #region Tvorba výchozích výrobních dat, plánování operací do pracovišť
         /// <summary>
         /// Vytvoří a vrátí kompletní balík s GUI daty, podkladová data zůstávají přítomná v instanci
         /// </summary>
@@ -73,54 +73,51 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.TimeRangeTotal = new GuiTimeRange(this.DateTimeFirst, this.DateTimeLast);
             this.DataChanged = false;
         }
-        #region Vlastní vytvoření dat k zobrazení
+        #region Vlastní vytvoření dat výrobních příkazů, operací, komponent, plánovacích jednotek atd
         /// <summary>
         /// Vygeneruje data { Výrobní příkazy, operace, jejich časy } a { Pracoviště, kalendáře }, 
         /// a provede jejich rozplánování (operace do pracovišť).
         /// </summary>
         protected void CreateData()
         {
-            int recordId;
-
             this.ProductOrderDict = new Dictionary<GuiId, ProductOrder>();
             this.ProductOperationDict = new Dictionary<GuiId, ProductOperation>();
             this.ProductStructureDict = new Dictionary<GuiId, ProductStructure>();
 
             // VÝROBA:
-            recordId = 10000;
-            this.CreateProductOrder(++recordId, "Židle lakovaná červená", Color.DarkGreen, 12, "židle", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Stůl konferenční", Color.DarkGreen, 3, "stoly", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Stolička třínohá", Color.DarkGreen, 8, "židle", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Sedátko chodbové", Color.DarkGreen, 4, "židle", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Židle lakovaná přírodní", Color.DarkGreen, 6, "židle", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Stůl pracovní", Color.DarkGreen, 3, "stoly", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Taburet ozdobný", Color.DarkBlue, 9, "židle", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Skříňka na klíče", Color.DarkGreen, 24, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Podstavec pod televizi", Color.DarkGreen, 12, "jiné", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Botník krátký", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Skříň šatní široká", Color.DarkGreen, 3, "skříně", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Stolek HiFi věže", Color.DarkGreen, 4, "jiné", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Polička na CD", Color.DarkBlue, 16, "jiné", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Skříňka na šicí stroj", Color.DarkGreen, 2, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Parapet okenní 25cm", Color.DarkGreen, 18, "jiné", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Dveře vnější ozdobné dub", Color.DarkGray, 3, "dveře", ProductTpv.Cooperation);
-            this.CreateProductOrder(++recordId, "Stůl jídelní 6 osob buk", Color.DarkGreen, 2, "stoly", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Židle jídelní buk", Color.DarkGreen, 12, "židle", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Květinová stěna borovice 245cm", Color.DarkGreen, 1, "jiné", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Knihovna volně stojící 90cm", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Regály sklepní smrk 3m", Color.DarkOrange, 8, "jiné", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Stolek servírovací malý", Color.DarkGreen, 1, "stoly", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Stůl pracovní (\"ponk\"), dub", Color.DarkGray, 2, "stoly", ProductTpv.Cooperation);
-            this.CreateProductOrder(++recordId, "Skříňka zásuvková 85cm", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Krabička dřevěná 35cm", Color.DarkCyan, 30, "jiné", ProductTpv.Simple);
-            this.CreateProductOrder(++recordId, "Krabička dřevěná 45cm", Color.DarkCyan, 36, "jiné", ProductTpv.Simple);
-            this.CreateProductOrder(++recordId, "Krabička dřevěná 60cm", Color.DarkBlue, 48, "jiné", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Houpací křeslo tmavé", Color.DarkBlue, 6, "jiné", ProductTpv.Luxus);
-            this.CreateProductOrder(++recordId, "Psí bouda střední", Color.DarkOrange, 12, "outdoor", ProductTpv.Simple);
-            this.CreateProductOrder(++recordId, "Zábradlí schodišťové standard", Color.DarkGreen, 30, "stavba", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Stříška před vchodem", Color.DarkRed, 3, "stavba", ProductTpv.Simple);
-            this.CreateProductOrder(++recordId, "Krmítko pro menší ptactvo", Color.DarkViolet, 42, "outdoor", ProductTpv.Simple);
-            this.CreateProductOrder(++recordId, "Pergola zahradní 4x5 m", Color.DarkCyan, 3, "stavba", ProductTpv.Simple);
+            this.CreateProductOrder("Židle lakovaná červená", Color.DarkGreen, 12, "židle", ProductTpv.Luxus);
+            this.CreateProductOrder("Stůl konferenční", Color.DarkGreen, 3, "stoly", ProductTpv.Luxus);
+            this.CreateProductOrder("Stolička třínohá", Color.DarkGreen, 8, "židle", ProductTpv.Standard);
+            this.CreateProductOrder("Sedátko chodbové", Color.DarkGreen, 4, "židle", ProductTpv.Standard);
+            this.CreateProductOrder("Židle lakovaná přírodní", Color.DarkGreen, 6, "židle", ProductTpv.Standard);
+            this.CreateProductOrder("Stůl pracovní", Color.DarkGreen, 3, "stoly", ProductTpv.Standard);
+            this.CreateProductOrder("Taburet ozdobný", Color.DarkBlue, 9, "židle", ProductTpv.Luxus);
+            this.CreateProductOrder("Skříňka na klíče", Color.DarkGreen, 24, "skříně", ProductTpv.Standard);
+            this.CreateProductOrder("Podstavec pod televizi", Color.DarkGreen, 12, "jiné", ProductTpv.Luxus);
+            this.CreateProductOrder("Botník krátký", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
+            this.CreateProductOrder("Skříň šatní široká", Color.DarkGreen, 3, "skříně", ProductTpv.Luxus);
+            this.CreateProductOrder("Stolek HiFi věže", Color.DarkGreen, 4, "jiné", ProductTpv.Luxus);
+            this.CreateProductOrder("Polička na CD", Color.DarkBlue, 16, "jiné", ProductTpv.Luxus);
+            this.CreateProductOrder("Skříňka na šicí stroj", Color.DarkGreen, 2, "skříně", ProductTpv.Standard);
+            this.CreateProductOrder("Parapet okenní 25cm", Color.DarkGreen, 18, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder("Dveře vnější ozdobné dub", Color.DarkGray, 3, "dveře", ProductTpv.Cooperation);
+            this.CreateProductOrder("Stůl jídelní 6 osob buk", Color.DarkGreen, 2, "stoly", ProductTpv.Standard);
+            this.CreateProductOrder("Židle jídelní buk", Color.DarkGreen, 12, "židle", ProductTpv.Standard);
+            this.CreateProductOrder("Květinová stěna borovice 245cm", Color.DarkGreen, 1, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder("Knihovna volně stojící 90cm", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
+            this.CreateProductOrder("Regály sklepní smrk 3m", Color.DarkOrange, 8, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder("Stolek servírovací malý", Color.DarkGreen, 1, "stoly", ProductTpv.Standard);
+            this.CreateProductOrder("Stůl pracovní (\"ponk\"), dub", Color.DarkGray, 2, "stoly", ProductTpv.Cooperation);
+            this.CreateProductOrder("Skříňka zásuvková 85cm", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
+            this.CreateProductOrder("Krabička dřevěná 35cm", Color.DarkCyan, 30, "jiné", ProductTpv.Simple);
+            this.CreateProductOrder("Krabička dřevěná 45cm", Color.DarkCyan, 36, "jiné", ProductTpv.Simple);
+            this.CreateProductOrder("Krabička dřevěná 60cm", Color.DarkBlue, 48, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder("Houpací křeslo tmavé", Color.DarkBlue, 6, "jiné", ProductTpv.Luxus);
+            this.CreateProductOrder("Psí bouda střední", Color.DarkOrange, 12, "outdoor", ProductTpv.Simple);
+            this.CreateProductOrder("Zábradlí schodišťové standard", Color.DarkGreen, 30, "stavba", ProductTpv.Standard);
+            this.CreateProductOrder("Stříška před vchodem", Color.DarkRed, 3, "stavba", ProductTpv.Simple);
+            this.CreateProductOrder("Krmítko pro menší ptactvo", Color.DarkViolet, 42, "outdoor", ProductTpv.Simple);
+            this.CreateProductOrder("Pergola zahradní 4x5 m", Color.DarkCyan, 3, "stavba", ProductTpv.Simple);
 
             // Pracvovní doby, Jednotky práce:
             this.WorkTimeDict = new Dictionary<GuiId, WorkTime>();
@@ -128,49 +125,47 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // DÍLNY:
             Color? colorLak = null;         // Color.FromArgb(224, 240, 255);
-            recordId = 10000;
             this.WorkplaceDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCWp(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h, colorLak);
-            this.CreatePlanUnitCWp(++recordId, "Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h, colorLak);
-            this.CreatePlanUnitCWp(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h, colorLak);
-            this.CreatePlanUnitCWp(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h, colorLak);
-            this.CreatePlanUnitCWp(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h, null);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h, null);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h, null);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp("Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWp("Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWp("Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWp("Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h, colorLak);
+            this.CreatePlanUnitCWp("Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp("Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp("Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp("Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp("Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h, null);
 
             // OSOBY, RANNÍ SMĚNA:
-            recordId = 10100;
             this.PersonDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCZm(++recordId, "NOVÁK Jiří", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "DVOŘÁK Pavel", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "STARÝ Slavomír", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "PEŠEK Petr", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "JENČÍK Jan", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "KRULIŠ Karel", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, null, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "NEKOKSA Jindřich", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "POKORNÝ Dan", CalendarType.Work5d1x8hR, null, WP_DILN, WP_KONT);
-            this.CreatePlanUnitCZm(++recordId, "DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, WP_KONT);
+            this.CreatePlanUnitCZm("NOVÁK Jiří", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("DVOŘÁK Pavel", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("STARÝ Slavomír", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("PEŠEK Petr", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("JENČÍK Jan", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("KRULIŠ Karel", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, null, WP_DILN);
+            this.CreatePlanUnitCZm("NEKOKSA Jindřich", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("POKORNÝ Dan", CalendarType.Work5d1x8hR, null, WP_DILN, WP_KONT);
+            this.CreatePlanUnitCZm("DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, WP_KONT);
 
             // OSOBY, ODPOLEDNÍ SMĚNA:
-            this.CreatePlanUnitCZm(++recordId, "VETCHÝ Marek", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "SUP Václav", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "ČERNÁ Marta", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "VIDÍM Dan", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "NĚMEC Jaroslav", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "HANZAL Patrik", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, null, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "DIETRICH Zdenek", CalendarType.Work5d1x8hO, null, WP_KONT);
+            this.CreatePlanUnitCZm("VETCHÝ Marek", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("SUP Václav", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("ČERNÁ Marta", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("VIDÍM Dan", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("NĚMEC Jaroslav", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, WP_DILN);
+            this.CreatePlanUnitCZm("HANZAL Patrik", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, null, WP_DILN);
+            this.CreatePlanUnitCZm("DIETRICH Zdenek", CalendarType.Work5d1x8hO, null, WP_KONT);
 
             this.PlanOperationsToWorkplaces();
         }
@@ -183,37 +178,36 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="qty"></param>
         /// <param name="tagText"></param>
         /// <param name="tpv"></param>
-        protected void CreateProductOrder(int recordId, string name, Color backColor, decimal qty, string tagText, ProductTpv tpv)
+        protected ProductOrder CreateProductOrder(string name, Color backColor, decimal qty, string tagText, ProductTpv tpv)
         {
-            string refer = "VP" + recordId.ToString();
             DateTime start = this.DateTimeNow;
             if (start < this.DateTimeFirst.AddDays(4d))
                 start = this.DateTimeFirst.AddDays(4d);
             DateTime begin = start.AddHours(this.Rand.Next(0, 240) - 72);
 
-            ProductOrder productOrder = new ProductOrder()
+            ProductOrder productOrder = new ProductOrder(this)
             {
-                RecordId = recordId,
-                Refer = refer,
                 Name = name,
                 BackColor = backColor,
                 Qty = qty,
                 TagTexts = (tagText != null ? tagText.Split(',', ';') : null)
             };
-            productOrder.OperationList = this.CreateProductOperations(100 * recordId, productOrder, tpv, qty);
+            productOrder.Refer = "VP" + productOrder.RecordId.ToString();
+            productOrder.OperationList = this.CreateProductOperations(productOrder, tpv, qty);
             productOrder.DatePlanBegin = begin;
 
             this.ProductOrderDict.Add(productOrder.RecordGid, productOrder);
+
+            return productOrder;
         }
         /// <summary>
         /// Vytvoří a vrátí sadu operací pro dané zadání.
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="time"></param>
         /// <param name="tpv"></param>
         /// <param name="qty"></param>
         /// <returns></returns>
-        protected List<ProductOperation> CreateProductOperations(int recordId, ProductOrder productOrder, ProductTpv tpv, decimal qty)
+        protected List<ProductOperation> CreateProductOperations(ProductOrder productOrder, ProductTpv tpv, decimal qty)
         {
             List<ProductOperation> operations = new List<ProductOperation>();
 
@@ -221,42 +215,42 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             switch (tpv)
             {
                 case ProductTpv.Simple:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0));
                     break;
 
                 case ProductTpv.Standard:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
                     break;
 
                 case ProductTpv.Luxus:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, "D", false, 30, 25, 45, Pbb(70)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, "D", false, 30, 25, 45, Pbb(70)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10)));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
                     break;
 
                 case ProductTpv.Cooperation:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60));
+                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0));
                     break;
 
             }
@@ -269,7 +263,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a vrátí jednu operaci pro dané zadání.
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="line"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
@@ -282,13 +275,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="tecMin"></param>
         /// <param name="isFixed"></param>
         /// <returns></returns>
-        protected ProductOperation CreateProductOperation(int recordId, ProductOrder productOrder, int line, Color backColor, string name, string toolTip,
+        protected ProductOperation CreateProductOperation(ProductOrder productOrder, int line, Color backColor, string name, string toolTip,
             string workPlace, decimal qty, string components, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
         {
             float height = CreateOperationHeight(isFragment);
-            ProductOperation operation = new ProductOperation()
+            ProductOperation operation = new ProductOperation(this)
             {
-                RecordId = recordId,
                 ProductOrder = productOrder,
                 Line = line,
                 Refer = (10 * line).ToString(),
@@ -308,11 +300,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
 
             // Komponenty:
-            int structId = 100 * recordId;
             if (!String.IsNullOrEmpty(components))
             {
                 foreach (char c in components)
-                    CreateProductStructure(ref structId, operation, c, qty);
+                    AddProductStructures(operation, c, qty);
             }
 
             return operation;
@@ -320,47 +311,46 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a do operace vepíše jednu komponentu
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="operation"></param>
         /// <param name="component"></param>
         /// <param name="qty"></param>
-        protected void CreateProductStructure(ref int recordId, ProductOperation operation, char component, decimal qty)
+        protected void AddProductStructures(ProductOperation operation, char component, decimal qty)
         {
             List<ProductStructure> structures = new List<ProductStructure>();
             switch (component)
             {
                 case 'D':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "DTD", Name = "Dřevo", Qty = 0.25m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "DTD", "Dřevo", 0.25m));
                     break;
                 case 'Š':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "M6š", Name = "Šroub M6", Qty = 6m * qty });
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "M6p", Name = "Podložka M6", Qty = 12m * qty });
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "M6m", Name = "Matka M6", Qty = 6m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "M6š", "Šroub M6", 6m));
+                    structures.Add(this.CreateProductStructure(operation, "M6p", "Podložka M6", 12m));
+                    structures.Add(this.CreateProductStructure(operation, "M6m", "Matka M6", 6m));
                     break;
                 case 'L':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Cx1000", Name = "Lak Celox 1000", Qty = 0.1m * qty });
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "C006", Name = "Nitroředidlo", Qty = 0.1m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "Cx1000", "Lak Celox 1000", 0.1m));
+                    structures.Add(this.CreateProductStructure(operation, "C006", "Nitroředidlo", 0.1m));
                     break;
                 case 'Č':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Č6x20", Name = "Čep dřevo 6 x 20", Qty = 6m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "Č6x20", "Čep dřevo 6 x 20", 6m));
                     break;
                 case 'K':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Kh12", Name = "Klíh 12MPa", Qty = 0.1m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "Kh12", "Klíh 12MPa", 0.1m));
                     break;
                 case 'l':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Sx1050", Name = "Lak syntetic 1050", Qty = 0.1m * qty });
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "S006", Name = "Syntetické ředidlo", Qty = 0.1m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "Sx1050", "Lak syntetic 1050", 0.1m));
+                    structures.Add(this.CreateProductStructure(operation, "S006", "Syntetické ředidlo", 0.1m));
                     break;
                 case 'B':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "BA95", Name = "Benzin Natural95", Qty = 0.04m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "BA95", "Benzin Natural95", 0.04m));
                     break;
                 case 'O':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Kt6", Name = "Karton 6\"", Qty = 1.00m * qty });
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Fb2", Name = "Folie bublinková", Qty = 0.10m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "Kt6", "Karton 6\"", 1.00m));
+                    structures.Add(this.CreateProductStructure(operation, "Fb2", "Folie bublinková", 0.10m));
                     break;
                 case 'Z':
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "ZL", Name = "Záruční list 2roky", Qty = 1.00m * qty });
-                    structures.Add(new ProductStructure() { RecordId = ++recordId, ProductOperation = operation, Refer = "Nobs", Name = "Návod k použití", Qty = 0.10m * qty });
+                    structures.Add(this.CreateProductStructure(operation, "ZL", "Záruční list 2roky", 1.00m));
+                    structures.Add(this.CreateProductStructure(operation, "Nobs", "Návod k použití", 0.10m));
                     break;
             }
 
@@ -371,6 +361,25 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 foreach (ProductStructure structure in structures)
                     this.ProductStructureDict.Add(structure.RecordGid, structure);
             }
+        }
+        /// <summary>
+        /// Vytvoří a vrátí jednu komponentu k dané operaci, s daným názvem a jednotkovým počtem
+        /// </summary>
+        /// <param name="operation"></param>
+        /// <param name="refer"></param>
+        /// <param name="name"></param>
+        /// <param name="qtyUnit"></param>
+        /// <returns></returns>
+        protected ProductStructure CreateProductStructure(ProductOperation operation, string refer, string name, decimal qtyUnit)
+        {
+            ProductStructure structure = new ProductStructure(this)
+            {
+                ProductOperation = operation,
+                Refer = refer,
+                Name = name,
+                Qty = operation.Qty * qtyUnit
+            };
+            return structure;
         }
         /// <summary>
         /// Vrátí výšku operace
@@ -389,20 +398,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a uloží jeden záznam Dílna včetně jeho pracovních směn, pro dané zadání.
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="name"></param>
         /// <param name="workPlace"></param>
         /// <param name="tagText"></param>
         /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
         /// <param name="rowBackColor"></param>
-        protected GuiId CreatePlanUnitCWp(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
+        protected GuiId CreatePlanUnitCWp(string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
         {
-            string refer = "D" + recordId.ToString();
-            PlanUnitC planUnitC = new PlanUnitC()
+             PlanUnitC planUnitC = new PlanUnitC(this)
             {
-                RecordId = recordId,
-                Refer = refer,
                 Name = name,
                 WorkPlace = workPlace,
                 RowBackColor = rowBackColor,
@@ -410,7 +415,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 MachinesCount = machinesCount,
                 PlanUnitType = PlanUnitType.Workplace
             };
-            planUnitC.WorkTimes = CreateWorkingItems(1000 * recordId, planUnitC, calendar, (float)machinesCount, this.TimeRangeTotal);
+            planUnitC.Refer = "D" + planUnitC.RecordId.ToString();
+            planUnitC.WorkTimes = CreateWorkingItems(planUnitC, calendar, (float)machinesCount, this.TimeRangeTotal);
             this.WorkplaceDict.Add(planUnitC.RecordGid, planUnitC);
 
             return planUnitC.RecordGid;
@@ -418,19 +424,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a uloží jeden záznam Zaměstnanec včetně jeho pracovních směn, pro dané zadání.
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="name"></param>
         /// <param name="calendar"></param>
         /// <param name="rowBackColor"></param>
         /// <param name="workPlaces"></param>
-        protected GuiId CreatePlanUnitCZm(int recordId, string name, CalendarType calendar, Color? rowBackColor, params string[] workPlaces)
+        protected GuiId CreatePlanUnitCZm(string name, CalendarType calendar, Color? rowBackColor, params string[] workPlaces)
         {
-            string refer = "Z" + recordId.ToString();
             string workplace = workPlaces.ToString(";");
-            PlanUnitC planUnitC = new PlanUnitC()
+            PlanUnitC planUnitC = new PlanUnitC(this)
             {
-                RecordId = recordId,
-                Refer = refer,
                 Name = name,
                 WorkPlace = workplace,
                 RowBackColor = rowBackColor,
@@ -438,7 +440,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 MachinesCount = 1,
                 PlanUnitType = PlanUnitType.Person
             };
-            planUnitC.WorkTimes = CreateWorkingItems(1000 * recordId, planUnitC, calendar, 1f, this.TimeRangeTotal);
+            planUnitC.Refer = "Z" + planUnitC.RecordId.ToString();
+            planUnitC.WorkTimes = CreateWorkingItems(planUnitC, calendar, 1f, this.TimeRangeTotal);
             this.PersonDict.Add(planUnitC.RecordGid, planUnitC);
 
             return planUnitC.RecordGid;
@@ -446,12 +449,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a vrátí záznamy pro pracovní směny.
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="calendar"></param>
         /// <param name="height"></param>
         /// <param name="totalTimeRange"></param>
         /// <returns></returns>
-        protected List<WorkTime> CreateWorkingItems(int recordId, PlanUnitC planUnitC, CalendarType calendar, float height, GuiTimeRange totalTimeRange)
+        protected List<WorkTime> CreateWorkingItems(PlanUnitC planUnitC, CalendarType calendar, float height, GuiTimeRange totalTimeRange)
         {
             List<WorkTime> list = new List<WorkTime>();
             DateTime time = totalTimeRange.Begin.Date;
@@ -461,9 +463,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             while (this.CreateWorkingTime(ref time, calendar, totalTimeRange, out workingTimeRange, out backColor))
             {
                 backColor = Color.FromArgb(64, backColor);
-                WorkTime workTime = new WorkTime()
+                WorkTime workTime = new WorkTime(this)
                 {
-                    RecordId = ++recordId,
                     PlanUnitC = planUnitC,
                     Time = workingTimeRange,
                     Height = height,
@@ -675,6 +676,31 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string WP_LAKO = "Lakovna";
         protected const string WP_KOOP = "Kooperace";
         protected const string WP_KONT = "Kontrola";
+        #region NextRecordNumber
+        /// <summary>
+        /// Metoda vrátí další číslo záznamu pro danou třídu dat
+        /// </summary>
+        /// <param name="classNumber"></param>
+        /// <returns></returns>
+        public int GetNextRecordId(int classNumber)
+        {
+            if (this.LastKeyDict == null)
+                this.LastKeyDict = new Dictionary<int, int>();
+            int recordNumber = 0;
+            if (this.LastKeyDict.TryGetValue(classNumber, out recordNumber))
+            {
+                recordNumber++;
+                this.LastKeyDict[classNumber] = recordNumber;
+            }
+            else
+            {
+                recordNumber = 1001;
+                this.LastKeyDict.Add(classNumber, recordNumber);
+            }
+            return recordNumber;
+        }
+        protected Dictionary<int, int> LastKeyDict;
+        #endregion
         #endregion
         #region Rozplánování operací do pracovišť
         /// <summary>
@@ -682,23 +708,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         protected void PlanOperationsToWorkplaces()
         {
-            int recordId = 0;
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values.Where(i => i.OperationList != null))
             {
                 DateTime startTime = productOrder.DatePlanBegin;
                 DateTime flowTime = startTime;
                 foreach (ProductOperation productOperation in productOrder.OperationList)
-                    this.PlanOperationToWorkplaces(ref recordId, productOperation, ref flowTime);
+                    this.PlanOperationToWorkplaces(productOperation, ref flowTime);
                 productOrder.Time = new GuiTimeRange(startTime, flowTime);
             }
         }
         /// <summary>
         /// Umístí pracovní časy operací dané operace na vhodné pracoviště
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="productOperation"></param>
         /// <param name="flowTime"></param>
-        protected void PlanOperationToWorkplaces(ref int recordId, ProductOperation productOperation, ref DateTime flowTime)
+        protected void PlanOperationToWorkplaces(ProductOperation productOperation, ref DateTime flowTime)
         {
             string workPlace = productOperation.WorkPlace;
             if (String.IsNullOrEmpty(workPlace)) return;
@@ -713,82 +737,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             if (Pbb(25))
                 flowTime = flowTime + TimeSpan.FromHours(Rand.Next(1, 9));        // Random pauza mezi operacemi 1 až 8 hodin, zařadím v 25% případů
-            productOperation.PlanTimeOperation(ref recordId, ref flowTime, Direction.Positive, workplace, person);
+            productOperation.PlanTimeOperation(ref flowTime, Direction.Positive, workplace, person);
 
             foreach (WorkUnit workUnit in productOperation.WorkUnitDict.Values)   // Sumarizuji WorkUnit z operace do globální Dictionary
                 this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
         }
         #endregion
-        #endregion
-        #region Generátor náhodných dat
-        /// <summary>
-        /// Metoda vygeneruje a vrátí časový úsek.
-        /// Jeho počátek = begin;
-        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
-        /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="time"></param>
-        /// <param name="timeQty"></param>
-        /// <returns></returns>
-        internal GuiTimeRange GetTimeRange(ref DateTime begin, TimeSpan time, double? timeQty = null)
-        {
-            return this.GetTimeRange(ref begin, 0d, 0, time, timeQty);
-        }
-        /// <summary>
-        /// Metoda vygeneruje a vrátí časový úsek.
-        /// Jeho počátek = begin [ + pauza vložená s pravděpodobností pauseRatio v délce 0 až pauseMaxHour];
-        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
-        /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="pauseRatio"></param>
-        /// <param name="pauseMaxHour"></param>
-        /// <param name="time"></param>
-        /// <param name="timeQty"></param>
-        /// <returns></returns>
-        internal GuiTimeRange GetTimeRange(ref DateTime begin, double pauseRatio, int pauseMaxHour, TimeSpan time, double? timeQty = null)
-        {
-            if (pauseRatio > 0d && this.Rand.NextDouble() > pauseRatio)
-                begin = begin + TimeSpan.FromHours(this.Rand.Next(pauseMaxHour + 1));
-            DateTime end = begin + ((timeQty.HasValue && timeQty.Value >= 0d) ? TimeSpan.FromHours(timeQty.Value * time.TotalHours) : time);
-            GuiTimeRange timeRange = new GuiTimeRange(begin, end);
-            begin = end;
-            return timeRange;
-        }
-        /// <summary>
-        /// metoda vrací náhodné ratio z rozsahu 0 - 1 včetně
-        /// </summary>
-        /// <returns></returns>
-        internal float GetRandomRatio()
-        {
-            float ratio = ((float)this.Rand.Next(0, 101)) / 100f;
-            return ratio;
-        }
-        /// <summary>
-        /// Vrátí jeden z prvků daného pole
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        internal T GetRandom<T>(T[] items)
-        {
-            int count = (items != null ? items.Length : 0);
-            if (count == 0) return default(T);
-            return items[this.Rand.Next(count)];
-        }
-        /// <summary>
-        /// Vrátí true, s pravděpodobností probability %.
-        /// Pokud probability = 10, pak 10 případů ze 100 vrátí true, 90% bude false.
-        /// </summary>
-        /// <param name="probability"></param>
-        /// <returns></returns>
-        internal bool Pbb(int probability)
-        {
-            return (this.Rand.Next(0, 100) <= probability);
-        }
-        /// <summary>
-        /// Generátor náhodných hodnot
-        /// </summary>
-        protected Random Rand;
         #endregion
         #region Tvorba GUI
         /// <summary>
@@ -1051,8 +1005,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Dílec", Width = 200 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "qty", Title = "Množství", Width = 45 });
 
+            List<GuiDataRow> rowList = new List<GuiDataRow>();
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
-                this.AddProductOrderToGrid(guiTable, productOrder);
+                productOrder.CreateGuiRows(rowList);
+            guiTable.AddRows(rowList);
 
             this.AddProductOrderTagItems(guiTable);
 
@@ -1616,9 +1572,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (dataInfo.WorkUnit.PlanUnitC == null || dataInfo.WorkUnit.PlanUnitC.PlanUnitType != PlanUnitType.Person) return false;
             return this.DeleteData(dataInfo.WorkUnit.RecordGid);
         }
-
-
-
         /// <summary>
         /// Do dané <see cref="GuiResponse"/> vloží hodnoty ClearLinks, ClearSelected a ToolbarItems[SaveData].Enable
         /// </summary>
@@ -1919,6 +1872,44 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #endregion
         #endregion
         #endregion
+        #region Přidání / Odebrání řádku grafu
+        protected void AddRowToGraph(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Vyrobíme náhodný Výrobní příkaz (přidá se do this dat!):
+            string name = GetRandom("Krabička pro hrací skříňku", "Dárková kazeta na mýdlo", "Dřevěné obložení dveří", "Botník na suché boty", "Botník na špinavé boty", "Kuchyňské prkénko 30cm", "Sada špalků pro automobil",
+                                    "Dřevěné hrací kostky 6ks", "Žebřík na půdu", "Dřevěný hlavolam «Kostka»", "Vyřezávaný model letadla 1:48", "Regál do malého sklepa 1.4m x 0.75m", "Ozdobná držadla příborů",
+                                    "Dětská stavebnice \"Skládací hrad\"", "Taburet ozdobný Empír, bílý", "Dřevěný paravan 3-dílný", "Stolek barevný pod černobílou TV", "Skříňka pro retro-rozhlasový přijímač",
+                                    "Kulatý poklop latriny, zdobený", "Sada nábytku pro panenky M 1:4", "Psí bouda pro jezevčíka", "Škrabadlo pro kočku domácí");
+            Color backColor = GetRandom(Color.DarkBlue, Color.Violet, Color.Turquoise, Color.SlateGray, Color.SaddleBrown, Color.RoyalBlue, Color.PowderBlue, Color.PapayaWhip, Color.PaleGreen, Color.OrangeRed, Color.OliveDrab, Color.Navy);
+            decimal qty = GetRandom(2m, 5m, 6m, 9m, 12m, 15m, 21m, 24m, 30m, 36m, 48m, 64m, 90m, 120m);
+            string tagText = GetRandom("stoly", "skříně", "víka", "pro děti", "jiné");
+            ProductTpv tpv = GetRandom(ProductTpv.Simple, ProductTpv.Standard, ProductTpv.Standard, ProductTpv.Luxus, ProductTpv.Cooperation, ProductTpv.Standard, ProductTpv.Simple, ProductTpv.Standard);
+            ProductOrder productOrder = this.CreateProductOrder(name, backColor, qty, tagText, tpv);
+
+            // Tento Výrobní příkaz vygeneruje standardně řádky GUI:
+            List<GuiDataRow> rowList = new List<GuiDataRow>();
+            productOrder.CreateGuiRows(rowList);
+
+            // Řádky přidáme do response tak, aby se zařadily do tabulky vlevo:
+            guiResponse.RefreshRows = rowList
+                .Select(row => new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = row.RowGuiId }, RowData = row })
+                .ToArray();
+        }
+        protected void RemoveRowFromGraph(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Vybereme jeden náhodný VP z našeho seznamu:
+            ProductOrder productOrder = GetRandom(this.ProductOrderDict.Values.ToArray());
+            if (productOrder != null)
+            {
+                GuiGridRowId gridId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = productOrder.RecordGid };
+                GuiRefreshRow refreshRow = new GuiRefreshRow() { GridRowId = gridId, RowData = null };
+
+                guiResponse.RefreshRows = new GuiRefreshRow[] { refreshRow };
+
+                this.ProductOrderDict.Remove(productOrder.RecordGid);
+            }
+        }
+        #endregion
         #region Test Serializace + Deserializace
         /// <summary>
         /// Metoda provede serializaci daného objektu a jeho následnou deserializaci, výsledek vrací.
@@ -2131,6 +2122,76 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameRightPanel = "rightPanel";
         protected const string GuiNameBottomPanel = "bottomPanel";
         #endregion
+        #region Generátor náhodných dat
+        /// <summary>
+        /// Metoda vygeneruje a vrátí časový úsek.
+        /// Jeho počátek = begin;
+        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="time"></param>
+        /// <param name="timeQty"></param>
+        /// <returns></returns>
+        internal GuiTimeRange GetTimeRange(ref DateTime begin, TimeSpan time, double? timeQty = null)
+        {
+            return this.GetTimeRange(ref begin, 0d, 0, time, timeQty);
+        }
+        /// <summary>
+        /// Metoda vygeneruje a vrátí časový úsek.
+        /// Jeho počátek = begin [ + pauza vložená s pravděpodobností pauseRatio v délce 0 až pauseMaxHour];
+        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="pauseRatio"></param>
+        /// <param name="pauseMaxHour"></param>
+        /// <param name="time"></param>
+        /// <param name="timeQty"></param>
+        /// <returns></returns>
+        internal GuiTimeRange GetTimeRange(ref DateTime begin, double pauseRatio, int pauseMaxHour, TimeSpan time, double? timeQty = null)
+        {
+            if (pauseRatio > 0d && this.Rand.NextDouble() > pauseRatio)
+                begin = begin + TimeSpan.FromHours(this.Rand.Next(pauseMaxHour + 1));
+            DateTime end = begin + ((timeQty.HasValue && timeQty.Value >= 0d) ? TimeSpan.FromHours(timeQty.Value * time.TotalHours) : time);
+            GuiTimeRange timeRange = new GuiTimeRange(begin, end);
+            begin = end;
+            return timeRange;
+        }
+        /// <summary>
+        /// metoda vrací náhodné ratio z rozsahu 0 - 1 včetně
+        /// </summary>
+        /// <returns></returns>
+        internal float GetRandomRatio()
+        {
+            float ratio = ((float)this.Rand.Next(0, 101)) / 100f;
+            return ratio;
+        }
+        /// <summary>
+        /// Vrátí jeden z prvků daného pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        internal T GetRandom<T>(params T[] items)
+        {
+            int count = (items != null ? items.Length : 0);
+            if (count == 0) return default(T);
+            return items[this.Rand.Next(count)];
+        }
+        /// <summary>
+        /// Vrátí true, s pravděpodobností probability %.
+        /// Pokud probability = 10, pak 10 případů ze 100 vrátí true, 90% bude false.
+        /// </summary>
+        /// <param name="probability"></param>
+        /// <returns></returns>
+        internal bool Pbb(int probability)
+        {
+            return (this.Rand.Next(0, 100) <= probability);
+        }
+        /// <summary>
+        /// Generátor náhodných hodnot
+        /// </summary>
+        protected Random Rand;
+        #endregion
         #region IAppHost : vyvolání funkce z Pluginu do AppHost
         /// <summary>
         /// Metoda je volána v threadu na pozadí, má za úkol zpracovat daný požadavek (parametr).
@@ -2199,37 +2260,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                                 break;
                             case GuiNameToolbarAddRow1:
-                                List<GuiRefreshRow> addRows = new List<GuiRefreshRow>();
-
-                                int recIdM = Rand.Next(1000, 10000);
-                                GuiId rowIdM = new GuiId(ProductOrder.ClassNumber, recIdM);
-                                GuiGridRowId gridRowIdM = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowIdM };
-                                GuiDataRow rowDataM = new GuiDataRow();
-                                rowDataM.Cells = new List<object> { rowIdM, "NVP_" + recIdM.ToString(), "Název nového VP: " + DateTime.Now.ToString("HH:mm:ss"), Rand.Next(2,100) };
-                                rowDataM.RowGuiId = rowIdM;
-                                addRows.Add(new GuiRefreshRow() { GridRowId = gridRowIdM, RowData = rowDataM });
-
-                                int recIdS = Rand.Next(1000, 10000);
-                                GuiId rowIdS = new GuiId(ProductOperation.ClassNumber, recIdS);
-                                GuiGridRowId gridRowIdS = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowIdS };
-                                GuiDataRow rowDataS = new GuiDataRow();
-                                rowDataS.Cells = new List<object> { rowIdS, "Op_" + recIdS.ToString(), "Operace: " + DateTime.Now.ToString("HH:mm:ss"), Rand.Next(2, 100) };
-                                rowDataS.RowGuiId = rowIdS;
-                                rowDataS.ParentRowGuiId = rowIdM;
-                                addRows.Add(new GuiRefreshRow() { GridRowId = gridRowIdS, RowData = rowDataS });
-
-                                responseArgs.GuiResponse.RefreshRows = addRows.ToArray();
+                                this.AddRowToGraph(requestArgs.Request, responseArgs.GuiResponse);
                                 break;
-
                             case GuiNameToolbarDelRow1:
-                                List<GuiRefreshRow> remRows = new List<GuiRefreshRow>();
-
-                                int recVp = Rand.Next(10000, 10030);
-                                GuiId rowVp = new GuiId(ProductOrder.ClassNumber, recVp);
-                                GuiGridRowId gridVp = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowVp };
-                                remRows.Add(new GuiRefreshRow() { GridRowId = gridVp, RowData = null });
-
-                                responseArgs.GuiResponse.RefreshRows = remRows.ToArray();
+                                this.RemoveRowFromGraph(requestArgs.Request, responseArgs.GuiResponse);
                                 break;
                         }
                         break;
@@ -2394,7 +2428,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// </summary>
     public class ProductOrder : SubjectClass
     {
-        public ProductOrder()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public ProductOrder(SchedulerDataSource dataSource)
+            : base(dataSource)
         { }
         public const int ClassNumber = 1188;
         public override int ClassId { get { return ClassNumber; } }
@@ -2405,6 +2444,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public GuiTimeRange Time { get; set; }
         public decimal Qty { get; set; }
         public Color BackColor { get; set; }
+        /// <summary>
+        /// Metoda vygeneruje řádky za this instanci a za svoje podřízené řádky, a přidá je do předané kolekce
+        /// </summary>
+        /// <returns></returns>
+        public void CreateGuiRows(ICollection<GuiDataRow> list)
+        {
+            GuiId rowGid = this.RecordGid;
+            GuiIdText name = new GuiIdText() { GuiId = new GuiId(343, this.RecordId), Text = this.Name };
+            GuiDataRow row = new GuiDataRow(rowGid, this.Refer, name, this.Qty);
+            row.TagItems = new List<GuiTagItem>(this.TagItems);
+            row.Graph = this.CreateGuiGraph();
+            list.Add(row);
+
+            foreach (ProductOperation productOperation in this.OperationList)
+                productOperation.CreateGuiRows(list);
+        }
         /// <summary>
         /// Vytvoří a vrátí graf za tento Výrobní příkaz (obsahuje prvky = operace)
         /// </summary>
@@ -2439,7 +2494,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// </summary>
     public class ProductOperation : SubjectClass
     {
-        public ProductOperation()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public ProductOperation(SchedulerDataSource dataSource)
+            : base(dataSource)
         {
             this.Height = 1f;
             this.BackColor = Color.FromArgb(64, 64, 160);
@@ -2475,7 +2535,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Dictionary obsahující jednotky práce za tuto operaci
         /// </summary>
         public Dictionary<GuiId, WorkUnit> WorkUnitDict { get; private set; }
+        /// <summary>
+        /// Metoda vygeneruje řádky za this instanci a za svoje podřízené řádky, a přidá je do předané kolekce
+        /// </summary>
+        /// <returns></returns>
+        public void CreateGuiRows(ICollection<GuiDataRow> list)
+        {
+            GuiId rowGid = this.RecordGid;
+            GuiDataRow row = new GuiDataRow(rowGid, this.Refer, this.Name, this.Qty);
+            row.ParentRowGuiId = this.ProductOrder.RecordGid;
+            list.Add(row);
 
+            foreach (ProductStructure productStructure in this.StructureList)
+                productStructure.CreateGuiRows(list);
+        }
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto operaci.
         /// </summary>
@@ -2497,33 +2570,31 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Zaplánuje tuto operaci (její jednotlivé časy) do pracoviště
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="flowTime"></param>
         /// <param name="direction"></param>
         /// <param name="workplace"></param>
         /// <param name="person"></param>
-        public void PlanTimeOperation(ref int recordId, ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person)
+        public void PlanTimeOperation(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person)
         {
             if (workplace == null) return;
             if (!(direction == Direction.Positive || direction == Direction.Negative))
                 throw new Asol.Tools.WorkScheduler.Application.GraphLibCodeException("Směr plánu musí být pouze Positive nebo Negative.");
 
-            this.TimeTBc = this.PlanTimePhase(ref recordId, ref flowTime, direction, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f));
-            this.TimeTAc = this.PlanTimePhase(ref recordId, ref flowTime, direction, workplace, person, this.TAc, this.BackColor);
-            this.TimeTEc = this.PlanTimePhase(ref recordId, ref flowTime, direction, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f));
+            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f));
+            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TAc, this.BackColor);
+            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f));
             this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
         }
         /// <summary>
         /// Uloží jednotku práce pro daný čas do pracoviště
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="flowTime"></param>
         /// <param name="direction"></param>
         /// <param name="workplace"></param>
         /// <param name="person"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
-        protected GuiTimeRange PlanTimePhase(ref int recordId, ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor)
+        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor)
         {
             if (workplace == null || time.Ticks <= 0L) return new GuiTimeRange(flowTime, flowTime);
 
@@ -2537,7 +2608,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 for (int t = 0; t < 25; t++)         // jenom Timeout
                 {
                     if (time.Ticks <= 0L) break;     // Je hotovo.
-                    bool isPlanned = this.PlanTimePart(ref recordId, ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref time, backColor);
+                    bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref time, backColor);
                     if (!isPlanned) break;           // Nejde to.
                 }
                 if (time.Ticks <= 0L) break;         // Je hotovo.
@@ -2562,7 +2633,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="needTime"></param>
         /// <param name="backColor"></param>
         /// <returns></returns>
-        protected bool PlanTimePart(ref int recordId, ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor)
+        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor)
         {
             // Provedu přípravu pracovních časů pro každou PlanUnitC tak, aby její CurrentWorkTime začínal v flowTime nebo později:
             foreach (PlanUnitC planUnit in planUnits)
@@ -2613,7 +2684,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Vygenerujeme pracovní časy do odpovídajících Kapacitních jednotek:
             GuiTimeRange workTimeRange = new GuiTimeRange(begin, end);
             foreach (PlanUnitC workingUnit in workingUnits)
-                workingUnit.AddUnitTime(this.CreateUnitTime(ref recordId, workingUnit, workTimeRange, backColor));
+                workingUnit.AddUnitTime(this.CreateUnitTime(workingUnit, workTimeRange, backColor));
 
             // Řešíme čas celé fáze (phaseBegin - phaseEnd), a posun flowTime - a to podle směru plánu:
             switch (direction)
@@ -2639,11 +2710,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="time"></param>
         /// <param name="backColor"></param>
         /// <returns></returns>
-        protected WorkUnit CreateUnitTime(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
+        protected WorkUnit CreateUnitTime(PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
         {
-            WorkUnit workUnit = new WorkUnit()
+            WorkUnit workUnit = new WorkUnit(this.DataSource)
             {
-                RecordId = ++recordId,
                 Operation = this,
                 PlanUnitC = planUnitC,
                 Time = time,
@@ -2685,6 +2755,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// </summary>
     public class ProductStructure : SubjectClass
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public ProductStructure(SchedulerDataSource dataSource)
+            : base(dataSource)
+        { }
         public const int ClassNumber = 1189;
         public override int ClassId { get { return ClassNumber; } }
         /// <summary>
@@ -2701,6 +2778,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Množství komponenty celkem požadované
         /// </summary>
         public decimal Qty { get; set; }
+        /// <summary>
+        /// Metoda vygeneruje řádky za this instanci a za svoje podřízené řádky, a přidá je do předané kolekce
+        /// </summary>
+        /// <returns></returns>
+        public void CreateGuiRows(ICollection<GuiDataRow> list)
+        {
+            GuiId rowGid = this.RecordGid;
+            GuiDataRow row = new GuiDataRow(rowGid, this.Refer, this.Name, this.Qty);
+            row.ParentRowGuiId = this.ProductOperation.RecordGid;
+            list.Add(row);
+        }
     }
     #endregion
     #region class PlanUnitC : Plánovací jednotka kapacit = Pracoviště + Pracovník
@@ -2709,6 +2797,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// </summary>
     public class PlanUnitC : SubjectClass
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public PlanUnitC(SchedulerDataSource dataSource)
+            : base(dataSource)
+        { }
         public const int ClassNumber = 1364;
         public override int ClassId { get { return ClassNumber; } }
         public string WorkPlace { get; set; }
@@ -2816,6 +2911,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// </summary>
     public class WorkUnit : RecordClass
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public WorkUnit(SchedulerDataSource dataSource)
+            : base(dataSource)
+        { }
         public override string ToString()
         {
             return "Time: " + this.Time + "; Operation: " + this.Operation + "; PlanUnitC: " + this.PlanUnitC;
@@ -2917,6 +3019,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// </summary>
     public class WorkTime : RecordClass
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public WorkTime(SchedulerDataSource dataSource)
+            : base(dataSource)
+        { }
         public override string ToString()
         {
             return this.Time.ToString();
@@ -2976,6 +3085,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     public abstract class SubjectClass : RecordClass
     {
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public SubjectClass(SchedulerDataSource dataSource)
+            : base (dataSource)
+        { }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -3015,6 +3131,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     public abstract class RecordClass
     {
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataSource"></param>
+        public RecordClass(SchedulerDataSource dataSource)
+        {
+            this.DataSource = dataSource;
+            this.RecordId = dataSource.GetNextRecordId(this.ClassId);
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -3033,7 +3158,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Číslo záznamu
         /// </summary>
-        public int RecordId { get; set; }
+        public int RecordId { get; private set; }
+        /// <summary>
+        /// Reference na datový základ
+        /// </summary>
+        protected SchedulerDataSource DataSource { get; private set; }
     }
     #endregion
     #region enumy
