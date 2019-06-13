@@ -5777,7 +5777,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <see cref="GuiToolbarItem.Visible"/>, <see cref="GuiToolbarItem.Enable"/>, <see cref="GuiToolbarItem.Size"/>, 
         /// <see cref="GuiToolbarItem.ModuleWidth"/>, <see cref="GuiToolbarItem.LayoutHint"/>.
         /// </summary>
-        public GuiToolbarItem[] ToolbarItems { get; set; }
+        public List<GuiToolbarItem> ToolbarItems { get; set; }
         /// <summary>
         /// Požadovaná hodnota časové osy. 
         /// Bude aplikována, pokud není null.
@@ -5788,17 +5788,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pole řádků v tabulkách, které se mají aktualizovat.
         /// Záznamy obsahují kompletní klíč řádku (=tabulka + RowId), a data řádku pro aktualizaci, anebo null pro smazání řádku.
         /// </summary>
-        public GuiRefreshRow[] RefreshRows { get; set; }
+        public List<GuiRefreshRow> RefreshRows { get; set; }
         /// <summary>
         /// Pole grafů, které se mají aktualizovat.
         /// Záznamy obsahují kompletní klíč řádku grafu (=tabulka + RowId), a data grafu pro aktualizaci, anebo null pro smazání grafu (?).
         /// </summary>
-        public GuiRefreshGraph[] RefreshGraphs { get; set; }
+        public List<GuiRefreshGraph> RefreshGraphs { get; set; }
         /// <summary>
         /// Pole prvků grafů, které se mají aktualizovat.
         /// Záznamy obsahují kompletní klíč prvku grafu (=tabulka + RowId + ItemId), a data prvku grafu pro aktualizaci, anebo null pro smazání prvku grafu.
         /// </summary>
-        public GuiRefreshGraphItem[] RefreshGraphItems { get; set; }
+        public List<GuiRefreshGraphItem> RefreshGraphItems { get; set; }
 
         /// <summary>
         /// Pole grafů, které se mají aktualizovat.
@@ -5826,7 +5826,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Obecně: všechny linky (které mají řádně naplněny obě strany vztahu (Prev i Next)) budou z grafu nejprve odebrány, 
         /// a následně do grafu budou přidány ty linky, které mají nastaven <see cref="GuiGraphLink.LinkType"/>.
         /// </summary>
-        public GuiResponseGraphLink[] ChangeLinks { get; set; }
+        public List<GuiResponseGraphLink> ChangeLinks { get; set; }
         #endregion
         #region Statické konstruktory: Success, Warning, Error
         /// <summary>
@@ -6041,7 +6041,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// ID starých prvků cílového grafu, které se mají nejprve odstranit
         /// </summary>
-        public GuiGridItemId[] RemoveItems { get; set; }
+        public List<GuiGridItemId> RemoveItems { get; set; }
         /// <summary>
         /// Režim práce s položkami grafů: pokud je zadán řádek, kde již graf existuje, pak tato property řídí chování vzhledem ke stávajícím prvkům.
         /// </summary>
@@ -6063,7 +6063,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphItem ItemData { get; set; }
     }
-
     /// <summary>
     /// GuiResponseGraph : třída sloužící pro přenos grafů (data z <see cref="GuiGraph"/> z aplikace do GUI v nestrukturovaném seznamu.
     /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
