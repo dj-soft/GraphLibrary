@@ -2627,8 +2627,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GuiRequest request = new GuiRequest();
                 request.Command = GuiRequest.COMMAND_OpenRecords;
                 request.RecordsToOpen = new GuiId[] { recordGId };
-                this.IMainData.CallAppHostFunction(request, null, null);
+                this.IMainData.CallAppHostFunction(request, RunOpenRecordFormResponse, null);
             }
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost OpenRecords
+        /// </summary>
+        /// <param name="response"></param>
+        protected void RunOpenRecordFormResponse(AppHostResponseArgs response)
+        {
+            this.IMainData.ProcessAppHostResponse(response.GuiResponse);
         }
         #endregion
         #region Drag and Drop Přemísťování prvku grafu odněkud někam, včetně aplikační logiky

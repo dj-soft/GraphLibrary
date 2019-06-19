@@ -584,6 +584,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public string Name { get; set; }
         /// <summary>
+        /// Index aktuální záložky v levém panelu, počítáné od 0. Záporná hodnota = panel je minimalizován.
+        /// </summary>
+        public int LeftTabIndex { get { return this._LeftTabIndex; } set { this._LeftTabIndex = value; } } private int _LeftTabIndex = 0;
+        /// <summary>
         /// Pozice levého splitteru, měřeno zleva, pokud je viditelný
         /// </summary>
         public int LeftSplit { get { return this._LeftSplit; } set { this._LeftSplit = _AlignV(value); } } private int _LeftSplit = DefVSplit;
@@ -596,15 +600,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public int RightSplit { get { return this._RightSplit; } set { this._RightSplit = _AlignH(value); } } private int _RightSplit = DefHSplit;
         /// <summary>
+        /// Index aktuální záložky v pravém panelu, počítáné od 0. Záporná hodnota = panel je minimalizován.
+        /// </summary>
+        public int RightTabIndex { get { return this._RightTabIndex; } set { this._RightTabIndex = value; } } private int _RightTabIndex = 0;
+        /// <summary>
         /// Pozice dolního splitteru, měřeno odspodu, pokud je viditelný
         /// </summary>
         public int BottomSplit { get { return this._BottomSplit; } set { this._BottomSplit = _AlignH(value); } } private int _BottomSplit = DefHSplit;
+        /// <summary>
+        /// Index aktuální záložky v pravém panelu, počítáné od 0. Záporná hodnota = panel je minimalizován.
+        /// </summary>
+        public int BottomTabIndex { get { return this._BottomTabIndex; } set { this._BottomTabIndex = value; } } private int _BottomTabIndex = 0;
         /// <summary>
         /// Viditelná šířka Splitteru
         /// </summary>
         public int SplitterSize { get { return this._SplitterSize; } set { this._SplitterSize = _Align(value, 1, 6); } } private int _SplitterSize = 4;
         /// <summary>
-        /// Layouty pro jednotlivé Gridy
+        /// Layouty pro jednotlivé Gridy (=sloupce: jejich pozice, šířka, viditelnost)
         /// </summary>
         public KeyValueArray<string, string> GridColumns { get { if (this._GridColumns == null) this._GridColumns = new KeyValueArray<string, string>(); return this._GridColumns; } set { this._GridColumns = value; } } private KeyValueArray<string, string> _GridColumns;
         #endregion
@@ -680,7 +692,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         [PersistingEnabled(false)]
         public Size CurrentControlSize { get; set; }
         /// <summary>
-        /// Aktuální velikost panelu Left..
+        /// Aktuální velikost panelu Left.
         /// Pokud má hodnotu, pak jde o fixní hodnotu a není zobrazován Splitter. 
         /// Může mít hodnotu 0 = pak je panel Invisible.
         /// Pokud nemá hodnotu, pak je panel vidět a jeho velikost řídí Splitter, který je rovněž vidět.

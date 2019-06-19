@@ -2515,7 +2515,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_OpenRecords;
             request.RecordsToOpen = guiIds.ToArray();
-            this._CallAppHostFunction(request, null);
+            this._CallAppHostFunction(request, _CallHostRunOpenRecordsFormResponse);
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost OpenRecords
+        /// </summary>
+        /// <param name="response"></param>
+        private void _CallHostRunOpenRecordsFormResponse(AppHostResponseArgs response)
+        {
+            this.ProcessGuiResponse(response.GuiResponse);
         }
         #endregion
         #region Sestavení instance GuiRequestCurrentState, obsahující stav celého Scheduleru
@@ -3025,6 +3033,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="blockGuiTime"></param>
         void IMainDataInternal.CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime) { this._CallAppHostFunction(request, callBackAction, blockGuiTime); }
         /// <summary>
+        /// Zpracuje odpověď z aplikační vrstvy
+        /// </summary>
+        /// <param name="response"></param>
+        void IMainDataInternal.ProcessAppHostResponse(GuiResponse response) { this.ProcessGuiResponse(response); }
+        /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>
         /// <param name="contextMenu">Data popisující prvek a čas kliknutí</param>
@@ -3098,6 +3111,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="callBackAction"></param>
         /// <param name="blockGuiTime"></param>
         void CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime);
+        /// <summary>
+        /// Zpracuje odpověď z aplikační vrstvy
+        /// </summary>
+        /// <param name="response"></param>
+        void ProcessAppHostResponse(GuiResponse response);
         /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>

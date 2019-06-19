@@ -493,6 +493,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             WinForm.ToolStripDropDownMenu menu = GPainter.CreateDropDownMenu(showImageMargin: false, showCheckMargin: true, title: "Zobrazit sloupce");
 
+            menu.Items.Add(GPainter.CreateDropDownItem("Všechny sloupce", tag: "A"));
+            menu.Items.Add(GPainter.CreateDropDownSeparator());
+
             foreach (GridColumn gridColumn in this.Grid.AllColumns)
             {
                 if (!gridColumn.MasterColumn.CanBeVisible) continue;           // To jsou sloupce typu Primární klíč nebo Číslo vztaženého záznamu atd
@@ -519,10 +522,35 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             WinForm.ToolStripDropDownMenu menu = sender as WinForm.ToolStripDropDownMenu;
             WinForm.ToolStripMenuItem item = e.ClickedItem as WinForm.ToolStripMenuItem;
             object tag = item?.Tag;
-            if (tag is string && ((string)tag) == "C")
+            string code = (tag is string ? (string)tag : "");
+            switch (code)
             {
-                if (menu != null)
-                    menu.Close();
+                case "A":         // A = All = Zobrazit všechny sloupce
+                    this.ColumnContextMenuShowAll(menu);
+                    break;
+                case "C":         // C = Close = Zavřít menu
+                    if (menu != null)
+                        menu.Close();
+                    break;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí zobrazení všech sloupců, a to prostřednictvím kontextového menu
+        /// </summary>
+        /// <param name="menu"></param>
+        private void ColumnContextMenuShowAll(WinForm.ToolStripDropDownMenu menu)
+        {
+            foreach (var i in menu.Items)
+            {   // Tady jsou prvky menu: Label (=titulek), Separator, a různě použité ToolStripMenuItem...
+                if (i is WinForm.ToolStripMenuItem)
+                {
+                    WinForm.ToolStripMenuItem item = i as WinForm.ToolStripMenuItem;
+                    object tag = item?.Tag;
+                    if (tag is GridColumn && !item.Checked)
+                    {
+                        item.Checked = true;         // Vyvolá se eventhandler ColumnContextMenuItemCheckedChanged() a ten zajistí potřebné...
+                    }
+                }
             }
         }
         /// <summary>

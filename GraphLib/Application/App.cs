@@ -490,7 +490,7 @@ namespace Asol.Tools.WorkScheduler.Application
         /// <param name="exc"></param>
         public static void ShowError(Exception exc) { string message = exc.Message + Environment.NewLine + exc.StackTrace; _ShowMsg(message, System.Windows.Forms.MessageBoxIcon.Error); }
         /// <summary>
-        /// Zobraz danou zprávu a ikkonku
+        /// Zobraz danou zprávu a ikonku
         /// </summary>
         /// <param name="message"></param>
         /// <param name="icon"></param>
