@@ -542,7 +542,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #endregion
         #region Refresh obsahu tabulky na základě dat z GuiResponse : přidání/aktualizace/odebrání : řádků/grafů/prvků grafu
-        #region Refresh řádků
+        #region Refresh a Expand řádků
         /// <summary>
         /// Metoda přidá/aktualizuje/odebere daný řádek this tabulky.
         /// </summary>
@@ -578,11 +578,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     row.FillFrom(refreshRow.RowData);
                     this.PrepareGraphForRow(row);
                 }
+                this.TimeGraphDict.TryGetValue(rowGId, out modifiedGraph);
             }
             else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TableRow.TryGetRow(refreshRow.GridRowId.RowId, out row))
             {   // Delete:
                 this.TableRow.Rows.Remove(row);
             }
+
+            return modifiedGraph;
+        }
+        /// <summary>
+        /// Metoda zajistí provedení Expand pro daný řádek tabulky a pro jeho Parents.
+        /// </summary>
+        /// <param name="expandRow"></param>
+        /// <param name="repaintGraphDict"></param>
+        public void ExpandRow(GuiGridRowId expandRow, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        {
+            GTimeGraph modifiedGraph = this._ExpandRow(expandRow);
+            _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
+        }
+        /// <summary>
+        /// Provede expand řádku a jeho parentů
+        /// </summary>
+        /// <param name="expandRow"></param>
+        /// <returns></returns>
+        private GTimeGraph _ExpandRow(GuiGridRowId expandRow)
+        {
+            if (expandRow == null || expandRow.RowId == null) return null;
+
+            GTimeGraph modifiedGraph = null;
+            GId rowGId = expandRow.RowId;
+            Row row;
+            if (this.TableRow.TryGetRow(rowGId, out row))
+                row.TreeNode.ExpandWithParents();
 
             return modifiedGraph;
         }

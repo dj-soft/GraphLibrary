@@ -5831,41 +5831,40 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiTimeRange TimeAxisValue { get; set; }
         /// <summary>
+        /// Tento časový úsek je pokrytý daty předanými v této <see cref="GuiResponse"/>, a proto se považuje za známý.
+        /// Nemusí být naplněno, pokud předaná data pokrývají přesně úsek <see cref="GuiRequestCurrentState.TimeAxisEnlargedValue"/> (tento úsek se považuje za naplněný automaticky).
+        /// </summary>
+        public GuiTimeRange TimeAxisFilledValue { get; set; }
+        /// <summary>
         /// Pole řádků v tabulkách, které se mají aktualizovat.
         /// Záznamy obsahují kompletní klíč řádku (=tabulka + RowId), a data řádku pro aktualizaci, anebo null pro smazání řádku.
+        /// <para/>
+        /// Výchozí hodnota této property je null.
         /// </summary>
         public List<GuiRefreshRow> RefreshRows { get; set; }
         /// <summary>
         /// Pole grafů, které se mají aktualizovat.
         /// Záznamy obsahují kompletní klíč řádku grafu (=tabulka + RowId), a data grafu pro aktualizaci, anebo null pro smazání grafu (?).
+        /// <para/>
+        /// Výchozí hodnota této property je null.
         /// </summary>
         public List<GuiRefreshGraph> RefreshGraphs { get; set; }
         /// <summary>
         /// Pole prvků grafů, které se mají aktualizovat.
         /// Záznamy obsahují kompletní klíč prvku grafu (=tabulka + RowId + ItemId), a data prvku grafu pro aktualizaci, anebo null pro smazání prvku grafu.
+        /// <para/>
+        /// Výchozí hodnota této property je null.
         /// </summary>
         public List<GuiRefreshGraphItem> RefreshGraphItems { get; set; }
-
         /// <summary>
-        /// Pole grafů, které se mají aktualizovat.
+        /// Pole řádků tabulek, které požadujeme aby byly Expanded.
+        /// Používá se pro tabulky, které obsahují TreeView.
+        /// Řádky v tomto seznamu uvedené budou Expanded = budou zobrazovat svoje Childs. 
+        /// Současně budou Expanded všechny jejich Parent řádky, aby daný řádek byl viditelný.
+        /// <para/>
+        /// Výchozí hodnota této property je null.
         /// </summary>
-        [Obsolete("Použijme property RefreshGraphs", true)]
-        public GuiResponseGraph[] UpdateGraphs { get; set; }
-        /// <summary>
-        /// Pole prvků grafů, které se mají z GUI odebrat.
-        /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiGridRowId.TableName"/>.
-        /// V tomto seznamu tedy mohou být prvky pocházející z kterékoli tabulky GUI.
-        /// </summary>
-        [Obsolete("Použijme property RefreshGraphItems", true)]
-        public GuiGridItemId[] RemoveItems { get; set; }
-        /// <summary>
-        /// Pole prvků grafů, které se mají do GUI nově vložit.
-        /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiResponseGraphItem.TableName"/>.
-        /// V tomto seznamu tedy mohou být prvky do kterékoli tabulky GUI.
-        /// </summary>
-        [Obsolete("Použijme property RefreshGraphItems", true)]
-        public GuiResponseGraphItem[] AddItems { get; set; }
-
+        public List<GuiGridRowId> ExpandRows { get; set; }
         /// <summary>
         /// Pole změn linků.
         /// Link, který má být vyřazen, bude mít nastaveno <see cref="GuiGraphLink.LinkType"/> = null, a musí mít řádně naplněny obě strany vztahu (Prev i Next).

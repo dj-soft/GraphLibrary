@@ -2922,6 +2922,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseRefreshGraphs(guiResponse.RefreshGraphs, mainTableDict, repaintGraphDict);
             this._ProcessResponseRefreshGraphItems(guiResponse.RefreshGraphItems, mainTableDict, repaintGraphDict);
             this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, repaintGraphDict);
+            this._ProcessResponseExpandRows(guiResponse.ExpandRows, mainTableDict, repaintGraphDict);
             this._ProcessResponseRepaintGraphs(repaintGraphDict.Values);
             this._ProcessResponseRepaintParentChilds(repaintGraphDict.Values);
             this._ProcessResponseRepaintControl(repaintGraphDict.Values);
@@ -3048,6 +3049,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 MainDataTable mainDataTable;
                 if (mainTableDict.TryGetValue(changeGroup.Key, out mainDataTable))
                     mainDataTable.UpdateGraphLinks(changeGroup);
+            }
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.ExpandRows"/>
+        /// </summary>
+        /// <param name="expandRows">Řádky, které mají být Expanded</param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseExpandRows(IEnumerable<GuiGridRowId> expandRows, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        {
+            if (expandRows == null) return;
+            foreach (GuiGridRowId expandRow in expandRows)
+            {
+                if (expandRow == null || expandRow.TableName == null) continue;
+                MainDataTable mainDataTable;
+                if (mainTableDict.TryGetValue(expandRow.TableName, out mainDataTable))
+                    mainDataTable.ExpandRow(expandRow, repaintGraphDict);
             }
         }
         /// <summary>

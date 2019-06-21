@@ -3966,6 +3966,13 @@ namespace Asol.Tools.WorkScheduler.Data
             this._Expand(true);
         }
         /// <summary>
+        /// Zajistí, že zdejší Childs budou viditelné, a že všechny moje Parents budou Expanded.
+        /// </summary>
+        public void ExpandWithParents()
+        {
+            _ExpandWithParents(this, true);
+        }
+        /// <summary>
         /// Metoda zavře this node, a zavře i všechny jeho Child nody.
         /// </summary>
         public void Collapse()
@@ -3987,6 +3994,31 @@ namespace Asol.Tools.WorkScheduler.Data
 
             if (invalidateRows && (this._IsExpanded != oldValue))
                 this.TableRowsInvalidate();
+        }
+        /// <summary>
+        /// Zajistí, že zdejší Childs budou viditelné, a že všechny moje Parents budou Expanded.
+        /// </summary>
+        private static void _ExpandWithParents(TreeNode node, bool invalidateRows)
+        {
+            if (node == null) return;
+            TreeNode firstNode = node;
+
+            bool isChanged = false;
+            Dictionary<GId, Row> expandDict = new Dictionary<GId, Row>();
+            for (int t = 0; t < 99; t++)
+            {   // jen Timeout...
+                if (node == null) break;
+                GId rowGId = node.Owner.RecordGId;
+                if (expandDict.ContainsKey(rowGId)) break;
+                node._CollapseOtherParents();
+                bool oldExpanded = node._IsExpanded;
+                node._IsExpanded = node.HasChilds;
+                if (node._IsExpanded != oldExpanded && !isChanged) isChanged = true;
+                node = node.CurrentParentNode;
+            }
+
+            if (invalidateRows && isChanged)
+                firstNode.TableRowsInvalidate();
         }
         /// <summary>
         /// Zavře this node, volitelně volá invalidaci
