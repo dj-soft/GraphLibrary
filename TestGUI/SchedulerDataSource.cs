@@ -759,6 +759,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.Properties.GraphItemMoveOtherGraph = GraphItemMoveAlignY.OnMousePosition;
             this.MainData.Properties.TimeChangeSend = TimeChangeSendMode.OnNewTime;
             this.MainData.Properties.TimeChangeSendEnlargement = 2d;
+            this.MainData.Properties.DoubleClickOnGraph = GuiDoubleClickAction.OpenForm;
+            this.MainData.Properties.DoubleClickOnGraphItem = GuiDoubleClickAction.TimeZoom;
         }
         /// <summary>
         /// Vygeneruje nastavení toolbaru GUI
