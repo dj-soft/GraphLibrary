@@ -521,7 +521,7 @@ namespace Asol.Tools.WorkScheduler.Data
             this._PrimaryKeyAddRow(row);
             this.TreeChildAdded(row);
 
-            this.RowsValid = false;
+            this.InvalidateRows();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání řádku, řádek je platný, event RowAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -562,7 +562,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 itm.Id = -1;
             }
             this._InvalidateTagItems();
-            this.RowsValid = false;
+
+            this.InvalidateRows();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
