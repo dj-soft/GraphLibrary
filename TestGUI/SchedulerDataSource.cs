@@ -757,6 +757,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.Properties.PluginFormTitle = "Plánovací nářadí";
             this.MainData.Properties.GraphItemMoveSameGraph = GraphItemMoveAlignY.OnOriginalItemPosition;
             this.MainData.Properties.GraphItemMoveOtherGraph = GraphItemMoveAlignY.OnMousePosition;
+            this.MainData.Properties.TimeChangeSend = TimeChangeSendMode.OnNewTime;
+            this.MainData.Properties.TimeChangeSendEnlargement = 2d;
         }
         /// <summary>
         /// Vygeneruje nastavení toolbaru GUI
