@@ -290,12 +290,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.PrepareTableForGraphs();
             foreach (Row row in this.TableRow.Rows)
             {
-                GId rowGid = row.RecordGId;
-                if (rowGid == null) continue;
-
-                GTimeGraph gTimeGraph = this.CreateGraphForRow(row);
-                if (!this.TimeGraphDict.ContainsKey(rowGid))
-                    this.TimeGraphDict.Add(rowGid, gTimeGraph);
+                this.PrepareGraphForRow(row);
             }
         }
         /// <summary>
@@ -342,6 +337,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 this.TableRow.GraphParameters = graphProperties;
             }
+        }
+        /// <summary>
+        /// Zajistí přípravu grafu pro daný řádek.
+        /// Používá se při prvotním načítání i následně při GuiRefresh
+        /// </summary>
+        /// <param name="row"></param>
+        protected void PrepareGraphForRow(Row row)
+        {
+            if (this.GraphPosition == DataGraphPositionType.None) return;
+
+            GId rowGid = row.RecordGId;
+            if (rowGid == null) return;
+
+            GTimeGraph gTimeGraph = this.CreateGraphForRow(row);
+            this.TimeGraphDict.AddRefresh(rowGid, gTimeGraph);
         }
         /// <summary>
         /// Metoda vytvoří nový <see cref="GTimeGraph"/> pro daný řádek a pozici, umístí jej do řádku, a graf vrátí.
@@ -566,6 +576,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 else
                 {   // Update:
                     row.FillFrom(refreshRow.RowData);
+                    this.PrepareGraphForRow(row);
                 }
             }
             else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TableRow.TryGetRow(refreshRow.GridRowId.RowId, out row))
