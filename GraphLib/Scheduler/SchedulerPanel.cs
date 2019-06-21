@@ -805,7 +805,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int? leftSize = this.CurrentLeftPanelFixedSize;
                 int left = (leftSize.HasValue ? leftSize.Value : (this.LeftSplit + this.SplitterSize2));     // Velikost prostoru Main:Left
                 int? rightSize = this.CurrentRightPanelFixedSize;
-                int right = (rightSize.HasValue ? rightSize.Value : (this.RightSplit - this.SplitterSize1)); // Velikost prostoru Main:Right
+                int right = (rightSize.HasValue ? rightSize.Value : (this.RightSplit + this.SplitterSize1)); // Velikost prostoru Main:Right
                 int width = this.CurrentWidth - right - left;
                 int height = this.CurrentMainHeight;
                 return new Rectangle(left, 0, width, height);
