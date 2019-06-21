@@ -1309,6 +1309,32 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (args.ContextMenu != null)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
         }
+        /// <summary>
+        /// DoubleClick myší na ploše grafu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
+        {
+            if (!this.HasDataSource) return;
+
+            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GGraphControlPosition.None);
+            this.DataSource.GraphDoubleClick(args);
+            if (args.ContextMenu != null)
+                this.GraphItemShowContextMenu(e, args.ContextMenu);
+        }
+        /// <summary>
+        /// LongClick myší na ploše grafu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
+        {
+            if (!this.HasDataSource) return;
+
+            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GGraphControlPosition.None);
+            this.DataSource.GraphLongClick(args);
+            if (args.ContextMenu != null)
+                this.GraphItemShowContextMenu(e, args.ContextMenu);
+        }
         #endregion
         #region Podpora pro Selectování DragFrame
         /// <summary>
@@ -2562,6 +2588,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="args"></param>
         void GraphRightClick(ItemActionArgs args);
+        /// <summary>
+        /// Vyřeší DoubleClick na grafu
+        /// </summary>
+        /// <param name="args"></param>
+        void GraphDoubleClick(ItemActionArgs args);
+        /// <summary>
+        /// Vyřeší DoubleClick na grafu
+        /// </summary>
+        /// <param name="args"></param>
+        void GraphLongClick(ItemActionArgs args);
         /// <summary>
         /// Vyřeší RightClick na prvku
         /// </summary>

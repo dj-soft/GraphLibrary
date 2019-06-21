@@ -237,6 +237,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GraphItemMoveAlignY GraphItemMoveOtherGraph { get; set; }
         /// <summary>
+        /// Reakce na DoubleClick v prostoru Časového grafu
+        /// </summary>
+        public GuiDoubleClickAction DoubleClickOnGraph { get; set; }
+        /// <summary>
+        /// Reakce na DoubleClick v prostoru Prvku na Časovém grafu
+        /// </summary>
+        public GuiDoubleClickAction DoubleClickOnGraphItem { get; set; }
+        /// <summary>
         /// Defaultní časový interval pro <see cref="TotalTimeRange"/>
         /// </summary>
         public static GuiTimeRange TotalTimeRangeDefault
@@ -264,6 +272,24 @@ namespace Noris.LCS.Base.WorkScheduler
                 return new GuiTimeRange(begin.AddHours(-add), end.AddHours(add));
             }
         }
+    }
+    /// <summary>
+    /// Druh reakce na DoubleClick
+    /// </summary>
+    public enum GuiDoubleClickAction
+    {
+        /// <summary>
+        /// Žádná reakce
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Otevřít přiměřený formulář
+        /// </summary>
+        OpenForm,
+        /// <summary>
+        /// Nastavit Zoom na časové ose na prvek / na všechny prvky v grafu
+        /// </summary>
+        TimeZoom
     }
     #endregion
     #region GuiPages : kompletní sada stránek (GuiPage) s daty

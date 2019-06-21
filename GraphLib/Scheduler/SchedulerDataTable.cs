@@ -187,6 +187,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return new GuiGridRowId() { RowId = row.RecordGId, TableName = this.TableName };
         }
         /// <summary>
+        /// Metoda se pokusí najít řádek podle daného klíče, vrací true pokud je nalezen.
+        /// Pokud dojde k chybě (nezadaný ID, neexistující PrimaryKey, více záznamů pro daný klíč), pak vrací false (=řádek nenalezen).
+        /// Toto chování lze změnit parametrem checkErrors: false = default = chyby nehlásit, vrátit false; true = chyby hlásit.
+        /// </summary>
+        /// <param name="rowGId">Identifikátor řádku</param>
+        /// <param name="row">Out nalezený řádek</param>
+        /// <returns></returns>
+        protected bool TryGetRow(GId rowGId, out Row row)
+        {
+            return this.TableRow.TryGetRow(rowGId, out row);
+        }
+        /// <summary>
         /// Metoda zajistí převedení konfigurace z <see cref="GuiGrid"/> do <see cref="GTableRow"/>
         /// </summary>
         protected void FillGTableProperties()
@@ -298,7 +310,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void PrepareGraphProperties()
         {
-            DataGraphProperties graphProperties = DataGraphProperties.CreateFrom(this, this.GuiGrid.GraphProperties);
+            DataGraphProperties graphProperties = DataGraphProperties.CreateFrom(this, this.MainData.GuiData.Properties, this.GuiGrid.GraphProperties);
             this.GraphProperties = graphProperties;
 
             DataGraphPositionType graphPosition = (this.TableRow != null ? graphProperties.GraphPosition : DataGraphPositionType.None);
@@ -363,7 +375,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTimeGraph gTimeGraph = new GTimeGraph();
             gTimeGraph.GraphId = this.GetId(row.RecordGId);
             gTimeGraph.DataSource = this;
-            gTimeGraph.UserData = this;
+            gTimeGraph.UserData = row;
 
             ITimeInteractiveGraph iTimeGraph = gTimeGraph as ITimeInteractiveGraph;
             if (this.GraphPosition == DataGraphPositionType.InLastColumn)
@@ -568,7 +580,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (refreshRow.RowData != null)
             {   // Máme zadaná data řádku - půjde o Insert nebo Update:
                 rowGId = (refreshRow.RowData?.RowGuiId ?? refreshRow.GridRowId?.RowId);    // ID řádku: primárně z dat řádku, sekundárně z ID
-                if (!this.TableRow.TryGetRow(rowGId, out row))
+                if (!this.TryGetRow(rowGId, out row))
                 {   // Insert: V tabulce nebyl nalezen řádek pro daný GId => vytvoříme nový řádek a přidáme do tabulky:
                     row = Row.CreateFrom(refreshRow.RowData);
                     this.TableRow.AddRow(row);
@@ -580,7 +592,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
                 this.TimeGraphDict.TryGetValue(rowGId, out modifiedGraph);
             }
-            else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TableRow.TryGetRow(refreshRow.GridRowId.RowId, out row))
+            else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TryGetRow(refreshRow.GridRowId.RowId, out row))
             {   // Delete:
                 this.TableRow.Rows.Remove(row);
             }
@@ -609,7 +621,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTimeGraph modifiedGraph = null;
             GId rowGId = expandRow.RowId;
             Row row;
-            if (this.TableRow.TryGetRow(rowGId, out row))
+            if (this.TryGetRow(rowGId, out row))
                 row.TreeNode.ExpandWithParents();
 
             return modifiedGraph;
@@ -2413,7 +2425,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {   // Na vstupu mám klíče ze zdrojového grafu, zde hledám řádky shodného klíče:
                 if (rowDict.ContainsKey(gId)) continue;
                 Row row;
-                if (!this.TableRow.TryGetRow(gId, out row)) continue;
+                if (!this.TryGetRow(gId, out row)) continue;
                 rowDict.Add(gId, row.Control);
             }
         }
@@ -3984,16 +3996,68 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return false;
         }
         /// <summary>
+        /// Uživatel dal doubleclick na plochu grafu
+        /// </summary>
+        /// <param name="args"></param>
+        protected void GraphDoubleClick(ItemActionArgs args)
+        {
+            switch (this.GraphProperties.DoubleClickOnGraph)
+            {
+                case GuiDoubleClickAction.OpenForm:
+                    Row row = args.Graph?.UserData as Row;
+                    if (row != null)
+                        this.RunOpenRecordForm(row.RecordGId);
+                    break;
+                case GuiDoubleClickAction.TimeZoom:
+                    TimeRange time = args.Graph.AllGraphItems.Select(i => i.Time).TimeUnion();
+                    if (time != null && time.IsFilled && time.IsReal)
+                    {
+                        time = time.ZoomToRatio(time.Center.Value, 1.2m);
+                        this.SynchronizedTime = time;
+                    }
+                    break;
+            }
+        }
+        /// <summary>
         /// Uživatel dal doubleclick na grafický prvek
         /// </summary>
         /// <param name="args"></param>
         protected void GraphItemDoubleClick(ItemActionArgs args)
         {
-            if (args.ModifierKeys == Keys.Control)
+            if (args.ModifierKeys == Keys.Control || this.GraphProperties.DoubleClickOnGraphItem == GuiDoubleClickAction.OpenForm)
             {   // Akce typu Ctrl+DoubleClick na grafickém prvku si žádá otevření formuláře:
                 DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
                 if (graphItem != null)
                     this.RunOpenRecordForm(graphItem.RecordGId);
+            }
+            else if (this.GraphProperties.DoubleClickOnGraphItem == GuiDoubleClickAction.TimeZoom)
+            {
+                TimeRange time = args.Group.Time;
+                if (time != null && time.IsFilled && time.IsReal)
+                {
+                    time = time.ZoomToRatio(time.Center.Value, 1.2m);
+                    this.SynchronizedTime = time;
+                }
+                /*
+                DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
+                if (graphItem != null)
+                {
+                    TimeRange time = graphItem.Time;
+                    if (graphItem.GroupGId != null)
+                    {
+                        DataGraphItem[] graphItems;
+                        if (this.TimeGraphGroupDict.TryGetValue(graphItem.GroupGId, out graphItems))
+                        {
+                            time = graphItems.Select(g => g.Time).TimeUnion();
+                        }
+                    }
+                    if (time != null && time.IsFilled && time.IsReal)
+                    {
+                        time = time.ZoomToRatio(time.Center.Value, 1.2m);
+                        this.SynchronizedTime = time;
+                    }
+                }
+                */
             }
         }
         /// <summary>
@@ -4138,6 +4202,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
         void ITimeGraphDataSource.CreateLinks(CreateLinksArgs args) { this.GraphItemCreateLinks(args); }
         void ITimeGraphDataSource.GraphRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForGraph(args); }
+        void ITimeGraphDataSource.GraphDoubleClick(ItemActionArgs args) { this.GraphDoubleClick(args); }
+        void ITimeGraphDataSource.GraphLongClick(ItemActionArgs args) { }
         void ITimeGraphDataSource.ItemRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForItem(args); }
         void ITimeGraphDataSource.ItemDoubleClick(ItemActionArgs args) { this.GraphItemDoubleClick(args); }
         void ITimeGraphDataSource.ItemLongClick(ItemActionArgs args) { }
@@ -4626,26 +4692,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vytvoří a vrátí instanci DataGraphProperties, vloží do ní dodaná data.
         /// </summary>
         /// <param name="dataGraphTable">Vlastník = tabulka</param>
+        /// <param name="guiProperties">Definice globálních vlastností</param>
         /// <param name="guiGraphProperties">Definice vlastností grafu</param>
         /// <returns></returns>
-        public static DataGraphProperties CreateFrom(MainDataTable dataGraphTable, GuiGraphProperties guiGraphProperties)
+        public static DataGraphProperties CreateFrom(MainDataTable dataGraphTable, GuiProperties guiProperties, GuiGraphProperties guiGraphProperties)
         {
-            return new DataGraphProperties(dataGraphTable, guiGraphProperties);
+            return new DataGraphProperties(dataGraphTable, guiProperties, guiGraphProperties);
         }
         /// <summary>
         /// Privátní konstruktor
         /// </summary>
         /// <param name="dataGraphTable">Vlastník = tabulka</param>
+        /// <param name="guiMainProperties">Definice globálních vlastností</param>
         /// <param name="guiGraphProperties">Definice vlastností grafu</param>
-        private DataGraphProperties(MainDataTable dataGraphTable, GuiGraphProperties guiGraphProperties)
+        private DataGraphProperties(MainDataTable dataGraphTable, GuiProperties guiMainProperties, GuiGraphProperties guiGraphProperties)
         {
             this.MainDataTable = dataGraphTable;
+            this.GuiMainProperties = guiMainProperties;
             this.GuiGraphProperties = guiGraphProperties;
         }
         /// <summary>
         /// Vlastník = tabulka
         /// </summary>
         protected MainDataTable MainDataTable { get; private set; }
+        /// <summary>
+        /// Vlastnosti globální
+        /// </summary>
+        protected GuiProperties GuiMainProperties { get; private set; }
         /// <summary>
         /// Vlastnosti grafu načtené z deklarace v <see cref="GuiData"/>
         /// </summary>
@@ -4675,6 +4748,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pozice grafu v tabulce
         /// </summary>
         public DataGraphPositionType GraphPosition { get { return this.GuiGraphProperties.GraphPosition; } }
+        /// <summary>
+        /// Reakce na DoubleClick v prostoru Časového grafu
+        /// </summary>
+        public GuiDoubleClickAction DoubleClickOnGraph { get { return (this.GuiMainProperties != null ? this.GuiMainProperties.DoubleClickOnGraph : GuiDoubleClickAction.None); } }
+        /// <summary>
+        /// Reakce na DoubleClick v prostoru Prvku na Časovém grafu
+        /// </summary>
+        public GuiDoubleClickAction DoubleClickOnGraphItem { get { return (this.GuiMainProperties != null ? this.GuiMainProperties.DoubleClickOnGraphItem : GuiDoubleClickAction.None); } }
         #endregion
         #region Převod konfiguračních dat z úrovně GuiGraphProperties (GUI) do úrovně TimeGraphProperties (Components.Graph)
         /// <summary>
