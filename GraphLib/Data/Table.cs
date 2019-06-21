@@ -3644,13 +3644,40 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (guiRow == null) return null;
             Row row = new Row(guiRow.Cells.ToArray());
-            row.RecordGId = guiRow.RowGuiId;
-            row.ParentRecordGId = guiRow.ParentRowGuiId;
-            row.TagItems = TagItem.CreateFrom(guiRow.TagItems);
-            row.Style = guiRow.Style;
-            row.StyleName = guiRow.StyleName;
-            row.UserData = guiRow;
+            row._FillFrom(guiRow);
             return row;
+        }
+        /// <summary>
+        /// Naplní do sebe data z dodaného řádku <see cref="GuiDataRow"/>
+        /// </summary>
+        /// <param name="guiRow"></param>
+        public void FillFrom(GuiDataRow guiRow)
+        {
+            if (guiRow == null) return;
+            this._FillCellsFrom(guiRow);
+            this._FillFrom(guiRow);
+        }
+        /// <summary>
+        /// Naplní do sebe Cells z dodaného řádku <see cref="GuiDataRow"/>
+        /// </summary>
+        /// <param name="guiRow"></param>
+        private void _FillCellsFrom(GuiDataRow guiRow)
+        {
+            this._CellDict = new Dictionary<int, Cell>();
+            this._CellInit(guiRow.Cells.ToArray());
+        }
+        /// <summary>
+        /// Naplní do sebe data vyjma Cells z dodaného řádku <see cref="GuiDataRow"/>
+        /// </summary>
+        /// <param name="guiRow"></param>
+        private void _FillFrom(GuiDataRow guiRow)
+        {
+            if (guiRow.RowGuiId != null) this.RecordGId = guiRow.RowGuiId;
+            if (guiRow.ParentRowGuiId != null) this.ParentRecordGId = guiRow.ParentRowGuiId;
+            this.TagItems = TagItem.CreateFrom(guiRow.TagItems);
+            this.Style = guiRow.Style;
+            this.StyleName = guiRow.StyleName;
+            this.UserData = guiRow;
         }
         /// <summary>
         /// Metoda vytvoří soupis řádků <see cref="Row"/> na základě dat o řádcích z tabulky <see cref="System.Data.DataRowCollection"/>.

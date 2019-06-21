@@ -380,6 +380,157 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return gTimeGraph;
         }
         #endregion
+        #region Vyhledání prvků grafu
+        /// <summary>
+        /// Najde a vrátí položku grafu podle jeho ID
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        protected DataGraphItem GetGraphItem(int id)
+        {
+            return this.GetGraphItem(this.GetGId(id));
+        }
+        /// <summary>
+        /// Najde a vrátí položku grafu podle jeho GId
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected DataGraphItem GetGraphItem(GId gId)
+        {
+            if (gId == null) return null;
+            DataGraphItem dataGraphItem;
+            if (!this.TimeGraphItemDict.TryGetValue(gId, out dataGraphItem)) return null;
+            return dataGraphItem;
+        }
+        /// <summary>
+        /// Metoda vrací <see cref="GId"/> řádku, na němž je umístěn daný graf.
+        /// </summary>
+        /// <param name="graph"></param>
+        /// <returns></returns>
+        protected GId GetGraphRowGid(GTimeGraph graph)
+        {
+            if (graph == null) return null;
+            GRow gRow = graph.SearchForParent(typeof(GRow)) as GRow;
+            if (gRow == null) return null;
+            return gRow.OwnerRow.RecordGId;
+        }
+        /// <summary>
+        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu <see cref="GTimeGraphItem"/>. Pokud ne, pak vrací null.
+        /// Pokud ano, pak z vizuálního prvku grafu načte všechny datové prvky grafu = kolekce <see cref="ITimeGraphItem"/>.
+        /// Najde odpovídající Schedulerovou tabulku, do které patří daný prvek grafu <see cref="MainDataTable"/>.
+        /// Z tabulky <see cref="MainDataTable"/> si nechá určit identifikátory <see cref="GuiGridItemId"/> nalezených prvků grafů, a ty vrátí.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="wholeGroup">Vrátit všechny prvky i tehdy, když daný prvek reprezentuje jednu položku?</param>
+        /// <returns></returns>
+        public static GuiGridItemId[] GetGuiGridItems(IInteractiveItem item, bool wholeGroup)
+        {
+            GTimeGraphItem graphItem = item as GTimeGraphItem;
+            if (graphItem == null) return null;
+            ITimeGraphItem[] dataItems = graphItem.GetDataItems(wholeGroup);             // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
+            if (dataItems == null || dataItems.Length == 0) return null;
+            GTable gTable = graphItem.SearchForParent(typeof(GTable)) as GTable;         // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
+            if (gTable == null) return null;
+            MainDataTable mainDataTable = gTable.DataTable.UserData as MainDataTable;    // Ve vizuální tabulce najdu její datový základ, a jeho UserData by měla být instance MainDataTable
+            if (mainDataTable == null) return null;
+
+            return mainDataTable.GetGuiGridItems(dataItems);                             // Instance MainDataTable vrátí identifikátory předaných prvků.
+        }
+        /// <summary>
+        /// Metoda pro dané prvky <see cref="ITimeGraphItem"/> najde a vrátí pole jejich identifikátorů <see cref="GuiGridItemId"/>.
+        /// </summary>
+        /// <param name="dataItems"></param>
+        /// <returns></returns>
+        public GuiGridItemId[] GetGuiGridItems(IEnumerable<ITimeGraphItem> dataItems)
+        {
+            if (dataItems == null) return null;
+            List<GuiGridItemId> gridItemIdList = new List<GuiGridItemId>();
+            foreach (ITimeGraphItem dataItem in dataItems)
+            {
+                DataGraphItem gridItem = dataItem as DataGraphItem;
+                if (dataItem == null) continue;
+                GuiGridItemId gridItemId = this.GetGridItemId(gridItem);
+                if (gridItemId == null) continue;
+                gridItemIdList.Add(gridItemId);
+            }
+            return gridItemIdList.ToArray();
+        }
+        /// <summary>
+        /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
+        /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
+        /// Pro první požadavek na určitý <see cref="GId"/> vytvoří nový ID.
+        /// Reverzní metoda je <see cref="GetGId(int)"/>.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected int GetId(GId gId)
+        {
+            if (gId == null) return 0;
+            return this.TimeIdIndex.GetIndex(gId);
+        }
+        /// <summary>
+        /// Pro daný Int32 ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
+        /// Pokud daný int nezná, vrátí null.
+        /// Reverzní metoda je <see cref="GetId(GId)"/>.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        protected GId GetGId(int id)
+        {
+            if (id == 0) return null;
+            GId gId;
+            if (!this.TimeIdIndex.TryGetKey(id, out gId)) return null;
+            return gId;
+        }
+        #endregion
+        #region Data (Dictionary) pro evidenci grafů a jejich položek a grup, index GId-Id
+        /// <summary>
+        /// Dictionary všech instancí grafů, které jsou vytvořeny do řádků zdejší tabulky <see cref="TableRow"/>.
+        /// Klíčem je GId řádku. Zde jsou grafy jak "plné", umístěné v samostatném sloupci, tak i grafy "na pozadí".
+        /// </summary>
+        protected Dictionary<GId, GTimeGraph> TimeGraphDict { get; private set; }
+        /// <summary>
+        /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
+        /// Klíčem je GId grafického prvku <see cref="DataGraphItem.ItemGId"/>.
+        /// </summary>
+        protected Dictionary<GId, DataGraphItem> TimeGraphItemDict { get; private set; }
+        /// <summary>
+        /// DictionaryList pro uchování informací o grupách grafických prvků.
+        /// Klíčem je tedy Int32 GroupId (pokud prvek má zadanou grupu), a hodnotou je seznam všech prvků v dané grupě.
+        /// </summary>
+        protected DictionaryList<GId, DataGraphItem> TimeGraphGroupDict { get; private set; }
+        /// <summary>
+        /// Index pro obousměrnou konverzi Int32 - GId
+        /// </summary>
+        protected Index<GId> TimeIdIndex { get; set; }
+        #endregion
+        #region Vlastnosti grafů a další property pro grafy
+        /// <summary>
+        /// Aktuální synchronizovaný časový interval
+        /// </summary>
+        protected TimeRange SynchronizedTime { get { return this.IMainData.SynchronizedTime; } set { this.IMainData.SynchronizedTime = value; } }
+        /// <summary>
+        /// Celkový časový interval <see cref="GuiProperties.TotalTimeRange"/>
+        /// </summary>
+        protected TimeRange TotalTime { get { return this.IMainData?.GuiData?.Properties?.TotalTimeRange; } }
+        /// <summary>
+        /// Vlastnosti tabulky, načtené z DataDeclaration
+        /// </summary>
+        public DataGraphProperties GraphProperties { get; private set; }
+        /// <summary>
+        /// Režim časové osy v grafu, podle zadání v deklaraci
+        /// </summary>
+        protected TimeGraphTimeAxisMode TimeAxisMode { get; private set; }
+        /// <summary>
+        /// Pozice grafu. Obsahuje None, pokud graf není definován.
+        /// </summary>
+        protected DataGraphPositionType GraphPosition { get; private set; }
+        /// <summary>
+        /// Sloupec hlavní tabulky, který zobrazuje graf při umístění <see cref="DataGraphPositionType.InLastColumn"/>
+        /// </summary>
+        protected Column GraphColumn { get; private set; }
+        #endregion
+        #endregion
         #region Refresh obsahu tabulky na základě dat z GuiResponse : přidání/aktualizace/odebrání : řádků/grafů/prvků grafu
         #region Refresh řádků
         /// <summary>
@@ -392,7 +543,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTimeGraph modifiedGraph = this._UpdateRow(refreshRow);
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
-
+        /// <summary>
+        /// Provede aktualizaci řádku
+        /// </summary>
+        /// <param name="refreshRow"></param>
+        /// <returns></returns>
         private GTimeGraph _UpdateRow(GuiRefreshRow refreshRow)
         {
             if (refreshRow == null || (refreshRow.GridRowId == null && refreshRow.RowData == null)) return null;
@@ -410,7 +565,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
                 else
                 {   // Update:
-
+                    row.FillFrom(refreshRow.RowData);
                 }
             }
             else if (refreshRow.GridRowId != null && refreshRow.GridRowId.RowId != null && this.TableRow.TryGetRow(refreshRow.GridRowId.RowId, out row))
@@ -721,157 +876,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
         }
-        #endregion
-        #region Vyhledání prvků grafu
-        /// <summary>
-        /// Najde a vrátí položku grafu podle jeho ID
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        protected DataGraphItem GetGraphItem(int id)
-        {
-            return this.GetGraphItem(this.GetGId(id));
-        }
-        /// <summary>
-        /// Najde a vrátí položku grafu podle jeho GId
-        /// </summary>
-        /// <param name="gId"></param>
-        /// <returns></returns>
-        protected DataGraphItem GetGraphItem(GId gId)
-        {
-            if (gId == null) return null;
-            DataGraphItem dataGraphItem;
-            if (!this.TimeGraphItemDict.TryGetValue(gId, out dataGraphItem)) return null;
-            return dataGraphItem;
-        }
-        /// <summary>
-        /// Metoda vrací <see cref="GId"/> řádku, na němž je umístěn daný graf.
-        /// </summary>
-        /// <param name="graph"></param>
-        /// <returns></returns>
-        protected GId GetGraphRowGid(GTimeGraph graph)
-        {
-            if (graph == null) return null;
-            GRow gRow = graph.SearchForParent(typeof(GRow)) as GRow;
-            if (gRow == null) return null;
-            return gRow.OwnerRow.RecordGId;
-        }
-        /// <summary>
-        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu <see cref="GTimeGraphItem"/>. Pokud ne, pak vrací null.
-        /// Pokud ano, pak z vizuálního prvku grafu načte všechny datové prvky grafu = kolekce <see cref="ITimeGraphItem"/>.
-        /// Najde odpovídající Schedulerovou tabulku, do které patří daný prvek grafu <see cref="MainDataTable"/>.
-        /// Z tabulky <see cref="MainDataTable"/> si nechá určit identifikátory <see cref="GuiGridItemId"/> nalezených prvků grafů, a ty vrátí.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="wholeGroup">Vrátit všechny prvky i tehdy, když daný prvek reprezentuje jednu položku?</param>
-        /// <returns></returns>
-        public static GuiGridItemId[] GetGuiGridItems(IInteractiveItem item, bool wholeGroup)
-        {
-            GTimeGraphItem graphItem = item as GTimeGraphItem;
-            if (graphItem == null) return null;
-            ITimeGraphItem[] dataItems = graphItem.GetDataItems(wholeGroup);             // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
-            if (dataItems == null || dataItems.Length == 0) return null;
-            GTable gTable = graphItem.SearchForParent(typeof(GTable)) as GTable;         // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
-            if (gTable == null) return null;
-            MainDataTable mainDataTable = gTable.DataTable.UserData as MainDataTable;    // Ve vizuální tabulce najdu její datový základ, a jeho UserData by měla být instance MainDataTable
-            if (mainDataTable == null) return null;
-
-            return mainDataTable.GetGuiGridItems(dataItems);                             // Instance MainDataTable vrátí identifikátory předaných prvků.
-        }
-        /// <summary>
-        /// Metoda pro dané prvky <see cref="ITimeGraphItem"/> najde a vrátí pole jejich identifikátorů <see cref="GuiGridItemId"/>.
-        /// </summary>
-        /// <param name="dataItems"></param>
-        /// <returns></returns>
-        public GuiGridItemId[] GetGuiGridItems(IEnumerable<ITimeGraphItem> dataItems)
-        {
-            if (dataItems == null) return null;
-            List<GuiGridItemId> gridItemIdList = new List<GuiGridItemId>();
-            foreach (ITimeGraphItem dataItem in dataItems)
-            {
-                DataGraphItem gridItem = dataItem as DataGraphItem;
-                if (dataItem == null) continue;
-                GuiGridItemId gridItemId = this.GetGridItemId(gridItem);
-                if (gridItemId == null) continue;
-                gridItemIdList.Add(gridItemId);
-            }
-            return gridItemIdList.ToArray();
-        }
-        /// <summary>
-        /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
-        /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
-        /// Pro první požadavek na určitý <see cref="GId"/> vytvoří nový ID.
-        /// Reverzní metoda je <see cref="GetGId(int)"/>.
-        /// </summary>
-        /// <param name="gId"></param>
-        /// <returns></returns>
-        protected int GetId(GId gId)
-        {
-            if (gId == null) return 0;
-            return this.TimeIdIndex.GetIndex(gId);
-        }
-        /// <summary>
-        /// Pro daný Int32 ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
-        /// Pokud daný int nezná, vrátí null.
-        /// Reverzní metoda je <see cref="GetId(GId)"/>.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        protected GId GetGId(int id)
-        {
-            if (id == 0) return null;
-            GId gId;
-            if (!this.TimeIdIndex.TryGetKey(id, out gId)) return null;
-            return gId;
-        }
-        #endregion
-        #region Data (Dictionary) pro evidenci grafů a jejich položek a grup, index GId-Id
-        /// <summary>
-        /// Dictionary všech instancí grafů, které jsou vytvořeny do řádků zdejší tabulky <see cref="TableRow"/>.
-        /// Klíčem je GId řádku. Zde jsou grafy jak "plné", umístěné v samostatném sloupci, tak i grafy "na pozadí".
-        /// </summary>
-        protected Dictionary<GId, GTimeGraph> TimeGraphDict { get; private set; }
-        /// <summary>
-        /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
-        /// Klíčem je GId grafického prvku <see cref="DataGraphItem.ItemGId"/>.
-        /// </summary>
-        protected Dictionary<GId, DataGraphItem> TimeGraphItemDict { get; private set; }
-        /// <summary>
-        /// DictionaryList pro uchování informací o grupách grafických prvků.
-        /// Klíčem je tedy Int32 GroupId (pokud prvek má zadanou grupu), a hodnotou je seznam všech prvků v dané grupě.
-        /// </summary>
-        protected DictionaryList<GId, DataGraphItem> TimeGraphGroupDict { get; private set; }
-        /// <summary>
-        /// Index pro obousměrnou konverzi Int32 - GId
-        /// </summary>
-        protected Index<GId> TimeIdIndex { get; set; }
-        #endregion
-        #region Vlastnosti grafů a další property pro grafy
-        /// <summary>
-        /// Aktuální synchronizovaný časový interval
-        /// </summary>
-        protected TimeRange SynchronizedTime { get { return this.IMainData.SynchronizedTime; } set { this.IMainData.SynchronizedTime = value; } }
-        /// <summary>
-        /// Celkový časový interval <see cref="GuiProperties.TotalTimeRange"/>
-        /// </summary>
-        protected TimeRange TotalTime { get { return this.IMainData?.GuiData?.Properties?.TotalTimeRange; } }
-        /// <summary>
-        /// Vlastnosti tabulky, načtené z DataDeclaration
-        /// </summary>
-        public DataGraphProperties GraphProperties { get; private set; }
-        /// <summary>
-        /// Režim časové osy v grafu, podle zadání v deklaraci
-        /// </summary>
-        protected TimeGraphTimeAxisMode TimeAxisMode { get; private set; }
-        /// <summary>
-        /// Pozice grafu. Obsahuje None, pokud graf není definován.
-        /// </summary>
-        protected DataGraphPositionType GraphPosition { get; private set; }
-        /// <summary>
-        /// Sloupec hlavní tabulky, který zobrazuje graf při umístění <see cref="DataGraphPositionType.InLastColumn"/>
-        /// </summary>
-        protected Column GraphColumn { get; private set; }
-        #endregion
         #endregion
         #region Linky mezi položkami grafů
         /// <summary>

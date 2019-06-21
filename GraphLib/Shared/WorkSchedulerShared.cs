@@ -167,6 +167,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.PluginFormIsMaximized = true;
             this.TotalTimeRange = TotalTimeRangeDefault;
             this.InitialTimeRange = InitialTimeRangeDefault;
+            this.TimeChangeSend = TimeChangeSendMode.None;
         }
         /// <summary>
         /// Titulek okna pluginu.
@@ -193,6 +194,39 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota: aktuální týden od pondělí do neděle, +- 8 hodin
         /// </summary>
         public GuiTimeRange InitialTimeRange { get; set; }
+        /// <summary>
+        /// Požadovaný režim odesílání informací o změně času na časové ose z pluginu do servisní funkce.
+        /// Podle tohoto režimu bude po změně času odeslán command <see cref="GuiRequest.COMMAND_TimeChange"/>.
+        /// Servisní funkce může reagovat = donačte další data, a v <see cref="GuiResponse"/> předá nové řádky a nové prvky grafů pro nový časový interval.
+        /// Plugin je zařadí do svých stávajících vizuálních dat a zobrazí je.
+        /// Další informace v property
+        /// </summary>
+        public TimeChangeSendMode TimeChangeSend { get; set; }
+        /// <summary>
+        /// Zvětšení časového intervalu aktuální časové osy použité do requestu <see cref="GuiRequest.COMMAND_TimeChange"/>.
+        /// Pokud je požadavek na odesílání tohoto commandu po změně času v režimu <see cref="TimeChangeSendMode.OnNewTime"/>, 
+        /// pak plugin (v situaci, že aktuální viditelný čas zahrnuje úsek, pro který dosud nejsou načtena data) 
+        /// rozšíří viditelný úsek v tomto poměru a odešle daný command s rozšířeným časem, a označí si tento rozšířený čas jako pokrytý budoucími daty.
+        /// <para/>
+        /// Příklad pro režim <see cref="TimeChangeSendMode.OnNewTime"/> (na číselné ose): 
+        /// Pokud máme načtena data pro rozsah { 50 - 80 } a uživatel zobrazí rozsah { 60 - 80 }, command se neposílá (máme dostatek dat).
+        /// Jakmile uživatel posune časovou osu na rozsah { 70 - 90 }, plugin zjistí, že se zobrazuje nepokrytá část časové osy { 80 - 90 }.
+        /// Určí rozšířený časový interval pomocí tohoto koeficientu <see cref="TimeChangeSendEnlargement"/>, 
+        /// například pro koeficient navýšení <see cref="TimeChangeSendEnlargement"/> = 0.5d se nově zobrazený interval { 70 - 90 } rozšíří : 
+        /// aktuální délka = (90-70)=20, poměr navýšení = (1 + <see cref="TimeChangeSendEnlargement"/>) = 1.5d; nová délka = 1.5d * 20 = 30, 
+        /// výsledný interval = { 65 - 95 }, následně si tento interval přidá do interní informace o pokrytých časech, a tento interval odešle:
+        /// Odešle tedy command <see cref="GuiRequest.COMMAND_TimeChange"/> a předá informaci o čase { 65 - 95 } v property <see cref="GuiRequestCurrentState.TimeAxisEnlargedValue"/>.
+        /// <para/>
+        /// Optimální hodnota navýšení je 1 až 2. Hodnota 2 zajistí, že při zobrazení úseku určité délky budou načtena data stejné délky vlevo, a také vpravo.
+        /// Hodnota 1 zajistí, že vlevo i vpravo bude načtena polovina dat z viditelné oblasti.
+        /// <para/>
+        /// Pokud koefcient <see cref="TimeChangeSendEnlargement"/> je null, 0 nebo záporný, pak se zvětšení neprovádí.
+        /// </summary>
+        public double? TimeChangeSendEnlargement { get; set; }
+        /// <summary>
+        /// Tento časový úsek je pokrytý výchozími daty a považuje se za známý.
+        /// </summary>
+        public GuiTimeRange TimeChangeInitialValue { get; set; }
         /// <summary>
         /// Způsob umístění prvku grafu při jeho přetahování (Drag and Drop), na ose Y, v rámci původního grafu (odkud prvek pochází)
         /// </summary>
@@ -5328,6 +5362,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string COMMAND_KeyPress = "KeyPress";
         /// <summary>
+        /// Uživatel provedl změnu na časové ose.
+        /// Tento command se posílá na základě základního nastavení dle <see cref=""/>
+        /// Objekt <see cref="GuiRequest"/> nese data o klávese a o objektu v property <see cref="GuiRequest.KeyPress"/>.
+        /// </summary>
+        public const string COMMAND_TimeChange = "TimeChange";
+        /// <summary>
         /// Otevřít záznamy.
         /// Objekt <see cref="GuiRequest"/> nese záznamy k otevření v property <see cref="GuiRequest.RecordsToOpen"/>.
         /// </summary>
@@ -5644,9 +5684,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string ActivePage { get; set; }
         /// <summary>
-        /// Aktuální hodnota časové osy
+        /// Aktuální hodnota časové osy, přesně rovna viditelné oblasti
         /// </summary>
         public GuiTimeRange TimeAxisValue { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="TimeAxisValue"/>, rozšířená koeficientem <see cref="GuiProperties.TimeChangeSendEnlargement"/>.
+        /// Tato property je naplněna pouze tehdy, když je předáván command <see cref="GuiRequest.COMMAND_TimeChange"/>.
+        /// Vyjadřuje časový úsek, jehož obsah požadujeme načíst - aby mohl být zobrazen On-Demand přo pohybu na časové ose.
+        /// </summary>
+        public GuiTimeRange TimeAxisEnlargedValue { get; set; }
         /// <summary>
         /// Aktivní řádek, je nanejvýše jeden
         /// </summary>
@@ -6660,7 +6706,27 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         OnBackgroundLogarithmic
     }
-
+    /// <summary>
+    /// Režim odesílání commandu o změně času na časové ose z pluginu do servisní funkce.
+    /// Pokud uživatel změní viditelný rozsah, pak podle této hodnoty odešle plugin command 
+    /// </summary>
+    public enum TimeChangeSendMode
+    {
+        /// <summary>
+        /// Při pohybu na časové ose se neodesílá žádný požadavek. Toto je výchozí nastavení.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Při pohybu na časové ose se detekuje, zda je zobrazen úsek, který už byl zobrazen a jsou pro něj načtena data 
+        /// (předchozím vyvoláním requestu <see cref="GuiRequest.COMMAND_TimeChange"/>), pak se tento request znovu neposílá.
+        /// Pošle se jen tehdy, když uživatel najede na časový úsek, pro který jsme ještě request neposílali.
+        /// </summary>
+        OnNewTime,
+        /// <summary>
+        /// Při jakémkoli pohybu na časové ose se odešle request <see cref="GuiRequest.COMMAND_TimeChange"/>.
+        /// </summary>
+        Allways
+    }
     /// <summary>
     /// Okraje formuláře
     /// </summary>
