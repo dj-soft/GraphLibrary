@@ -759,6 +759,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.Properties.GraphItemMoveOtherGraph = GraphItemMoveAlignY.OnMousePosition;
             this.MainData.Properties.TimeChangeSend = TimeChangeSendMode.OnNewTime;
             this.MainData.Properties.TimeChangeSendEnlargement = 2d;
+            this.MainData.Properties.TimeChangeInitialValue = this.TimeRangeCurrent;
             this.MainData.Properties.DoubleClickOnGraph = GuiDoubleClickAction.OpenForm;
             this.MainData.Properties.DoubleClickOnGraphItem = GuiDoubleClickAction.TimeZoom;
         }
