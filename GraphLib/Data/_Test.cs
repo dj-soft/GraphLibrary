@@ -143,6 +143,88 @@ SET @cislo = 15307;
             if (dateRound != dateExp) throw new AssertFailedException("TestExtensions.RoundTime() error: expected time: " + dateExp.ToString("hh:MM:ss.fff") + ", returned time " + dateRound.ToString("hh:MM:ss.fff") + ".");
         }
         #endregion
+        #region Testy IntervalArray
+        /// <summary>
+        /// Testy IntervalArray
+        /// </summary>
+        [TestMethod]
+        public void TestIntervalArray()
+        {
+            TimeRangeArray intervalArray = new TimeRangeArray();
+            intervalArray.Merge(_IntervalCreate(12, 14));
+            _IntervalAssert(intervalArray, "12-14");
+            intervalArray.Merge(_IntervalCreate(18, 20));
+            _IntervalAssert(intervalArray, "12-14,18-20");
+            intervalArray.Merge(_IntervalCreate(6, 10));
+            _IntervalAssert(intervalArray, "06-10,12-14,18-20");
+            intervalArray.Merge(_IntervalCreate(11, 12));
+            _IntervalAssert(intervalArray, "06-10,11-14,18-20");
+            intervalArray.Merge(_IntervalCreate(08, 13));
+            _IntervalAssert(intervalArray, "06-14,18-20");
+            intervalArray.Merge(_IntervalCreate(15, 16));
+            _IntervalAssert(intervalArray, "06-14,15-16,18-20");
+            intervalArray.Merge(_IntervalCreate(20, 22));
+            _IntervalAssert(intervalArray, "06-14,15-16,18-22");
+            intervalArray.Merge(_IntervalCreate(19, 22));
+            _IntervalAssert(intervalArray, "06-14,15-16,18-22");
+            intervalArray.Merge(_IntervalCreate(04, 07));
+            _IntervalAssert(intervalArray, "04-14,15-16,18-22");
+            intervalArray.Merge(_IntervalCreate(14, 15));
+            _IntervalAssert(intervalArray, "04-16,18-22");
+
+            intervalArray.Clear();
+            intervalArray.Merge(_IntervalCreate(06, 12));
+            _IntervalAssert(intervalArray, "06-12");
+            intervalArray.Merge(_IntervalCreate(08, 10));
+            _IntervalAssert(intervalArray, "06-12");
+            intervalArray.Merge(_IntervalCreate(06, 14));
+            _IntervalAssert(intervalArray, "06-14");
+            intervalArray.Merge(_IntervalCreate(14, 16));
+            _IntervalAssert(intervalArray, "06-16");
+            intervalArray.Merge(_IntervalCreate(18, 20));
+            _IntervalAssert(intervalArray, "06-16,18-20");
+            intervalArray.Merge(_IntervalCreate(21, 22));
+            _IntervalAssert(intervalArray, "06-16,18-20,21-22");
+            intervalArray.Merge(_IntervalCreate(02, 04));
+            _IntervalAssert(intervalArray, "02-04,06-16,18-20,21-22");
+            intervalArray.Merge(_IntervalCreate(02, 22));
+            _IntervalAssert(intervalArray, "02-22");
+
+            intervalArray.Clear();
+            intervalArray.Merge(_IntervalCreate(08, 12));
+            _IntervalAssert(intervalArray, "08-12");
+            intervalArray.Merge(_IntervalCreate(12, 14));
+            _IntervalAssert(intervalArray, "08-14");
+            intervalArray.Merge(_IntervalCreate(14, 16));
+            _IntervalAssert(intervalArray, "08-16");
+            intervalArray.Merge(_IntervalCreate(06, 18));
+            _IntervalAssert(intervalArray, "06-18");
+            intervalArray.Merge(_IntervalCreate(04, 06));
+            _IntervalAssert(intervalArray, "04-18");
+            intervalArray.Merge(_IntervalCreate(18, 20));
+            _IntervalAssert(intervalArray, "04-20");
+        }
+        private TimeRange _IntervalCreate(int h1, int h2)
+        {
+            return new TimeRange(new DateTime(2019, 06, 01, h1, 0, 0), new DateTime(2019, 06, 01, h2, 0, 0));
+        }
+        private void _IntervalAssert(TimeRangeArray intervalArray, string expected)
+        {
+            string current = _IntervalToString(intervalArray);
+            if (current == expected) return;
+            Assert.Fail("Liší se hodnota reálná: " + current + " od očekáváné: " + expected);
+        }
+        private string _IntervalToString(TimeRangeArray intervalArray)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (var item in intervalArray.Items)
+            {
+                string time = item.Begin.Value.ToString("HH") + "-" + item.End.Value.ToString("HH");
+                sb.Append((sb.Length > 0 ? "," : "") + time);
+            }
+            return sb.ToString();
+        }
+        #endregion
         #region Testy serializace
 
         [TestMethod]

@@ -706,6 +706,323 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
+    #region TimeRangeArray
+    /// <summary>
+    /// Třída, obshaující v sobě uspořádané pole prvků <see cref="TimeRange"/>, a umožňující detekci pokrytí určitého časového intervalu prvky v tomto poli
+    /// </summary>
+    public class TimeRangeArray
+    {
+        #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TimeRangeArray()
+        {
+            this._List = new List<TimeRange>();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="items"></param>
+        public TimeRangeArray(params TimeRange[] items)
+            : this()
+        {
+            if (items != null)
+                this._List.AddRange(items);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="items"></param>
+        public TimeRangeArray(IEnumerable<TimeRange> items)
+            : this()
+        {
+            if (items != null)
+                this._List.AddRange(items);
+        }
+        /// <summary>
+        /// Vynuluje svůj obsah
+        /// </summary>
+        public void Clear()
+        {
+            this._List.Clear();
+        }
+        /// <summary>
+        /// Privátní List prvků
+        /// </summary>
+        private List<TimeRange> _List;
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        public int Count { get { return this._List.Count; } }
+        /// <summary>
+        /// Prvky v poli
+        /// </summary>
+        public TimeRange[] Items { get { return this._List.ToArray(); } }
+        #endregion
+        #region Contains - detekce pokrytí
+        /// <summary>
+        /// Vrací true, pokud daný interval je plně pokryt některým prvek this pole
+        /// </summary>
+        /// <param name="interval"></param>
+        /// <returns></returns>
+        public bool Contains(TimeRange interval)
+        {
+            if (interval == null || !interval.IsFilled || !interval.IsReal) return false;
+
+            // Hledáme tedy, zda najdeme prvek, který uvnitř sebe obsahuje daný interval:
+            DateTime begin = interval.Begin.Value;
+            DateTime end = interval.End.Value;
+            foreach (TimeRange item in this._List)
+            {
+                if (item.Contains(interval)) return true;
+            }
+            return false;
+        }
+        #endregion
+        #region Merge - přidání prvku
+        /// <summary>
+        /// Dodaný interval sloučí do this pole intervalů
+        /// </summary>
+        /// <param name="interval"></param>
+        public void Merge(TimeRange interval)
+        {
+            if (interval == null || !interval.IsFilled || !interval.IsReal) return;
+
+            this._MergeInit(interval);
+            if (!this._MergeSimple())
+            {   // Pokud to nejde vložit jednoduchým algoritmem, musíme to provést postupem Scan & Merge:
+                this._Scan();
+                this._Merge();
+            }
+        }
+        /// <summary>
+        /// Vyhledá indexy důležitých prvků v poli.
+        /// Důležité indexy jsou (v tomto pořadí na časové ose): 
+        /// <see cref="_IndexPrev"/> = těsně před (poslední před) Begin; <see cref="_IndexBegin"/> = v něm je Begin; <see cref="_IndexFirst"/> = před ním je Begin;
+        /// <see cref="_IndexLast"/> = za ním je End; <see cref="_IndexEnd"/> = v něm je End; <see cref="_IndexNext"/> = těsně za (první za) End ;
+        /// </summary>
+        private void _Scan()
+        {
+            for (int index = 0; index < this.Count; index++)
+            {
+                TimeRange currentTime = this._List[index];
+
+                // Hledáme Begin?
+                if (!this._HasBegin)
+                {
+                    this._IndexPrev = index;
+                    if (currentTime.End.Value >= this._MergeTimeBegin)
+                    {
+                        bool isBegin = currentTime.Contains(this._MergeTimeBegin, true);
+                        if (isBegin)
+                            this._IndexBegin = index;
+                        else
+                            this._IndexFirst = index;
+                        this._HasBegin = true;
+                    }
+                }
+
+                // Pokud nynější prvek má svůj Begin až za hledaným End, pak už jsme mimo:
+                if (currentTime.Begin.Value > this._MergeTimeEnd)
+                {
+                    this._IndexNext = index;
+                    this._HasEnd = true;
+                    break;
+                }
+
+                // Pokud nynější prvek má End menší než náš End, jde o prvek před End:
+                if (!this._HasEnd)
+                {
+                    if (currentTime.End.Value < this._MergeTimeEnd)
+                    {
+                        this._IndexLast = index;
+                    }
+                    else
+                    {
+                        bool isEnd = currentTime.Contains(this._MergeTimeEnd, true);
+                        if (isEnd)
+                            this._IndexEnd = index;
+                        this._HasEnd = true;
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Aktuálně přidávaný prvek přidá do this pole, podle nalezených indexů
+        /// </summary>
+        private void _Merge()
+        {
+            DateTime begin = this._MergeTimeBegin;
+            DateTime end = this._MergeTimeEnd;
+            int ib, ie;
+            TimeRange intervalBegin;
+            TimeRange intervalEnd;
+            if (_IndexBegin.HasValue)
+            {   // Máme nalezen index, na němž se nachází Begin:
+                ib = _IndexBegin.Value;
+                intervalBegin = this._List[ib];
+                if (_IndexEnd.HasValue)
+                {   // Máme nalezeny oba indexy (na kterých se nachází Begin i End):
+                    ie = _IndexEnd.Value;
+                    intervalEnd = this._List[ie];
+                    // Pokud je to tentýž prvek, pak nic nemusíme řešit, protože jeden nalezený prvek pokrývá přinejmenším celý náš interval:
+                    if (ib == ie) return;
+                    // Jsou to různé prvky:
+                    // a) spojím jejich interval a vložím jej namísto dosavadního Begin:
+                    this._List[ib] = new TimeRange(intervalBegin.Begin, intervalEnd.End);
+                    // b) prvky počínaje [ib+1] a konče [ie] (včetně) odeberu:
+                    this._List.RemoveRange(ib + 1, ie - ib);
+                    return;
+                }
+                if (_IndexLast.HasValue)
+                {   // Máme nalezen index Begin, a známe index Last = pozice posledního prvku před místem, kde má být nový End:
+                    ie = _IndexLast.Value;
+                    // a) do prvku na indexu Begin vložíme nový End:
+                    this._List[ib] = new TimeRange(intervalBegin.Begin, end);
+                    // b) prvky počínaje [ib+1] a konče [ie] (včetně) odeberu, pokud (ie > ib):
+                    if (ie > ib)
+                        this._List.RemoveRange(ib + 1, ie - ib);
+                    return;
+                }
+                throw new NotImplementedException("Máme nalezen index Begin, ale nemám nalezen žádný End ani Last... co to je?");
+            }
+            if (_IndexFirst.HasValue)
+            {   // Sice nemám index Begin, ale mám First = náš nový Begin začíná před prvkem First:
+                ib = _IndexFirst.Value;
+                intervalBegin = this._List[ib];
+                if (_IndexEnd.HasValue)
+                {   // Máme nalezen index End (kde se nahází čas End) a máme First, kde náš Begin je před ním:
+                    ie = _IndexEnd.Value;
+                    intervalEnd = this._List[ie];
+                    // Na pozici First vložím prvek, obsahující nový Begin a hodnotu End z prvku na indexu End:
+                    this._List[ib] = new TimeRange(begin, intervalEnd.End);
+                    // A pokud je End je jiný prvek než First, tak mezilehlé včetně End odstraním:
+                    if (ie > ib)
+                        this._List.RemoveRange(ib + 1, ie - ib);
+                    return;
+                }
+                if (_IndexLast.HasValue)
+                {   // Nemáme nalezen ani prvek Begin (máme First) a ani End (máme Last):
+                    ie = _IndexLast.Value;
+                    // Může se stát, že _IndexFirst je větší než _IndexLast:
+                    if (ib > ie)
+                    {   // To je tehdy, když vkládáme nový čas mezi dva časy: pak First je index ZA naším Beginem, a Last je index před naším End:
+                        // Pak okolní prvky neměníme, ale vložíme mezi ně náš nový prvek:
+                        this._List.Insert(ib, new TimeRange(begin, end));
+                        return;
+                    }
+                    // Na pozici First vložím prvek, obsahující nový Begin a nový End:
+                    this._List[ib] = new TimeRange(begin, end);
+                    // b) prvky počínaje [ib+1] a konče [ie] (včetně) odeberu, pokud (ie > ib):
+                    if (ie > ib)
+                        this._List.RemoveRange(ib + 1, ie - ib);
+                    return;
+                }
+                if (_IndexNext.HasValue)
+                {   // Mám sice index First (=prvek, před kterým začínám), ale nemám ani Last a ani End (prvky, za kterým/ve kterém končím):
+                    ib = _IndexNext.Value;
+                    // Vložím náš čas před prvek First:
+                    this._List.Insert(ib, new TimeRange(begin, end));
+                    return;
+                }
+                throw new NotImplementedException("Máme nalezen index First, ale nemám nalezen žádný End ani Last, a ani Next... co to je?");
+            }
+            if (_IndexPrev.HasValue)
+            {   // Nemám ani Begin, ani First (tzn. všechny prvky jsou vlevo na časové ose), ale mám index Prev = poslední prvek před naším Begin:
+                // Vložím náš čas na konec seznamu:
+                this._List.Add(new TimeRange(begin, end));
+                return;
+            }
+            throw new NotImplementedException("Nemáme nalezen ani index Begin ani First, a nemám nalezen žádný End ani Last... co to je?");
+        }
+        /// <summary>
+        /// Do this pole se pokusí přidat interval jednoduchou cestou, bez složitých analýz
+        /// </summary>
+        /// <returns></returns>
+        private bool _MergeSimple()
+        {
+            if ((this._Count == 0) || (this._MergeTimeBegin <= this._List[0].Begin.Value && this._MergeTimeEnd >= this._List[_Last].End.Value))
+            {
+                if (this._Count > 0)
+                    this._List.Clear();
+                this._List.Add(new TimeRange(this._MergeTimeBegin, this._MergeTimeEnd));
+                return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Inicializace proměnných pro metodu <see cref="Merge(TimeRange)"/>
+        /// </summary>
+        /// <param name="interval"></param>
+        private void _MergeInit(TimeRange interval)
+        {
+            this._MergeTimeBegin = interval.Begin.Value;
+            this._MergeTimeEnd = interval.End.Value;
+            this._Count = this.Count;
+            this._Last = this._Count - 1;
+            this._HasBegin = false;
+            this._IndexPrev = null;
+            this._IndexBegin = null;
+            this._IndexFirst = null;
+            this._HasEnd = false;
+            this._IndexLast = null;
+            this._IndexEnd = null;
+            this._IndexNext = null;
+        }
+        /// <summary>
+        /// Počet prvků Listu v době metody <see cref="Merge(TimeRange)"/>
+        /// </summary>
+        private int _Count;
+        /// <summary>
+        /// Poslední prvek Listu v době metody <see cref="Merge(TimeRange)"/>
+        /// </summary>
+        private int _Last;
+        /// <summary>
+        /// Zadaný interval, Begin
+        /// </summary>
+        private DateTime _MergeTimeBegin;
+        /// <summary>
+        /// Zadaný interval, End
+        /// </summary>
+        private DateTime _MergeTimeEnd;
+
+        /// <summary>
+        /// true = máme nalezen <see cref="_MergeTimeBegin"/>, false = stále jej hledáme
+        /// </summary>
+        private bool _HasBegin;
+        /// <summary>
+        /// Poslední index prvku před pozicí našeho <see cref="_MergeTimeBegin"/>
+        /// </summary>
+        private int? _IndexPrev;
+        /// <summary>
+        /// Index prvku, v kterém leží náš <see cref="_MergeTimeBegin"/> (pak <see cref="_IndexFirst"/> je null)
+        /// </summary>
+        private int? _IndexBegin;
+        /// <summary>
+        /// Index prvku, který je první za naším <see cref="_MergeTimeBegin"/>, když <see cref="_IndexBegin"/> je null
+        /// </summary>
+        private int? _IndexFirst;
+
+        /// <summary>
+        /// true = máme nalezen <see cref="_MergeTimeEnd"/>, false = stále jej hledáme
+        /// </summary>
+        private bool _HasEnd;
+        /// <summary>
+        /// Index prvku, který je poslední před naším <see cref="_MergeTimeEnd"/>, když <see cref="_IndexEnd"/> je null
+        /// </summary>
+        private int? _IndexLast;
+        /// <summary>
+        /// Index prvku, v kterém leží náš <see cref="_MergeTimeEnd"/> (pak <see cref="_IndexLast"/> je null)
+        /// </summary>
+        private int? _IndexEnd;
+        /// <summary>
+        /// Index prvního prvku za pozicí našeho <see cref="_MergeTimeEnd"/>
+        /// </summary>
+        private int? _IndexNext;
+        #endregion
+    }
+    #endregion
     #region TimeVector
     /// <summary>
     /// Time vector (Time, direction)

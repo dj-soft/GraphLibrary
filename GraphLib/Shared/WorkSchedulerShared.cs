@@ -5378,6 +5378,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiRequestRowDragMove RowDragMove { get; set; }
         /// <summary>
+        /// Data pro command <see cref="COMMAND_TimeChange"/>
+        /// </summary>
+        public GuiRequestTimeAxisChange TimeAxisChange { get; set; }
+        /// <summary>
         /// Aktuální stav okna WorkScheduler
         /// </summary>
         public GuiRequestCurrentState CurrentState { get; set; }
@@ -5674,6 +5678,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Čas v rámci grafu, kam byly řádky umístěny. Zde je čas zaokrouhlený na malé dílky na časové ose.
         /// </summary>
         public DateTime? TargetTimeRound { get; set; }
+    }
+    /// <summary>
+    /// Informace o změně hodnoty na časové ose
+    /// </summary>
+    public class GuiRequestTimeAxisChange
+    {
+        public GuiTimeRange TimeRangeVisible { get; set; }
+        public GuiTimeRange TimeRangeEnlarged { get; set; }
+        public GuiTimeRange[] TimeRangeKnown { get; set; }
     }
     /// <summary>
     /// Informace o stavu při kliknutí na kontextové menu

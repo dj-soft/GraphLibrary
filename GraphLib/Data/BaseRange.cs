@@ -130,6 +130,26 @@ namespace Asol.Tools.WorkScheduler.Data
             return true;
         }
         /// <summary>
+        /// Vrací true, když dodaná hodnota (interval range) leží uvnitř this intervalu, včetně krajních meí (this.Begin == range.Begin; this.End == range.End).
+        /// Vrací false, když this interval není reálný (jeho Begin je větší než End).
+        /// Vrací false, když this není naplněn (když <see cref="IsFilled"/> je false = když Begin a/nebo End nemají hodnotu).
+        /// </summary>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        public bool Contains(BaseRange<TEdge, TSize> range)
+        {
+            if (!this.IsFilled) return false;
+            if (range == null || !range.IsFilled) return false;
+
+            int bec = this.CompareEdge(this.Begin, this.End);
+            if (bec > 0) return false;                               // this.Begin > this.End : nothing can be between!
+            int bvc = this.CompareEdge(this.Begin, range.Begin);
+            if (bvc > 0) return false;                               // this.Begin > range.Begin : range.Begin is before this.Begin.
+            int vec = this.CompareEdge(range.End, this.End);
+            if (vec > 0) return false;                               // range.End > this.End : range.End is after this.End.
+            return true;
+        }
+        /// <summary>
         /// Returns true, when specified value is in this range (include Begin, include End).
         /// Return false, when is outside, or when this is not filled.
         /// </summary>

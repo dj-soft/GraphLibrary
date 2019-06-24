@@ -198,6 +198,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="userData">Libovolná další data, která chce dostat metoda (callBackAction). Tato data se nijak nezpracovávají v hostiteli.</param>
         private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime = null, string blockGuiMessage = null, object userData = null)
         {
+            request.CurrentState = this._CreateGuiCurrentState();
+
             int requestId = ++this._RequestId;
             bool hasCallBack = (callBackAction != null);
             bool hasBlockGui = blockGuiTime.HasValue;
@@ -320,7 +322,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_KeyPress;
-            request.CurrentState = this._CreateGuiCurrentState();
             request.KeyPress = new GuiRequestKeyPress()
             {
                 KeyData = action.KeyData,
@@ -579,7 +580,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             request.Command = GuiRequest.COMMAND_ToolbarClick;
             guiToolbarItem.IsChecked = toolBarItem.IsChecked;        // Přenesu příznak "Označen" (je to nutné?)
             request.ToolbarItem = guiToolbarItem;
-            request.CurrentState = this._CreateGuiCurrentState();
             this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime, guiToolbarItem.BlockGuiMessage);
         }
         /// <summary>
@@ -1458,297 +1458,77 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     break;
             }
         }
+        /// <summary>
+        /// Řeší změnu zobrazeného času v režimu <see cref="TimeChangeSendMode.OnNewTime"/>
+        /// </summary>
+        /// <param name="timeRange"></param>
         private void _TimeAxisChangeRunServiceOnNewTime(TimeRange timeRange)
         {
             if (timeRange == null || !timeRange.IsFilled || !timeRange.IsReal) return;
 
             // Pokud aktuální čas na ose celý již "známe", je to OK:
-            if (this._TimeAxisIsKnownValue(timeRange)) return;
+            if (this._TimeAxisKnownArray.Contains(timeRange)) return;
 
             // Aktuální čas zvětšíme, abychom měli na stranách rezervy:
             double? ratio = this.GuiData.Properties.TimeChangeSendEnlargement;
             TimeRange timeRangeEnlarge = ((ratio.HasValue && ratio.Value > 0f) ? timeRange.ZoomToRatio(timeRange.Center.Value, 1d + ratio.Value) : timeRange);
-            this._TimeAxisAddKnownValue(timeRangeEnlarge);
 
+            // Zvětšený čas si přidáme do pole "známého času" abychom ho už brali jako "známý":
+            this._TimeAxisKnownArray.Merge(timeRangeEnlarge);
 
-
+            // Zavoláme servis:
+            this._TimeAxisChangeCallAppHost(timeRange, timeRangeEnlarge);
         }
+        /// <summary>
+        /// Řeší změnu zobrazeného času v režimu <see cref="TimeChangeSendMode.Allways"/>
+        /// </summary>
+        /// <param name="timeRange"></param>
         private void _TimeAxisChangeRunServiceAllways(TimeRange timeRange)
         {
+            // Aktuální čas zvětšíme, abychom měli na stranách rezervy:
+            double? ratio = this.GuiData.Properties.TimeChangeSendEnlargement;
+            TimeRange timeRangeEnlarge = ((ratio.HasValue && ratio.Value > 0f) ? timeRange.ZoomToRatio(timeRange.Center.Value, 1d + ratio.Value) : timeRange);
 
+            // Zavoláme servis:
+            this._TimeAxisChangeCallAppHost(timeRange, timeRangeEnlarge);
         }
         /// <summary>
-        /// Vrátí true pokud celý daný časový interval "známe" = je pokryt někteým intervalem z <see cref="_TimeAxisKnownValues"/>.
+        /// Vyvolá AppHost a předá command <see cref="GuiRequest.COMMAND_TimeChange"/> a odpovídající data
         /// </summary>
         /// <param name="timeRange"></param>
-        /// <returns></returns>
-        private bool _TimeAxisIsKnownValue(TimeRange timeRange)
+        /// <param name="timeRangeEnlarge"></param>
+        private void _TimeAxisChangeCallAppHost(TimeRange timeRange, TimeRange timeRangeEnlarge)
         {
-            if (timeRange == null || !timeRange.IsFilled || !timeRange.IsReal) return false;
-            if (this._TimeAxisKnownValues == null || this._TimeAxisKnownValues.Count == 0) return false;
-
-            // Princip pole _TimeAxisKnownValues je takový, že obsahuje jednotlivé časy, které se nepřekrývají ani nedotýkají, a jsou časově vzestupné.
-            // Hledáme tedy, zda najdeme prvek, který je stejný nebo větší jako zadaný čas:
-            DateTime begin = timeRange.Begin.Value;
-            DateTime end = timeRange.End.Value;
-            foreach (TimeRange knownValue in this._TimeAxisKnownValues)
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_TimeChange;
+            request.TimeAxisChange = new GuiRequestTimeAxisChange()
             {
-                if (knownValue.Begin.Value <= begin && knownValue.End.Value >= end) return true;
-            }
-            return false;
+                TimeRangeVisible = timeRange,
+                TimeRangeEnlarged = timeRangeEnlarge,
+                TimeRangeKnown = this._TimeAxisKnownArray.Items.Select(t => (GuiTimeRange)t).ToArray()
+            };
+
+            this._CallAppHostFunction(request, _TimeAxisChangeApplicationResponse);
         }
         /// <summary>
-        /// Přidá daný časový interval jako Známý do patřičného pole <see cref="_TimeAxisKnownValues"/>.
-        /// Pokud je na vstupu null, nebo prázdný interval, nic nedělá.
+        /// Zpracování odpovědi z aplikační funkce, na událost TimeChange
         /// </summary>
-        /// <param name="timeRange"></param>
-        private void _TimeAxisAddKnownValue(TimeRange timeRange)
+        /// <param name="response"></param>
+        private void _TimeAxisChangeApplicationResponse(AppHostResponseArgs response)
         {
-            if (timeRange == null || !timeRange.IsFilled || !timeRange.IsReal) return;
-            timeRange = timeRange.Clone;
-
-            if (this._TimeAxisKnownValues == null) this._TimeAxisKnownValues = new List<TimeRange>();
-
-            // Princip pole _TimeAxisKnownValues je takový, že obsahuje jednotlivé časy, které se nepřekrývají ani nedotýkají, a jsou časově vzestupné.
-
-            // Zjednodušení: pokud pole neobsahuje nic, není nutno provádět analýzy a řešení:
-            int count = this._TimeAxisKnownValues.Count;
-            if (count == 0)
-            {
-                this._TimeAxisKnownValues.Add(timeRange);
-                return;
-            }
-
-            // Princip vložení nového intervalu do pole intervalů:
-            //  - Máme interval (timeRange)
-            DateTime begin = timeRange.Begin.Value;
-            DateTime end = timeRange.End.Value;
-            int? index = null;
-            TimeRange targetTime = null;
-            //  - Postupně najdeme v poli _TimeAxisKnownValues takový interval, do kterého náš interval mergujeme jeho počátkem, anebo za který jej přidáme
-            //  - Dále procházíme další intervaly, které náš interval překrývá - ty odebíráme 
-            //  - Nakonec najdeme interval, ve kterém nebo před kterým náš interval skončí:
-            _TimeAxisSearchMode mode = _TimeAxisSearchMode.SearchBegin;
-            for (int i = 0; i < count; i++)
-            {
-                TimeRange time = this._TimeAxisKnownValues[i];
-                if (mode == _TimeAxisSearchMode.SearchBegin)
-                {   // Hledám umístění pro náš Begin:
-                    if (time.End.Value < begin) continue;                      // Nalezený interval má konec před naším začátkem = přeskakujeme jej...
-                    if (time.Begin.Value > begin)                              // Nalezený interval má začátek až za naším začátkem:
-                    {
-                        this._TimeAxisKnownValues.Insert(i, timeRange);        // Před nalezený prvek vložíme new instanci = nás
-                        targetTime = timeRange;
-                        index = i;                                             // Náš prvek je na tomto indexu
-                        mode = _TimeAxisSearchMode.SearchOver;                 // Nyní hledáme, zda aktuální prvky náš interval překrývá...
-                        i++;
-                    }
-                    else                                                       // Nalezený interval má začátek před nebo v našem začátku, a konec v něm nebo za ním:
-                    {
-                        targetTime = time;
-                        index = i;                                             // Náš prvek je na tomto indexu
-                        mode = _TimeAxisSearchMode.SearchOver;                 // Nyní hledáme, zda aktuální prvky náš interval překrývá...
-                    }
-                }
-
-                if (mode == _TimeAxisSearchMode.SearchOver)
-                {
-                    // ???
-                }
-            }
-            
+            this.ProcessGuiResponse(response.GuiResponse);
         }
-        private enum _TimeAxisSearchMode { None, SearchBegin, SearchOver, SearchEnd, Done }
-
-        #region Přidání hodnoty VVV
-        private void _TimeAxisAddKnownValueVxx(TimeRange timeRange)
-        {
-            if (timeRange == null || !timeRange.IsFilled || !timeRange.IsReal) return;
-            if (this._TimeAxisKnownValues == null) this._TimeAxisKnownValues = new List<TimeRange>();
-
-            // Princip pole _TimeAxisKnownValues je takový, že obsahuje jednotlivé časy, které se nepřekrývají ani nedotýkají, a jsou časově vzestupné.
-
-            // Zjednodušení: pokud pole neobsahuje nic, není nutno provádět analýzy a řešení:
-            int count = this._TimeAxisKnownValues.Count;
-            if (count == 0)
-            {
-                this._TimeAxisKnownValues.Add(timeRange);
-                return;
-            }
-
-            // Hledáme tedy Prev = poslední prvek (index a obsah), jehož Begin <= aktuální Begin;
-            // a hledáme prvek Next = první prvek (index a obsah), jehož End >= aktuální End:
-            int? prevIndex = null;
-            TimeRange prevRange = null;
-            int? nextIndex = null;
-            TimeRange nextRange = null;
-            DateTime begin = timeRange.Begin.Value;
-            DateTime end = timeRange.End.Value;
-            for (int i = 0; i < count; i++)
-            {
-                TimeRange time = this._TimeAxisKnownValues[i];
-
-                // Hledáme Prev = poslední prvek, jehož Begin <= aktuální Begin:
-                if (time.Begin.Value <= begin)
-                {
-                    prevIndex = i;
-                    prevRange = time;
-                }
-
-                // Hledáme Next = první prvek, jehož End >= aktuální End:
-                if (time.End.Value >= end)
-                {
-                    nextIndex = i;
-                    nextRange = time;
-                    // Žádný další prvek nás už nezajímá - hledali jsme "První prvek za daným časem" a ten máme:
-                    break;
-                }
-            }
-
-            // Nyní je mnoho možností, jak nový čas vložit do pole známých časů, podle vztahu k prvkům Prev a Next, a podle obsahu prvků mezi nimi:
-            bool prevExists = (prevIndex.HasValue);                            // Předchozí prvek existuje
-            bool prevMerge = (prevExists && prevRange.End.Value >= begin);     // Předchozí prvek se překrývá s aktuálním prvkem = končí za (nebo v) našem začátku = lze je sloučit
-            bool nextExists = (nextIndex.HasValue);                            // Následující prvek existuje
-            bool nextMerge = (nextExists && nextRange.Begin.Value <= end);     // Následující prvek se překrývá s aktuálním prvkem = začíná před (nebo v) našem konci = lze je sloučit
-
-            if (!prevExists && !nextExists)
-                this._TimeAxisAddKnownValueV1(timeRange, prevIndex, prevRange, nextIndex, nextRange);   // Nový prvek nahradí všechny stávající
-            else if (prevExists && prevMerge && !nextExists)
-
-                this._TimeAxisAddKnownValueV2(timeRange, prevIndex, prevRange, nextIndex, nextRange);   // Nový prvek se sloučí s Prev prvkem, a všechny následující se zahodí
-            else if (prevExists && !prevMerge && !nextExists)
-                this._TimeAxisAddKnownValueV3(timeRange, prevIndex, prevRange, nextIndex, nextRange);   // Nový prvek se přidá za Prev prvek, a všechny následující se zahodí
-
-            else if (prevExists && prevMerge && nextExists && nextMerge)
-                this._TimeAxisAddKnownValueV4(timeRange, prevIndex, prevRange, nextIndex, nextRange);   // Nový prvek se sloučí s Prev prvkem i s Next prvkem, a všechny mezilehlé se zahodí
-            else if (prevExists && prevMerge && nextExists && !nextMerge)
-                this._TimeAxisAddKnownValueV5(timeRange, prevIndex, prevRange, nextIndex, nextRange);   // Nový prvek se sloučí s Prev prvkem, nikoli s Next prvkem, Next se ponechá a všechny mezilehlé se zahodí
-
-            else if (prevExists && !prevMerge && nextExists && nextMerge)
-                this._TimeAxisAddKnownValueV3(timeRange, prevIndex, prevRange, nextIndex, nextRange);   // Nový prvek se přidá za Prev prvek, a všechny následující se zahodí
-
-
-
-        }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace: prvek před neexistuje, ani prvek za neexistuje, a přitom pole není prázdné. Aktuální hodnota překrývá všechny stávajíví prvky (ty jsou uvnitř).
-        /// Řešení: všechny stávající prvky smažu a nahradím je dodaným prvkem.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV1(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        {
-            this._TimeAxisKnownValues.Clear();
-            _TimeAxisKnownValues.Add(timeRange);
-        }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace: nějaký prvek před existuje, a časově se překrývá s novým prvkem = lze je sloučit, a prvky za naším prvkem už neexistují.
-        /// Řešení: dodaný prvek sloučíme s prvkem před ním.
-        /// Před tím ale dosavadní prvky za prvkem Prev zahodíme (protože jejich časy nyní zcela pokrývá nový prvek).
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV2(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        {
-            int count = this._TimeAxisKnownValues.Count;
-            int removeCount = (count - 1) - prevIndex.Value;
-            if (removeCount > 0)
-                this._TimeAxisKnownValues.RemoveRange(prevIndex.Value + 1, removeCount);
-            this._TimeAxisKnownValues[prevIndex.Value] = prevRange + timeRange;
-        }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace: nějaký prvek před existuje, je časově před novým prvkem = nelze je sloučit, a prvky za naším prvkem už neexistují.
-        /// Řešení: dodaný prvek vložíme za prvek před ním, neslučujeme je.
-        /// Před tím ale dosavadní prvky za prvkem Prev zahodíme (protože jejich časy nyní zcela pokrývá nový prvek).
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV3(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        {
-            int count = this._TimeAxisKnownValues.Count;
-            int removeCount = (count - 1) - prevIndex.Value;
-            if (removeCount > 0)
-                this._TimeAxisKnownValues.RemoveRange(prevIndex.Value + 1, removeCount);
-            this._TimeAxisKnownValues.Add(timeRange);
-        }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace:
-        /// Řešení:
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV4(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        { }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace:
-        /// Řešení:
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV5(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        { }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace:
-        /// Řešení:
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV6(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        { }
-        /// <summary>
-        /// Vloží danou hodnotu do pole známých časů <see cref="_TimeAxisKnownValues"/>.
-        /// Situace:
-        /// Řešení:
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="prevIndex"></param>
-        /// <param name="prevRange"></param>
-        /// <param name="nextIndex"></param>
-        /// <param name="nextRange"></param>
-        private void _TimeAxisAddKnownValueV7(TimeRange timeRange, int? prevIndex, TimeRange prevRange, int? nextIndex, TimeRange nextRange)
-        { }
-        
-
-        #endregion
-
-
 
         /// <summary>
         /// Pole časových intervalů na časové ose, pro které jsme už zadali request <see cref="GuiRequest.COMMAND_TimeChange"/>, 
         /// a považujeme je tedy za "obsahující data".
-        /// Detekci, zda určitý interval je již pokrytý daty, zajišťuje metoda _TimeAxisIsKnownValue(TimeRange)
-        /// Vkládání dalších intervalů zajišťuje metoda <see cref="_TimeAxisAddKnownValue(TimeRange)"/>.
         /// <para/>
         /// Pole obsahuje jednotlivé prvky, které mají kladný čas, mezi jednotlivými následujícími prvky je kladná mezera.
         /// Pokud by byl vkládán prvek s časem nezadaným nebo nulovým nebo záporným, nevloží se.
         /// Prvky se navzájem nepřekrývají ani nedotýkají (takové jsou při vkládání sloučeny).
         /// Prvky jsou setříděny podle času vzestupně.
         /// </summary>
-        private List<TimeRange> _TimeAxisKnownValues;
+        private TimeRangeArray _TimeAxisKnownArray;
         /// <summary>
         /// Režim odesílání změn časové osy.
         /// Načten z <see cref="GuiProperties.TimeChangeSend"/> zde při inicializaci v metodě <see cref="_FillMainControlPagesFromGui()"/>
@@ -2234,9 +2014,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlPagesFromGui", ""))
             {
+                this._TimeAxisKnownArray = new TimeRangeArray();
                 this._TimeChangeSend = this.GuiData.Properties.TimeChangeSend;
                 this._TimeChangeSendEnlargement = this.GuiData.Properties.TimeChangeSendEnlargement;
-                this._TimeAxisAddKnownValue(this.GuiData.Properties.TimeChangeInitialValue);
+                this._TimeAxisKnownArray.Merge(this.GuiData.Properties.TimeChangeInitialValue);
                 this._MainControl.ClearPages();
                 this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
                 this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
@@ -2446,7 +2227,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             request.Command = GuiRequest.COMMAND_ContextMenuClick;
             request.ActiveGraphItem = menuRunArgs.ContextItemId;
             request.ContextMenu = menuRunArgs;
-            request.CurrentState = this._CreateGuiCurrentState();
             this._CallAppHostFunction(request, this._ContextMenuItemClickApplicationResponse);
         }
         /// <summary>
@@ -3205,7 +2985,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // c) cancelujeme zavírání okna, ale máme blokované GUI; uživatel toho moc dalšího neudělá
             // d) přijde odpověď na COMMAND_QueryCloseWindow do metody _ClosingProcessResponseQuery; pokračování komentáře tam.
             this.ClosingState = MainFormClosingState.WaitCommandQueryCloseWindow;
-
             this.ClosingStart = DateTime.Now;
 
             GuiRequest request = new GuiRequest();
