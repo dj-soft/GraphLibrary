@@ -1737,8 +1737,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             get
             {
                 Row row = this.OwnerRow;
-                if (row.IsChecked) return (Application.App.Resources.GetImage(row.RowCheckedImage) ?? Skin.Grid.RowCheckedImage);
-                if (row.Table.AllowRowCheckedByClick) return (Application.App.Resources.GetImage(row.RowNonCheckedImage) ?? Skin.Grid.RowNotCheckedImage);
+                GuiImage guiImage;
+                if (row.IsChecked)
+                {
+                    guiImage = row.RowCheckedImage;
+                    if (guiImage != null) return Application.App.Resources.GetImage(guiImage);
+                    return Skin.Grid.RowCheckedImage;
+                }
+                if (row.Table.AllowRowCheckedByClick)
+                {
+                    guiImage = row.RowNonCheckedImage;
+                    if (guiImage != null) return Application.App.Resources.GetImage(row.RowCheckedImage);
+                    return Skin.Grid.RowNotCheckedImage;
+                }
                 return null;
             }
         }
