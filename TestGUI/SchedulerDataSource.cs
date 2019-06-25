@@ -1219,6 +1219,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             GuiDataTable guiTable = new GuiDataTable() { ClassId = PlanUnitC.ClassNumber };
             guiTable.RowCheckEnabled = true;
+            // guiTable.RowCheckedImage = RES.Images.Actions16.DialogOk3Png;
+            // guiTable.RowNonCheckedImage = RES.Images.Actions16.DialogNo3Png;
             guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = PlanUnitC.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Jméno", Width = 200 });
@@ -1471,6 +1473,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             row.Style = new GuiVisualStyle() { BackColor = planUnitC.RowBackColor };
             row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
             row.Graph = planUnitC.CreateGuiGraphTime();
+            // row.RowCheckedImage = RES.Images.Actions16.DialogApplyPng;
+            row.Icon = GetRandom(
+                null,
+                RES.Images.Actions16.FormatTextBold3Png, null,
+                RES.Images.Actions16.FormatTextItalic3Png, null,
+                RES.Images.Actions16.FormatTextStrikethrough3Png, null,
+                RES.Images.Actions16.FormatTextUnderline3Png, null,
+                null);
         }
         /// <summary>
         /// Do dodané tabulky přidá linky mezi operacemi daného Výrobního příkazu
@@ -1890,10 +1900,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             string tagText = GetRandom("stoly", "skříně", "víka", "pro děti", "jiné");
             ProductTpv tpv = GetRandom(ProductTpv.Simple, ProductTpv.Standard, ProductTpv.Standard, ProductTpv.Luxus, ProductTpv.Cooperation, ProductTpv.Standard, ProductTpv.Simple, ProductTpv.Standard);
             ProductOrder productOrder = this.CreateProductOrder(name, backColor, qty, tagText, tpv);
+            this.DataChanged = true;
 
             // Tento Výrobní příkaz vygeneruje standardně řádky GUI:
             List<GuiDataRow> rowList = new List<GuiDataRow>();
             productOrder.CreateGuiRows(rowList);
+
+            // Zajistíme, že první komponenta bude mít Expanded svůj Parent node:
+            GuiDataRow rowStruct = rowList.First(r => r.RowGuiId.ClassId == ProductStructure.ClassNumber);
+            if (rowStruct != null)
+                guiResponse.ExpandRows = new List<GuiGridRowId>() { new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = rowStruct.ParentRowGuiId } };
 
             // Řádky přidáme do response tak, aby se zařadily do tabulky vlevo:
             guiResponse.RefreshRows = rowList
@@ -1912,6 +1928,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 guiResponse.RefreshRows = new List<GuiRefreshRow>() { refreshRow };
 
                 this.ProductOrderDict.Remove(productOrder.RecordGid);
+
+                this.DataChanged = true;
             }
         }
         #endregion
@@ -2458,6 +2476,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiId rowGid = this.RecordGid;
             GuiIdText name = new GuiIdText() { GuiId = new GuiId(343, this.RecordId), Text = this.Name };
             GuiDataRow row = new GuiDataRow(rowGid, this.Refer, name, this.Qty);
+            row.RowGuiId = rowGid;
             row.TagItems = new List<GuiTagItem>(this.TagItems);
             row.Graph = this.CreateGuiGraph();
             list.Add(row);
@@ -2548,6 +2567,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GuiId rowGid = this.RecordGid;
             GuiDataRow row = new GuiDataRow(rowGid, this.Refer, this.Name, this.Qty);
+            row.RowGuiId = rowGid;
             row.ParentRowGuiId = this.ProductOrder.RecordGid;
             list.Add(row);
 
@@ -2791,6 +2811,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GuiId rowGid = this.RecordGid;
             GuiDataRow row = new GuiDataRow(rowGid, this.Refer, this.Name, this.Qty);
+            row.RowGuiId = rowGid;
             row.ParentRowGuiId = this.ProductOperation.RecordGid;
             list.Add(row);
         }
