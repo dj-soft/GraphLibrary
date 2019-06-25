@@ -1225,6 +1225,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Jméno", Width = 200 });
             gridRight.RowTable = guiTable;
+            gridRight.RowTable.RowNonCheckedImage = GuiImage.Empty;
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
@@ -1481,6 +1482,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 RES.Images.Actions16.FormatTextStrikethrough3Png, null,
                 RES.Images.Actions16.FormatTextUnderline3Png, null,
                 null);
+            row.Icon = GetRandom(
+                RES.Images.Small16.BulletBlackPng,
+                RES.Images.Small16.BulletBluePng,
+                RES.Images.Small16.BulletGreenPng,
+                RES.Images.Small16.BulletOrangePng,
+                RES.Images.Small16.BulletPinkPng,
+                RES.Images.Small16.BulletPurplePng,
+                RES.Images.Small16.BulletRedPng,
+                RES.Images.Small16.BulletWhitePng,
+                RES.Images.Small16.BulletYellowPng);
         }
         /// <summary>
         /// Do dodané tabulky přidá linky mezi operacemi daného Výrobního příkazu
