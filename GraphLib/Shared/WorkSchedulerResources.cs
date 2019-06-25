@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 //   Pokud fyzické zdroje ("ASOL.GraphLib.res") jsou novější, pak znovu vygeneruje kompletní obsah souboru "WorkSchedulerResources.cs".
 // Generátor tohoto souboru je v aplikaci GraphLib, v kódu "GraphLib\Application\Resources.cs".
 // Místo, kde je uloženo datum "LastWriteTime" souboru "ASOL.GraphLib.res" je na následujícím řádku:
-//     ResourceFile.LastWriteTime = 2019-03-21 08:00
+//     ResourceFile.LastWriteTime = 2019-06-25 12:15
 #pragma warning disable 1591
 namespace Noris.LCS.Base.WorkScheduler.Resources.Images
 {
@@ -1255,6 +1255,11 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string GoHome4Png = "asol/go-home-4.png";
         public const string GoNextViewPng = "asol/go-next-view.png";
         public const string GoPreviousViewPng = "asol/go-previous-view.png";
+        public const string CheckboxCFalsePng = "asol/checkbox_c_false.png";
+        public const string CheckboxCTruePng = "asol/checkbox_c_true.png";
+        public const string CheckboxRFalsePng = "asol/checkbox_r_false.png";
+        public const string CheckboxRNullPng = "asol/checkbox_r_null.png";
+        public const string CheckboxRTruePng = "asol/checkbox_r_true.png";
         public const string ViewCalendarDay2Png = "asol/view-calendar-day-2.png";
         public const string ViewCalendarMonth2Png = "asol/view-calendar-month-2.png";
         public const string ViewCalendarWeek2Png = "asol/view-calendar-week-2.png";
@@ -3351,11 +3356,14 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DialogClose2Png = "actions16/dialog-close-2.png";
         public const string DialogClosePng = "actions16/dialog-close.png";
         public const string DialogDisablePng = "actions16/dialog-disable.png";
+        public const string DialogDisAccept2Png = "actions16/dialog-dis-accept-2.png";
         public const string DialogFewerPng = "actions16/dialog-fewer.png";
         public const string DialogMorePng = "actions16/dialog-more.png";
         public const string DialogNo2Png = "actions16/dialog-no-2.png";
         public const string DialogNo3Png = "actions16/dialog-no-3.png";
+        public const string DialogNonAccept2Png = "actions16/dialog-non-accept-2.png";
         public const string DialogNoPng = "actions16/dialog-no.png";
+        public const string DialogNotAccept2Png = "actions16/dialog-not-accept-2.png";
         public const string DialogOk2Png = "actions16/dialog-ok-2.png";
         public const string DialogOk3Png = "actions16/dialog-ok-3.png";
         public const string DialogOk4Png = "actions16/dialog-ok-4.png";
@@ -5221,6 +5229,43 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string VcardPng = "others16/vcard.png";
         public const string XhtmlPng = "others16/xhtml.png";
         public const string XhtmlValidPng = "others16/xhtml-valid.png";
+    }
+    #endregion
+    #region Small16
+    /// <summary>
+    /// Obsah adresáře Small16
+    /// <para/>
+    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor "ASOL.GraphLib.res" v adresáři pluginu WorkScheduler,
+    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.
+    /// <para/>
+    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
+    /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
+    /// <para/>
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// </summary>
+    public class Small16
+    {
+        public const string BulletBlackPng = "small16/bullet-black.png";
+        public const string BulletBluePng = "small16/bullet-blue.png";
+        public const string BulletGreenPng = "small16/bullet-green.png";
+        public const string BulletOrangePng = "small16/bullet-orange.png";
+        public const string BulletPinkPng = "small16/bullet-pink.png";
+        public const string BulletPurplePng = "small16/bullet-purple.png";
+        public const string BulletRedPng = "small16/bullet-red.png";
+        public const string BulletStarPng = "small16/bullet-star.png";
+        public const string BulletWhitePng = "small16/bullet-white.png";
+        public const string BulletYellowPng = "small16/bullet-yellow.png";
+        public const string DialogAccept2Png = "small16/dialog-accept-2.png";
+        public const string DialogAcceptPng = "small16/dialog-accept.png";
+        public const string DialogApplyPng = "small16/dialog-apply.png";
+        public const string DialogBlockPng = "small16/dialog-block.png";
+        public const string DialogCancel2Png = "small16/dialog-cancel-2.png";
+        public const string DialogCancel3Png = "small16/dialog-cancel-3.png";
+        public const string DialogOk5Png = "small16/dialog-ok-5.png";
+        public const string DialogOkApply2Png = "small16/dialog-ok-apply-2.png";
+        public const string DialogOkApply4Png = "small16/dialog-ok-apply-4.png";
+        public const string GoDown2Png = "small16/go-down-2.png";
+        public const string GoUp2Png = "small16/go-up-2.png";
     }
     #endregion
 }

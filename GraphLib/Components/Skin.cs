@@ -1388,7 +1388,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color BorderLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderLineColor", DefaultBorderLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderLineColor", value); } }
         public Image SortAscendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortAscendingImage", value); } }
         public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
-        public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
+        public Image RowCheckedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
+        public Image RowNotCheckedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowNotSelectedImage", DefaultRowNotSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowNotSelectedImage", value); } }
         public Image RowHeaderDeselectedAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderDeselectedAllImage", DefaultRowHeaderDeselectedAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderDeselectedAllImage", value); } }
         public Image RowHeaderExpandAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderExpandAllImage", DefaultRowHeaderExpandAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderExpandAllImage", value); } }
         public Image RowHeaderCollapseAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderCollapseAllImage", DefaultRowHeaderCollapseAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderCollapseAllImage", value); } }
@@ -1414,6 +1415,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Image DefaultSortAscendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoUp2Png); } }          // { get { return IconStandard.SortAsc; } }
         protected virtual Image DefaultSortDescendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoDown2Png); } }       // { get { return IconStandard.SortDesc; } }
         protected virtual Image DefaultRowSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogAccept2Png); } }    // { get { return IconStandard.RowSelected; } }
+        protected virtual Image DefaultRowNotSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogNotAccept2Png); } }
         protected virtual Image DefaultRowHeaderDeselectedAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogClose2Png); } }
         protected virtual Image DefaultRowHeaderExpandAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowRightDouble2Png); } }
         protected virtual Image DefaultRowHeaderCollapseAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowLeftDouble2Png); } }

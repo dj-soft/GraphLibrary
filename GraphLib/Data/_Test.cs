@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
 using Asol.Tools.WorkScheduler.Data.Parsing;
+using RES = Noris.LCS.Base.WorkScheduler.Resources;
 
 namespace Asol.Tools.WorkScheduler.Data.Test
 {
@@ -226,7 +227,9 @@ SET @cislo = 15307;
         }
         #endregion
         #region Testy serializace
-
+        /// <summary>
+        /// Testy serializace
+        /// </summary>
         [TestMethod]
         public void TestXmlPersistFromFile()
         {
@@ -279,6 +282,11 @@ SET @cislo = 15307;
             orig.Sachovnice.Add(new GuiId(1, 105), new Rectangle(5, 5, 5, 5));
             orig.Sachovnice.Add(key6, new Rectangle(6, 6, 6, 6));
 
+            orig.Images = new List<GuiImage>();
+            orig.Images.Add(RES.Images.Actions16.DialogNo3Png);
+            orig.Images.Add(RES.Images.Actions16.DialogOk3Png);
+            orig.Images.Add(RES.Images.Actions16.DialogOkApply3Png);
+
             string zip = Persist.Serialize(orig, PersistArgs.Compressed);
             string xml = Persist.Serialize(orig, PersistArgs.Default);
 
@@ -315,6 +323,7 @@ SET @cislo = 15307;
             public List<GuiId> GuiIdList { get; set; }
             public string[,] Tabulka { get; set; }
             public TestDictionary Sachovnice { get; set; }
+            public List<GuiImage> Images { get; set; }
         }
         internal class TestDictionary : Dictionary<GuiId, Rectangle>
         { }

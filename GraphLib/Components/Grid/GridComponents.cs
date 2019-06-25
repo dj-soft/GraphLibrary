@@ -406,12 +406,24 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
             this.DrawFunctionIcon(e, boundsAbsolute, drawAsGhost, opacity);
         }
+        /// <summary>
+        /// Vykreslí funkční ikonu TableHeader (=UnCheck All, Expand / Collapse All TreeNode)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
         protected void DrawFunctionIcon(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             Image image = GetImageForFunction(this.OwnerITable.TableHeaderFunction);
             if (image == null) return;
             GPainter.DrawImage(e.Graphics, boundsAbsolute, image, true, alignment: ContentAlignment.MiddleCenter);
         }
+        /// <summary>
+        /// Vrátí funkční ikonu TableHeader (=UnCheck All, Expand / Collapse All TreeNode)
+        /// </summary>
+        /// <param name="function"></param>
+        /// <returns></returns>
         protected static Image GetImageForFunction(TableHeaderFunctionType function)
         {
             switch (function)
@@ -1659,7 +1671,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawMouseHot(e, boundsAbsolute, opacity);
-            this.DrawSelectedRow(e, boundsAbsolute, opacity);
+            this.DrawIcon(e, boundsAbsolute, opacity);
+            this.DrawCheckedImage(e, boundsAbsolute, opacity);
             this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
@@ -1674,7 +1687,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Left, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
-        /// Do this záhlaví podbarvení v situaci, kdy tento řádek je MouseHot
+        /// Do this záhlaví vykreslí podbarvení v situaci, kdy tento řádek je MouseHot
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
@@ -1687,14 +1700,29 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             GPainter.DrawInsertMark(e.Graphics, bounds, Skin.Modifiers.MouseHotColor, ContentAlignment.MiddleRight, false, 255);
         }
         /// <summary>
+        /// Do this záhlaví vykreslí ikonu, pokud ji řádek má
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected void DrawIcon(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            Image icon = Application.App.Resources.GetImage(this.OwnerRow.Icon);
+            if (icon == null) return;
+
+            Rectangle bounds = boundsAbsolute.Enlarge(-1, -1, -1, -1);
+            bounds = icon.Size.AlignTo(bounds, ContentAlignment.MiddleCenter, true);
+            e.Graphics.DrawImage(icon, bounds);
+        }
+        /// <summary>
         /// Do this záhlaví vykreslí ikonu pro RowHeaderImage (typicky pro SelectedRow).
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="opacity"></param>
-        protected void DrawSelectedRow(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        protected void DrawCheckedImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
         {
-            Image image = this.RowHeaderImage;
+            Image image = this.CheckedImage;
             if (image == null) return;
 
             Rectangle bounds = boundsAbsolute.Enlarge(-1, -1, -1, -1);
@@ -1702,15 +1730,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             e.Graphics.DrawImage(image, bounds);
         }
         /// <summary>
-        /// Image vhodný do záhlaví this řádku
+        /// Image vhodný do záhlaví this řádku pro zobrazení CheckBoxu 
         /// </summary>
-        protected Image RowHeaderImage
+        protected Image CheckedImage
         {
             get
             {
                 Row row = this.OwnerRow;
-                if (row.IsChecked) return Skin.Grid.RowSelectedImage;
-                // Případné další ikonky mohou být zde...
+                if (row.IsChecked) return (Application.App.Resources.GetImage(row.RowCheckedImage) ?? Skin.Grid.RowCheckedImage);
+                if (row.Table.AllowRowCheckedByClick) return (Application.App.Resources.GetImage(row.RowNonCheckedImage) ?? Skin.Grid.RowNotCheckedImage);
                 return null;
             }
         }

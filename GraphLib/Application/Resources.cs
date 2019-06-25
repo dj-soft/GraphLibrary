@@ -143,6 +143,7 @@ namespace Asol.Tools.WorkScheduler.Application
             }
             catch (Exception exc)
             {
+                App.ShowWarning("Error " + exc.Message + " on update resource file " + targetFile);
                 App.Trace.Exception(exc, "Update resources file " + targetFile);
             }
         }

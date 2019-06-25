@@ -1197,7 +1197,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = IconStandard.RowSelected;
         /// </summary>
-        public Image SelectedRowImage { get { return this._SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = IconStandard.RowSelected;
+        public GuiImage RowCheckedImage { get { return this._RowCheckedImage; } set { this._RowCheckedImage = value; } } private GuiImage _RowCheckedImage = null;
+        /// <summary>
+        /// Obrázek použitý pro neoznačený řádek této tabulky, pokud tabulka povoluje označování řádků myší (<see cref="AllowRowCheckedByClick"/> je true)
+        /// </summary>
+        public GuiImage RowNonCheckedImage { get { return this._RowNonCheckedImage; } set { this._RowNonCheckedImage = value; } } private GuiImage _RowNonCheckedImage = null;
         /// <summary>
         /// Defaultní parametry pro grafy na pozadí této tabulky, anebo defaultní parametry pro grafy ve sloupci.
         /// Tato property nikdy není null (ve výchozím stavu má hodnotu <see cref="Components.Graph.TimeGraphProperties.Default"/>).
@@ -2533,7 +2537,9 @@ namespace Asol.Tools.WorkScheduler.Data
             target.BackgroundValue = CloneValue(source.BackgroundValue, cloneArgs);
             target.RecordGId = source.RecordGId;
             target.ParentRecordGId = source.ParentRecordGId;
-            target.SelectedRowImage = source.SelectedRowImage;
+            target.RowCheckedImage = source.RowCheckedImage;
+            target.RowNonCheckedImage = source.RowNonCheckedImage;
+            target.Icon = source.Icon;
             target.Style = source.Style;
             target.StyleName = source.StyleName;
             target.UserData = source.UserData;
@@ -2808,7 +2814,15 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = null, v tom případě se použije image this.Table.SelectedRowImage.
         /// </summary>
-        public Image SelectedRowImage { get { return this._SelectedRowImage ?? this.Table.SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = null;
+        public GuiImage RowCheckedImage { get { return this._RowCheckedImage ?? this.Table.RowCheckedImage; } set { this._RowCheckedImage = value; } } private GuiImage _RowCheckedImage = null;
+        /// <summary>
+        /// Obrázek použitý pro neoznačený řádek této tabulky, pokud tabulka povoluje označování řádků myší (<see cref="Table.AllowRowCheckedByClick"/> je true)
+        /// </summary>
+        public GuiImage RowNonCheckedImage { get { return this._RowNonCheckedImage ?? this.Table.RowNonCheckedImage; } set { this._RowNonCheckedImage = value; } } private GuiImage _RowNonCheckedImage = null;
+        /// <summary>
+        /// Ikonka tohoto řádku
+        /// </summary>
+        public GuiImage Icon { get { return this._Icon; } set { this._Icon = value; } } private GuiImage _Icon = null;
         /// <summary>
         /// Explicitně definovaný styl pro tento řádek. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
         /// </summary>
@@ -2981,11 +2995,6 @@ namespace Asol.Tools.WorkScheduler.Data
             get { return this.TreeNode.ParentRecordGId; }
             set { this.TreeNode.ParentRecordGId = value; }
         }
-        /// <summary>
-        /// Barva pozadí tohoto řádku, null = výchozí
-        /// </summary>
-        [Obsolete("Přejdeme na Table.Style", true)]
-        public Color? BackColor { get; set; }
         /// <summary>
         /// Libovolná aplikační data.
         /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy.
@@ -3330,6 +3339,8 @@ namespace Asol.Tools.WorkScheduler.Data
             this.ClassId = guiTable.ClassId;
             this.TemplateId = guiTable.TemplateId;
             this.AllowRowCheckedByClick = guiTable.RowCheckEnabled;
+            this.RowCheckedImage = guiTable.RowCheckedImage;
+            this.RowNonCheckedImage = guiTable.RowNonCheckedImage;
             this.TreeViewNodeOffset = guiTable.TreeViewNodeOffset;
             this.TreeViewLinkMode = _ConvertLinkMode(guiTable.TreeViewLinkMode);
             this.TreeViewLinkColor = guiTable.TreeViewLinkColor;
@@ -3678,6 +3689,9 @@ namespace Asol.Tools.WorkScheduler.Data
             this.TagItems = TagItem.CreateFrom(guiRow.TagItems);
             this.Style = guiRow.Style;
             this.StyleName = guiRow.StyleName;
+            this.RowCheckedImage = guiRow.RowCheckedImage;
+            this.RowNonCheckedImage = guiRow.RowNonCheckedImage;
+            this.Icon = guiRow.Icon;
             this.UserData = guiRow;
         }
         /// <summary>
