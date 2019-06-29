@@ -167,23 +167,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreatePlanUnitCZm("SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, null, WP_DILN);
             this.CreatePlanUnitCZm("DIETRICH Zdenek", CalendarType.Work5d1x8hO, null, WP_KONT);
 
-            this.PlanOperationsToWorkplaces();
+            this.PlanAllProductOrdersToWorkplaces();
         }
         /// <summary>
         /// Vytvoří a uloží jeden výrobní příkaz včetně jeho operací, pro dané zadání.
         /// </summary>
-        /// <param name="recordId"></param>
         /// <param name="name"></param>
         /// <param name="backColor"></param>
         /// <param name="qty"></param>
         /// <param name="tagText"></param>
         /// <param name="tpv"></param>
-        protected ProductOrder CreateProductOrder(string name, Color backColor, decimal qty, string tagText, ProductTpv tpv)
+        /// <param name="startTime">Přesný okamžik počátku VP <see cref="ProductOrder.DatePlanBegin"/>, null = vygeneruje jej náhodně</param>
+        protected ProductOrder CreateProductOrder(string name, Color backColor, decimal qty, string tagText, ProductTpv tpv, DateTime? startTime = null)
         {
-            DateTime start = this.DateTimeNow;
-            if (start < this.DateTimeFirst.AddDays(4d))
-                start = this.DateTimeFirst.AddDays(4d);
-            DateTime begin = start.AddHours(this.Rand.Next(0, 240) - 72);
+            DateTime begin = (startTime.HasValue ? startTime.Value : this.CreateRandomStartTime());
 
             ProductOrder productOrder = new ProductOrder(this)
             {
@@ -201,9 +198,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return productOrder;
         }
         /// <summary>
+        /// Vrátí náhodně umístěný čas zahájení práce
+        /// </summary>
+        /// <returns></returns>
+        protected DateTime CreateRandomStartTime()
+        {
+            DateTime start = this.DateTimeNow;
+            if (start < this.DateTimeFirst.AddDays(4d))
+                start = this.DateTimeFirst.AddDays(4d);
+            DateTime begin = start.AddHours(this.Rand.Next(0, 240) - 72);
+            return begin;
+        }
+        /// <summary>
         /// Vytvoří a vrátí sadu operací pro dané zadání.
         /// </summary>
-        /// <param name="time"></param>
+        /// <param name="productOrder"></param>
         /// <param name="tpv"></param>
         /// <param name="qty"></param>
         /// <returns></returns>
@@ -263,6 +272,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a vrátí jednu operaci pro dané zadání.
         /// </summary>
+        /// <param name="productOrder"></param>
         /// <param name="line"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
@@ -404,7 +414,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
         /// <param name="rowBackColor"></param>
-        protected GuiId CreatePlanUnitCWp(string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
+        protected PlanUnitC CreatePlanUnitCWp(string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
         {
              PlanUnitC planUnitC = new PlanUnitC(this)
             {
@@ -419,7 +429,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             planUnitC.WorkTimes = CreateWorkingItems(planUnitC, calendar, (float)machinesCount, this.TimeRangeTotal);
             this.WorkplaceDict.Add(planUnitC.RecordGid, planUnitC);
 
-            return planUnitC.RecordGid;
+            return planUnitC;
         }
         /// <summary>
         /// Vytvoří a uloží jeden záznam Zaměstnanec včetně jeho pracovních směn, pro dané zadání.
@@ -702,27 +712,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected Dictionary<int, int> LastKeyDict;
         #endregion
         #endregion
-        #region Rozplánování operací do pracovišť
+        #region Rozplánování Výrobních příkazů (tj. operací) do pracovišť
         /// <summary>
-        /// Umístí pracovní časy operací výrobních příkazů na vhodná pracoviště
+        /// Umístí pracovní časy operací všech výrobních příkazů na vhodná pracoviště
         /// </summary>
-        protected void PlanOperationsToWorkplaces()
+        protected void PlanAllProductOrdersToWorkplaces()
         {
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values.Where(i => i.OperationList != null))
-            {
-                DateTime startTime = productOrder.DatePlanBegin;
-                DateTime flowTime = startTime;
-                foreach (ProductOperation productOperation in productOrder.OperationList)
-                    this.PlanOperationToWorkplaces(productOperation, ref flowTime);
-                productOrder.Time = new GuiTimeRange(startTime, flowTime);
-            }
+                this.PlanProductOrderToWorkplaces(productOrder, productOrder.DatePlanBegin);
+        }
+        /// <summary>
+        /// Umístí pracovní časy operací daného výrobního příkazu na vhodná pracoviště
+        /// </summary>
+        /// <param name="productOrder"></param>
+        /// <param name="startTime"></param>
+        protected void PlanProductOrderToWorkplaces(ProductOrder productOrder, DateTime startTime)
+        {
+            DateTime flowTime = startTime;
+            foreach (ProductOperation productOperation in productOrder.OperationList)
+                this.PlanProductOperationToWorkplaces(productOperation, ref flowTime);
+            productOrder.Time = new GuiTimeRange(startTime, flowTime);
         }
         /// <summary>
         /// Umístí pracovní časy operací dané operace na vhodné pracoviště
         /// </summary>
         /// <param name="productOperation"></param>
         /// <param name="flowTime"></param>
-        protected void PlanOperationToWorkplaces(ProductOperation productOperation, ref DateTime flowTime)
+        protected void PlanProductOperationToWorkplaces(ProductOperation productOperation, ref DateTime flowTime)
         {
             string workPlace = productOperation.WorkPlace;
             if (String.IsNullOrEmpty(workPlace)) return;
@@ -1455,12 +1471,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="planUnitC"></param>
         protected void AddPlanUnitCToGridCenter(GuiDataTable guiTable, PlanUnitC planUnitC)
         {
-            GuiId rowGid = planUnitC.RecordGid;
-            GuiIdText mc = new GuiIdText() { GuiId = new GuiId(PlanUnitC.ClassNumber, planUnitC.RecordId), Text = planUnitC.MachinesCount.ToString() };
-            GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, mc);      // planUnitC.MachinesCount
-            row.Style = new GuiVisualStyle() { BackColor = planUnitC.RowBackColor };
-            row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
-            row.Graph = planUnitC.CreateGuiGraphWork();
+            guiTable.AddRow(planUnitC.CreateGuiRow(GridPositionType.Workplace));
         }
         /// <summary>
         /// Do dodané tabulky gridu Right (=Employee) přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho směn.
@@ -1469,29 +1480,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="planUnitC"></param>
         protected void AddPlanUnitCToGridRight(GuiDataTable guiTable, PlanUnitC planUnitC)
         {
-            GuiId rowGid = planUnitC.RecordGid;
-            GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name);
-            row.Style = new GuiVisualStyle() { BackColor = planUnitC.RowBackColor };
-            row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
-            row.Graph = planUnitC.CreateGuiGraphTime();
-            // row.RowCheckedImage = RES.Images.Actions16.DialogApplyPng;
-            row.Icon = GetRandom(
-                null,
-                RES.Images.Actions16.FormatTextBold3Png, null,
-                RES.Images.Actions16.FormatTextItalic3Png, null,
-                RES.Images.Actions16.FormatTextStrikethrough3Png, null,
-                RES.Images.Actions16.FormatTextUnderline3Png, null,
-                null);
-            row.Icon = GetRandom(
-                RES.Images.Small16.BulletBlackPng,
-                RES.Images.Small16.BulletBluePng,
-                RES.Images.Small16.BulletGreenPng,
-                RES.Images.Small16.BulletOrangePng,
-                RES.Images.Small16.BulletPinkPng,
-                RES.Images.Small16.BulletPurplePng,
-                RES.Images.Small16.BulletRedPng,
-                RES.Images.Small16.BulletWhitePng,
-                RES.Images.Small16.BulletYellowPng);
+            guiTable.AddRow(planUnitC.CreateGuiRow(GridPositionType.Employee));
         }
         /// <summary>
         /// Do dodané tabulky přidá linky mezi operacemi daného Výrobního příkazu
@@ -1899,8 +1888,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #endregion
         #endregion
         #region Přidání / Odebrání řádku grafu
+        /// <summary>
+        /// Přidá řádek do grafu Výroba nebo Kapacity
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
         protected void AddRowToGraph(GuiRequest guiRequest, GuiResponse guiResponse)
         {
+            float rnd = GetRandomRatio();
+            if (rnd > 0.333f)
+                this.AddRowToGraphProductOrder(guiRequest, guiResponse);
+            else
+                this.AddRowToGraphWorkplace(guiRequest, guiResponse);
+        }
+        /// <summary>
+        /// Přidá řádek do grafu Výroba
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void AddRowToGraphProductOrder(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Čas počátky výroby = na pozici 10% časové osy:
+            TimeRange axisTime = guiRequest.CurrentState.TimeAxisValue;
+            DateTime? startTime = axisTime.GetPoint(0.1m);
+
             // Vyrobíme náhodný Výrobní příkaz (přidá se do this dat!):
             string name = GetRandom("Krabička pro hrací skříňku", "Dárková kazeta na mýdlo", "Dřevěné obložení dveří", "Botník na suché boty", "Botník na špinavé boty", "Kuchyňské prkénko 30cm", "Sada špalků pro automobil",
                                     "Dřevěné hrací kostky 6ks", "Žebřík na půdu", "Dřevěný hlavolam «Kostka»", "Vyřezávaný model letadla 1:48", "Regál do malého sklepa 1.4m x 0.75m", "Ozdobná držadla příborů",
@@ -1910,8 +1921,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             decimal qty = GetRandom(2m, 5m, 6m, 9m, 12m, 15m, 21m, 24m, 30m, 36m, 48m, 64m, 90m, 120m);
             string tagText = GetRandom("stoly", "skříně", "víka", "pro děti", "jiné");
             ProductTpv tpv = GetRandom(ProductTpv.Simple, ProductTpv.Standard, ProductTpv.Standard, ProductTpv.Luxus, ProductTpv.Cooperation, ProductTpv.Standard, ProductTpv.Simple, ProductTpv.Standard);
-            ProductOrder productOrder = this.CreateProductOrder(name, backColor, qty, tagText, tpv);
+            ProductOrder productOrder = this.CreateProductOrder(name, backColor, qty, tagText, tpv, startTime);
             this.DataChanged = true;
+
+            // Zaplánujeme VP do Kapacitních jednotek, tím dojde k termínování jeho operací:
+            this.PlanProductOrderToWorkplaces(productOrder, productOrder.DatePlanBegin);
 
             // Tento Výrobní příkaz vygeneruje standardně řádky GUI:
             List<GuiDataRow> rowList = new List<GuiDataRow>();
@@ -1927,18 +1941,87 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 .Select(row => new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = row.RowGuiId }, RowData = row })
                 .ToList();
         }
+        /// <summary>
+        /// Přidá řádek do grafu Kapacity
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void AddRowToGraphWorkplace(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Vyrobíme náhodné Pracoviště (přidá se do this dat!):
+            string name = GetRandom("Ruční pilník dřevo", "Ruční rašple", "Ruční pilník jehlový",
+                                    "Ruční pilka na železo", "Ruční pila lupenková", "Ruční pila ocaska",
+                                    "Kladivo", "Dláto", "Šroubovák křížový", "Šroubovák plochý",
+                                    "Bateriový šroubovák", "Aku vrtačka", "Vrtačka Narex",
+                                    "Štětec vlasový", "Štětec plochý", "Štětec kulatý");
+            string wplc = GetRandom(WP_DILN, WP_KONT, WP_KOOP, WP_LAKO, WP_PILA);
+            string tags = GetRandom("ruční", "aku", "štětce");
+            int machines = GetRandom(1, 1, 1, 2, 3);
+            CalendarType calendar = GetRandom(CalendarType.Work5d1x8hR, CalendarType.Work5d1x8hO, CalendarType.Work5d1x8hR, CalendarType.Work5d1x8hO, CalendarType.Work5d2x8h);
+
+            PlanUnitC workplace = this.CreatePlanUnitCWp(name, wplc, tags, machines, calendar, null);
+            this.DataChanged = true;
+
+            // Pracoviště vygeneruje standardní řádek GUI:
+            GuiDataRow row = workplace.CreateGuiRow(GridPositionType.Workplace);
+
+            // Řádky přidáme do response tak, aby se zařadily do tabulky uprostřed nahoře:
+            guiResponse.RefreshRows = new List<GuiRefreshRow>() {
+                new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridCenterTop, RowId = row.RowGuiId }, RowData = row }
+                };
+        }
+        /// <summary>
+        /// Odebere řádek z grafu Výroba nebo Kapacity
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
         protected void RemoveRowFromGraph(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            float rnd = GetRandomRatio();
+            if (rnd > 0.2f)
+                this.RemoveRowFromGraphProductOrder(guiRequest, guiResponse);
+            else
+                this.RemoveRowFromGraphWorkplace(guiRequest, guiResponse);
+        }
+        /// <summary>
+        /// Odebere řádek z grafu Výroba
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void RemoveRowFromGraphProductOrder(GuiRequest guiRequest, GuiResponse guiResponse)
         {
             // Vybereme jeden náhodný VP z našeho seznamu:
             ProductOrder productOrder = GetRandom(this.ProductOrderDict.Values.ToArray());
             if (productOrder != null)
             {
-                GuiGridRowId gridId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = productOrder.RecordGid };
-                GuiRefreshRow refreshRow = new GuiRefreshRow() { GridRowId = gridId, RowData = null };
+                GuiId[] rows = productOrder.AllRecordsGid;
+                guiResponse.RefreshRows = rows
+                    .Select(r => new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = r }, RowData = null })
+                    .ToList();
 
-                guiResponse.RefreshRows = new List<GuiRefreshRow>() { refreshRow };
-
+                this.ProductStructureDict.RemoveKeys(rows);
+                this.ProductOperationDict.RemoveKeys(rows);
                 this.ProductOrderDict.Remove(productOrder.RecordGid);
+
+                this.DataChanged = true;
+            }
+        }
+        /// <summary>
+        /// Odebere řádek z grafu Kapacity
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void RemoveRowFromGraphWorkplace(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            // Vybereme jedno náhodné pracoviště:
+            PlanUnitC workplace = GetRandom(this.WorkplaceDict.Values.ToArray());
+            if (workplace != null)
+            {
+                guiResponse.RefreshRows = new List<GuiRefreshRow>() {
+                    new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = workplace.RecordGid }, RowData = null }
+                    };
+
+                this.WorkplaceDict.Remove(workplace.RecordGid);
 
                 this.DataChanged = true;
             }
@@ -2479,6 +2562,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public decimal Qty { get; set; }
         public Color BackColor { get; set; }
         /// <summary>
+        /// Obsahuje pole všech <see cref="GuiId"/>, které spadají do tohoto VP: samotný VP, jeho operace a jejich komponenty
+        /// </summary>
+        public GuiId[] AllRecordsGid
+        {
+            get
+            {
+                List<GuiId> allRecordsGid = new List<GuiId>();
+                allRecordsGid.Add(this.RecordGid);
+                allRecordsGid.AddRange(this.OperationList.SelectMany(op => op.AllRecordsGid));
+                return allRecordsGid.ToArray();
+            }
+        }
+        /// <summary>
         /// Metoda vygeneruje řádky za this instanci a za svoje podřízené řádky, a přidá je do předané kolekce
         /// </summary>
         /// <returns></returns>
@@ -2566,6 +2662,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public GuiTimeRange TimeTAc { get; set; }
         public GuiTimeRange TimeTEc { get; set; }
         public Color BackColor { get; set; }
+        /// <summary>
+        /// Obsahuje pole všech <see cref="GuiId"/>, které spadají do této Operace VP: samotná Operace, a její komponenty
+        /// </summary>
+        public GuiId[] AllRecordsGid
+        {
+            get
+            {
+                List<GuiId> allRecordsGid = new List<GuiId>();
+                allRecordsGid.Add(this.RecordGid);
+                allRecordsGid.AddRange(this.StructureList.Select(st => st.RecordGid));
+                return allRecordsGid.ToArray();
+            }
+        }
         /// <summary>
         /// Dictionary obsahující jednotky práce za tuto operaci
         /// </summary>
@@ -2925,6 +3034,32 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return guiGraph;
         }
+        /// <summary>
+        /// Vytvoří a vrátí kompletní řádek
+        /// </summary>
+        /// <param name="gridType"></param>
+        /// <returns></returns>
+        internal GuiDataRow CreateGuiRow(GridPositionType gridType)
+        {
+            GuiDataRow guiRow = null;
+            switch (gridType)
+            {
+                case GridPositionType.Workplace:
+                case GridPositionType.Person:
+                    GuiIdText mc = new GuiIdText() { GuiId = new GuiId(PlanUnitC.ClassNumber, this.RecordId), Text = this.MachinesCount.ToString() };
+                    guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name, mc);
+                    guiRow.Graph = this.CreateGuiGraphWork();
+                    break;
+                case GridPositionType.Employee:
+                    guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name);
+                    guiRow.Graph = this.CreateGuiGraphTime();
+                    break;
+            }
+            guiRow.RowGuiId = this.RecordGid;
+            guiRow.Style = new GuiVisualStyle() { BackColor = this.RowBackColor };
+            guiRow.TagItems = new List<GuiTagItem>(this.TagItems);
+            return guiRow;
+        }
     }
     /// <summary>
     /// Druh kapacity
@@ -3227,9 +3362,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     internal enum GridPositionType
     {
         None,
+        /// <summary>
+        /// Vlevo - Výrobní příkazy
+        /// </summary>
         ProductOrder,
+        /// <summary>
+        /// Uprostřed nahoře - pracoviště a práce na nich
+        /// </summary>
         Workplace,
+        /// <summary>
+        /// Uprostřed dole - osoby a jejich práce
+        /// </summary>
         Person,
+        /// <summary>
+        /// Vpravo - zaměstnanci a jejich pracovní doba, nikoli práce
+        /// </summary>
         Employee
     }
     #endregion
