@@ -580,10 +580,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (refreshRow.RowData != null)
             {   // Máme zadaná data řádku - půjde o Insert nebo Update:
                 rowGId = (refreshRow.RowData?.RowGuiId ?? refreshRow.GridRowId?.RowId);    // ID řádku: primárně z dat řádku, sekundárně z ID
+                if (rowGId == null)
+                    throw new GraphLibDataException("Chyba: v řádku GuiRefreshRow není přítomen RowId ani v RowData, ani v GridRowId.");
+
                 if (!this.TryGetRow(rowGId, out row))
                 {   // Insert: V tabulce nebyl nalezen řádek pro daný GId => vytvoříme nový řádek a přidáme do tabulky:
                     row = Row.CreateFrom(refreshRow.RowData);
                     this.TableRow.AddRow(row);
+                    this.PrepareGraphForRow(row);
                 }
                 else
                 {   // Update:
@@ -1731,7 +1735,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (targetGraph.TryGetGraphItem(itemId, out targetItem))
             {
                 targetData = targetItem as DataGraphItem;
-
                 if (targetData != null)
                 {   // Synchronizace hodnot:
                     targetData.RowGId = targetRow.RecordGId;
@@ -1743,10 +1746,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             else
             {   // Klonování prvku grafu:
                 targetData = DataGraphItem.CreateFrom(this, sourceData.GuiGraphItem);
-                targetData.Time = sourceData.Time;
-                targetData.BehaviorMode = (sourceData.BehaviorMode & GraphItemBehaviorMode.AllEnabledForChildRows);
-                targetGraph.AddGraphItem(targetData);
-                targetItem = targetData;
+                if (targetData != null)
+                {   // Vstupní data jsou platná:
+                    targetData.Time = sourceData.Time;
+                    targetData.BehaviorMode = (sourceData.BehaviorMode & GraphItemBehaviorMode.AllEnabledForChildRows);
+                    targetGraph.AddGraphItem(targetData);
+                    targetItem = targetData;
+                }
             }
 
             return targetItem;
@@ -4269,7 +4275,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public static DataGraphItem CreateFrom(MainDataTable graphTable, GuiGraphItem guiGraphItem)
         {
-            if (guiGraphItem == null) return null;
+            if (guiGraphItem == null || guiGraphItem.Time == null) return null;     // Neplatný vstup vygeneruje null.
+
             IMainDataTableInternal iGraphTable = graphTable as IMainDataTableInternal;
 
             DataGraphItem item = new DataGraphItem(graphTable, guiGraphItem);

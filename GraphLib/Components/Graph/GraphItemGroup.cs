@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             //  ale pro korektní fungování grupy musí být prvky v jedné grupě setříděny.
             List<ITimeGraphItem> itemList = items.ToList();
             if (itemList.Count > 1)
-                itemList.Sort((a,b) => DateTime.Compare(a.Time.Begin.Value, b.Time.Begin.Value));
+                itemList.Sort((a, b) => TimeRange.CompareByBeginAsc(a.Time, b.Time));
             this._Items = itemList.ToArray();
             DateTime? begin = null;
             DateTime? end = null;
