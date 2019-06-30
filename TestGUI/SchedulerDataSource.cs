@@ -1328,12 +1328,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiDataTable guiTable = new GuiDataTable() { ClassId = PlanUnitC.ClassNumber };
             guiTable.RowCheckEnabled = true;
             // guiTable.RowCheckedImage = RES.Images.Actions16.DialogOk3Png;
-            // guiTable.RowNonCheckedImage = RES.Images.Actions16.DialogNo3Png;
+            // guiTable.RowNonCheckedImage = RES.Images.Actions16.DialogNonAccept2Png;
+            // guiTable.RowNonCheckedImage = GuiImage.Empty;
             guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = PlanUnitC.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Jméno", Width = 200 });
             gridRight.RowTable = guiTable;
-            gridRight.RowTable.RowNonCheckedImage = GuiImage.Empty;
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
