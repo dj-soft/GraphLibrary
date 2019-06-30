@@ -190,7 +190,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 TagTexts = (tagText != null ? tagText.Split(',', ';') : null)
             };
             productOrder.Refer = "VP" + productOrder.RecordId.ToString();
-            productOrder.OperationList = this.CreateProductOperations(productOrder, tpv, qty);
+            this.CreateProductOperations(productOrder, tpv, qty);
             productOrder.DatePlanBegin = begin;
 
             this.ProductOrderDict.Add(productOrder.RecordGid, productOrder);
@@ -210,67 +210,61 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return begin;
         }
         /// <summary>
-        /// Vytvoří a vrátí sadu operací pro dané zadání.
+        /// Vytvoří sadu operací pro daný VP a dané zadání.
         /// </summary>
         /// <param name="productOrder"></param>
         /// <param name="tpv"></param>
         /// <param name="qty"></param>
         /// <returns></returns>
-        protected List<ProductOperation> CreateProductOperations(ProductOrder productOrder, ProductTpv tpv, decimal qty)
+        protected void CreateProductOperations(ProductOrder productOrder, ProductTpv tpv, decimal qty)
         {
-            List<ProductOperation> operations = new List<ProductOperation>();
-
             int line = 0;
             switch (tpv)
             {
                 case ProductTpv.Simple:
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0));
+                    CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
+                    CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0);
+                    CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0);
                     break;
 
                 case ProductTpv.Standard:
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
+                    CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
+                    CreateProductOperation(productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20));
+                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5));
+                    CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0);
+                    CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360);
+                    CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Luxus:
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, "D", false, 30, 25, 45, Pbb(70)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10)));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
+                    CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, "D", false, 30, 25, 45, Pbb(70));
+                    CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50));
+                    CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40));
+                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30));
+                    CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20));
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10));
+                    CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0);
+                    CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
+                    CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5);
+                    CreateProductOperation(productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Cooperation:
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60));
-                    operations.Add(CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0));
+                    CreateProductOperation(productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0);
                     break;
 
             }
-
-            foreach (ProductOperation operation in operations)
-                this.ProductOperationDict.Add(operation.RecordGid, operation);
-
-            return operations;
         }
         /// <summary>
         /// Vytvoří a vrátí jednu operaci pro dané zadání.
+        /// Operaci přidá do daného VP a do indexu <see cref="ProductOperationDict"/>.
         /// </summary>
         /// <param name="productOrder"></param>
         /// <param name="line"></param>
@@ -309,11 +303,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
 
+            // Operaci do VP, a do indexu:
+            productOrder.OperationList.Add(operation);
+            this.ProductOperationDict.Add(operation.RecordGid, operation);
+
             // Komponenty:
             if (!String.IsNullOrEmpty(components))
             {
                 foreach (char c in components)
-                    AddProductStructures(operation, c, qty);
+                    CreateProductStructures(operation, c, qty);
             }
 
             return operation;
@@ -324,56 +322,48 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="operation"></param>
         /// <param name="component"></param>
         /// <param name="qty"></param>
-        protected void AddProductStructures(ProductOperation operation, char component, decimal qty)
+        protected void CreateProductStructures(ProductOperation operation, char component, decimal qty)
         {
-            List<ProductStructure> structures = new List<ProductStructure>();
             switch (component)
             {
                 case 'D':
-                    structures.Add(this.CreateProductStructure(operation, "DTD", "Dřevo", 0.25m));
+                    this.CreateProductStructure(operation, "DTD", "Dřevo", 0.25m);
                     break;
                 case 'Š':
-                    structures.Add(this.CreateProductStructure(operation, "M6š", "Šroub M6", 6m));
-                    structures.Add(this.CreateProductStructure(operation, "M6p", "Podložka M6", 12m));
-                    structures.Add(this.CreateProductStructure(operation, "M6m", "Matka M6", 6m));
+                    this.CreateProductStructure(operation, "M6š", "Šroub M6", 6m);
+                    this.CreateProductStructure(operation, "M6p", "Podložka M6", 12m);
+                    this.CreateProductStructure(operation, "M6m", "Matka M6", 6m);
                     break;
                 case 'L':
-                    structures.Add(this.CreateProductStructure(operation, "Cx1000", "Lak Celox 1000", 0.1m));
-                    structures.Add(this.CreateProductStructure(operation, "C006", "Nitroředidlo", 0.1m));
+                    this.CreateProductStructure(operation, "Cx1000", "Lak Celox 1000", 0.1m);
+                    this.CreateProductStructure(operation, "C006", "Nitroředidlo", 0.1m);
                     break;
                 case 'Č':
-                    structures.Add(this.CreateProductStructure(operation, "Č6x20", "Čep dřevo 6 x 20", 6m));
+                    this.CreateProductStructure(operation, "Č6x20", "Čep dřevo 6 x 20", 6m);
                     break;
                 case 'K':
-                    structures.Add(this.CreateProductStructure(operation, "Kh12", "Klíh 12MPa", 0.1m));
+                    this.CreateProductStructure(operation, "Kh12", "Klíh 12MPa", 0.1m);
                     break;
                 case 'l':
-                    structures.Add(this.CreateProductStructure(operation, "Sx1050", "Lak syntetic 1050", 0.1m));
-                    structures.Add(this.CreateProductStructure(operation, "S006", "Syntetické ředidlo", 0.1m));
+                    this.CreateProductStructure(operation, "Sx1050", "Lak syntetic 1050", 0.1m);
+                    this.CreateProductStructure(operation, "S006", "Syntetické ředidlo", 0.1m);
                     break;
                 case 'B':
-                    structures.Add(this.CreateProductStructure(operation, "BA95", "Benzin Natural95", 0.04m));
+                    this.CreateProductStructure(operation, "BA95", "Benzin Natural95", 0.04m);
                     break;
                 case 'O':
-                    structures.Add(this.CreateProductStructure(operation, "Kt6", "Karton 6\"", 1.00m));
-                    structures.Add(this.CreateProductStructure(operation, "Fb2", "Folie bublinková", 0.10m));
+                    this.CreateProductStructure(operation, "Kt6", "Karton 6\"", 1.00m);
+                    this.CreateProductStructure(operation, "Fb2", "Folie bublinková", 0.10m);
                     break;
                 case 'Z':
-                    structures.Add(this.CreateProductStructure(operation, "ZL", "Záruční list 2roky", 1.00m));
-                    structures.Add(this.CreateProductStructure(operation, "Nobs", "Návod k použití", 0.10m));
+                    this.CreateProductStructure(operation, "ZL", "Záruční list 2roky", 1.00m);
+                    this.CreateProductStructure(operation, "Nobs", "Návod k použití", 0.10m);
                     break;
-            }
-
-            if (structures.Count > 0)
-            {
-                operation.StructureList.AddRange(structures);
-
-                foreach (ProductStructure structure in structures)
-                    this.ProductStructureDict.Add(structure.RecordGid, structure);
             }
         }
         /// <summary>
-        /// Vytvoří a vrátí jednu komponentu k dané operaci, s daným názvem a jednotkovým počtem
+        /// Vytvoří a vrátí jednu komponentu k dané operaci, s daným názvem a jednotkovým počtem.
+        /// Komponentu přidá do dodané operace i do zdejšího indexu <see cref="ProductStructureDict"/>.
         /// </summary>
         /// <param name="operation"></param>
         /// <param name="refer"></param>
@@ -389,7 +379,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Name = name,
                 Qty = operation.Qty * qtyUnit
             };
+
+            // Komponentu do Operace, a do indexu:
+            operation.StructureList.Add(structure);
+            this.ProductStructureDict.Add(structure.RecordGid, structure);
+
             return structure;
+        }
+        /// <summary>
+        /// Odebere danou komponentu z její operace a ze zdejšího indexu <see cref="ProductStructureDict"/>.
+        /// </summary>
+        /// <param name="structure"></param>
+        protected void RemoveStructure(ProductStructure structure)
+        {
+            if (structure == null) return;
+            structure.ProductOperation.StructureList.RemoveAll(s => (s.RecordGid == structure.RecordGid));
+            this.ProductStructureDict.RemoveIfExists(structure.RecordGid);
         }
         /// <summary>
         /// Vrátí výšku operace
@@ -1512,6 +1517,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
                 VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
             });
+
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
                 Name = GuiNameContextUnFixItem,
@@ -1520,6 +1526,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = "Tato funkce zruší fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
                 VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
             });
+
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
                 Name = GuiNameContextShowTime,
@@ -1529,6 +1536,44 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = "Pouze zobrazí čas.",
                 VisibleFor = GuiFullNameGridCenterTop + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
             });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextRemoveStruct1,
+                Title = "Odeber komponentu",
+                Image = RES.Images.Actions24.DeleteTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Odebere vybranou komponentu.",
+                VisibleFor = GuiFullNameGridLeft + 
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + 
+                ":" + ProductStructure.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextRemoveStructs,
+                Title = "Odeber všechny komponenty operace",
+                Image = RES.Images.Actions24.DeleteTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Odebere všechny komponenty dané operace.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + ProductOperation.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextInsertStruct,
+                Title = "Přidej komponentu",
+                Image = RES.Images.Actions24.InsertTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Přidá novou komponentudo dané operace.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + ProductStructure.ClassNumber.ToString() + "," + ProductOperation.ClassNumber.ToString()
+            });
+
+
         }
         protected GuiData MainData;
         protected GuiPage MainPage;
@@ -2026,6 +2071,141 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this.DataChanged = true;
             }
         }
+        /// <summary>
+        /// Přidá komponentu k vybrané operaci
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void InsertStruct(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            ProductOperation operation = this.SearchOperation(guiRequest.ContextMenu.ContextItemId);
+            if (operation == null)
+            {   // Pokud bylo kliknuto na řádek nějaké komponenty, tak najdu operaci z ní:
+                ProductStructure itemStructure = this.SearchStructure(guiRequest.ContextMenu.ContextItemId);
+                operation = itemStructure?.ProductOperation;
+            }
+            if (operation == null) return;
+
+            // Vytvoříme komponentu VP:
+            string referName = GetRandom(
+                "M4:Matka M4", "M6:Matka M6", "M8:Matka M8",
+                "M4x30:Šroub M4 x 30", "M6x45:Šroub M6 x 45", "M8x60:Šroub M8 x 60",
+                "Cx1060:Lak Celox lesklý", "S2040:Lak Syntol matný",
+                "H2/50:Hřebík 2 x 50", "H3/70:Hřebík 3 x 70",
+                "P4:Překližka 4mm");
+            decimal qty = GetRandom(1m, 2m, 4m, 6m, 9m, 10m, 16m, 20m, 24m);
+            string[] rns = referName.Split(':');
+            ProductStructure structure = this.CreateProductStructure(operation, rns[0], rns[1], qty);
+
+            // Vytvořím GUI řádek za danou komponentu:
+            List<GuiDataRow> rows = new List<GuiDataRow>();
+            structure.CreateGuiRows(rows);
+            GuiDataRow rowStruct = rows[0];
+
+            // Zajistíme, že tato komponenta bude mít Expanded svůj Parent node = operace:
+            guiResponse.ExpandRows = new List<GuiGridRowId>() { new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = operation.RecordGid } };
+
+            // Řádek komponenty přidáme do response tak, aby se zařadil do tabulky vlevo:
+            guiResponse.RefreshRows = new List<GuiRefreshRow>() { new GuiRefreshRow()
+            {
+                GridRowId = new GuiGridRowId() {TableName = GuiFullNameGridLeft, RowId = structure.RecordGid },
+                RowData = rowStruct
+            } };
+        }
+        /// <summary>
+        /// Odebere komponentu z vybrané operace 
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void RemoveStruct(GuiRequest guiRequest, GuiResponse guiResponse)
+        {
+            ProductStructure structure = this.SearchStructure(guiRequest.ContextMenu.ContextItemId);
+            if (structure != null)
+            {
+                this.RemoveStruct(guiRequest, guiResponse, structure);
+            }
+            else
+            {
+                ProductOperation operation = this.SearchOperation(guiRequest.ContextMenu.ContextItemId);
+                if (operation != null)
+                {
+                    ProductStructure[] structures = operation.StructureList.ToArray();
+                    foreach (ProductStructure s in structures)
+                        this.RemoveStruct(guiRequest, guiResponse, s);
+                }
+            }
+        }
+        /// <summary>
+        /// Zajistí odebrání dané komponenty z dat i z GUI vrstvy, pomocí <see cref="GuiResponse.RefreshRows"/>
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        /// <param name="structure"></param>
+        protected void RemoveStruct(GuiRequest guiRequest, GuiResponse guiResponse, ProductStructure structure)
+        {
+            this.RemoveStructure(structure);
+
+            if (guiResponse.RefreshRows == null) guiResponse.RefreshRows = new List<GuiRefreshRow>();
+            guiResponse.RefreshRows.Add(new GuiRefreshRow()
+            {
+                GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridLeft, RowId = structure.RecordGid },
+                RowData = null
+            });
+        }
+        /// <summary>
+        /// Zkusí najít Operaci VP pro některý z ID v daném komplexním identifikátoru <see cref="GuiGridItemId"/>
+        /// </summary>
+        /// <param name="guiItemId"></param>
+        /// <returns></returns>
+        protected ProductOperation SearchOperation(GuiGridItemId guiItemId)
+        {
+            if (guiItemId == null) return null;
+            return this.SearchOperation(guiItemId.ItemId, guiItemId.DataId, guiItemId.RowId, guiItemId.GroupId);
+        }
+        /// <summary>
+        /// Zkusí najít Operaci VP pro některý z dodaných <see cref="GuiId"/>
+        /// </summary>
+        /// <param name="guiIds"></param>
+        /// <returns></returns>
+        protected ProductOperation SearchOperation(params GuiId[] guiIds)
+        {
+            ProductOperation operation = null;
+            if (guiIds != null)
+            {
+                foreach (GuiId guiId in guiIds)
+                {
+                    if (guiId != null && this.ProductOperationDict.TryGetValue(guiId, out operation)) break;
+                }
+            }
+            return operation;
+        }
+        /// <summary>
+        /// Zkusí najít Komponentu VP pro některý z ID v daném komplexním identifikátoru <see cref="GuiGridItemId"/>
+        /// </summary>
+        /// <param name="guiItemId"></param>
+        /// <returns></returns>
+        protected ProductStructure SearchStructure(GuiGridItemId guiItemId)
+        {
+            if (guiItemId == null) return null;
+            return this.SearchStructure(guiItemId.ItemId, guiItemId.DataId, guiItemId.RowId, guiItemId.GroupId);
+        }
+        /// <summary>
+        /// Zkusí najít Komponentu VP pro některý z dodaných <see cref="GuiId"/>
+        /// </summary>
+        /// <param name="guiIds"></param>
+        /// <returns></returns>
+        protected ProductStructure SearchStructure(params GuiId[] guiIds)
+        {
+            ProductStructure structure = null;
+            if (guiIds != null)
+            {
+                foreach (GuiId guiId in guiIds)
+                {
+                    if (guiId != null && this.ProductStructureDict.TryGetValue(guiId, out structure)) break;
+                }
+            }
+            return structure;
+        }
         #endregion
         #region Test Serializace + Deserializace
         /// <summary>
@@ -2231,6 +2411,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameContextFixItem = "CtxFixItem";
         protected const string GuiNameContextUnFixItem = "CtxUnFixItem";
         protected const string GuiNameContextShowTime = "CtxShowTimeItem";
+        protected const string GuiNameContextRemoveStruct1 = "CtxRemoveStruct1";
+        protected const string GuiNameContextRemoveStructs = "CtxRemoveStructs";
+        protected const string GuiNameContextInsertStruct = "CtxInsertStruct";
 
         protected const string GuiNameDelimiter = "\\";
         protected const string GuiNamePages = "pages";
@@ -2386,12 +2569,24 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         break;
 
                     case GuiRequest.COMMAND_ContextMenuClick:
-                        Application.App.ShowInfo(
-                            "Někdo chce provést funkci: " + requestArgs.Request.ContextMenu.ContextMenuItem.Title + Environment.NewLine +
-                            "Pro prvek grafu: " + requestArgs.Request.ContextMenu.ContextItemId.ToString() + Environment.NewLine +
-                            "V čase: " + requestArgs.Request.ContextMenu.ClickTime);
-                        break;
+                        switch (requestArgs.Request.ContextMenu.ContextMenuItem.Name)
+                        {
+                            case GuiNameContextRemoveStruct1:
+                            case GuiNameContextRemoveStructs:
+                                this.RemoveStruct(requestArgs.Request, responseArgs.GuiResponse);
+                                break;
+                            case GuiNameContextInsertStruct:
+                                this.InsertStruct(requestArgs.Request, responseArgs.GuiResponse);
+                                break;
 
+                            default:
+                                Application.App.ShowInfo(
+                                    "Někdo chce provést funkci: " + requestArgs.Request.ContextMenu.ContextMenuItem.Title + Environment.NewLine +
+                                    "Pro prvek grafu: " + requestArgs.Request.ContextMenu.ContextItemId.ToString() + Environment.NewLine +
+                                    "V čase: " + requestArgs.Request.ContextMenu.ClickTime);
+                                break;
+                        }
+                        break;
                     case GuiRequest.COMMAND_OpenRecords:
                         Application.App.ShowInfo("Bohužel neumím otevřít záznam, jehož ID=" + requestArgs.Request.RecordsToOpen.ToString(";"));
                         break;
@@ -2551,7 +2746,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="dataSource"></param>
         public ProductOrder(SchedulerDataSource dataSource)
             : base(dataSource)
-        { }
+        {
+            this.OperationList = new List<ProductOperation>();
+        }
         public const int ClassNumber = 1188;
         public override int ClassId { get { return ClassNumber; } }
         public List<ProductOperation> OperationList { get; set; }
