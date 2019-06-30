@@ -587,8 +587,9 @@ namespace Asol.Tools.WorkScheduler.Data
             {
                 // Základní viditelnost řádku daná kódem (Row.Visible) a řádkovým filtrem (RowFiltersExists):
                 bool rowFiltersExists = this.RowFiltersExists;
+                Row[] rows = this.Rows.ToArray();
                 List<Row> list = new List<Row>();
-                foreach (Row row in this.Rows)
+                foreach (Row row in rows)
                 {
                     bool isVisible = false;
                     if (!row.Hidden && row.TreeNode.IsRoot && (rowFiltersExists ? this.FilterRow(row) : true))
@@ -3954,7 +3955,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         private Dictionary<int, Row> _StaticChildDict;
         #endregion
-        #region Expand, Collapse
+        #region Expand, ExpandWithParents, Collapse
         /// <summary>
         /// Child nody tohoto řádku jsou otevřené?
         /// </summary>
@@ -4017,6 +4018,7 @@ namespace Asol.Tools.WorkScheduler.Data
             if (node == null) return;
             TreeNode firstNode = node;
 
+            List<TreeNode> expandNodes = new List<TreeNode>();
             bool isChanged = false;
             Dictionary<GId, Row> expandDict = new Dictionary<GId, Row>();
             for (int t = 0; t < 99; t++)
@@ -4024,11 +4026,19 @@ namespace Asol.Tools.WorkScheduler.Data
                 if (node == null) break;
                 GId rowGId = node.Owner.RecordGId;
                 if (expandDict.ContainsKey(rowGId)) break;
-                node._CollapseOtherParents();
-                bool oldExpanded = node._IsExpanded;
-                node._IsExpanded = node.HasChilds;
-                if (node._IsExpanded != oldExpanded && !isChanged) isChanged = true;
+                // node._CollapseOtherParents();
+                if (node.HasChilds)
+                    expandNodes.Add(node);
                 node = node.CurrentParentNode;
+            }
+
+            foreach (TreeNode expandNode in expandNodes)
+            {
+                if (!expandNode._IsExpanded)
+                {
+                    expandNode._IsExpanded = true;
+                    isChanged |= true;
+                }
             }
 
             if (invalidateRows && isChanged)
