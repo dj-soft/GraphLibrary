@@ -3683,7 +3683,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// FullName gridu <see cref="GuiGrid"/> má formu: "Data\pageMain\mainPanel\workGrid". Více viz <see cref="GuiBase.FullName"/>.
         /// Text pro definici <see cref="VisibleFor"/> i <see cref="EnableFor"/> obsahuje FullName gridu, volitelně pak dvojtečku a číslo třídy prvku grafu, pro který je funkce určená.
         /// Číslo třídy: může jich být uvedeno více, oddělené čárkami.
-        /// Pokud nebude zadáno číslo třídy, pak definice platí pro všechny třídy. Jakmile bude zadáno alespoň jedno nebo více číslo třídy, pak bude platit definice jen pro zadané třídu.
+        /// Pokud nebude zadáno číslo třídy, pak definice platí pro všechny třídy. 
+        /// Jakmile bude zadáno alespoň jedno nebo více číslo třídy, pak bude platit definice jen pro zadané třídu.
+        /// Před číslem třídy smí být písmeno C, nebo M nebo E.
+        /// C značí, že definice platí pro všechny objekty třídy (Master i Entries), M platí jen pro Master a E pouze pro Entries.
+        /// Lze tak definovat funkce platné jen pro hlavičkové prvky, anebo jen pro položky.
+        /// Pokud písmeno není zadáno, platí definice pro celou třídu (jako by bylo zadáno písmeno C).
+        /// <para/>
         /// Číslo třídy se testuje z grafického prvku z jeho <see cref="GuiGraphItem.ItemId"/> a z <see cref="GuiGraphItem.GroupId"/> a z <see cref="GuiGraphItem.DataId"/>.
         /// Jedna definice může obsahovat více výše popsaných prvků, oddělených středníkem.
         /// Definice může v rámci FullName obsahovat hvězdičku, která nahrazuje část FullName (nebo i celou hodnotu FullName). Hvězdičku lze použít namísto tříd, anebo se čísla tříd nemusí zadávat.
@@ -3720,6 +3726,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konstanta, určující že daná definice kontextové funkce se má použít pro plochu celého řádku = tj. i mimo graf
         /// </summary>
         public const string AREA_ROW = "Row";
+        /// <summary>
+        /// Prefix před číslo třídy, pro platnost definice pro celou třídu (Master + Entries)
+        /// </summary>
+        public const string CLASS_ALL = "C";
+        /// <summary>
+        /// Prefix před číslo třídy, pro platnost definice výhradně pro Master
+        /// </summary>
+        public const string CLASS_MASTER = "M";
+        /// <summary>
+        /// Prefix před číslo třídy, pro platnost definice výhradně pro Entries
+        /// </summary>
+        public const string CLASS_ENTRIES = "E";
     }
     #endregion
     #region GuiTextItem : Vizuální prvek v GUI, obsahuje Name, Title, ToolTip a Image

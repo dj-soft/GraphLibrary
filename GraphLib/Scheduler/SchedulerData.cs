@@ -2348,7 +2348,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <param name="fullNameRegex"></param>
             /// <param name="area"></param>
             /// <param name="classDict"></param>
-            private ContextFunctionValidInfo(System.Text.RegularExpressions.Regex fullNameRegex, AreaType area, Dictionary<int, object> classDict)
+            private ContextFunctionValidInfo(System.Text.RegularExpressions.Regex fullNameRegex, AreaType area, Dictionary<int, ClassValidityRange> classDict)
             {
                 this.FullNameRegex = fullNameRegex;
                 this.Area = area;
@@ -2365,7 +2365,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Povolené třídy. Pokud není žádná, neřeší se.
             /// </summary>
-            protected Dictionary<int, object> ClassDict { get; private set; }
+            protected Dictionary<int, ClassValidityRange> ClassDict { get; private set; }
             /// <summary>
             /// Typ oblasti, kde může být použita Kontextová funkce
             /// </summary>
@@ -2408,7 +2408,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     if (String.IsNullOrEmpty(item)) continue;
                     System.Text.RegularExpressions.Regex fullNameRegex = null;
                     AreaType? area = null;
-                    Dictionary<int, object> classDict = null;
+                    Dictionary<int, ClassValidityRange> classDict = null;
                     string[] parts = item.Split(':');                     // FullName:Classes, anebo FullName:Area:Classes
                     int partCount = parts.Length;
                     if (partCount == 1)
@@ -2488,19 +2488,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <param name="text"></param>
             /// <param name="strictParse">Požadavek (true), aby se výsledná Dictionary vrátila pouze tehdy, když vstupní text je korektní = obsahuje jen čísla a oddělovače. Pokud by obsahoval jiné znaky, vrací se null.</param>
             /// <returns></returns>
-            private static Dictionary<int, object> _ParseClasses(string text, bool strictParse)
+            private static Dictionary<int, ClassValidityRange> _ParseClasses(string text, bool strictParse)
             {
                 if (String.IsNullOrEmpty(text)) return null;
-                Dictionary<int, object> result = new Dictionary<int, object>();
+                Dictionary<int, ClassValidityRange> result = new Dictionary<int, ClassValidityRange>();
                 string[] items = text.Split(',');
                 foreach (string item in items)
                 {
-                    string number = item.Trim();
+                    string classText = item.Trim();
+                    ClassValidityRange validityRange = _ParseClassValidityRange(ref classText);
                     int value;
-                    if (number.Length > 0 && Int32.TryParse(number, out value))
+                    if (classText.Length > 0 && Int32.TryParse(classText, out value))
                     {   // Je to číslo, OK:
                         if (value > 0 && !result.ContainsKey(value))
-                            result.Add(value, null);
+                            result.Add(value, validityRange);
                     }
                     else if (strictParse)
                     {   // Není to číslo, a pokud máme být striktní, pak ihned vrátíme null:
@@ -2508,6 +2509,60 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     }
                 }
                 return (result.Count == 0 ? null : result);
+            }
+            /// <summary>
+            /// Řeší prefix <see cref="ClassValidityRange"/> v dodaném textu
+            /// </summary>
+            /// <param name="classText"></param>
+            /// <returns></returns>
+            private static ClassValidityRange _ParseClassValidityRange(ref string classText)
+            {
+                ClassValidityRange validityRange = ClassValidityRange.None;
+                if (classText != null && classText.Length >= 2)
+                {
+                    string prefix = classText.Substring(0, 1);
+                    switch (prefix)
+                    {
+                        case GuiContextMenuItem.CLASS_ALL:
+                            validityRange = ClassValidityRange.WholeClass;
+                            classText = classText.Substring(1).Trim();
+                            break;
+                        case GuiContextMenuItem.CLASS_MASTER:
+                            validityRange = ClassValidityRange.Master;
+                            classText = classText.Substring(1).Trim();
+                            break;
+                        case GuiContextMenuItem.CLASS_ENTRIES:
+                            validityRange = ClassValidityRange.Entries;
+                            classText = classText.Substring(1).Trim();
+                            break;
+                        default:
+                            validityRange = ClassValidityRange.WholeClass;
+                            break;
+                    }
+                }
+                return validityRange;
+            }
+            /// <summary>
+            /// Platnost z pohledu třídy
+            /// </summary>
+            protected enum ClassValidityRange
+            {
+                /// <summary>
+                /// Nic
+                /// </summary>
+                None,
+                /// <summary>
+                /// Master
+                /// </summary>
+                Master,
+                /// <summary>
+                /// Entries
+                /// </summary>
+                Entries,
+                /// <summary>
+                /// Celá třída
+                /// </summary>
+                WholeClass
             }
             #endregion
             #region Testy validity
@@ -2559,8 +2614,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 if (this.ClassDict == null) return true;
                 foreach (GuiId guiId in guiIds)
-                {   // Jakýkoli GuiId s povolenou třídou zajistí vrácení true:
-                    if (guiId != null && this.ClassDict.ContainsKey(guiId.ClassId)) return true;
+                {   // Jakýkoli GuiId s povolenou třídou a odpovídající Master/Entries zajistí vrácení true:
+                    ClassValidityRange validityRange;
+                    if (guiId != null && this.ClassDict.TryGetValue(guiId.ClassId, out validityRange))
+                    {
+                        bool isEntry = guiId.EntryId.HasValue;                 // true = je zadán položkový GuiId
+                        if ((validityRange == ClassValidityRange.WholeClass) || 
+                            (validityRange == ClassValidityRange.Master && !isEntry) ||
+                            (validityRange == ClassValidityRange.Entries && isEntry))
+                            return true;
+                    }
                 }
                 // Žádný zadaný GuiId nemá povolenou třídu, vrátíme false:
                 return false;
