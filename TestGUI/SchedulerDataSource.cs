@@ -978,6 +978,93 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
         }
         /// <summary>
+        /// Vygeneruje kontextové funkce
+        /// </summary>
+        protected void CreateContextFunctions()
+        {
+            this.MainData.ContextMenuItems = new GuiContextMenuSet();
+            this.MainData.ContextMenuItems.Title = "Nabídka funkcí";
+            this.MainData.ContextMenuItems.BackColor = Color.FromArgb(220, 230, 255);
+            this.MainData.ContextMenuItems.ImageScalingSize = new Size(24, 24);
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextFixItem,
+                Title = "Nastav FIXOVÁNÍ",
+                Image = RES.Images.Actions24.Lock4Png,
+                ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
+                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextUnFixItem,
+                Title = "Zrušit FIXOVÁNÍ",
+                Image = RES.Images.Actions24.Lock2Png,
+                ToolTip = "Tato funkce zruší fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
+                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextShowTime,
+                Title = "Zobrazit čas",
+                Image = RES.Images.Actions24.ViewCalendarTimeSpentPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Pouze zobrazí čas.",
+                VisibleFor = GuiFullNameGridCenterTop + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextInsertStruct,
+                Title = "Přidej komponentu",
+                Image = RES.Images.Actions24.InsertTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Přidá novou komponentu do dané operace.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + GuiContextMenuItem.CLASS_MASTER + ProductStructure.ClassNumber.ToString() + "," + ProductOperation.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = "XxxYyy",        // Tato položka by se NEMĚLA objevit, protože povolené třídy ProductStructure a ProductOperation NEMOHOU být položkové...
+                Title = "Tato funkce nesmí být vidět",
+                Image = RES.Images.Actions24.InsertTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Pokud je vidět tato funkce, je chyba v detektorech ContextFunctionValidInfo a enum ClassValidityRange.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + GuiContextMenuItem.CLASS_ENTRIES + ProductStructure.ClassNumber.ToString() + "," + GuiContextMenuItem.CLASS_ENTRIES + ProductOperation.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextRemoveStruct1,
+                Title = "Odeber komponentu",
+                Image = RES.Images.Actions24.DeleteTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Odebere vybranou komponentu.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + ProductStructure.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextRemoveStructs,
+                Title = "Odeber všechny komponenty operace",
+                Image = RES.Images.Actions24.DeleteTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Odebere všechny komponenty dané operace.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + ProductOperation.ClassNumber.ToString()
+            });
+
+        }
+        /// <summary>
         /// Vygeneruje hlavní (a jedinou) stránku pro data, zatím bez dat
         /// </summary>
         protected void CreateMainPage()
@@ -1498,82 +1585,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (links == null || links.Length == 0) return;
             if (guiTable.GraphLinks == null) guiTable.GraphLinks = new List<GuiGraphLink>();
             guiTable.GraphLinks.AddRange(links);
-        }
-        /// <summary>
-        /// Vygeneruje kontextové funkce
-        /// </summary>
-        protected void CreateContextFunctions()
-        {
-            this.MainData.ContextMenuItems = new GuiContextMenuSet();
-            this.MainData.ContextMenuItems.Title = "Nabídka funkcí";
-            this.MainData.ContextMenuItems.BackColor = Color.FromArgb(220, 230, 255);
-            this.MainData.ContextMenuItems.ImageScalingSize = new Size(24, 24);
-
-            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
-            {
-                Name = GuiNameContextFixItem,
-                Title = "Nastav FIXOVÁNÍ",
-                Image = RES.Images.Actions24.Lock4Png,
-                ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
-            });
-
-            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
-            {
-                Name = GuiNameContextUnFixItem,
-                Title = "Zrušit FIXOVÁNÍ",
-                Image = RES.Images.Actions24.Lock2Png,
-                ToolTip = "Tato funkce zruší fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
-            });
-
-            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
-            {
-                Name = GuiNameContextShowTime,
-                Title = "Zobrazit čas",
-                Image = RES.Images.Actions24.ViewCalendarTimeSpentPng,
-                BackColor = Color.FromArgb(255, 235, 235),
-                ToolTip = "Pouze zobrazí čas.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
-            });
-
-            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
-            {
-                Name = GuiNameContextRemoveStruct1,
-                Title = "Odeber komponentu",
-                Image = RES.Images.Actions24.DeleteTableRowPng,
-                BackColor = Color.FromArgb(255, 235, 235),
-                ToolTip = "Odebere vybranou komponentu.",
-                VisibleFor = GuiFullNameGridLeft + 
-                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + 
-                ":" + ProductStructure.ClassNumber.ToString()
-            });
-
-            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
-            {
-                Name = GuiNameContextRemoveStructs,
-                Title = "Odeber všechny komponenty operace",
-                Image = RES.Images.Actions24.DeleteTableRowPng,
-                BackColor = Color.FromArgb(255, 235, 235),
-                ToolTip = "Odebere všechny komponenty dané operace.",
-                VisibleFor = GuiFullNameGridLeft +
-                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
-                ":" + ProductOperation.ClassNumber.ToString()
-            });
-
-            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
-            {
-                Name = GuiNameContextInsertStruct,
-                Title = "Přidej komponentu",
-                Image = RES.Images.Actions24.InsertTableRowPng,
-                BackColor = Color.FromArgb(255, 235, 235),
-                ToolTip = "Přidá novou komponentudo dané operace.",
-                VisibleFor = GuiFullNameGridLeft +
-                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
-                ":" + ProductStructure.ClassNumber.ToString() + "," + ProductOperation.ClassNumber.ToString()
-            });
-
-
         }
         protected GuiData MainData;
         protected GuiPage MainPage;
