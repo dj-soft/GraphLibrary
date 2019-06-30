@@ -1747,7 +1747,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 if (row.Table.AllowRowCheckedByClick)
                 {
                     guiImage = row.RowNonCheckedImage;
-                    if (guiImage != null) return Application.App.Resources.GetImage(row.RowCheckedImage);
+                    if (guiImage != null) return Application.App.Resources.GetImage(guiImage);
                     return Skin.Grid.RowNotCheckedImage;
                 }
                 return null;
