@@ -2528,6 +2528,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         GraphItemBehaviorMode BehaviorMode { get; }
         /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Editovatelný
+        /// </summary>
+        TimeGraphElementBackEffectStyle BackEffectEditable { get; }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Needitovatelný
+        /// </summary>
+        TimeGraphElementBackEffectStyle BackEffectNonEditable { get; }
+        /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
         /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat. Rozhodně ji nemá vlastními silami generovat.
@@ -2561,6 +2569,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         Rectangle
     }
+    /// <summary>
+    /// Styl výplně pozadí prvku grafu
+    /// </summary>
+    public enum TimeGraphElementBackEffectStyle
+    {
+        /// <summary>
+        /// Standardní
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Plochý
+        /// </summary>
+        Flat,
+        /// <summary>
+        /// Výrazně trubkovitý tvar
+        /// </summary>
+        Pipe
+    }
+
     #endregion
     #region Interface ITimeGraphDataSource a příslušné třídy argumentů
     /// <summary>

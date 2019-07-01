@@ -851,6 +851,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GPainter.GraphItemArgs graphItemArgs = new GPainter.GraphItemArgs(e.Graphics, boundsAbsolute);
             graphItemArgs.IsGroup = false;
             graphItemArgs.BackColor = this._Group.GetColorWithOpacity(this.ItemBackColor, e.DrawLayer, drawMode, false, true);
+            graphItemArgs.InteractiveState = this.GroupInteractiveState;
             graphItemArgs.Effect3D = this.CurrentEffect3DItem;
             graphItemArgs.IsFirstItem = this.IsFirstItem;
             graphItemArgs.IsLastItem = this.IsLastItem;
@@ -863,6 +864,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             graphItemArgs.RatioEndBackColor = this._Owner.RatioEndBackColor;
             graphItemArgs.RatioLineColor = this._Owner.RatioLineColor;
             graphItemArgs.RatioLineWidth = this._Owner.RatioLineWidth;
+            graphItemArgs.BackEffectStyle = (this.IsEditable ? this._Owner.BackEffectEditable : this._Owner.BackEffectNonEditable);
 
             // Stav IsSelected a IsFramed budeme vždy přebírat z GUI prvku Grupy, protože Select a Framed a Activated se řeší na úrovni Grupy:
             GTimeGraphItem groupItem = (this._Position == GGraphControlPosition.Group ? this :

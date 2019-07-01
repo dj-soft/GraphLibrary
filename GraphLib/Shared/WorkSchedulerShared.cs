@@ -2448,6 +2448,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public DataGraphPositionType GraphPosition { get; set; }
         /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Editovatelný.
+        /// Pokud není zadán, použije se Default.
+        /// </summary>
+        public GuiGraphItemBackEffectStyle? BackEffectEditable { get; set; }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Needitovatelný.
+        /// Pokud není zadán, použije se Default.
+        /// </summary>
+        public GuiGraphItemBackEffectStyle? BackEffectNonEditable { get; set; }
+        /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
         /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphItem.Height"/> = 1.0f.
         /// Výchozí hodnota je 20.
@@ -2784,6 +2794,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z databáze se načítá ze sloupce: "ratio_end", je NEPOVINNÝ.
         /// </summary>
         public float? RatioEnd { get; set; }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Editovatelný.
+        /// Pokud není zadán, převezme se hodnota z <see cref="GuiGraphProperties.BackEffectEditable"/>, nebo se použije Default.
+        /// </summary>
+        public GuiGraphItemBackEffectStyle? BackEffectEditable { get; set; }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Needitovatelný.
+        /// Pokud není zadán, převezme se hodnota z <see cref="GuiGraphProperties.BackEffectNonEditable"/>, nebo se použije Default.
+        /// </summary>
+        public GuiGraphItemBackEffectStyle? BackEffectNonEditable { get; set; }
         #endregion
         #region Skiny: SkinCurrent, SkinDefault, SkinDict, SkinCurrentIndex
         /// <summary>
@@ -3042,6 +3062,24 @@ namespace Noris.LCS.Base.WorkScheduler
                     "back_color string, line_color string, back_style string, " +
                     "ratio_begin float, ratio_end float, ratio_begin_back_color string, ratio_end_back_color string, ratio_line_color string, ratio_line_width int";
         #endregion
+    }
+    /// <summary>
+    /// Styl výplně pozadí prvku grafu
+    /// </summary>
+    public enum GuiGraphItemBackEffectStyle
+    {
+        /// <summary>
+        /// Standardní
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Plochý
+        /// </summary>
+        Flat,
+        /// <summary>
+        /// Výrazně trubkovitý tvar
+        /// </summary>
+        Pipe
     }
     /// <summary>
     /// Definice skinu pro grafický prvek

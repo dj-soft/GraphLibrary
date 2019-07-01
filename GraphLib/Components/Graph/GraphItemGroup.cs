@@ -300,6 +300,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GraphItemBehaviorMode BehaviorMode { get { return this._FirstItem.BehaviorMode; } }
         /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Editovatelný
+        /// </summary>
+        public TimeGraphElementBackEffectStyle BackEffectEditable { get { return this._FirstItem.BackEffectEditable; } }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Needitovatelný
+        /// </summary>
+        public TimeGraphElementBackEffectStyle BackEffectNonEditable { get { return this._FirstItem.BackEffectNonEditable; } }
+        /// <summary>
         /// true pokud this grupu je možno resizovat.
         /// Hodnota je platná až po doběhnutí konstruktoru, nikoli v době tvorby controlu <see cref="GControl"/>.
         /// </summary>
@@ -784,6 +792,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         Image ITimeGraphItem.ImageBegin { get { return this.ImageBegin; } }
         Image ITimeGraphItem.ImageEnd { get { return this.ImageEnd; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.BackEffectEditable; } }
+        TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.BackEffectNonEditable; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion

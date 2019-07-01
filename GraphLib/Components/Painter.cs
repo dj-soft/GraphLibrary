@@ -2461,7 +2461,97 @@ namespace Asol.Tools.WorkScheduler.Components
         private static void GraphItemDrawBack(GraphItemArgs args, Rectangle[] boundsParts)
         {
             if (!args.BackColor.HasValue) return;
-            GPainter.DrawEffect3D(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.Effect3D, null);
+            switch (args.BackEffectStyle)
+            {
+                case Graph.TimeGraphElementBackEffectStyle.Pipe:
+                    GPainter.GraphItemDrawBackPipe(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
+                    break;
+                case Graph.TimeGraphElementBackEffectStyle.Flat:
+                    GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
+                    break;
+                case Graph.TimeGraphElementBackEffectStyle.Default:
+                default:
+                    GPainter.DrawEffect3D(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.Effect3D, null);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vykreslí pozadí prvku v režimu <see cref="Graph.TimeGraphElementBackEffectStyle.Pipe"/>
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="effect3D"></param>
+        /// <param name="opacity"></param>
+        private static void GraphItemDrawBackPipe(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, GInteractiveState interactiveState, float? effect3D, Int32? opacity = null)
+        {
+            float angle = (orientation == Orientation.Horizontal ? 90f : 0f);
+            using (LinearGradientBrush brush = new LinearGradientBrush(bounds, color, color, angle))
+            {
+                brush.InterpolationColors = CreateColorBlendPipe(color, interactiveState, effect3D);
+                graphics.FillRectangle(brush, bounds);
+            }
+        }
+        /// <summary>
+        /// Vrátí definici barevného přechodu
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="effect3D"></param>
+        /// <returns></returns>
+        private static ColorBlend CreateColorBlendPipe(Color color, GInteractiveState interactiveState, float? effect3D)
+        {
+            ColorBlend colorBlend = new ColorBlend(5);
+            Color dark = color;
+            Color light = color;
+            switch (interactiveState)
+            {
+                case GInteractiveState.Disabled:
+                    dark = color.Morph(Color.DimGray, 0.75f);
+                    light = color.Morph(Color.LightGray, 0.75f);
+                    colorBlend.Positions = new float[] { 0f, 0.15f, 0.50f, 0.85f, 1f };
+                    break;
+                case GInteractiveState.MouseOver:
+                    dark = color.Morph(Color.DimGray, 0.75f);
+                    light = color.Morph(Color.LightYellow, 0.75f);
+                    colorBlend.Positions = new float[] { 0f, 0.15f, 0.30f, 0.75f, 1f };
+                    break;
+                case GInteractiveState.LeftDown:
+                case GInteractiveState.RightDown:
+                    dark = color.Morph(Color.Black, 0.70f);
+                    light = color.Morph(Color.LightYellow, 0.75f);
+                    colorBlend.Positions = new float[] { 0f, 0.30f, 0.65f, 0.85f, 1f };
+                    break;
+                case GInteractiveState.Enabled:
+                default:
+                    dark = color.Morph(Color.DimGray, 0.75f);
+                    light = color.Morph(Color.White, 0.65f);
+                    colorBlend.Positions = new float[] { 0f, 0.20f, 0.45f, 0.80f, 1f };
+                    break;
+            }
+            colorBlend.Colors = new Color[] { dark, color, light, color, dark };
+
+            return colorBlend;
+        }
+        /// <summary>
+        /// Vykreslí pozadí prvku v režimu <see cref="Graph.TimeGraphElementBackEffectStyle.Flat"/>
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="effect3D"></param>
+        /// <param name="opacity"></param>
+        private static void GraphItemDrawBackFlat(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, GInteractiveState interactiveState, float? effect3D, Int32? opacity = null)
+        {
+            if (effect3D.HasValue)
+                color = color.Morph(Skin.Modifiers.Effect3DLight, 0.50f * effect3D.Value);
+            if (opacity.HasValue)
+                color = Color.FromArgb(opacity.Value, color);
+            graphics.FillRectangle(Skin.Brush(color), bounds);
         }
         private static void GraphItemDrawHatch(GraphItemArgs args, Rectangle[] boundsParts)
         {
@@ -2639,6 +2729,14 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Barva plného pozadí prvku
             /// </summary>
             public Color? BackColor { get; set; }
+            /// <summary>
+            /// Interaktivní stav
+            /// </summary>
+            public GInteractiveState InteractiveState { get; set; }
+            /// <summary>
+            /// Styl efektu pozadí prvku
+            /// </summary>
+            public Components.Graph.TimeGraphElementBackEffectStyle BackEffectStyle { get; set; }
             /// <summary>
             /// 3D effekt
             /// </summary>

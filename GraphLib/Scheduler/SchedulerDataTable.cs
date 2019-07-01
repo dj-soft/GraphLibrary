@@ -643,7 +643,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
         /// <summary>
-        /// Metoda z dodaného prvku <see cref="GuiResponseGraph"/> aktualizuje data odpovídajícího grafu <see cref="DataGraphItem"/>.
+        /// Metoda z dodaného prvku <see cref="GuiRefreshGraph"/> aktualizuje data odpovídajícího grafu <see cref="GTimeGraph"/>.
         /// Vrací referenci na zmíněný modifikovaný graf.
         /// </summary>
         /// <param name="refreshGraph"></param>
@@ -4646,6 +4646,38 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._GControl.DrawItem(e, boundsAbsolute, drawMode);
         }
+        /// <summary>
+        /// Vrátí efekt pro vykreslení prvku, pokud je Editovatelný
+        /// </summary>
+        /// <returns></returns>
+        protected TimeGraphElementBackEffectStyle GetBackEffectEditable()
+        {
+            return this.GetBackEffect(this._GuiGraphItem.BackEffectEditable, this.GraphTable.GraphProperties.BackEffectEditable);
+        }
+        /// <summary>
+        /// Vrátí efekt pro vykreslení prvku, pokud je Needitovatelný
+        /// </summary>
+        /// <returns></returns>
+        protected TimeGraphElementBackEffectStyle GetBackEffectNonEditable()
+        {
+            return this.GetBackEffect(this._GuiGraphItem.BackEffectNonEditable, this.GraphTable.GraphProperties.BackEffectNonEditable);
+        }
+        /// <summary>
+        /// Vrací efekt pro kreslení pozadí prvku grafu
+        /// </summary>
+        /// <param name="backEffectItem"></param>
+        /// <param name="backEffectGraph"></param>
+        /// <returns></returns>
+        protected TimeGraphElementBackEffectStyle GetBackEffect(GuiGraphItemBackEffectStyle? backEffectItem, GuiGraphItemBackEffectStyle? backEffectGraph)
+        {
+            GuiGraphItemBackEffectStyle backEffect = (backEffectItem.HasValue ? backEffectItem.Value : (backEffectGraph.HasValue ? backEffectGraph.Value : GuiGraphItemBackEffectStyle.Default));
+            switch (backEffect)
+            {
+                case GuiGraphItemBackEffectStyle.Flat: return TimeGraphElementBackEffectStyle.Flat;
+                case GuiGraphItemBackEffectStyle.Pipe: return TimeGraphElementBackEffectStyle.Pipe;
+            }
+            return TimeGraphElementBackEffectStyle.Default;
+        }
         #endregion
         #region ICloneable members
         object ICloneable.Clone()
@@ -4669,6 +4701,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
         float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.GetBackEffectEditable(); } }
+        TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.GetBackEffectNonEditable(); } }
         GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
         // Následující properties se načítají i ze Skinu:
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
@@ -4763,6 +4797,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Reakce na DoubleClick v prostoru Prvku na Časovém grafu
         /// </summary>
         public GuiDoubleClickAction DoubleClickOnGraphItem { get { return (this.GuiMainProperties != null ? this.GuiMainProperties.DoubleClickOnGraphItem : GuiDoubleClickAction.None); } }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Editovatelný.
+        /// Pokud není zadán, použije se Default.
+        /// </summary>
+        public GuiGraphItemBackEffectStyle? BackEffectEditable { get { return this.GuiGraphProperties?.BackEffectEditable; } }
+        /// <summary>
+        /// Efekt pro vykreslení prvku, pokud je Needitovatelný.
+        /// Pokud není zadán, použije se Default.
+        /// </summary>
+        public GuiGraphItemBackEffectStyle? BackEffectNonEditable { get { return this.GuiGraphProperties?.BackEffectNonEditable; } }
         #endregion
         #region Převod konfiguračních dat z úrovně GuiGraphProperties (GUI) do úrovně TimeGraphProperties (Components.Graph)
         /// <summary>
