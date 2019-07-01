@@ -1377,6 +1377,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 gridCenterWorkplace.GraphProperties.GraphLineHeight = 20;
                 gridCenterWorkplace.GraphProperties.GraphLinePartialHeight = 40;
                 gridCenterWorkplace.GraphProperties.GraphPosition = DataGraphPositionType.InLastColumn;
+                gridCenterWorkplace.GraphProperties.BackEffectEditable = GuiGraphItemBackEffectStyle.Pipe;
+                gridCenterWorkplace.GraphProperties.BackEffectNonEditable = GuiGraphItemBackEffectStyle.Flat;
                 gridCenterWorkplace.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift | AxisInteractiveChangeMode.Zoom;
                 gridCenterWorkplace.GraphProperties.LogarithmicGraphDrawOuterShadow = 0.15f;
                 gridCenterWorkplace.GraphProperties.LogarithmicRatio = 0.60f;
@@ -2228,7 +2230,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public static GuiData SerialDeserialData(GuiData guiData)
         {
             // return guiData;
-            // if (!System.Diagnostics.Debugger.IsAttached) return guiData;
+            if (!System.Diagnostics.Debugger.IsAttached) return guiData;
 
             // Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 

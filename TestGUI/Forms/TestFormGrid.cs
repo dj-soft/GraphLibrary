@@ -723,6 +723,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Image ITimeGraphItem.ImageBegin { get { return null; } }
         Image ITimeGraphItem.ImageEnd { get { return null; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
+        TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
         WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
         object ICloneable.Clone() { return this.MemberwiseClone(); }
