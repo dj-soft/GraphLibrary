@@ -2041,6 +2041,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
+        /// <param name="backColor"></param>
         private static void _DrawScrollBarBack(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Color backColor)
         {
             if (!isEnabled)
@@ -2055,7 +2056,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
-        /// <param name="itemState"></param>
+        /// <param name="backColor"></param>
+        /// <param name="userDataDraw"></param>
         private static void _DrawScrollBarData(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Color backColor, Action<Graphics, Rectangle> userDataDraw)
         {
             // GInteractiveState itemState = (isEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled);
@@ -2088,6 +2090,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
         /// <param name="itemState"></param>
+        /// <param name="drawOnlyMouseActive"></param>
         /// <param name="shapeHorizontal"></param>
         /// <param name="shapeVertical"></param>
         private static void _DrawScrollBarButton(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, GInteractiveState itemState, bool drawOnlyMouseActive, LinearShapeType shapeHorizontal, LinearShapeType shapeVertical)
@@ -3085,6 +3088,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="positions"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, RelativePosition positions)
         {
@@ -3096,6 +3100,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="positions"></param>
+        /// <param name="joinBroken"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, RelativePosition positions, bool joinBroken)
         {
@@ -3107,6 +3113,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="partSelector"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector)
         {
@@ -3118,6 +3125,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="partSelector"></param>
+        /// <param name="joinBroken"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, bool joinBroken)
         {
@@ -3129,6 +3138,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="lineHandler"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
         {
@@ -3140,6 +3150,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="partSelector"></param>
+        /// <param name="lineHandler"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
         {
@@ -3151,6 +3163,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
+        /// <param name="partSelector"></param>
+        /// <param name="joinBroken"></param>
+        /// <param name="lineHandler"></param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, bool joinBroken, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
         {
@@ -3782,6 +3797,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Restore of state is not requierd.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="graphicSetting"></param>
         /// <returns></returns>
         internal static GraphicsState GraphicsSet(Graphics graphics, GraphicSetting graphicSetting)
         {
@@ -3843,6 +3859,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// using(Painter.GraphicsUseSmooth(graphics) { any drawing... }.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="graphicSetting"></param>
         /// <returns></returns>
         internal static IDisposable GraphicsUse(Graphics graphics, GraphicSetting graphicSetting)
         {
@@ -3863,6 +3880,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Set specified rectangle as Clip region to Graphics. On Dispose returns original Clip region.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="setClip"></param>
+        /// <param name="graphicSetting"></param>
         /// <returns></returns>
         internal static IDisposable GraphicsUse(Graphics graphics, Rectangle setClip, GraphicSetting graphicSetting)
         {
@@ -3897,6 +3916,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Set specified rectangle as Clip region to Graphics. On Dispose returns original Clip region.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="setClip"></param>
         /// <returns></returns>
         internal static IDisposable GraphicsUseSmooth(Graphics graphics, Rectangle setClip)
         {
@@ -3927,6 +3947,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Set specified rectangle as Clip region to Graphics. On Dispose returns original Clip region.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="setClip"></param>
         /// <returns></returns>
         internal static IDisposable GraphicsUseText(Graphics graphics, Rectangle setClip)
         {
@@ -3957,6 +3978,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Set specified rectangle as Clip region to Graphics. On Dispose returns original Clip region.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="setClip"></param>
         /// <returns></returns>
         internal static IDisposable GraphicsUseSharp(Graphics graphics, Rectangle setClip)
         {
@@ -3972,6 +3994,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// using(Painter.GraphicsUseSmooth(graphics) { any drawing... }.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="opacity"></param>
         /// <returns></returns>
         internal static IDisposable GraphicsUseOpacity(Graphics graphics, int opacity)
         {
@@ -4168,8 +4191,14 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #region class DrawButtonArgs : třída argumentů pro kreslení Buttonu
+    /// <summary>
+    /// Třída pro kreslení buttonů
+    /// </summary>
     public class DrawButtonArgs
     {
+        /// <summary>
+        /// Konsturktor
+        /// </summary>
         public DrawButtonArgs()
         {
             this.BackColor = Skin.Button.BackColor;
@@ -4182,14 +4211,41 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DrawBackground = true;
             this.DrawBorders = true;
         }
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
         public Color BackColor { get; set; }
+        /// <summary>
+        /// Barva okraje
+        /// </summary>
         public Color? BorderColor { get; set; }
+        /// <summary>
+        /// Interaktivní stav
+        /// </summary>
         public GInteractiveState InteractiveState { get; set; }
+        /// <summary>
+        /// Orientace barvy pozadí
+        /// </summary>
         public Orientation Orientation { get; set; }
+        /// <summary>
+        /// Kulaté rohy
+        /// </summary>
         public int RoundCorner { get; set; }
+        /// <summary>
+        /// Souřadnice myši pro vykreslení TrackPointu
+        /// </summary>
         public Point? MouseTrackPoint { get; set; }
+        /// <summary>
+        /// Průhlednost
+        /// </summary>
         public Int32? Opacity { get; set; }
+        /// <summary>
+        /// Vykreslit background?
+        /// </summary>
         public bool DrawBackground { get; set; }
+        /// <summary>
+        /// Vykreslit borders?
+        /// </summary>
         public bool DrawBorders { get; set; }
 
     }
@@ -4200,22 +4256,75 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public interface IScrollBarPaintData
     {
+        /// <summary>
+        /// Orientace ScrollBaru
+        /// </summary>
         Orientation Orientation { get; }
+        /// <summary>
+        /// Je Enabled?
+        /// </summary>
         bool IsEnabled { get; }
+        /// <summary>
+        /// Souřadnice celková
+        /// </summary>
         Rectangle ScrollBarBounds { get; }
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
         Color ScrollBarBackColor { get; }
+        /// <summary>
+        /// Souřadnice buttonu Min (=vlevo nebo nahoře)
+        /// </summary>
         Rectangle MinButtonBounds { get; }
+        /// <summary>
+        /// Stav buttonu Min (=vlevo nebo nahoře)
+        /// </summary>
         GInteractiveState MinButtonState { get; }
+        /// <summary>
+        /// Souřadnice datového prostoru
+        /// </summary>
         Rectangle DataAreaBounds { get; }
+        /// <summary>
+        /// Souřadnice datového prostoru před Thumbem
+        /// </summary>
         Rectangle MinAreaBounds { get; }
+        /// <summary>
+        /// Stav datového prostoru před Thumbem
+        /// </summary>
         GInteractiveState MinAreaState { get; }
+        /// <summary>
+        /// Souřadnice datového prostoru za Thumbem
+        /// </summary>
         Rectangle MaxAreaBounds { get; }
+        /// <summary>
+        /// Stav datového prostoru za Thumbem
+        /// </summary>
         GInteractiveState MaxAreaState { get; }
+        /// <summary>
+        /// Souřadnice buttonu Max (=vpravo nebo dole)
+        /// </summary>
         Rectangle MaxButtonBounds { get; }
+        /// <summary>
+        /// Stav buttonu Max (=vpravo nebo dole)
+        /// </summary>
         GInteractiveState MaxButtonState { get; }
+        /// <summary>
+        /// Souřadnice Thumbu
+        /// </summary>
         Rectangle ThumbButtonBounds { get; }
+        /// <summary>
+        /// Stav Thumbu
+        /// </summary>
         GInteractiveState ThumbButtonState { get; }
+        /// <summary>
+        /// Souřadnice pro ikonu v Thumbu
+        /// </summary>
         Rectangle ThumbImageBounds { get; }
+        /// <summary>
+        /// Metoda, volaná uprostřed kreslení Scrollbaru pro vykreslení pozadí v datové oblasti
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
         void UserDataDraw(Graphics graphics, Rectangle bounds);
     }
     #endregion
@@ -4225,18 +4334,59 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public interface ITabHeaderItemPaintData
     {
+        /// <summary>
+        /// Pozice TabHeader proti datovému prostoru
+        /// </summary>
         RectangleSide Position { get; }
+        /// <summary>
+        /// Je Enabled
+        /// </summary>
         bool IsEnabled { get; }
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
         Color? BackColor { get; }
+        /// <summary>
+        /// Je aktivní? (tzn. tato záložka je viditelná)
+        /// </summary>
         bool IsActive { get; }
+        /// <summary>
+        /// Interaktivní stav
+        /// </summary>
         GInteractiveState InteractiveState { get; }
+        /// <summary>
+        /// Písmo
+        /// </summary>
         FontInfo Font { get; }
+        /// <summary>
+        /// Ikonka
+        /// </summary>
         Image Image { get; }
+        /// <summary>
+        /// Souřadnice ikonky
+        /// </summary>
         Rectangle ImageBounds { get; }
+        /// <summary>
+        /// Text
+        /// </summary>
         string Text { get; }
+        /// <summary>
+        /// Souřadnice textu
+        /// </summary>
         Rectangle TextBounds { get; }
+        /// <summary>
+        /// Zobrazit zavírací ikonku (button)
+        /// </summary>
         bool CloseButtonVisible { get; }
+        /// <summary>
+        /// Souřadnice zavírací ikonky (button)
+        /// </summary>
         Rectangle CloseButtonBounds { get; }
+        /// <summary>
+        /// Metoda volaná pro user kreslení na pozadí
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
         void UserDataDraw(Graphics graphics, Rectangle bounds);
     }
     #endregion
