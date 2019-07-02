@@ -2503,38 +2503,51 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private static ColorBlend CreateColorBlendPipe(Color color, GInteractiveState interactiveState, float? effect3D)
         {
-            ColorBlend colorBlend = new ColorBlend(5);
-            Color dark = color;
-            Color light = color;
-            switch (interactiveState)
-            {
-                case GInteractiveState.Disabled:
-                    dark = color.Morph(Color.DimGray, 0.75f);
-                    light = color.Morph(Color.LightGray, 0.75f);
-                    colorBlend.Positions = new float[] { 0f, 0.15f, 0.50f, 0.85f, 1f };
-                    break;
-                case GInteractiveState.MouseOver:
-                    dark = color.Morph(Color.DimGray, 0.75f);
-                    light = color.Morph(Color.LightYellow, 0.75f);
-                    colorBlend.Positions = new float[] { 0f, 0.15f, 0.30f, 0.75f, 1f };
-                    break;
-                case GInteractiveState.LeftDown:
-                case GInteractiveState.RightDown:
-                    dark = color.Morph(Color.Black, 0.70f);
-                    light = color.Morph(Color.LightYellow, 0.75f);
-                    colorBlend.Positions = new float[] { 0f, 0.30f, 0.65f, 0.85f, 1f };
-                    break;
-                case GInteractiveState.Enabled:
-                default:
-                    dark = color.Morph(Color.DimGray, 0.75f);
-                    light = color.Morph(Color.White, 0.65f);
-                    colorBlend.Positions = new float[] { 0f, 0.20f, 0.45f, 0.80f, 1f };
-                    break;
+            if (_ColorBlendPipe == null) _ColorBlendPipe = new Dictionary<string, ColorBlend>();
+            string key = "[" + color.A.ToString() + ":" + color.R.ToString() + ":" + color.G.ToString() + ":" + color.B.ToString() + "]:" + interactiveState.ToString();
+            ColorBlend colorBlend;
+            if (!_ColorBlendPipe.TryGetValue(key, out colorBlend))
+            {   // Hledali jsme a nemáme... Možná budeme muset vytvořit, ale...
+                lock (_ColorBlendPipe)
+                {   // .. raději si Dictionary zamkneme, a podíváme se ještě jednou (možná v jiném threadu někdo právě tuto věc vytvořil)
+                    if (!_ColorBlendPipe.TryGetValue(key, out colorBlend))
+                    {   // Dictionary je zamčená, a klíč v neexistuje => vytvoříme ColorBlend a do Dictionary ji přidáme:
+                        colorBlend = new ColorBlend(5);
+                        Color dark = color;
+                        Color light = color;
+                        switch (interactiveState)
+                        {
+                            case GInteractiveState.Disabled:
+                                dark = color.Morph(Color.DimGray, 0.75f);
+                                light = color.Morph(Color.LightGray, 0.75f);
+                                colorBlend.Positions = new float[] { 0f, 0.15f, 0.50f, 0.85f, 1f };
+                                break;
+                            case GInteractiveState.MouseOver:
+                                dark = color.Morph(Color.DimGray, 0.75f);
+                                light = color.Morph(Color.LightYellow, 0.75f);
+                                colorBlend.Positions = new float[] { 0f, 0.15f, 0.30f, 0.75f, 1f };
+                                break;
+                            case GInteractiveState.LeftDown:
+                            case GInteractiveState.RightDown:
+                                dark = color.Morph(Color.Black, 0.70f);
+                                light = color.Morph(Color.LightYellow, 0.75f);
+                                colorBlend.Positions = new float[] { 0f, 0.30f, 0.65f, 0.85f, 1f };
+                                break;
+                            case GInteractiveState.Enabled:
+                            default:
+                                dark = color.Morph(Color.DimGray, 0.75f);
+                                light = color.Morph(Color.White, 0.65f);
+                                colorBlend.Positions = new float[] { 0f, 0.20f, 0.45f, 0.80f, 1f };
+                                break;
+                        }
+                        colorBlend.Colors = new Color[] { dark, color, light, color, dark };
+                        _ColorBlendPipe.Add(key, colorBlend);
+                    }
+                }
             }
-            colorBlend.Colors = new Color[] { dark, color, light, color, dark };
-
             return colorBlend;
         }
+        private static Dictionary<string, ColorBlend> _ColorBlendPipe;
         /// <summary>
         /// Vykreslí pozadí prvku v režimu <see cref="Graph.TimeGraphElementBackEffectStyle.Flat"/>
         /// </summary>
