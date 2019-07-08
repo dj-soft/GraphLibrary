@@ -225,6 +225,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
                     CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0);
                     CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240);
+                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0);
                     break;
 
@@ -235,6 +236,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0);
                     CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360);
                     CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
+                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
@@ -251,12 +253,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5);
                     CreateProductOperation(productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0);
+                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Cooperation:
                     CreateProductOperation(productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
+                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0);
                     break;
 
@@ -295,11 +299,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Height = height,
                 WorkPlace = workPlace,
                 TBc = TimeSpan.FromMinutes(tbcMin),
-                TAc = TimeSpan.FromMinutes((double)(qty = (decimal)tacMin)),
+                TAc = TimeSpan.FromMinutes((double)(qty * (decimal)tacMin)),
                 TEc = TimeSpan.FromMinutes(tecMin)
             };
+            /*
             TimeSpan add = TimeSpan.FromHours(1d) - operation.TTc;
             if (add.Ticks > 0L) operation.TAc = operation.TAc + add;
+            */
+
+            if (IsExpectable(5))
+                operation.Icon = RES.Images.Small16.BulletPinkPng;
+            if (operation.TTc.Ticks == 0L && IsExpectable(50))
+                operation.Icon = RES.Images.Actions24.SystemLogOut2Png;
 
             operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
 
@@ -1244,8 +1255,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC);
 
             // Vztahy prvků (Link):
+            gridCenterWorkplace.RowTable.GraphLinks = new List<GuiGraphLink>();
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
-                this.AddGraphLinkToGrid(gridCenterWorkplace.RowTable, productOrder);
+                productOrder.AddGuiGraphLinksTo(gridCenterWorkplace.RowTable.GraphLinks);
 
             // Chci zavolat, když uživatel zmáčkne Delete:
             gridCenterWorkplace.ActiveKeys = new List<GuiKeyAction>();
@@ -1379,6 +1391,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 gridCenterWorkplace.GraphProperties.GraphPosition = DataGraphPositionType.InLastColumn;
                 gridCenterWorkplace.GraphProperties.BackEffectEditable = GuiGraphItemBackEffectStyle.Pipe;
                 gridCenterWorkplace.GraphProperties.BackEffectNonEditable = GuiGraphItemBackEffectStyle.Flat;
+                gridCenterWorkplace.GraphProperties.GraphItemMinPixelWidth = 3;
                 gridCenterWorkplace.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift | AxisInteractiveChangeMode.Zoom;
                 gridCenterWorkplace.GraphProperties.LogarithmicGraphDrawOuterShadow = 0.15f;
                 gridCenterWorkplace.GraphProperties.LogarithmicRatio = 0.60f;
@@ -1575,18 +1588,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void AddPlanUnitCToGridRight(GuiDataTable guiTable, PlanUnitC planUnitC)
         {
             guiTable.AddRow(planUnitC.CreateGuiRow(GridPositionType.Employee));
-        }
-        /// <summary>
-        /// Do dodané tabulky přidá linky mezi operacemi daného Výrobního příkazu
-        /// </summary>
-        /// <param name="guiTable"></param>
-        /// <param name="productOrder"></param>
-        protected void AddGraphLinkToGrid(GuiDataTable guiTable, ProductOrder productOrder)
-        {
-            var links = productOrder.CreateGuiLinks();
-            if (links == null || links.Length == 0) return;
-            if (guiTable.GraphLinks == null) guiTable.GraphLinks = new List<GuiGraphLink>();
-            guiTable.GraphLinks.AddRange(links);
         }
         protected GuiData MainData;
         protected GuiPage MainPage;
@@ -2479,6 +2480,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return ratio;
         }
         /// <summary>
+        /// Metoda vrátí true s pravděpodobností danou procentem.
+        /// Tedy: pokud je <paramref name="percent"/> = 5, pak vrátí true v 5 případech z 100 volání této metody.
+        /// </summary>
+        /// <param name="percent"></param>
+        /// <returns></returns>
+        internal bool IsExpectable(int percent)
+        {
+            if (percent <= 0) return false;
+            if (percent >= 100) return true;
+            return (this.Rand.Next(0, 101) <= percent);
+        }
+        /// <summary>
         /// Vrátí jeden z prvků daného pole
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -2816,16 +2829,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return guiGraph;
         }
         /// <summary>
-        /// Vytvoří a vrátí sadu vztahů mezi operacemi tohoto Výrobního příkazu
+        /// Vytvoří prvky <see cref="GuiGraphLink"/> za své operace, a přidá je do daného Listu
         /// </summary>
-        /// <returns></returns>
-        public GuiGraphLink[] CreateGuiLinks()
+        /// <param name="graphLinks"></param>
+        public void AddGuiGraphLinksTo(List<GuiGraphLink> graphLinks)
         {
-            if (this.OperationList == null || this.OperationList.Count <= 1) return null;
-            List<GuiGraphLink> linkList = new List<GuiGraphLink>();
-            for (int i = 1; i < this.OperationList.Count; i++)
-                linkList.Add(ProductOperation.CreateGuiLink(this.OperationList[i - 1], this.OperationList[i]));
-            return linkList.ToArray();
+            if (this.OperationList == null || this.OperationList.Count <= 1) return;
+            ProductOperation[] operations = this.OperationList.Where(op => op.HasLink).ToArray();
+            int length = operations.Length;
+            if (length < 2) return;
+            for (int i = 1; i < length; i++)
+                graphLinks.Add(ProductOperation.CreateGuiLink(operations[i - 1], operations[i]));
         }
     }
     #endregion
@@ -2862,10 +2876,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public decimal Qty { get; set; }
         public float Height { get; set; }
         public bool IsFixed { get; set; }
+        public string Icon { get; set; }
         public string WorkPlace { get; set; }
         public TimeSpan TBc { get; set; }
         public TimeSpan TAc { get; set; }
         public TimeSpan TEc { get; set; }
+        /// <summary>
+        /// Součet <see cref="TBc"/> + <see cref="TAc"/> + <see cref="TEc"/>
+        /// </summary>
         public TimeSpan TTc { get { return this.TBc + this.TAc + this.TEc; } }
         public GuiTimeRange Time { get; set; }
         public GuiTimeRange TimeTBc { get; set; }
@@ -3080,6 +3098,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             workUnit.Text = (workUnit.Height <= 1f ? this.ReferName : this.ReferName + "\r\n" + this.ProductOrder.ReferName);
             this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
             return workUnit;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud tato operace má mít Link na sousední operaci (tj. pokud má nějaký prvek, který se zobrazuje v grafu MainTop)
+        /// </summary>
+        public bool HasLink
+        {
+            get
+            {
+                return (this.WorkUnitDict != null && this.WorkUnitDict.Count > 0);
+            }
         }
         /// <summary>
         /// Vygeneruje a vrátí vztah mezi dvěma operacemi (Link)
@@ -3367,7 +3395,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 guiGraphItem.ImageBegin = RES.Images.Actions24.Lock4Png;
             }
 
-
+            // Icon:
+            if (this.Operation != null && this.Operation.Icon != null)
+            {
+                guiGraphItem.ImageBegin = new GuiImage() { ImageFile = this.Operation.Icon };
+            }
 
             // Testy Skinů:
             bool isHidden = ((this.Operation.RecordId % 5) == 0);
