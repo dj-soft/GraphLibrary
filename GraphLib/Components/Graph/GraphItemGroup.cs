@@ -30,22 +30,24 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Konstruktor s předáním jediné položky
         /// </summary>
         /// <param name="parent"></param>
+        /// <param name="acceptZeroTime">Požadavek true = jako platný prvek lze akceptovat i prvek, jehož čas End == čas Begin; false = čas End musí být větší než Begin.</param>
         /// <param name="item"></param>
-        public GTimeGraphGroup(GTimeGraph parent, ITimeGraphItem item)
+        public GTimeGraphGroup(GTimeGraph parent, bool acceptZeroTime, ITimeGraphItem item)
             : this(parent)
         {
             this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
             this._FirstItem = item;
             this._Items = new ITimeGraphItem[] { item };
             bool canResize = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime);
-            this._Store(item.Time.Begin, item.Time.End, item.Height, canResize);
+            this._Store(item.Time.Begin, item.Time.End, acceptZeroTime, item.Height, canResize);
         }
         /// <summary>
         /// Konstruktor s předáním skupiny položek, s výpočtem jejich sumárního časového intervalu a výšky
         /// </summary>
         /// <param name="parent"></param>
+        /// <param name="acceptZeroTime">Požadavek true = jako platný prvek lze akceptovat i prvek, jehož čas End == čas Begin; false = čas End musí být větší než Begin.</param>
         /// <param name="items"></param>
-        public GTimeGraphGroup(GTimeGraph parent, IEnumerable<ITimeGraphItem> items)
+        public GTimeGraphGroup(GTimeGraph parent, bool acceptZeroTime, IEnumerable<ITimeGraphItem> items)
             : this(parent)
         {
             // Vstupní prvky (items) mohou být (ze vstupních dat) nesetříděné podle jejich času, 
@@ -68,7 +70,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 if (!canResize && item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime)) canResize = true;
                 item.OwnerGraph = parent;
             }
-            this._Store(begin, end, height, canResize);
+            this._Store(begin, end, acceptZeroTime, height, canResize);
         }
         /// <summary>
         /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.GControl"/>) pro this grupu.
@@ -93,13 +95,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="begin"></param>
         /// <param name="end"></param>
+        /// <param name="acceptZeroTime">Požadavek true = jako platný prvek lze akceptovat i prvek, jehož čas End == čas Begin; false = čas End musí být větší než Begin.</param>
         /// <param name="height"></param>
         /// <param name="canResize"></param>
-        private void _Store(DateTime? begin, DateTime? end, float height, bool canResize)
+        private void _Store(DateTime? begin, DateTime? end, bool acceptZeroTime, float height, bool canResize)
         {
             this._Time = new TimeRange(begin, end);
             this._Height = height;
-            this._IsValidRealTime = ((height > 0f) && (begin.HasValue && end.HasValue && end.Value > begin.Value));
+            this._IsValidRealTime = ((height > 0f) && (begin.HasValue && end.HasValue && (acceptZeroTime ? end.Value >= begin.Value : end.Value > begin.Value)));
             this.GControl.CanResize = canResize;
         }
         /// <summary>
@@ -136,12 +139,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="timeConvert"></param>
         /// <param name="offsetX"></param>
+        /// <param name="minWidth"></param>
         /// <param name="itemsCount"></param>
-        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, int offsetX, ref int itemsCount)
+        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, int offsetX, int minWidth, ref int itemsCount)
         {
             Int32Range coordX;
             DoubleRange groupX = timeConvert(this.Time);             // Vrací souřadnici X v koordinátech grafu
-            coordX = groupX.Int32RoundEnd;                           // Zaokrouhlím Begin i End
+            coordX = ResizeRangeToMinWidth(groupX, minWidth);        // Zaokrouhlím Begin i End
             int groupB = coordX.Begin;                               // Offset z absolutní do relativní souřadnice pro jednotlivé prvky
             if (offsetX != 0d) coordX = coordX.ShiftBy(offsetX);     // Posun celé grupy vlivem offsetu grafu vůči časové ose
             this.GControl.CoordinateX = coordX;                      // Relativní souřadnice grupy v rámci grafu
@@ -149,10 +153,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             {
                 itemsCount++;
                 DoubleRange itemX = timeConvert(item.Time);          // Vrací souřadnici X v koordinátech grafu
-                coordX = itemX.Int32RoundEnd;                        // Zaokrouhlím Begin i End
+                coordX = ResizeRangeToMinWidth(itemX, minWidth);     // Zaokrouhlím Begin i End
                 item.GControl.CoordinateX = coordX.ShiftBy(-groupB); // Posunu prvek na relativní souřadnici vzhledem ke grupě
             }
             this.InvalidateBounds();
+        }
+        /// <summary>
+        /// Metoda zajistí velikost MinWidth a vrátí zaokrouhlený interval
+        /// </summary>
+        /// <param name="range"></param>
+        /// <param name="minWidth"></param>
+        /// <returns></returns>
+        protected static Int32Range ResizeRangeToMinWidth(DoubleRange range, double minWidth)
+        {
+            if (minWidth > 0 && range.Size < minWidth)
+                range = range.ZoomToSize(range.Center, minWidth);
+            return range.Int32RoundEnd;
         }
         /// <summary>
         /// Metoda připraví reálné souřadnice Bounds do this grupy a jejích grafických items.

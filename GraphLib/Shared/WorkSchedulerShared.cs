@@ -2458,6 +2458,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphItemBackEffectStyle? BackEffectNonEditable { get; set; }
         /// <summary>
+        /// Nejmenší šířka prvku grafu v pixelech. 
+        /// Pokud by byla vypočtena šířka menší, bude zvětšena na tuto hodnotu - aby byl prvek grafu viditelný.
+        /// Výchozí hodnota = 0, neprovádí se zvětšení, malé prvky (krátký čas na širokém měřítku) nejsou vidět.
+        /// </summary>
+        public int GraphItemMinPixelWidth { get; set; }
+        /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
         /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphItem.Height"/> = 1.0f.
         /// Výchozí hodnota je 20.

@@ -496,12 +496,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             //  kdežto jednotlivé položky ITimeGraphItem reprezentují jednotlivé pracovní časy, například jednotlivé směny.
             List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();     // Výsledné pole prvků GTimeGraphGroup
             List<ITimeGraphItem> groupsItems = new List<ITimeGraphItem>();     // Sem vložíme prvky ITimeGraphItem, které mají GroupId nenulové, odsud budeme generovat grupy...
-
+            bool acceptZeroTime = (this.GraphItemMinPixelWidth > 0);
             // a) Položky bez GroupId:
             foreach (ITimeGraphItem item in items)
             {
                 if (item.GroupId == 0)
-                    groupList.Add(new GTimeGraphGroup(this, item));            // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
+                    groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, item));      // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
                 else
                     groupsItems.Add(item);
             }
@@ -509,7 +509,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // b) Položky, které mají GroupId nenulové, podle něj seskupíme:
             IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = groupsItems.GroupBy(i => (i.GroupId != 0 ? i.GroupId : i.ItemId));
             foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
-                groupList.Add(new GTimeGraphGroup(this, group));               // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
+                groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, group));         // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
 
             // Setřídíme prvky GTimeGraphGroup podle jejich Order a podle času jejich počátku:
             if (groupList.Count > 1)
@@ -1029,7 +1029,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, ref counters[2]);
+            int minWidth = this.GraphItemMinPixelWidth;
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, minWidth, ref counters[2]);
 
             if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
@@ -1049,7 +1050,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, ref counters[2]);
+            int minWidth = this.GraphItemMinPixelWidth;
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, minWidth, ref counters[2]);
 
             if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
@@ -1069,8 +1071,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
+            int minWidth = this.GraphItemMinPixelWidth;
             float proportionalRatio = this.CurrentGraphProperties.LogarithmicRatio;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, ref counters[2]);
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, minWidth, ref counters[2]);
 
             // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
             if (groupItem.IsValidRealTime)
@@ -1079,6 +1082,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 visibleGroupList.Add(groupItem);
             }
         }
+        /// <summary>
+        /// Hodnota <see cref="TimeGraphProperties.GraphItemMinPixelWidth"/> načtená z <see cref="CurrentGraphProperties"/>, anebo 0
+        /// </summary>
+        protected int GraphItemMinPixelWidth
+        {
+            get
+            {
+                var properties = this.CurrentGraphProperties;
+                return (properties != null ? properties.GraphItemMinPixelWidth : 0);
+            }
+        }
+            
         /// <summary>
         /// Seznam všech aktuálně viditelných prvků v grafu.
         /// Seznam má jednoduchou úroveň (na rozdíl od <see cref="AllGroupList"/>), ale prvky obsahuje ve správném pořadí = odspodu nahoru.
@@ -2236,6 +2251,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Výchozí hodnota = 1 pixel, nelze zadat zápornou hodnotu.
         /// </summary>
         public int BottomMarginPixel { get { return this._BottomMarginPixel; } set { this._BottomMarginPixel = (value < 0 ? 0 : value); } } private int _BottomMarginPixel = 1;
+        /// <summary>
+        /// Nejmenší šířka prvku grafu v pixelech. 
+        /// Pokud by byla vypočtena šířka menší, bude zvětšena na tuto hodnotu - aby byl prvek grafu viditelný.
+        /// Výchozí hodnota = 0, neprovádí se zvětšení, malé prvky (krátký čas na širokém měřítku) nejsou vidět.
+        /// </summary>
+        public int GraphItemMinPixelWidth { get { return this._GraphItemMinPixelWidth; } set { this._GraphItemMinPixelWidth = (value < 0 ? 0 : value); } } private int _GraphItemMinPixelWidth = 0;
         /// <summary>
         /// Rozmezí výšky celého grafu, v pixelech.
         /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph"/>.DefaultTotalHeightMin až <see cref="Skin.Graph"/>.DefaultTotalHeightMax

@@ -980,7 +980,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 .Select(g => this.CreateGraphLink(g))
                 .ToArray();
 
-            // Odeberu stávající záznamy (z GraphLinkDict), které mají shodné klíče Prev a Next s těmiu, které se budou zanedlouho přidávat:
+            // Odeberu stávající záznamy (z GraphLinkDict), které mají shodné klíče Prev a Next s těmi, které se budou zanedlouho přidávat:
             if (removeItems)
                 // Tady předávám referenci na IEnumerable links, které ještě reálně není enumerováno!!!  Úmyslně! 
                 this.RemoveGraphLinks(links.Select(l => new Tuple<int, int>(l.ItemIdPrev, l.ItemIdNext)));
@@ -4807,6 +4807,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokud není zadán, použije se Default.
         /// </summary>
         public GuiGraphItemBackEffectStyle? BackEffectNonEditable { get { return this.GuiGraphProperties?.BackEffectNonEditable; } }
+        /// <summary>
+        /// Nejmenší šířka prvku grafu v pixelech. 
+        /// Pokud by byla vypočtena šířka menší, bude zvětšena na tuto hodnotu - aby byl prvek grafu viditelný.
+        /// Výchozí hodnota = 0, neprovádí se zvětšení, malé prvky (krátký čas na širokém měřítku) nejsou vidět.
+        /// </summary>
+        public int GraphItemMinPixelWidth { get { return (this.GuiGraphProperties?.GraphItemMinPixelWidth ?? 0); } }
         #endregion
         #region Převod konfiguračních dat z úrovně GuiGraphProperties (GUI) do úrovně TimeGraphProperties (Components.Graph)
         /// <summary>
@@ -4833,6 +4839,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             timeProperties.OneLinePartialHeight = guiProperties.GraphLinePartialHeight;
             timeProperties.UpperSpaceLogical = guiProperties.UpperSpaceLogical;
             timeProperties.BottomMarginPixel = guiProperties.BottomMarginPixel;
+            timeProperties.GraphItemMinPixelWidth = guiProperties.GraphItemMinPixelWidth;
             timeProperties.TotalHeightRange = new Int32NRange(guiProperties.TableRowHeightMin, guiProperties.TableRowHeightMax);
             timeProperties.LogarithmicRatio = (guiProperties.LogarithmicRatio.HasValue ? guiProperties.LogarithmicRatio.Value : 0.60f);
             timeProperties.LogarithmicGraphDrawOuterShadow = (guiProperties.LogarithmicGraphDrawOuterShadow.HasValue ? guiProperties.LogarithmicGraphDrawOuterShadow.Value : 0.20f);
