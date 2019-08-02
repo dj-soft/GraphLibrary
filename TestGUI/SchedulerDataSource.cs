@@ -1062,17 +1062,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ":" + ProductStructure.ClassNumber.ToString()
             });
 
+            /*
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
                 Name = GuiNameContextAddOneStruct,
                 Title = "Přidej komponentu do této operace",
                 Image = RES.Images.Actions24.InsertTableRowPng,
                 BackColor = Color.FromArgb(255, 235, 235),
-                ToolTip = "Do této operace přidá jednu dáhodnou komponentu.",
+                ToolTip = "Do této operace přidá jednu náhodnou komponentu.",
                 VisibleFor = GuiFullNameGridLeft +
                 ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
                 ":" + ProductOperation.ClassNumber.ToString()
             });
+            */
 
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
