@@ -1064,6 +1064,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
             {
+                Name = GuiNameContextAddOneStruct,
+                Title = "Přidej komponentu do této operace",
+                Image = RES.Images.Actions24.InsertTableRowPng,
+                BackColor = Color.FromArgb(255, 235, 235),
+                ToolTip = "Do této operace přidá jednu dáhodnou komponentu.",
+                VisibleFor = GuiFullNameGridLeft +
+                ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW +
+                ":" + ProductOperation.ClassNumber.ToString()
+            });
+
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
                 Name = GuiNameContextRemoveStructs,
                 Title = "Odeber všechny komponenty operace",
                 Image = RES.Images.Actions24.DeleteTableRowPng,
@@ -2426,6 +2438,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameContextUnFixItem = "CtxUnFixItem";
         protected const string GuiNameContextShowTime = "CtxShowTimeItem";
         protected const string GuiNameContextRemoveStruct1 = "CtxRemoveStruct1";
+        protected const string GuiNameContextAddOneStruct = "CtxAddOneStruct";
         protected const string GuiNameContextRemoveStructs = "CtxRemoveStructs";
         protected const string GuiNameContextInsertStruct = "CtxInsertStruct";
 
