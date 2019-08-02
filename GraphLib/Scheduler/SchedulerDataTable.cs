@@ -2846,9 +2846,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void ItemDragDropDropAppResponse(AppHostResponseArgs response)
         {
             if (response == null || response.GuiResponse == null) return;
-            GuiResponse guiResponse = response.GuiResponse;
-
-            this.IMainData.ProcessResponse(guiResponse);
+            this.IMainData.ProcessAppHostResponse(response.GuiResponse);
         }
         /// <summary>
         /// Metoda vrátí hodnotu <see cref="GuiSide"/> z obdobné hodnoty typu <see cref="RangeSide"/>.
@@ -2990,8 +2988,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void ItemResizeDropAppResponse(AppHostResponseArgs response)
         {
             if (response == null || response.GuiResponse == null) return;
-            GuiResponse guiResponse = response.GuiResponse;
-            this.IMainData.ProcessResponse(guiResponse);
+            this.IMainData.ProcessAppHostResponse(response.GuiResponse);
         }
         #endregion
         #region Drag and Drop Přemísťování řádků z this tabulky někam jinam, včetně aplikační logiky
@@ -3077,9 +3074,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void RowDragDropAppResponse(AppHostResponseArgs response)
         {
             if (response == null || response.GuiResponse == null) return;
-            GuiResponse guiResponse = response.GuiResponse;
-
-            this.IMainData.ProcessResponse(guiResponse);
+            this.IMainData.ProcessAppHostResponse(response.GuiResponse);
         }
         /// <summary>
         /// Analyzovaný režim Drag and Move pro řádky this tabulky.

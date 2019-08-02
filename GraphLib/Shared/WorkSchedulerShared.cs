@@ -6532,6 +6532,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string CMD_START_PLUGIN = "StartPlugin";
         /// <summary>
+        /// Command pro refresh pluginu
+        /// </summary>
+        public const string CMD_REFRESH_PLUGIN = "RefreshPlugin";
+
+        /// <summary>
         /// Key v Request: "PluginId", obsahuje aktuálně přidělené ID číslo pluginu.
         /// Toto ID se odesílá do Helios Green do servisní funkce, aby tato funkce dokázala podle ID najít odpovídající serverovou sadu dat, odpovídající klientu.
         /// </summary>

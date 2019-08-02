@@ -75,7 +75,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ClosingState = MainFormClosingState.None;
         }
         #endregion
-        #region Public metody a properties
+        #region Public metody a properties: LoadData(), CreateControl(), RefreshData() - voláno zvenku (z pluginu)
         /// <summary>
         /// Načte data ze strukturovaného objektu <see cref="GuiData"/>
         /// </summary>
@@ -122,6 +122,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this._FillMainControlFromGui();                // Do controlu MainControl vygenerujeme všechny jeho controly
             return this._MainControl;
+        }
+        /// <summary>
+        /// Tato metoda je volána z vnějšího prostředí, v případě kdy je třeba akceptovat změny provedené vně controlu a promítnout je do GUI vrstvy
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        public void RefreshData(GuiResponse guiResponse)
+        {
+            try
+            {
+                this.ProcessGuiResponse(guiResponse);
+            }
+            catch (Exception exc)
+            {
+                App.Trace.Exception(exc, "RefreshData(GuiResponse) error");
+            }
         }
         /// <summary>
         /// Hlavní objekt s daty <see cref="GuiData"/>
@@ -1538,7 +1553,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Zvětšení časového intervalu aktuální časové osy použité do requestu <see cref="GuiRequest.COMMAND_TimeChange"/>.
         /// Načten z <see cref="GuiProperties.TimeChangeSendEnlargement"/> zde při inicializaci v metodě <see cref="_FillMainControlPagesFromGui()"/>
         /// </summary>
-        public double? _TimeChangeSendEnlargement;
+        private double? _TimeChangeSendEnlargement;
         #endregion
         #region Systémové nastavení - tvorba položky v Toolbaru a celá obsluha
         /// <summary>
@@ -3260,11 +3275,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Všechny tabulky s daty
         /// </summary>
         IEnumerable<MainDataTable> IMainDataInternal.DataTables { get { return this._DataTables; } }
-        /// <summary>
-        /// Metoda zpracuje odpovědi z aplikace.
-        /// </summary>
-        /// <param name="guiResponse"></param>
-        void IMainDataInternal.ProcessResponse(GuiResponse guiResponse) { this.ProcessGuiResponse(guiResponse); }
         #endregion
     }
     #region interface IMainDataInternal
@@ -3339,11 +3349,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Všechny tabulky s daty
         /// </summary>
         IEnumerable<MainDataTable> DataTables { get; }
-        /// <summary>
-        /// Metoda zpracuje odpovědi z aplikace.
-        /// </summary>
-        /// <param name="guiResponse"></param>
-        void ProcessResponse(GuiResponse guiResponse);
     }
     #endregion
     #region class MainDataPanel - třída obsahující data o jednom panelu.
