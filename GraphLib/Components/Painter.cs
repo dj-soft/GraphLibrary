@@ -3630,28 +3630,38 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vykreslí linku vztahu jako křivku z bodu pointStart do pointEnd.
         /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="graphicsPath"></param>
-        /// <param name="color"></param>
-        /// <param name="width"></param>
+        /// <param name="graphics">Grafika pro kreslení</param>
+        /// <param name="graphicsPath">Tvar linky k vykreslení</param>
+        /// <param name="colorLine">Barva linky</param>
+        /// <param name="colorBack">Barva podkreslení, aby linka byla viditelná na každém podkladu; kreslí se tatář linka ale s větší šířkou. Zadání null = barva mezi barvou <paramref name="colorLine"/> a černou. Zadání Empty = nebude podkreslení.</param>
+        /// <param name="width">Šířka linky</param>
         /// <param name="startCap"></param>
         /// <param name="endCap"></param>
-        /// <param name="ratio"></param>
-        internal static void DrawLinkPath(Graphics graphics, System.Drawing.Drawing2D.GraphicsPath graphicsPath, Color color, int? width = null,
+        /// <param name="opacityRatio">Průhlednost linky</param>
+        /// <param name="setSmoothGraphics">Nastavit hladkou grafiku?</param>
+        internal static void DrawLinkPath(Graphics graphics, System.Drawing.Drawing2D.GraphicsPath graphicsPath, Color colorLine, Color? colorBack = null, int? width = null,
             System.Drawing.Drawing2D.LineCap startCap = LineCap.Round, System.Drawing.Drawing2D.LineCap endCap = LineCap.ArrowAnchor,
-            float? ratio = null)
+            float? opacityRatio = null, bool setSmoothGraphics = false)
         {
             if (graphicsPath == null) return;
 
-            Color colorB = color.Morph(Color.Black, 0.80f);
+            GraphicSetting? setting = (setSmoothGraphics ? (GraphicSetting?)GraphicSetting.Smooth : null);
+            using (GPainter.GraphicsUse(graphics, setting))
+            {
+                Pen pen;
+                Color colorOut = (colorBack.HasValue ? colorBack.Value : colorLine.Morph(Color.Black, 0.80f));
+                float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 8 ? 8f : (float)width.Value)) : 1f);
 
-            float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 6 ? 6f : (float)width.Value)) : 1f);
+                if (!colorOut.IsEmpty)
+                {
+                    float width2 = (width1 <= 5f ? width1 + 2f : 1.4f * width1);             // Do šířky 5px včetně přidávám 2px, pro šířku větší přidávám 20% na každou stranu
+                    pen = Skin.Pen(colorOut, width2, opacityRatio: opacityRatio, startCap: startCap, endCap: endCap);
+                    graphics.DrawPath(pen, graphicsPath);
+                }
 
-            Pen pen = Skin.Pen(colorB, width1 + 2f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
-            graphics.DrawPath(pen, graphicsPath);
-
-            pen = Skin.Pen(color, width1, opacityRatio: ratio, endCap: endCap);
-            graphics.DrawPath(pen, graphicsPath);
+                pen = Skin.Pen(colorLine, width1, opacityRatio: opacityRatio, startCap: LineCap.Round, endCap: endCap);
+                graphics.DrawPath(pen, graphicsPath);
+            }
         }
 
         #endregion
@@ -3861,8 +3871,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="graphicSetting"></param>
         /// <returns></returns>
-        internal static IDisposable GraphicsUse(Graphics graphics, GraphicSetting graphicSetting)
+        internal static IDisposable GraphicsUse(Graphics graphics, GraphicSetting? graphicSetting)
         {
+            if (!graphicSetting.HasValue) return null;
             switch (graphicSetting)
             {
                 case GraphicSetting.None: return GraphicsUseText(graphics);

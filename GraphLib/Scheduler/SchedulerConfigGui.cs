@@ -1757,7 +1757,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     Point? nextPoint = items[l + 1].GetPoint(ContentAlignment.MiddleLeft);
                     using (GraphicsPath graphicsPath = GPainter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
                     {
-                        GPainter.DrawLinkPath(e.Graphics, graphicsPath, lineColor, width);
+                        GPainter.DrawLinkPath(e.Graphics, graphicsPath, lineColor, null, width);
                     }
                 }
             }

@@ -1576,7 +1576,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = GPainter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
             {
-                GPainter.DrawLinkPath(e.Graphics, graphicsPath, color1, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
+                GPainter.DrawLinkPath(e.Graphics, graphicsPath, color1, null, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
             }
         }
         /// <summary>

@@ -280,6 +280,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     switch (this._MouseDragState)
                     {
+                        case MouseMoveDragState.Paint:
+                            this._MousePaintCancel();
+                            runFinal = true;
+                            break;
                         case MouseMoveDragState.DragMove:
                             this._MouseDragMoveCancel();
                             runFinal = true;
@@ -557,7 +561,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return runFinal;
         }
         /// <summary>
-        /// Myš se pohybuje
+        /// Myš se pohybuje v prostoru controlu, možná bez stisknuté myši, možná se stisknutým tlačítkem...
         /// </summary>
         /// <param name="e"></param>
         private bool _OnMouseMove(MouseEventArgs e)
@@ -598,13 +602,15 @@ namespace Asol.Tools.WorkScheduler.Components
                     // Nyní začíná pohyb myši mimo výchozí prostor, musíme rozhodnout co to bude:
                     this._MouseDragStartDetect(e, scope);
                     break;
-
+                case MouseMoveDragState.Paint:
+                    this._MousePaintStep(e);
+                    scope.Result = "MousePaintStep";
+                    break;
                 case MouseMoveDragState.DragMove:
                     // Nyní probíhá rutinní Drag:
                     this._MouseDragMoveStep(e);
                     scope.Result = "MouseDragMoveStep";
                     break;
-
                 case MouseMoveDragState.DragFrame:
                     // Nyní probíhá rutinní Frame:
                     this._MouseDragFrameStep(e);
@@ -624,6 +630,11 @@ namespace Asol.Tools.WorkScheduler.Components
             MouseMoveDragState dragMode = mouseCurrentItem.MouseDragStartDetect();
             switch (dragMode)
             {
+                case MouseMoveDragState.Paint:
+                    // Na tomto prvku začíná proces Paint; ale do této metody bychom se v tomto stavu dostávat asi neměli...
+                    scope.Result = "MouseDragMoveBegin";
+                    break;
+
                 case MouseMoveDragState.DragMove:
                     // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuálním stavu podporuje Drag and Drop):
                     // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag and Drop začíná:
@@ -661,9 +672,9 @@ namespace Asol.Tools.WorkScheduler.Components
             // Pokud byl dán Cancel, pak bez ohledu na další vracím None:
             if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;          // Proces Drag and Drop probíhal, ale byl stornován (klávesou Escape)
 
-            // Pokud control již rozhodl o stavu, pak jej vrátíme bez dalšího zkoumání:
+            // Pokud se control již dříve rozhodl o stavu, pak jej vrátíme bez dalšího zkoumání:
             MouseMoveDragState state = this._MouseDragState;
-            if (state == MouseMoveDragState.DragMove || state == MouseMoveDragState.DragFrame) return state;
+            if (state == MouseMoveDragState.Paint || state == MouseMoveDragState.DragMove || state == MouseMoveDragState.DragFrame) return state;
 
             // Dosud nebylo o stavu rozhodnuto, detekujeme pozici myši vzhledem k výchozímu bodu:
             Rectangle? startBounds = this._MouseDragStartBounds;
@@ -698,10 +709,24 @@ namespace Asol.Tools.WorkScheduler.Components
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
             {
                 this._InteractiveDrawInit(e);
-                if (this._CurrentMouseDragCanceled) { }
-                else if (this._MouseDragState == MouseMoveDragState.DragMove) this._MouseDragMoveDone(e);
-                else if (this._MouseDragState == MouseMoveDragState.DragFrame) this._MouseDragFrameDone(e);
-                else this._MouseRaise(e);
+                if (!this._CurrentMouseDragCanceled)
+                {
+                    switch (this._MouseDragState)
+                    {
+                        case MouseMoveDragState.Paint:
+                            this._MousePaintDone(e);
+                            break;
+                        case MouseMoveDragState.DragMove:
+                            this._MouseDragMoveDone(e);
+                            break;
+                        case MouseMoveDragState.DragFrame:
+                            this._MouseDragFrameDone(e);
+                            break;
+                        default:
+                            this._MouseRaise(e);
+                            break;
+                    }
+                }
             }
             return runFinal;
         }
@@ -758,10 +783,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GActivePosition oldActiveItem = this._CurrentActiveItem;
             if (e != null)
-            {   // Standarndí pohyb myši nad Controlem:
+            {   // Standardní pohyb myši nad Controlem:
                 GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, true);
                 this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
                 this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
+                this._MousePaintMove(e, newActiveItem);
             }
             else
             {   // MouseLeave z tohoto Controlu:
@@ -770,6 +796,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._ActivateCursor(SysCursorType.Default);
             }
         }
+        /// <summary>
+        /// Tato akce se provede po stisknutí myši v prostoru controlu.
+        /// </summary>
+        /// <param name="e"></param>
         private void _MouseFell(MouseEventArgs e)
         {
             MouseButtons mouseButtons = e.Button;
@@ -790,6 +820,8 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (mouseButtonsLeft && newActiveItem.ItemIsSelectable)
                 this._ItemMouseLeftDownUnSelect(newActiveItem);
+
+            this._MousePaintDown(e);
         }
         /// <summary>
         /// Voláno při zvednutí tlačítka myši (=konec kliknutí), v situaci kdy NEPROBÍHALA žádná akce "Drag and Drop", ani "Drag and Frame". 
@@ -892,7 +924,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._RepaintAllItems = true;
                 this._MouseDragMoveItem = null;
             }
-            this._MouseDragMoveItemOffset = null;              // on primary handler _MouseUp() will be called _MouseRaise(), instead of _MouseDragDone()!  In _MouseDragDone() will be called _MouseDownReset().
+            this._MouseDragMoveItemOffset = null;          // Primární handler _MouseUp() vyvolá _MouseRaise(), namísto _MouseDragDone()!  V metodě _MouseDragDone() bude volána metoda _MouseDownReset().
             this._CurrentMouseDragCanceled = true;
         }
         private void _MouseDragMoveDone(MouseEventArgs e)
@@ -1448,7 +1480,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _InteractiveDrawRun()
         {
-            DrawRequest request = new DrawRequest(this._RepaintAllItems, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
+            DrawRequest request = new DrawRequest(this._RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
             request.Fill(this.ClientSize, this, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
@@ -1489,6 +1521,158 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Any Interactive method or any items need repaint all items, after current (interactive) event.
         /// </summary>
         private bool _RepaintAllItems;
+        #endregion
+        #region Podpora pro interaktivní kreslení (MouseDown + Drag + MouseUp) => vytváření nového obrazce na controlu
+        /// <summary>
+        /// Uživatel pohybuje myší nad controlem, a pokud je povoleno kreslení pak tato metoda může změnit kurzor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="newActiveItem"></param>
+        private void _MousePaintMove(MouseEventArgs e, GActivePosition newActiveItem)
+        {
+            if (this.IsGUIBlocked) return;
+            bool isPaint = this._MousePaintStartIsEnabled();
+            this._MousePaintShowCursor(isPaint);
+        }
+        /// <summary>
+        /// Uživatel zmáčkl myš v určitém místě: zdejší metoda určí, zda můžeme přejít do stavu Draw
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MousePaintDown(MouseEventArgs e)
+        {
+            if (this.IsGUIBlocked) return;
+            bool isPaint = this._MousePaintStartIsEnabled();
+            if (!isPaint) return;
+
+            // Pokud bude Draw, pak musíme nastavit proměnné:
+            this._MouseDragState = MouseMoveDragState.Paint;
+            this._MousePaintPointBegin = e.Location;
+            this._MousePaintPointEnd = this._MousePaintPointBegin;
+            this._MousePaintTimeStart = DateTime.Now;
+        }
+        /// <summary>
+        /// Metoda je volána v každém kroku aktivního kreslení.
+        /// Jsme v režimu <see cref="_MouseDragState"/> == <see cref="MouseMoveDragState.Paint"/>, tzn. kreslíme = myš je zmáčknutá, a pohybuje se.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MousePaintStep(MouseEventArgs e)
+        {
+            this._MousePaintPointEnd = e.Location;
+        }
+        /// <summary>
+        /// Voláno v procesu MouseDrag:Cancel
+        /// </summary>
+        private void _MousePaintCancel()
+        {
+            if (this._MouseDragState != MouseMoveDragState.Paint) return;
+            this._MousePaintEnd();
+        }
+        /// <summary>
+        /// Metoda je volána při MouseUp na konci procesu kreslení.
+        /// Jejím úkolem je vykreslený prvek commitovat (protože nebyl proveden Cancel).
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MousePaintDone(MouseEventArgs e)
+        {
+
+
+            this._MousePaintEnd();
+        }
+        /// <summary>
+        /// Voláno na konci procesu MousePaint, a to jak po Cancel, tak po Done.
+        /// </summary>
+        private void _MousePaintEnd()
+        {
+            this._MouseDragState = MouseMoveDragState.None;
+            this._MousePaintPointBegin = null;
+            this._MousePaintPointEnd = null;
+            this._MousePaintShowCursor(false);
+            this._MousePaintTimeStart = null;
+            this._RepaintAllItems = true;
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud v daném místě controlu můžeme za aktuální situace začít kreslit obrazec 
+        /// </summary>
+        /// <returns></returns>
+        private bool _MousePaintStartIsEnabled()
+        {
+            if (this.IsGUIBlocked) return false;
+            DateTime now = DateTime.Now;
+            return ((now.Second % 2) == 0);
+        }
+        /// <summary>
+        /// Zajistí zobrazení kurzoru pro kreslení podle parametru
+        /// </summary>
+        /// <param name="isPaint"></param>
+        private void _MousePaintShowCursor(bool isPaint)
+        {
+            bool isCursor = this._MousePaintCursorActive;
+            if (isPaint && !isCursor)
+            {   // Máme mít kreslící kurzor, a nyní jej nemáme:
+                this._MousePaintCursorBefore = this._CurrentCursorType;
+                this._ActivateCursor(SysCursorType.Cross);
+                this._MousePaintCursorActive = true;
+            }
+            else if (!isPaint && isCursor)
+            {   // Nemáme mít kreslící kurzor, ale nyní jej máme:
+                this._ActivateCursor(this._MousePaintCursorBefore);
+                this._MousePaintCursorActive = false;
+                this._MousePaintCursorBefore = null;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="layer"></param>
+        private void _MousePaintDraw(Graphics graphics, GInteractiveDrawLayer layer)
+        {
+            Point? begin = _MousePaintPointBegin;
+            Point? end = _MousePaintPointEnd;
+            if (!begin.HasValue || !end.HasValue) return;
+            int dx = begin.Value.X - end.Value.X;
+            int dy = begin.Value.Y - end.Value.Y;
+            int dr = (int)Math.Sqrt(dx * dx + dy * dy);
+
+            using (var line = GPainter.CreatePathLinkLine(begin, end, true))
+                GPainter.DrawLinkPath(graphics, line, Color.Yellow, Color.DarkViolet, 4, LineCap.RoundAnchor, LineCap.ArrowAnchor, setSmoothGraphics: true);
+        }
+        /// <summary>
+        /// Obsahuje true, když je aktivní proces MousePaint a control tedy bude vykreslovat obrazec kreslený myší
+        /// </summary>
+        private bool _MousePaintNeedDraw { get { return (this._MouseDragState == MouseMoveDragState.Paint); } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuální kurzor byl nastaven na kurzor pro interaktivní kreslení, false v běžném stavu
+        /// </summary>
+        private bool _MousePaintCursorActive;
+        /// <summary>
+        /// Typ kurzoru, který byl aktivní před vstupem do oblasti s povoleným kreslením
+        /// </summary>
+        private SysCursorType? _MousePaintCursorBefore;
+        /// <summary>
+        /// Absolutní souřadnice bodu, kde byla stisknuta myš v režimu <see cref="MouseMoveDragState.Paint"/>
+        /// </summary>
+        private Point? _MousePaintPointBegin;
+        /// <summary>
+        /// Absolutní souřadnice bodu, kde se nachází myš aktuálně, v režimu <see cref="MouseMoveDragState.Paint"/>
+        /// </summary>
+        private Point? _MousePaintPointEnd;
+        /// <summary>
+        /// Čas začátku kreslení myší
+        /// </summary>
+        private DateTime? _MousePaintTimeStart;
+        /// <summary>
+        /// Počet sekund, po které se provádí kreslení myší
+        /// </summary>
+        private double _MousePaintTimeSeconds
+        {
+            get
+            {
+                if (!this._MousePaintTimeStart.HasValue) return 0d;
+                TimeSpan time = DateTime.Now - this._MousePaintTimeStart.Value;
+                return time.TotalSeconds;
+            }
+        }
         #endregion
         #region Podpora pro Kontextové menu
         /// <summary>
@@ -1631,7 +1815,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _ProgressDrawRun()
         {
-            DrawRequest request = new DrawRequest(false, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
+            DrawRequest request = new DrawRequest(false, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
             if (request.NeedAnyDraw)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "ProgressDrawRun", ""))
@@ -1879,61 +2063,109 @@ namespace Asol.Tools.WorkScheduler.Components
                 scope.AddItem("PendingFullDraw: " + (this.PendingFullDraw ? "true => Full Draw" : "false"));
                 if (request == null || this.PendingFullDraw)
                 {   // Explicit request not specified, we will draw all items:
-                    request = new DrawRequest(true, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
+                    request = new DrawRequest(true, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
                     request.Fill(this.ClientSize, this, this.ItemsList, true, false);
                 }
 
-                if (request.NeedStdDraw || request.DrawAllItems)
-                {
-                    if (request.DrawAllItems)
-                        base.OnPaintLayers(e);
-                    Graphics graphics = e.GetGraphicsForLayer(0, true);
-                    this.CallDrawStandardLayer(graphics);
-                    this._PaintItems(graphics, graphicsSize, request.StandardItems, GInteractiveDrawLayer.Standard);
-                    scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
-                }
-                if (request.NeedIntDraw)
-                {
-                    Graphics graphics = e.GetGraphicsForLayer(1, true);
-                    this._PaintItems(graphics, graphicsSize, request.InteractiveItems, GInteractiveDrawLayer.Interactive);
-                    scope.AddItem("Layer Interactive, Items: " + request.InteractiveItems.Count.ToString());
-                }
-                if (request.NeedDynDraw)
-                {
-                    Graphics graphics = e.GetGraphicsForLayer(2, true);
-                    if (request.DynamicItems.Count > 0)
-                    {
-                        this._PaintItems(graphics, graphicsSize, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
-                        scope.AddItem("Layer Dynamic, Items: " + request.DynamicItems.Count.ToString());
-                    }
-                    if (request.DrawFrameSelect)
-                    {
-                        this._PaintFrameBounds(graphics, GInteractiveDrawLayer.Dynamic);
-                    }
-                }
-
-                if (this.HasBlockedGuiMessage || this._ProgressItem.Is.Visible || this._ToolTip.NeedDraw)
-                {
-                    Graphics graphics = e.GetGraphicsForLayer(3, true);
-                    if (this.IsGUIBlocked)
-                    {
-                        if (this.HasBlockedGuiMessage)
-                            this.BlockedGuiDraw(graphics, e.GraphicsSize);
-                    }
-                    else
-                    {
-                        if (this._ProgressItem.Is.Visible)
-                            this._ProgressItem.Draw(graphics);
-                        if (this._ToolTip.NeedDraw)
-                            this._ToolTip.Draw(graphics);
-                    }
-                    scope.AddItem("Layer BlockGui + Progress + ToolTip");
-                }
+                this._PaintLayerStandard(e, request, graphicsSize, scope);
+                this._PaintLayerInteractive(e, request, graphicsSize, scope);
+                this._PaintLayerDynamic(e, request, graphicsSize, scope);
+                this._PaintLayerOverlay(e, request, graphicsSize, scope);
 
                 this._PaintStopwatch(e);
 
                 this._DrawState = InteractiveDrawState.Standard;
                 this._RepaintAllItems = false;
+            }
+        }
+        /// <summary>
+        /// Metoda vykreslí vše do vrstvy 0 = Standard
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="request"></param>
+        /// <param name="graphicsSize"></param>
+        /// <param name="scope"></param>
+        private void _PaintLayerStandard(LayeredPaintEventArgs e, DrawRequest request, Size graphicsSize, ITraceScope scope)
+        {
+            if (request.NeedStdDraw || request.DrawAllItems)
+            {
+                if (request.DrawAllItems)
+                    base.OnPaintLayers(e);
+                Graphics graphics = e.GetGraphicsForLayer(0, true);
+                this.CallDrawStandardLayer(graphics);
+                this._PaintItems(graphics, graphicsSize, request.StandardItems, GInteractiveDrawLayer.Standard);
+                scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
+            }
+        }
+        /// <summary>
+        /// Metoda vykreslí vše do vrstvy 1 = Interactive
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="request"></param>
+        /// <param name="graphicsSize"></param>
+        /// <param name="scope"></param>
+        private void _PaintLayerInteractive(LayeredPaintEventArgs e, DrawRequest request, Size graphicsSize, ITraceScope scope)
+        {
+            if (request.NeedIntDraw)
+            {
+                Graphics graphics = e.GetGraphicsForLayer(1, true);
+                this._PaintItems(graphics, graphicsSize, request.InteractiveItems, GInteractiveDrawLayer.Interactive);
+                scope.AddItem("Layer Interactive, Items: " + request.InteractiveItems.Count.ToString());
+            }
+        }
+        /// <summary>
+        /// Metoda vykreslí vše do vrstvy 2 = Dynamic.
+        /// Tato vrstva obsahuje to, co kreslí myš (=FrameBounds + MousePaint).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="request"></param>
+        /// <param name="graphicsSize"></param>
+        /// <param name="scope"></param>
+        private void _PaintLayerDynamic(LayeredPaintEventArgs e, DrawRequest request, Size graphicsSize, ITraceScope scope)
+        {
+            if (request.NeedDynDraw)
+            {
+                Graphics graphics = e.GetGraphicsForLayer(2, true);
+                if (request.DynamicItems.Count > 0)
+                {
+                    this._PaintItems(graphics, graphicsSize, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
+                    scope.AddItem("Layer Dynamic, Items: " + request.DynamicItems.Count.ToString());
+                }
+                if (request.DrawFrameSelect)
+                {
+                    this._PaintFrameBounds(graphics, GInteractiveDrawLayer.Dynamic);
+                }
+                if (request.DrawMousePaint)
+                {
+                    this._MousePaintDraw(graphics, GInteractiveDrawLayer.Dynamic);
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda vykreslí vše do vrstvy 3 = Overlay
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="request"></param>
+        /// <param name="graphicsSize"></param>
+        /// <param name="scope"></param>
+        private void _PaintLayerOverlay(LayeredPaintEventArgs e, DrawRequest request, Size graphicsSize, ITraceScope scope)
+        {
+            if (this.HasBlockedGuiMessage || this._ProgressItem.Is.Visible || this._ToolTip.NeedDraw)
+            {
+                Graphics graphics = e.GetGraphicsForLayer(3, true);
+                if (this.IsGUIBlocked)
+                {
+                    if (this.HasBlockedGuiMessage)
+                        this.BlockedGuiDraw(graphics, e.GraphicsSize);
+                }
+                else
+                {
+                    if (this._ProgressItem.Is.Visible)
+                        this._ProgressItem.Draw(graphics);
+                    if (this._ToolTip.NeedDraw)
+                        this._ToolTip.Draw(graphics);
+                }
+                scope.AddItem("Layer BlockGui + Progress + ToolTip");
             }
         }
         /// <summary>
@@ -2065,13 +2297,15 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             /// <param name="drawAllItems"></param>
             /// <param name="drawFrameSelect"></param>
+            /// <param name="drawMousePaint"></param>
             /// <param name="toolTipItem"></param>
             /// <param name="progressItem"></param>
-            public DrawRequest(bool drawAllItems, bool drawFrameSelect, ToolTipItem toolTipItem, ProgressItem progressItem)
+            public DrawRequest(bool drawAllItems, bool drawFrameSelect, bool drawMousePaint, ToolTipItem toolTipItem, ProgressItem progressItem)
                 : this()
             {
                 this.DrawAllItems = drawAllItems;
                 this.DrawFrameSelect = drawFrameSelect;
+                this.DrawMousePaint = drawMousePaint;
                 this.DrawToolTip = (toolTipItem != null && toolTipItem.NeedDraw);
                 this.DrawProgress = (progressItem != null && progressItem.Is.Visible);
             }
@@ -2100,6 +2334,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public bool DrawFrameSelect { get; private set; }
             /// <summary>
+            /// Obsahuje true, pokud je požadavek na vykreslení objektu tvořeného myší (kreslí se do vrstvy Dynamic)
+            /// </summary>
+            public bool DrawMousePaint { get; private set; }
+            /// <summary>
             /// Obsahuje true, pokud je požadavek na vykreslení ToolTipu
             /// </summary>
             public bool DrawToolTip { get; private set; }
@@ -2125,7 +2363,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Obsahuje true, pokud je požadavek na kreslení do vrstvy Dynamic.
             /// Tedy máme nějaké prvky v poli <see cref="DynamicItems"/>, anebo je nastaveno <see cref="DrawFrameSelect"/> == true.
             /// </summary>
-            public bool NeedDynDraw { get { return (this.DynamicItems.Count > 0 || this.DrawFrameSelect); } }
+            public bool NeedDynDraw { get { return (this.DynamicItems.Count > 0 || this.DrawFrameSelect || this.DrawMousePaint); } }
             /// <summary>
             /// true when need any draw (Standard, Interactive, Dynamic, ToolTip)
             /// </summary>
@@ -2636,7 +2874,7 @@ namespace Asol.Tools.WorkScheduler.Components
             try
             {
                 this._BackThreadRunDrawGuiProcess = true;
-                DrawRequest request = new DrawRequest(this.RepaintAllItems, this._NeedDrawFrameBounds, this._ToolTip, null);
+                DrawRequest request = new DrawRequest(this.RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, null);
                 if (drawItems)
                     request.Fill(this.ClientSize, this, this.ItemsList, this.RepaintAllItems, false);
                 request.InteractiveMode = true;
@@ -3215,11 +3453,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         None,
         /// <summary>
-        /// Myš je zmáčknutá, ale její souřadnice jsou uvnitř prostoru v němž se malé pohybi myši ignorují
+        /// Myš je zmáčknuta a je v režimu Draw = kreslení. Tento režim je aktivní od okamžiku MouseDown, nečeká se na pohyb mimo startovní prostor.
+        /// Režim Draw je podmíněn stavem controlu i stavem konkrétního prvku, kde došlo ke stisknutí myši.
+        /// V tomto stavu se již provádí vykreslování obrazce z bodu MouseDown do bodu MouseCurrent.
+        /// </summary>
+        Paint,
+        /// <summary>
+        /// Myš je zmáčknutá, ale její souřadnice jsou uvnitř prostoru, v němž se malé pohyby myši ignorují
         /// </summary>
         Wait,
         /// <summary>
-        /// Myš je zmáčknutá, pohybuje se a právě nyní se dostala mimo prostor odpovídající hodnotě <see cref="Wait"/>.
+        /// Myš je zmáčknutá, pohybuje se, a právě nyní se dostala mimo prostor odpovídající hodnotě <see cref="Wait"/>.
         /// Aplikace nyní musí určit, zda se jedná o akci <see cref="DragMove"/>, nebo 
         /// </summary>
         Start,
