@@ -1125,6 +1125,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Rectangle UserAbsoluteBounds { get; private set; }
     }
+    /// <summary>
+    /// Předpis pro handler události MousePaint
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void GInteractiveMousePaintHandler(object sender, GInteractiveMousePaintArgs e);
+    /// <summary>
+    /// Argumenty pro události MousePaint
+    /// </summary>
+    public class GInteractiveMousePaintArgs : EventArgs
+    {
+        /// <summary>
+        /// Sem aplikace nastaví true / false podle toho, zda aktuální operace je / není povolená.
+        /// </summary>
+        public bool IsEnabled { get; set; }
+        /// <summary>
+        /// Typ kurzoru; pokud je null pak nebude změněn.
+        /// 
+        /// </summary>
+        public SysCursorType? CursorType { get; set; }
+    }
+
     #endregion
     #region Enums ZOrder, GInteractiveState, GInteractiveChangeState, GInteractiveDrawLayer, DragResponseType, ProcessAction, EventSourceType
     /// <summary>

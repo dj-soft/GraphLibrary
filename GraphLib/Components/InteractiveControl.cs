@@ -1524,6 +1524,29 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Podpora pro interaktivní kreslení (MouseDown + Drag + MouseUp) => vytváření nového obrazce na controlu
         /// <summary>
+        /// Povoluje aktivity MousePaint = kreslení pomocí myši (MouseDown, Drag, MouseUp).
+        /// Výchozí hodnota je false.
+        /// Pokud aplikace nastaví true, pak by měla obsloužit události <see cref="MousePaintStartEnabled"/>, <see cref="MousePaintTargetEnabled"/>, <see cref="MousePaintCompleted"/>.
+        /// </summary>
+        public bool MousePaintEnabled { get; set; }
+        /// <summary>
+        /// Událost, kdy interaktivní control potřebuje informaci, zda na dané souřadnici a na daném prvku je možno zahájit akci MousePaint.
+        /// Tato událost se volá pouze tehdy, když <see cref="MousePaintEnabled"/> je true, volá se při každém pohybu myši (kvůli aktualizaci kurzoru).
+        /// V argumentu jsou předány informace o pozici myši a o prvku na pozici myši.
+        /// Pokud bude akce MousePaint v tomto handleru povolena, pak uživatel stisknutím myši začne vykreslovat objekt, a bude volán event <see cref="MousePaintTargetEnabled"/>.
+        /// V odpovědi je očekávána informace <see cref="GInteractiveMousePaintArgs.IsEnabled"/>
+        /// </summary>
+        public event GInteractiveMousePaintHandler MousePaintStartEnabled;
+        /// <summary>
+        /// Událost, kdy interaktivní control potřebuje informaci, zda na dané souřadnici a na daném prvku je možno umístit cíl (Target) akce MousePaint.
+        /// Tato událost se volá pouze tehdy, když <see cref="MousePaintEnabled"/> je true, když pro určitý výchozí bod (Start) byl volán event <see cref="MousePaintStartEnabled"/> 
+        /// a ten vrátil <see cref="GInteractiveMousePaintArgs.IsEnabled"/> = true.
+        /// 
+        /// volá se při každém pohybu myši (kvůli aktualizaci kurzoru).
+        /// </summary>
+        public event GInteractiveMousePaintHandler MousePaintTargetEnabled;
+        public event GInteractiveMousePaintHandler MousePaintCompleted;
+        /// <summary>
         /// Uživatel pohybuje myší nad controlem, a pokud je povoleno kreslení pak tato metoda může změnit kurzor
         /// </summary>
         /// <param name="e"></param>
