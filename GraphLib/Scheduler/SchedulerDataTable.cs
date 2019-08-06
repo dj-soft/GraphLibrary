@@ -3819,6 +3819,75 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #endregion
+        #region Interaktivní přidávání prvků pomocí myši (kreslení MousePaint)
+        /// <summary>
+        /// Aplikace zde zjistí, zda v daném bodě controlu je možno zahájit operaci MousePaint = uživatelsky nakreslit nějaký tvar, a následně jej převzít k dalšímu zpracování.
+        /// Myš se nyní nachází na bodě, kde by uživatel mohl zmáčknout myš (nebo ji už dokonce právě nyní zmáčkl, 
+        /// to když <see cref="GInteractiveMousePaintArgs.InteractiveChange"/> == <see cref="GInteractiveChangeState.LeftDown"/> nebo RightDown).
+        /// </summary>
+        /// <param name="e"></param>
+        internal void InteractiveMousePaintProcessStart(GInteractiveMousePaintArgs e)
+        {
+            DateTime now = DateTime.Now;
+            e.IsEnabled = ((now.Second % 4) < 2);
+            e.CursorType = SysCursorType.Cross;
+        }
+        /// <summary>
+        /// Aplikace zde zjistí, zda v daném bodě controlu je možno dokončit kreslení, tedy zda daný bod a prvek na něm je vhodným cílem.
+        /// </summary>
+        /// <param name="e"></param>
+        internal void InteractiveMousePaintProcessTarget(GInteractiveMousePaintArgs e)
+        {
+            e.IsEnabled = true;
+            int v = DateTime.Now.Second % 4;
+            e.ToolTipData.IsVisible = false;
+            switch (v)
+            {
+                case 0:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.Rectangle;
+                    e.PaintInfo.LineColor = Color.Red;
+                    e.PaintInfo.LineWidth = 2;
+                    e.PaintInfo.FillColor = Color.FromArgb(64, Color.Blue);
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.Triangle;
+                    e.ToolTipData.AnimationType = TooltipAnimationType.Instant;
+                    e.ToolTipData.InfoText = "Obdélník mezi souřadnicemi:\r\nStart\t" + e.PaintInfo.StartPoint + "\r\nEnd\t" + e.PaintInfo.EndPoint;
+                    e.ToolTipData.IsVisible = true;
+                    e.CursorType = SysCursorType.SizeAll;
+                    break;
+                case 1:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.Curve;
+                    e.PaintInfo.LineColor = Color.Violet;
+                    e.PaintInfo.LineWidth = 7;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
+                    e.CursorType = SysCursorType.Arrow;
+                    break;
+                case 2:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagHorizonal;
+                    e.PaintInfo.LineColor = Color.Yellow;
+                    e.PaintInfo.LineWidth = 5;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.RoundAnchor;
+                    e.CursorType = SysCursorType.Cross;
+                    break;
+                case 3:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagVertical;
+                    e.PaintInfo.LineColor = Color.Green;
+                    e.PaintInfo.LineWidth = 3;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.DiamondAnchor;
+                    e.CursorType = SysCursorType.Hand;
+                    break;
+            }
+
+            if (e.PaintInfo.StartPoint.HasValue && e.PaintInfo.EndPoint.HasValue && e.PaintInfo.StartPoint.Value.X > e.PaintInfo.EndPoint.Value.X)
+                e.PaintInfo.ExchangePoints();
+        }
+        /// <summary>
+        /// Aplikace zde zajistí zpracování vykresleného tvaru MousePaint = tedy převezme si souřadnice a prvky, a vytvoří z nich nějaká data.
+        /// </summary>
+        /// <param name="e"></param>
+        internal void InteractiveMousePaintProcessCommit(GInteractiveMousePaintArgs e)
+        {
+        }
+        #endregion
         #region Kontextové menu k řádku, ke grafu, k jednotlivému prvku grafu
         /// <summary>
         /// Eventhandler události RightClick v prostoru buňky tabulky

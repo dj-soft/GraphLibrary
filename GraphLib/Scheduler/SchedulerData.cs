@@ -101,11 +101,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "ApplyPropertiesToForm", ""))
                 this._ApplyPropertiesToForm(mainForm);     // Nastavíme vlastnosti formu podle GuiProperties
 
-            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainControl", ".ctor", ""))
-                this._MainControl = new MainControl(this); // Vytvoříme new control MainControl
-
-            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlFromGui", ""))
-                this._FillMainControlFromGui();            // Do controlu MainControl vygenerujeme všechny jeho controly
+            this._CreateMainControl();
 
             mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
             this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
@@ -117,10 +113,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public System.Windows.Forms.Control CreateControl()
         {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", ".ctor", ""))
-                this._MainControl = new MainControl(this);
-
-            this._FillMainControlFromGui();                // Do controlu MainControl vygenerujeme všechny jeho controly
+            this._CreateMainControl();
             return this._MainControl;
         }
         /// <summary>
@@ -156,6 +149,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             mainForm.Text = guiProperties.PluginFormTitle;
             mainForm.FormClosing += _MainFormClosing;
             mainForm.FormClosed += _MainFormClosed;
+        }
+        /// <summary>
+        /// Vytvoří instanci hlavního interaktivního controlu <see cref="MainControl"/> a uloží ji do <see cref="_MainControl"/>.
+        /// Do controlu vygeneruje všechny potřebné jeho controly a zaregistruje potřebné eventhandlery.
+        /// </summary>
+        private void _CreateMainControl()
+        {
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainControl", ".ctor", ""))
+                this._MainControl = new MainControl(this); // Vytvoříme new control MainControl
+
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlFromGui", ""))
+                this._FillMainControlFromGui();            // Do controlu MainControl vygenerujeme všechny jeho controly
+
+            this._AddMainControlEventHandlers();           // A zaregistrujeme si eventhandlery.
         }
         /// <summary>
         /// Vrátí WinForm styl borderu podle Plugin stylu.
@@ -195,6 +202,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             App.TryRun(this._FillMainControlToolbar);
             App.TryRun(this._FillMainControlPagesFromGui);
             App.TryRun(this._FillMainControlFromConfig);
+        }
+        /// <summary>
+        /// Do hlavního controlu <see cref="_MainControl"/> zaregistrujeme naše eventhandlery
+        /// </summary>
+        private void _AddMainControlEventHandlers()
+        {
+            this._InteractiveMousePaintInit();
         }
         /// <summary>
         /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(Form)"/>
@@ -2707,6 +2721,69 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _CallHostRunOpenRecordsFormResponse(AppHostResponseArgs response)
         {
             this.ProcessGuiResponse(response.GuiResponse);
+        }
+        #endregion
+        #region Interaktivní přidávání prvků pomocí myši
+        /// <summary>
+        /// Inicializace subsystému interaktivního kreslení
+        /// </summary>
+        private void _InteractiveMousePaintInit()
+        {
+            this._MainControl.MousePaintProcessStart += _InteractiveMousePaintProcessStart;
+            this._MainControl.MousePaintProcessTarget += _InteractiveMousePaintProcessTarget;
+            this._MainControl.MousePaintProcessCommit += _InteractiveMousePaintProcessCommit;
+            this._MainControl.MousePaintEnabled = true;
+        }
+        /// <summary>
+        /// Aplikace zde zjistí, zda v daném bodě controlu je možno zahájit operaci MousePaint = uživatelsky nakreslit nějaký tvar, a následně jej převzít k dalšímu zpracování.
+        /// Myš se nyní nachází na bodě, kde by uživatel mohl zmáčknout myš (nebo ji už dokonce právě nyní zmáčkl, 
+        /// to když <see cref="GInteractiveMousePaintArgs.InteractiveChange"/> == <see cref="GInteractiveChangeState.LeftDown"/> nebo RightDown).
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _InteractiveMousePaintProcessStart(object sender, GInteractiveMousePaintArgs e)
+        {
+            MainDataTable dataTable;
+            if (!InteractiveMousePaintTryGetTable(e.CurrentItem, out dataTable)) return;
+            dataTable.InteractiveMousePaintProcessStart(e);
+        }
+        /// <summary>
+        /// Aplikace zde zjistí, zda v daném bodě controlu je možno dokončit kreslení, tedy zda daný bod a prvek na něm je vhodným cílem.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _InteractiveMousePaintProcessTarget(object sender, GInteractiveMousePaintArgs e)
+        {
+            MainDataTable dataTable;
+            if (!InteractiveMousePaintTryGetTable(e.StartItem, out dataTable)) return;
+            dataTable.InteractiveMousePaintProcessTarget(e);
+        }
+        /// <summary>
+        /// Aplikace zde zajistí zpracování vykresleného tvaru MousePaint = tedy převezme si souřadnice a prvky, a vytvoří z nich nějaká data.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _InteractiveMousePaintProcessCommit(object sender, GInteractiveMousePaintArgs e)
+        {
+            MainDataTable dataTable;
+            if (!InteractiveMousePaintTryGetTable(e.StartItem, out dataTable)) return;
+            dataTable.InteractiveMousePaintProcessCommit(e);
+        }
+        /// <summary>
+        /// Metoda pro daný interaktivní prvek (prvek grafu, graf, řádek/sloupec tabulky, tabulka) najde jeho odpovídající <see cref="MainDataTable"/>.
+        /// Vrací true, když je datová tabulka nalezena.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        internal static bool InteractiveMousePaintTryGetTable(IInteractiveItem item, out MainDataTable dataTable)
+        {
+            dataTable = null;
+            if (item == null) return false;
+            GTable table = InteractiveObject.SearchForParent(item, typeof(GTable)) as GTable;
+            if (table == null) return false;
+            dataTable = table.DataTable.UserData as MainDataTable;
+            return (dataTable != null);
         }
         #endregion
         #region Sestavení instance GuiRequestCurrentState, obsahující stav celého Scheduleru

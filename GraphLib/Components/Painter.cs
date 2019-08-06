@@ -1318,7 +1318,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Color lineColorD = lineColor.Morph(Skin.Modifiers.Effect3DDark, 0.25f);
 
             result.Add(new Tuple<Color?, Rectangle>(backColor, new Rectangle(t0, l0, ts, ls)));
-            result.Add(new Tuple<Color?, Rectangle>(paintData.TrackActiveBackColor, new Rectangle(t0, lv, ts, l9 - lv))); 
+            result.Add(new Tuple<Color?, Rectangle>(paintData.TrackActiveBackColor, new Rectangle(t0, lv, ts, l9 - lv)));
             result.Add(new Tuple<Color?, Rectangle>(paintData.TrackInactiveBackColor, new Rectangle(t0, l0, ts, lv - l0)));
 
             result.Add(new Tuple<Color?, Rectangle>(lineColorD, new Rectangle(t0, l0, 1, ls)));
@@ -1378,7 +1378,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="paintData"></param>
         private static void DrawTrackBarTrackData(Graphics graphics, Rectangle bounds, ITrackBarPaintData paintData)
         {
-             paintData.PaintTextData(graphics, bounds);
+            paintData.PaintTextData(graphics, bounds);
         }
         /// <summary>
         /// Vykreslí TrackPoint = ovládací jezdec TrackBaru
@@ -1422,7 +1422,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Color trackBackColor = paintData.TrackPointBackColor ?? Skin.TrackBar.BackColorButton;
             Color? mouseOverColor = paintData.TrackPointMouseOverBackColor ?? Skin.TrackBar.BackColorMouseOverButton;
-            Color? mouseDownColor = paintData.TrackPointMouseDownBackColor?? Skin.TrackBar.BackColorMouseDownButton;
+            Color? mouseDownColor = paintData.TrackPointMouseDownBackColor ?? Skin.TrackBar.BackColorMouseDownButton;
             Color? mouseDragColor = mouseDownColor;
             Color? disabledColor = trackBackColor.Morph(Skin.Modifiers.BackColorDisable);
             return GetColorByInteractiveState(paintData.InteractiveState, trackBackColor, mouseOverColor, mouseDownColor, mouseDragColor, disabledColor);
@@ -1562,9 +1562,10 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isVertical = _CreatePathTrackPointerIsVertical(pointerSide, size);
             switch (pointerType)
             {
-                case TrackPointerType.OneSide: return (isVertical ?
-                        _CreatePathTrackPointerOneSideVertical(center, size, pointerSide, pathPart, out graphicSetting) :
-                        _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, out graphicSetting));
+                case TrackPointerType.OneSide:
+                    return (isVertical ?
+_CreatePathTrackPointerOneSideVertical(center, size, pointerSide, pathPart, out graphicSetting) :
+_CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, out graphicSetting));
                 case TrackPointerType.DoubleSide:
                     return (isVertical ?
                         _CreatePathTrackPointerDoubleSideVertical(center, size, pointerSide, pathPart, out graphicSetting) :
@@ -3498,6 +3499,31 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region LinkLine
         /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje prostou přímou linku, která jde z bodu "prevPoint" do bodu "nextPoint".
+        /// <para/>
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
+        /// Pokud jsou null oba, vrací se null.
+        /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
+        /// </summary>
+        /// <param name="prevPoint">Bod počátku</param>
+        /// <param name="nextPoint">Bod konce</param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathStraightLine(Point? prevPoint, Point? nextPoint)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny;
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            path.AddLine(px, py, nx, ny);
+            return path;
+        }
+        /// <summary>
         /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje linku, která jde z bodu "prevPoint" do bodu "nextPoint",
         /// a může to být linka nebo rovná čára podle parametru "asSCurve".
         /// Pokud jde o přímou čáru, není třeba vysvětlivek.
@@ -3510,55 +3536,37 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je tomu naopak, pak je vrácena křivka částečné ležaté osmičky tak, 
         /// aby vycházela z bodu Prev (který je ale vpravo od Next) doprava, stáčí se pak dolů a doleva, nahoru stále doleva, rovně doleva, pak doleva dolů a nakonec doprava do bodu Prev.
         /// <para/>
-        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. Pokud jsou null oba, vrací se null.
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
+        /// Pokud jsou null oba, vrací se null.
         /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
         /// </summary>
-        /// <param name="prevPoint"></param>
-        /// <param name="nextPoint"></param>
-        /// <param name="asSCurve"></param>
+        /// <param name="prevPoint">Bod počátku</param>
+        /// <param name="nextPoint">Bod konce</param>
+        /// <param name="asSCurve">Tvar S-křivky</param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathLinkLine(Point? prevPoint, Point? nextPoint, bool asSCurve)
         {
             if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
 
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
             System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
             int px, py, nx, ny, dx, dy, bx, by;
 
-            // Mám jen prvek Prev: vykreslím linku "z Prev doprava":
-            if (!nextPoint.HasValue)
-            {
-                px = prevPoint.Value.X;
-                py = prevPoint.Value.Y;
-                nx = px + 12;
-                ny = py;
-                path.AddLine(px, py, nx, ny);
-                return path;
-            }
-
-            // Mám jen prvek Next: vykreslím linku "zleva do Next":
-            if (!prevPoint.HasValue)
-            {
-                nx = nextPoint.Value.X;
-                ny = nextPoint.Value.Y;
-                px = nx - 12;
-                py = ny;
-                path.AddLine(px, py, nx, ny);
-                return path;
-            }
-
-            // Máme tedy oba body. Co mezi nimi budeme kreslit?
             px = prevPoint.Value.X;
             py = prevPoint.Value.Y;
             nx = nextPoint.Value.X;
             ny = nextPoint.Value.Y;
             dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
             dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
-            if (dy == 0)
-            {   // Prvky jsou na stejné souřadnici Y, takže bez ohledu na požavek "asSCurve" to nebude klasická S-křivka:
+            bool sameY = (dy < 5 && dy > -5);
+            if (sameY)
+            {   // Prvky jsou na (skoro) stejné souřadnici Y, takže bez ohledu na požavek "asSCurve" to nebude klasická S-křivka:
                 if (dx >= 0)
-                {   // Next je (v nebo) za Prev, takže to bude přímka, jen ji trochu prodloužím:
-                    px = px - 2;
-                    nx = nx + 2;
+                {   // Next je (v nebo) za Prev, takže to bude přímka, jen ji možná trochu prodloužím:
+                    int addx = (dx < 3 ? 2 : (dx < 5 ? 1 : 0));
+                    px = px - addx;
+                    nx = nx + addx;
                     path.AddLine(px, py, nx, ny);
                     return path;
                 }
@@ -3603,6 +3611,103 @@ namespace Asol.Tools.WorkScheduler.Components
             return path;
         }
         /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje prostou lomenou linku, která jde z bodu "prevPoint" do bodu "nextPoint".
+        /// Křivka vede z bodu <paramref name="prevPoint"/> vodorovně do poloviční vzdálenosti (ve směru X) k bodu <paramref name="nextPoint"/>,
+        /// pak se zlomí do svislé, vede do souřadnice Y bodu <paramref name="nextPoint"/>, a pak běží vodorvně až do cíle.
+        /// <para/>
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
+        /// Pokud jsou null oba, vrací se null.
+        /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
+        /// </summary>
+        /// <param name="prevPoint">Bod počátku</param>
+        /// <param name="nextPoint">Bod konce</param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathLinkZigZagHorizontal(Point? prevPoint, Point? nextPoint)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny, dx, dy, hx;
+
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
+            dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
+            hx = px + (dx / 2);        // Poloviční souřadnice X, kde se křivka lomí z vodorovné do svislé
+
+            path.AddLine(px, py, hx, py);        // Vodorovně z Prev do půli cesty k Next
+            path.AddLine(hx, py, hx, ny);        // Svisle k Next
+            path.AddLine(hx, ny, nx, ny);        // Vodorovně do Next
+            return path;
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje prostou lomenou linku, která jde z bodu "prevPoint" do bodu "nextPoint".
+        /// Křivka vede z bodu <paramref name="prevPoint"/> svisle do poloviční vzdálenosti (ve směru Y) k bodu <paramref name="nextPoint"/>,
+        /// pak se zlomí do vodorovné, vede do souřadnice X bodu <paramref name="nextPoint"/>, a pak běží vodorvně až do cíle.
+        /// <para/>
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
+        /// Pokud jsou null oba, vrací se null.
+        /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
+        /// </summary>
+        /// <param name="prevPoint">Bod počátku</param>
+        /// <param name="nextPoint">Bod konce</param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathLinkZigZagVertical(Point? prevPoint, Point? nextPoint)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny, dx, dy, hy;
+
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
+            dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
+            hy = py + (dy / 2);        // Poloviční souřadnice Y, kde se křivka lomí z svislé do vodorovné
+
+            path.AddLine(px, py, px, hy);        // Svisle z Prev do půli cesty k Next
+            path.AddLine(px, hy, nx, hy);        // Vodorovně k Next
+            path.AddLine(nx, hy, nx, ny);        // Svisle do Next
+            return path;
+        }
+        private static GraphicsPath _CreatePathLinkHalf(Point? prevPoint, Point? nextPoint, int halfLength)
+        {
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny;
+
+            // Mám jen prvek Prev: vykreslím linku "z Prev doprava":
+            if (!nextPoint.HasValue)
+            {
+                px = prevPoint.Value.X;
+                py = prevPoint.Value.Y;
+                nx = px + halfLength;
+                ny = py;
+                path.AddLine(px, py, nx, ny);
+                return path;
+            }
+
+            // Mám jen prvek Next: vykreslím linku "zleva do Next":
+            if (!prevPoint.HasValue)
+            {
+                nx = nextPoint.Value.X;
+                ny = nextPoint.Value.Y;
+                px = nx - halfLength;
+                py = ny;
+                path.AddLine(px, py, nx, ny);
+                return path;
+            }
+
+            return null;
+        }
+        /// <summary>
         /// Vykreslí linku vztahu jako rovnou čáru z bodu pointStart do pointEnd.
         /// </summary>
         /// <param name="graphics"></param>
@@ -3632,14 +3737,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics">Grafika pro kreslení</param>
         /// <param name="graphicsPath">Tvar linky k vykreslení</param>
-        /// <param name="colorLine">Barva linky</param>
-        /// <param name="colorBack">Barva podkreslení, aby linka byla viditelná na každém podkladu; kreslí se tatář linka ale s větší šířkou. Zadání null = barva mezi barvou <paramref name="colorLine"/> a černou. Zadání Empty = nebude podkreslení.</param>
-        /// <param name="width">Šířka linky</param>
+        /// <param name="colorLine">Barva linky. Pokud je null, nebude se kreslit vnitřní linka.</param>
+        /// <param name="colorBack">Barva podkreslení, aby linka byla viditelná na každém podkladu; kreslí se tatáž linka ale s větší šířkou. Zadání null = automatická barva mezi barvou <paramref name="colorLine"/> a černou. Zadání Empty = nebude podkreslení.</param>
+        /// <param name="width">Šířka linky, akceptuje se šířka 1 až 12 pixelů</param>
         /// <param name="startCap"></param>
         /// <param name="endCap"></param>
         /// <param name="opacityRatio">Průhlednost linky</param>
         /// <param name="setSmoothGraphics">Nastavit hladkou grafiku?</param>
-        internal static void DrawLinkPath(Graphics graphics, System.Drawing.Drawing2D.GraphicsPath graphicsPath, Color colorLine, Color? colorBack = null, int? width = null,
+        internal static void DrawLinkPath(Graphics graphics, System.Drawing.Drawing2D.GraphicsPath graphicsPath, Color? colorLine, Color? colorBack = null, int? width = null,
             System.Drawing.Drawing2D.LineCap startCap = LineCap.Round, System.Drawing.Drawing2D.LineCap endCap = LineCap.ArrowAnchor,
             float? opacityRatio = null, bool setSmoothGraphics = false)
         {
@@ -3649,8 +3754,8 @@ namespace Asol.Tools.WorkScheduler.Components
             using (GPainter.GraphicsUse(graphics, setting))
             {
                 Pen pen;
-                Color colorOut = (colorBack.HasValue ? colorBack.Value : colorLine.Morph(Color.Black, 0.80f));
-                float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 8 ? 8f : (float)width.Value)) : 1f);
+                Color colorOut = (colorBack.HasValue ? colorBack.Value : (colorLine.HasValue ? colorLine.Value.Morph(Color.Black, 0.80f) : Color.Empty));
+                float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 12 ? 12f : (float)width.Value)) : 1f);
 
                 if (!colorOut.IsEmpty)
                 {
@@ -3659,11 +3764,13 @@ namespace Asol.Tools.WorkScheduler.Components
                     graphics.DrawPath(pen, graphicsPath);
                 }
 
-                pen = Skin.Pen(colorLine, width1, opacityRatio: opacityRatio, startCap: LineCap.Round, endCap: endCap);
-                graphics.DrawPath(pen, graphicsPath);
+                if (colorLine.HasValue)
+                {
+                    pen = Skin.Pen(colorLine.Value, width1, opacityRatio: opacityRatio, startCap: LineCap.Round, endCap: endCap);
+                    graphics.DrawPath(pen, graphicsPath);
+                }
             }
         }
-
         #endregion
         #region Ellipse
         /// <summary>

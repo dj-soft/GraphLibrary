@@ -5,6 +5,7 @@ using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
+using System.Drawing.Drawing2D;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -1137,16 +1138,200 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GInteractiveMousePaintArgs : EventArgs
     {
         /// <summary>
-        /// Sem aplikace nastaví true / false podle toho, zda aktuální operace je / není povolená.
+        /// Konstruktor
+        /// </summary>
+        /// <param name="interactiveChange"></param>
+        /// <param name="currentActiveItem"></param>
+        /// <param name="startActiveItem"></param>
+        /// <param name="mousePaintInfo"></param>
+        /// <param name="toolTipData"></param>
+        public GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, GActivePosition currentActiveItem, GActivePosition startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
+        {
+            this._InteractiveChange = interactiveChange;
+            this._CurrentActiveItem = currentActiveItem;
+            this._StartActiveItem = startActiveItem;
+            if (mousePaintInfo != null)
+            {   // Aktualizuji souřadnice pro kreslení:
+                mousePaintInfo.StartPoint = this.StartPoint;
+                mousePaintInfo.EndPoint = this.CurrentPoint;
+            }
+            this._MousePaintInfo = mousePaintInfo;
+            this._ToolTipData = toolTipData;
+        }
+        private GInteractiveChangeState _InteractiveChange;
+        private GActivePosition _CurrentActiveItem;
+        private GActivePosition _StartActiveItem;
+        private MousePaintInfo _MousePaintInfo;
+        private ToolTipData _ToolTipData;
+        /// <summary>
+        /// Interaktivní stav
+        /// </summary>
+        public GInteractiveChangeState InteractiveChange { get { return this._InteractiveChange; } }
+        /// <summary>
+        /// Prvek, nad kterým se nacházela myš v době startu kreslení. Může být null, při pohybu nad controlem.
+        /// </summary>
+        public IInteractiveItem StartItem { get { return this._StartActiveItem?.ActiveItem; } }
+        /// <summary>
+        /// Absolutní souřadnice bodu, kde se nacházela myš v době startu kreslení. Může být null, při pohybu nad controlem.
+        /// </summary>
+        public Point? StartPoint { get { return this._StartActiveItem?.MouseAbsolutePoint; } }
+        /// <summary>
+        /// Prvek, nad kterým se aktuálně nachází myš, a to jak při pohybu nad controlem, tak při kreslení. 
+        /// </summary>
+        public IInteractiveItem CurrentItem { get { return this._CurrentActiveItem.ActiveItem; } }
+        /// <summary>
+        /// Absolutní souřadnice bodu, kde se aktuálně nachází myš
+        /// </summary>
+        public Point CurrentPoint { get { return this._CurrentActiveItem.MouseAbsolutePoint; } }
+        /// <summary>
+        /// Aktuální stav kláves
+        /// </summary>
+        public Keys CurrentModifierKeys { get { return this._CurrentActiveItem.CurrentModifierKeys; } }
+        /// <summary>
+        /// Data pro kreslení objektu.
+        /// V režimu <see cref="InteractiveChange"/> == <see cref="GInteractiveChangeState.MouseOver"/> nemá význam, je null.
+        /// V režimu kreslení je objekt inicializován na defaultní, a po všechny jednotlivé kroky kreslení je perzistentní.
+        /// </summary>
+        public MousePaintInfo PaintInfo { get { return this._MousePaintInfo; } set { this._MousePaintInfo = value; } }
+        /// <summary>
+        /// Data do tooltipu
+        /// </summary>
+        public ToolTipData ToolTipData { get { if (this._ToolTipData == null) this._ToolTipData = new ToolTipData(); return this._ToolTipData; } set { this._ToolTipData = value; } }
+        /// <summary>
+        /// Máme data do ToolTipu?
+        /// </summary>
+        public bool HasToolTipData { get { return (this._ToolTipData != null); } }
+        /// <summary>
+        /// Do této property eventhandler nastaví true / false podle toho, zda aktuální operace je / není povolená.
+        /// Výchozí hodnota = false
         /// </summary>
         public bool IsEnabled { get; set; }
         /// <summary>
-        /// Typ kurzoru; pokud je null pak nebude změněn.
-        /// 
+        /// Do této property eventhandler vloží požadovaný typ kurzoru.
+        /// Pokud zde bude null (=výchozí hodnota), pak bude kurzor výchozí.
         /// </summary>
         public SysCursorType? CursorType { get; set; }
     }
-
+    /// <summary>
+    /// Definice kresleného obrazu
+    /// </summary>
+    public class MousePaintInfo
+    {
+        /// <summary>
+        /// Defaultní obrazec = typ Curve, 5px, Yellow/DarkMagenta, Round lineCaps
+        /// </summary>
+        public static MousePaintInfo Default
+        {
+            get
+            {
+                MousePaintInfo paintInfo = new MousePaintInfo()
+                {
+                    ObjectType = MousePaintObjectType.Curve,
+                    LineWidth = 5,
+                    LineColor = Color.Yellow,
+                    FillColor = Color.DarkMagenta,
+                    StartCap = LineCap.Round,
+                    EndCap = LineCap.Round
+                };
+                return paintInfo;
+            }
+        }
+        /// <summary>
+        /// Druh kresleného objektu
+        /// </summary>
+        public MousePaintObjectType ObjectType { get; set; }
+        /// <summary>
+        /// Šířka čáry v pixelech
+        /// </summary>
+        public int LineWidth { get; set; }
+        /// <summary>
+        /// Barva čáry, null = nekreslí se
+        /// </summary>
+        public Color? LineColor { get; set; }
+        /// <summary>
+        /// Barva výplně (pro Rectangle a Ellipse), null = nekreslí se.
+        /// Pro typ objektu Čára je zde barva stínování okolo čáry.
+        /// </summary>
+        public Color? FillColor { get; set; }
+        /// <summary>
+        /// Tvar zahájení linky
+        /// </summary>
+        public LineCap StartCap { get; set; }
+        /// <summary>
+        /// Tvar zakončení linky
+        /// </summary>
+        public LineCap EndCap { get; set; }
+        /// <summary>
+        /// Absolutní souřadnice bodu, kde má kresba počátek.
+        /// Výchozí hodnota odpovídá reálné souřadnici v GUI, ale eventhandler může souřadnici korigovat, nebo dokonce prohodit s <see cref="EndPoint"/>.
+        /// </summary>
+        public Point? StartPoint { get; set; }
+        /// <summary>
+        /// Absolutní souřadnice bodu, kde má kresba konec.
+        /// Výchozí hodnota odpovídá reálné souřadnici v GUI, ale eventhandler může souřadnici korigovat, nebo dokonce prohodit s <see cref="StartPoint"/>.
+        /// </summary>
+        public Point? EndPoint { get; set; }
+        /// <summary>
+        /// Obrázek
+        /// </summary>
+        public Image Image { get; set; }
+        /// <summary>
+        /// Libovolná User data
+        /// </summary>
+        public object UserData { get; set; }
+        /// <summary>
+        /// Vzájemně prohodí souřadnice <see cref="StartPoint"/> a <see cref="EndPoint"/>
+        /// </summary>
+        public void ExchangePoints()
+        {
+            Point? startPoint = this.StartPoint;
+            Point? endPoint = this.EndPoint;
+            this.StartPoint = endPoint;
+            this.EndPoint = startPoint;
+        }
+    }
+    /// <summary>
+    /// Druh kresleného objektu v controlu, <see cref="GInteractiveControl.MousePaintEnabled"/>
+    /// </summary>
+    public enum MousePaintObjectType
+    {
+        /// <summary>
+        /// Nekreslí se nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přímá čára z bodu Start do bodu End
+        /// </summary>
+        Line,
+        /// <summary>
+        /// Esíčková křivka z bodu Start do bodu End
+        /// </summary>
+        Curve,
+        /// <summary>
+        /// Rovná, lomená křivka, vodorovná : z bodu Start doprava/doleva, v polovině pak nahoru/dolů, a nakonec doprava/doleva do End
+        /// </summary>
+        ZigZagHorizonal,
+        /// <summary>
+        /// Rovná, lomená křivka, svislá : z bodu Start nahoru/dolů, v polovině pak doprava/doleva, a nakonec nahoru/dolů do End
+        /// </summary>
+        ZigZagVertical,
+        /// <summary>
+        /// Obdélník
+        /// </summary>
+        Rectangle,
+        /// <summary>
+        /// Elipsa
+        /// </summary>
+        Ellipse,
+        /// <summary>
+        /// Obrázek
+        /// </summary>
+        Image,
+        /// <summary>
+        /// Sám uživatel kreslí
+        /// </summary>
+        UserDraw
+    }
     #endregion
     #region Enums ZOrder, GInteractiveState, GInteractiveChangeState, GInteractiveDrawLayer, DragResponseType, ProcessAction, EventSourceType
     /// <summary>

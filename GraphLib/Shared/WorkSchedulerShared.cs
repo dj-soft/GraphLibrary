@@ -3635,6 +3635,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// předá do systému interakcí definici zdrojové akce <see cref="SourceActionType"/> z property <see cref="GuiToolbarItem.RunInteractionSource"/>
         /// </summary>
         RunInteractions = 0x0000000000000100,
+
         /// <summary>
         /// Aktivace této funkce NEBUDE volat funkci aplikačního serveru
         /// </summary>

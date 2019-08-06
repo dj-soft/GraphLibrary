@@ -274,7 +274,8 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _OnKeyDown(KeyEventArgs e)
         {
             bool runFinal = false;
-            if (e.KeyCode == Keys.Escape && ((this._MouseDragState == MouseMoveDragState.DragMove && this._MouseDragMoveItem != null) || this._MouseDragState == MouseMoveDragState.DragFrame))
+            this._MousePaintKeyPress(e);
+            if (e.KeyCode == Keys.Escape && ((this._MouseDragState == MouseMoveDragState.DragMove && this._MouseDragMoveItem != null) || this._MouseDragState == MouseMoveDragState.DragFrame || this._MouseDragState == MouseMoveDragState.Paint))
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
                 {
@@ -786,8 +787,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // Standardní pohyb myši nad Controlem:
                 GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, true);
                 this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
-                this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
                 this._MousePaintMove(e, newActiveItem);
+                this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
             }
             else
             {   // MouseLeave z tohoto Controlu:
@@ -821,7 +822,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (mouseButtonsLeft && newActiveItem.ItemIsSelectable)
                 this._ItemMouseLeftDownUnSelect(newActiveItem);
 
-            this._MousePaintDown(e);
+            this._MousePaintDown(e, newActiveItem);
         }
         /// <summary>
         /// Voláno při zvednutí tlačítka myši (=konec kliknutí), v situaci kdy NEPROBÍHALA žádná akce "Drag and Drop", ani "Drag and Frame". 
@@ -1522,30 +1523,47 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _RepaintAllItems;
         #endregion
-        #region Podpora pro interaktivní kreslení (MouseDown + Drag + MouseUp) => vytváření nového obrazce na controlu
+        #region Podpora pro interaktivní kreslení MousePaint (MouseDown + Drag + MouseUp) => vytváření nového obrazce na controlu
         /// <summary>
         /// Povoluje aktivity MousePaint = kreslení pomocí myši (MouseDown, Drag, MouseUp).
         /// Výchozí hodnota je false.
-        /// Pokud aplikace nastaví true, pak by měla obsloužit události <see cref="MousePaintStartEnabled"/>, <see cref="MousePaintTargetEnabled"/>, <see cref="MousePaintCompleted"/>.
+        /// Pokud aplikace nastaví true, pak by musí obsloužit události <see cref="MousePaintProcessStart"/>, <see cref="MousePaintProcessTarget"/>, 
+        /// a aby vše mělo smysl, měla by zaregistrovat i událost <see cref="MousePaintProcessCommit"/>.
         /// </summary>
         public bool MousePaintEnabled { get; set; }
         /// <summary>
         /// Událost, kdy interaktivní control potřebuje informaci, zda na dané souřadnici a na daném prvku je možno zahájit akci MousePaint.
-        /// Tato událost se volá pouze tehdy, když <see cref="MousePaintEnabled"/> je true, volá se při každém pohybu myši (kvůli aktualizaci kurzoru).
-        /// V argumentu jsou předány informace o pozici myši a o prvku na pozici myši.
-        /// Pokud bude akce MousePaint v tomto handleru povolena, pak uživatel stisknutím myši začne vykreslovat objekt, a bude volán event <see cref="MousePaintTargetEnabled"/>.
-        /// V odpovědi je očekávána informace <see cref="GInteractiveMousePaintArgs.IsEnabled"/>
+        /// Tato událost se volá pouze tehdy, když <see cref="MousePaintEnabled"/> je true, 
+        /// volá se při každém pohybu myši (kvůli aktualizaci kurzoru, pak je <see cref="GInteractiveMousePaintArgs.InteractiveChange"/> == <see cref="GInteractiveChangeState.MouseOver"/>)
+        /// a volá se i při stisknutí myši (vlastní start kreslení, pak stav je LeftDown nebo RightDown).
+        /// V argumentu jsou předány informace o pozici myši a o prvku na pozici myši, a o akci (interaktivní stav).
+        /// Pokud bude akce MousePaint v tomto handleru povolena, pak uživatel stisknutím myši začne vykreslovat objekt, a bude volán event <see cref="MousePaintProcessTarget"/>.
+        /// V odpovědi je očekávána informace <see cref="GInteractiveMousePaintArgs.IsEnabled"/>, a vhodné je i nastavit kurzor <see cref="GInteractiveMousePaintArgs.CursorType"/>.
         /// </summary>
-        public event GInteractiveMousePaintHandler MousePaintStartEnabled;
+        public event GInteractiveMousePaintHandler MousePaintProcessStart;
         /// <summary>
         /// Událost, kdy interaktivní control potřebuje informaci, zda na dané souřadnici a na daném prvku je možno umístit cíl (Target) akce MousePaint.
-        /// Tato událost se volá pouze tehdy, když <see cref="MousePaintEnabled"/> je true, když pro určitý výchozí bod (Start) byl volán event <see cref="MousePaintStartEnabled"/> 
-        /// a ten vrátil <see cref="GInteractiveMousePaintArgs.IsEnabled"/> = true.
-        /// 
-        /// volá se při každém pohybu myši (kvůli aktualizaci kurzoru).
+        /// Tato událost se volá pouze tehdy, když <see cref="MousePaintEnabled"/> je true, když pro určitý výchozí bod (Start) byl volán 
+        /// event <see cref="MousePaintProcessStart"/> a ten vrátil <see cref="GInteractiveMousePaintArgs.IsEnabled"/> = true.
         /// </summary>
-        public event GInteractiveMousePaintHandler MousePaintTargetEnabled;
-        public event GInteractiveMousePaintHandler MousePaintCompleted;
+        public event GInteractiveMousePaintHandler MousePaintProcessTarget;
+        /// <summary>
+        /// Událost, kdy interaktivní control dokončil akci MousePaint (nakreslení objektu z bodu Start do bodu End).
+        /// Aplikační kód by si v eventhandleru této události měl převzít data a zpracovat z nich h,atatelný a trvale viditelný výsledek.
+        /// </summary>
+        public event GInteractiveMousePaintHandler MousePaintProcessCommit;
+        /// <summary>
+        /// Na controlu se stiskla klávesa, zjistíme zda by mohla povolit akci MousePaint
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MousePaintKeyPress(KeyEventArgs e)
+        {
+            if (!this._MousePaintIsEnabled) return;
+            Point mousePoint = Control.MousePosition;
+            GActivePosition newActiveItem = this.FindActivePositionAtPoint(mousePoint, false);
+            GInteractiveMousePaintArgs paintArgs = this._MousePaintStartIsEnabled(newActiveItem, GInteractiveChangeState.MouseOver);
+            this._MousePaintShowCursorMove(paintArgs);
+        }
         /// <summary>
         /// Uživatel pohybuje myší nad controlem, a pokud je povoleno kreslení pak tato metoda může změnit kurzor
         /// </summary>
@@ -1553,34 +1571,60 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="newActiveItem"></param>
         private void _MousePaintMove(MouseEventArgs e, GActivePosition newActiveItem)
         {
-            if (this.IsGUIBlocked) return;
-            bool isPaint = this._MousePaintStartIsEnabled();
-            this._MousePaintShowCursor(isPaint);
+            if (!this._MousePaintIsEnabled) return;
+            GInteractiveMousePaintArgs paintArgs = this._MousePaintStartIsEnabled(newActiveItem, GInteractiveChangeState.MouseOver);
+            this._MousePaintShowCursorMove(paintArgs);
+            this._MousePaintToolTipSet(e.Location, paintArgs, false);
         }
         /// <summary>
         /// Uživatel zmáčkl myš v určitém místě: zdejší metoda určí, zda můžeme přejít do stavu Draw
         /// </summary>
         /// <param name="e"></param>
-        private void _MousePaintDown(MouseEventArgs e)
+        /// <param name="newActiveItem"></param>
+        private void _MousePaintDown(MouseEventArgs e, GActivePosition newActiveItem)
         {
-            if (this.IsGUIBlocked) return;
-            bool isPaint = this._MousePaintStartIsEnabled();
-            if (!isPaint) return;
+            if (!this._MousePaintIsEnabled) return;
 
-            // Pokud bude Draw, pak musíme nastavit proměnné:
+            GInteractiveChangeState interactiveChange = (e.Button == MouseButtons.Left ? GInteractiveChangeState.LeftDown : GInteractiveChangeState.RightDown);
+            GInteractiveMousePaintArgs paintArgs = this._MousePaintStartIsEnabled(newActiveItem, interactiveChange);
+            // Zde kurzor neřešíme, protože: a) není Enabled => kurzor neměníme, b) je Enabled => pak předáme řízení do _MousePaintStep() 
+            if (paintArgs == null || !paintArgs.IsEnabled) return;
+
+            // Protože přecházíme do stavu MousePaint, pak musíme nastavit proměnné o stavu a jeho začátku:
             this._MouseDragState = MouseMoveDragState.Paint;
-            this._MousePaintPointBegin = e.Location;
-            this._MousePaintPointEnd = this._MousePaintPointBegin;
+            this._MousePaintInteractiveMode = interactiveChange;
+            this._MousePaintBeginPoint = e.Location;
+            this._MousePaintBeginItem = newActiveItem;
             this._MousePaintTimeStart = DateTime.Now;
+
+            // A aktuální point bereme nejen jako Start, ale i jako možný End:
+            this._MousePaintStep(e, newActiveItem);
         }
         /// <summary>
         /// Metoda je volána v každém kroku aktivního kreslení.
         /// Jsme v režimu <see cref="_MouseDragState"/> == <see cref="MouseMoveDragState.Paint"/>, tzn. kreslíme = myš je zmáčknutá, a pohybuje se.
+        /// Metoda je volána i při začátku kreslení. Není volána při MouseUp.
         /// </summary>
         /// <param name="e"></param>
         private void _MousePaintStep(MouseEventArgs e)
         {
-            this._MousePaintPointEnd = e.Location;
+            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            this._MousePaintStep(e, newActiveItem);
+        }
+        /// <summary>
+        /// Metoda je volána v každém kroku aktivního kreslení.
+        /// Jsme v režimu <see cref="_MouseDragState"/> == <see cref="MouseMoveDragState.Paint"/>, tzn. kreslíme = myš je zmáčknutá, a pohybuje se.
+        /// Metoda je volána i při začátku kreslení. Není volána při MouseUp.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="newActiveItem"></param>
+        private void _MousePaintStep(MouseEventArgs e, GActivePosition newActiveItem)
+        {
+            GInteractiveMousePaintArgs paintArgs = this._MousePaintTargetIsEnabled(newActiveItem);
+            this._MousePaintShowCursorDrag(paintArgs);
+            this._MousePaintToolTipSet(e.Location, paintArgs, true);
+            this._MousePaintEndPoint = e.Location;
+            this._MousePaintEndItem = newActiveItem;
         }
         /// <summary>
         /// Voláno v procesu MouseDrag:Cancel
@@ -1588,7 +1632,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MousePaintCancel()
         {
             if (this._MouseDragState != MouseMoveDragState.Paint) return;
-            this._MousePaintEnd();
+            this._MousePaintEnd(true);
         }
         /// <summary>
         /// Metoda je volána při MouseUp na konci procesu kreslení.
@@ -1597,51 +1641,141 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _MousePaintDone(MouseEventArgs e)
         {
-
-
-            this._MousePaintEnd();
+            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            GInteractiveMousePaintArgs paintArgs = this._MousePaintTargetIsCommited(newActiveItem);
+            this._MousePaintToolTipSet(e.Location, paintArgs, false);
+            this._MousePaintEnd(true);
         }
         /// <summary>
         /// Voláno na konci procesu MousePaint, a to jak po Cancel, tak po Done.
         /// </summary>
-        private void _MousePaintEnd()
+        private void _MousePaintEnd(bool repaintAllItems)
         {
             this._MouseDragState = MouseMoveDragState.None;
-            this._MousePaintPointBegin = null;
-            this._MousePaintPointEnd = null;
-            this._MousePaintShowCursor(false);
+            this._MousePaintInteractiveMode = null;
+            this._MousePaintBeginPoint = null;
+            this._MousePaintBeginItem = null;
+            this._MousePaintEndPoint = null;
+            this._MousePaintEndItem = null;
+            this._MousePaintShowCursorMove(null);
+            this._MousePaintInfo = null;
             this._MousePaintTimeStart = null;
-            this._RepaintAllItems = true;
+            this._RepaintAllItems = repaintAllItems;
         }
         /// <summary>
-        /// Metoda vrací true, pokud v daném místě controlu můžeme za aktuální situace začít kreslit obrazec 
+        /// Metoda zjistí informace o povolení kreslit / začít kresbu pomocí myši na dané výchozí (Start) souřadnici.
+        /// Metoda může vrátit null, což je rychlejší než vracet new empty argument.
         /// </summary>
         /// <returns></returns>
-        private bool _MousePaintStartIsEnabled()
+        private GInteractiveMousePaintArgs _MousePaintStartIsEnabled(GActivePosition currentActiveItem, GInteractiveChangeState interactiveChange)
         {
-            if (this.IsGUIBlocked) return false;
-            DateTime now = DateTime.Now;
-            return ((now.Second % 2) == 0);
+            if (!this._MousePaintIsEnabled) return null;
+            ToolTipData toolTipData = this._FlowToolTipData;
+            GInteractiveMousePaintArgs paintArgs = new GInteractiveMousePaintArgs(interactiveChange, currentActiveItem, null, null, toolTipData);
+            this.MousePaintProcessStart(this, paintArgs);
+            this._MousePaintInfo = (paintArgs.IsEnabled ? paintArgs.PaintInfo : null);          // Eventhandler si mohl připravit data, pokud vrací true
+            if (paintArgs.HasToolTipData)
+                this._FlowToolTipData = paintArgs.ToolTipData;
+            return paintArgs;
         }
         /// <summary>
-        /// Zajistí zobrazení kurzoru pro kreslení podle parametru
+        /// Metoda zjistí informace o povolení kreslit pomocí myši do dané cílové souřadnice.
+        /// Metoda může vrátit null, což je rychlejší než vracet new empty argument.
         /// </summary>
-        /// <param name="isPaint"></param>
-        private void _MousePaintShowCursor(bool isPaint)
+        /// <returns></returns>
+        private GInteractiveMousePaintArgs _MousePaintTargetIsEnabled(GActivePosition currentActiveItem)
         {
-            bool isCursor = this._MousePaintCursorActive;
-            if (isPaint && !isCursor)
-            {   // Máme mít kreslící kurzor, a nyní jej nemáme:
+            if (!this._MousePaintIsEnabled) return null;
+
+            GInteractiveChangeState interactiveChange = this._MousePaintInteractiveMode ?? GInteractiveChangeState.LeftDown;
+            GActivePosition startActiveItem = this._MousePaintBeginItem;
+            MousePaintInfo mousePaintInfo = this._MousePaintInfo;    // Objekt může již existovat
+            if (mousePaintInfo == null) mousePaintInfo = MousePaintInfo.Default;
+            ToolTipData toolTipData = this._FlowToolTipData;
+            GInteractiveMousePaintArgs paintArgs = new GInteractiveMousePaintArgs(interactiveChange, currentActiveItem, startActiveItem, mousePaintInfo, toolTipData);
+            this.MousePaintProcessTarget(this, paintArgs);
+            if (paintArgs.PaintInfo != null)
+                this._MousePaintInfo = paintArgs.PaintInfo;          // Eventhandler mohl objekt vyměnit, proto vždy uložíme aktuální referenci; ale null si nepřebereme.
+            if (paintArgs.HasToolTipData)
+                this._FlowToolTipData = paintArgs.ToolTipData;
+
+            return paintArgs;
+        }
+        /// <summary>
+        /// Metoda vyvolá eventhandler <see cref="MousePaintProcessCommit"/> včetně potřebných dat.
+        /// </summary>
+        /// <param name="currentActiveItem"></param>
+        /// <returns></returns>
+        private GInteractiveMousePaintArgs _MousePaintTargetIsCommited(GActivePosition currentActiveItem)
+        {
+            if (this.MousePaintProcessCommit == null) return null;
+
+            GInteractiveChangeState interactiveChange = this._MousePaintInteractiveMode ?? GInteractiveChangeState.LeftDown;
+            GActivePosition startActiveItem = this._MousePaintBeginItem;
+            MousePaintInfo mousePaintInfo = this._MousePaintInfo;    // Objekt může již existovat
+            if (mousePaintInfo == null) mousePaintInfo = MousePaintInfo.Default;
+            ToolTipData toolTipData = this._FlowToolTipData;
+            GInteractiveMousePaintArgs paintArgs = new GInteractiveMousePaintArgs(interactiveChange, currentActiveItem, startActiveItem, mousePaintInfo, toolTipData);
+            this.MousePaintProcessCommit(this, paintArgs);
+            if (paintArgs.HasToolTipData)
+                this._FlowToolTipData = paintArgs.ToolTipData;
+
+            return paintArgs;
+        }
+        /// <summary>
+        /// Obsahuje true, když v aktuální situaci se může pracovat v režimu MousePaint (tj. když není blokované GUI, a <see cref="MousePaintEnabled"/> je true, 
+        /// a jsou zadány eventhandlery <see cref="MousePaintProcessStart"/> a <see cref="MousePaintProcessTarget"/>).
+        /// </summary>
+        private bool _MousePaintIsEnabled { get { return (!this.IsGUIBlocked && this.MousePaintEnabled && this.MousePaintProcessStart != null && this.MousePaintProcessTarget != null); } }
+        /// <summary>
+        /// Zajistí zobrazení kurzoru pro kreslení v metodě MouseMove (tj. pohyb myši nad controlem, bez stisknutého tlačítka), podle dat v argumentu.
+        /// Je voláno i při skončení MousePaint (po zvednutí myši nebo po Cancel), pak má nastavit původní kurzor.
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        private void _MousePaintShowCursorMove(GInteractiveMousePaintArgs paintArgs)
+        {
+            bool isPaint = (paintArgs != null ? paintArgs.IsEnabled : false);
+            if (isPaint)
+            {   // Máme mít kreslící kurzor:
+                if (!this._MousePaintCursorBefore.HasValue)
+                    this._MousePaintCursorBefore = this._CurrentCursorType;    // _CurrentCursorType.get nikdy nevrací null
+                this._ActivateCursor(paintArgs.CursorType ?? SysCursorType.Cross);
+            }
+            else
+            {   // Nemáme mít kreslící kurzor:
+                if (this._MousePaintCursorBefore.HasValue)
+                {
+                    this._ActivateCursor(this._MousePaintCursorBefore);
+                    this._MousePaintCursorBefore = null;
+                }
+            }
+        }
+        /// <summary>
+        /// Zajistí zobrazení kurzoru pro kreslení v metodě MouseDrag (tj. pohyb myši se stisknutým tlačítkem), podle dat v argumentu.
+        /// </summary>
+        /// <param name="paintArgs"></param>
+        private void _MousePaintShowCursorDrag(GInteractiveMousePaintArgs paintArgs)
+        {
+            if (paintArgs == null) return;
+
+            // Zálohuji aktuální typ kurzoru, pokud je to třeba:
+            if (!this._MousePaintCursorBefore.HasValue)
                 this._MousePaintCursorBefore = this._CurrentCursorType;
-                this._ActivateCursor(SysCursorType.Cross);
-                this._MousePaintCursorActive = true;
-            }
-            else if (!isPaint && isCursor)
-            {   // Nemáme mít kreslící kurzor, ale nyní jej máme:
-                this._ActivateCursor(this._MousePaintCursorBefore);
-                this._MousePaintCursorActive = false;
-                this._MousePaintCursorBefore = null;
-            }
+
+            // Vykreslím požadovaný typ kurzoru, ale pouze pokud je v argumentu uveden, jinak nechám dosavadní:
+            if (paintArgs.CursorType.HasValue)
+                this._ActivateCursor(paintArgs.CursorType);
+        }
+        /// <summary>
+        /// Zajistí zobrazení tooltipu v rámci akce MousePaint
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="paintArgs"></param>
+        /// <param name="force"></param>
+        private void _MousePaintToolTipSet(Point point, GInteractiveMousePaintArgs paintArgs, bool force)
+        {
+            if ((paintArgs.IsEnabled || force) && paintArgs.HasToolTipData)
+                this._ToolTipSet(point, paintArgs.ToolTipData);
         }
         /// <summary>
         /// Metoda zajistí vykreslení obrazce kresleného myší
@@ -1650,40 +1784,197 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="layer"></param>
         private void _MousePaintDraw(Graphics graphics, GInteractiveDrawLayer layer)
         {
-            Point? begin = _MousePaintPointBegin;
-            Point? end = _MousePaintPointEnd;
-            if (!begin.HasValue || !end.HasValue) return;
-            int dx = begin.Value.X - end.Value.X;
-            int dy = begin.Value.Y - end.Value.Y;
-            int dr = (int)Math.Sqrt(dx * dx + dy * dy);
+            MousePaintInfo mousePaintInfo = this._MousePaintInfo;
+            if (mousePaintInfo == null) return;
+            if (!(mousePaintInfo.StartPoint.HasValue && mousePaintInfo.EndPoint.HasValue)) return;
 
-            using (var line = GPainter.CreatePathLinkLine(begin, end, true))
-                GPainter.DrawLinkPath(graphics, line, Color.Yellow, Color.DarkViolet, 4, LineCap.RoundAnchor, LineCap.ArrowAnchor, setSmoothGraphics: true);
+            switch (mousePaintInfo.ObjectType)
+            {
+                case MousePaintObjectType.Line:
+                    this._MousePaintDrawLine(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.Curve:
+                    this._MousePaintDrawCurve(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.ZigZagHorizonal:
+                    this._MousePaintDrawZigZagHorizonal(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.ZigZagVertical:
+                    this._MousePaintDrawZigZagVertical(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.Rectangle:
+                    this._MousePaintDrawRectangle(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.Ellipse:
+                    this._MousePaintDrawEllipse(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.Image:
+                    this._MousePaintDrawImage(graphics, mousePaintInfo);
+                    break;
+                case MousePaintObjectType.UserDraw:
+                    this._MousePaintDrawUserDraw(graphics, mousePaintInfo);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Line
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawLine(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            using (var line = GPainter.CreatePathStraightLine(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
+                _MousePaintDrawPath(graphics, line, mousePaintInfo);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Curve
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawCurve(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            using (var line = GPainter.CreatePathLinkLine(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value, true))
+                _MousePaintDrawPath(graphics, line, mousePaintInfo);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: ZigZagHorizonal
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawZigZagHorizonal(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            using (var line = GPainter.CreatePathLinkZigZagHorizontal(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
+                _MousePaintDrawPath(graphics, line, mousePaintInfo);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: ZigZagVertical
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawZigZagVertical(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            using (var line = GPainter.CreatePathLinkZigZagVertical(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
+                _MousePaintDrawPath(graphics, line, mousePaintInfo);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Rectangle
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawRectangle(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            Rectangle? bounds = _MousePaintGetBounds(mousePaintInfo);
+            if (!bounds.HasValue) return;
+            if (mousePaintInfo.FillColor.HasValue)
+                graphics.FillRectangle(Skin.Brush(mousePaintInfo.FillColor.Value), bounds.Value);
+            if (mousePaintInfo.LineColor.HasValue && mousePaintInfo.LineWidth > 0)
+                graphics.DrawRectangle(Skin.Pen(mousePaintInfo.LineColor.Value, mousePaintInfo.LineWidth), bounds.Value);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Ellipse
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawEllipse(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            Rectangle? bounds = _MousePaintGetBounds(mousePaintInfo);
+            if (!bounds.HasValue) return;
+            if (mousePaintInfo.FillColor.HasValue)
+                graphics.FillEllipse(Skin.Brush(mousePaintInfo.FillColor.Value), bounds.Value);
+            if (mousePaintInfo.LineColor.HasValue && mousePaintInfo.LineWidth > 0)
+                graphics.DrawEllipse(Skin.Pen(mousePaintInfo.LineColor.Value, mousePaintInfo.LineWidth), bounds.Value);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Image
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawImage(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            Rectangle? bounds = _MousePaintGetBounds(mousePaintInfo);
+            if (!bounds.HasValue) return;
+            if (mousePaintInfo.FillColor.HasValue)
+                graphics.FillEllipse(Skin.Brush(mousePaintInfo.FillColor.Value), bounds.Value);
+            if (mousePaintInfo.LineColor.HasValue && mousePaintInfo.LineWidth > 0)
+                graphics.DrawEllipse(Skin.Pen(mousePaintInfo.LineColor.Value, mousePaintInfo.LineWidth), bounds.Value);
+            if (mousePaintInfo.Image != null)
+                graphics.DrawImage(mousePaintInfo.Image, bounds.Value);
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení obrazce kresleného myší - typ: UserDraw
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawUserDraw(Graphics graphics, MousePaintInfo mousePaintInfo)
+        {
+            Rectangle? bounds = _MousePaintGetBounds(mousePaintInfo);
+            if (!bounds.HasValue) return;
+            // ???
+        }
+        /// <summary>
+        /// Vykreslí do dané grafiky daný obrazec podle předpisu
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="path"></param>
+        /// <param name="mousePaintInfo"></param>
+        private void _MousePaintDrawPath(Graphics graphics, GraphicsPath path, MousePaintInfo mousePaintInfo)
+        {
+            GPainter.DrawLinkPath(graphics, path, mousePaintInfo.LineColor, mousePaintInfo.FillColor, mousePaintInfo.LineWidth, mousePaintInfo.StartCap, mousePaintInfo.EndCap, setSmoothGraphics: true);
+        }
+        /// <summary>
+        /// Vrací souřadnice prostoru bezi body <see cref="MousePaintInfo.StartPoint"/> a <see cref="MousePaintInfo.EndPoint"/>
+        /// </summary>
+        /// <param name="mousePaintInfo"></param>
+        /// <returns></returns>
+        private static Rectangle? _MousePaintGetBounds(MousePaintInfo mousePaintInfo)
+        {
+            if (mousePaintInfo == null || !mousePaintInfo.StartPoint.HasValue || !mousePaintInfo.EndPoint.HasValue) return null;
+            Point p1 = mousePaintInfo.StartPoint.Value;
+            Point p2 = mousePaintInfo.EndPoint.Value;
+            int x = (p1.X < p2.X ? p1.X : p2.X);
+            int w = (p1.X < p2.X ? p2.X - p1.X : p1.X - p2.X);
+            int y = (p1.Y < p2.Y ? p1.Y : p2.Y);
+            int h = (p1.Y < p2.Y ? p2.Y - p1.Y : p1.Y - p2.Y);
+            return new Rectangle(x, y, w, h);
         }
         /// <summary>
         /// Obsahuje true, když je aktivní proces MousePaint a control tedy bude vykreslovat obrazec kreslený myší
         /// </summary>
         private bool _MousePaintNeedDraw { get { return (this._MouseDragState == MouseMoveDragState.Paint); } }
         /// <summary>
-        /// Obsahuje true, pokud aktuální kurzor byl nastaven na kurzor pro interaktivní kreslení, false v běžném stavu
-        /// </summary>
-        private bool _MousePaintCursorActive;
-        /// <summary>
         /// Typ kurzoru, který byl aktivní před vstupem do oblasti s povoleným kreslením
         /// </summary>
-        private SysCursorType? _MousePaintCursorBefore;
+        private SysCursorType? _MousePaintCursorBefore { get; set; }
+        /// <summary>
+        /// Režim kreslení: levá / pravá myš (může mít pouze hodnotou null nebo GInteractiveChangeState.LeftDown / GInteractiveChangeState.RightDown)
+        /// </summary>
+        private GInteractiveChangeState? _MousePaintInteractiveMode { get; set; }
         /// <summary>
         /// Absolutní souřadnice bodu, kde byla stisknuta myš v režimu <see cref="MouseMoveDragState.Paint"/>
         /// </summary>
-        private Point? _MousePaintPointBegin;
+        private Point? _MousePaintBeginPoint { get; set; }
+        /// <summary>
+        /// Prvek, kde byla stisknuta myš a začala tak akce MousePaint
+        /// </summary>
+        private GActivePosition _MousePaintBeginItem { get; set; }
         /// <summary>
         /// Absolutní souřadnice bodu, kde se nachází myš aktuálně, v režimu <see cref="MouseMoveDragState.Paint"/>
         /// </summary>
-        private Point? _MousePaintPointEnd;
+        private Point? _MousePaintEndPoint { get; set; }
+        /// <summary>
+        /// Prvek, kde se aktuálně nachází myš a v průběhu akce MousePaint
+        /// </summary>
+        private GActivePosition _MousePaintEndItem { get; set; }
+        /// <summary>
+        /// Data určující parametry pro kreslení obrazce v režimu MousePaint.
+        /// Data obecně určuje eventhandler <see cref="MousePaintProcessTarget"/>. 
+        /// Tato data se následně používají při kreslení obrazce (spojovací linka, jiný obrazec, image) v metodě <see cref="_MousePaintDraw(Graphics, GInteractiveDrawLayer)"/>.
+        /// </summary>
+        private MousePaintInfo _MousePaintInfo { get; set; }
         /// <summary>
         /// Čas začátku kreslení myší
         /// </summary>
-        private DateTime? _MousePaintTimeStart;
+        private DateTime? _MousePaintTimeStart { get; set; }
         /// <summary>
         /// Počet sekund, po které se provádí kreslení myší
         /// </summary>
@@ -2239,9 +2530,16 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Current cursor type. Null = default.
+        /// Aktuální typ kurzoru.
+        /// Čtení hodnoty: nikdy nevrací null, ve výchozím stavu vracá Default.
+        /// Setování hodnoty: vložení hodnoty null nezmění hodnotu.
         /// </summary>
-        private SysCursorType? _CurrentCursorType;
+        private SysCursorType? _CurrentCursorType
+        {
+            get { return (this.__CurrentCursorType ?? SysCursorType.Default); }
+            set { this.__CurrentCursorType = value; }
+        }
+        private SysCursorType? __CurrentCursorType;
         private InteractiveDrawState _DrawState = InteractiveDrawState.Standard;
         private enum InteractiveDrawState { Standard = 0, InteractiveEvent, InteractiveRepaint }
         /// <summary>
