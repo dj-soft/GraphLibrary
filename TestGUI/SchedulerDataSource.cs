@@ -854,6 +854,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
+                Name = GuiNameToolbarCreateLink,
+                Size = FunctionGlobalItemSize.Whole,
+                LayoutHint = LayoutHint.NextItemSkipToNextTable,
+                GroupName = "FUNKCE",
+                Title = "Vztah",
+                ToolTip = "Po aktivaci tohoto tlačítka je možno navázat vztah mezi dvěma operacemi",
+                Image = RES.Images.Actions.InsertLinkPng,
+                GuiActions = GuiActionType.EnableMousePaintLinkLine | GuiActionType.SuppressCallAppHost
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
                 Name = GuiNameToolbarFilterLeft,
                 Size = FunctionGlobalItemSize.Half,
                 LayoutHint = LayoutHint.NextItemSkipToNextRow,
@@ -984,8 +996,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = "Z grafu odebere náhodně řádek s Výrobním příkazem",
                 Image = RES.Images.Actions.ListRemove4Png
             });
-
-            
 
         }
         /// <summary>
@@ -1224,6 +1234,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
             gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 100 };
             gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 100 };
+
+            gridCenterWorkplace.GridProperties.PaintLinkPairs = new List<string>();
+            gridCenterWorkplace.GridProperties.PaintLinkPairs.Add("C1190:C1190");
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -2408,6 +2421,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameToolbarResetFilters = "TlbResetAllFilters";
         protected const string GuiNameToolbarTrackBar = "TlbTrackBar";
         protected const string GuiNameToolbarResetTrackBar = "TlbResetTrackBar";
+        protected const string GuiNameToolbarCreateLink = "TlbCreateLink";
         protected const string GuiNameToolbarShowColorSet1 = "TlbShowColorSet1";
         protected const string GuiNameToolbarShowColorSet2 = "TlbShowColorSet2";
         protected const string GuiNameToolbarShowColorSet3 = "TlbShowColorSet3";
