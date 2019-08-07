@@ -3499,6 +3499,25 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         #endregion
         #region LinkLine
         /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje spojovací linii dvou bodů, daného tvaru.
+        /// </summary>
+        /// <param name="lineType"></param>
+        /// <param name="prevPoint"></param>
+        /// <param name="nextPoint"></param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathLink(LinkLineType lineType, Point? prevPoint, Point? nextPoint)
+        {
+            switch (lineType)
+            {
+                case LinkLineType.StraightLine: return CreatePathStraightLine(prevPoint, nextPoint);
+                case LinkLineType.SCurveHorizontal: return CreatePathSCurveHorizontal(prevPoint, nextPoint);
+                case LinkLineType.SCurveVertical: return CreatePathSCurveVertical(prevPoint, nextPoint);
+                case LinkLineType.ZigZagHorizontal: return CreatePathLinkZigZagHorizontal(prevPoint, nextPoint);
+                case LinkLineType.ZigZagVertical: return CreatePathLinkZigZagVertical(prevPoint, nextPoint);
+            }
+            return null;
+        }
+        /// <summary>
         /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje prostou přímou linku, která jde z bodu "prevPoint" do bodu "nextPoint".
         /// <para/>
         /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
@@ -3610,6 +3629,137 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             path.AddBezier(px, py, px + bx, py, nx - bx, ny, nx, ny);
             return path;
         }
+        /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje linku, která jde z bodu "prevPoint" do bodu "nextPoint",
+        /// a může to být linka nebo rovná čára podle parametru "asSCurve".
+        /// Pokud jde o přímou čáru, není třeba vysvětlivek.
+        /// <para/>
+        /// Pokud jde o křivku:
+        /// Z bodu "prevPoint" vychází křivka vždy ve směru vodorovně doprava, teprve pak se stáčí patřičným směrem.
+        /// Do bodu "nextPoint" vstupuje křivka vždy vodorovně zleva.
+        /// Mezi oběma body se křivka esovitě vine jako had.
+        /// Pokud jsou body na stejné souřadnici Y: pokud bod "nextPoint" je vpravo od bodu "nextPoint", pak je vrácena přímá čára.
+        /// Pokud je tomu naopak, pak je vrácena křivka částečné ležaté osmičky tak, 
+        /// aby vycházela z bodu Prev (který je ale vpravo od Next) doprava, stáčí se pak dolů a doleva, nahoru stále doleva, rovně doleva, pak doleva dolů a nakonec doprava do bodu Prev.
+        /// <para/>
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
+        /// Pokud jsou null oba, vrací se null.
+        /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
+        /// </summary>
+        /// <param name="prevPoint">Bod počátku</param>
+        /// <param name="nextPoint">Bod konce</param>
+        /// <param name="asSCurve">Tvar S-křivky</param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathSCurveHorizontal(Point? prevPoint, Point? nextPoint)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny, dx, dy, bx, by;
+
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
+            dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
+            bool sameY = (dy < 5 && dy > -5);
+            if (sameY)
+            {   // Prvky jsou na (skoro) stejné souřadnici Y, takže bez ohledu na požavek "asSCurve" to nebude klasická S-křivka:
+                if (dx >= 0)
+                {   // Next je (v nebo) za Prev, takže to bude přímka, jen ji možná trochu prodloužím:
+                    int addx = (dx < 3 ? 2 : (dx < 5 ? 1 : 0));
+                    px = px - addx;
+                    nx = nx + addx;
+                    path.AddLine(px, py, nx, ny);
+                    return path;
+                }
+                // Next je PŘED Prev, tedy opačné pořadí než je přirozené. 
+                // Tady vykreslíme křivku, která vychází z Prev (tj. napravo), jde doprava dolů, stáčí se doleva zpátky,
+                //  projde jako ležatá osmička doleva a nahoru nad prvek Next, a pak se stočí doleva dolů do úrovně souřadnice Y a vstoupí zleva do prvku Next (která je vpravo od Prev):
+
+                // 1. část křivky vycházející z Prev, jde kousek doprava, dolů, zpátky doleva a končí na souřadnici Prev.X a Prev.Y + 12
+                int p1y = py + 12;
+                int tx = 25;
+                path.AddBezier(px, py, px + tx, py, px + tx, p1y, px, p1y);
+
+                // 2. část křivky, tvar S, spojující bod (Prev + Y) s bodem (Next - Y):
+                int n1y = ny - 12;
+                bx = (-dx) / 4;
+                if (bx < 12) bx = 12;  // Vzdálenost řídícího bodu na ose X pro tuto část křivky
+                path.AddBezier(px, p1y, px - bx, p1y, nx + bx, n1y, nx, n1y);
+
+                // 3. část křivky vycházející z (Next - Y), jde kousek doleva, dolů, zpátky doprava a končí na souřadnici Next.X a Next.Y (zakončení, podobné části 1):
+                path.AddBezier(nx, n1y, nx - tx, n1y, nx - tx, ny, nx, ny);
+
+                return path;
+            }
+
+            // Bezierova křivka z Prev do Next - určíme hodnotu bx (vzdálenost řídícího bodu na ose X):
+            bx = dx / 4;                         // Výchozí hodnota je 1/4 vzdálenosti Prev a Next (kladné číslo)
+            if (bx < 0) bx = 3 * (-bx);          // Pokud je ale posun záporný (Next je vlevo od Prev), pak musíme bx výrazně zvětšit, aby se zobrazila křivka jdoucí nejprve doprava, a pak zpátky
+            if (bx < 16) bx = 16;                // Konstanta pro případ, kdy dx je malé, aby se S-křivka projevila
+
+            by = (dy < 0 ? -dy : dy) / 4;        // Vliv vzdálenosti ve směru Y
+            if (by > 40) by = 40;
+            if (bx < by) bx = by;                // Pokud jsou prvky Prev a Next od sebe ve směru Y daleko, zvětšíme křivku.
+
+            path.AddBezier(px, py, px + bx, py, nx - bx, ny, nx, ny);
+            return path;
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje linku, která jde z bodu "prevPoint" do bodu "nextPoint",
+        /// a může to být linka nebo rovná čára podle parametru "asSCurve".
+        /// Pokud jde o přímou čáru, není třeba vysvětlivek.
+        /// <para/>
+        /// Pokud jde o křivku:
+        /// Z bodu "prevPoint" vychází křivka vždy ve směru vodorovně doprava, teprve pak se stáčí patřičným směrem.
+        /// Do bodu "nextPoint" vstupuje křivka vždy vodorovně zleva.
+        /// Mezi oběma body se křivka esovitě vine jako had.
+        /// Pokud jsou body na stejné souřadnici Y: pokud bod "nextPoint" je vpravo od bodu "nextPoint", pak je vrácena přímá čára.
+        /// Pokud je tomu naopak, pak je vrácena křivka částečné ležaté osmičky tak, 
+        /// aby vycházela z bodu Prev (který je ale vpravo od Next) doprava, stáčí se pak dolů a doleva, nahoru stále doleva, rovně doleva, pak doleva dolů a nakonec doprava do bodu Prev.
+        /// <para/>
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. 
+        /// Pokud jsou null oba, vrací se null.
+        /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
+        /// </summary>
+        /// <param name="prevPoint">Bod počátku</param>
+        /// <param name="nextPoint">Bod konce</param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathSCurveVertical(Point? prevPoint, Point? nextPoint)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny, dx, dy, bx, by;
+
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
+            dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
+
+            // Bezierova křivka z Prev do Next - určíme hodnotu by (vzdálenost řídícího bodu na ose Y):
+            by = dy / 4;                         // Výchozí hodnota je 1/4 vzdálenosti Prev a Next (kladné číslo)
+            if (by >= 0 && by < 20) by = 20;     // Konstanta pro případ, kdy dy je příliš malé, aby se S-křivka projevila
+            if (by < 0 && by > -20) by = -20;
+
+            bx = (dx < 0 ? -dx : dx) / 4;        // Vliv vzdálenosti ve směru X
+            if (bx > 40) bx = 40;
+            if (by < bx) by = bx;                // Pokud jsou prvky Prev a Next od sebe ve směru Y daleko, zvětšíme křivku.
+
+            path.AddBezier(px, py, px, py + by, nx, ny - by, nx, ny);
+            return path;
+        }
+
+
+
         /// <summary>
         /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje prostou lomenou linku, která jde z bodu "prevPoint" do bodu "nextPoint".
         /// Křivka vede z bodu <paramref name="prevPoint"/> vodorovně do poloviční vzdálenosti (ve směru X) k bodu <paramref name="nextPoint"/>,
@@ -4780,6 +4930,36 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         LightBorder = 2,
         DarkBorder = 4,
         FilledArea = 8
+    }
+    /// <summary>
+    /// Typ spojovací čáry
+    /// </summary>
+    internal enum LinkLineType : int
+    {
+        /// <summary>
+        /// Žádná
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přímá linie
+        /// </summary>
+        StraightLine,
+        /// <summary>
+        /// S-křivka, kde počátek i konec jsou vodorovné
+        /// </summary>
+        SCurveHorizontal,
+        /// <summary>
+        /// S-křivka, kde počátek i konec jsou svislé
+        /// </summary>
+        SCurveVertical,
+        /// <summary>
+        /// Lomená čára, kde počátek i konec jsou vodorovné
+        /// </summary>
+        ZigZagHorizontal,
+        /// <summary>
+        /// Lomená čára, kde počátek i konec jsou svislé
+        /// </summary>
+        ZigZagVertical
     }
     /// <summary>
     /// Druhy transformací, pro které lze vygenerovat matrix v metodě GetMatrix(MatrixBasicTransformType).

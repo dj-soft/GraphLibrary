@@ -1790,17 +1790,20 @@ namespace Asol.Tools.WorkScheduler.Components
 
             switch (mousePaintInfo.ObjectType)
             {
-                case MousePaintObjectType.Line:
-                    this._MousePaintDrawLine(graphics, mousePaintInfo);
+                case MousePaintObjectType.StraightLine:
+                    this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.StraightLine);
                     break;
-                case MousePaintObjectType.Curve:
-                    this._MousePaintDrawCurve(graphics, mousePaintInfo);
+                case MousePaintObjectType.SCurveVertical:
+                    this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.SCurveVertical);
+                    break;
+                case MousePaintObjectType.SCurveHorizontal:
+                    this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.SCurveHorizontal);
                     break;
                 case MousePaintObjectType.ZigZagHorizonal:
-                    this._MousePaintDrawZigZagHorizonal(graphics, mousePaintInfo);
+                    this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.ZigZagHorizontal);
                     break;
                 case MousePaintObjectType.ZigZagVertical:
-                    this._MousePaintDrawZigZagVertical(graphics, mousePaintInfo);
+                    this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.ZigZagVertical);
                     break;
                 case MousePaintObjectType.Rectangle:
                     this._MousePaintDrawRectangle(graphics, mousePaintInfo);
@@ -1817,43 +1820,14 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Line
+        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: <see cref="LinkLineType"/>
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="mousePaintInfo"></param>
-        private void _MousePaintDrawLine(Graphics graphics, MousePaintInfo mousePaintInfo)
+        /// <param name="lineType"></param>
+        private void _MousePaintDrawLink(Graphics graphics, MousePaintInfo mousePaintInfo, LinkLineType lineType)
         {
-            using (var line = GPainter.CreatePathStraightLine(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
-                _MousePaintDrawPath(graphics, line, mousePaintInfo);
-        }
-        /// <summary>
-        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Curve
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="mousePaintInfo"></param>
-        private void _MousePaintDrawCurve(Graphics graphics, MousePaintInfo mousePaintInfo)
-        {
-            using (var line = GPainter.CreatePathLinkLine(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value, true))
-                _MousePaintDrawPath(graphics, line, mousePaintInfo);
-        }
-        /// <summary>
-        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: ZigZagHorizonal
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="mousePaintInfo"></param>
-        private void _MousePaintDrawZigZagHorizonal(Graphics graphics, MousePaintInfo mousePaintInfo)
-        {
-            using (var line = GPainter.CreatePathLinkZigZagHorizontal(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
-                _MousePaintDrawPath(graphics, line, mousePaintInfo);
-        }
-        /// <summary>
-        /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: ZigZagVertical
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="mousePaintInfo"></param>
-        private void _MousePaintDrawZigZagVertical(Graphics graphics, MousePaintInfo mousePaintInfo)
-        {
-            using (var line = GPainter.CreatePathLinkZigZagVertical(mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
+            using (var line = GPainter.CreatePathLink(lineType, mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
                 _MousePaintDrawPath(graphics, line, mousePaintInfo);
         }
         /// <summary>

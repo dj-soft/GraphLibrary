@@ -1226,7 +1226,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 MousePaintInfo paintInfo = new MousePaintInfo()
                 {
-                    ObjectType = MousePaintObjectType.Curve,
+                    ObjectType = MousePaintObjectType.SCurveVertical,
                     LineWidth = 5,
                     LineColor = Color.Yellow,
                     FillColor = Color.DarkMagenta,
@@ -1300,13 +1300,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         None = 0,
         /// <summary>
-        /// Přímá čára z bodu Start do bodu End
+        /// Přímá rovná čára z bodu Start do bodu End
         /// </summary>
-        Line,
+        StraightLine,
         /// <summary>
-        /// Esíčková křivka z bodu Start do bodu End
+        /// Esíčková křivka z bodu Start do bodu End, zleva doprava
         /// </summary>
-        Curve,
+        SCurveVertical,
+        /// <summary>
+        /// Esíčková křivka z bodu Start do bodu End, nahoru / dolů
+        /// </summary>
+        SCurveHorizontal,
         /// <summary>
         /// Rovná, lomená křivka, vodorovná : z bodu Start doprava/doleva, v polovině pak nahoru/dolů, a nakonec doprava/doleva do End
         /// </summary>

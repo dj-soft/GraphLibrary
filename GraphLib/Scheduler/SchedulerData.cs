@@ -204,7 +204,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             App.TryRun(this._FillMainControlFromConfig);
         }
         /// <summary>
-        /// Do hlavního controlu <see cref="_MainControl"/> zaregistrujeme naše eventhandlery
+        /// Do hlavního controlu <see cref="_MainControl"/> zaregistrujeme naše eventhandlery.
+        /// Volá se po úplném vytvoření a naplnění controlu podle dat z <see cref="GuiData"/>.
         /// </summary>
         private void _AddMainControlEventHandlers()
         {
@@ -521,6 +522,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     group.Items.Add(item);
                     this._ToolBarGuiItems.Add(item);
+                    this._MousePaintAddToolBar(item);
                 }
             }
 
@@ -540,6 +542,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._ToolBarItemSelectedChangeApplication(guiToolbarItem);
             else
                 this._ToolBarItemSelectedChangeSystem(args.Item);
+            this._MousePaintToolBarSelectedChange(args.Item as ToolBarItem);
         }
         /// <summary>
         /// Obsluha události ItemClick na ToolBaru
@@ -555,7 +558,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._ToolBarItemClickSystem(args.Item);
         }
         /// <summary>
-        /// Obsluha události StatusChanged na ToolBaru
+        /// Obsluha události StatusChanged na ToolBaru (něco bylo změněno, něco co by mělo být uchováno v konfiguraci)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -913,7 +916,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             public override bool IsCheckable { get { return (this._HasItem ? (this._GuiToolBarItem.IsCheckable.HasValue ? this._GuiToolBarItem.IsCheckable.Value : false) : base.IsCheckable); } set { if (this._HasItem) this._GuiToolBarItem.IsCheckable = value; else base.IsCheckable = value; } }
             /// <summary>
-            /// Obsahuje true, pokud tento prvek je aktivní (má u sebe zaškrtávátko)
+            /// Obsahuje true, pokud tento prvek je aktivní (jeho zaškrtávátko je zaškrtnuté)
             /// </summary>
             public override bool IsChecked { get { return (this._HasItem ? (this._GuiToolBarItem.IsChecked.HasValue ? this._GuiToolBarItem.IsChecked.Value : false) : base.IsChecked); } set { if (this._HasItem) this._GuiToolBarItem.IsChecked = value; else base.IsChecked = value; } }
             /// <summary>
@@ -2723,16 +2726,114 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ProcessGuiResponse(response.GuiResponse);
         }
         #endregion
-        #region Interaktivní přidávání prvků pomocí myši
+        #region Interaktivní přidávání prvků pomocí myši (MousePaint) => předání do konkrétní MainDataTable
         /// <summary>
-        /// Inicializace subsystému interaktivního kreslení
+        /// Zaeviduje si prvek toolbaru, pokud má vztah k aktivitě MousePaint (=kreslení myší).
+        /// </summary>
+        /// <param name="item"></param>
+        private void _MousePaintAddToolBar(ToolBarItem item)
+        {
+            GuiActionType mousePaintActions = _MousePaintToolBarGetAction(item);
+            if (mousePaintActions == GuiActionType.None) return;
+
+            // Daný prvek toolbaru má vliv na akci MousePaint, zaevidujeme si jej:
+            if (this._MousePaintToolBarItems == null) this._MousePaintToolBarItems = new List<Tuple<ToolBarItem, GuiActionType>>();
+            this._MousePaintToolBarItems.Add(new Tuple<ToolBarItem, GuiActionType>(item, mousePaintActions));
+
+            // Do prvku nastavíme jeho požadované chování, pokud to aplikační kód nezvládl (tj. přepíšeme některé definice):
+            item.GuiToolbarItem.IsCheckable = true;                  // Prvek musí pracovat v režimu CheckBoxu
+            item.GuiToolbarItem.IsChecked = false;                   // Výchozí stav je NonChecked
+            item.GuiToolbarItem.StoreValueToConfig = false;          // Hodnota se nepersistuje
+        }
+        /// <summary>
+        /// Na daném prvku Toolbaru došlo ke změně stavu IsChecked. Pokud má prvek vliv na aktivitu MousePaint, pak aplikace reaguje zde.
+        /// </summary>
+        /// <param name="item"></param>
+        private void _MousePaintToolBarSelectedChange(ToolBarItem item)
+        {
+            if (this._MousePaintToolBarItems == null) return;        // Žádný prvek ToolBaru není evidován jako EnableMousePaint*
+            GuiActionType mousePaintActions = _MousePaintToolBarGetAction(item);
+            if (mousePaintActions == GuiActionType.None) return;     // Tento konkrétní prvek ToolBaru nemá akci EnableMousePaint*
+
+            bool isChecked = item.IsChecked;
+
+            // Pokud prvek ToolBaru byl právě nyní "označen" (=nastaven jeho stav IsChecked), pak musím všechny ostatní "konkurenční" prvky odznačit:
+            if (isChecked)
+            {
+                this._MousePaintToolBarItems
+                    .Where(t => !Object.ReferenceEquals(t.Item1, item))
+                    .ForEachItem(t => t.Item1.IsChecked = false);
+            }
+
+            // Nyní nastavíme příznaky kreslení podle prvku toolbaru (jeho akce a jeho stav):
+            this._MousePaintLinkLineActive = (isChecked && ((mousePaintActions & GuiActionType.EnableMousePaintLinkLine) != 0));
+            this._MousePaintRectangleActive = (isChecked && !this._MousePaintLinkLineActive && ((mousePaintActions & GuiActionType.EnableMousePaintRectangle) != 0));
+            this._MainControl.MousePaintEnabled = (this._MousePaintLinkLineActive || this._MousePaintRectangleActive);
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je aktivní režim MousePaint:LinkLine
+        /// Tuto property není možno nastavit z aplikačního kódu na true, pouze na false.
+        /// </summary>
+        public bool MousePaintLinkLineActive
+        {
+            get { return this._MousePaintLinkLineActive; }
+            set
+            {
+                if (value) return;          // Tuto property není možno nastavit z aplikačního kódu na true
+                this._MousePaintToolBarItems
+                    .Where(t => t.Item1.IsChecked)
+                    .ForEachItem(t => t.Item1.IsChecked = false);
+                this._MousePaintLinkLineActive = false;
+                this._MainControl.MousePaintEnabled = false;
+                this._MainControl.RefreshToolBar(GToolBarRefreshMode.RefreshControl);
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je aktivní režim MousePaint:Rectangle
+        /// Tuto property není možno nastavit z aplikačního kódu na true, pouze na false.
+        /// </summary>
+        public bool MousePaintRectangleActive
+        {
+            get { return this._MousePaintRectangleActive; }
+            set
+            {
+                if (value) return;          // Tuto property není možno nastavit z aplikačního kódu na true
+                this._MousePaintToolBarItems
+                    .Where(t => t.Item1.IsChecked)
+                    .ForEachItem(t => t.Item1.IsChecked = false);
+                this._MousePaintRectangleActive = false;
+                this._MainControl.MousePaintEnabled = false;
+                this._MainControl.RefreshToolBar(GToolBarRefreshMode.RefreshControl);
+            }
+        }
+        private bool _MousePaintLinkLineActive;
+        private bool _MousePaintRectangleActive;
+        /// <summary>
+        /// Metoda vrátí akce typu EnableMousePaint* z daného prvku Toolbaru
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private GuiActionType _MousePaintToolBarGetAction(ToolBarItem item)
+        {
+            GuiActionType? action = item?.GuiToolbarItem?.GuiActions;
+            if (!action.HasValue) return GuiActionType.None;
+            GuiActionType mousePaintActions = action.Value & (GuiActionType.EnableMousePaintLinkLine | GuiActionType.EnableMousePaintRectangle);
+            return mousePaintActions;
+        }
+        /// <summary>
+        /// Prvky ToolBaru, které mají nějakou akci EnableMousePaint* (Item1 = prvek GUI, Item2 = akce)
+        /// </summary>
+        private List<Tuple<ToolBarItem, GuiActionType>> _MousePaintToolBarItems;
+        /// <summary>
+        /// Inicializace subsystému interaktivního kreslení.
+        /// Volá se po úplném vytvoření a naplnění controlu podle dat z <see cref="GuiData"/>.
         /// </summary>
         private void _InteractiveMousePaintInit()
         {
             this._MainControl.MousePaintProcessStart += _InteractiveMousePaintProcessStart;
             this._MainControl.MousePaintProcessTarget += _InteractiveMousePaintProcessTarget;
             this._MainControl.MousePaintProcessCommit += _InteractiveMousePaintProcessCommit;
-            this._MainControl.MousePaintEnabled = true;
+            this._MainControl.MousePaintEnabled = false;
         }
         /// <summary>
         /// Aplikace zde zjistí, zda v daném bodě controlu je možno zahájit operaci MousePaint = uživatelsky nakreslit nějaký tvar, a následně jej převzít k dalšímu zpracování.

@@ -84,6 +84,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadGraphs();
             this.LoadLinks();
             this.LoadTexts();
+            this.LoadPaint();
         }
         /// <summary>
         /// Metoda zajistí přípravu dat této tabulky poté, kdy projdou přípravou všechny tabulky systému.
@@ -3820,6 +3821,171 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #endregion
         #region Interaktivní přidávání prvků pomocí myši (kreslení MousePaint)
+        #region Definice LinkPairs z GridProperties = povolené linky (načtení z GridProperties.PaintLinkPairs, vyhodnocení pro konkrétní prvek grafu)
+        /// <summary>
+        /// Načte (připraví) podklady pro interaktivní zadávání dat
+        /// </summary>
+        protected void LoadPaint()
+        {
+            this.LoadPaintLinkPairs();
+        }
+        /// <summary>
+        /// Načte (připraví) podklady pro interaktivní zadávání vztahů mezi prvky grafu
+        /// </summary>
+        protected void LoadPaintLinkPairs()
+        {
+            this.MousePaintLinkPairs = new List<PaintLinkPair>();
+            List<string> linkPairs = this.GuiGrid.GridProperties?.PaintLinkPairs;
+            if (linkPairs != null && linkPairs.Count > 0)
+            {
+                foreach (string item in linkPairs)
+                {
+                    PaintLinkPair linkPair = PaintLinkPair.CreateFrom(item);
+                    if (linkPair != null)
+                        this.MousePaintLinkPairs.Add(linkPair);
+                }
+            }
+        }
+        protected bool MousePaintLinkSourceIsEnabled()
+        { }
+        /// <summary>
+        /// Třída obsahující data z jedné položky <see cref="GuiGridProperties.PaintLinkPairs"/>:
+        /// Typ prvku vlevo, Typ prvku vpravo.
+        /// Instance dovoluje testovat, zda na daném prvku Source nebo Target je povoleno navázat Link.
+        /// </summary>
+        protected class PaintLinkPair
+        {
+            #region Konstrukce, proměnné, tvorba
+            /// <summary>
+            /// Vytvoří a vrátí instanci <see cref="PaintLinkPair"/> z dodaného textu.
+            /// Text má typicky tvar: "C1190:E111", tedy pár: typ pozice (Class/Master/Entry) a číslo třídy.
+            /// </summary>
+            /// <param name="text"></param>
+            /// <returns></returns>
+            public static PaintLinkPair CreateFrom(string text)
+            {
+                if (String.IsNullOrEmpty(text)) return null;
+                string[] items = text.Split(':', ';', '-', ',', '/');
+
+                PaintLinkPair result = null;
+                foreach (string item in items)
+                {
+                    ClassPosition position;
+                    int cls;
+                    if (TryParseText(item, out position, out cls))
+                    {
+                        if (result == null)
+                        {
+                            result = new PaintLinkPair();
+                            result._SourcePosition = position;
+                            result._SourceClass = cls;
+                        }
+                        else if (!result._TargetExists)
+                        {
+                            result._TargetPosition = position;
+                            result._TargetClass = cls;
+                        }
+                    }
+                }
+                return result;
+            }
+            /// <summary>
+            /// Z dodaného textu detekuje typ a číslo třídy.
+            /// Na vstupu je např. " C 1190", na výstupu je true a out parametry jsou: type = "C", cls = 1190.
+            /// </summary>
+            /// <param name="item"></param>
+            /// <param name="position"></param>
+            /// <param name="cls"></param>
+            /// <returns></returns>
+            private static bool TryParseText(string item, out ClassPosition position, out int cls)
+            {
+                position = ClassPosition.None;
+                cls = 0;
+                if (String.IsNullOrEmpty(item)) return false;
+                string text = item.Trim().ToUpper();
+                if (text.Length < 2) return false;
+                string type = text.Substring(0, 1);
+                position = (type == "C" ? ClassPosition.Class : (type == "M" ? ClassPosition.Master : (type == "E" ? ClassPosition.Entry : ClassPosition.None)));
+                if (position == ClassPosition.None) return false;
+                if (!Int32.TryParse(text.Substring(1), out cls)) return false;
+                return (cls > 0);
+            }
+            /// <summary>
+            /// Konstruktor je privátní
+            /// </summary>
+            private PaintLinkPair()
+            {
+                this._SourcePosition = ClassPosition.None;
+                this._SourceClass = 0;
+                this._TargetPosition = ClassPosition.None;
+                this._TargetClass = 0;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                string text = this._SourcePosition + this._SourceClass.ToString();
+                if (this._TargetExists)
+                    text += ":" + this._TargetPosition + this._TargetClass.ToString();
+                return text;
+            }
+            private ClassPosition _SourcePosition;
+            private int _SourceClass;
+            private ClassPosition _TargetPosition;
+            private int _TargetClass;
+            private bool _TargetExists { get { return (_TargetPosition != ClassPosition.None && _TargetClass > 0); } }
+            /// <summary>
+            /// Pozice (Celá třída, Master, Entry)
+            /// </summary>
+            private enum ClassPosition { None, Class, Master, Entry }
+            #endregion
+            #region Test přípustnosti zdroje a cíle
+            /// <summary>
+            /// Vrátí true, pokud daný <see cref="GId"/> vyhovuje dané pozici a třídě definované zde jako Source
+            /// </summary>
+            /// <param name="gId"></param>
+            /// <returns></returns>
+            public bool IsSourceEnabled(GId gId)
+            {
+                return _IsEnabled(gId, this._SourcePosition, this._SourceClass, true);
+            }
+            /// <summary>
+            /// Vrátí true, pokud daný <see cref="GId"/> vyhovuje dané pozici a třídě definované zde jako Target
+            /// </summary>
+            /// <param name="gId"></param>
+            /// <returns></returns>
+            public bool IsTargetEnabled(GId gId)
+            {
+                return _IsEnabled(gId, this._TargetPosition, this._TargetClass, this._TargetExists);
+            }
+            /// <summary>
+            /// Vrátí true, pokud daný <see cref="GId"/> vyhovuje dané pozici a třídě
+            /// </summary>
+            /// <param name="gId"></param>
+            /// <param name="position"></param>
+            /// <param name="classNumber"></param>
+            /// <param name="testValues">true = Je požadován test hodnot / false = stačí když GId nebude null (má význam pouze pro Target, když _TargetExists je false)</param>
+            /// <returns></returns>
+            private bool _IsEnabled(GId gId, ClassPosition position, int classNumber, bool testValues)
+            { 
+                if (gId == null) return false;
+                if (!testValues) return true;
+                if (gId.ClassId != this._SourceClass) return false;
+                switch (this._SourcePosition)
+                {
+                    case ClassPosition.Class: return true;
+                    case ClassPosition.Master: return (!gId.EntryId.HasValue);
+                    case ClassPosition.Entry: return (gId.EntryId.HasValue);
+                }
+                return false;
+            }
+            #endregion
+        }
+        private List<PaintLinkPair> MousePaintLinkPairs;
+        #endregion
+        #region Obsluha GUI eventů = testování povolení vytvářet linky, vizuální reakce na aktuální stav, vyvolání serverové akce Commit
         /// <summary>
         /// Aplikace zde zjistí, zda v daném bodě controlu je možno zahájit operaci MousePaint = uživatelsky nakreslit nějaký tvar, a následně jej převzít k dalšímu zpracování.
         /// Myš se nyní nachází na bodě, kde by uživatel mohl zmáčknout myš (nebo ji už dokonce právě nyní zmáčkl, 
@@ -3828,6 +3994,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         internal void InteractiveMousePaintProcessStart(GInteractiveMousePaintArgs e)
         {
+            // Pokud není aktivní režim LinkLine (=povoluje se v Toolbaru, tlačítkem, které má GuiActionType.EnableMousePaintLinkLine), skončím hned:
+            if (!this.MainData.MousePaintLinkLineActive) return;
+
+            qqq;
             DateTime now = DateTime.Now;
             e.IsEnabled = ((now.Second % 4) < 2);
             e.CursorType = SysCursorType.Cross;
@@ -3838,12 +4008,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         internal void InteractiveMousePaintProcessTarget(GInteractiveMousePaintArgs e)
         {
+            // Pokud není aktivní režim LinkLine (=povoluje se v Toolbaru, tlačítkem, které má GuiActionType.EnableMousePaintLinkLine), skončím hned:
+            if (!this.MainData.MousePaintLinkLineActive) return;
+
             e.IsEnabled = true;
-            int v = DateTime.Now.Second % 4;
+            int v = DateTime.Now.Second % 6;
             e.ToolTipData.IsVisible = false;
             switch (v)
             {
                 case 0:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.StraightLine;
+                    e.PaintInfo.LineColor = Color.LightCoral;
+                    e.PaintInfo.LineWidth = 2;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.Triangle;
+                    e.CursorType = SysCursorType.Default;
+                    break;
+                case 1:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.SCurveVertical;
+                    e.PaintInfo.LineColor = Color.Violet;
+                    e.PaintInfo.LineWidth = 7;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
+                    e.CursorType = SysCursorType.Arrow;
+                    break;
+                case 2:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.SCurveHorizontal;
+                    e.PaintInfo.LineColor = Color.Violet;
+                    e.PaintInfo.LineWidth = 7;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
+                    e.CursorType = SysCursorType.Arrow;
+                    break;
+                case 3:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagHorizonal;
+                    e.PaintInfo.LineColor = Color.Yellow;
+                    e.PaintInfo.LineWidth = 5;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.RoundAnchor;
+                    e.CursorType = SysCursorType.Cross;
+                    break;
+                case 4:
+                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagVertical;
+                    e.PaintInfo.LineColor = Color.Green;
+                    e.PaintInfo.LineWidth = 3;
+                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.DiamondAnchor;
+                    e.CursorType = SysCursorType.Hand;
+                    break;
+                case 5:
                     e.PaintInfo.ObjectType = MousePaintObjectType.Rectangle;
                     e.PaintInfo.LineColor = Color.Red;
                     e.PaintInfo.LineWidth = 2;
@@ -3853,27 +4061,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     e.ToolTipData.InfoText = "Obdélník mezi souřadnicemi:\r\nStart\t" + e.PaintInfo.StartPoint + "\r\nEnd\t" + e.PaintInfo.EndPoint;
                     e.ToolTipData.IsVisible = true;
                     e.CursorType = SysCursorType.SizeAll;
-                    break;
-                case 1:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.Curve;
-                    e.PaintInfo.LineColor = Color.Violet;
-                    e.PaintInfo.LineWidth = 7;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
-                    e.CursorType = SysCursorType.Arrow;
-                    break;
-                case 2:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagHorizonal;
-                    e.PaintInfo.LineColor = Color.Yellow;
-                    e.PaintInfo.LineWidth = 5;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.RoundAnchor;
-                    e.CursorType = SysCursorType.Cross;
-                    break;
-                case 3:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagVertical;
-                    e.PaintInfo.LineColor = Color.Green;
-                    e.PaintInfo.LineWidth = 3;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.DiamondAnchor;
-                    e.CursorType = SysCursorType.Hand;
                     break;
             }
 
@@ -3886,7 +4073,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         internal void InteractiveMousePaintProcessCommit(GInteractiveMousePaintArgs e)
         {
+            if (!this.MainData.MousePaintLinkLineActive) return;     // Není aktivní režim LinkLine
         }
+        #endregion
         #endregion
         #region Kontextové menu k řádku, ke grafu, k jednotlivému prvku grafu
         /// <summary>

@@ -752,6 +752,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string RowDragMoveToTarget { get; set; }
         /// <summary>
+        /// Specifikace, zda v této tabulce může být prováděno interaktivní zadávání vztahů mezi prvky.
+        /// Tento List obsahuje stringy, kdy každý string pole určuje: zdrojový prvek a cílový prvek, mezi nimiž lze navázat Link.
+        /// Formát stringu je: "C1234:C5678", kde "C" reprezentuje typ prvku (C=prvek určité třídy, M=pouze Master prvek určité třídy, E=pouze Entry prvek třídy),
+        /// číslo určuje číslo třídy a dvojtečka odděluje části Odkud:Kam lze navázat vztah.
+        /// Pokud string neobsahuje dvojtečku nebo za ní neobsahuje nic, pak prvek dané třídy nemůže být zdrojem vztahu.
+        /// Třída se hledá v prvku grafu v ItemId, DataId, GroupId (v tomto pořadí).
+        /// Výchozí hodnota je null (navazování vztahů není povoleno).
+        /// </summary>
+        public List<string> PaintLinkPairs { get; set; }
+        /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
         /// <param name="interaction"></param>
@@ -3635,7 +3645,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// předá do systému interakcí definici zdrojové akce <see cref="SourceActionType"/> z property <see cref="GuiToolbarItem.RunInteractionSource"/>
         /// </summary>
         RunInteractions = 0x0000000000000100,
-
+        /// <summary>
+        /// Tento prvek Toolbaru se používá pro "zapnutí" možnosti kreslit myší na GUI spojovací linie.
+        /// Je vhodné přidat i hodnotu <see cref="SuppressCallAppHost"/>, protože toto je akce GUI a ne akce aplikačního serveru.
+        /// Prvek by měl být typu CheckBox: <see cref="GuiToolbarItem.IsCheckable"/> = true, protože pouze v "zapnutém" stavu se provede kreslení.
+        /// Prvek Toolbaru s touto akcí by měl být jen jeden, protože mít najednou více takových prvků nemá význam.
+        /// </summary>
+        EnableMousePaintLinkLine = 0x0000000000001000,
+        /// <summary>
+        /// Tento prvek Toolbaru se používá pro "zapnutí" možnosti kreslit myší na GUI obdélník.
+        /// Je vhodné přidat i hodnotu <see cref="SuppressCallAppHost"/>, protože toto je akce GUI a ne akce aplikačního serveru.
+        /// Prvek by měl být typu CheckBox: <see cref="GuiToolbarItem.IsCheckable"/> = true, protože pouze v "zapnutém" stavu se provede kreslení.
+        /// Prvek Toolbaru s touto akcí by měl být jen jeden, protože mít najednou více takových prvků nemá význam.
+        /// Jeho zapnutí automaticky vypne ostatní prvky Toolbaru typu EnableMousePaint*.
+        /// </summary>
+        EnableMousePaintRectangle = 0x0000000000002000,
         /// <summary>
         /// Aktivace této funkce NEBUDE volat funkci aplikačního serveru
         /// </summary>
