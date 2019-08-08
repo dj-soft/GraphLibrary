@@ -112,6 +112,7 @@
     <Compile Include="Data\Interface.cs" />
     <Compile Include="Data\Parser.cs" />
     <Compile Include="Data\Regex.cs" />
+    <Compile Include="Data\SynchronizedPair.cs" />
     <Compile Include="Data\Text.cs" />
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Data\ValueSynchronizer.cs" />

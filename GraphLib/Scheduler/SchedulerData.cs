@@ -2845,7 +2845,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _InteractiveMousePaintProcessStart(object sender, GInteractiveMousePaintArgs e)
         {
             MainDataTable dataTable;
-            if (!InteractiveMousePaintTryGetTable(e.CurrentItem, out dataTable)) return;
+            if (!InteractiveMousePaintTryGetTable(e.CurrentItem, out dataTable)) return; // Veškeré aktivity řídí ta tabulka, na které se nachází StartItem (v metodě Start je to CurrentItem), tedy kde proces MousePaint začal...
             dataTable.InteractiveMousePaintProcessStart(e);
         }
         /// <summary>
@@ -2856,7 +2856,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _InteractiveMousePaintProcessTarget(object sender, GInteractiveMousePaintArgs e)
         {
             MainDataTable dataTable;
-            if (!InteractiveMousePaintTryGetTable(e.StartItem, out dataTable)) return;
+            if (!InteractiveMousePaintTryGetTable(e.StartItem, out dataTable)) return;   // Veškeré aktivity řídí ta tabulka, na které se nachází StartItem, tedy kde proces MousePaint začal, nikoli ta tabulka, kde se právě nachází myš!!!
             dataTable.InteractiveMousePaintProcessTarget(e);
         }
         /// <summary>
@@ -2867,7 +2867,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _InteractiveMousePaintProcessCommit(object sender, GInteractiveMousePaintArgs e)
         {
             MainDataTable dataTable;
-            if (!InteractiveMousePaintTryGetTable(e.StartItem, out dataTable)) return;
+            if (!InteractiveMousePaintTryGetTable(e.StartItem, out dataTable)) return;   // Veškeré aktivity řídí ta tabulka, na které se nachází StartItem, tedy kde proces MousePaint začal, nikoli ta tabulka, kde se právě nachází myš!!!
             dataTable.InteractiveMousePaintProcessCommit(e);
         }
         /// <summary>

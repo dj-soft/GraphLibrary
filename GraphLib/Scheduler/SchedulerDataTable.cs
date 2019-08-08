@@ -448,7 +448,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public static GuiGridItemId[] GetGuiGridItems(IInteractiveItem item, bool wholeGroup)
         {
-            GTimeGraphItem graphItem = item as GTimeGraphItem;
+            if (item == null) return null;
+            GTimeGraphItem graphItem = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
             if (graphItem == null) return null;
             ITimeGraphItem[] dataItems = graphItem.GetDataItems(wholeGroup);             // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
             if (dataItems == null || dataItems.Length == 0) return null;
@@ -477,6 +478,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 gridItemIdList.Add(gridItemId);
             }
             return gridItemIdList.ToArray();
+        }
+        /// <summary>
+        /// Metoda z dodaného soupisu prvků <see cref="GuiGridItemId"/> sestaví lineární seznam jejich <see cref="GuiId"/>
+        /// </summary>
+        /// <param name="gridItemIds"></param>
+        /// <param name="addItem"></param>
+        /// <param name="addGroup"></param>
+        /// <param name="addData"></param>
+        /// <param name="addRow"></param>
+        /// <returns></returns>
+        protected static GuiId[] GetGuiIds(IEnumerable<GuiGridItemId> gridItemIds, bool addItem = true, bool addGroup = true, bool addData = true, bool addRow = true)
+        {
+            Dictionary<GuiId, object> searchIdDict = new Dictionary<GuiId, object>();
+            if (gridItemIds != null)
+            {
+                foreach (GuiGridItemId id in gridItemIds)
+                {
+                    if (id == null) continue;
+                    if (addItem) _GetGuiIdsAddOne(id.ItemId, searchIdDict);
+                    if (addGroup) _GetGuiIdsAddOne(id.GroupId, searchIdDict);
+                    if (addData) _GetGuiIdsAddOne(id.DataId, searchIdDict);
+                    if (addRow) _GetGuiIdsAddOne(id.RowId, searchIdDict);
+                }
+            }
+            return searchIdDict.Keys.ToArray();
+        }
+        private static void _GetGuiIdsAddOne(GuiId itemId, Dictionary<GuiId, object> searchIdDict)
+        {
+            if (itemId != null && itemId.RecordId != 0 && !searchIdDict.ContainsKey(itemId))
+                searchIdDict.Add(itemId, null);
         }
         /// <summary>
         /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
@@ -3820,36 +3851,136 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #endregion
-        #region Interaktivní přidávání prvků pomocí myši (kreslení MousePaint)
+        #region Drag and Drop Interaktivní přidávání prvků pomocí myši (kreslení MousePaint)
         #region Definice LinkPairs z GridProperties = povolené linky (načtení z GridProperties.PaintLinkPairs, vyhodnocení pro konkrétní prvek grafu)
         /// <summary>
         /// Načte (připraví) podklady pro interaktivní zadávání dat
         /// </summary>
         protected void LoadPaint()
         {
-            this.LoadPaintLinkPairs();
+            this.LoadPaintLink();
         }
         /// <summary>
         /// Načte (připraví) podklady pro interaktivní zadávání vztahů mezi prvky grafu
         /// </summary>
-        protected void LoadPaintLinkPairs()
+        protected void LoadPaintLink()
         {
-            this.MousePaintLinkPairs = new List<PaintLinkPair>();
-            List<string> linkPairs = this.GuiGrid.GridProperties?.PaintLinkPairs;
+            this.MousePaintDefinitionLinks = null;
+            this._MousePaintCurrentReset();
+            GuiMousePaintLink guiPaints = this.GuiGrid.GridProperties?.MousePaintLink;
+            if (guiPaints == null || guiPaints.PaintLinkPairs == null || guiPaints.PaintLinkPairs.Count == 0) return;
+
+            this.LoadPaintLinkPairs(guiPaints);
+            this.LoadPaintLinkParam(guiPaints);
+        }
+        /// <summary>
+        /// Načte (připraví) podklady pro interaktivní zadávání vztahů mezi prvky grafu - načte párové definice (Source-Target)
+        /// </summary>
+        protected void LoadPaintLinkPairs(GuiMousePaintLink guiPaints)
+        {
+            List<PaintLinkPair> result = new List<PaintLinkPair>();
+            List<string> linkPairs = guiPaints.PaintLinkPairs;
             if (linkPairs != null && linkPairs.Count > 0)
             {
                 foreach (string item in linkPairs)
                 {
                     PaintLinkPair linkPair = PaintLinkPair.CreateFrom(item);
                     if (linkPair != null)
-                        this.MousePaintLinkPairs.Add(linkPair);
+                        result.Add(linkPair);
                 }
             }
+            this.MousePaintDefinitionLinks = result.ToArray();
         }
-        protected bool MousePaintLinkSourceIsEnabled()
-        { }
         /// <summary>
-        /// Třída obsahující data z jedné položky <see cref="GuiGridProperties.PaintLinkPairs"/>:
+        /// Načte (připraví) podklady pro interaktivní zadávání vztahů mezi prvky grafu - načte definici GUI
+        /// </summary>
+        private void LoadPaintLinkParam(GuiMousePaintLink guiPaints)
+        {
+            this.MousePaintDefinitionParam = new MousePaintLinkParam(guiPaints);
+        }
+        /// <summary>
+        /// Vrátí true, pokud mezi zadanými prvky jsou některé, které povolují kreslit LinkLine z daného zdroje
+        /// <para/>
+        /// Pozor: tato metoda plní nalezená data (zdroje) do <see cref="MousePaintCurrentSourceLinks"/> a <see cref="MousePaintCurrentSourceIds"/>,
+        /// a nuluje data v <see cref="MousePaintCurrentTargetLinks"/> a <see cref="MousePaintCurrentTargetIds"/> !
+        /// </summary>
+        /// <param name="guiIds"></param>
+        /// <returns></returns>
+        protected bool MousePaintLinkSourceAllowed(IEnumerable<GuiId> guiIds)
+        {
+            GuiId[] acceptIds;
+            this.MousePaintCurrentSourceLinks = MousePaintLinkAllowed(this.MousePaintDefinitionLinks, guiIds, true, out acceptIds);
+            this.MousePaintCurrentSourceIds = acceptIds;
+            this.MousePaintCurrentTargetLinks = null;
+            this.MousePaintCurrentTargetIds = null;
+            return this.MousePaintCurrentSourceExists;
+        }
+        /// <summary>
+        /// Vrátí true, pokud mezi zadanými prvky jsou některé, které povolují kreslit LinkLine do daného cíle.
+        /// <para/>
+        /// Pozor: tato metoda plní nalezená data (cíle) do <see cref="MousePaintCurrentTargetLinks"/> a <see cref="MousePaintCurrentTargetIds"/> !
+        /// </summary>
+        /// <param name="guiIds"></param>
+        /// <returns></returns>
+        protected bool MousePaintLinkTargetAllowed(IEnumerable<GuiId> guiIds)
+        {
+            GuiId[] acceptIds;
+            this.MousePaintCurrentTargetLinks = MousePaintLinkAllowed(this.MousePaintCurrentSourceLinks, guiIds, false, out acceptIds);
+            this.MousePaintCurrentTargetIds = acceptIds;
+            return this.MousePaintCurrentTargetExists;
+        }
+        /// <summary>
+        /// Metoda vrátí true, když zdroj a cíl pro akci MousePaint.Link existují a jsou shodné.
+        /// </summary>
+        /// <returns></returns>
+        protected bool MousePaintLinkTargetEqualSource()
+        {
+            GuiId[] sourceIds = this.MousePaintCurrentSourceIds;
+            GuiId[] targetIds = this.MousePaintCurrentTargetIds;
+            if (sourceIds == null || targetIds == null) return false;          // Pokud některé pole je null, pak nejsou shodné
+            if (sourceIds.Length != targetIds.Length) return false;            // Pokud se liší délka, pak nemohou být shodné (pole neobsahují duplicity)
+            var differents = sourceIds.SyncDifferent(g => g, targetIds);       // Získám seznam obsahující GuiId, které jsou Differenc (tj. existují v jednom poli, ale ne v druhém)
+            return (differents.Length == 0);                                   // Pokud NEJSOU žádné rozdíly, pak jsou obě pole SHODNÁ (bez ohledu na pořadí prvků v nich)
+        }
+        /// <summary>
+        /// Metoda vyhledá povolené linky v daném poli <paramref name="linkPairs"/> pro dané prvky <paramref name="guiIds"/>, na straně Source/Target podle <paramref name="onSourceSide"/>.
+        /// Vyhovující vstupní <see cref="GuiId"/> uloží do out <paramref name="acceptIds"/>.
+        /// </summary>
+        /// <param name="linkPairs"></param>
+        /// <param name="guiIds"></param>
+        /// <param name="onSourceSide"></param>
+        /// <param name="acceptIds"></param>
+        /// <returns></returns>
+        protected PaintLinkPair[] MousePaintLinkAllowed(PaintLinkPair[] linkPairs, IEnumerable<GuiId> guiIds, bool onSourceSide, out GuiId[] acceptIds)
+        {
+            acceptIds = null;
+            if (linkPairs == null || guiIds == null) return null;
+            if (linkPairs == null || linkPairs.Length == 0) return null;
+
+            Dictionary<GuiId, object> acceptDict = new Dictionary<GuiId, object>();
+            List<PaintLinkPair> links = new List<PaintLinkPair>();
+            foreach (PaintLinkPair linkPair in linkPairs)
+            {
+                bool linkEnabled = false;
+                foreach (GuiId guiId in guiIds)
+                {
+                    if (linkPair.IsEnabled(guiId, onSourceSide))
+                    {
+                        linkEnabled = true;
+                        if (!acceptDict.ContainsKey(guiId))
+                            acceptDict.Add(guiId, null);
+                    }
+                }
+                if (linkEnabled)
+                    links.Add(linkPair);
+            }
+
+            acceptIds = acceptDict.Keys.ToArray();
+            return links.ToArray();
+        }
+        #region class PaintLinkPair : Třída obsahující data z jedné položky GuiGridProperties.MousePaintLink
+        /// <summary>
+        /// Třída obsahující data z jedné položky <see cref="GuiGridProperties.MousePaintLink"/>:
         /// Typ prvku vlevo, Typ prvku vpravo.
         /// Instance dovoluje testovat, zda na daném prvku Source nebo Target je povoleno navázat Link.
         /// </summary>
@@ -3943,47 +4074,178 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             #endregion
             #region Test přípustnosti zdroje a cíle
             /// <summary>
-            /// Vrátí true, pokud daný <see cref="GId"/> vyhovuje dané pozici a třídě definované zde jako Source
+            /// Vrátí true, pokud daný <see cref="GuiId"/> vyhovuje dané pozici a třídě definované zde jako Source menp Target, podle parametru <paramref name="onSourceSide"/>
             /// </summary>
-            /// <param name="gId"></param>
+            /// <param name="guiId"></param>
+            /// <param name="onSourceSide"></param>
             /// <returns></returns>
-            public bool IsSourceEnabled(GId gId)
+            public bool IsEnabled(GuiId guiId, bool onSourceSide)
             {
-                return _IsEnabled(gId, this._SourcePosition, this._SourceClass, true);
+                return (onSourceSide ? this.IsSourceEnabled(guiId) : this.IsTargetEnabled(guiId));
             }
             /// <summary>
-            /// Vrátí true, pokud daný <see cref="GId"/> vyhovuje dané pozici a třídě definované zde jako Target
+            /// Vrátí true, pokud daný <see cref="GuiId"/> vyhovuje dané pozici a třídě definované zde jako Source
             /// </summary>
-            /// <param name="gId"></param>
+            /// <param name="guiId"></param>
             /// <returns></returns>
-            public bool IsTargetEnabled(GId gId)
+            public bool IsSourceEnabled(GuiId guiId)
             {
-                return _IsEnabled(gId, this._TargetPosition, this._TargetClass, this._TargetExists);
+                return _IsEnabled(guiId, this._SourcePosition, this._SourceClass, true);
             }
             /// <summary>
-            /// Vrátí true, pokud daný <see cref="GId"/> vyhovuje dané pozici a třídě
+            /// Vrátí true, pokud daný <see cref="GuiId"/> vyhovuje dané pozici a třídě definované zde jako Target
             /// </summary>
-            /// <param name="gId"></param>
+            /// <param name="guiId"></param>
+            /// <returns></returns>
+            public bool IsTargetEnabled(GuiId guiId)
+            {
+                return _IsEnabled(guiId, this._TargetPosition, this._TargetClass, this._TargetExists);
+            }
+            /// <summary>
+            /// Vrátí true, pokud daný <see cref="GuiId"/> vyhovuje dané pozici a třídě
+            /// </summary>
+            /// <param name="guiId"></param>
             /// <param name="position"></param>
             /// <param name="classNumber"></param>
             /// <param name="testValues">true = Je požadován test hodnot / false = stačí když GId nebude null (má význam pouze pro Target, když _TargetExists je false)</param>
             /// <returns></returns>
-            private bool _IsEnabled(GId gId, ClassPosition position, int classNumber, bool testValues)
+            private bool _IsEnabled(GuiId guiId, ClassPosition position, int classNumber, bool testValues)
             { 
-                if (gId == null) return false;
+                if (guiId == null) return false;
                 if (!testValues) return true;
-                if (gId.ClassId != this._SourceClass) return false;
+                if (guiId.ClassId != this._SourceClass) return false;
                 switch (this._SourcePosition)
                 {
                     case ClassPosition.Class: return true;
-                    case ClassPosition.Master: return (!gId.EntryId.HasValue);
-                    case ClassPosition.Entry: return (gId.EntryId.HasValue);
+                    case ClassPosition.Master: return (!guiId.EntryId.HasValue);
+                    case ClassPosition.Entry: return (guiId.EntryId.HasValue);
                 }
                 return false;
             }
             #endregion
         }
-        private List<PaintLinkPair> MousePaintLinkPairs;
+        #endregion
+        #region class MousePaintLinkParam : Třída pro přenos parametrů z GuiMousePaintLink do Scheduleru
+        /// <summary>
+        /// Třída pro přenos parametrů z <see cref="GuiMousePaintLink"/> do Scheduleru
+        /// </summary>
+        protected class MousePaintLinkParam : GuiMousePaintLink
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="guiPaints"></param>
+            public MousePaintLinkParam(GuiMousePaintLink guiPaints)
+            {
+                this.PaintLineShape = GetValue(guiPaints.PaintLineShape, GuiLineShape.SCurveHorizontal);
+                this.EnabledLineForeColor = GetValue(guiPaints.EnabledLineForeColor, Color.LightGreen);
+                this.EnabledLineBackColor = GetValue(guiPaints.EnabledLineBackColor, Color.DimGray);
+                this.EnabledLineWidth = GetValue(guiPaints.EnabledLineWidth, 5);
+                this.EnabledLineEndingCap = GetValue(guiPaints.EnabledLineEndingCap, GuiLineEndingCap.ArrowAnchor);
+                this.DisabledLineForeColor = GetValue(guiPaints.DisabledLineForeColor, Color.LightGray);
+                this.DisabledLineBackColor = GetValue(guiPaints.DisabledLineBackColor, Color.Gray);
+                this.DisabledLineWidth = GetValue(guiPaints.DisabledLineWidth, 3);
+                this.DisabledLineEndingCap = GetValue(guiPaints.DisabledLineEndingCap, GuiLineEndingCap.Round);
+
+                this.LineShape = GetEnum(this.PaintLineShape.Value, MousePaintObjectType.SCurveHorizontal);
+                this.EnabledEndingCap = GetEnum(this.EnabledLineEndingCap.Value, System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+                this.DisabledEndingCap = GetEnum(this.DisabledLineEndingCap.Value, System.Drawing.Drawing2D.LineCap.Round);
+            }
+            private static T GetValue<T>(T? value, T defaultValue) where T : struct
+            {
+                return (value.HasValue ? value.Value : defaultValue);
+            }
+
+            private static TOut GetEnum<TInp, TOut>(TInp inpValue, TOut defaultValue) where TInp : struct where TOut : struct
+            {
+                string name = Enum.GetName(typeof(TInp), inpValue);
+                TOut outValue;
+                if (Enum.TryParse<TOut>(name, out outValue)) return outValue;
+                return defaultValue;
+            }
+            /// <summary>
+            /// Typ čáry
+            /// </summary>
+            public MousePaintObjectType LineShape { get; set; }
+            /// <summary>
+            /// Druh zakončení spojovací linky, pokud ukazuje na povolený cíl
+            /// </summary>
+            public System.Drawing.Drawing2D.LineCap EnabledEndingCap { get; set; }
+            /// <summary>
+            /// Druh zakončení spojovací linky, pokud ukazuje na NEpovolený cíl
+            /// </summary>
+            public System.Drawing.Drawing2D.LineCap DisabledEndingCap { get; set; }
+            /// <summary>
+            /// Přenese svoje hodnoty do daného kreslícího objektu, pro daný stav Enabled
+            /// </summary>
+            /// <param name="paintInfo"></param>
+            /// <param name="isEnabled"></param>
+            public void SetParamsTo(MousePaintInfo paintInfo, bool isEnabled)
+            {
+                paintInfo.ObjectType = this.LineShape;
+                if (isEnabled)
+                {
+                    paintInfo.LineColor = this.EnabledLineForeColor.Value;
+                    paintInfo.FillColor = this.EnabledLineBackColor.Value;
+                    paintInfo.LineWidth = this.EnabledLineWidth.Value;
+                    paintInfo.EndCap = this.EnabledEndingCap;
+                }
+                else
+                {
+                    paintInfo.LineColor = this.DisabledLineForeColor.Value;
+                    paintInfo.FillColor = this.DisabledLineBackColor.Value;
+                    paintInfo.LineWidth = this.DisabledLineWidth.Value;
+                    paintInfo.EndCap = this.DisabledEndingCap;
+                }
+            }
+        }
+        #endregion
+        /// <summary>
+        /// Soupis všech údajů o povolení kreslit linky mezi prvky, pochází z <see cref="GuiGridProperties.MousePaintLink"/>
+        /// </summary>
+        private PaintLinkPair[] MousePaintDefinitionLinks;
+        /// <summary>
+        /// Definice GUI parametrů pro kreslení LinkLine
+        /// </summary>
+        private MousePaintLinkParam MousePaintDefinitionParam;
+        /// <summary>
+        /// Obsahuje true, pokud je obecně povoleno kreslení (tj. pokud máme platné definice vztahů v <see cref="MousePaintDefinitionLinks"/>)
+        /// </summary>
+        private bool MousePaintDefinitionExists { get { return (this.MousePaintDefinitionLinks != null && this.MousePaintDefinitionLinks.Length > 0); } }
+        /// <summary>
+        /// Aktuálně platné prvky z <see cref="MousePaintDefinitionLinks"/>, které povolují kreslení linky z aktuálního startu
+        /// </summary>
+        private PaintLinkPair[] MousePaintCurrentSourceLinks;
+        /// <summary>
+        /// Aktuální ID zdrojového prvku (start), odkud se kreslí
+        /// </summary>
+        private GuiId[] MousePaintCurrentSourceIds;
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je povoleno kreslení z určitého zdroje
+        /// </summary>
+        private bool MousePaintCurrentSourceExists { get { return (this.MousePaintCurrentSourceIds != null && this.MousePaintCurrentSourceIds.Length > 0); } }
+        /// <summary>
+        /// Aktuálně platné prvky z <see cref="MousePaintCurrentSourceLinks"/>, které povolují kreslení linky do aktuálního cíle
+        /// </summary>
+        private PaintLinkPair[] MousePaintCurrentTargetLinks;
+        /// <summary>
+        /// Aktuální ID cílového prvku (target), kam se kreslí
+        /// </summary>
+        private GuiId[] MousePaintCurrentTargetIds;
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je povoleno kreslení do určitého cíle
+        /// </summary>
+        private bool MousePaintCurrentTargetExists { get { return (this.MousePaintCurrentTargetIds != null && this.MousePaintCurrentTargetIds.Length > 0); } }
+        /// <summary>
+        /// Uvolní z paměti všechna provozní data MousePaint
+        /// </summary>
+        private void _MousePaintCurrentReset()
+        {
+            this.MousePaintCurrentSourceLinks = null;
+            this.MousePaintCurrentSourceIds = null;
+            this.MousePaintCurrentTargetLinks = null;
+            this.MousePaintCurrentTargetIds = null;
+        }
         #endregion
         #region Obsluha GUI eventů = testování povolení vytvářet linky, vizuální reakce na aktuální stav, vyvolání serverové akce Commit
         /// <summary>
@@ -3996,11 +4258,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Pokud není aktivní režim LinkLine (=povoluje se v Toolbaru, tlačítkem, které má GuiActionType.EnableMousePaintLinkLine), skončím hned:
             if (!this.MainData.MousePaintLinkLineActive) return;
+            if (!this.MousePaintDefinitionExists) return;
 
-            qqq;
-            DateTime now = DateTime.Now;
-            e.IsEnabled = ((now.Second % 4) < 2);
-            e.CursorType = SysCursorType.Cross;
+            // Na základě grafického prvku e.CurrentItem najdu identifikátory DATOVÝCH prvků, které jsou tímto GUI prvkem reprezentovány:
+            GuiGridItemId[] gridItemIds = GetGuiGridItems(e.CurrentItem, true);
+            if (gridItemIds == null || gridItemIds.Length == 0) return;
+
+            // Vyhledám prvky PaintLinkPair, které povolují MousePaint.LinkPair pro aktuální = zdrojový prvek:
+            GuiId[] guiIds = GetGuiIds(gridItemIds, addRow: false);
+            e.IsEnabled = this.MousePaintLinkSourceAllowed(guiIds);
+            if (e.IsEnabled)
+                e.CursorType = SysCursorType.Cross;
         }
         /// <summary>
         /// Aplikace zde zjistí, zda v daném bodě controlu je možno dokončit kreslení, tedy zda daný bod a prvek na něm je vhodným cílem.
@@ -4010,62 +4278,65 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Pokud není aktivní režim LinkLine (=povoluje se v Toolbaru, tlačítkem, které má GuiActionType.EnableMousePaintLinkLine), skončím hned:
             if (!this.MainData.MousePaintLinkLineActive) return;
+            if (!this.MousePaintCurrentSourceExists) return;
 
-            e.IsEnabled = true;
-            int v = DateTime.Now.Second % 6;
-            e.ToolTipData.IsVisible = false;
-            switch (v)
+            bool isEnabled = this.InteractiveMousePaintSearchTarget(e);
+
+            // Hledáme jen tehdy, pokud cílový prvek leží v tabulce, která je naší tabulkou (nelze dávat LinkLine do cizí tabulky!):
+            MainDataTable dataTable;
+            if (Scheduler.MainData.InteractiveMousePaintTryGetTable(e.CurrentItem, out dataTable) && Object.ReferenceEquals(dataTable, this))
             {
-                case 0:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.StraightLine;
-                    e.PaintInfo.LineColor = Color.LightCoral;
-                    e.PaintInfo.LineWidth = 2;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.Triangle;
-                    e.CursorType = SysCursorType.Default;
-                    break;
-                case 1:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.SCurveVertical;
-                    e.PaintInfo.LineColor = Color.Violet;
-                    e.PaintInfo.LineWidth = 7;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
-                    e.CursorType = SysCursorType.Arrow;
-                    break;
-                case 2:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.SCurveHorizontal;
-                    e.PaintInfo.LineColor = Color.Violet;
-                    e.PaintInfo.LineWidth = 7;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
-                    e.CursorType = SysCursorType.Arrow;
-                    break;
-                case 3:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagHorizonal;
-                    e.PaintInfo.LineColor = Color.Yellow;
-                    e.PaintInfo.LineWidth = 5;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.RoundAnchor;
-                    e.CursorType = SysCursorType.Cross;
-                    break;
-                case 4:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.ZigZagVertical;
-                    e.PaintInfo.LineColor = Color.Green;
-                    e.PaintInfo.LineWidth = 3;
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.DiamondAnchor;
-                    e.CursorType = SysCursorType.Hand;
-                    break;
-                case 5:
-                    e.PaintInfo.ObjectType = MousePaintObjectType.Rectangle;
-                    e.PaintInfo.LineColor = Color.Red;
-                    e.PaintInfo.LineWidth = 2;
-                    e.PaintInfo.FillColor = Color.FromArgb(64, Color.Blue);
-                    e.PaintInfo.EndCap = System.Drawing.Drawing2D.LineCap.Triangle;
-                    e.ToolTipData.AnimationType = TooltipAnimationType.Instant;
-                    e.ToolTipData.InfoText = "Obdélník mezi souřadnicemi:\r\nStart\t" + e.PaintInfo.StartPoint + "\r\nEnd\t" + e.PaintInfo.EndPoint;
-                    e.ToolTipData.IsVisible = true;
-                    e.CursorType = SysCursorType.SizeAll;
-                    break;
+                // Na základě grafického prvku e.CurrentItem (=aktuální cíl) najdu identifikátory DATOVÝCH prvků, které jsou tímto GUI prvkem reprezentovány:
+                GuiGridItemId[] gridItemIds = GetGuiGridItems(e.CurrentItem, true);
+                if (gridItemIds != null && gridItemIds.Length > 0)
+                {
+                    // Vyhledám prvky PaintLinkPair, které povolují MousePaint.LinkPair pro aktuální = cílový prvek:
+                    GuiId[] guiIds = GetGuiIds(gridItemIds, addRow: false);
+                    isEnabled = this.MousePaintLinkTargetAllowed(guiIds);
+                    if (isEnabled)
+                        isEnabled = !this.MousePaintLinkTargetEqualSource();
+                }
             }
 
-            if (e.PaintInfo.StartPoint.HasValue && e.PaintInfo.EndPoint.HasValue && e.PaintInfo.StartPoint.Value.X > e.PaintInfo.EndPoint.Value.X)
-                e.PaintInfo.ExchangePoints();
+            // Omezím souřadnici cílového bodu (pro vykreslení linky) jen do prostoru this tabulky:
+            Rectangle tableContentBounds = this.GTableRow.GetAbsoluteBoundsForArea(TableAreaType.RowData);
+            e.PaintInfo.EndPoint = e.CurrentPoint.FitInto(tableContentBounds);
+
+            // Nyní na základě povolení cíle nastavím zobrazení:
+            this.MousePaintDefinitionParam.SetParamsTo(e.PaintInfo, isEnabled);
+            e.CursorType = SysCursorType.Hand;
+        }
+        /// <summary>
+        /// Metoda ověří, zda aktuální GUI cíl je povolený z hlediska pravidel.
+        /// Pokud ano, vrací true a správně nastaví pole 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool InteractiveMousePaintSearchTarget(GInteractiveMousePaintArgs e)
+        {
+            // Pokud není aktivní režim LinkLine (=povoluje se v Toolbaru, tlačítkem, které má GuiActionType.EnableMousePaintLinkLine), skončím hned:
+            if (!this.MainData.MousePaintLinkLineActive) return false;
+            if (!this.MousePaintCurrentSourceExists) return false;
+
+            bool isEnabled = false;
+
+            // Hledáme jen tehdy, pokud cílový prvek leží v tabulce, která je naší tabulkou (nelze dávat LinkLine do cizí tabulky!):
+            MainDataTable dataTable;
+            if (Scheduler.MainData.InteractiveMousePaintTryGetTable(e.CurrentItem, out dataTable) && Object.ReferenceEquals(dataTable, this))
+            {
+                // Na základě grafického prvku e.CurrentItem (=aktuální cíl) najdu identifikátory DATOVÝCH prvků, které jsou tímto GUI prvkem reprezentovány:
+                GuiGridItemId[] gridItemIds = GetGuiGridItems(e.CurrentItem, true);
+                if (gridItemIds != null && gridItemIds.Length > 0)
+                {
+                    // Vyhledám prvky PaintLinkPair, které povolují MousePaint.LinkPair pro aktuální = cílový prvek:
+                    GuiId[] guiIds = GetGuiIds(gridItemIds, addRow: false);
+                    isEnabled = this.MousePaintLinkTargetAllowed(guiIds);
+                    if (isEnabled)
+                        isEnabled = !this.MousePaintLinkTargetEqualSource();
+                }
+            }
+
+            return isEnabled;
         }
         /// <summary>
         /// Aplikace zde zajistí zpracování vykresleného tvaru MousePaint = tedy převezme si souřadnice a prvky, a vytvoří z nich nějaká data.
@@ -4073,7 +4344,66 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         internal void InteractiveMousePaintProcessCommit(GInteractiveMousePaintArgs e)
         {
-            if (!this.MainData.MousePaintLinkLineActive) return;     // Není aktivní režim LinkLine
+            if (!this.InteractiveMousePaintSearchTarget(e)) return;     // Není nalezen vhodný cíl
+
+            // Máme nalezen zdrojový prvek, máme i cílový prvek, myš je uvolněna => zavoláme aplikaci:
+            GuiRequestInteractiveDraw draw = new GuiRequestInteractiveDraw();
+            draw.SourceItem = GetGridItemId(e.StartItem);
+            draw.SourcePoint = e.StartPoint;
+            draw.SourceBounds = GetGraphGroupAbsBounds(e.StartItem);
+            draw.SourceTime = GetTimeOnGraph(e.StartItem, draw.SourcePoint);
+            draw.TargetItem = GetGridItemId(e.CurrentItem);
+            draw.TargetPoint = e.CurrentPoint;
+            draw.TargetBounds = GetGraphGroupAbsBounds(e.CurrentItem);
+            draw.TargetTime = GetTimeOnGraph(e.CurrentItem, draw.TargetPoint);
+
+            // Sestavit argument pro volání IHost:
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_InteractiveDraw;
+            request.CurrentState = this.IMainData.CreateGuiCurrentState();
+            request.InteractiveDraw = draw;
+
+            // Zavolat Host:
+            this.IMainData.CallAppHostFunction(request, this.InteractiveMousePaintProcessResponse, TimeSpan.FromMilliseconds(1500));
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice prvku grafu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private Rectangle? GetGraphGroupAbsBounds(IInteractiveItem item)
+        {
+            GTimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+            if (timeGraphItem == null) return null;
+            return timeGraphItem.BoundsAbsolute;
+        }
+        /// <summary>
+        /// Metoda vrátí čas na grafu (graf bude vyhledán z dodaného prvku), čas odpovídající dané absolutní souřadnici
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        private DateTime? GetTimeOnGraph(IInteractiveItem item, Point? absolutePoint)
+        {
+            DateTime? time = null;
+            // Najdeme graf:
+            GTimeGraph graph = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
+            if (graph != null && absolutePoint.HasValue)
+            {
+                Rectangle graphBounds = graph.BoundsAbsolute;
+                Point relativePoint = absolutePoint.Value.Sub(graphBounds.Location);
+                time = graph.GetTimeForPosition(relativePoint.X, AxisTickType.Pixel);
+            }
+            return time;
+        }
+        /// <summary>
+        /// Metoda, která obdrží odpovědi z aplikační funkce, a podle nich zajistí patřičné změny v tabulkách.
+        /// </summary>
+        /// <param name="response"></param>
+        protected void InteractiveMousePaintProcessResponse(AppHostResponseArgs response)
+        {
+            if (response == null || response.GuiResponse == null) return;
+            this.IMainData.ProcessAppHostResponse(response.GuiResponse);
         }
         #endregion
         #endregion
@@ -4334,6 +4664,48 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             return gridRowId;
         }
+
+        /// <summary>
+        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v prvku grafu, který se pokusí najít v daném interaktivním objektu.
+        /// </summary>
+        /// <param name="item">Interaktivní prvek</param>
+        /// <returns></returns>
+        private GuiGridItemId GetGridItemId(IInteractiveItem item)
+        {
+            if (item == null) return null;
+            GTimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+            if (timeGraphItem == null) return null;
+            GTable gTable = timeGraphItem.SearchForParent(typeof(GTable)) as GTable;     // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
+            if (gTable == null) return null;
+            MainDataTable mainDataTable = gTable.DataTable.UserData as MainDataTable;    // Ve vizuální tabulce najdu její datový základ, a jeho UserData by měla být instance MainDataTable
+            if (mainDataTable == null) return null;
+
+            return GetGridItemId(timeGraphItem, mainDataTable.TableName);
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="GuiGridItemId"/> pro daný prvek grafu.
+        /// Pokud bylo kliknuto na grupu do prostoru mezi prvky, tedy na <see cref="GTimeGraphItem"/> typu Group, pak vrácený <see cref="GuiGridItemId"/> bude mít nevyplněné <see cref="GuiGridItemId.ItemId"/>.
+        /// </summary>
+        /// <param name="timeGraphItem"></param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        private GuiGridItemId GetGridItemId(GTimeGraphItem timeGraphItem, string tableName)
+        {
+            if (timeGraphItem == null || String.IsNullOrEmpty(tableName)) return null;
+            var items = timeGraphItem.GetDataItems(false);
+            DataGraphItem graphItem = items[0] as DataGraphItem;     // Nikdy se nevrací 0 prvků, protože prvek grafu obsahuje vždy nejméně jeden datový prvek
+            if (graphItem == null) return null;
+
+            GuiGridItemId gridItemId = new GuiGridItemId();
+            gridItemId.TableName = tableName;
+            gridItemId.RowId = graphItem.RowGId;
+            if (items.Length == 1)                                   // Pokud prvek timeGraphItem reprezentuje grupu (tedy aktivní bod je mezi konkrétními prvky grafu), pak Length je větší než 1, protože metoda timeGraphItem.GetDataItems(false); vrátila všechny prvky grupy.
+                gridItemId.ItemId = graphItem.ItemGId;
+            gridItemId.GroupId = graphItem.GroupGId;
+            gridItemId.DataId = graphItem.DataGId;
+
+            return gridItemId;
+        }
         /// <summary>
         /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném prvku grafu.
         /// </summary>
@@ -4341,8 +4713,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private GuiGridItemId GetGridItemId(DataGraphItem graphItem)
         {
+            return GetGridItemId(graphItem, this.TableName);
+        }
+        /// <summary>
+        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném prvku grafu.
+        /// </summary>
+        /// <param name="graphItem">Prvek grafu</param>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        private static GuiGridItemId GetGridItemId(DataGraphItem graphItem, string tableName)
+        {
             GuiGridItemId gridItemId = new GuiGridItemId();
-            gridItemId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            gridItemId.TableName = tableName;
             if (graphItem != null)
             {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
                 gridItemId.RowId = graphItem.RowGId;                 // Parentem je GID řádku

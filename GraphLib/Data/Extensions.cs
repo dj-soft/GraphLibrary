@@ -947,6 +947,27 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Dictionary
         /// <summary>
+        /// Metoda přidá daný klíč a hodnotu do Dictionary.
+        /// Na rozdíl od nativní metody má parametr <paramref name="overwrite"/>, který říká, co dělat v případě, kdy klíč v Dictionary už existuje:
+        /// true = vlož novou hodnotu; false = ponech původní hodnotu. K chybě (duplicita klíče) ale nedochází.
+        /// Metoda vrací true, pokud dodaná hodnota byla reálně uložena do Dictionary.
+        /// Vrací false jen tehdy, když daný klíč už v Dictionary existoval, a požadavek <paramref name="overwrite"/> je false = nepřepisovat.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="overwrite"></param>
+        public static bool Add<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value, bool overwrite)
+        {
+            bool exists = dictionary.ContainsKey(key);
+            if (!exists) dictionary.Add(key, value);
+            else if (overwrite) dictionary[key] = value;
+            else return false;
+            return true;
+        }
+        /// <summary>
         /// Metoda zajistí typickou operaci: 
         /// "Najdi v Dictionary hodnotu pro daný klíč, a pokud ji nenajdeš tak vytvoř novou hodnotu, vlož ji tam a vrať".
         /// </summary>

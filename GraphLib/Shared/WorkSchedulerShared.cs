@@ -752,15 +752,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string RowDragMoveToTarget { get; set; }
         /// <summary>
-        /// Specifikace, zda v této tabulce může být prováděno interaktivní zadávání vztahů mezi prvky.
-        /// Tento List obsahuje stringy, kdy každý string pole určuje: zdrojový prvek a cílový prvek, mezi nimiž lze navázat Link.
-        /// Formát stringu je: "C1234:C5678", kde "C" reprezentuje typ prvku (C=prvek určité třídy, M=pouze Master prvek určité třídy, E=pouze Entry prvek třídy),
-        /// číslo určuje číslo třídy a dvojtečka odděluje části Odkud:Kam lze navázat vztah.
-        /// Pokud string neobsahuje dvojtečku nebo za ní neobsahuje nic, pak prvek dané třídy nemůže být zdrojem vztahu.
-        /// Třída se hledá v prvku grafu v ItemId, DataId, GroupId (v tomto pořadí).
-        /// Výchozí hodnota je null (navazování vztahů není povoleno).
+        /// Veškeré definice pro interaktivní zakreslování vztahů do grafu
         /// </summary>
-        public List<string> PaintLinkPairs { get; set; }
+        public GuiMousePaintLink MousePaintLink { get; set; }
         /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
@@ -904,6 +898,58 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     /// <summary>
+    /// Třída, která dovoluje definovat pravidla pro interaktivní vykreslování spojovacích linek mezi prvky grafu
+    /// </summary>
+    public class GuiMousePaintLink : GuiBase
+    {
+        /// <summary>
+        /// Specifikace, zda v této tabulce může být prováděno interaktivní zadávání vztahů mezi prvky.
+        /// Tento List obsahuje stringy, kdy každý string pole určuje: zdrojový prvek a cílový prvek, mezi nimiž lze navázat Link.
+        /// Formát stringu je: "C1234:C5678", kde "C" reprezentuje typ prvku (C=prvek určité třídy, M=pouze Master prvek určité třídy, E=pouze Entry prvek třídy),
+        /// číslo určuje číslo třídy a dvojtečka odděluje části Odkud:Kam lze navázat vztah.
+        /// Pokud string neobsahuje dvojtečku nebo za ní neobsahuje nic, pak prvek dané třídy nemůže být zdrojem vztahu.
+        /// Třída se hledá v prvku grafu v ItemId, DataId, GroupId (v tomto pořadí).
+        /// Výchozí hodnota je null (navazování vztahů není povoleno).
+        /// </summary>
+        public List<string> PaintLinkPairs { get; set; }
+        /// <summary>
+        /// Tvar spojovací čáry
+        /// </summary>
+        public GuiLineShape? PaintLineShape { get; set; }
+        /// <summary>
+        /// Barva spojovací linky, pokud ukazuje na povolený cíl
+        /// </summary>
+        public Color? EnabledLineForeColor { get; set; }
+        /// <summary>
+        /// Barva podkladu spojovací linky, pokud ukazuje na povolený cíl
+        /// </summary>
+        public Color? EnabledLineBackColor { get; set; }
+        /// <summary>
+        /// Šířka spojovací linky, pokud ukazuje na povolený cíl
+        /// </summary>
+        public int? EnabledLineWidth { get; set; }
+        /// <summary>
+        /// Druh zakončení spojovací linky, pokud ukazuje na povolený cíl
+        /// </summary>
+        public GuiLineEndingCap? EnabledLineEndingCap { get; set; }
+        /// <summary>
+        /// Barva spojovací linky, pokud ukazuje na NEpovolený cíl
+        /// </summary>
+        public Color? DisabledLineForeColor { get; set; }
+        /// <summary>
+        /// Barva podkladu spojovací linky, pokud ukazuje na NEpovolený cíl
+        /// </summary>
+        public Color? DisabledLineBackColor { get; set; }
+        /// <summary>
+        /// Šířka spojovací linky, pokud ukazuje na NEpovolený cíl
+        /// </summary>
+        public int? DisabledLineWidth { get; set; }
+        /// <summary>
+        /// Druh zakončení spojovací linky, pokud ukazuje na NEpovolený cíl
+        /// </summary>
+        public GuiLineEndingCap? DisabledLineEndingCap { get; set; }
+    }
+    /// <summary>
     /// Předpis pro vyhledání Child řádků k danému Parent řádku
     /// </summary>
     [Flags]
@@ -976,6 +1022,80 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         InDynamicChildOnly = 0x4000
     }
+    /// <summary>
+    /// Typ spojovací čáry
+    /// </summary>
+    public enum GuiLineShape
+    {
+        /// <summary>
+        /// Nekreslí se nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přímá rovná čára z bodu Start do bodu End
+        /// </summary>
+        StraightLine,
+        /// <summary>
+        /// Esíčková křivka z bodu Start do bodu End, zleva doprava
+        /// </summary>
+        SCurveVertical,
+        /// <summary>
+        /// Esíčková křivka z bodu Start do bodu End, nahoru / dolů
+        /// </summary>
+        SCurveHorizontal,
+        /// <summary>
+        /// Rovná, lomená křivka, vodorovná : z bodu Start doprava/doleva, v polovině pak nahoru/dolů, a nakonec doprava/doleva do End
+        /// </summary>
+        ZigZagHorizonal,
+        /// <summary>
+        /// Rovná, lomená křivka, svislá : z bodu Start nahoru/dolů, v polovině pak doprava/doleva, a nakonec nahoru/dolů do End
+        /// </summary>
+        ZigZagVertical
+    }
+    /// <summary>
+    /// Druh zakončení čáry
+    /// </summary>
+    public enum GuiLineEndingCap
+    {
+        /// <summary>
+        /// Specifies a flat line cap.
+        /// </summary>
+        Flat = 0,
+        /// <summary>
+        /// Specifies a square line cap.
+        /// </summary>
+        Square = 1,
+        /// <summary>
+        /// Specifies a round line cap.
+        /// </summary>
+        Round = 2,
+        /// <summary>
+        /// Specifies a triangular line cap.
+        /// </summary>
+        Triangle = 3,
+        /// <summary>
+        /// Specifies no anchor.
+        /// </summary>
+        NoAnchor = 16,
+        /// <summary>
+        /// Specifies a square anchor line cap.
+        /// </summary>
+        SquareAnchor = 17,
+        /// <summary>
+        /// Specifies a round anchor cap.
+        /// </summary>
+        RoundAnchor = 18,
+        /// <summary>
+        /// Specifies a diamond anchor cap.
+        /// </summary>
+        DiamondAnchor = 19,
+        /// <summary>
+        /// Specifies an arrow-shaped anchor cap.
+        /// </summary>
+        ArrowAnchor = 20,
+    }
+
+
     #endregion
     #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
     /// <summary>
@@ -5093,6 +5213,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiRequestRowDragMove RowDragMove { get; set; }
         /// <summary>
+        /// Informace o interaktivním kreslení
+        /// </summary>
+        public GuiRequestInteractiveDraw InteractiveDraw { get; set; }
+        /// <summary>
         /// Data pro command <see cref="COMMAND_TimeChange"/>
         /// </summary>
         public GuiRequestTimeAxisChange TimeAxisChange { get; set; }
@@ -5150,6 +5274,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Aplikační servisní funkce může zareagovat úpravou svých dat, a případně přeplánováním.
         /// </summary>
         public const string COMMAND_RowDragDrop = "RowDragDrop";
+        /// <summary>
+        /// Bylo provedeno interaktivní kreslení.
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétních hodnotách Odkud a Kam v property <see cref="GuiRequest.InteractiveDraw"/>,
+        /// Kompletní údaje o stavu GUI jsou v <see cref="GuiRequest.CurrentState"/>.
+        /// Aplikační servisní funkce může zareagovat úpravou svých dat, a případně přeplánováním.
+        /// </summary>
+        public const string COMMAND_InteractiveDraw = "InteractiveDraw";
         /// <summary>
         /// Test před zavřením okna.
         /// Nepředávají se žádná upřesňující data.
@@ -5395,12 +5526,66 @@ namespace Noris.LCS.Base.WorkScheduler
         public DateTime? TargetTimeRound { get; set; }
     }
     /// <summary>
+    /// Informace o prvku, uživatelem vykresleném do GUI prostoru
+    /// </summary>
+    public class GuiRequestInteractiveDraw
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiRequestInteractiveDraw()
+        { }
+        /// <summary>
+        /// ID záznamu, z něhož kreslení začalo
+        /// </summary>
+        public GuiGridItemId SourceItem { get; set; }
+        /// <summary>
+        /// Souřadnice prvku, kde kreslení začalo. Jde o souřadnice prvku, který se účastní pohybu (můře to být Item nebo Group).
+        /// Hodnotu lze použít v souvislosti s <see cref="SourcePoint"/> pro určení, ve kterém místě prvku byla myš stisknuta.
+        /// </summary>
+        public Rectangle? SourceBounds { get; set; }
+        /// <summary>
+        /// Souřadnice myši, kde kreslení začalo
+        /// </summary>
+        public Point? SourcePoint { get; set; }
+        /// <summary>
+        /// Čas na časové ose v místě, kde kreslení začalo
+        /// </summary>
+        public DateTime? SourceTime { get; set; }
+        /// <summary>
+        /// ID záznamu, kde kreslení skončilo
+        /// </summary>
+        public GuiGridItemId TargetItem { get; set; }
+        /// <summary>
+        /// Souřadnice prvku, kde kreslení skončilo. Jde o souřadnice prvku, který se účastní pohybu (můře to být Item nebo Group).
+        /// Hodnotu lze použít v souvislosti s <see cref="TargetPoint"/> pro určení, ve kterém místě prvku byla myš uvolněna.
+        /// </summary>
+        public Rectangle? TargetBounds { get; set; }
+        /// <summary>
+        /// Souřadnice myši, kde kreslení skončilo
+        /// </summary>
+        public Point? TargetPoint { get; set; }
+        /// <summary>
+        /// Čas na časové ose v místě, kde kreslení skončilo
+        /// </summary>
+        public DateTime? TargetTime { get; set; }
+    }
+    /// <summary>
     /// Informace o změně hodnoty na časové ose
     /// </summary>
     public class GuiRequestTimeAxisChange
     {
+        /// <summary>
+        /// Aktuálně viditelný rozsah na časové ose
+        /// </summary>
         public GuiTimeRange TimeRangeVisible { get; set; }
+        /// <summary>
+        /// Rozšířený rozsah na časové ose
+        /// </summary>
         public GuiTimeRange TimeRangeEnlarged { get; set; }
+        /// <summary>
+        /// Pole časových úseků, které GUI vrstva eviduje jako "známé"
+        /// </summary>
         public GuiTimeRange[] TimeRangeKnown { get; set; }
     }
     /// <summary>
