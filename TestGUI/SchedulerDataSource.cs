@@ -860,7 +860,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GroupName = "FUNKCE",
                 Title = "Vztah",
                 ToolTip = "Po aktivaci tohoto tlačítka je možno navázat vztah mezi dvěma operacemi",
-                Image = RES.Images.Actions.InsertLinkPng,
+                Image = RES.Images.Actions.InsertLink2Png,     //    InsertLinkPng,
                 GuiActions = GuiActionType.EnableMousePaintLinkLine | GuiActionType.SuppressCallAppHost
             });
 
@@ -1235,8 +1235,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 100 };
             gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 100 };
 
-            gridCenterWorkplace.GridProperties.PaintLinkPairs = new List<string>();
-            gridCenterWorkplace.GridProperties.PaintLinkPairs.Add("C1190:C1190");
+            gridCenterWorkplace.GridProperties.MousePaintLink = this.CreateCenterPanelMousePaint();
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -1292,6 +1291,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.GridCenterWorkplace = gridCenterWorkplace;
             this.MainPage.MainPanel.Grids.Add(gridCenterWorkplace);
+        }
+        /// <summary>
+        /// Vrátí definici pro ruční zakreslenování vztahů
+        /// </summary>
+        /// <returns></returns>
+        private GuiMousePaintLink CreateCenterPanelMousePaint()
+        {
+            GuiMousePaintLink paint = new GuiMousePaintLink();
+            paint.PaintLinkPairs = new List<string>();
+            paint.PaintLinkPairs.Add("C1190:C1190");
+            paint.PaintLineShape = GuiLineShape.ZigZagVertical;
+            paint.EnabledLineForeColor = Color.YellowGreen;
+            paint.EnabledLineWidth = 6;
+            paint.DisabledLineForeColor = Color.Red;
+            paint.DisabledLineWidth = 6;
+            return paint;
         }
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu do dolní tabulky = Osoby
