@@ -3806,7 +3806,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
             hx = px + (dx / 2);        // Poloviční souřadnice X, kde se křivka lomí z vodorovné do svislé
 
-            if (_EnableLineZigZag(dy, treshold))
+            if (_EnableLineZigZag(dx, treshold))
             {   // Vykreslíme ZigZag, protože máme dostatek prostoru:
                 path.AddLine(px, py, hx, py);    // Vodorovně z Prev do půli cesty k Next
                 path.AddLine(hx, py, hx, ny);    // Svisle k Next
@@ -3888,10 +3888,10 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         private static bool _EnableLineZigZag(int diff, float? treshold = null)
         {
             if (!treshold.HasValue || treshold.Value <= 0f) return true;       // Pokud není zadáno, pak dáme ZigZag bez omezení
-            int half = diff / 2;
-            if (half < 0) half = -half;
+            int half = diff / 2;                 // diff je vzdálenost bodů prev a next, ale ZigZag kreslí cílovou čáru v poloviční délce
+            if (half < 0) half = -half;          // zajímá nás Abs(half)
             int tres = (int)Math.Ceiling(treshold.Value);
-            return (half >= tres);
+            return (half >= tres);               // ZigZag můžeme kreslit, když daný prostor je větší než treshold (Ceiling)
         }
         private static GraphicsPath _CreatePathLinkHalf(Point? prevPoint, Point? nextPoint, int halfLength)
         {
