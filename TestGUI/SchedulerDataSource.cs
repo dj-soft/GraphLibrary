@@ -794,6 +794,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.Properties.TimeChangeInitialValue = this.TimeRangeCurrent;
             this.MainData.Properties.DoubleClickOnGraph = GuiDoubleClickAction.OpenForm;
             this.MainData.Properties.DoubleClickOnGraphItem = GuiDoubleClickAction.TimeZoom;
+            this.MainData.Properties.LineShapeEndBegin = GuiLineShape.ZigZagVertical;
         }
         /// <summary>
         /// Vygeneruje nastavení toolbaru GUI
@@ -1688,6 +1689,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (dataInfo.WorkUnit.PlanUnitC == null || dataInfo.WorkUnit.PlanUnitC.PlanUnitType != PlanUnitType.Person) return false;
             return this.DeleteData(dataInfo.WorkUnit.RecordGid);
         }
+        /// <summary>
+        /// Uživatel nakreslil vztah mezi prvek A a B
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="guiResponse"></param>
+        protected void AddInteractiveLink(GuiRequest request, GuiResponse guiResponse)
+        {
+            if (request.InteractiveDraw != null)
+            {
+                var draw = request.InteractiveDraw;
+                guiResponse.ChangeLinks = new List<GuiResponseGraphLink>();
+                guiResponse.ChangeLinks.Add(new GuiResponseGraphLink()
+                {
+                    TableName = draw.SourceItem.TableName,
+                    ItemIdPrev = draw.SourceItem.GroupId,
+                    ItemIdNext = draw.TargetItem.GroupId,
+                    LinkType = GuiGraphItemLinkType.PrevEndToNextBegin,
+                    RelationType = GuiGraphItemLinkRelation.OneLevel,
+                    LinkWidth = 5
+                });
+            }
+        }
+
         /// <summary>
         /// Do dané <see cref="GuiResponse"/> vloží hodnoty ClearLinks, ClearSelected a ToolbarItems[SaveData].Enable
         /// </summary>
@@ -2602,6 +2626,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.ApplyCommonToResponse(responseArgs.GuiResponse);
                         break;
 
+                    case GuiRequest.COMMAND_InteractiveDraw:
+                        this.AddInteractiveLink(requestArgs.Request, responseArgs.GuiResponse);
+                        break;
+
                     case GuiRequest.COMMAND_ToolbarClick:
                         switch (requestArgs.Request.ToolbarItem.Name)
                         {
@@ -3168,7 +3196,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 ItemIdPrev = prev?.RecordGid,
                 ItemIdNext = next?.RecordGid,
-                LinkType = GuiGraphItemLinkType.PrevEndToNextBeginSCurve,
+                LinkType = GuiGraphItemLinkType.PrevEndToNextBegin,
                 RelationType = GuiGraphItemLinkRelation.OneLevel,
                 LinkWidth = width
             };
