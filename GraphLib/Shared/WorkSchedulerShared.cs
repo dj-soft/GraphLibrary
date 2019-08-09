@@ -168,6 +168,8 @@ namespace Noris.LCS.Base.WorkScheduler
             this.TotalTimeRange = TotalTimeRangeDefault;
             this.InitialTimeRange = InitialTimeRangeDefault;
             this.TimeChangeSend = TimeChangeSendMode.None;
+            this.LineShapeCenter = GuiLineShape.ZigZagVertical;
+            this.LineShapeEndBegin = GuiLineShape.SCurveHorizontal;
         }
         /// <summary>
         /// Titulek okna pluginu.
@@ -244,6 +246,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Reakce na DoubleClick v prostoru Prvku na Časovém grafu
         /// </summary>
         public GuiDoubleClickAction DoubleClickOnGraphItem { get; set; }
+        /// <summary>
+        /// Tvar spojovací linky výchozí pro spojnici prvků grafu typu Center.
+        /// </summary>
+        public GuiLineShape? LineShapeCenter { get; set; }
+        /// <summary>
+        /// Tvar spojovací linky výchozí pro spojnici prvků grafu typu End to Begin.
+        /// </summary>
+        public GuiLineShape? LineShapeEndBegin { get; set; }
         /// <summary>
         /// Defaultní časový interval pro <see cref="TotalTimeRange"/>
         /// </summary>
@@ -1022,80 +1032,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         InDynamicChildOnly = 0x4000
     }
-    /// <summary>
-    /// Typ spojovací čáry
-    /// </summary>
-    public enum GuiLineShape
-    {
-        /// <summary>
-        /// Nekreslí se nic
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Přímá rovná čára z bodu Start do bodu End
-        /// </summary>
-        StraightLine,
-        /// <summary>
-        /// Esíčková křivka z bodu Start do bodu End, zleva doprava
-        /// </summary>
-        SCurveVertical,
-        /// <summary>
-        /// Esíčková křivka z bodu Start do bodu End, nahoru / dolů
-        /// </summary>
-        SCurveHorizontal,
-        /// <summary>
-        /// Rovná, lomená křivka, vodorovná : z bodu Start doprava/doleva, v polovině pak nahoru/dolů, a nakonec doprava/doleva do End
-        /// </summary>
-        ZigZagHorizonal,
-        /// <summary>
-        /// Rovná, lomená křivka, svislá : z bodu Start nahoru/dolů, v polovině pak doprava/doleva, a nakonec nahoru/dolů do End
-        /// </summary>
-        ZigZagVertical
-    }
-    /// <summary>
-    /// Druh zakončení čáry
-    /// </summary>
-    public enum GuiLineEndingCap
-    {
-        /// <summary>
-        /// Specifies a flat line cap.
-        /// </summary>
-        Flat = 0,
-        /// <summary>
-        /// Specifies a square line cap.
-        /// </summary>
-        Square = 1,
-        /// <summary>
-        /// Specifies a round line cap.
-        /// </summary>
-        Round = 2,
-        /// <summary>
-        /// Specifies a triangular line cap.
-        /// </summary>
-        Triangle = 3,
-        /// <summary>
-        /// Specifies no anchor.
-        /// </summary>
-        NoAnchor = 16,
-        /// <summary>
-        /// Specifies a square anchor line cap.
-        /// </summary>
-        SquareAnchor = 17,
-        /// <summary>
-        /// Specifies a round anchor cap.
-        /// </summary>
-        RoundAnchor = 18,
-        /// <summary>
-        /// Specifies a diamond anchor cap.
-        /// </summary>
-        DiamondAnchor = 19,
-        /// <summary>
-        /// Specifies an arrow-shaped anchor cap.
-        /// </summary>
-        ArrowAnchor = 20,
-    }
-
-
     #endregion
     #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
     /// <summary>
@@ -3368,6 +3304,12 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public GuiGraphItemLinkType? LinkType { get; set; }
         /// <summary>
+        /// Tvar spojovací linky.
+        /// Nezadáno = použije se výchozí, viz <see cref="GuiProperties.LineShapeCenter"/> nebo <see cref="GuiProperties.LineShapeEndBegin"/>
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public GuiLineShape? LineShape { get; set; }
+        /// <summary>
         /// Šířka linky, nezadáno = 1
         /// </summary>
         [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
@@ -3408,6 +3350,7 @@ namespace Noris.LCS.Base.WorkScheduler
             {
                 string result = (this.RelationType.HasValue ? ((int)this.RelationType.Value).ToString() : "N") + ";" +
                                 (this.LinkType.HasValue ? ((int)this.LinkType.Value).ToString() : "N") + ";" +
+                                (this.LineShape.HasValue ? ((int)this.LineShape.Value).ToString() : "N") + ";" +
                                 (this.LinkWidth.HasValue ? ((int)this.LinkWidth.Value).ToString() : "N");
                 return result;
             }
@@ -3415,6 +3358,7 @@ namespace Noris.LCS.Base.WorkScheduler
             {
                 GuiGraphItemLinkRelation? relationType = null;
                 GuiGraphItemLinkType? linkType = null;
+                GuiLineShape? lineShape = null;
                 int? linkWidth = null;
 
                 if (!String.IsNullOrEmpty(value))
@@ -3426,11 +3370,14 @@ namespace Noris.LCS.Base.WorkScheduler
                     num = ConvertToInt32N(items, 1);
                     if (num.HasValue) linkType = (GuiGraphItemLinkType)num.Value;
                     num = ConvertToInt32N(items, 2);
+                    if (num.HasValue) lineShape = (GuiLineShape)num.Value;
+                    num = ConvertToInt32N(items, 3);
                     if (num.HasValue) linkWidth = num.Value;
                 }
 
                 this.RelationType = relationType;
                 this.LinkType = linkType;
+                this.LineShape = lineShape;
                 this.LinkWidth = linkWidth;
             }
         }
@@ -3464,23 +3411,91 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Nezadáno.
         /// </summary>
-        None,
+        None = 0,
         /// <summary>
         /// Neviditelná
         /// </summary>
         Invisible,
         /// <summary>
-        /// Běžná přímá návaznost = Konec prvku Prev se napojí na Počátek prvku Next, rovnou čárou
+        /// Běžná přímá návaznost = Konec prvku Prev se napojí na Počátek prvku Next
         /// </summary>
-        PrevEndToNextBeginLine,
-        /// <summary>
-        /// Běžná hladká návaznost = Konec prvku Prev se napojí na Počátek prvku Next, S-křivkou
-        /// </summary>
-        PrevEndToNextBeginSCurve,
+        PrevEndToNextBegin,
         /// <summary>
         /// Běžná synchronizace = propojí se středy prvků
         /// </summary>
         PrevCenterToNextCenter
+    }
+    /// <summary>
+    /// Typ spojovací čáry
+    /// </summary>
+    public enum GuiLineShape
+    {
+        /// <summary>
+        /// Nekreslí se nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přímá rovná čára z bodu Start do bodu End
+        /// </summary>
+        StraightLine,
+        /// <summary>
+        /// Esíčková křivka z bodu Start do bodu End, zleva doprava
+        /// </summary>
+        SCurveVertical,
+        /// <summary>
+        /// Esíčková křivka z bodu Start do bodu End, nahoru / dolů
+        /// </summary>
+        SCurveHorizontal,
+        /// <summary>
+        /// Rovná, lomená křivka, vodorovná : z bodu Start doprava/doleva, v polovině pak nahoru/dolů, a nakonec doprava/doleva do End
+        /// </summary>
+        ZigZagHorizontal,
+        /// <summary>
+        /// Rovná, lomená křivka, svislá : z bodu Start nahoru/dolů, v polovině pak doprava/doleva, a nakonec nahoru/dolů do End
+        /// </summary>
+        ZigZagVertical
+    }
+    /// <summary>
+    /// Druh zakončení čáry
+    /// </summary>
+    public enum GuiLineEndingCap
+    {
+        /// <summary>
+        /// Specifies a flat line cap.
+        /// </summary>
+        Flat = 0,
+        /// <summary>
+        /// Specifies a square line cap.
+        /// </summary>
+        Square = 1,
+        /// <summary>
+        /// Specifies a round line cap.
+        /// </summary>
+        Round = 2,
+        /// <summary>
+        /// Specifies a triangular line cap.
+        /// </summary>
+        Triangle = 3,
+        /// <summary>
+        /// Specifies no anchor.
+        /// </summary>
+        NoAnchor = 16,
+        /// <summary>
+        /// Specifies a square anchor line cap.
+        /// </summary>
+        SquareAnchor = 17,
+        /// <summary>
+        /// Specifies a round anchor cap.
+        /// </summary>
+        RoundAnchor = 18,
+        /// <summary>
+        /// Specifies a diamond anchor cap.
+        /// </summary>
+        DiamondAnchor = 19,
+        /// <summary>
+        /// Specifies an arrow-shaped anchor cap.
+        /// </summary>
+        ArrowAnchor = 20,
     }
     #endregion
     #region GuiKeyAction : Akce spojená s klávesou

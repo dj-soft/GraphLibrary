@@ -3504,16 +3504,26 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="lineType"></param>
         /// <param name="prevPoint"></param>
         /// <param name="nextPoint"></param>
+        /// <param name="treshold">Prahová hodnota, pod kterou se místo čáry ZigZag bude kreslit Straight. 
+        /// Pokud by vzdálenost prevPoint a nextPoint v klíčovém směru byla menší než treshold, 
+        /// pak by lomená čára vykreslená pomocí Windows s nějakým větším LineCap byla ošklivá.
+        /// Bylo to zjištěno pro typ linky <see cref="LinkLineType.ZigZagHorizontal"/>, pokud je větší šířka čáry, tvar zakončení je <see cref="LineCap.ArrowAnchor"/>,
+        /// a vzdálenost bodů na ose Y je menší, pak při vykreslení (DrawLinkPath()) byl ignorován předposlední bod, a linka neměla tvar ZigZag (Svisle - Vodorovně - Svisle),
+        /// protože poslední Svisle bylo menší než bylo potřeba pro vykreslení závěrečné šipky (ArrowAnchor), a tak se místo posledních dvou úseků (Vodorovně - Svisle)
+        /// natáhla šikmá linka po úhlopříčce.
+        /// A toto chování je navíc závislé i na šířce čáry, protože podle ní se odvozuje délka ArrowAnchor.
+        /// Proto je pro čáry ZigZag vhodné zadávat treshold ve velikosti cca 2.5 * šířka čáry.
+        /// </param>
         /// <returns></returns>
-        internal static GraphicsPath CreatePathLink(LinkLineType lineType, Point? prevPoint, Point? nextPoint)
+        internal static GraphicsPath CreatePathLink(LinkLineType lineType, Point? prevPoint, Point? nextPoint, float? treshold = null)
         {
             switch (lineType)
             {
                 case LinkLineType.StraightLine: return CreatePathStraightLine(prevPoint, nextPoint);
                 case LinkLineType.SCurveHorizontal: return CreatePathSCurveHorizontal(prevPoint, nextPoint);
                 case LinkLineType.SCurveVertical: return CreatePathSCurveVertical(prevPoint, nextPoint);
-                case LinkLineType.ZigZagHorizontal: return CreatePathLinkZigZagHorizontal(prevPoint, nextPoint);
-                case LinkLineType.ZigZagVertical: return CreatePathLinkZigZagVertical(prevPoint, nextPoint);
+                case LinkLineType.ZigZagHorizontal: return CreatePathLinkZigZagHorizontal(prevPoint, nextPoint, treshold);
+                case LinkLineType.ZigZagVertical: return CreatePathLinkZigZagVertical(prevPoint, nextPoint, treshold);
             }
             return null;
         }
@@ -3757,9 +3767,6 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             path.AddBezier(px, py, px, py + by, nx, ny - by, nx, ny);
             return path;
         }
-
-
-
         /// <summary>
         /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje prostou lomenou linku, která jde z bodu "prevPoint" do bodu "nextPoint".
         /// Křivka vede z bodu <paramref name="prevPoint"/> vodorovně do poloviční vzdálenosti (ve směru X) k bodu <paramref name="nextPoint"/>,
@@ -3771,8 +3778,18 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// </summary>
         /// <param name="prevPoint">Bod počátku</param>
         /// <param name="nextPoint">Bod konce</param>
+        /// <param name="treshold">Prahová hodnota, pod kterou se místo čáry ZigZag bude kreslit Straight. 
+        /// Pokud by vzdálenost prevPoint a nextPoint v klíčovém směru byla menší než treshold, 
+        /// pak by lomená čára vykreslená pomocí Windows s nějakým větším LineCap byla ošklivá.
+        /// Bylo to zjištěno pro typ linky <see cref="LinkLineType.ZigZagHorizontal"/>, pokud je větší šířka čáry, tvar zakončení je <see cref="LineCap.ArrowAnchor"/>,
+        /// a vzdálenost bodů na ose Y je menší, pak při vykreslení (DrawLinkPath()) byl ignorován předposlední bod, a linka neměla tvar ZigZag (Svisle - Vodorovně - Svisle),
+        /// protože poslední Svisle bylo menší než bylo potřeba pro vykreslení závěrečné šipky (ArrowAnchor), a tak se místo posledních dvou úseků (Vodorovně - Svisle)
+        /// natáhla šikmá linka po úhlopříčce.
+        /// A toto chování je navíc závislé i na šířce čáry, protože podle ní se odvozuje délka ArrowAnchor.
+        /// Proto je pro čáry ZigZag vhodné zadávat treshold ve velikosti cca 2.5 * šířka čáry.
+        /// </param>
         /// <returns></returns>
-        internal static GraphicsPath CreatePathLinkZigZagHorizontal(Point? prevPoint, Point? nextPoint)
+        internal static GraphicsPath CreatePathLinkZigZagHorizontal(Point? prevPoint, Point? nextPoint, float? treshold = null)
         {
             if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
             if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
@@ -3789,9 +3806,16 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
             hx = px + (dx / 2);        // Poloviční souřadnice X, kde se křivka lomí z vodorovné do svislé
 
-            path.AddLine(px, py, hx, py);        // Vodorovně z Prev do půli cesty k Next
-            path.AddLine(hx, py, hx, ny);        // Svisle k Next
-            path.AddLine(hx, ny, nx, ny);        // Vodorovně do Next
+            if (_EnableLineZigZag(dy, treshold))
+            {   // Vykreslíme ZigZag, protože máme dostatek prostoru:
+                path.AddLine(px, py, hx, py);    // Vodorovně z Prev do půli cesty k Next
+                path.AddLine(hx, py, hx, ny);    // Svisle k Next
+                path.AddLine(hx, ny, nx, ny);    // Vodorovně do Next
+            }
+            else
+            {   // Máme málo místa, vykreslíme Straight:
+                path.AddLine(px, py, nx, ny);    // Přímo ze začátku do konce
+            }
             return path;
         }
         /// <summary>
@@ -3805,8 +3829,18 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// </summary>
         /// <param name="prevPoint">Bod počátku</param>
         /// <param name="nextPoint">Bod konce</param>
+        /// <param name="treshold">Prahová hodnota, pod kterou se místo čáry ZigZag bude kreslit Straight. 
+        /// Pokud by vzdálenost prevPoint a nextPoint v klíčovém směru byla menší než treshold, 
+        /// pak by lomená čára vykreslená pomocí Windows s nějakým větším LineCap byla ošklivá.
+        /// Bylo to zjištěno pro typ linky <see cref="LinkLineType.ZigZagHorizontal"/>, pokud je větší šířka čáry, tvar zakončení je <see cref="LineCap.ArrowAnchor"/>,
+        /// a vzdálenost bodů na ose Y je menší, pak při vykreslení (DrawLinkPath()) byl ignorován předposlední bod, a linka neměla tvar ZigZag (Svisle - Vodorovně - Svisle),
+        /// protože poslední Svisle bylo menší než bylo potřeba pro vykreslení závěrečné šipky (ArrowAnchor), a tak se místo posledních dvou úseků (Vodorovně - Svisle)
+        /// natáhla šikmá linka po úhlopříčce.
+        /// A toto chování je navíc závislé i na šířce čáry, protože podle ní se odvozuje délka ArrowAnchor.
+        /// Proto je pro čáry ZigZag vhodné zadávat treshold ve velikosti cca 2.5 * šířka čáry.
+        /// </param>
         /// <returns></returns>
-        internal static GraphicsPath CreatePathLinkZigZagVertical(Point? prevPoint, Point? nextPoint)
+        internal static GraphicsPath CreatePathLinkZigZagVertical(Point? prevPoint, Point? nextPoint, float? treshold = null)
         {
             if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
             if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
@@ -3823,10 +3857,41 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
             hy = py + (dy / 2);        // Poloviční souřadnice Y, kde se křivka lomí z svislé do vodorovné
 
-            path.AddLine(px, py, px, hy);        // Svisle z Prev do půli cesty k Next
-            path.AddLine(px, hy, nx, hy);        // Vodorovně k Next
-            path.AddLine(nx, hy, nx, ny);        // Svisle do Next
+            if (_EnableLineZigZag(dy, treshold))
+            {   // Vykreslíme ZigZag, protože máme dostatek prostoru:
+                path.AddLine(px, py, px, hy);    // Svisle z Prev do půli cesty k Next
+                path.AddLine(px, hy, nx, hy);    // Vodorovně k Next
+                path.AddLine(nx, hy, nx, ny);    // Svisle do Next
+            }
+            else
+            {   // Máme málo místa, vykreslíme Straight:
+                path.AddLine(px, py, nx, ny);    // Přímo ze začátku do konce
+            }
             return path;
+        }
+        /// <summary>
+        /// Vrátí true, pokud pro danou vzdálenost bodů prevPoint a nextPoint na důležité ose (Horizontal: X; Vertical: Y) a daná práh (treshold)
+        /// je vhodné vytvářet čáru ZigZag (vrací true) nebo dát Straight (když vrací false).
+        /// </summary>
+        /// <param name="diff">Celá vzdálenost bodů Prev a Next v klíčové ose</param>
+        /// <param name="treshold">Prahová hodnota, pod kterou se místo čáry ZigZag bude kreslit Straight. 
+        /// Pokud by vzdálenost prevPoint a nextPoint v klíčovém směru byla menší než treshold, 
+        /// pak by lomená čára vykreslená pomocí Windows s nějakým větším LineCap byla ošklivá.
+        /// Bylo to zjištěno pro typ linky <see cref="LinkLineType.ZigZagHorizontal"/>, pokud je větší šířka čáry, tvar zakončení je <see cref="LineCap.ArrowAnchor"/>,
+        /// a vzdálenost bodů na ose Y je menší, pak při vykreslení (DrawLinkPath()) byl ignorován předposlední bod, a linka neměla tvar ZigZag (Svisle - Vodorovně - Svisle),
+        /// protože poslední Svisle bylo menší než bylo potřeba pro vykreslení závěrečné šipky (ArrowAnchor), a tak se místo posledních dvou úseků (Vodorovně - Svisle)
+        /// natáhla šikmá linka po úhlopříčce.
+        /// A toto chování je navíc závislé i na šířce čáry, protože podle ní se odvozuje délka ArrowAnchor.
+        /// Proto je pro čáry ZigZag vhodné zadávat treshold ve velikosti cca 2.5 * šířka čáry.
+        /// </param>
+        /// <returns></returns>
+        private static bool _EnableLineZigZag(int diff, float? treshold = null)
+        {
+            if (!treshold.HasValue || treshold.Value <= 0f) return true;       // Pokud není zadáno, pak dáme ZigZag bez omezení
+            int half = diff / 2;
+            if (half < 0) half = -half;
+            int tres = (int)Math.Ceiling(treshold.Value);
+            return (half >= tres);
         }
         private static GraphicsPath _CreatePathLinkHalf(Point? prevPoint, Point? nextPoint, int halfLength)
         {
@@ -4934,7 +4999,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
     /// <summary>
     /// Typ spojovací čáry
     /// </summary>
-    internal enum LinkLineType : int
+    public enum LinkLineType : int
     {
         /// <summary>
         /// Žádná

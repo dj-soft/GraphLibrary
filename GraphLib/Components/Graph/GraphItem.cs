@@ -1379,7 +1379,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public override string ToString()
         {
-            return "GraphLink; IdPrev: " + this.ItemIdPrev + "; IdNext: " + this.ItemIdNext + "; LinkType: " + (this.LinkType.HasValue ? this.LinkType.Value.ToString() : "{Null}");
+            return "GraphLink; IdPrev: " + this.ItemIdPrev + "; IdNext: " + this.ItemIdNext + "; LinkType: " + (this.LinkCenter ? "Center" : "End-Begin") + "; Shape: " + this.LineShape.ToString();
         }
         /// <summary>
         /// ID prvku předchozího
@@ -1398,9 +1398,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraphItem ItemNext { get; set; }
         /// <summary>
-        /// Typ linky, nezadáno = použije se <see cref="GuiGraphItemLinkType.PrevEndToNextBeginLine"/>
+        /// Druh spojení prvků: false = spojí se konec Prev a začátek Next (odpovídá <see cref="GuiGraphItemLinkType.PrevEndToNextBegin"/>),
+        /// true = spojí se středy prvků (odpovídá <see cref="GuiGraphItemLinkType.PrevCenterToNextCenter"/>).
         /// </summary>
-        public GuiGraphItemLinkType? LinkType { get; set; }
+        public bool LinkCenter { get; set; }
+        /// <summary>
+        /// Tvar spojovací linie (čára, křivka, cikcak), podle zadání v datech.
+        /// Pokud je null, pak se bude brát hodnota z lokální konfigrace v procesu kreslení.
+        /// Aktuálně platná hodnota je uložena v <see cref="CurrentLineShape"/>.
+        /// </summary>
+        public LinkLineType? LineShape { get; set; }
+        /// <summary>
+        /// Tvar spojovací linie (čára, křivka, cikcak), aktuálně platná.
+        /// </summary>
+        protected LinkLineType CurrentLineShape { get; set; }
         /// <summary>
         /// Šířka linky, nezadáno = 1
         /// </summary>
@@ -1478,6 +1489,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     break;
             }
         }
+        /// <summary>
+        /// Určí aktuálně platný tvar čáry <see cref="CurrentLineShape"/> podle hodnoty v datech <see cref="LineShape"/>, a pokud není zadáno pak vezme defaultní (parametr).
+        /// </summary>
+        /// <param name="defaultLineType">Výchozí tvar křivky dle konfigurace</param>
+        internal void PrepareCurrentLine(LinkLineType defaultLineType)
+        {
+            this.CurrentLineShape = this.LineShape ?? defaultLineType;
+        }
         #endregion
         #region Klíč linku
         /// <summary>
@@ -1515,9 +1534,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal bool NeedDraw { get { return (this.IsLinkTypeVisible && this.ItemPrev != null && this.ItemNext != null); } }
         /// <summary>
-        /// Obsahuje true, pokud linka podle jejího typu je viditelná
+        /// Obsahuje true, pokud linka podle jejího tvaru je viditelná
         /// </summary>
-        internal bool IsLinkTypeVisible { get { return (this.LinkType.HasValue && (this.LinkType.Value == GuiGraphItemLinkType.PrevCenterToNextCenter || this.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginLine || this.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginSCurve)); } }
+        internal bool IsLinkTypeVisible { get { return (this.LineShape != LinkLineType.None); } }
         /// <summary>
         /// Vykreslí tuto jednu linku
         /// </summary>
@@ -1526,18 +1545,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
         internal void Draw(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
-            GuiGraphItemLinkType linkType = (this.LinkType ?? GuiGraphItemLinkType.None);
-            switch (linkType)
+            if (this.IsLinkTypeVisible)
             {
-                case GuiGraphItemLinkType.PrevCenterToNextCenter:
+                if (this.LinkCenter)
                     this.DrawCenter(e, mode, ratio);
-                    break;
-                case GuiGraphItemLinkType.PrevEndToNextBeginLine:
-                    this.DrawPrevNext(e, mode, ratio, false);
-                    break;
-                case GuiGraphItemLinkType.PrevEndToNextBeginSCurve:
-                    this.DrawPrevNext(e, mode, ratio, true);
-                    break;
+                else
+                    this.DrawPrevNext(e, mode, ratio);
             }
         }
         /// <summary>
@@ -1564,8 +1577,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
-        /// <param name="asSCurve"></param>
-        protected void DrawPrevNext(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio, bool asSCurve)
+        protected void DrawPrevNext(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
             GTimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
@@ -1574,7 +1586,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.MiddleRight, true);
             Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.MiddleLeft, true);
 
-            using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = GPainter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
+            float? treshold = 4f * (float)(this.LinkWidth.HasValue ? this.LinkWidth.Value : 3);
+            using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = GPainter.CreatePathLink(this.CurrentLineShape, prevPoint, nextPoint, treshold))
             {
                 GPainter.DrawLinkPath(e.Graphics, graphicsPath, color1, null, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
             }

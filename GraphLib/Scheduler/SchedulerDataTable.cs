@@ -1014,7 +1014,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Odeberu stávající záznamy (z GraphLinkDict), které mají shodné klíče Prev a Next s těmi, které se budou zanedlouho přidávat:
             if (removeItems)
-                // Tady předávám referenci na IEnumerable links, které ještě reálně není enumerováno!!!  Úmyslně! 
+                // Tady předávám referenci na IEnumerable links, které ještě reálně není enumerováno!!!  Úmyslně! Proto, že v metodě RemoveGraphLinks() možná ani nedojde k jejímu reálnému použití (viz tam, druhý řádek)
                 this.RemoveGraphLinks(links.Select(l => new Tuple<int, int>(l.ItemIdPrev, l.ItemIdNext)));
 
             // Objekt DictionaryList drží soupisy vztahů jak při pohledu zleva, tak zprava.
@@ -1032,7 +1032,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void RemoveGraphLinks(IEnumerable<GuiGraphLink> guiLinks)
         {
             if (guiLinks == null) return;
-            if (this.GraphLinkPrevDict.CountKeys == 0 && this.GraphLinkNextDict.CountKeys == 0) return;
+            if (this.GraphLinkPrevDict.CountKeys == 0 && this.GraphLinkNextDict.CountKeys == 0) return; // Pokud není CO SMAZAT, nepotřebuji pracovat se vstupní kolekcí!
 
             // Vytvořím soupis dvojklíčů <Int32> z pole linků, kde jsou klíče Prev a Next ve formě <GuiId>:
             Tuple<int, int>[] twoKeys = guiLinks
@@ -1067,16 +1067,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="searchSidePrev">Hledej linky na straně Prev</param>
         /// <param name="searchSideNext">Hledej linky na straně Next</param>
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
-        /// <param name="asSCurve">Nastav linky "Jako S křivky"</param>
+        /// <param name="defaultLineType">Výchozí tvar křivky dle konfigurace</param>
         /// <returns></returns>
-        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem currentItem, bool searchSidePrev, bool searchSideNext, bool wholeTask, bool? asSCurve)
+        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem currentItem, bool searchSidePrev, bool searchSideNext, bool wholeTask, LinkLineType defaultLineType)
         {
             Dictionary<uint, GTimeGraphItem> itemDict = new Dictionary<uint, GTimeGraphItem>();
             Dictionary<ulong, GTimeGraphLinkItem> linkDict = new Dictionary<ulong, GTimeGraphLinkItem>();
             if (currentItem != null)
             {
-                if (searchSidePrev && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask, asSCurve);
-                if (searchSideNext && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask, asSCurve);
+                if (searchSidePrev && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask, defaultLineType);
+                if (searchSideNext && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask, defaultLineType);
             }
             return linkDict.Values.ToArray();
         }
@@ -1093,10 +1093,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="scanItemDict">Sem se průběžně ukládají scanované prvky, aby nedošlo k zacyklení - vyjma prvního (ten se scanuje dvakrát, jednou Prev a podruhé Next)</param>
         /// <param name="resultLinkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="GTimeGraphLinkItem.Key"/>; jde o průběžný výstup</param>
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
-        /// <param name="asSCurve">Nastav linky "Jako S křivky"</param>
+        /// <param name="defaultLineType">Výchozí tvar křivky dle konfigurace</param>
         /// <returns></returns>
         private void _SearchForGraphLink(GTimeGraphItem currentItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, Direction targetSide,
-            Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask, bool? asSCurve)
+            Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask, LinkLineType defaultLineType)
         {
             Direction sourceSide = targetSide.Reverse();
             Queue<GTimeGraphItem> searchQueue = new Queue<GTimeGraphItem>();
@@ -1126,7 +1126,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     GTimeGraphItem sourceItem = this._SearchGraphItemsForLink(sourceId, position);
                     link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu (buď ten, kde hledání začalo, anebo odpovídající prvek = jeho Grupa, pro kterou máme vztahy!
                     link.SetItem(targetSide, targetItem);            // Prvek na cílové straně vztahu
-                    _AdjustLinkType(link, asSCurve);                 // Zajistí prohození typu linku podle konfigurace (proměnná asSCurve)
+                    link.PrepareCurrentLine(defaultLineType);        // Aplikuje defaultní tvar z konfigurace
                     resultLinkDict.Add(link.Key, link);
 
                     // Podle podmínek zajistíme provedení rekurze = hledání dalších vztahů z cílového prvku tohoto vztahu:
@@ -1142,21 +1142,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 // Další prvek ve frontě už budeme testovat na non-duplicitu:
                 testDuplicity = true;
-            }
-        }
-        /// <summary>
-        /// Upraví typ linku podle proměnné
-        /// </summary>
-        /// <param name="link"></param>
-        /// <param name="asSCurve"></param>
-        private void _AdjustLinkType(GTimeGraphLinkItem link, bool? asSCurve)
-        {
-            if (link != null && link.LinkType.HasValue && asSCurve.HasValue)
-            {
-                if (link.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginLine && asSCurve.Value)
-                    link.LinkType = GuiGraphItemLinkType.PrevEndToNextBeginSCurve;
-                else if (link.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginSCurve && !asSCurve.Value)
-                    link.LinkType = GuiGraphItemLinkType.PrevEndToNextBeginLine;
             }
         }
         /// <summary>
@@ -1237,11 +1222,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected GTimeGraphLinkItem CreateGraphLink(GuiGraphLink guiGraphLink)
         {
+            if (!guiGraphLink.LinkType.HasValue || guiGraphLink.LinkType.Value == GuiGraphItemLinkType.None || guiGraphLink.LinkType.Value == GuiGraphItemLinkType.Invisible) return null;
+            bool linkCenter = (guiGraphLink.LinkType.Value == GuiGraphItemLinkType.PrevCenterToNextCenter);
+            LinkLineType? lineShape = CreateLinkShape(guiGraphLink.LineShape, linkCenter);
             GTimeGraphLinkItem graphLink = new GTimeGraphLinkItem()
             {
                 ItemIdPrev = this.GetId(guiGraphLink.ItemIdPrev),
                 ItemIdNext = this.GetId(guiGraphLink.ItemIdNext),
-                LinkType = guiGraphLink.LinkType,
+                LinkCenter = linkCenter,
+                LineShape = lineShape,
                 LinkWidth = guiGraphLink.LinkWidth,
                 LinkColorStandard = guiGraphLink.LinkColorStandard,
                 LinkColorWarning = guiGraphLink.LinkColorWarning,
@@ -1249,6 +1238,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GuiGraphLink = guiGraphLink
             };
             return graphLink;
+        }
+        /// <summary>
+        /// Vrací typ tvaru čáry
+        /// </summary>
+        /// <param name="lineShape"></param>
+        /// <param name="linkCenter"></param>
+        /// <returns></returns>
+        protected LinkLineType? CreateLinkShape(GuiLineShape? lineShape, bool linkCenter)
+        {
+            if (!lineShape.HasValue)
+            {
+                GuiProperties guiProperties = this.MainData.GuiData?.Properties;
+                if (guiProperties != null)
+                    lineShape = (linkCenter ? guiProperties.LineShapeCenter : guiProperties.LineShapeEndBegin);
+            }
+            if (lineShape.HasValue)
+            {
+                switch (lineShape.Value)
+                {
+                    case GuiLineShape.StraightLine: return LinkLineType.StraightLine;
+                    case GuiLineShape.SCurveHorizontal: return LinkLineType.SCurveHorizontal;
+                    case GuiLineShape.SCurveVertical: return LinkLineType.SCurveVertical;
+                    case GuiLineShape.ZigZagHorizontal: return LinkLineType.ZigZagHorizontal;
+                    case GuiLineShape.ZigZagVertical: return LinkLineType.ZigZagVertical;
+                }
+            }
+            return null;
         }
         /// <summary>
         /// Soupis linků mezi prvky grafů v této tabulce, ze strany Prev.
@@ -4564,9 +4580,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             bool wholeTask = GraphItemLinksForWholeTask(args.ItemEvent);
             bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
+            LinkLineType defaultLineType = (asSCurve ? LinkLineType.SCurveHorizontal : LinkLineType.StraightLine);
 
             GTimeGraphItem currentItem = args.ItemControl ?? args.GroupControl;     // Na tomto prvku začne hledání. Může to být prvek konkrétní, anebo prvek grupy.
-            args.Links = this.SearchForGraphLink(currentItem, args.SearchSidePrev, args.SearchSideNext, wholeTask, asSCurve);
+            args.Links = this.SearchForGraphLink(currentItem, args.SearchSidePrev, args.SearchSideNext, wholeTask, defaultLineType);
         }
         /// <summary>
         /// Metoda vrátí true, pokud pro daný typ události se podle konfigurace mají zobrazovat vztahy (Linky) pro všechny prvky tasku = celá sekvence,

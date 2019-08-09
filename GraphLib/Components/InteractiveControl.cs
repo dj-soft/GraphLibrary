@@ -1827,8 +1827,44 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="lineType"></param>
         private void _MousePaintDrawLink(Graphics graphics, MousePaintInfo mousePaintInfo, LinkLineType lineType)
         {
-            using (var line = GPainter.CreatePathLink(lineType, mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value))
+            float? treshold = _MousePaintGetTreshold(mousePaintInfo, lineType);
+            using (var line = GPainter.CreatePathLink(lineType, mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value, treshold))
                 _MousePaintDrawPath(graphics, line, mousePaintInfo);
+        }
+        /// <summary>
+        /// Vrátí treshold pro tvorbu čáry pro daný tvar čáry, daný typ zakončení a šířku.
+        /// </summary>
+        /// <param name="mousePaintInfo"></param>
+        /// <param name="lineType"></param>
+        /// <returns></returns>
+        private float? _MousePaintGetTreshold(MousePaintInfo mousePaintInfo, LinkLineType lineType)
+        {
+            if (lineType == LinkLineType.StraightLine || lineType == LinkLineType.SCurveHorizontal || lineType == LinkLineType.SCurveVertical) return null;
+
+            float coeff1 = _MousePaintGetLineCapCoeff(mousePaintInfo.StartCap);
+            float coeff2 = _MousePaintGetLineCapCoeff(mousePaintInfo.EndCap);
+            float coeff = (coeff1 > coeff2 ? coeff1 : coeff2);
+            float width = mousePaintInfo.LineWidth;
+            return 1.1f * coeff * width;
+        }
+        /// <summary>
+        /// Vrátí koeficient délky daného zakončení čáry
+        /// </summary>
+        /// <param name="lineCap"></param>
+        /// <returns></returns>
+        private static float _MousePaintGetLineCapCoeff(LineCap lineCap)
+        {
+            switch (lineCap)
+            {
+                case LineCap.AnchorMask:
+                case LineCap.DiamondAnchor:
+                case LineCap.RoundAnchor:
+                case LineCap.SquareAnchor:
+                    return 2f;
+                case LineCap.ArrowAnchor:
+                    return 3f;
+            }
+            return 1f;
         }
         /// <summary>
         /// Metoda zajistí vykreslení obrazce kresleného myší - tvar: Rectangle
