@@ -1699,8 +1699,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (request.InteractiveDraw != null)
             {
                 var draw = request.InteractiveDraw;
-                guiResponse.ChangeLinks = new List<GuiResponseGraphLink>();
-                guiResponse.ChangeLinks.Add(new GuiResponseGraphLink()
+                guiResponse.ChangeLinks = new List<GuiGraphLink>();
+                guiResponse.ChangeLinks.Add(new GuiGraphLink()
                 {
                     TableName = draw.SourceItem.TableName,
                     ItemIdPrev = draw.SourceItem.GroupId,
