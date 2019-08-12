@@ -3272,6 +3272,10 @@ namespace Noris.LCS.Base.WorkScheduler
             return "Link; Prev: " + this.ItemIdPrev + "; Type: " + this.LinkType + "; Next: " + this.ItemIdNext;
         }
         /// <summary>
+        /// FullName tabulky, do které se má tento prvek vložit.
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
         /// ID prvku předchozího v tomto vztahu.
         /// ID může pocházet buď <see cref="GuiGraphItem.ItemId"/>, nebo <see cref="GuiGraphItem.GroupId"/>.
         /// Podle toho se Link chová a vykresluje.
@@ -5825,7 +5829,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Obecně: všechny linky (které mají řádně naplněny obě strany vztahu (Prev i Next)) budou z grafu nejprve odebrány, 
         /// a následně do grafu budou přidány ty linky, které mají nastaven <see cref="GuiGraphLink.LinkType"/>.
         /// </summary>
-        public List<GuiResponseGraphLink> ChangeLinks { get; set; }
+        public List<GuiGraphLink> ChangeLinks { get; set; }
         #endregion
         #region Statické konstruktory: Success, Warning, Error
         /// <summary>
@@ -6067,16 +6071,13 @@ namespace Noris.LCS.Base.WorkScheduler
     /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
     /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
     /// </summary>
+    [Obsolete("Používejme rovnou třídu GuiGraphLink a naplňme její property TableName", true)]
     public class GuiResponseGraphLink : GuiGraphLink
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public GuiResponseGraphLink() : base() { }
-        /// <summary>
-        /// FullName tabulky, do které se má tento prvek vložit.
-        /// </summary>
-        public string TableName { get; set; }
     }
     /// <summary>
     /// Režim spojení stávajích dat v prvku s daty novými

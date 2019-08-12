@@ -3076,7 +3076,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="changeLinks">Změněné vztahy</param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseUpdateLinks(IEnumerable<GuiResponseGraphLink> changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseUpdateLinks(IEnumerable<GuiGraphLink> changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
         {
             if (changeLinks == null) return;
             var changeGroups = changeLinks.Where(l => l.TableName != null).GroupBy(l => l.TableName);
