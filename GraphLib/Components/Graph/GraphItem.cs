@@ -1565,8 +1565,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
             Color color1 = this.GetColorForState(relationState, graph);
 
-            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.CenterX | RectangleSide.CenterY, true);
-            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.CenterX | RectangleSide.CenterY, true);
+            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.CenterX | RectangleSide.CenterY, true, false);
+            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.CenterX | RectangleSide.CenterY, true, false);
             if (!(prevPoint.HasValue && nextPoint.HasValue)) return;
 
             GPainter.DrawLinkLine(e.Graphics, prevPoint.Value, nextPoint.Value, color1, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
@@ -1583,13 +1583,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
             Color color1 = this.GetColorForState(relationState, graph);
 
-            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.MiddleRight, true);
-            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.MiddleLeft, true);
+            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.MiddleRight, true, true);
+            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.MiddleLeft, true, true);
 
+            LinkLineType lineType = this.CurrentLineShape;
             float? treshold = 4f * (float)(this.LinkWidth.HasValue ? this.LinkWidth.Value : 3);
-            using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = GPainter.CreatePathLink(this.CurrentLineShape, prevPoint, nextPoint, treshold))
+            using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = GPainter.CreatePathLink(lineType, prevPoint, nextPoint, treshold))
             {
-                GPainter.DrawLinkPath(e.Graphics, graphicsPath, color1, null, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
+                bool useRoundAnchor = (lineType == LinkLineType.ZigZagHorizontal || lineType == LinkLineType.ZigZagVertical || lineType == LinkLineType.ZigZagOptimal);
+                System.Drawing.Drawing2D.LineCap startCap = (useRoundAnchor ? System.Drawing.Drawing2D.LineCap.RoundAnchor : System.Drawing.Drawing2D.LineCap.Round);
+                System.Drawing.Drawing2D.LineCap endCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
+                GPainter.DrawLinkPath(e.Graphics, graphicsPath, color1, null, this.LinkWidth, startCap, endCap, ratio);
             }
         }
         /// <summary>
@@ -1599,14 +1603,28 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="item"></param>
         /// <param name="side"></param>
         /// <param name="onlyVisible">true = vracet bod pouze pro objekt, který může být viditelný (z hlediska Is.Visible jeho a všech jeho Parentů)</param>
+        /// <param name="shiftInner">Posunout výsledný bod mírně směrem doprostřed objektu</param>
         /// <returns></returns>
-        protected static Point? GetPoint(InteractiveObject item, RectangleSide side, bool onlyVisible)
+        protected static Point? GetPoint(InteractiveObject item, RectangleSide side, bool onlyVisible, bool shiftInner)
         {
             if (item == null) return null;
             BoundsInfo boundsInfo = item.BoundsInfo;
             if (onlyVisible && !boundsInfo.CurrentIsVisible) return null;
             Rectangle absBounds = boundsInfo.CurrentAbsBounds;
+            if (shiftInner)
+                absBounds = GetInnerBounds(absBounds);
             return absBounds.GetPoint(side);
+        }
+        /// <summary>
+        /// Vrátí zadané souřadnice mírně zmenšené
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        protected static Rectangle GetInnerBounds(Rectangle bounds)
+        {
+            int m = (bounds.GetOrientation() == System.Windows.Forms.Orientation.Horizontal ? bounds.Height : bounds.Width) / 3;   // Menší z (Width, Height)
+            if (m > 6) m = 6;
+            return bounds.Enlarge(-m);
         }
         /// <summary>
         /// Vrací stav popisující vztah času Prev a Next

@@ -367,6 +367,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TimeGraphDict.AddRefresh(rowGid, gTimeGraph);
         }
         /// <summary>
+        /// Zajistí aktualizaci grafu do daného řádku
+        /// </summary>
+        /// <param name="row"></param>
+        protected void UpdateGraphFromRow(Row row)
+        {
+            if (this.GraphPosition == DataGraphPositionType.None) return;
+
+            GId rowGid = row.RecordGId;
+            if (rowGid == null) return;
+
+            GTimeGraph gTimeGraph;
+            if (this.TimeGraphDict.TryGetValue(rowGid, out gTimeGraph))
+            {
+                this.StoreGraphToRow(gTimeGraph, row);
+                this.RefreshGraphFromGui(gTimeGraph, row);
+            }
+            else
+            {
+                gTimeGraph = this.CreateGraphForRow(row);
+                this.TimeGraphDict.AddRefresh(rowGid, gTimeGraph);
+            }
+        }
+        /// <summary>
         /// Metoda vytvoří nový <see cref="GTimeGraph"/> pro daný řádek a pozici, umístí jej do řádku, a graf vrátí.
         /// </summary>
         /// <param name="row"></param>
@@ -376,6 +399,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTimeGraph gTimeGraph = new GTimeGraph();
             gTimeGraph.GraphId = this.GetId(row.RecordGId);
             gTimeGraph.DataSource = this;
+
+            this.StoreGraphToRow(gTimeGraph, row);
+            this.RefreshGraphFromGui(gTimeGraph, row);
+           
+            return gTimeGraph;
+        }
+        /// <summary>
+        /// Vloží dodaný graf do dodaného řádku, vzájemně je prováže - podle definice <see cref="GraphPosition"/>
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="row"></param>
+        protected void StoreGraphToRow(GTimeGraph gTimeGraph, Row row)
+        {
             gTimeGraph.UserData = row;
 
             ITimeInteractiveGraph iTimeGraph = gTimeGraph as ITimeInteractiveGraph;
@@ -390,17 +426,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 iTimeGraph.TimeAxisConvertor = this.GGrid.SynchronizedTimeConvertor;
                 row.BackgroundValue = gTimeGraph;
             }
-
-            // Naplníme do grafu data dodaná z GUI vrstvy, pokud nějaká data dodaná byla:
-            GuiDataRow dataRow = row.UserData as GuiDataRow;
+        }
+        /// <summary>
+        /// Naplní do dodaného grafu data dodaná z GUI vrstvy, pokud nějaká data dodaná byla
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="row"></param>
+        protected void RefreshGraphFromGui(GTimeGraph gTimeGraph, Row row)
+        {
+            if (row != null && row.UserData != null && row.UserData is GuiDataRow)
+                this.RefreshGraphFromGui(gTimeGraph, row.UserData as GuiDataRow);
+        }
+        /// <summary>
+        /// Naplní do dodaného grafu data dodaná z GUI vrstvy, pokud nějaká data dodaná byla
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="dataRow"></param>
+        protected void RefreshGraphFromGui(GTimeGraph gTimeGraph, GuiDataRow dataRow)
+        {
             if (dataRow != null && dataRow.Graph != null)
+                this.RefreshGraphFromGui(gTimeGraph, dataRow.Graph);
+        }
+        /// <summary>
+        /// Naplní do dodaného grafu data dodaná z GUI vrstvy, pokud nějaká data dodaná byla
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="guiGraph"></param>
+        protected void RefreshGraphFromGui(GTimeGraph gTimeGraph, GuiGraph guiGraph)
+        {
+            if (guiGraph != null)
             {
-                GuiGraph guiGraph = dataRow.Graph;
                 gTimeGraph.UpdateGraphData(guiGraph);
                 this._RefreshGraphItems(gTimeGraph, guiGraph.GraphItems);
             }
-
-            return gTimeGraph;
         }
         #endregion
         #region Vyhledání prvků grafu
@@ -623,8 +681,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
                 else
                 {   // Update:
-                    row.FillFrom(refreshRow.RowData);
-                    this.PrepareGraphForRow(row);
+                    row.UpdateFrom(refreshRow.RowData);
+                    this.UpdateGraphFromRow(row);
+         // ???     this.PrepareGraphForRow(row);
                 }
                 this.TimeGraphDict.TryGetValue(rowGId, out modifiedGraph);
             }
@@ -1262,6 +1321,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     case GuiLineShape.SCurveVertical: return LinkLineType.SCurveVertical;
                     case GuiLineShape.ZigZagHorizontal: return LinkLineType.ZigZagHorizontal;
                     case GuiLineShape.ZigZagVertical: return LinkLineType.ZigZagVertical;
+                    case GuiLineShape.ZigZagOptimal: return LinkLineType.ZigZagOptimal;
                 }
             }
             return null;
@@ -4985,6 +5045,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 targetItem.BehaviorMode = sourceItem.BehaviorMode;
                 this._BehaviorMode = sourceItem.BehaviorMode;
             }
+
+            if (this._GControl != null) this._GControl.InvalidateBounds();
 
             // Zajistit invalidaci grafu:
             return true;

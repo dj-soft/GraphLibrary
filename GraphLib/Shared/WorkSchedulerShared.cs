@@ -3457,7 +3457,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Rovná, lomená křivka, svislá : z bodu Start nahoru/dolů, v polovině pak doprava/doleva, a nakonec nahoru/dolů do End
         /// </summary>
-        ZigZagVertical
+        ZigZagVertical,
+        /// <summary>
+        /// Lomená čára optimální:
+        /// Pokud konec má souřadnici X nižší než začátek (= časově zpětná), pak je vykreslena <see cref="ZigZagVertical"/> = nejprve dolů, pak zpátky, a pak zase dolů;
+        /// Pokud konec má X rovno nebo vyšší, pak je vykreslena <see cref="ZigZagHorizontal"/> = nejprve doprava, pak nahoru/dolů, a pak doprava.
+        /// </summary>
+        ZigZagOptimal
     }
     /// <summary>
     /// Druh zakončení čáry
@@ -4693,8 +4699,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="classId">Číslo třídy</param>
         /// <param name="recordId">Číslo záznamu (MasterId)</param>
-        /// <param name="entryId">Číslo položky (EntryId)</param>
-        public GuiId(int classId, int recordId, int entryId)
+        /// <param name="entryId">Číslo položky (EntryId); pokud bude null, pak jde o ID hlavičky (Master)</param>
+        public GuiId(int classId, int recordId, int? entryId)
         {
             this.ClassId = classId;
             this.RecordId = recordId;

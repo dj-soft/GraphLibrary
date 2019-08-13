@@ -1805,6 +1805,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 case MousePaintObjectType.ZigZagVertical:
                     this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.ZigZagVertical);
                     break;
+                case MousePaintObjectType.ZigZagOptimal:
+                    this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.ZigZagOptimal);
+                    break;
                 case MousePaintObjectType.Rectangle:
                     this._MousePaintDrawRectangle(graphics, mousePaintInfo);
                     break;

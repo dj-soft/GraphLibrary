@@ -3524,6 +3524,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 case LinkLineType.SCurveVertical: return CreatePathSCurveVertical(prevPoint, nextPoint);
                 case LinkLineType.ZigZagHorizontal: return CreatePathLinkZigZagHorizontal(prevPoint, nextPoint, treshold);
                 case LinkLineType.ZigZagVertical: return CreatePathLinkZigZagVertical(prevPoint, nextPoint, treshold);
+                case LinkLineType.ZigZagOptimal: return CreatePathLinkZigZagOptimal(prevPoint, nextPoint, treshold);
             }
             return null;
         }
@@ -3658,7 +3659,6 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// </summary>
         /// <param name="prevPoint">Bod počátku</param>
         /// <param name="nextPoint">Bod konce</param>
-        /// <param name="asSCurve">Tvar S-křivky</param>
         /// <returns></returns>
         internal static GraphicsPath CreatePathSCurveHorizontal(Point? prevPoint, Point? nextPoint)
         {
@@ -3806,7 +3806,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
             hx = px + (dx / 2);        // Poloviční souřadnice X, kde se křivka lomí z vodorovné do svislé
 
-            if (_EnableLineZigZag(dx, treshold))
+            if (_EnableLineZigZag(dy, dx, treshold))
             {   // Vykreslíme ZigZag, protože máme dostatek prostoru:
                 path.AddLine(px, py, hx, py);    // Vodorovně z Prev do půli cesty k Next
                 path.AddLine(hx, py, hx, ny);    // Svisle k Next
@@ -3857,7 +3857,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
             hy = py + (dy / 2);        // Poloviční souřadnice Y, kde se křivka lomí z svislé do vodorovné
 
-            if (_EnableLineZigZag(dy, treshold))
+            if (_EnableLineZigZag(dx, dy, treshold))
             {   // Vykreslíme ZigZag, protože máme dostatek prostoru:
                 path.AddLine(px, py, px, hy);    // Svisle z Prev do půli cesty k Next
                 path.AddLine(px, hy, nx, hy);    // Vodorovně k Next
@@ -3870,9 +3870,29 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             return path;
         }
         /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje čáru <see cref="LinkLineType.ZigZagOptimal"/> 
+        /// </summary>
+        /// <param name="prevPoint"></param>
+        /// <param name="nextPoint"></param>
+        /// <param name="treshold"></param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathLinkZigZagOptimal(Point? prevPoint, Point? nextPoint, float? treshold = null)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+            if (!prevPoint.HasValue || !nextPoint.HasValue) return _CreatePathLinkHalf(prevPoint, nextPoint, 12);
+
+            int dx = nextPoint.Value.X - prevPoint.Value.X;
+            int th = (treshold.HasValue && treshold.Value > 0f ? (int)(Math.Ceiling(2f * treshold.Value)) : 8);
+            if (dx > th)
+                return CreatePathLinkZigZagHorizontal(prevPoint, nextPoint, treshold);
+            else
+                return CreatePathLinkZigZagVertical(prevPoint, nextPoint, treshold);
+        }
+        /// <summary>
         /// Vrátí true, pokud pro danou vzdálenost bodů prevPoint a nextPoint na důležité ose (Horizontal: X; Vertical: Y) a daná práh (treshold)
         /// je vhodné vytvářet čáru ZigZag (vrací true) nebo dát Straight (když vrací false).
         /// </summary>
+        /// <param name="length">Celá vzdálenost bodů Prev a Next v NEklíčové ose</param>
         /// <param name="diff">Celá vzdálenost bodů Prev a Next v klíčové ose</param>
         /// <param name="treshold">Prahová hodnota, pod kterou se místo čáry ZigZag bude kreslit Straight. 
         /// Pokud by vzdálenost prevPoint a nextPoint v klíčovém směru byla menší než treshold, 
@@ -3885,14 +3905,23 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// Proto je pro čáry ZigZag vhodné zadávat treshold ve velikosti cca 2.5 * šířka čáry.
         /// </param>
         /// <returns></returns>
-        private static bool _EnableLineZigZag(int diff, float? treshold = null)
+        private static bool _EnableLineZigZag(int length, int diff, float? treshold = null)
         {
+            if (length == 0 || diff == 0) return false;    // Pokud v jedné nebo druhé ose je rozdíl bodů == 0, pak NEkreslíme ZigZag, ale Straight
+
             if (!treshold.HasValue || treshold.Value <= 0f) return true;       // Pokud není zadáno, pak dáme ZigZag bez omezení
             int half = diff / 2;                 // diff je vzdálenost bodů prev a next, ale ZigZag kreslí cílovou čáru v poloviční délce
             if (half < 0) half = -half;          // zajímá nás Abs(half)
             int tres = (int)Math.Ceiling(treshold.Value);
             return (half >= tres);               // ZigZag můžeme kreslit, když daný prostor je větší než treshold (Ceiling)
         }
+        /// <summary>
+        /// Vytvoří a vrátí Half-čáru, kdy pouze jeden z bodů je zadán...
+        /// </summary>
+        /// <param name="prevPoint"></param>
+        /// <param name="nextPoint"></param>
+        /// <param name="halfLength"></param>
+        /// <returns></returns>
         private static GraphicsPath _CreatePathLinkHalf(Point? prevPoint, Point? nextPoint, int halfLength)
         {
             System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
@@ -5024,7 +5053,13 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <summary>
         /// Lomená čára, kde počátek i konec jsou svislé
         /// </summary>
-        ZigZagVertical
+        ZigZagVertical,
+        /// <summary>
+        /// Lomená čára optimální:
+        /// Pokud konec má souřadnici X nižší než začátek (= časově zpětná), pak je vykreslena <see cref="ZigZagVertical"/> = nejprve dolů, pak zpátky, a pak zase dolů;
+        /// Pokud konec má X rovno nebo vyšší, pak je vykreslena <see cref="ZigZagHorizontal"/> = nejprve doprava, pak nahoru/dolů, a pak doprava.
+        /// </summary>
+        ZigZagOptimal
     }
     /// <summary>
     /// Druhy transformací, pro které lze vygenerovat matrix v metodě GetMatrix(MatrixBasicTransformType).

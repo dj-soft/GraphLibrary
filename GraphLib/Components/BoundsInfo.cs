@@ -515,6 +515,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle nd = (forItem as IInteractiveItem).Bounds;
 
+            //   Použito při debugování tvorby BoundsInfo v komplikované situaci:
+            //  StringBuilder log = new StringBuilder();
+            //  log.AppendLine($"Index\tItem\tX\tY\tWidth\tHeight");
+            //  int index = 0;
+
             // Nejprve projdu postupně všechny parenty daného prvku, zpětně, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
             List<Rectangle> boundsList = new List<Rectangle>();
             IInteractiveParent item = (asContainer ? forItem : forItem.Parent);
@@ -525,15 +530,20 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (scanned.ContainsKey(item.Id)) break;   // Zacyklení.
                 scanned.Add(item.Id, null);
-                boundsList.Add(GetParentClientBounds(item, currentLayer));
-                IInteractiveItem iItem = item as IInteractiveItem;
-                if (iItem != null)
+                Rectangle pcb = GetParentClientBounds(item, currentLayer);
+                boundsList.Add(pcb);
+                if (item is IInteractiveItem iItem)
                 {
                     isVisible &= iItem.Is.Visible;
                     isEnabled &= iItem.Is.Enabled;
                 }
+
+                //  log.AppendLine($"{index}\t{item}\t{pcb.X}\t{pcb.Y}\t{pcb.Width}\t{pcb.Height}");
+                //  index++;
+
                 item = item.Parent;                        // Krok na dalšího parenta
             }
+            //  string logTxt = log.ToString();
 
             // Nyní projdu prvky v jejich grafickém pořadí = podle hierarchie od základního (root) až k parentovi našeho prvku currentItem (tento currentItem tam není!),
             //  a nastřádám si souřadnice Origin a Visible:

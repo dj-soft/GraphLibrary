@@ -1320,6 +1320,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         ZigZagVertical,
         /// <summary>
+        /// Lomená čára optimální:
+        /// Pokud konec má souřadnici X nižší než začátek (= časově zpětná), pak je vykreslena <see cref="ZigZagVertical"/> = nejprve dolů, pak zpátky, a pak zase dolů;
+        /// Pokud konec má X rovno nebo vyšší, pak je vykreslena <see cref="ZigZagHorizontal"/> = nejprve doprava, pak nahoru/dolů, a pak doprava.
+        /// </summary>
+        ZigZagOptimal,
+        /// <summary>
         /// Obdélník
         /// </summary>
         Rectangle,
