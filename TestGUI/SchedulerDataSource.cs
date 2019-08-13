@@ -794,7 +794,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.Properties.TimeChangeInitialValue = this.TimeRangeCurrent;
             this.MainData.Properties.DoubleClickOnGraph = GuiDoubleClickAction.OpenForm;
             this.MainData.Properties.DoubleClickOnGraphItem = GuiDoubleClickAction.TimeZoom;
-            this.MainData.Properties.LineShapeEndBegin = GuiLineShape.ZigZagVertical;
+            this.MainData.Properties.LineShapeEndBegin = GuiLineShape.ZigZagOptimal;
         }
         /// <summary>
         /// Vygeneruje nastavení toolbaru GUI
@@ -1302,7 +1302,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiMousePaintLink paint = new GuiMousePaintLink();
             paint.PaintLinkPairs = new List<string>();
             paint.PaintLinkPairs.Add("C1190:C1190");
-            paint.PaintLineShape = GuiLineShape.ZigZagVertical;
+            paint.PaintLineShape = GuiLineShape.ZigZagOptimal;
             paint.EnabledLineForeColor = Color.YellowGreen;
             paint.EnabledLineWidth = 6;
             paint.DisabledLineForeColor = Color.Red;
@@ -2302,9 +2302,25 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Asol.Tools.WorkScheduler.Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 
             GuiData result = null;
+
+            string debugFile = System.IO.Path.Combine(Application.App.AppCodePath, "_debug_data.xml");
+            if (System.IO.File.Exists(debugFile))
+            {
+                result = DeserializeFile(debugFile);
+                if (result != null) return result;
+            }
+
             // result = SerialDeserialData(guiData, XmlCompressMode.None);
             result = SerialDeserialData(guiData, XmlCompressMode.Compress);
             return result;
+        }
+        private static GuiData DeserializeFile(string file)
+        {
+            string serial = System.IO.File.ReadAllText(file, Encoding.UTF8);
+
+            PersistArgs desArgs = new PersistArgs() { CompressMode = XmlCompressMode.Auto, DataContent = serial };
+            object result = Persist.Deserialize(desArgs);
+            return result as GuiData;
         }
         /// <summary>
         /// Metoda provede test serializace v daném režimu komprese
