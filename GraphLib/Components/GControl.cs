@@ -299,6 +299,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.Draw();
                 this.Invalidate();
+                base.Refresh();
             }
         }
         #endregion

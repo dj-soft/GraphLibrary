@@ -3657,18 +3657,18 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (guiRow == null) return null;
             Row row = new Row(guiRow.Cells.ToArray());
-            row._FillFrom(guiRow);
+            row._FillPropertiesFrom(guiRow);
             return row;
         }
         /// <summary>
         /// Naplní do sebe data z dodaného řádku <see cref="GuiDataRow"/>
         /// </summary>
         /// <param name="guiRow"></param>
-        public void FillFrom(GuiDataRow guiRow)
+        public void UpdateFrom(GuiDataRow guiRow)
         {
             if (guiRow == null) return;
             this._FillCellsFrom(guiRow);
-            this._FillFrom(guiRow);
+            this._FillPropertiesFrom(guiRow);
         }
         /// <summary>
         /// Naplní do sebe Cells z dodaného řádku <see cref="GuiDataRow"/>
@@ -3683,7 +3683,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Naplní do sebe data vyjma Cells z dodaného řádku <see cref="GuiDataRow"/>
         /// </summary>
         /// <param name="guiRow"></param>
-        private void _FillFrom(GuiDataRow guiRow)
+        private void _FillPropertiesFrom(GuiDataRow guiRow)
         {
             if (guiRow.RowGuiId != null) this.RecordGId = guiRow.RowGuiId;
             if (guiRow.ParentRowGuiId != null) this.ParentRecordGId = guiRow.ParentRowGuiId;
