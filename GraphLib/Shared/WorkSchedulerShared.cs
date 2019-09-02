@@ -4339,7 +4339,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public bool IsEmpty { get { return (String.IsNullOrEmpty(this.ImageFile) && this.ImageContent == null && this.Image == null); } }
         /// <summary>
         /// Empty obrázek: není null (takže se předává do GUI vrstvy), ale reprezentuje neexistující obrázek (takže se nevykresluje).
-        /// Používá se při aktualizaci dat v <see cref="GuiResponse.AddItems"/>, když dřívější prvek grafu měl Image, ale nově jej mít nemá.
+        /// Používá se při aktualizaci dat v <see cref="GuiResponse.RefreshGraphItems"/>, když dřívější prvek grafu měl Image, ale nově jej mít nemá.
         /// </summary>
         public static GuiImage Empty { get { return new GuiImage(); } }
         #endregion
@@ -5257,7 +5257,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public const string COMMAND_KeyPress = "KeyPress";
         /// <summary>
         /// Uživatel provedl změnu na časové ose.
-        /// Tento command se posílá na základě základního nastavení dle <see cref=""/>
+        /// Tento command se posílá na základě základního nastavení dle <see cref="GuiProperties.TimeChangeSend"/>
         /// Objekt <see cref="GuiRequest"/> nese data o klávese a o objektu v property <see cref="GuiRequest.KeyPress"/>.
         /// </summary>
         public const string COMMAND_TimeChange = "TimeChange";
