@@ -532,8 +532,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 scanned.Add(item.Id, null);
                 Rectangle pcb = GetParentClientBounds(item, currentLayer);
                 boundsList.Add(pcb);
-                if (item is IInteractiveItem iItem)
+                if (item is IInteractiveItem)
                 {
+                    IInteractiveItem iItem = item as IInteractiveItem;
                     isVisible &= iItem.Is.Visible;
                     isEnabled &= iItem.Is.Enabled;
                 }
