@@ -1023,6 +1023,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (guiActions.HasFlag(GuiActionType.RunInteractions))
                 this._RunGuiInteractionsByName(SourceActionType.ToolbarClicked | (guiToolbarItem.RunInteractionSource.HasValue ? guiToolbarItem.RunInteractionSource.Value : SourceActionType.None), guiToolbarItem.RunInteractionNames, ref callRefresh);
 
+            if (guiActions.HasFlag(GuiActionType.SetVisibleForControl))
+                this._RunGuiInteractionsSetVisibleForControl(guiToolbarItem, ref callRefresh);
+
             if (callRefresh)
                 this._MainControl.Refresh();
         }
@@ -1184,6 +1187,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     }
                       )
                 .ToList();
+        }
+        /// <summary>
+        /// Zajistí akci GUI: <see cref="GuiActionType.SetVisibleForControl"/> pro daný prvek Toolbaru
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        /// <param name="callRefresh"></param>
+        protected void _RunGuiInteractionsSetVisibleForControl(GuiToolbarItem guiToolbarItem, ref bool callRefresh)
+        {
+            string names = guiToolbarItem.ActionTargetNames;
+            if (String.IsNullOrEmpty(names)) return;
+            bool isVisible = (guiToolbarItem.IsChecked.HasValue ? guiToolbarItem.IsChecked.Value : true);
+            string[] targetNames = names.Split(',', ';');
+            foreach (string targetName in targetNames)
+                this._SetVisibleForControl(targetName, isVisible, ref callRefresh);
+        }
+        /// <summary>
+        /// Nastaví IsVisible pro control daného jména
+        /// </summary>
+        /// <param name="controlName"></param>
+        /// <param name="isVisible"></param>
+        /// <param name="callRefresh"></param>
+        protected void _SetVisibleForControl(string controlName, bool isVisible, ref bool callRefresh)
+        {
+            object control = this._SearchForControl(controlName);
+            if (control == null) return;
+            if (control is MainDataTable)
+            {
+                MainDataTable mainDataTable = control as MainDataTable;
+                mainDataTable.TableRow.IsVisible = isVisible;
+                callRefresh = true;
+            }
+            else if (control is MainDataPanel)
+            { }
         }
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu; reakce na změny synchronního času
@@ -2135,6 +2171,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Souhrn všech datových tabulek ze všech panelů.
         /// </summary>
         private MainDataTable[] _DataTables;
+        #endregion
+        #region Soupis úplně všech objektů GUI
+        private void _AddControl(string fullName, object control)
+        {
+            if (this._ControlDict == null) this._ControlDict = new Dictionary<string, object>();
+            if (String.IsNullOrEmpty(fullName)) return;
+            if (control == null) return;
+            if (!this._ControlDict.ContainsKey(fullName))
+                this._ControlDict.Add(fullName, control);
+            else
+                this._ControlDict[fullName] = control;
+        }
+
+        private object _SearchForControl(string fullName)
+        {
+            if (String.IsNullOrEmpty(fullName)) return null;
+            if (this._ControlDict == null) return null;
+            object control;
+            if (!this._ControlDict.TryGetValue(fullName, out control)) return null;
+            return control;
+        }
+        /// <summary>
+        /// Dictionary obsahující všechny prvky GUI
+        /// </summary>
+        private Dictionary<string, object> _ControlDict;
         #endregion
         #region Kontextové menu
         /// <summary>

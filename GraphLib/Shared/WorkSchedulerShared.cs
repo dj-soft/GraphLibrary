@@ -3726,7 +3726,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Předpis pro akce, které na základě aktivace tohoto prvku má provést vrstva GUI.
         /// Lze deklarovat více než jednu akci.
         /// Lze potlačit volání servisní funkce aplikačního serveru : <see cref="GuiActionType.SuppressCallAppHost"/>.
-        /// 
         /// </summary>
         public GuiActionType? GuiActions { get; set; }
         /// <summary>
@@ -3750,6 +3749,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Vyhodnocuje se pouze pokud v <see cref="GuiActions"/> je hodnota <see cref="GuiActionType.RunInteractions"/>.
         /// </summary>
         public SourceActionType? RunInteractionSource { get; set; }
+        /// <summary>
+        /// Jména prvků (FullPath), oddělená čárkou nebo středníkem, kterých se týká akce prováděná tímto prvkem Toolbaru.
+        /// Typicky se použije pro akci <see cref="GuiActions"/> == <see cref="GuiActionType.SetVisibleForControl"/>, kdy určuje jména controlů, kterým tento prvek nastavuje Visible.
+        /// </summary>
+        public string ActionTargetNames { get; set; }
         /// <summary>
         /// Vlastnosti pro TrackBar. 
         /// POužije se jen tehdy, když <see cref="ItemType"/> == <see cref="FunctionGlobalItemType.TrackBar"/>
@@ -3805,6 +3809,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Jeho zapnutí automaticky vypne ostatní prvky Toolbaru typu EnableMousePaint*.
         /// </summary>
         EnableMousePaintRectangle = 0x0000000000002000,
+        /// <summary>
+        /// Tento prvek Toolbaru zajistí nastavení hodnoty Visible pro určitý objekt GUI.
+        /// Objekt je definován plným názvem objektu, ten je předán v <see cref="GuiToolbarItem.ActionTargetNames"/>
+        /// Objektem může být: záložka s daty, postranní panel, jedna tabulka v panelu / jedna tabulka v hlavním Gridu.
+        /// Nelze nastavit viditelnost sloupce nebo řádku.
+        /// Prvek toolbaru by měl být typu CheckBox (<see cref="GuiToolbarItem.IsCheckable"/> = true), aby mohl měnit hodnotu (zapínat/vypínat stav Visible).
+        /// Prvek toolbaru může mít nastaveno <see cref="GuiToolbarItem.StoreValueToConfig"/> = true, pak jeho hodnota je ukládána do lokální konfigurace, 
+        /// a po dalším spuštění aplikace je GUI obnoveno do posledního stavu před ukončením.
+        /// </summary>
+        SetVisibleForControl = 0x0000000000010000,
         /// <summary>
         /// Aktivace této funkce NEBUDE volat funkci aplikačního serveru
         /// </summary>
