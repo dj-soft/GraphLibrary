@@ -891,6 +891,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.SuppressCallAppHost
             });
 
+            /*
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
                 Name = GuiNameToolbarTrackBar,
@@ -916,6 +917,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.SuppressCallAppHost
             });
 
+            */
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
                 Name = GuiNameToolbarShowColorSet1,
@@ -988,6 +990,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = "Do grafu přidá další řádek s Výrobním příkazem",
                 Image = RES.Images.Actions.ListAdd4Png
             });
+
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
                 Name = GuiNameToolbarDelRow1,
@@ -996,6 +999,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Title = "Smaž řádek",
                 ToolTip = "Z grafu odebere náhodně řádek s Výrobním příkazem",
                 Image = RES.Images.Actions.ListRemove4Png
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarShowBottomTable,
+                Size = FunctionGlobalItemSize.Whole,
+                IsCheckable = true,
+                IsChecked = true,
+                StoreValueToConfig = true,
+                GroupName = "NASTAVENÍ",
+                Title = "Zaměstnanci",
+                ToolTip = "Zobrazí / skryje dolní tabulku zaměstnanců",
+                GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
+                ActionTargetNames = GuiFullNameGridCenterBottom,
+                Image = RES.Images.Actions.EditFindUserPng
             });
 
         }
@@ -2483,6 +2501,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameToolbarShowColorSet4 = "TlbShowColorSet4";
         protected const string GuiNameToolbarAddRow1 = "TlbAddRow1";
         protected const string GuiNameToolbarDelRow1 = "TlbDelRow1";
+        protected const string GuiNameToolbarShowBottomTable = "ShowBottomTable";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
