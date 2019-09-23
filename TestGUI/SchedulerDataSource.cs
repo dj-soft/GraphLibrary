@@ -1012,7 +1012,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Title = "Zaměstnanci",
                 ToolTip = "Zobrazí / skryje dolní tabulku zaměstnanců",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
-                ActionTargetNames = GuiFullNameGridCenterBottom,
+                ActionTargetNames = GuiFullNameGridCenterBottom + ";!" + GuiFullNameRightPanel,
                 Image = RES.Images.Actions.EditFindUserPng
             });
 
@@ -2517,12 +2517,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameRowsCenterTop = "RowsCenterTop";
         protected const string GuiNameRowsCenterBottom = "RowsCenterBottom";
 
-        protected const string GuiFullNameLeftPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameLeftPanel + GuiNameDelimiter;
-        protected const string GuiFullNameGridLeft = GuiFullNameLeftPanel + GuiNameGridLeft;
-        protected const string GuiFullNameMainPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameMainPanel + GuiNameDelimiter;
-        protected const string GuiFullNameGridCenterTop = GuiFullNameMainPanel + GuiNameGridCenterTop;
-        protected const string GuiFullNameGridCenterBottom = GuiFullNameMainPanel + GuiNameGridCenterBottom;
-        protected const string GuiFullNameGridRight = GuiFullNameMainPanel + GuiNameGridRight;
+        protected const string GuiFullNameMainPage = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage;
+        protected const string GuiFullNameLeftPanel = GuiFullNameMainPage + GuiNameDelimiter + GuiNameLeftPanel;
+        protected const string GuiFullNameGridLeft = GuiFullNameLeftPanel + GuiNameDelimiter + GuiNameGridLeft;
+        protected const string GuiFullNameMainPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameMainPanel;
+        protected const string GuiFullNameGridCenterTop = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterTop;
+        protected const string GuiFullNameGridCenterBottom = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterBottom;
+        protected const string GuiFullNameRightPanel = GuiFullNameMainPage + GuiNameDelimiter + GuiNameRightPanel;
+        protected const string GuiFullNameGridRight = GuiFullNameRightPanel + GuiNameDelimiter + GuiNameGridRight;
 
         protected const string GuiNameContextFixItem = "CtxFixItem";
         protected const string GuiNameContextUnFixItem = "CtxUnFixItem";
