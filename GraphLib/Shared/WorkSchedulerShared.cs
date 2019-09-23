@@ -3750,8 +3750,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public SourceActionType? RunInteractionSource { get; set; }
         /// <summary>
-        /// Jména prvků (FullPath), oddělená čárkou nebo středníkem, kterých se týká akce prováděná tímto prvkem Toolbaru.
+        /// Jména prvků (FullName), oddělená čárkou nebo středníkem, kterých se týká akce prováděná tímto prvkem Toolbaru.
         /// Typicky se použije pro akci <see cref="GuiActions"/> == <see cref="GuiActionType.SetVisibleForControl"/>, kdy určuje jména controlů, kterým tento prvek nastavuje Visible.
+        /// Pro akce, které přebírají hodnotu od <see cref="GuiToolbarItem.IsChecked"/>, je povoleno na začátek FullName dát vykřičník, pak se pro konkrétní prvek bere hodnota opačná.
+        /// Lze tak jedním CheckBoxem v Toolbaru řídit de facto vzájemné přepínání viditelnosti dvou controlů, kdy jeden bude reagovat na <see cref="GuiToolbarItem.IsChecked"/>,
+        /// a druhý s vykřičníkem na NOT <see cref="GuiToolbarItem.IsChecked"/>.
         /// </summary>
         public string ActionTargetNames { get; set; }
         /// <summary>

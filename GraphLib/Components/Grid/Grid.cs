@@ -932,11 +932,14 @@ namespace Asol.Tools.WorkScheduler.Components
             Int32Range dataVisibleRange = tablesPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
             foreach (GTable table in this.TablesAll)
             {
-                ISequenceLayout isl = table as ISequenceLayout;
-                bool isTableVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tato tabulka je vidět?
-                table.VisualRange = (isTableVisible ? tablesPositions.GetVisualPosition(isl) : null);
-                if (isTableVisible)
-                    visibleTables.Add(table);
+                if (table.DataTable.IsVisible)
+                {
+                    ISequenceLayout isl = table as ISequenceLayout;
+                    bool isTableVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tato tabulka je vidět?
+                    table.VisualRange = (isTableVisible ? tablesPositions.GetVisualPosition(isl) : null);
+                    if (isTableVisible)
+                        visibleTables.Add(table);
+                }
             }
             this._TablesVisible = visibleTables.ToArray();
         }
@@ -1301,13 +1304,31 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void _ChildItemsAddTables()
         {
             Rectangle tablesBounds = this.TablesBounds;
-            foreach (GTable table in this.TablesVisible)
+            GTable[] tables = this.TablesVisible;
+            int count = tables.Length;
+            for (int i = 0; i < count; i++)
             {
-                Rectangle tableBounds = Int32Range.GetRectangle(tablesBounds, table.VisualRange);
+                GTable table = tables[i];
+                bool isLast = (i == (count - 1));
+                Rectangle tableBounds = _CreateBoundsForTable(tablesBounds, table.VisualRange, isLast);
                 table.Bounds = tableBounds;
                 table.TableSplitter.LoadFrom(tableBounds, RectangleSide.Bottom, true);
                 this.ChildList.Add(table);
             }
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice pro tabulku
+        /// </summary>
+        /// <param name="tablesBounds"></param>
+        /// <param name="tableVisualRange"></param>
+        /// <param name="isLast"></param>
+        /// <returns></returns>
+        protected Rectangle _CreateBoundsForTable(Rectangle tablesBounds, Int32Range tableVisualRange, bool isLast)
+        {
+            Rectangle tableBounds = Int32Range.GetRectangle(tablesBounds, tableVisualRange);
+            if (isLast && tableBounds.Bottom < tablesBounds.Bottom)
+                tableBounds.Height = tablesBounds.Bottom - tableBounds.Y;
+            return tableBounds;
         }
         /// <summary>
         /// Do pole this.ChildList přidá všechny potřebné splittery.

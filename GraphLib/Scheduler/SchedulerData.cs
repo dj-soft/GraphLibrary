@@ -523,6 +523,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     group.Items.Add(item);
                     this._ToolBarGuiItems.Add(item);
                     this._MousePaintAddToolBar(item);
+                    this._AddControl(guiToolBarItem.FullName, item);
                 }
             }
 
@@ -1210,16 +1211,43 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="callRefresh"></param>
         protected void _SetVisibleForControl(string controlName, bool isVisible, ref bool callRefresh)
         {
+            if (String.IsNullOrEmpty(controlName)) return;
+
+            controlName = controlName.Trim();
+            if (controlName.StartsWith("!"))
+            {
+                controlName = (controlName.Length > 1 ? controlName.Substring(1).Trim() : "");
+                if (String.IsNullOrEmpty(controlName)) return;
+                isVisible = !isVisible;
+            }
+
             object control = this._SearchForControl(controlName);
             if (control == null) return;
-            if (control is MainDataTable)
+
+            if (control is MainDataPanel)
+            {
+                MainDataPanel mainDataPanel = control as MainDataPanel;
+                mainDataPanel.GTabPage.TabHeader.ActivePage = mainDataPanel.GTabPage;
+                callRefresh = true;
+            }
+            else if (control is GTabContainer)
+            {
+                GTabContainer tabContainer = control as GTabContainer;
+                tabContainer.IsCollapsed = !isVisible;
+                callRefresh = true;
+            }
+            else if (control is MainDataTable)
             {
                 MainDataTable mainDataTable = control as MainDataTable;
                 mainDataTable.TableRow.IsVisible = isVisible;
                 callRefresh = true;
             }
-            else if (control is MainDataPanel)
-            { }
+            else if (control is ToolBarItem)
+            {
+                ToolBarItem toolBarItem = control as ToolBarItem;
+                toolBarItem.IsVisible = isVisible;
+                callRefresh = true;
+            }
         }
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu; reakce na změny synchronního času
@@ -2110,6 +2138,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 App.TryRun(() =>
                 {
                     var panel = this._MainControl.AddPage(guiPage);
+                    this._AddControl(guiPage.FullName, panel);
+                    this._AddControl(guiPage.LeftPanel?.FullName, panel.LeftPanelTabs);
+                    this._AddControl(guiPage.RightPanel?.FullName, panel.RightPanelTabs);
+                    this._AddControl(guiPage.BottomPanel?.FullName, panel.BottomPanelTabs);
                 });
             }
         }
@@ -2134,7 +2166,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 List<MainDataTable> tableList = new List<MainDataTable>();
                 foreach (MainDataPanel panel in this._MainControl.DataPanels)
-                    tableList.AddRange(panel.SchedulerPanel.DataTables);
+                {
+                    foreach (MainDataTable table in panel.SchedulerPanel.DataTables)
+                    {
+                        tableList.Add(table);
+                        this._AddControl(table.TableName, table);
+                    }
+                }
                 this._DataTables = tableList.ToArray();
             }
         }
@@ -2173,6 +2211,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private MainDataTable[] _DataTables;
         #endregion
         #region Soupis úplně všech objektů GUI
+        /// <summary>
+        /// Metoda přidá do interního lineárního soupisu další control, který bude možno vyhledat podle jeho názvu <paramref name="fullName"/>.
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <param name="control"></param>
         private void _AddControl(string fullName, object control)
         {
             if (this._ControlDict == null) this._ControlDict = new Dictionary<string, object>();
@@ -2183,7 +2226,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             else
                 this._ControlDict[fullName] = control;
         }
-
+        /// <summary>
+        /// Metoda najde a vrátí control pro daný název
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
         private object _SearchForControl(string fullName)
         {
             if (String.IsNullOrEmpty(fullName)) return null;
@@ -3628,6 +3675,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Data panelu
         /// </summary>
         public SchedulerPanel SchedulerPanel { get; private set; }
+        /// <summary>
+        /// Levý panel záložek
+        /// </summary>
+        public GTabContainer LeftPanelTabs { get { return this.SchedulerPanel.LeftPanelTabs; } }
+        /// <summary>
+        /// Hlavní Grid
+        /// </summary>
+        public GGrid MainPanelGrid { get { return this.SchedulerPanel.MainPanelGrid; } }
+        /// <summary>
+        /// Pravý panel záložek
+        /// </summary>
+        public GTabContainer RightPanelTabs { get { return this.SchedulerPanel.RightPanelTabs; } }
+        /// <summary>
+        /// Dolní panel záložek
+        /// </summary>
+        public GTabContainer BottomPanelTabs { get { return this.SchedulerPanel.BottomPanelTabs; } }
+
     }
     #endregion
     #region class GraphItemDragMoveInfo : Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI

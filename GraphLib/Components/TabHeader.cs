@@ -1072,7 +1072,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Reference na vlastníka této záložky
         /// </summary>
-        protected GTabHeader TabHeader { get; private set; }
+        public GTabHeader TabHeader { get; private set; }
         /// <summary>
         /// Příznak, že toto záhlaví reprezentuje tlačítko Collapse.
         /// </summary>

@@ -554,6 +554,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public MainControl MainControl { get { return this._MainControl; } }
         /// <summary>
+        /// Levý panel záložek
+        /// </summary>
+        public GTabContainer LeftPanelTabs { get { return this._LeftPanelTabs; } }
+        /// <summary>
+        /// Hlavní Grid
+        /// </summary>
+        public GGrid MainPanelGrid { get { return this._MainPanelGrid; } }
+        /// <summary>
+        /// Pravý panel záložek
+        /// </summary>
+        public GTabContainer RightPanelTabs { get { return this._RightPanelTabs; } }
+        /// <summary>
+        /// Dolní panel záložek
+        /// </summary>
+        public GTabContainer BottomPanelTabs { get { return this._BottomPanelTabs; } }
+        /// <summary>
         /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
         public Localizable.TextLoc Title { get { return this._GuiPage.Title; } }

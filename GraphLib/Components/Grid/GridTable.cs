@@ -1288,6 +1288,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     this._VisibleRows = null;
                     this._ChildArrayValid = false;
                     items |= InvalidateItem.Paint;
+                    callGrid = true;
                 }
 
                 if ((items & (InvalidateItem.RowHeader)) != 0)
@@ -1369,7 +1370,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Předáme to šéfovi, pokud ho máme, a pokud to pro něj může být zajímavé, a pokud událost není určena jen pro naše (OnlyForTable) potřeby:
             if (this.HasGrid && callGrid && !items.HasFlag(InvalidateItem.OnlyForTable))
-                this.Grid.Invalidate(items);
+                this.Grid.Invalidate(items | InvalidateItem.OnlyForGrid);
         }
         #endregion
         #region TableHeader a jeho funkčnost (DeSelect All, TreeViewNode Expand / Collapse All)
