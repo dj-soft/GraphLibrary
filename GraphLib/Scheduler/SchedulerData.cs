@@ -1196,12 +1196,41 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="callRefresh"></param>
         protected void _RunGuiInteractionsSetVisibleForControl(GuiToolbarItem guiToolbarItem, ref bool callRefresh)
         {
-            string names = guiToolbarItem.ActionTargetNames;
-            if (String.IsNullOrEmpty(names)) return;
-            bool isVisible = (guiToolbarItem.IsChecked.HasValue ? guiToolbarItem.IsChecked.Value : true);
-            string[] targetNames = names.Split(',', ';');
-            foreach (string targetName in targetNames)
-                this._SetVisibleForControl(targetName, isVisible, ref callRefresh);
+            var targetNames = GetTargetNames(guiToolbarItem);
+            foreach (var target in targetNames)
+                this._SetVisibleForControl(target.Item1, target.Item2, ref callRefresh);
+        }
+        /// <summary>
+        /// Metoda z dodaného prvku Toolbaru <paramref name="guiToolbarItem"/> načte jeho 
+        /// <see cref="GuiToolbarItem.ActionTargetNames"/> a rozdělí jej na jednotlivá jména (oddělená čárkou nebo středníkem).
+        /// Zjistí stav <see cref="GuiToolbarItem.IsChecked"/>.
+        /// Sestaví a vrátí pole párů: jméno + aktivita.
+        /// Pokud před jednotlivým jménem je vykřičník, obrátí stav aktivity pro dané jméno cíle.
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        /// <returns></returns>
+        protected List<Tuple<string, bool>> GetTargetNames(GuiToolbarItem guiToolbarItem)
+        {
+            if (guiToolbarItem == null) return null;
+            string text = guiToolbarItem.ActionTargetNames;
+            if (String.IsNullOrEmpty(text)) return null;
+            bool isActive = (guiToolbarItem.IsCheckable.HasValue && guiToolbarItem.IsChecked.HasValue ? guiToolbarItem.IsChecked.Value : true);
+            List<Tuple<string, bool>> targetNames = new List<Tuple<string, bool>>();
+            string[] names = text.Split(',', ';');
+            foreach (string name in names)
+            {
+                if (String.IsNullOrEmpty(name)) continue;
+                string targetName = name.Trim();
+                bool targetActive = isActive;
+                if (targetName.StartsWith("!"))
+                {
+                    targetName = (targetName.Length > 1 ? targetName.Substring(1).Trim() : "");
+                    if (String.IsNullOrEmpty(targetName)) continue;
+                    targetActive = !targetActive;
+                }
+                targetNames.Add(new Tuple<string, bool>(targetName, targetActive));
+            }
+            return targetNames;
         }
         /// <summary>
         /// Nastaví IsVisible pro control daného jména
@@ -1212,14 +1241,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void _SetVisibleForControl(string controlName, bool isVisible, ref bool callRefresh)
         {
             if (String.IsNullOrEmpty(controlName)) return;
-
-            controlName = controlName.Trim();
-            if (controlName.StartsWith("!"))
-            {
-                controlName = (controlName.Length > 1 ? controlName.Substring(1).Trim() : "");
-                if (String.IsNullOrEmpty(controlName)) return;
-                isVisible = !isVisible;
-            }
 
             object control = this._SearchForControl(controlName);
             if (control == null) return;
