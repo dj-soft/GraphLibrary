@@ -1341,10 +1341,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void IsCheckedChange()
         {
-            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetOptionGroup(this._DataItem.CheckedGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
+            this.IsCheckedChange(!this.Is.Checked);
+        }
+        /// <summary>
+        /// Metoda zajistí nastavení stavu <see cref="InteractiveProperties.Checked"/> pro tento prvek, 
+        /// a pokud tento prvek je členem nějaké selectovací grupy, pak najde i ostatní členy grupy a vyřeší to i pro ně.
+        /// Metoda je volána před voláním <see cref="GToolBarItem.CallItemClick()"/>, 
+        /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsChecked"/>.
+        /// </summary>
+        protected void IsCheckedChange(bool newIsChecked)
+        {
+            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetOptionGroup(this.CheckedGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
             if (itemGroup == null)
             {   // null = není zadána grupa => v tom případě this button je CheckBox:
-                bool newIsChecked = !this.Is.Checked;
                 this.Is.Checked = newIsChecked;
                 this.CallItemCheckedChange(this.DataItem);
             }
@@ -1396,8 +1405,26 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (!this._DataItem.IsCheckable) return;
                 if (value == null) return;
                 bool isChecked = (value == "Checked");
-                if (isChecked == this.Is.Checked) return;
-                this.IsCheckedChange();
+                this.PersistedValueApply(this.Is.Checked, isChecked);
+            }
+        }
+        /// <summary>
+        /// Metoda řídí načtení persistované IsChecked do this objektu.
+        /// </summary>
+        /// <param name="oldChecked"></param>
+        /// <param name="newChecked"></param>
+        protected void PersistedValueApply(bool oldChecked, bool newChecked)
+        {
+            //  Z hlediska praktického použití jsou dva scénáře:
+            // 1. this button je prostý CheckBox (tj. není v žádné skupině, která by tvořila RadioButton):
+            //    - Pak vyvoláme patřičnou akci CallItemClick() i tehdy, když nejde o změnu hodnoty, protože může být navázaná akce, která musí být provedena vždy (typicky nastavení IsVisible pro controly)
+            // 2. this button je RadioButton (je členem skupiny):
+            //    - Pak vyvoláme akci CallItemClick() pouze pokud newChecked je true:
+            bool isCheckBox = String.IsNullOrEmpty(this.CheckedGroupName);
+            bool isChanged = (newChecked != oldChecked);
+            if (isCheckBox || newChecked)
+            {   // This prvek je CheckBox, anebo (pro RadioButton) pokud nová hodnota je true:
+                this.IsCheckedChange(newChecked);
                 this.CallItemClick();
             }
         }
@@ -1409,6 +1436,25 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ExecLeftClick();
             this.Repaint();
         }
+        /// <summary>
+        /// Obsahuje název skupiny prvků, které se vzájemně chovají jako OptionGroup.
+        /// To znamená, že právě jeden z prvků skupiny může být IsChecked = být označen jako aktivní.
+        /// <para/>
+        /// Chování:
+        /// <para/>
+        /// a) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty IsChecked neovlivní žádný jiný prvek.
+        /// Kliknutí na takový prvek mění hodnotu IsChecked z false na true a naopak = lze jej shodit na false.
+        /// <para/>
+        /// b) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
+        /// Opakované kliknutí na označený button jej neodznačí.
+        /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině "GroupName" (platí pro Toolbar).
+        /// Pokud by byly umístěny v jiné grupě, nebudou považovány za jednu skupinu, ale více oddělených skupin.
+        /// Naproti tomu jedna grafická grupa "GroupName" může obsahovat více skupin <see cref="CheckedGroupName"/>.
+        /// <para/>
+        /// Je rozumné dávat prvky jedné <see cref="CheckedGroupName"/> blízko k sobě, ale technicky nutné to není.
+        /// </summary>
+        public string CheckedGroupName { get { return this._DataItem?.CheckedGroupName; } }
+
     }
     /// <summary>
     /// Konkrétní položka Toolbaru: ComboBox

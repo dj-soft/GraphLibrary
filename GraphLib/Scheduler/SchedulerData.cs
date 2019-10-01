@@ -1212,11 +1212,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected List<Tuple<string, bool>> GetTargetNames(GuiToolbarItem guiToolbarItem)
         {
             if (guiToolbarItem == null) return null;
-            string text = guiToolbarItem.ActionTargetNames;
-            if (String.IsNullOrEmpty(text)) return null;
+            string actionTargetNames = guiToolbarItem.ActionTargetNames;
+            if (String.IsNullOrEmpty(actionTargetNames)) return null;
             bool isActive = (guiToolbarItem.IsCheckable.HasValue && guiToolbarItem.IsChecked.HasValue ? guiToolbarItem.IsChecked.Value : true);
+            return this.GetTargetNames(actionTargetNames, isActive);
+        }
+        /// <summary>
+        /// Metoda z dodaného textu <paramref name="actionTargetNames"/> (= <see cref="GuiToolbarItem.ActionTargetNames"/>) a dodané hodnoty aktivity <paramref name="isActive"/> 
+        /// načte a rozdělí text na jednotlivá jména (oddělená čárkou nebo středníkem).
+        /// Sestaví a vrátí pole párů: jméno + aktivita.
+        /// Pokud před jednotlivým jménem je vykřičník, obrátí stav aktivity pro dané jméno cíle.
+        /// </summary>
+        /// <param name="actionTargetNames"></param>
+        /// <param name="isActive"></param>
+        /// <returns></returns>
+        protected List<Tuple<string, bool>> GetTargetNames(string actionTargetNames, bool isActive)
+        {
+            if (String.IsNullOrEmpty(actionTargetNames)) return null;
             List<Tuple<string, bool>> targetNames = new List<Tuple<string, bool>>();
-            string[] names = text.Split(',', ';');
+            string[] names = actionTargetNames.Split(',', ';');
             foreach (string name in names)
             {
                 if (String.IsNullOrEmpty(name)) continue;
