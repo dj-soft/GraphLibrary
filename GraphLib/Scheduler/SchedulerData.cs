@@ -1283,6 +1283,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 toolBarItem.IsVisible = isVisible;
                 callRefresh = true;
             }
+            else if (control is link)
         }
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu; reakce na změny synchronního času
