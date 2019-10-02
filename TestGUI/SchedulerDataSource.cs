@@ -1004,7 +1004,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
                 Name = GuiNameToolbarShowBottomTable,
-                Size = FunctionGlobalItemSize.Whole,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.ThisItemSkipToNextTable | LayoutHint.NextItemSkipToNextRow,
                 IsCheckable = true,
                 IsChecked = true,
                 StoreValueToConfig = true,
@@ -1016,6 +1017,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Image = RES.Images.Actions.EditFindUserPng
             });
 
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarShowMainLink,
+                Size = FunctionGlobalItemSize.Half,
+                IsCheckable = true,
+                IsChecked = true,
+                StoreValueToConfig = true,
+                GroupName = "NASTAVENÍ",
+                Title = "Vztahy",
+                ToolTip = "Zobrazí / skryje dolní tabulku zaměstnanců",
+                GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
+                ActionTargetNames = GuiFullNameGridCenterTop + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME,
+                Image = RES.Images.Actions.EditFindUserPng
+            });
         }
         /// <summary>
         /// Vygeneruje kontextové funkce
@@ -2502,6 +2517,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameToolbarAddRow1 = "TlbAddRow1";
         protected const string GuiNameToolbarDelRow1 = "TlbDelRow1";
         protected const string GuiNameToolbarShowBottomTable = "ShowBottomTable";
+        protected const string GuiNameToolbarShowMainLink = "ShowMainLink";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
