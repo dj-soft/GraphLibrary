@@ -1283,7 +1283,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 toolBarItem.IsVisible = isVisible;
                 callRefresh = true;
             }
-            else if (control is link)
+            else if (control is GTimeGraphLinkArray)
+            {
+                GTimeGraphLinkArray graphLinkArray = control as GTimeGraphLinkArray;
+                graphLinkArray.ShowAllLinks = isVisible;
+                callRefresh = true;
+            }
         }
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu; reakce na změny synchronního času
@@ -2207,6 +2212,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     {
                         tableList.Add(table);
                         this._AddControl(table.TableName, table);
+                        this._AddControl(table.TableName + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME, table.GraphLinkArray);
                     }
                 }
                 this._DataTables = tableList.ToArray();

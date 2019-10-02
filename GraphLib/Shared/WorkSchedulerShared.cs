@@ -50,6 +50,10 @@ namespace Noris.LCS.Base.WorkScheduler
             this.ContextMenuItems = new GuiContextMenuSet() { Name = CONTEXT_MENU_NAME };
         }
         /// <summary>
+        /// Oddělovač jednotlivých úrovní plného jména prvku
+        /// </summary>
+        public const string NAME_DELIMITER = "\\";
+        /// <summary>
         /// Výchozí název celého objektu <see cref="GuiData"/>
         /// </summary>
         public const string DATA_NAME = "Data";
@@ -69,6 +73,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Název prvku <see cref="ContextMenuItems"/>
         /// </summary>
         public const string CONTEXT_MENU_NAME = "contextMenu";
+        /// <summary>
+        /// Název prvku "Link" v tabulce, prvek řídí zobrazování vztahů mezi prvky grafu v jedné tabulce.
+        /// Pomocí toolbaru (s definovanou akcí <see cref="GuiActionType.SetVisibleForControl"/>) lze řídit viditelnost všech vztahů v konkrétní tabulce,
+        /// jako jméno prvku (v <see cref="GuiToolbarItem.ActionTargetNames"/>) je třeba uvést plné jméno tabulky 
+        /// + oddělovač <see cref="NAME_DELIMITER"/> + jméno prvku Link <see cref="TABLELINK_NAME"/>.
+        /// </summary>
+        public const string TABLELINK_NAME = "link";
         /// <summary>
         /// Základní společné vlastnosti pro celý plugin
         /// </summary>
