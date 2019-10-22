@@ -1026,10 +1026,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 StoreValueToConfig = true,
                 GroupName = "NASTAVENÍ",
                 Title = "Vztahy",
-                ToolTip = "Zobrazí / skryje dolní tabulku zaměstnanců",
+                ToolTip = "Zobrazí / skryje vztahy mezi operacemi",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
                 ActionTargetNames = GuiFullNameGridCenterTop + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME,
-                Image = RES.Images.Actions.EditFindUserPng
+                Image = RES.Images.Actions.OfficeChartLineStackedPng
             });
         }
         /// <summary>
