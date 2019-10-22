@@ -87,6 +87,7 @@
     <Compile Include="Components\Graph\Graph.cs" />
     <Compile Include="Components\Graph\GraphItem.cs" />
     <Compile Include="Components\Graph\GraphItemGroup.cs" />
+    <Compile Include="Components\Graph\GraphLinks.cs" />
     <Compile Include="Components\Grid\GridArray.cs" />
     <Compile Include="Components\Grid\GridComponents.cs" />
     <Compile Include="Components\Grid\GridTable.cs" />

@@ -1249,9 +1249,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Nastaví IsVisible pro control daného jména
         /// </summary>
-        /// <param name="controlName"></param>
-        /// <param name="isVisible"></param>
-        /// <param name="callRefresh"></param>
+        /// <param name="controlName">FullName controlu</param>
+        /// <param name="isVisible">Má být zobrazen daný control?</param>
+        /// <param name="callRefresh">Nastavit na true, pokud má proběhnout Refresh controlu (tj. po změně)</param>
         protected void _SetVisibleForControl(string controlName, bool isVisible, ref bool callRefresh)
         {
             if (String.IsNullOrEmpty(controlName)) return;
@@ -1286,7 +1286,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             else if (control is GTimeGraphLinkArray)
             {
                 GTimeGraphLinkArray graphLinkArray = control as GTimeGraphLinkArray;
-                graphLinkArray.ShowAllLinks = isVisible;
+                graphLinkArray.CurrentLinksMode = (isVisible ? GTimeGraphLinkMode.Allways : graphLinkArray.DefaultLinksMode);
                 callRefresh = true;
             }
         }
@@ -2210,6 +2210,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     foreach (MainDataTable table in panel.SchedulerPanel.DataTables)
                     {
+                        table.GraphLinkArray.LinkDataSource = table;
                         tableList.Add(table);
                         this._AddControl(table.TableName, table);
                         this._AddControl(table.TableName + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME, table.GraphLinkArray);

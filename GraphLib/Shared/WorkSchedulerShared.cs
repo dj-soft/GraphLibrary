@@ -2502,6 +2502,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.TableRowHeightMax = 200;
             this.LogarithmicRatio = 0.60f;
             this.LogarithmicGraphDrawOuterShadow = 0.20f;
+            this.LinkMode = GuiGraphLinkMode.Default;
         }
         /// <summary>
         /// Režim zobrazování času na ose X
@@ -2599,6 +2600,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int? Opacity { get; set; }
         /// <summary>
+        /// Režim zobrazení vztahů mezi prvky v grafu této tabulky.
+        /// Výchozí hodnota je <see cref="GuiGraphLinkMode.MouseOver"/> | <see cref="GuiGraphLinkMode.Selected"/>
+        /// </summary>
+        public GuiGraphLinkMode LinkMode { get; set; }
+        /// <summary>
         /// Barva linky základní.
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
@@ -2623,6 +2629,34 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Segmenty časové osy, které mají jinou barvu pozadí než je základní barva, a mohou obsahovat přídavný ToolTip
         /// </summary>
         public List<GuiTimeAxisSegment> TimeAxisSegmentList { get; set; }
+    }
+    /// <summary>
+    /// Režim, ve kterém jsou zobrazovány vztahy mezi prvky grafů.
+    /// Hodnoty lze sčítat.
+    /// </summary>
+    [Flags]
+    public enum GuiGraphLinkMode
+    {
+        /// <summary>
+        /// Vztahy se nebudou nikdy zobrazovat
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Vztahy budou zobrazovány při najetí myší na prvek
+        /// </summary>
+        MouseOver = 1,
+        /// <summary>
+        /// Vztahy budou zobrazovány při označení prvku (IsSelected)
+        /// </summary>
+        Selected = 2,
+        /// <summary>
+        /// Vztahy budou zobrazovány stále
+        /// </summary>
+        Allways = 4,
+        /// <summary>
+        /// Výchozí hodnota = <see cref="MouseOver"/> | <see cref="Selected"/>
+        /// </summary>
+        Default = MouseOver | Selected
     }
     /// <summary>
     /// GuiTimeAxisSegment : Definice jednoho segmentu časové osy
@@ -6549,29 +6583,32 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Nezobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
+        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
         ShowLinkNone = 0x100000,
         /// <summary>
         /// Zobrazit spojovací linie mezi prvky při stavu MouseOver.
         /// Tyto linky (MouseOver) jsou zobrazovány polovičně průhlednou barvou.
         /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
+        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
         ShowLinkInMouseOver = 0x200000,
         /// <summary>
         /// Zobrazit spojovací linie mezi prvky při stavu Selected.
         /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
+        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
         ShowLinkInSelected = 0x400000,
         /// <summary>
         /// Zobrazit spojovací linie mezi prvky při stavu vždy.
         /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
+        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
         ShowLinkAllways = 0x800000,
         /// <summary>
         /// Default pro pracovní čas = 
         /// <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> 
-        /// | <see cref="ShowLinkInMouseOver"/> | <see cref="ShowLinkInSelected"/>
         /// </summary>
-        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow | ShowLinkInMouseOver | ShowLinkInSelected,
+        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow,
         /// <summary>
         /// Default pro text = 
         /// <see cref="ShowCaptionInMouseOver"/> | <see cref="ShowCaptionInSelected"/> | <see cref="ShowToolTipFadeIn"/>

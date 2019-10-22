@@ -20,7 +20,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// MainDataTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, grafy, položky grafů, vztahy mezi položkami grafů a popisky položek grafů.
     /// Tvoří základ pro jeden vizuální objekt <see cref="GTable"/>.
     /// </summary>
-    public class MainDataTable : IMainDataTableInternal, ITimeGraphDataSource
+    public class MainDataTable : IMainDataTableInternal, ITimeGraphDataSource, ITimeGraphLinkDataSource
     {
         #region Konstrukce, základní property
         /// <summary>
@@ -139,6 +139,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 this.GTableRow = gGrid.AddTable(this.TableRow);
                 this.FillGTableProperties();
+                this.FillGTableLinks();
                 this.FillGTableEventHandlers();
                 return this.GTableRow;
             }
@@ -213,6 +214,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 gTableRow.TagFilterItemHeight = gridProperties.TagFilterItemHeight;
                 gTableRow.TagFilterItemMaxCount = gridProperties.TagFilterItemMaxCount;
                 gTableRow.TagFilterRoundItemPercent = gridProperties.TagFilterRoundItemPercent;
+            }
+        }
+        /// <summary>
+        /// Metoda nastaví režim zobrazování vztahů do grafického controlu <see cref="GTableRow"/> a zajistí načtení linků dle tohoto režimu
+        /// </summary>
+        protected void FillGTableLinks()
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainDataTable", "FillGTableLinks", "", this.GuiGrid.FullName))
+            {
+                if (this.GTableRow != null)
+                {
+                    this.GraphLinkArray.DefaultLinksMode = this.GraphProperties.DefaultLinksMode;
+                    this.GraphLinkArray.ReloadLinks();
+                }
             }
         }
         /// <summary>
@@ -320,6 +335,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TimeAxisMode = (graphPosition == DataGraphPositionType.InLastColumn ? TimeGraphTimeAxisMode.Standard :
                                 (graphPosition == DataGraphPositionType.OnBackgroundProportional ? TimeGraphTimeAxisMode.ProportionalScale :
                                 (graphPosition == DataGraphPositionType.OnBackgroundLogarithmic ? TimeGraphTimeAxisMode.LogarithmicScale : TimeGraphTimeAxisMode.Default)));
+
+            // this.GraphLinkArray.DefaultLinksMode = graphProperties.DefaultLinksMode;
         }
         /// <summary>
         /// Metoda připraví tabulku <see cref="TableRow"/> na vkládání grafů daného typu (podle pozice grafu <see cref="GraphPosition"/>).
@@ -1026,9 +1043,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Linky mezi položkami grafů
         /// <summary>
         /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="GTimeGraphLinkItem"/>.
-        /// Tento prvek slouží jednotlivým grafům.
+        /// Tento prvek slouží jednotlivým grafům. Před dokončením incializace je null.
         /// </summary>
-        public GTimeGraphLinkArray GraphLinkArray { get { return this.GTableRow.GraphLinkArray; } }
+        public GTimeGraphLinkArray GraphLinkArray { get { return this.GTableRow?.GraphLinkArray; } }
         /// <summary>
         /// Metoda načte a předzpracuje informace o vztazích mezi prvky grafů (Linky)
         /// </summary>
@@ -1116,6 +1133,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.GraphLinkPrevDict.RemoveAll((k, v) => (v.ItemIdPrev == twoKey.Item1 && v.ItemIdNext == twoKey.Item2));
                 this.GraphLinkNextDict.RemoveAll((k, v) => (v.ItemIdPrev == twoKey.Item1 && v.ItemIdNext == twoKey.Item2));
             }
+        }
+        /// <summary>
+        /// Najde a vrátí vztahy prvků pro režim a data dle argumentu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        void ITimeGraphLinkDataSource.CreateLinks(CreateAllLinksArgs args)
+        {
+            // CoSTím;
         }
         /// <summary>
         /// Metoda najde a vrátí soupis platných vztahů mezi prvky pro jeden daný prvek grafu.
@@ -5527,6 +5553,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Výchozí hodnota = 0, neprovádí se zvětšení, malé prvky (krátký čas na širokém měřítku) nejsou vidět.
         /// </summary>
         public int GraphItemMinPixelWidth { get { return (this.GuiGraphProperties?.GraphItemMinPixelWidth ?? 0); } }
+        /// <summary>
+        /// Určuje výchozí režim zobrazení spojovacích čar mezi prvky.
+        /// </summary>
+        public GTimeGraphLinkMode DefaultLinksMode { get { return (this.GuiGraphProperties != null ? ConvertTo(this.GuiGraphProperties.LinkMode) : GTimeGraphLinkMode.Default); } }
+        /// <summary>
+        /// Metoda vrátí <see cref="GTimeGraphLinkMode"/> pro daný <see cref="GuiGraphLinkMode"/>
+        /// </summary>
+        /// <param name="linkMode"></param>
+        /// <returns></returns>
+        protected static GTimeGraphLinkMode ConvertTo(GuiGraphLinkMode linkMode)
+        {
+            GTimeGraphLinkMode mode = GTimeGraphLinkMode.None;
+            if (linkMode.HasFlag(GuiGraphLinkMode.MouseOver)) mode |= GTimeGraphLinkMode.MouseOver;
+            if (linkMode.HasFlag(GuiGraphLinkMode.Selected)) mode |= GTimeGraphLinkMode.Selected;
+            if (linkMode.HasFlag(GuiGraphLinkMode.Allways)) mode |= GTimeGraphLinkMode.Allways;
+            return mode;
+        }
         #endregion
         #region Převod konfiguračních dat z úrovně GuiGraphProperties (GUI) do úrovně TimeGraphProperties (Components.Graph)
         /// <summary>
