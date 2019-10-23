@@ -6063,7 +6063,7 @@ namespace Noris.LCS.Base.WorkScheduler
         #region Obecné vlastnosti v odpovědi
         /// <summary>
         /// Zrušit všechny zobrazené linky.
-        /// Pokud existují nějaké prvky, které jsou Selected, obnocí se Linky podle nich (pokud nebudou vlivem <see cref="ClearSelected"/> odselectovány)
+        /// Pokud existují nějaké prvky, které jsou Selected, obnoví se Linky podle nich (pokud nebudou vlivem <see cref="ClearSelected"/> odselectovány)
         /// </summary>
         public bool ClearLinks { get; set; }
         /// <summary>

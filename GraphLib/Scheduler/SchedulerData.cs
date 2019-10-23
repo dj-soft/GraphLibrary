@@ -3138,7 +3138,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
 
             if (common.ClearLinks && !common.ClearSelected)
-            {   // Najít a obnovit Linky:
+            {   // Najít prvky, které jsou Selected, a obnovit jejich Linky:
                 foreach (var item in this._MainControl.Selector.SelectedItems)
                 {
                     GTimeGraphItem graphItem = item as GTimeGraphItem;
