@@ -13,6 +13,9 @@ namespace Asol.Tools.WorkScheduler.Components
     public class IconLib
     {
         #region Singleton
+        /// <summary>
+        /// Singleton, "já"
+        /// </summary>
         protected static IconLib I
         {
             get
@@ -384,6 +387,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class IconImages
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="name"></param>
+            /// <param name="owner"></param>
             public IconImages(string key, string name, IconLib owner)
             {
                 this.Key = key;
@@ -472,7 +481,6 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Returns null only when does not exists any path (this.FileLists.Count == 0).
             /// </summary>
             /// <param name="size"></param>
-            /// <param name="shift"></param>
             /// <returns></returns>
             private IconImageSize GetImageForSize(int size)
             {
@@ -492,6 +500,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class IconImageSize
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="size"></param>
             public IconImageSize(int size)
             {
                 this.Size = size;
@@ -548,7 +560,13 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.ImageDict[state] = value;
                 }
             }
+            /// <summary>
+            /// Velikost
+            /// </summary>
             public int Size { get; private set; }
+            /// <summary>
+            /// Ikony pro různé stavy
+            /// </summary>
             public Dictionary<IconState, Image> ImageDict { get; private set; }
         }
         #endregion
@@ -559,22 +577,61 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public enum IconSize : int
     {
+        /// <summary>
+        /// Mikro - ikona = 8
+        /// </summary>
         Micro8 = 8,
+        /// <summary>
+        /// Mini - ikona = 16
+        /// </summary>
         Mini16 = 16,
+        /// <summary>
+        /// Malá - ikona = 24
+        /// </summary>
         Small24 = 24,
+        /// <summary>
+        /// Standard - ikona = 32
+        /// </summary>
         Standard32 = 32,
+        /// <summary>
+        /// Velká - ikona = 48
+        /// </summary>
         Enlarged48 = 48,
+        /// <summary>
+        /// Extra velká - ikona = 64
+        /// </summary>
         Big64 = 64
     }
+    /// <summary>
+    /// Stav ikony
+    /// </summary>
     public enum IconState : int
     {
+        /// <summary>
+        /// Běžně dostupná
+        /// </summary>
         Standard = 'a',
+        /// <summary>
+        /// Disabled
+        /// </summary>
         Disable = 'd',
+        /// <summary>
+        /// Hot = pod myší
+        /// </summary>
         Hot = 'h',
+        /// <summary>
+        /// Focus = s focusem
+        /// </summary>
         Focused = 'f',
+        /// <summary>
+        /// Stisknutá
+        /// </summary>
         Pressed = 'p'
     }
     #endregion
+    /// <summary>
+    /// Knihovna ikon
+    /// </summary>
 
     public class IconLibrary
     {
@@ -764,64 +821,195 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class IconStandard
     {
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy černé
+        /// </summary>
         public static Image BulletBlack16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_black_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy modré
+        /// </summary>
         public static Image BulletBlue16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_blue_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy zelené
+        /// </summary>
         public static Image BulletGreen16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_green_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy oranžové
+        /// </summary>
         public static Image BulletOrange16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_orange_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy jůzové
+        /// </summary>
         public static Image BulletPink16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_pink_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy fialové
+        /// </summary>
         public static Image BulletPurple16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_purple_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy červené
+        /// </summary>
         public static Image BulletRed16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_red_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy bílé
+        /// </summary>
         public static Image BulletWhite16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_white_16; } }
+        /// <summary>
+        /// Standardní ikona : malá kulička barvy žluté
+        /// </summary>
         public static Image BulletYellow16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_yellow_16; } }
+        /// <summary>
+        /// Standardní ikona : malá hvězdička
+        /// </summary>
         public static Image BulletStar16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_star_16; } }
 
+        /// <summary>
+        /// Standardní ikona : Export - 64
+        /// </summary>
         public static Image DocumentExport { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_export_64; } }
+        /// <summary>
+        /// Standardní ikona : Save - 64
+        /// </summary>
         public static Image DocumentSave { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_save_5_64; } }
+        /// <summary>
+        /// Standardní ikona : Save As - 64
+        /// </summary>
         public static Image DocumentSaveAs { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_save_as_5_64; } }
 
+        /// <summary>
+        /// Standardní ikona : EditCopy
+        /// </summary>
         public static Image EditCopy { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_copy_3_64; } }
+        /// <summary>
+        /// Standardní ikona : EditCut
+        /// </summary>
         public static Image EditCut { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_cut_3_64; } }
+        /// <summary>
+        /// Standardní ikona : EditPaste
+        /// </summary>
         public static Image EditPaste { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_paste_3_64; } }
+        /// <summary>
+        /// Standardní ikona : EditUndo
+        /// </summary>
         public static Image EditUndo { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_undo_3_64; } }
+        /// <summary>
+        /// Standardní ikona : EditRedo
+        /// </summary>
         public static Image EditRedo { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_redo_3_64; } }
 
+        /// <summary>
+        /// Standardní ikona : GoTop
+        /// </summary>
         public static Image GoTop { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_top_3_64; } }
+        /// <summary>
+        /// Standardní ikona : GoUp
+        /// </summary>
         public static Image GoUp { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_up_4_64; } }
+        /// <summary>
+        /// Standardní ikona : GoDown
+        /// </summary>
         public static Image GoDown { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_down_4_64; } }
+        /// <summary>
+        /// Standardní ikona : GoBottom
+        /// </summary>
         public static Image GoBottom { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_bottom_3_64; } }
 
+        /// <summary>
+        /// Standardní ikona : GoHome
+        /// </summary>
         public static Image GoHome { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_first_2_64; } }
+        /// <summary>
+        /// Standardní ikona : GoLeft
+        /// </summary>
         public static Image GoLeft { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_previous_4_64; } }
+        /// <summary>
+        /// Standardní ikona : GoRight
+        /// </summary>
         public static Image GoRight { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_next_4_64; } }
+        /// <summary>
+        /// Standardní ikona : GoEnd
+        /// </summary>
         public static Image GoEnd { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_last_2_64; } }
 
+        /// <summary>
+        /// Standardní ikona : Refresh
+        /// </summary>
         public static Image Refresh { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_refresh_3_64; } }
 
+        /// <summary>
+        /// Standardní ikona : FlipHorizontal
+        /// </summary>
         public static Image ObjectFlipHorizontal32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.object_flip_horizontal_32; } }
+        /// <summary>
+        /// Standardní ikona : FlipVertical
+        /// </summary>
         public static Image ObjectFlipVertical32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.object_flip_vertical_32; } }
+        /// <summary>
+        /// Standardní ikona : Kalendář
+        /// </summary>
         public static Image ViewPimCalendar32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_pim_calendar_32; } }
+        /// <summary>
+        /// Standardní ikona : Zoom
+        /// </summary>
         public static Image ZoomFitBest32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.zoom_fit_best_3_32; } }
 
+        /// <summary>
+        /// Standardní ikona : Třídit ASC
+        /// </summary>
         public static Image SortAsc { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_up_2_16; } }
+        /// <summary>
+        /// Standardní ikona : Třídit DESC
+        /// </summary>
         public static Image SortDesc { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_down_2_16; } }
+        /// <summary>
+        /// Standardní ikona : Vybraný řádek
+        /// </summary>
         public static Image RowSelected { get { return Asol.Tools.WorkScheduler.Properties.Resources.dialog_accept_2_16; } }
 
-
-
-
-
+        /// <summary>
+        /// Standardní ikona : Info
+        /// </summary>
         public static Image IconInfo { get { return Asol.Tools.WorkScheduler.Properties.Resources.help_contents_32; } }
+        /// <summary>
+        /// Standardní ikona : Help
+        /// </summary>
         public static Image IconHelp { get { return Asol.Tools.WorkScheduler.Properties.Resources.help_32; } }
 
+        /// <summary>
+        /// Standardní ikona : Drak
+        /// </summary>
         internal static Image Dragon { get { return Asol.Tools.WorkScheduler.Properties.Resources.Dragon_128; } }
 
+        /// <summary>
+        /// Standardní ikona : Stín vlevo nahoře
+        /// </summary>
         internal static Image Shadow00 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow00; } }
+        /// <summary>
+        /// Standardní ikona : Stín nahoře
+        /// </summary>
         internal static Image Shadow01 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow01; } }
+        /// <summary>
+        /// Standardní ikona : Stín vpravo nahoře
+        /// </summary>
         internal static Image Shadow02 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow02; } }
+        /// <summary>
+        /// Standardní ikona : Stín
+        /// </summary>
         internal static Image Shadow10 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow10; } }
+        /// <summary>
+        /// Standardní ikona : Stín
+        /// </summary>
         internal static Image Shadow12 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow12; } }
+        /// <summary>
+        /// Standardní ikona : Stín
+        /// </summary>
         internal static Image Shadow20 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow20; } }
+        /// <summary>
+        /// Standardní ikona : Stín
+        /// </summary>
         internal static Image Shadow21 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow21; } }
+        /// <summary>
+        /// Standardní ikona : Stín
+        /// </summary>
         internal static Image Shadow22 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow22; } }
     }
 }

@@ -408,6 +408,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="drawBackground"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
         {
             Rectangle textArea;
@@ -419,7 +420,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="text"></param>
-        /// <param name="color"></param>
+        /// <param name="brush"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment)
@@ -433,9 +434,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="text"></param>
-        /// <param name="color"></param>
+        /// <param name="brush"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="drawBackground"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
         {
             Rectangle textArea;
@@ -450,6 +452,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="textArea"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
@@ -463,6 +466,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="drawBackground"></param>
+        /// <param name="textArea"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
@@ -473,9 +478,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="text"></param>
-        /// <param name="color"></param>
+        /// <param name="brush"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="textArea"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
@@ -486,9 +492,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="text"></param>
-        /// <param name="color"></param>
+        /// <param name="brush"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="drawBackground"></param>
+        /// <param name="textArea"></param>
         internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
@@ -503,6 +511,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
         /// <param name="textArea"></param>
         private static void _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation, Action<Rectangle> drawBackground, out Rectangle textArea)
@@ -711,8 +720,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="color"></param>
+        /// <param name="side"></param>
+        /// <param name="backColor"></param>
+        /// <param name="draw3D"></param>
+        /// <param name="lineColor"></param>
         /// <param name="state"></param>
+        /// <param name="orientation"></param>
+        /// <param name="relativePoint"></param>
         /// <param name="opacity"></param>
         internal static void DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
         {
@@ -723,8 +737,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="color"></param>
+        /// <param name="side"></param>
+        /// <param name="backColor"></param>
+        /// <param name="draw3D"></param>
+        /// <param name="lineColor"></param>
         /// <param name="state"></param>
+        /// <param name="orientation"></param>
+        /// <param name="relativePoint"></param>
         /// <param name="opacity"></param>
         private static void _DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
         {
@@ -4966,9 +4985,13 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
     /// </summary>
     public enum GraphicSetting
     {
+        /// <summary>Nezadáno</summary>
         None,
+        /// <summary>Konfigurace pro kreslení TEXTU</summary>
         Text,
+        /// <summary>Konfigurace pro kreslení HLADKÝCH KŘIVEK</summary>
         Smooth,
+        /// <summary>Konfigurace pro kreslení OSTRÝCH PRAVOÚHLÝCH ČAR</summary>
         Sharp
     }
     /// <summary>
@@ -4977,36 +5000,61 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
     [Flags]
     public enum RelativePosition 
     { 
-        None        = 0x00000, 
-        Inside      = 0x00001, 
-        TopLeft     = 0x00010, 
-        Top         = 0x00020, 
-        TopRight    = 0x00040, 
-        RightTop    = 0x00100, 
-        Right       = 0x00200, 
-        RightBottom = 0x00400, 
-        BottomRight = 0x01000, 
-        Bottom      = 0x02000, 
-        BottomLeft  = 0x04000, 
-        LeftBottom  = 0x10000, 
-        Left        = 0x20000, 
+        /// <summary>Nezadáno</summary>
+        None        = 0x00000,
+        /// <summary>Uvnitř</summary>
+        Inside      = 0x00001,
+        /// <summary>Nahoře vlevo</summary>
+        TopLeft     = 0x00010,
+        /// <summary>Nahoře</summary>
+        Top         = 0x00020,
+        /// <summary>Nahoře vpravo</summary>
+        TopRight    = 0x00040,
+        /// <summary>Vpravo nahoře</summary>
+        RightTop    = 0x00100,
+        /// <summary>Vpravo</summary>
+        Right       = 0x00200,
+        /// <summary>Vpravo dole</summary>
+        RightBottom = 0x00400,
+        /// <summary>Dole vpravo</summary>
+        BottomRight = 0x01000,
+        /// <summary>Dole</summary>
+        Bottom      = 0x02000,
+        /// <summary>Dole vlevo</summary>
+        BottomLeft  = 0x04000,
+        /// <summary>Vlevo dole</summary>
+        LeftBottom  = 0x10000,
+        /// <summary>Vlevo</summary>
+        Left        = 0x20000,
+        /// <summary>Vlevo nahoře</summary>
         LeftTop     = 0x40000,
-        AllTop = TopLeft | Top | TopRight,
-        AllRight = RightTop | Right | RightBottom,
-        AllBottom = BottomRight | Bottom | BottomLeft,
-        AllLeft = LeftBottom | Left | LeftTop
+        /// <summary>Kdekoli nahoře</summary>
+        AllTop      = TopLeft | Top | TopRight,
+        /// <summary>Kdekoli vpravo</summary>
+        AllRight    = RightTop | Right | RightBottom,
+        /// <summary>Kdekoli dole</summary>
+        AllBottom   = BottomRight | Bottom | BottomLeft,
+        /// <summary>Kdekoli vlevo</summary>
+        AllLeft     = LeftBottom | Left | LeftTop
     }
     /// <summary>
     /// Tvary, které generuje metoda <see cref="GPainter.CreatePathLinearShape(LinearShapeType, Rectangle, int)"/>
     /// </summary>
     public enum LinearShapeType
     {
+        /// <summary>Nezadáno</summary>
         None,
+        /// <summary>Šipka doleva</summary>
         LeftArrow,
+        /// <summary>Šipka nahoru</summary>
         UpArrow,
+        /// <summary>Šipka doprava</summary>
         RightArrow,
+        /// <summary>Šipka dolů</summary>
         DownArrow,
+        /// <summary>Vodorovné čáry</summary>
         HorizontalLines,
+        /// <summary>Svislé čáry</summary>
         VerticalLines
     }
     internal enum TrackPointerType

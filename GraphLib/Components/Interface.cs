@@ -1314,7 +1314,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Rovná, lomená křivka, vodorovná : z bodu Start doprava/doleva, v polovině pak nahoru/dolů, a nakonec doprava/doleva do End
         /// </summary>
-        ZigZagHorizonal,
+        ZigZagHorizontal,
         /// <summary>
         /// Rovná, lomená křivka, svislá : z bodu Start nahoru/dolů, v polovině pak doprava/doleva, a nakonec nahoru/dolů do End
         /// </summary>

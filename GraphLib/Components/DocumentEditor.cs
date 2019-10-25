@@ -10,18 +10,31 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Editor dokumentu
+    /// </summary>
     public class GDocumentEditor : GInteractiveControl
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GDocumentEditor()
         {
             this.ComponentsInit();
         }
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnSizeChanged(EventArgs e)
         {
             this.ComponentLayout();
             base.OnSizeChanged(e);
         }
         #region Components
+        /// <summary>
+        /// Inicializace komponent
+        /// </summary>
         protected void ComponentsInit()
         {
             this.DocumentArea = new GDocumentArea() { DocumentSize = new SizeD(149, 210) };
@@ -116,6 +129,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="currentValue"></param>
         /// <param name="maxValue"></param>
+        /// <param name="force"></param>
         /// <param name="newValue"></param>
         /// <returns></returns>
         private bool MustChangeValue(DecimalNRange currentValue, DecimalNRange maxValue, bool force, out DecimalNRange newValue)
@@ -184,17 +198,38 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AcceptMaximalBoundsFromDocument();
             this.Draw();
         }
-        protected GDocumentArea DocumentArea;
-        protected GSizeAxis AxisH;
-        protected GSplitter SplitterH;
-        protected GScrollBar ScrollH;
-        protected GSizeAxis AxisV;
-        protected GSplitter SplitterV;
-        protected GScrollBar ScrollV;
         /// <summary>
-        /// Position of horizontal splitter (under horizontal axis)
+        /// Prvek vlastního dokumentu
         /// </summary>
-        protected int SplitterHPos { get { return this.SplitterH.Value; } set { this.SplitterH.Value = value; } }
+        protected GDocumentArea DocumentArea { get; set; }
+        /// <summary>
+        /// Osa H
+        /// </summary>
+        protected GSizeAxis AxisH { get; set; }
+        /// <summary>
+        /// Dělítko H
+        /// </summary>
+        protected GSplitter SplitterH { get; set; }
+        /// <summary>
+        /// Scrollbar H
+        /// </summary>
+        protected GScrollBar ScrollH { get; set; }
+        /// <summary>
+        /// Osa V
+        /// </summary>
+        protected GSizeAxis AxisV { get; set; }
+        /// <summary>
+        /// Dělítko V
+        /// </summary>
+        protected GSplitter SplitterV { get; set; }
+        /// <summary>
+        /// Scrollbar V
+        /// </summary>
+        protected GScrollBar ScrollV { get; set; }
+    /// <summary>
+    /// Position of horizontal splitter (under horizontal axis)
+    /// </summary>
+    protected int SplitterHPos { get { return this.SplitterH.Value; } set { this.SplitterH.Value = value; } }
         /// <summary>
         /// Position of vertical splitter (after vertical axis)
         /// </summary>

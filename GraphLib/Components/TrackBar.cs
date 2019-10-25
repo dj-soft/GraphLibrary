@@ -591,7 +591,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Text vypisovaný v dolním okraji prvku
         /// </summary>
         public string Text { get; set; }
+        /// <summary>
+        /// Titulek tooltipu
+        /// </summary>
         public string ToolTipTitle { get; set; }
+        /// <summary>
+        /// Text tooltipu
+        /// </summary>
         public string ToolTipText { get; set; }
         /// <summary>
         /// true = Zobrazovat text <see cref="ToolTipText"/> celou dobu přetahování (když je myš stisknutá), dynamický;

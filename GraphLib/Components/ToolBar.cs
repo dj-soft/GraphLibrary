@@ -1534,6 +1534,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TrackBar = new GTrackBar(this);
             this.ChildList.Add(this._TrackBar);
         }
+        /// <summary>
+        /// Připraví layout pro tento trackbar
+        /// </summary>
+        /// <param name="graphics"></param>
         internal override void PrepareLayout(Graphics graphics)
         {
             // this.PrepareBoundsCommon(graphics);
@@ -1545,8 +1549,6 @@ namespace Asol.Tools.WorkScheduler.Components
             int h = itemSetting.ModulePixel;
             int s = itemSetting.OffsetPixel;
             int c = (h / 2);
-            int x = 0;
-
 
             int w = 100;
             int modulesWidth = tBarSetting.GetModuleCount(w + 4);
@@ -1555,6 +1557,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
 
         }
+        /// <summary>
+        /// Vykreslí tento trackbar
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
         protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             this.DrawItemBackground(e, absoluteBounds);

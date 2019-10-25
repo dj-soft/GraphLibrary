@@ -14,22 +14,41 @@ namespace Asol.Tools.WorkScheduler.Data
         where TValue : IComparable<TValue>, IComparable
     {
         #region Constructor and public properties, First item
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public IntervalArray()
         {
             this.First = null;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public IntervalArray(TValue begin, TValue end)
         {
             this.First = new PrevNextItem<Interval<TValue>>(new Interval<TValue>(begin, end));
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="first"></param>
         public IntervalArray(Interval<TValue> first)
         {
             this.First = (first != null ? new PrevNextItem<Interval<TValue>>(first) : null);
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
         }
+        /// <summary>
+        /// Textové vyjádření obsahu
+        /// </summary>
         public string Text
         { 
             get
@@ -101,7 +120,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Merge it into existing item, or add itnerval as new item at correct position.
         /// This array is always sorted by the Begin value, and neither intervals do not overlap or touch.
         /// </summary>
-        /// <param name="array"></param>
+        /// <param name="items"></param>
         public void AddRange(IEnumerable<Interval<TValue>> items)
         {
             if (items != null)
@@ -196,6 +215,13 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Search for used / unused space 
+        /// <summary>
+        /// Vyhledá volný prostor
+        /// </summary>
+        /// <param name="searchFrom"></param>
+        /// <param name="size"></param>
+        /// <param name="addFunction"></param>
+        /// <returns></returns>
         public Interval<TValue> SearchForSpace(TValue searchFrom, TValue size, Func<TValue, TValue, TValue> addFunction)
         {
             // Detection of direction: scan Up (when size is positive value) or Down (size is negative value):
@@ -349,22 +375,44 @@ namespace Asol.Tools.WorkScheduler.Data
         where TValue : IComparable<TValue>, IComparable
     {
         #region Constructors
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public Interval() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="isEditable"></param>
         public Interval(bool isEditable)
         {
             this._IsEditable = isEditable;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public Interval(TValue begin, TValue end)
         {
             this.BeginValue = begin;
             this.EndValue = end;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="isEditable"></param>
         public Interval(TValue begin, TValue end, bool isEditable)
         {
             this.BeginValue = begin;
             this.EndValue = end;
             this._IsEditable = isEditable;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "<" + (this.HasBegin ? this.Begin.ToString() : "...") + " ÷ " + (this.HasEnd ? this.End.ToString() : "...") + ">";
@@ -504,11 +552,47 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region <T> Comparators
+        /// <summary>
+        /// Vrací true, pokud hodnota a je menší než b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected static bool IsLower(TValue a, TValue b) { return (a.CompareTo(b) < 0); }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected static bool IsEqual(TValue a, TValue b) { return (a.CompareTo(b) == 0); }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je větší než b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected static bool IsGreater(TValue a, TValue b) { return (a.CompareTo(b) >= 0); }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je menší nebo rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected static bool IsLowerOrEqual(TValue a, TValue b) { return (a.CompareTo(b) <= 0); }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je větší nebo rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected static bool IsGreaterOrEqual(TValue a, TValue b) { return (a.CompareTo(b) >= 0); }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected static bool IsEqual(Interval<TValue> a, Interval<TValue> b)
         {
             return (a.IsFilled && b.IsFilled && IsEqual(a.Begin, b.Begin) && IsEqual(a.End, b.End));
@@ -579,6 +663,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// when interval = { 10; 20 } and point is 20, then return is PointOnEnd;
         /// when interval = { 10; 20 } and point is 25, then return is PointAfterEnd;
         /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         /// <param name="point"></param>
         /// <returns></returns>
         public static IntervalRelation GetRelationFor(IComparable begin, IComparable end, IComparable point)
@@ -663,16 +749,31 @@ namespace Asol.Tools.WorkScheduler.Data
         where TValue : class, IDeepCloneable, new()
     {
         #region Constructor, First item
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public PointArray()
         { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="point"></param>
         public PointArray(TPoint point)
         {
             this.First = new PrevNextItem<PointItem>(new PointItem(point));
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="value"></param>
         public PointArray(TPoint point, TValue value)
         {
             this.First = new PrevNextItem<PointItem>(new PointItem(point, value));
         }
+        /// <summary>
+        /// První objekt pole
+        /// </summary>
         protected PrevNextItem<PointItem> First;
         /// <summary>
         /// Array of all items in this PointArray (or null, when this.First is null).
@@ -799,16 +900,29 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class PointItem : IValueCloneable
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="point"></param>
             public PointItem(TPoint point)
             {
                 this._Point = point;
                 this._Value = default(TValue);
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="point"></param>
+            /// <param name="value"></param>
             public PointItem(TPoint point, TValue value)
             {
                 this._Point = point;
                 this._Value = value;
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return "Point: " + this.Point.ToString() + "; Value: " + this.Value.ToString();
@@ -821,6 +935,9 @@ namespace Asol.Tools.WorkScheduler.Data
             /// Any value
             /// </summary>
             public TValue Value { get { return _Value; } set { _Value = value; } } private TValue _Value;
+            /// <summary>
+            /// Vždy vrátí new instanci obsahující klon this objektu
+            /// </summary>
             public PointItem ValueClone
             {
                 get
@@ -835,6 +952,12 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region <TPoint> Compare
+        /// <summary>
+        /// Vrací porovnání dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected int Compare(TPoint a, TPoint b)
         {
             return a.CompareTo(b);
@@ -851,12 +974,26 @@ namespace Asol.Tools.WorkScheduler.Data
         where TItem : class, IValueCloneable
     {
         #region Constructos, Property: <T> Value
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public PrevNextItem() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
         public PrevNextItem(TItem value) { this.Value = value; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return (this.Value != null ? this.Value.ToString() : "NULL");
         }
+        /// <summary>
+        /// Hodnota v tomto prvku
+        /// </summary>
         public TItem Value { get; set; }
         #endregion
         #region Properties Prev, Next, ValueClone
@@ -942,6 +1079,9 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region IDeepCloneable
+        /// <summary>
+        /// Obsahuje kompletní klon this objektu
+        /// </summary>
         public PrevNextItem<TItem> DeepClone
         {
             get
@@ -1192,6 +1332,9 @@ namespace Asol.Tools.WorkScheduler.Data
     }
     #endregion
     #region interface IMergeable, IValueCloneable, IDeepCloneable
+    /// <summary>
+    /// Deklaruje, že instance má metodu <see cref="MergeWith(IMergeable)"/> = lze do ní vložit další instanci
+    /// </summary>
     public interface IMergeable
     {
         /// <summary>
@@ -1200,6 +1343,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="other"></param>
         void MergeWith(IMergeable other);
     }
+    /// <summary>
+    /// Deklaruje, že instance má prvek <see cref="ValueClone"/> = Shallow clone
+    /// </summary>
     public interface IValueCloneable
     {
         /// <summary>
@@ -1207,6 +1353,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         object ValueClone { get; }
     }
+    /// <summary>
+    /// Deklaruje, že instance má prvek <see cref="DeepClone"/> = Deep clone
+    /// </summary>
     public interface IDeepCloneable
     {
         /// <summary>

@@ -451,6 +451,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Sent to an application when the IME changes composition status as a result of a keystroke. A window receives this message through its WindowProc function.
         /// </summary>
         IME_COMPOSITION = 0x010F,
+        /// <summary>
+        /// ???
+        /// </summary>
         IME_KEYLAST = 0x010F,
         /// <summary>
         /// The WM_INITDIALOG message is sent to the dialog box procedure immediately before a dialog box is displayed. Dialog box procedures typically use this message to initialize controls and carry out any other initialization tasks that affect the appearance of the dialog box.
@@ -777,7 +780,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// The WM_WTSSESSION_CHANGE message notifies applications of changes in session state.
         /// </summary>
         WTSSESSION_CHANGE = 0x02B1,
+        /// <summary>
+        /// ???
+        /// </summary>
         TABLET_FIRST = 0x02c0,
+        /// <summary>
+        /// ???
+        /// </summary>
         TABLET_LAST = 0x02df,
         /// <summary>
         /// An application sends a WM_CUT message to an edit control or combo box to delete (cut) the current selection, if any, in the edit control and copy the deleted text to the clipboard in CF_TEXT format.
@@ -896,11 +905,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Sent to request extended title bar information. A window receives this message through its WindowProc function.
         /// </summary>
         GETTITLEBARINFOEX = 0x033F,
+        /// <summary>
+        /// ???
+        /// </summary>
         HANDHELDFIRST = 0x0358,
+        /// <summary>
+        /// ???
+        /// </summary>
         HANDHELDLAST = 0x035F,
+        /// <summary>
+        /// ???
+        /// </summary>
         AFXFIRST = 0x0360,
+        /// <summary>
+        /// ???
+        /// </summary>
         AFXLAST = 0x037F,
+        /// <summary>
+        /// ???
+        /// </summary>
         PENWINFIRST = 0x0380,
+        /// <summary>
+        /// ???
+        /// </summary>
         PENWINLAST = 0x038F,
         /// <summary>
         /// The WM_APP constant is used by applications to help define private messages, usually of the form WM_APP+X, where X is an integer value.

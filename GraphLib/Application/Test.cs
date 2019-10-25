@@ -57,6 +57,12 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class TestArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="testProvider"></param>
+        /// <param name="testType"></param>
+        /// <param name="resultList"></param>
         public TestArgs(ITest testProvider, TestType testType, List<TestResultItem> resultList)
         {
             this._TestProvider = testProvider;
@@ -85,6 +91,12 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class TestResultItem
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="testProvider"></param>
+        /// <param name="resultType"></param>
+        /// <param name="resultMessage"></param>
         public TestResultItem(ITest testProvider, TestResultType resultType, string resultMessage)
         {
             this.TestProvider = testProvider;
@@ -143,15 +155,35 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         void RunTest(TestArgs testArgs);
     }
+    /// <summary>
+    /// Druhy testů
+    /// </summary>
     [Flags]
     public enum TestType
     {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Zásadní - rychlý a důležitý
+        /// </summary>
         Essential = 0x0001,
+        /// <summary>
+        /// Běžný spouštěný po startu aplikace
+        /// </summary>
         AtStartup = 0x0002,
-
+        /// <summary>
+        /// Těžký zátěžový
+        /// </summary>
         HardWorkLoad = 0x8000,
+        /// <summary>
+        /// Všechny standardní
+        /// </summary>
         AllStandard = 0x00FF,
+        /// <summary>
+        /// Všechny
+        /// </summary>
         All = 0xFFFF
     }
     

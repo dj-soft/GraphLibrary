@@ -9,10 +9,25 @@ using System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Virtuální interaktivní kontejner
+    /// </summary>
     public abstract class VirtualInteractiveContainer : InteractiveContainer, IInteractiveItem
     {
+        /// <summary>
+        /// Přidá prvek
+        /// </summary>
+        /// <param name="item"></param>
         public void Add(VirtualInteractiveItem item) { this.ChildList.Add(item); }
+        /// <summary>
+        /// Přidá sadu prvků
+        /// </summary>
+        /// <param name="items"></param>
         public void AddRange(IEnumerable<VirtualInteractiveItem> items) { this.ChildList.AddRange(items); }
+        /// <summary>
+        /// Přidá sadu prvků
+        /// </summary>
+        /// <param name="items"></param>
         public void AddRange(params VirtualInteractiveItem[] items) { this.ChildList.AddRange(items); }
         /// <summary>
         /// Invalidate ActualBounds on all virtual items
@@ -27,9 +42,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected IEnumerable<VirtualInteractiveItem> VirtualItems { get { return this.ChildList.OfType<VirtualInteractiveItem>(); } }
     }
+    /// <summary>
+    /// Prvek do virtuálního kontejneru
+    /// </summary>
     public abstract class VirtualInteractiveItem : InteractiveObject, IInteractiveItem
     {
         #region Virtual item memebers (constructor, VirtualBounds and ActiveBounds, validity check and calculators)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="virtualConvertor"></param>
         public VirtualInteractiveItem(IVirtualConvertor virtualConvertor)
         {
             this._VirtualConvertor = virtualConvertor;

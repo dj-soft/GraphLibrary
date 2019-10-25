@@ -1799,7 +1799,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case MousePaintObjectType.SCurveHorizontal:
                     this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.SCurveHorizontal);
                     break;
-                case MousePaintObjectType.ZigZagHorizonal:
+                case MousePaintObjectType.ZigZagHorizontal:
                     this._MousePaintDrawLink(graphics, mousePaintInfo, LinkLineType.ZigZagHorizontal);
                     break;
                 case MousePaintObjectType.ZigZagVertical:

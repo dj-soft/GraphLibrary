@@ -215,7 +215,18 @@ namespace Asol.Tools.WorkScheduler.Rtf
         /// </summary>
         protected struct NameValue
         {
-
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="name"></param>
+            /// <param name="value"></param>
+            /// <param name="valueInt"></param>
+            public NameValue(string name, string value, int? valueInt)
+            {
+                _Name = name;
+                _Value = value;
+                _ValueInt = valueInt;
+            }
             private string _Name;
             private string _Value;
             private int? _ValueInt;
