@@ -247,7 +247,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GControlLayered()
         {
-            this.LayerCount = 1;
+            this.PrepareLayers("Standard");
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
             this.ResizeRedraw = true;
         }
@@ -325,16 +325,20 @@ namespace Asol.Tools.WorkScheduler.Components
         public int LayerCount
         {
             get { return this._LayerCount; }
-            set
-            {
-                int cnt = value;
-                if (cnt < 1) cnt = 1;
-                if (cnt > 10) cnt = 10;
-                if (cnt == this._LayerCount) return;
-                this._LayerCount = cnt;
-                this._CreateLayers();
-                this.Draw();
-            }
+        }
+        /// <summary>
+        /// Metoda zajistí přípravu dat pro kreslící vrstvy, kde jednotlivé vrstvy mají daná jména
+        /// </summary>
+        /// <param name="layerNames"></param>
+        protected void PrepareLayers(params string[] layerNames)
+        {
+            string[] names = layerNames.Where(n => n != null).ToArray();
+            if (names.Length == 0) names = new string[] { "Default" };
+            if (names.Length > 10) names = names.Take(10).ToArray();
+            this._LayerNames = names;
+            this._LayerCount = names.Length;
+            this._CreateLayers();
+            this.Draw();
         }
         /// <summary>
         /// Tato metoda se volá tehdy, když aplikace chce překreslit celý objekt.
@@ -485,27 +489,40 @@ namespace Asol.Tools.WorkScheduler.Components
         protected bool PendingFullDraw { get; set; }
         #endregion
         #region Řízení vrstev: Create, Resize, Dispose. Nikoliv kreslení.
+        /// <summary>
+        /// Zajistí změnu kreslící velikosti
+        /// </summary>
+        /// <param name="callDraw"></param>
         private void _ResizeLayers(bool callDraw)
         {
             this._CreateLayers();
             if (callDraw)
                 this.Draw();
         }
+        /// <summary>
+        /// Vytvoří new grafické vrstvy pro aktuální velikost <see cref="Size"/> a pro počet vrstev <see cref="LayerCount"/>.
+        /// </summary>
         private void _CreateLayers()
         {
             this._DisposeLayers(false);
 
-            Size size = this.Size;
             int count = this._LayerCount;
-            count = (count < 1 ? 1 : (count > 10 ? 10 : count));
+            string[] names = this._LayerNames;
+
+            Size size = this.Size;
+            if (size.Width <= 0 || size.Height <= 0)
+                size = new Size(1, 1);
+
             GraphicLayer[] allLayers = new GraphicLayer[count];
-            if (size.Width > 0 && size.Height > 0)
-            {
-                for (int index = 0; index < count; index++)
-                    allLayers[index] = new GraphicLayer(this, size, allLayers, index);
-            }
+            for (int index = 0; index < count; index++)
+                allLayers[index] = new GraphicLayer(this, size, allLayers, index, names[index]);
+            
             this._GraphicLayers = allLayers;
         }
+        /// <summary>
+        /// Uvolní z paměti stávající grafické vrstvy
+        /// </summary>
+        /// <param name="resetCount"></param>
         private void _DisposeLayers(bool resetCount)
         {
             if (this._GraphicLayers != null)
@@ -521,6 +538,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._LayerCount = 0;
         }
         private int _LayerCount;
+        private string[] _LayerNames;
         private GraphicLayer[] _GraphicLayers;
         #endregion
         #region Dispose
@@ -560,19 +578,30 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="size"></param>
         /// <param name="allLayers">Reference na pole všech vrstev</param>
         /// <param name="index">Index této jedné vrstvy</param>
-        public GraphicLayer(Control owner, Size size, GraphicLayer[] allLayers, int index)
+        /// <param name="layerName">Název vrstvy</param>
+        public GraphicLayer(Control owner, Size size, GraphicLayer[] allLayers, int index, string layerName)
         {
             this._Owner = owner;
             this._Size = size;
             this._AllLayers = allLayers;
             this._Index = index;
+            this._Name = layerName;
             this._ContainData = false;
             this._CreateLayer();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Layer: #" + this._Index.ToString() + "; Name: " + this._Name + "; ContainData: " + (this._ContainData ? "Yes" : "No");
         }
         private Control _Owner;
         private Size _Size;
         private GraphicLayer[] _AllLayers;
         private int _Index;
+        private string _Name;
         private bool _ContainData;
         /// <summary>
         /// Controll mechanism for buffered graphics
@@ -642,7 +671,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Objekt Graphics, který dovoluje kreslit motivy do této vrstvy
         /// </summary>
         public Graphics LayerGraphics { get { return this._GraphicsData.Graphics; } }
-
         /// <summary>
         /// Kopíruje obsah vrstvy (sourceLayer) to vrstvy (targetLayer).
         /// Pokud některá vrstva (sourceLayer nebo targetLayer) je null, nekopíruje se nic.

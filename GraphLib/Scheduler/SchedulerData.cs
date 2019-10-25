@@ -1286,7 +1286,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             else if (control is GTimeGraphLinkArray)
             {
                 GTimeGraphLinkArray graphLinkArray = control as GTimeGraphLinkArray;
-                graphLinkArray.CurrentLinksMode = (isVisible ? GTimeGraphLinkMode.Allways : graphLinkArray.DefaultLinksMode);
+                graphLinkArray.CurrentLinksMode = (isVisible ? GTimeGraphLinkMode.All : graphLinkArray.DefaultLinksMode);
                 callRefresh = true;
             }
         }

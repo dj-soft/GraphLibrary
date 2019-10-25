@@ -409,7 +409,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Alpha channel (=opacity) for animated ToolTip (wait, fade-in, show, fade-out)
         /// </summary>
-        protected float AnimationAlpha { get { return this.AnimationCurrentState.AlphaCurrent; } }
+        internal float AnimationAlpha { get { return this.AnimationCurrentState.AlphaCurrent; } }
         /// <summary>
         /// Current animation phase.
         /// Setting a new value will change object in AnimationCurrentState to appropriate state.

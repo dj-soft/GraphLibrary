@@ -27,6 +27,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Inicializace, reference na GGrid, IGridMember
         internal GTable(GGrid grid, Table table)
         {
+            this.Parent = grid;
             this._ValidityLock = new object();
             this._Grid = grid;
             this._DataTable = table;
@@ -717,11 +718,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private void InitRowsPositions()
         {
-            this._RowArea = new GRowArea(this._DataTable, TableAreaType.RowData);
+            this._RowArea = new GRowArea(this, TableAreaType.RowData);
 
             this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixelRowArea, this._SetVisualFirstPixel);
 
-            this._RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
+            this._RowsScrollBar = new GScrollBar(this) { Orientation = System.Windows.Forms.Orientation.Vertical };
             this._RowsScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
             this._RowsScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
         }

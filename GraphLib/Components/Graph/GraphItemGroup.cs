@@ -362,6 +362,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
+        /// Vrací true, pokud pro daný prvek mohou být vyhledávány a zobrazovány Linky, podle jeho <see cref="BehaviorMode"/>.
+        /// Rozhoduje o tom Group, protože jednotlivé Items nemají svoje privátní Linky.
+        /// </summary>
+        internal bool IsShowLinks { get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.ShowLinks); } }
+        /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
         /// Aplikační kód (respektive implementační objekt <see cref="ITimeGraphItem"/>) se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
@@ -577,18 +582,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Vrací true, pokud daný prvek může být přemísťován.
         /// Rozhoduje o tom Group, protože jednotlivé Items přemisťovat nelze.
         /// </summary>
-        internal bool IsSelectable
-        {
-            get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnySelectable); }
-        }
+        internal bool IsSelectable { get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnySelectable); } }
         /// <summary>
         /// Vrací true, pokud daný prvek může být přemísťován.
         /// Rozhoduje o tom Group, protože jednotlivé Items přemisťovat nelze.
         /// </summary>
-        internal bool IsDragEnabled
-        {
-            get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnyMove); }
-        }
+        internal bool IsDragEnabled { get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnyMove); } }
         /// <summary>
         /// Obsahuje true, pokud this grupa je nyní přemisťována akcí DragMove.
         /// </summary>

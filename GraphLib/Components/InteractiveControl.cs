@@ -2077,9 +2077,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="sender"></param>
         /// <param name="args"></param>
         void _ToolTip_TimerDrawRequest(object sender, GPropertyEventArgs<float> args)
-        {
-
-        }
+        { }
         /// <summary>
         /// Store definitions for tooltip from data object (TooltipData) to visual object (ToolTipItem)
         /// </summary>
@@ -2371,7 +2369,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _DrawInit()
         {
-            this.LayerCount = 4;          // [0] = Standard;  [1] = Dynamic;  [2] = Interactive;  [3] = ToolTip, Progress Window and Animations
+            this.PrepareLayers("Standard", "Interactive", "Dynamic", "Overlay");
             this._DrawItemStandard = new Dictionary<uint, IInteractiveItem>();
             this._DrawItemInteractive = new Dictionary<uint, IInteractiveItem>();
             this._DrawItemDynamic = new Dictionary<uint, IInteractiveItem>();

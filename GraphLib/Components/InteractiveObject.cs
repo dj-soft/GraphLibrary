@@ -61,7 +61,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Textem vyjádřená cesta ke všem Parentům, pro kontroly
         /// </summary>
-        public string AllParentsPath
+        public string FullPathFromParent
         {
             get
             {

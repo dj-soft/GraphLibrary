@@ -1141,7 +1141,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         void ITimeGraphLinkDataSource.CreateLinks(CreateAllLinksArgs args)
         {
-            // CoSTím;
+            GTimeGraphLinkItem[] links = null;
+            // Máme dvě Dictionary obsahující Linky: GraphLinkNextDict a GraphLinkPrevDict: mají stejný počet vět, 
+            //  a liší se jen tím, že v jedné je klíčem hodnota Next a v druhé je klíčem Prev.
+            // Projdu tedy GraphLinkNextDict.Values a všechny vhodné hodnoty dám do výsledku:
+            if (args.LinksMode.HasFlag(GTimeGraphLinkMode.Allways))
+            {
+                links = this.GraphLinkNextDict.Values;
+            }
+
+            if (links != null && links.Length > 0)
+            {
+                bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
+                LinkLineType defaultLineType = (asSCurve ? LinkLineType.SCurveHorizontal : LinkLineType.StraightLine);
+
+                foreach (GTimeGraphLinkItem link in links)
+                {
+                    if (this._SearchLinkItemPrepareData(link, Direction.Positive, GGraphControlPosition.Group, defaultLineType))
+                        args.Links.Add(link);
+                }
+            }
         }
         /// <summary>
         /// Metoda najde a vrátí soupis platných vztahů mezi prvky pro jeden daný prvek grafu.
@@ -1183,6 +1202,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _SearchForGraphLink(GTimeGraphItem currentItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, Direction targetSide,
             Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask, LinkLineType defaultLineType)
         {
+            if (currentItem == null || !currentItem.Group.IsShowLinks) return;           // Pokud daný prvek NPOVOLUJE práci s Linky, skončíme...
+
             Direction sourceSide = targetSide.Reverse();
             Queue<GTimeGraphItem> searchQueue = new Queue<GTimeGraphItem>();
             searchQueue.Enqueue(currentItem);
@@ -1203,21 +1224,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     if (resultLinkDict.ContainsKey(link.Key)) continue;    // Tenhle vztah už ve výstupní dictionary máme; ten přeskočíme.
 
-                    // Najdeme zdrojový i cílový prvek vztahu:
-                    int targetId = link.GetId(targetSide);
-                    GTimeGraphItem targetItem = this._SearchGraphItemsForLink(targetId, position);
-                    if (targetItem == null) continue;                // Vztah nemá nalezen prvek na cílové straně vztahu; vztah přeskočíme.
-                    int sourceId = link.GetId(sourceSide);           // Na source straně vztahu nemusí být nutně prvek, který jsme hledali - může tam být jeho grupa! (anebo naopak)
-                    GTimeGraphItem sourceItem = this._SearchGraphItemsForLink(sourceId, position);
-                    link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu (buď ten, kde hledání začalo, anebo odpovídající prvek = jeho Grupa, pro kterou máme vztahy!
-                    link.SetItem(targetSide, targetItem);            // Prvek na cílové straně vztahu
-                    link.PrepareCurrentLine(defaultLineType);        // Aplikuje defaultní tvar z konfigurace
-                    resultLinkDict.Add(link.Key, link);
+                    // Do linku doplníme zdrojový i cílový prvek vztahu a tvar křivky:
+                    GTimeGraphItem targetItem;
+                    if (this._SearchLinkItemPrepareData(link, targetSide, position, defaultLineType, out targetItem))
+                    {   // Pokud jsme našli target:
+                        resultLinkDict.Add(link.Key, link);
 
-                    // Podle podmínek zajistíme provedení rekurze = hledání dalších vztahů z cílového prvku tohoto vztahu:
-                    if (wholeTask && link.GuiGraphLink != null && link.GuiGraphLink.RelationType.HasValue && link.GuiGraphLink.RelationType.Value == GuiGraphItemLinkRelation.OneLevel && !scanItemDict.ContainsKey(targetItem.Id))
-                    {   // Daný cílový prvek si zařadíme do fronty práce, a v některém z dalších cyklů v této metodě jej zpracujeme:
-                        searchQueue.Enqueue(targetItem);
+                        // Podle podmínek zajistíme provedení rekurze = hledání dalších vztahů z cílového prvku tohoto vztahu:
+                        if (wholeTask && link.GuiGraphLink != null && link.GuiGraphLink.RelationType.HasValue && link.GuiGraphLink.RelationType.Value == GuiGraphItemLinkRelation.OneLevel && !scanItemDict.ContainsKey(targetItem.Id))
+                        {   // Daný cílový prvek si zařadíme do fronty práce, a v některém z dalších cyklů v této metodě jej zpracujeme:
+                            searchQueue.Enqueue(targetItem);
+                        }
                     }
                 }
 
@@ -1238,23 +1255,64 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private GTimeGraphLinkItem[] _SearchForGraphLinkOne(GTimeGraphItem baseItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, out GGraphControlPosition position)
         {
-            if (baseItem != null && graphLinkDict != null && graphLinkDict.CountKeys > 0)
-            {
-                int id;
-                GTimeGraphLinkItem[] links;
-
-                position = GGraphControlPosition.Group;
-                id = baseItem.Group.GroupId;
-                links = graphLinkDict[id];
-                if (links != null) return links;
-
-                position = GGraphControlPosition.Item;
-                id = baseItem.Item.ItemId;
-                links = graphLinkDict[id];
-                if (links != null) return links;
-            }
             position = GGraphControlPosition.None;
+            if (baseItem == null || graphLinkDict == null || graphLinkDict.CountKeys == 0) return null;
+            if (!baseItem.Group.IsShowLinks) return null;
+
+            GTimeGraphLinkItem[] links;
+
+            links = graphLinkDict[baseItem.Group.GroupId];
+            if (links != null)
+            {
+                position = GGraphControlPosition.Group;
+                return links;
+            }
+
+            links = graphLinkDict[baseItem.Item.ItemId];
+            if (links != null)
+            {
+                position = GGraphControlPosition.Item;
+                return links;
+            }
+
             return null;
+        }
+        /// <summary>
+        /// Pro dodaný link (=záznam o vztahu dvou prvků) dohledá právě ty dva prvky Prev a Next a vloží je do linku.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="targetSide"></param>
+        /// <param name="position"></param>
+        /// <param name="defaultLineType"></param>
+        /// <returns></returns>
+        private bool _SearchLinkItemPrepareData(GTimeGraphLinkItem link, Direction targetSide, GGraphControlPosition position, LinkLineType defaultLineType)
+        {
+            GTimeGraphItem targetItem;
+            return this._SearchLinkItemPrepareData(link, targetSide, position, defaultLineType, out targetItem);
+        }
+        /// <summary>
+        /// Pro dodaný link (=záznam o vztahu dvou prvků) dohledá právě ty dva prvky Prev a Next a vloží je do linku.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="targetSide"></param>
+        /// <param name="position"></param>
+        /// <param name="defaultLineType"></param>
+        /// <param name="targetItem"></param>
+        /// <returns></returns>
+        private bool _SearchLinkItemPrepareData(GTimeGraphLinkItem link, Direction targetSide, GGraphControlPosition position, LinkLineType defaultLineType, out GTimeGraphItem targetItem)
+        {
+            Direction sourceSide = targetSide.Reverse();
+
+            int targetId = link.GetId(targetSide);
+            targetItem = this._SearchGraphItemsForLink(targetId, position);
+            if (targetItem == null) return false;            // Vztah nemá nalezen prvek na cílové straně vztahu; vztah přeskočíme.
+            int sourceId = link.GetId(sourceSide);           // Na source straně vztahu nemusí být nutně prvek, který jsme hledali - může tam být jeho grupa! (anebo naopak)
+            GTimeGraphItem sourceItem = this._SearchGraphItemsForLink(sourceId, position);
+            link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu (buď ten, kde hledání začalo, anebo odpovídající prvek = jeho Grupa, pro kterou máme vztahy!
+            link.SetItem(targetSide, targetItem);            // Prvek na cílové straně vztahu
+            link.PrepareCurrentLine(defaultLineType);        // Aplikuje defaultní tvar z konfigurace
+
+            return true;
         }
         /// <summary>
         /// Metoda najde a vrátí grafický prvek grafu <see cref="GTimeGraphItem"/> pro dané ID prvku a danou prioritu pozice.

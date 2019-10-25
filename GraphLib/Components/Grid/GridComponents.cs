@@ -1155,11 +1155,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Konstruktor pro záhlaví, s odkazem na tabulku
         /// </summary>
-        /// <param name="table"></param>
+        /// <param name="gTable"></param>
         /// <param name="areaType"></param>
-        public GRowArea(Table table, TableAreaType areaType)
+        public GRowArea(GTable gTable, TableAreaType areaType)
         {
-            this._OwnerTable = table;
+            this.Parent = gTable;
+            this._OwnerTable = gTable.DataTable;
             this._AreaType = areaType;
             this._ChildList = new List<IInteractiveItem>();
         }

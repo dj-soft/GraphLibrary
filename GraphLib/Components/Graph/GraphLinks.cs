@@ -115,6 +115,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.Clear();
 
             ITimeGraphLinkDataSource linkDataSource = this.LinkDataSource;
+            if (linkDataSource == null) return;
+
+            GTimeGraphLinkMode itemMode = linksMode;
+            if (linksMode.HasFlag(GTimeGraphLinkMode.Allways)) itemMode = GTimeGraphLinkMode.Allways;
+
             CreateAllLinksArgs args = null;
 
             if (linkDataSource != null)
@@ -128,13 +133,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
                 else if (linksMode.HasFlag(GTimeGraphLinkMode.Selected))
                 {
-                    args = new CreateAllLinksArgs(GTimeGraphLinkMode.Selected, this.Host.Selector.SelectedItems);
-                    linkDataSource.CreateLinks(args);
+                    if (this.Host != null && this.Host.Selector != null)
+                    {
+                        args = new CreateAllLinksArgs(GTimeGraphLinkMode.Selected, this.Host.Selector.SelectedItems);
+                        linkDataSource.CreateLinks(args);
+                    }
                 }
             }
 
             if (args != null && args.Links.Count > 0)
-                this.AddLinks(args.Links, linksMode);
+                this.AddLinks(args.Links, itemMode);
         }
         /// <summary>
         /// Datový zdroj, ze kterého mohou být čteny linky - v situaci, kdy GUI si samo chce vyžádat seznam linků
@@ -226,8 +234,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda vrací poměr průhlednosti pro daný režim linku.
         /// Průhlednost Linku = hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva).
         /// Na hodnoty průhlednosti má vliv i aktuální režim <see cref="CurrentLinksMode"/>.
-        /// Hodnoty jsou dány konstantně:
-        /// 
         /// </summary>
         /// <param name="itemLinkMode"></param>
         /// <returns></returns>
@@ -250,15 +256,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Allways, když prvek má aktuálně na sobě myš
         /// </summary>
-        protected const float LinkVisibleRatioAllwaysWithMouse = 0.90f;
+        protected const float LinkVisibleRatioAllwaysWithMouse = 0.80f;
         /// <summary>
         /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Allways, bez myši
         /// </summary>
-        protected const float LinkVisibleRatioAllwaysStandard = 0.60f;
+        protected const float LinkVisibleRatioAllwaysStandard = 0.40f;
         /// <summary>
         /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek je IsSelected a má aktuálně na sobě myš
         /// </summary>
-        protected const float LinkVisibleRatioSelectedWithMouse = 0.90f;
+        protected const float LinkVisibleRatioSelectedWithMouse = 0.80f;
         /// <summary>
         /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek je IsSelected a je bez myši
         /// </summary>
@@ -266,7 +272,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek není IsSelected a má aktuálně na sobě myš
         /// </summary>
-        protected const float LinkVisibleRatioOnlyWithMouse = 0.90f;
+        protected const float LinkVisibleRatioOnlyWithMouse = 0.80f;
         /// <summary>
         /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek není IsSelected a je bez myši - takový Link by de facto neměl být zpracováván, protože není důvod jej zobrazit
         /// </summary>

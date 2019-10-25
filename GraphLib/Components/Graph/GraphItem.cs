@@ -1007,6 +1007,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Pokud aktuální graf NENÍ nebo NEMÁ zobrazovat linky v MouseOver, pak skončíme:
             if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.MouseOver)) return;
 
+            // Pokud aktuální PRVEK nemá zobrazovat linky:
+            if (!this.Group.IsShowLinks) return;
+
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
             if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksForMouseOver != null) return;
 
@@ -1041,7 +1044,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected void PrepareLinksForSelect(bool isSelected)
         {
             // Pokud aktuální graf NEMÁ zobrazovat linky v IsSelected stavu, pak skončíme:
-            if (!this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.Selected)) return;
+            if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.Selected)) return;
+
+            // Pokud aktuální PRVEK nemá zobrazovat linky:
+            if (!this.Group.IsShowLinks) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
             if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksForMouseOver != null) return;
@@ -1069,12 +1075,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Pole vztahů, které jsou získány při Select = true a odebrány při Select = false
         /// </summary>
         protected GTimeGraphLinkItem[] LinksSelect;
-
         #endregion
     }
     #region enum GGraphControlPosition
     /// <summary>
-    /// Pozice GUI controlu pro prvek grafu
+    /// Pozice GUI controlu pro prvek grafu (Group / Item)
     /// </summary>
     public enum GGraphControlPosition
     {
