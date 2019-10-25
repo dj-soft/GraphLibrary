@@ -15,16 +15,35 @@ namespace Asol.Tools.WorkScheduler.Data
     {
         #region Public
         #region Constructors, Equals, ToString, variables
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
         public XDateTime(DateTime value)
             : this(value.Year, value.Month, value.Day, value.Hour, value.Minute, value.Second, (decimal)value.Millisecond / 1000m)
         {
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
         public XDateTime(long year, int month, int day)
         {
             this._DayTicks = _MergeDateFromParts(year, month, day);
             this._TimeTicks = 0;
             this._HasTime = false;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <param name="minute"></param>
+        /// <param name="second"></param>
         public XDateTime(long year, int month, int day, int hour, int minute, int second)
         {
             this._DayTicks = _MergeDateFromParts(year, month, day);
@@ -47,27 +66,49 @@ namespace Asol.Tools.WorkScheduler.Data
             this._TimeTicks = _MergeTimeFromParts(hour, minute, second, fragments);
             this._HasTime = true;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dayTicks"></param>
         internal XDateTime(long dayTicks)
         {
             this._DayTicks = dayTicks;
             this._TimeTicks = 0;
             this._HasTime = false;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dayTicks"></param>
+        /// <param name="timeTicks"></param>
         internal XDateTime(long dayTicks, ulong timeTicks)
         {
             this._DayTicks = dayTicks;
             this._TimeTicks = timeTicks;
             this._HasTime = true;
         }
+        /// <summary>
+        /// HashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this._DayTicks.GetHashCode() ^ this._TimeTicks.GetHashCode() ^ this._HasTime.GetHashCode();
         }
+        /// <summary>
+        /// Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             XDateTime other = (XDateTime)obj;
             return this == other;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             if (this.IsStandard)
@@ -244,7 +285,7 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region operators
         /// <summary>
-        /// Is value "a" and "b" exact equal?
+        /// Vrací true, pokud hodnota a je rovna b
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -254,7 +295,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return (a._DayTicks == b._DayTicks && a._TimeIndexZero == b._TimeIndexZero);
         }
         /// <summary>
-        /// Is value a and b not equall?
+        /// Vrací true, pokud hodnota a je jiná než b
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -263,28 +304,56 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return (a._DayTicks != b._DayTicks || a._TimeIndexZero != b._TimeIndexZero);
         }
-
+        /// <summary>
+        /// Vrací true, pokud hodnota a je menší než b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator <(XDateTime a, XDateTime b)
         {
             return (a._DayTicks < b._DayTicks || (a._DayTicks == b._DayTicks && a._TimeIndexZero < b._TimeIndexZero));
         }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je větší než b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator >(XDateTime a, XDateTime b)
         {
             return (a._DayTicks > b._DayTicks || (a._DayTicks == b._DayTicks && a._TimeIndexZero > b._TimeIndexZero));
         }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je menší nebo rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator <=(XDateTime a, XDateTime b)
         {
             return (a._DayTicks < b._DayTicks || (a._DayTicks == b._DayTicks && a._TimeIndexZero <= b._TimeIndexZero));
         }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je větší nebo rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator >=(XDateTime a, XDateTime b)
         {
             return (a._DayTicks > b._DayTicks || (a._DayTicks == b._DayTicks && a._TimeIndexZero >= b._TimeIndexZero));
         }
+        /// <summary>
+        /// Vrací čas a posunutý dopředu o čas b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public static XDateTime operator +(XDateTime a, XTimeSpan time)
         {
             return a.Add(time);
         }
-
         /// <summary>
         /// Implicit conversion from DateTime to XDateTime
         /// </summary>
@@ -323,21 +392,21 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Convertors, check
         /// <summary>
-        /// Create time parts (UInt64, Int32) from this instance
+        /// Rozdělí this čas na rok, měsíc, den
         /// </summary>
-        /// <param name="p"></param>
-        /// <param name="hour"></param>
-        /// <param name="minute"></param>
-        /// <param name="second"></param>
-        /// <param name="fragments"></param>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
         internal void SplitToParts(out long year, out int month, out int day)
         {
             _SplitDateToParts(this._DayTicks, out year, out month, out day);
         }
         /// <summary>
-        /// Create time parts (UInt64, Int32) from this instance
+        /// Rozdělí this čas na rok, měsíc, den, čas
         /// </summary>
-        /// <param name="p"></param>
+        /// <param name="year"></param>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
@@ -386,7 +455,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="fragments"></param>
         /// <returns></returns>
         private static ulong _MergeTimeFromParts(int hour, int minute, int second)
         {
@@ -426,7 +494,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Create a long (Int64) value from time parts
         /// </summary>
-        /// <param name="p"></param>
+        /// <param name="timeIndex"></param>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
@@ -569,7 +637,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a day count in specified year (365 ÷ 366).
         /// </summary>
         /// <param name="year"></param>
-        /// <param name="month"></param>
         /// <returns></returns>
         public static int GetDayCountInYear(long year)
         {
@@ -658,6 +725,11 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Day shift (Add, Sub)
+        /// <summary>
+        /// Vrátí nový <see cref="XDateTime"/> jako výsledek this + dodaný časový rozdíl <see cref="XTimeSpan"/>
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public XDateTime Add(XTimeSpan time)
         {
             if (this.IsStandard && time.IsStandard)
@@ -680,6 +752,11 @@ namespace Asol.Tools.WorkScheduler.Data
             // New instance:
             return new XDateTime(dayTicks, timeTicks);
         }
+        /// <summary>
+        /// Vrátí nový <see cref="XDateTime"/> jako výsledek this - dodaný časový rozdíl <see cref="XTimeSpan"/>
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public XDateTime Subtract(XTimeSpan time)
         {
             if (this.IsStandard && time.IsStandard)
@@ -902,12 +979,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Return a day difference between date 2 and date 1 (result = (d1 - d2).Days);
         /// </summary>
-        /// <param name="year1"></param>
-        /// <param name="month1"></param>
-        /// <param name="day1"></param>
-        /// <param name="year2"></param>
-        /// <param name="month2"></param>
-        /// <param name="day2"></param>
+        /// <param name="d1"></param>
+        /// <param name="d2"></param>
         /// <returns></returns>
         private static long _DateDiff(XDateTime d1, XDateTime d2)
         {
@@ -973,7 +1046,6 @@ namespace Asol.Tools.WorkScheduler.Data
             int month = xdaad.Month;
             int day = xdaad.Day;
 
-
             Data.XDateTime date = new Data.XDateTime(12450, 3, 28, 6, 45, 0);
             int testYear = 2450; //  (date.IsLeap ? 2000 : 2001);
             Data.XTimeSpan time2 = new Data.XTimeSpan(12, 0, 0, 0);
@@ -994,6 +1066,7 @@ namespace Asol.Tools.WorkScheduler.Data
     }
     #endregion
     #region XTimeSpan
+    /// <summary>
     /// eXtended TimeSpan.
     /// XTimeSpan can hold years in range +/- 1395× age of our Universe (+/- 19 215 358 410 114 years), 
     /// with an accuracy of 10 femtoseconds.
@@ -1002,6 +1075,10 @@ namespace Asol.Tools.WorkScheduler.Data
     {
         #region Public
         #region Constructors, Equals, ToString, variables
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
         public XTimeSpan(TimeSpan value)
             : this(value.Days, value.Hours, value.Minutes, value.Seconds, (decimal)value.Milliseconds / 1000m)
         { }
@@ -1023,7 +1100,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="hour">Whole number of hour, in range 0÷23</param>
         /// <param name="minute">Whole number of minute, in range 0÷59</param>
         /// <param name="second">Whole number of second, in range 0÷59</param>
-        /// <param name="fragments">Fragment of second, in range 0 (include) to 1 (exclude, e.g. 0.999999999999...) second.</param>
         public XTimeSpan(long days, int hour, int minute, int second)
         {
             this._DayCount = days;
@@ -1042,25 +1118,47 @@ namespace Asol.Tools.WorkScheduler.Data
             this._DayCount = days;
             this._TicksTime = _MergeTimeFromParts(hour, minute, second, fragments);
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="timeTicks"></param>
         internal XTimeSpan(ulong timeTicks)
         {
             this._DayCount = 0L;
             this._TicksTime = timeTicks;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="days"></param>
+        /// <param name="ticksTime"></param>
         internal XTimeSpan(long days, ulong ticksTime)
         {
             this._DayCount = days;
             this._TicksTime = ticksTime;
         }
+        /// <summary>
+        /// GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this._DayCount.GetHashCode() ^ this._TicksTime.GetHashCode();
         }
+        /// <summary>
+        /// Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             XTimeSpan other = (XTimeSpan)obj;
             return this == other;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             if (this.IsStandard)
@@ -1167,7 +1265,7 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region operators
         /// <summary>
-        /// Is value "a" and "b" exact equal?
+        /// Vrací true, pokud hodnota a je rovna b
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -1177,7 +1275,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return (a._DayCount == b._DayCount && a._TicksTime == b._TicksTime);
         }
         /// <summary>
-        /// Is value a and b not equall?
+        /// Vrací true, pokud hodnota a je jiná než b
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -1186,25 +1284,46 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return (a._DayCount != b._DayCount || a._TicksTime != b._TicksTime);
         }
-
+        /// <summary>
+        /// Vrací true, pokud hodnota a je menší než b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator <(XTimeSpan a, XTimeSpan b)
         {
             return (a._DayCount < b._DayCount || (a._DayCount == b._DayCount && a._TicksTime < b._TicksTime));
         }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je větší než b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator >(XTimeSpan a, XTimeSpan b)
         {
             return (a._DayCount > b._DayCount || (a._DayCount == b._DayCount && a._TicksTime > b._TicksTime));
         }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je menší nebo rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator <=(XTimeSpan a, XTimeSpan b)
         {
             return (a._DayCount < b._DayCount || (a._DayCount == b._DayCount && a._TicksTime <= b._TicksTime));
         }
+        /// <summary>
+        /// Vrací true, pokud hodnota a je větší nebo rovna b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator >=(XTimeSpan a, XTimeSpan b)
         {
             return (a._DayCount > b._DayCount || (a._DayCount == b._DayCount && a._TicksTime >= b._TicksTime));
         }
-
-
         /// <summary>
         /// Implicit conversion from TimeSpan to XTimeSpan
         /// </summary>
@@ -1237,13 +1356,11 @@ namespace Asol.Tools.WorkScheduler.Data
             return new TimeSpan((int)days, hour, minute, second, milisec);
         }
         #endregion
-
-
         #region Convertors, check
         /// <summary>
         /// Create time parts (UInt64, Int32) from this instance
         /// </summary>
-        /// <param name="p"></param>
+        /// <param name="days"></param>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
@@ -1259,7 +1376,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
-        /// <param name="fragments"></param>
         /// <returns></returns>
         private static ulong _MergeTimeFromParts(int hour, int minute, int second)
         {
@@ -1299,7 +1415,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Create separate time parts (Int32) from one long (Int64) value
         /// </summary>
-        /// <param name="p"></param>
+        /// <param name="timeIndex"></param>
         /// <param name="hour"></param>
         /// <param name="minute"></param>
         /// <param name="second"></param>
@@ -1381,6 +1497,11 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Time shift (Add, Subtract, Negate)
+        /// <summary>
+        /// Vrátí nový <see cref="XTimeSpan"/> jako výsledek this + dodaný časový rozdíl <see cref="XTimeSpan"/>
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public XTimeSpan Add(XTimeSpan time)
         {
             long days = this.Days + time.Days;
@@ -1392,6 +1513,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return new XTimeSpan(days, ticksTime);
         }
+        /// <summary>
+        /// Vrátí nový <see cref="XTimeSpan"/> jako výsledek this - dodaný časový rozdíl <see cref="XTimeSpan"/>
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public XTimeSpan Subtract(XTimeSpan time)
         {
             return this.Add(time.Negative);
@@ -1411,7 +1537,6 @@ namespace Asol.Tools.WorkScheduler.Data
             return new XTimeSpan(dayCount, timeTicks);
         }
         #endregion
-
     }
     #endregion
 }

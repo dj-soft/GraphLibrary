@@ -403,13 +403,25 @@ SET @cislo = 15307;
             XmlResponse response5 = XmlResponse.CreateFrom("");
             XmlResponse response6 = XmlResponse.CreateFrom(null);
         }
+        /// <summary>
+        /// XmlResponse
+        /// </summary>
         protected class XmlResponse
         {
+            /// <summary>
+            /// Vrátí XmlResponse z daného stringu
+            /// </summary>
+            /// <param name="xmlResponse"></param>
+            /// <returns></returns>
             public static XmlResponse CreateFrom(string xmlResponse)
             {
                 XmlResponse result = new XmlResponse(xmlResponse);
                 return result;
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="xmlResponse"></param>
             private XmlResponse(string xmlResponse)
             {
                 System.Xml.Linq.XDocument xDoc = _TryParseXml(xmlResponse);
@@ -486,31 +498,91 @@ SET @cislo = 15307;
                 if (xElement == null) return null;
                 return xElement.Element(elementName);
             }
+            /// <summary>
+            /// Je platný?
+            /// </summary>
             public bool IsValid { get; private set; }
+            /// <summary>
+            /// ResultState
+            /// </summary>
             public string ResultState { get; private set; }
+            /// <summary>
+            /// Čas Start
+            /// </summary>
             public DateTime? Start { get; private set; }
+            /// <summary>
+            /// Čas Stop
+            /// </summary>
             public DateTime? Stop { get; private set; }
+            /// <summary>
+            /// DatabaseId
+            /// </summary>
             public string DatabaseId { get; private set; }
+            /// <summary>
+            /// DetailLevel
+            /// </summary>
             public string DetailLevel { get; private set; }
+            /// <summary>
+            /// DetailErrorMessage
+            /// </summary>
             public string DetailErrorMessage { get; private set; }
+            /// <summary>
+            /// DetailTime
+            /// </summary>
             public DateTime? DetailTime { get; private set; }
+            /// <summary>
+            /// DetailText
+            /// </summary>
             public string DetailText { get; private set; }
+            /// <summary>
+            /// UserDataIsExists
+            /// </summary>
             public bool UserDataIsExists { get; private set; }
+            /// <summary>
+            /// UserDataIsBase64
+            /// </summary>
             public string UserDataIsBase64 { get; private set; }
+            /// <summary>
+            /// UserDataContent
+            /// </summary>
             public string UserDataContent { get; private set; }
+            /// <summary>
+            /// AuditlogId
+            /// </summary>
             public string AuditlogId { get; private set; }
+            /// <summary>
+            /// AuditlogState
+            /// </summary>
             public string AuditlogState { get; private set; }
 
             // <RUNRESULT STATE=\"SUCCESS\" START=\"2018-09-19 15:28:08\" STOP=\"2018-09-19 15:30:31\" DATABASENUMBER=\"999999001\"><DETAIL /><USERDATA Base64Conversion=\"No\">OK</USERDATA><auditlog id=\"198689\" state=\"success\" /></RUNRESULT>
         }
+        /// <summary>
+        /// Vzorek 1
+        /// </summary>
         protected const string Response1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"FAIL\" START=\"2018-09-19 15:20:23\" STOP=\"2018-09-19 15:24:35\" DATABASENUMBER=\"0\"><DETAIL LEVEL=\"SYSTEM\" errorMessage=\"Key «ClassNumber» value «9999» [System.Int32] was not found in the store «Noris.Repo.ClassStoreDefinition» !\" WHEN=\"2018-09-19 15:24:35\"><TEXT>System.Collections.Generic.KeyNotFoundException: Key «ClassNumber» value «9999» [System.Int32] was not... ...ServiceGate\\Processor.cs:line 398</TEXT></DETAIL></RUNRESULT>";
+        /// <summary>
+        /// Vzorek 2
+        /// </summary>
         protected const string Response2 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"FAIL\" START=\"2018-09-19 15:26:46\" STOP=\"2018-09-19 15:27:08\" DATABASENUMBER=\"0\"><DETAIL LEVEL=\"APPLICATION\" errorMessage=\"Exception of type 'Noris.Srv.StopProcessException' was thrown.\" WHEN=\"2018-09-19 15:27:08\"><TEXT>Noris.Srv.StopProcessException: Exception of type 'Noris.Srv.StopProcessException' was thrown.   at Noris.Message.StopProcess() ....ServiceGate\\Processor.cs:line 398</TEXT></DETAIL></RUNRESULT>";
+        /// <summary>
+        /// Vzorek 3
+        /// </summary>
         protected const string Response3 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"SUCCESS\" START=\"2018-09-19 15:28:08\" STOP=\"2018-09-19 15:30:31\" DATABASENUMBER=\"999999001\"><DETAIL /><USERDATA Base64Conversion=\"No\">OK</USERDATA><auditlog id=\"198689\" state=\"success\" /></RUNRESULT>";
         #endregion
     }
+    /// <summary>
+    /// Třída pro testy: Name + Value
+    /// </summary>
     internal class TestSimpleClass
     {
+        /// <summary>
+        /// Name
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Value
+        /// </summary>
         public object Value { get; set; }
     }
 }
