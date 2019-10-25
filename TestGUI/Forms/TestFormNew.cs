@@ -67,33 +67,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(450, 850), Tag = "Přepínací ScrollBar na straně 3" };
             this._TabContainer.AddTabItem(dataControl, "Třetí scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletOrange16);
             this.GControl.AddItem(this._TabContainer);
-
-            /*
-            this._TabHeaderH = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Top };
-            this._TabHeaderH.TabItemPaintBackGround += _TabHeaderH_TabItemPaintBackGround;
-            var headerH1 = this._TabHeaderH.AddHeader("První stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
-            var headerH2 = this._TabHeaderH.AddHeader("Druhá stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipHorizontal32);
-            var headerH3 = this._TabHeaderH.AddHeader("Třetí...");
-            var headerH4 = this._TabHeaderH.AddHeader("Vodorovný scrollbar");
-            headerH4.ToolTipText = "Aktivace této stránky aktivuje Vodorovný scrollbar.";
-            headerH4.Control = this._ScrollBarH;
-            headerH4.BackColor = Color.Violet.Morph(Color.Yellow, 0.50f);
-            var headerH5 = this._TabHeaderH.AddHeader("Str.5", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
-            this._TabHeaderH.ActiveHeaderItem = headerH3;
-            this.GControl.AddItem(this._TabHeaderH);
-
-            this._TabHeaderV = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Left };
-            this._TabHeaderV.HeaderSizeRange = new Int32Range(180, 180);
-            this._TabHeaderV.ActiveItemChanged += _TabHeaderV_ActiveItemChanged;
-            var headerV1 = this._TabHeaderV.AddHeader("Plan", "Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
-            headerV1.ToolTipText = "Položky ve stavu Zaplánováno";
-            var headerV2 = this._TabHeaderV.AddHeader("Product", "Product orders", Asol.Tools.WorkScheduler.Components.IconStandard.EditUndo);
-            headerV2.ToolTipText = "Existující výrobní příkazy";
-            var headerV3 = this._TabHeaderV.AddHeader("Invalid", "Invalid items");
-            headerV3.ToolTipText = "Chybné položky";
-            // this._TabHeaderV.ActiveHeaderItem = headerV1;
-            this.GControl.AddItem(this._TabHeaderV);
-            */
+            
             this.ControlsPosition();
         }
         private void _TabHeaderH_TabItemPaintBackGround(object sender, PaintEventArgs e)
@@ -158,8 +132,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GSizeAxis _SizeAxis;
         private GScrollBar _ScrollBarH;
         private GScrollBar _ScrollBarV;
-        private GTabHeader _TabHeaderH;
-        private GTabHeader _TabHeaderV;
         private GTrackBar _Track;
         private GTabContainer _TabContainer;
 
@@ -193,7 +165,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             int scrollHeight = GScrollBar.DefaultSystemBarHeight;
             int scrollWidth = GScrollBar.DefaultSystemBarWidth;
-            int headerHeight = 32;
 
             this._Track.Bounds = new Rectangle(20, axisBottom + 5, 150, 30);
 
@@ -211,14 +182,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (this._ScrollBarH != null)
             {   // Vodorovný scrollbar dole:
                 this._ScrollBarH.Bounds = new Rectangle(dataArea.X, dataArea.Bottom, dataArea.Width, scrollHeight);
-            }
-            if (this._TabHeaderH != null)
-            {   // Vodorovný TabPage je dole těsně nad scollbarem, ale vlevo nechává prostor (headerHeight) volný:
-                this._TabHeaderH.Bounds = new Rectangle(dataArea.X + headerHeight, dataArea.Bottom - headerHeight, dataArea.Width - headerHeight, headerHeight);
-            }
-            if (this._TabHeaderV != null)
-            {   // Svislý TabPage je vlevo, ale dole nechává prostor (headerHeight) volný:
-                this._TabHeaderV.Bounds = new Rectangle(dataArea.X, dataArea.Y, headerHeight, dataArea.Height - headerHeight);
             }
             if (this._TabContainer != null)
             {   // TabContainer vyplňuje prostor dataArea:
