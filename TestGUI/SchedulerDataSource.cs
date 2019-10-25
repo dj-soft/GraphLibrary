@@ -3496,7 +3496,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 {
                     case PlanUnitType.Workplace:
                         guiGraphItem.BehaviorMode |=
-                            GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
+                            GraphItemBehaviorMode.ShowLinks |
                             GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
                         if (this.Operation != null)
                         {
