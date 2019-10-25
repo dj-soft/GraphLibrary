@@ -871,13 +871,37 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Poměr 3D efektu pro okraje
         /// </summary>
         public float Effect3DBorderRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na počátku
+        /// </summary>
         public Color ShiftBackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorBegin", DefaultShiftBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorBegin", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na konci
+        /// </summary>
         public Color ShiftBackColorEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorEnd", DefaultShiftBackColorEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorEnd", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na počátku za stavu MouseHot
+        /// </summary>
         public Color ShiftBackColorHotBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorHotBegin", DefaultShiftBackColorHotBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorHotBegin", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na konci za stavu MouseHot
+        /// </summary>
         public Color ShiftBackColorHotEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorHotEnd", DefaultShiftBackColorHotEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorHotEnd", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na počátku za stavu MouseDown
+        /// </summary>
         public Color ShiftBackColorDownBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDownBegin", DefaultShiftBackColorDownBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDownBegin", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na konci za stavu MouseDown
+        /// </summary>
         public Color ShiftBackColorDownEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDownEnd", DefaultShiftBackColorDownEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDownEnd", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na počátku za stavu MouseDrag
+        /// </summary>
         public Color ShiftBackColorDragBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragBegin", DefaultShiftBackColorDragBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragBegin", value); } }
+        /// <summary>
+        /// Posun barvy pozadí na konci za stavu MouseDrag
+        /// </summary>
         public Color ShiftBackColorDragEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragEnd", DefaultShiftBackColorDragEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragEnd", value); } }
         /// <summary>
         /// Modifikátor barvy pozadí pro prvek, který je cílovým prvkem v procesu Drag and Drop
@@ -886,39 +910,128 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Default colors
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
+        /// <summary>
+        /// Defaultní barva: DefaultMouseMoveTracking
+        /// </summary>
         protected virtual Color DefaultMouseMoveTracking { get { return Color.FromArgb(96, Color.LightYellow); } }
+        /// <summary>
+        /// Defaultní barva: DefaultMouseDragTracking
+        /// </summary>
         protected virtual Color DefaultMouseDragTracking { get { return Color.FromArgb(64, Color.LightYellow); } }
+        /// <summary>
+        /// Defaultní barva: DefaultMouseHotColor
+        /// </summary>
         protected virtual Color DefaultMouseHotColor { get { return Color.FromArgb(192, Color.LightYellow); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorBegin
+        /// </summary>
         protected virtual Color DefaultBackColorBegin { get { return Color.FromArgb(16, Color.White); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorEnd
+        /// </summary>
         protected virtual Color DefaultBackColorEnd { get { return Color.FromArgb(16, Color.Black); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorHotBegin
+        /// </summary>
         protected virtual Color DefaultBackColorHotBegin { get { return Color.FromArgb(64, Color.White); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorHotEnd
+        /// </summary>
         protected virtual Color DefaultBackColorHotEnd { get { return Color.FromArgb(64, Color.Black); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorDownBegin
+        /// </summary>
         protected virtual Color DefaultBackColorDownBegin { get { return Color.FromArgb(64, Color.Black); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorDownEnd
+        /// </summary>
         protected virtual Color DefaultBackColorDownEnd { get { return Color.FromArgb(48, Color.White); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorDragBegin
+        /// </summary>
         protected virtual Color DefaultBackColorDragBegin { get { return Color.FromArgb(38, Color.Black); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorDragEnd
+        /// </summary>
         protected virtual Color DefaultBackColorDragEnd { get { return Color.FromArgb(64, Color.White); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorDisable
+        /// </summary>
         protected virtual Color DefaultBackColorDisable { get { return Color.FromArgb(96, Color.LightGray); } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorShadow
+        /// </summary>
         protected virtual Color DefaultBackColorShadow { get { return Color.FromArgb(96, Color.DimGray); } }
+        /// <summary>
+        /// Defaultní barva: DefaultTextColorHot
+        /// </summary>
         protected virtual Color DefaultTextColorHot { get { return Color.FromArgb(64, Color.DarkViolet); } }
+        /// <summary>
+        /// Defaultní barva: DefaultTextColorDown
+        /// </summary>
         protected virtual Color DefaultTextColorDown { get { return Color.FromArgb(96, Color.DarkViolet); } }
+        /// <summary>
+        /// Defaultní barva: DefaultTextColorDrag
+        /// </summary>
         protected virtual Color DefaultTextColorDrag { get { return Color.FromArgb(96, Color.DarkViolet); } }
+        /// <summary>
+        /// Defaultní barva: DefaultTextColorDisable
+        /// </summary>
         protected virtual Color DefaultTextColorDisable { get { return Color.FromArgb(160, Color.Gray); } }
+        /// <summary>
+        /// Defaultní barva: DefaultEffect3DDark
+        /// </summary>
         protected virtual Color DefaultEffect3DDark { get { return Color.FromArgb(64, 64, 64); } }
+        /// <summary>
+        /// Defaultní barva: DefaultEffect3DLight
+        /// </summary>
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
+        /// <summary>
+        /// Defaultní barva: DefaultEffect3DBackgroundRatio
+        /// </summary>
         protected virtual float DefaultEffect3DBackgroundRatio { get { return 0.10f; } }
+        /// <summary>
+        /// Defaultní barva: DefaultEffect3DRatio
+        /// </summary>
         protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
+        /// <summary>
+        /// Defaultní barva: DefaultBackColorDropTargetItem
+        /// </summary>
         protected virtual Color DefaultBackColorDropTargetItem { get { return Color.FromArgb(128, Color.Magenta); } }
 
         // Barvy pro provádění Shift = mají ve složká hodnotu posunu základní barvy, kde hodnota 128 = střed = 0:
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorBegin
+        /// </summary>
         protected virtual Color DefaultShiftBackColorBegin { get { return Color.FromArgb(0, 136, 136, 136); } }        //  +8
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorEnd
+        /// </summary>
         protected virtual Color DefaultShiftBackColorEnd { get { return Color.FromArgb(0, 120, 120, 120); } }          //  -8
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorHotBegin
+        /// </summary>
         protected virtual Color DefaultShiftBackColorHotBegin { get { return Color.FromArgb(0, 160, 160, 160); } }     // +32
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorHotEnd
+        /// </summary>
         protected virtual Color DefaultShiftBackColorHotEnd { get { return Color.FromArgb(0, 96, 96, 96); } }          // -32
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorDownBegin
+        /// </summary>
         protected virtual Color DefaultShiftBackColorDownBegin { get { return Color.FromArgb(0, 96, 96, 96); } }       // -32
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorDownEnd
+        /// </summary>
         protected virtual Color DefaultShiftBackColorDownEnd { get { return Color.FromArgb(0, 160, 160, 160); } }      // +32
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorDragBegin
+        /// </summary>
         protected virtual Color DefaultShiftBackColorDragBegin { get { return Color.FromArgb(0, 112, 112, 112); } }    // -16
+        /// <summary>
+        /// Defaultní barevný posun: DefaultShiftBackColorDragEnd
+        /// </summary>
         protected virtual Color DefaultShiftBackColorDragEnd { get { return Color.FromArgb(0, 144, 144, 144); } }      // +16
-
         #endregion
         #region Servis
         /// <summary>
@@ -957,39 +1070,82 @@ namespace Asol.Tools.WorkScheduler.Components
             backColor = backColor.Morph(modifierColor.Value, modifierRatio);
             return backColor;
         }
+        /// <summary>
+        /// Vrací barvu okraje modifikovanou na 3D Light
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <returns></returns>
         public Color GetColor3DBorderLight(Color borderColor)
         {
             return borderColor.Morph(this.Effect3DLight, this.Effect3DBorderRatio);
         }
+        /// <summary>
+        /// Vrací barvu okraje modifikovanou na 3D Light v daném poměru
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public Color GetColor3DBorderLight(Color borderColor, float ratio)
         {
             return borderColor.Morph(this.Effect3DLight, ratio);
         }
+        /// <summary>
+        /// Vrací barvu okraje modifikovanou na 3D Dark
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <returns></returns>
         public Color GetColor3DBorderDark(Color borderColor)
         {
             return borderColor.Morph(this.Effect3DDark, this.Effect3DBorderRatio);
         }
+        /// <summary>
+        /// Vrací barvu okraje modifikovanou na 3D Dark v daném poměru
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public Color GetColor3DBorderDark(Color borderColor, float ratio)
         {
             return borderColor.Morph(this.Effect3DDark, ratio);
         }
+        /// <summary>
+        /// Vrací barvu pozadí modifikovanou na 3D Light
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <returns></returns>
         public Color GetColor3DBackgroundLight(Color borderColor)
         {
             return borderColor.Morph(this.Effect3DLight, this.Effect3DBackgroundRatio);
         }
+        /// <summary>
+        /// Vrací barvu pozadí modifikovanou na 3D Light v daném poměru
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public Color GetColor3DBackgroundLight(Color borderColor, float ratio)
         {
             return borderColor.Morph(this.Effect3DLight, ratio);
         }
+        /// <summary>
+        /// Vrací barvu pozadí modifikovanou na 3D Dark
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <returns></returns>
         public Color GetColor3DBackgroundDark(Color borderColor)
         {
             return borderColor.Morph(this.Effect3DDark, this.Effect3DBackgroundRatio);
         }
+        /// <summary>
+        /// Vrací barvu pozadí modifikovanou na 3D Dark v daném poměru
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public Color GetColor3DBackgroundDark(Color borderColor, float ratio)
         {
             return borderColor.Morph(this.Effect3DDark, ratio);
         }
-
         #endregion
     }
     /// <summary>
@@ -1004,11 +1160,23 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Vnější barva
+        /// </summary>
         public Color OuterColor { get { return this._Owner.GetValue(this._SkinSetKey, "OuterColor", DefaultOuterColor); } set { this._Owner.SetValue(this._SkinSetKey, "OuterColor", value); } }
+        /// <summary>
+        /// Vnitřní barva
+        /// </summary>
         public Color InnerColor { get { return this._Owner.GetValue(this._SkinSetKey, "InnerColor", DefaultInnerColor); } set { this._Owner.SetValue(this._SkinSetKey, "InnerColor", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default Vnější barva
+        /// </summary>
         protected virtual Color DefaultOuterColor { get { return Color.FromArgb(8, 192, 192, 192); } }
+        /// <summary>
+        /// Default Vnitřní barva
+        /// </summary>
         protected virtual Color DefaultInnerColor { get { return Color.FromArgb(192, 32, 32, 32); } }
         #endregion
     }
@@ -1024,21 +1192,63 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva pozadí Ambient
+        /// </summary>
         public Color AmbientBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "AmbientBackColor", DefaultAmbientBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "AmbientBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí Control
+        /// </summary>
         public Color ControlBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ControlBackColor", DefaultControlBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ControlBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí Active
+        /// </summary>
         public Color ActiveBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBackColor", DefaultActiveBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBackColor", value); } }
+        /// <summary>
+        /// Barva textu Control
+        /// </summary>
         public Color ControlTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        /// <summary>
+        /// Barva okraje
+        /// </summary>
         public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
+        /// <summary>
+        /// Barva pozadí rámečku FrameSelect
+        /// </summary>
         public Color FrameSelectBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "FrameSelectBackColor", DefaultFrameSelectBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "FrameSelectBackColor", value); } }
+        /// <summary>
+        /// Barva linky rámečku FrameSelect
+        /// </summary>
         public Color FrameSelectLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "FrameSelectLineColor", DefaultFrameSelectLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "FrameSelectLineColor", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default Barva pozadí Ambient
+        /// </summary>
         protected virtual Color DefaultAmbientBackColor { get { return Color.Gray; } }
+        /// <summary>
+        /// Default Barva pozadí Control
+        /// </summary>
         protected virtual Color DefaultControlBackColor { get { return Color.LightGray; } }
+        /// <summary>
+        /// Default Barva pozadí Active
+        /// </summary>
         protected virtual Color DefaultActiveBackColor { get { return Color.FromArgb(255, 216, 216, 216); } }
+        /// <summary>
+        /// Default Barva textu Control
+        /// </summary>
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default Barva okraje
+        /// </summary>
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
+        /// <summary>
+        /// Default Barva pozadí rámečku FrameSelect
+        /// </summary>
         protected virtual Color DefaultFrameSelectBackColor { get { return Color.FromArgb(48, Color.LightYellow); } }
+        /// <summary>
+        /// Default Barva linky rámečku FrameSelect
+        /// </summary>
         protected virtual Color DefaultFrameSelectLineColor { get { return Color.DarkViolet; } }
         #endregion
     }
@@ -1053,25 +1263,79 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva pro Splitter neaktivní
+        /// </summary>
         public Color InactiveColor { get { return this._Owner.GetValue(this._SkinSetKey, "InactiveColor", DefaultInactiveColor); } set { this._Owner.SetValue(this._SkinSetKey, "InactiveColor", value); } }
+        /// <summary>
+        /// Velikost pro Splitter neaktivní
+        /// </summary>
         public int InactiveSize { get { return this._Owner.GetValue(this._SkinSetKey, "InactiveSize", DefaultInactiveSize); } set { this._Owner.SetValue(this._SkinSetKey, "InactiveSize", value); } }
+        /// <summary>
+        /// Barva pro Splitter když je myš na parentovi
+        /// </summary>
         public Color MouseOnParentColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOnParentColor", DefaultMouseOnParentColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOnParentColor", value); } }
+        /// <summary>
+        /// Velikost pro Splitter když je myš na parentovi
+        /// </summary>
         public int MouseOnParentSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOnParentSize", DefaultMouseOnParentSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOnParentSize", value); } }
+        /// <summary>
+        /// Barva pro Splitter když je myš na splitteru
+        /// </summary>
         public Color MouseOverColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverColor", DefaultMouseOverColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverColor", value); } }
+        /// <summary>
+        /// Velikost pro Splitter když je myš na splitteru
+        /// </summary>
         public int MouseOverSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverSize", DefaultMouseOverSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverSize", value); } }
+        /// <summary>
+        /// Barva pro Splitter když je myš stisknutá (splitter se přetahuje)
+        /// </summary>
         public Color MouseDownColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDownColor", DefaultMouseDownColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDownColor", value); } }
+        /// <summary>
+        /// Velikost pro Splitter když je myš stisknutá (splitter se přetahuje)
+        /// </summary>
         public int MouseDownSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDownSize", DefaultMouseDownSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDownSize", value); } }
+        /// <summary>
+        /// Přesah aktivních okrajů splitteru
+        /// </summary>
         public int InteractivePaddingSize { get { return this._Owner.GetValue(this._SkinSetKey, "InteractivePaddingSize", DefaultInteractivePaddingSize); } set { this._Owner.SetValue(this._SkinSetKey, "InteractivePaddingSize", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Barva pro Splitter neaktivní
+        /// </summary>
         protected virtual Color DefaultInactiveColor { get { return Color.FromArgb(96, 96, 96, 64); } }
+        /// <summary>
+        /// Default pro: Velikost pro Splitter neaktivní
+        /// </summary>
         protected virtual int DefaultInactiveSize { get { return 2; } }
+        /// <summary>
+        /// Default pro: Barva pro Splitter když je myš na parentovi
+        /// </summary>
         protected virtual Color DefaultMouseOnParentColor { get { return Color.FromArgb(160, 96, 96, 64); } }
+        /// <summary>
+        /// Default pro: Velikost pro Splitter když je myš na parentovi
+        /// </summary>
         protected virtual int DefaultMouseOnParentSize { get { return 3; } }
+        /// <summary>
+        /// Default pro: Barva pro Splitter když je myš na splitteru
+        /// </summary>
         protected virtual Color DefaultMouseOverColor { get { return Color.FromArgb(220, 96, 96, 96); } }
+        /// <summary>
+        /// Default pro: Velikost pro Splitter když je myš na splitteru
+        /// </summary>
         protected virtual int DefaultMouseOverSize { get { return 4; } }
+        /// <summary>
+        /// Default pro: Barva pro Splitter když je myš stisknutá (splitter se přetahuje)
+        /// </summary>
         protected virtual Color DefaultMouseDownColor { get { return Color.FromArgb(255, 64, 64, 64); } }
+        /// <summary>
+        /// Default pro: Velikost pro Splitter když je myš stisknutá (splitter se přetahuje)
+        /// </summary>
         protected virtual int DefaultMouseDownSize { get { return 4; } }
+        /// <summary>
+        /// Default pro: Přesah aktivních okrajů splitteru
+        /// </summary>
         protected virtual int DefaultInteractivePaddingSize { get { return 3; } }
         #endregion
     }
@@ -1086,15 +1350,39 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva okolí = překryvná pro celý control
+        /// </summary>
         public Color AreaColor { get { return this._Owner.GetValue(this._SkinSetKey, "AreaColor", DefaultAreaColor); } set { this._Owner.SetValue(this._SkinSetKey, "AreaColor", value); } }
+        /// <summary>
+        /// Barva pozadí pásu s textem
+        /// </summary>
         public Color TextBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextBackColor", DefaultTextBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextBackColor", value); } }
+        /// <summary>
+        /// Barva písma titulku pásu s textem
+        /// </summary>
         public Color TextTitleForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextTitleForeColor", DefaultTextTitleForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextTitleForeColor", value); } }
+        /// <summary>
+        /// Barva písma textu pásu s textem
+        /// </summary>
         public Color TextInfoForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextInfoForeColor", DefaultTextInfoForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextInfoForeColor", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Barva okolí = překryvná pro celý control
+        /// </summary>
         protected virtual Color DefaultAreaColor { get { return Color.FromArgb(144, 144, 144, 144); } }
+        /// <summary>
+        /// Default pro: Barva pozadí pásu s textem
+        /// </summary>
         protected virtual Color DefaultTextBackColor { get { return Color.FromArgb(240, 196, 255, 255); } }
+        /// <summary>
+        /// Default pro: Barva písma titulku pásu s textem
+        /// </summary>
         protected virtual Color DefaultTextTitleForeColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva písma textu pásu s textem
+        /// </summary>
         protected virtual Color DefaultTextInfoForeColor { get { return Color.Black; } }
         #endregion
     }
