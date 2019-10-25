@@ -6581,29 +6581,41 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         ShowToolTipImmediatelly = 0x40000,
         /// <summary>
+        /// Pro tento konkrétní prvek se mají vyhledávat spojovací linky.
+        /// Volbu, za které situace se mají linky zobrazovat, řeší property <see cref="GuiGraphProperties.LinkMode"/>, 
+        /// a operativně ji může změnit uživatel pomocí prvku toolbaru <see cref="GuiToolbarItem"/>, kde nastaví <see cref="GuiToolbarItem.GuiActions"/> = <see cref="GuiActionType.SetVisibleForControl"/>, 
+        /// a do <see cref="GuiToolbarItem.ActionTargetNames"/> uvede FullName tabulky, ve které chce zobrazovat všechny vztahy, plus suffix = delimiter + jméno prvku linků v tabulce: <see cref="GuiData.TABLELINK_NAME"/>.
+        /// Pak uživatel zapnutím prvku v ToolBaru nastaví zobrazení všech linků v dané tabulce, a po jejím vypnutí se vrátí výchozí stav zobrazovaných linků dle <see cref="GuiGraphProperties.LinkMode"/>.
+        /// </summary>
+        ShowLinks = 0x100000,
+
+
+        /// <summary>
         /// Nezobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
-        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
+        [Obsolete("Použijme definici 'GraphItemBehaviorMode.ShowLinks', a detailní řízení typu vztahů pro celou tabulku pomocí GuiGraphProperties.LinkMode !", true)]
         ShowLinkNone = 0x100000,
         /// <summary>
         /// Zobrazit spojovací linie mezi prvky při stavu MouseOver.
         /// Tyto linky (MouseOver) jsou zobrazovány polovičně průhlednou barvou.
         /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
-        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
+        [Obsolete("Použijme definici 'GraphItemBehaviorMode.ShowLinks', a detailní řízení typu vztahů pro celou tabulku pomocí GuiGraphProperties.LinkMode !", true)]
         ShowLinkInMouseOver = 0x200000,
         /// <summary>
         /// Zobrazit spojovací linie mezi prvky při stavu Selected.
         /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
-        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
+        [Obsolete("Použijme definici 'GraphItemBehaviorMode.ShowLinks', a detailní řízení typu vztahů pro celou tabulku pomocí GuiGraphProperties.LinkMode !", true)]
         ShowLinkInSelected = 0x400000,
         /// <summary>
         /// Zobrazit spojovací linie mezi prvky při stavu vždy.
         /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
-        [Obsolete("Použijme definici na úrovni GuiGraphProperties, property LinkMode", true)]
+        [Obsolete("Použijme definici 'GraphItemBehaviorMode.ShowLinks', a detailní řízení typu vztahů pro celou tabulku pomocí GuiGraphProperties.LinkMode !", true)]
         ShowLinkAllways = 0x800000,
+
+
         /// <summary>
         /// Default pro pracovní čas = 
         /// <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> 

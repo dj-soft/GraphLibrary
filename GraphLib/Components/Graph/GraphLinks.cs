@@ -115,7 +115,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.Clear();
 
             ITimeGraphLinkDataSource linkDataSource = this.LinkDataSource;
-            CreateAllLinksArgs args = new CreateAllLinksArgs(linksMode);
+            CreateAllLinksArgs args = null;
 
             if (linkDataSource != null)
             {
@@ -123,16 +123,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 // Primárně jde o rozlišení Allways / Selected / None:
                 if (linksMode.HasFlag(GTimeGraphLinkMode.Allways))
                 {
+                    args = new CreateAllLinksArgs(GTimeGraphLinkMode.Allways);
                     linkDataSource.CreateLinks(args);
                 }
                 else if (linksMode.HasFlag(GTimeGraphLinkMode.Selected))
                 {
-                    args.SelectedItems = this.Host.Selector.SelectedItems;
+                    args = new CreateAllLinksArgs(GTimeGraphLinkMode.Selected, this.Host.Selector.SelectedItems);
                     linkDataSource.CreateLinks(args);
                 }
             }
 
-            this.AddLinks(args.Links, linksMode, 1.0f);
+            if (args != null && args.Links.Count > 0)
+                this.AddLinks(args.Links, linksMode);
         }
         /// <summary>
         /// Datový zdroj, ze kterého mohou být čteny linky - v situaci, kdy GUI si samo chce vyžádat seznam linků
@@ -145,11 +147,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="links">Souhrn linků k přidání</param>
         /// <param name="mode">Důvod zobrazení</param>
-        /// <param name="visibleRatio">Průhlednost v rozsahu 0 (neviditelná) - 1 (plná barva)</param>
-        public void AddLinks(IEnumerable<GTimeGraphLinkItem> links, GTimeGraphLinkMode mode, float visibleRatio)
+        public void AddLinks(IEnumerable<GTimeGraphLinkItem> links, GTimeGraphLinkMode mode)
         {
             if (links == null) return;
-            if (mode == GTimeGraphLinkMode.None || visibleRatio <= 0f) return;
+            if (mode == GTimeGraphLinkMode.None) return;
             Dictionary<UInt64, LinkInfo> linkDict = this._LinkDict;
             foreach (GTimeGraphLinkItem link in links)
             {
@@ -159,12 +160,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 bool exists = linkDict.TryGetValue(key, out linkInfo);
                 if (!exists)
                 {   // Pro daný klíč (Prev-Next) dosud nemám link => založím si nový, a přidám do něj dodaná data:
-                    linkInfo = new LinkInfo(link) { Mode = mode, VisibleRatio = visibleRatio };
+                    linkInfo = new LinkInfo(this, link) { Mode = mode };
                     linkDict.Add(key, linkInfo);
                 }
                 else
-                {   // Link máme => můžeme v něm navýšit hodnoty:
-                    if (linkInfo.VisibleRatio < visibleRatio) linkInfo.VisibleRatio = visibleRatio;
+                {   // Link máme => přidáme do něj případně nové bity do jeho režimu:
                     linkInfo.Mode |= mode;
                 }
             }
@@ -173,7 +173,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Odebere dané linky z paměti, pokud v ní jsou a pokud již neexistuje důvod pro jejich zobrazování.
-        /// Důvod zobrazení: každý link v sobě eviduje souhrn důvodů, pro které byl zobrazen (metoda <see cref="AddLinks(IEnumerable{GTimeGraphLinkItem}, GTimeGraphLinkMode, float)"/>),
+        /// Důvod zobrazení: každý link v sobě eviduje souhrn důvodů, pro které byl zobrazen (metoda <see cref="AddLinks(IEnumerable{GTimeGraphLinkItem}, GTimeGraphLinkMode)"/>),
         /// důvody z opakovaných volání této metody se průběžně sčítají, a při odebírání se odečítají.
         /// A až tam nezbyde žádný, bude link ze seznamu odebrán.
         /// </summary>
@@ -194,16 +194,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 bool exists = linkDict.TryGetValue(key, out linkInfo);
                 if (!exists) continue;
 
-                // Zdejší algoritmus Remove nedokáže provést snížení hodnoty Ratio. Dokáže jen odebrat bit z hodnoty Mode.
-                // Ke snížení Ratio: k tomu by došlo jen tehdy, když by link bylů nejprve zobrazen z důvodu Mouse, kde je Ratio menší než 1.0 (např. 0.80),
-                //  pak by se přidal důvod Select a s tím i zvýšení Ratio na hodnotu 1,
-                //  a poté by se odebral důvod Select - a nyní bychom očekávali snížení Ratio z 1.0 zpátky na 0.80.
-                // Prakticky ale se to projeví jen v tomto postupu:
-                //  a) Najdu myší na prvek = rozsvítí se Linky v režimu Mouse
-                //  b) Kliknu na prvek = prvek se označí - Linky se rozsvítí i v režimu Select (takže Mode == Mouse | Select)
-                //  c) Kliknu na prvek = z prvku se odebere důvod Select, zůstane tam Mouse, ale zůstane původní Ratio
-                // Ale poté myš odjede z prvku, a Linky se odeberou i z důvodu Mouse, a Linky tak kompletně zhasnou.
-
+                // Z Důvodu zobrazení odebereme zadaný režim, a pokud zůstane None pak odebereme celý prvek Linku:
                 linkInfo.Mode &= reMode;                                       // Vstupní hodnota (mode) bude z hodnoty linkInfo.Mode vynulována
                 if (linkInfo.Mode == GTimeGraphLinkMode.None)                  // A pokud v Mode nezbyla žádná hodnota, link odebereme.
                 {
@@ -231,6 +222,56 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Souhrn všech aktuálních linků, bez dalších informací
         /// </summary>
         public IEnumerable<GTimeGraphLinkItem> Links { get { return this._LinkDict.Values.Select(l => l.Link); } }
+        /// <summary>
+        /// Metoda vrací poměr průhlednosti pro daný režim linku.
+        /// Průhlednost Linku = hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva).
+        /// Na hodnoty průhlednosti má vliv i aktuální režim <see cref="CurrentLinksMode"/>.
+        /// Hodnoty jsou dány konstantně:
+        /// 
+        /// </summary>
+        /// <param name="itemLinkMode"></param>
+        /// <returns></returns>
+        internal float GetVisibleRatioForMode(GTimeGraphLinkMode itemLinkMode)
+        {
+            bool isMouseOver = itemLinkMode.HasFlag(GTimeGraphLinkMode.MouseOver);
+
+            GTimeGraphLinkMode currentMode = this.CurrentLinksMode;
+            if (currentMode.HasFlag(GTimeGraphLinkMode.Allways))
+            {   // Pokud aktuálně vidím všechny Linky, tak budu ignorovat bit Selected, a použiju dvě úrovně průhlednosti - podle přítomnosti myši nad prvkem:
+                return (isMouseOver ? LinkVisibleRatioAllwaysWithMouse : LinkVisibleRatioAllwaysStandard);
+            }
+
+            // Nejsou zapnuty všechny linky dle režimu, tedy zobrazuji jen Linky pro prvky Selected + MouseOver:
+            bool isSelected = itemLinkMode.HasFlag(GTimeGraphLinkMode.Selected);
+            return (isSelected ?
+                     (isMouseOver ? LinkVisibleRatioSelectedWithMouse : LinkVisibleRatioSelectedStandard) :
+                     (isMouseOver ? LinkVisibleRatioOnlyWithMouse : LinkVisibleRatioNone));
+        }
+        /// <summary>
+        /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Allways, když prvek má aktuálně na sobě myš
+        /// </summary>
+        protected const float LinkVisibleRatioAllwaysWithMouse = 0.90f;
+        /// <summary>
+        /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Allways, bez myši
+        /// </summary>
+        protected const float LinkVisibleRatioAllwaysStandard = 0.60f;
+        /// <summary>
+        /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek je IsSelected a má aktuálně na sobě myš
+        /// </summary>
+        protected const float LinkVisibleRatioSelectedWithMouse = 0.90f;
+        /// <summary>
+        /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek je IsSelected a je bez myši
+        /// </summary>
+        protected const float LinkVisibleRatioSelectedStandard = 0.60f;
+        /// <summary>
+        /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek není IsSelected a má aktuálně na sobě myš
+        /// </summary>
+        protected const float LinkVisibleRatioOnlyWithMouse = 0.90f;
+        /// <summary>
+        /// Hodnota průhlednosti pro Link, zobrazený v globálním režimu Not-Allways, když prvek není IsSelected a je bez myši - takový Link by de facto neměl být zpracováván, protože není důvod jej zobrazit
+        /// </summary>
+        protected const float LinkVisibleRatioNone = 0.00f;
+
         #endregion
         #region Subclass LinkInfo: třída pro reálně ukládané prvky - obsahuje navíc i důvod zobrazení a transparentnost
         /// <summary>
@@ -241,16 +282,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <summary>
             /// Konstruktor
             /// </summary>
-            /// <param name="link"></param>
-            public LinkInfo(GTimeGraphLinkItem link)
+            /// <param name="owner">Vlastník grafického linku</param>
+            /// <param name="link">Data o linku</param>
+            public LinkInfo(GTimeGraphLinkArray owner, GTimeGraphLinkItem link)
             {
+                this._Owner = owner;
                 this._Link = link;
                 this._Mode = GTimeGraphLinkMode.None;
-                this._VisibleRatio = 0f;
             }
+            private GTimeGraphLinkArray _Owner;
             private GTimeGraphLinkItem _Link;
             private GTimeGraphLinkMode _Mode;
-            private float _VisibleRatio;
             /// <summary>
             /// Objekt vztahu
             /// </summary>
@@ -261,9 +303,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             public GTimeGraphLinkMode Mode { get { return this._Mode; } set { this._Mode = value; } }
             /// <summary>
             /// Průhlednost Linku:
-            /// hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)
+            /// hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva).
+            /// Hodnotu určuje důvod zobrazení.
             /// </summary>
-            public float VisibleRatio { get { return this._VisibleRatio; } set { this._VisibleRatio = (value < 0f ? 0f : (value > 1f ? 1f : value)); } }
+            public float VisibleRatio
+            {
+                get { return this._Owner.GetVisibleRatioForMode(this.Mode); }
+            }
             /// <summary>
             /// Vykreslí tuto jednu linku
             /// </summary>
@@ -403,9 +449,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Konstruktor
         /// </summary>
         /// <param name="linksMode"></param>
-        public CreateAllLinksArgs(GTimeGraphLinkMode linksMode)
+        /// <param name="selectedItems"></param>
+        public CreateAllLinksArgs(GTimeGraphLinkMode linksMode, IInteractiveItem[] selectedItems = null)
         {
             this.LinksMode = linksMode;
+            this.SelectedItems = selectedItems;
             this.Links = new List<GTimeGraphLinkItem>();
         }
         /// <summary>
@@ -415,7 +463,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Obsahuje souhrn všech aktuálně selectovaných prvků (=nejen pro daný graf)
         /// </summary>
-        public IInteractiveItem[] SelectedItems { get; internal set; }
+        public IInteractiveItem[] SelectedItems { get; private set; }
         /// <summary>
         /// Pole linků. Je inicializováno na prázdný List = lze do něj vkládat i odebírat prvky, ale nelze vložit novou instanci.
         /// </summary>

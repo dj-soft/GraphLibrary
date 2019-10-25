@@ -268,7 +268,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e"></param>
         protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
         {
-            this.PrepareLinksMouse();
+            this.PrepareLinksForMouseOver();
             base.AfterStateChangedMouseEnter(e);
         }
         /// <summary>
@@ -278,7 +278,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
         {
             if (InteractiveLeaveThisGroup(e))
-                this.ResetLinksMouse();
+                this.RemoveLinksForMouseOver();
             base.AfterStateChangedMouseLeave(e);
         }
         /// <summary>
@@ -301,7 +301,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="args"></param>
         protected override void OnIsSelectedChanged(GPropertyChangeArgs<bool> args)
         {
-            this.PrepareLinksSelect(args.NewValue);
+            this.PrepareLinksForSelect(args.NewValue);
             base.OnIsSelectedChanged(args);
         }
         /// <summary>
@@ -990,22 +990,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         internal void ActivateLink(bool fromMouse, bool fromSelect)
         {
             if (fromMouse)
-                this.PrepareLinksMouse();
+                this.PrepareLinksForMouseOver();
 
             if (fromSelect)
-                this.PrepareLinksSelect(true);
+                this.PrepareLinksForSelect(true);
         }
         /// <summary>
-        /// Zkusí najít vztahy ke kreslení.
-        /// Pokud nějaké najde, budou uloženy v <see cref="LinksMouse"/>.
+        /// Zajistí zobrazení vztahů (Linky) z this prvku na jeho sousedy, v situaci kdy na this prvek najela myš (MouseEnter).
+        /// Metoda vyhledá linky pomocí metody <see cref="ITimeGraphDataSource.CreateLinks(CreateLinksArgs)"/>, 
+        /// poté je přidá do globálního controlu pro zobrazování Linků <see cref="GTimeGraph.GraphLinkArray"/> (v <see cref="Graph"/>), 
+        /// a vloží je do <see cref="LinksForMouseOver"/> - protože po odjetí myši bude volaná metoda <see cref="RemoveLinksForMouseOver()"/>,
+        /// která tyto vztahy ze zobrazení odebere.
         /// </summary>
-        protected void PrepareLinksMouse()
+        protected void PrepareLinksForMouseOver()
         {
-            // Pokud aktuální graf NEMÁ zobrazovat linky v MouseOver, pak skončíme:
-            if (!this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.MouseOver)) return;
+            // Pokud aktuální graf NENÍ nebo NEMÁ zobrazovat linky v MouseOver, pak skončíme:
+            if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.MouseOver)) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksMouse != null) return;
+            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksForMouseOver != null) return;
 
             GTimeGraphItem item = this;
             CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
@@ -1013,49 +1016,51 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GTimeGraphLinkItem[] linksOne = args.Links;
             if (linksOne == null || linksOne.Length == 0) return;
 
-            this.Graph.GraphLinkArray.AddLinks(linksOne, GTimeGraphLinkMode.MouseOver, 0.45f);
-            this.LinksMouse = linksOne;
+            this.Graph.GraphLinkArray.AddLinks(linksOne, GTimeGraphLinkMode.MouseOver);
+            this.LinksForMouseOver = linksOne;
         }
         /// <summary>
-        /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
+        /// Zajistí konec zobrazování těch vztahů (Linky) z this prvku na sousedy, které byly přidány při MouseEnter (v metodě <see cref="PrepareLinksForMouseOver()"/>).
+        /// Vztahy má uloženy v <see cref="LinksForMouseOver"/>, odebere je z globálního controlu pro zobrazování Linků <see cref="GTimeGraph.GraphLinkArray"/> (v <see cref="Graph"/>), 
+        /// a na závěr nulluje <see cref="LinksForMouseOver"/>.
         /// </summary>
-        protected void ResetLinksMouse()
+        protected void RemoveLinksForMouseOver()
         {
-            if (this.LinksMouse != null)
-                this.Graph.GraphLinkArray.RemoveLinks(this.LinksMouse, GTimeGraphLinkMode.MouseOver);
-            this.LinksMouse = null;
+            if (this.LinksForMouseOver != null)
+                this.Graph.GraphLinkArray.RemoveLinks(this.LinksForMouseOver, GTimeGraphLinkMode.MouseOver);
+            this.LinksForMouseOver = null;
         }
         /// <summary>
         /// Pole vztahů, které jsou získány při MouseEnter a odebrány při MouseLeave
         /// </summary>
-        protected GTimeGraphLinkItem[] LinksMouse;
+        protected GTimeGraphLinkItem[] LinksForMouseOver;
         /// <summary>
-        /// Připrava linků po změně <see cref="InteractiveObject.IsSelected"/>
+        /// Zajistí zobrazení /zhasnutí vztahů (Linků) z this prvku na sousedy, jako reaklci na změnu hodnoty <see cref="InteractiveObject.IsSelected"/>.
         /// </summary>
         /// <param name="isSelected">Aktuálně platný stav IsSelected prvku</param>
-        protected void PrepareLinksSelect(bool isSelected)
+        protected void PrepareLinksForSelect(bool isSelected)
         {
             // Pokud aktuální graf NEMÁ zobrazovat linky v IsSelected stavu, pak skončíme:
             if (!this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.Selected)) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksMouse != null) return;
+            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksForMouseOver != null) return;
 
             if (this.LinksSelect != null)
-            {   // Deselectovat:
+            {   // Pokud něco máme z dřívějška, tak to odebereme:
                 this.Graph.GraphLinkArray.RemoveLinks(this.LinksSelect, GTimeGraphLinkMode.Selected);
                 this.LinksSelect = null;
             }
 
             if (isSelected)
-            {   // Selectovat:
+            {   // Prvek je vybrán, a má se Selectovat:
                 GTimeGraphItem item = this;
                 CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.ItemSelected);
                 item.Graph.DataSource.CreateLinks(args);
                 GTimeGraphLinkItem[] links = args.Links;
                 if (links != null && links.Length > 0)
                 {
-                    this.Graph.GraphLinkArray.AddLinks(links, GTimeGraphLinkMode.Selected, 0.8f);
+                    this.Graph.GraphLinkArray.AddLinks(links, GTimeGraphLinkMode.Selected);
                     this.LinksSelect = links;
                 }
             }
