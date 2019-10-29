@@ -71,10 +71,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         protected override void OnClosed(EventArgs e)
         {
+            string traceFile = App.Trace.File;
             using (App.Trace.Scope("SchedulerForm", "OnClosed", ""))
                 base.OnClosed(e);
             ((IDisposable)this.DataSource).Dispose();
-            Clipboard.SetText(App.Trace.File);
+            if (!String.IsNullOrEmpty(traceFile))
+                App.TryRun(() => Clipboard.SetText(traceFile));
         }
         protected SchedulerDataSource DataSource;
         protected GUI.GuiData GuiData;

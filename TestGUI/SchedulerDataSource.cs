@@ -3321,16 +3321,24 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public PlanUnitType PlanUnitType { get; set; }
         public Color? RowBackColor { get; set; }
         public int MachinesCount { get; set; }
+        /// <summary>
+        /// Soupis položek pracovní doby (obdoba Stavu kapacit)
+        /// </summary>
         public List<WorkTime> WorkTimes { get; set; }
         public void AddUnitTime(WorkUnit unitTime)
         {
-            if (unitTime != null)
-            {
-                if (this.UnitTimes == null)
-                    this.UnitTimes = new List<WorkUnit>();
-                this.UnitTimes.Add(unitTime);
-            }
+            if (unitTime == null) return;
+
+            if (this.UnitTimes == null) this.UnitTimes = new List<WorkUnit>();
+            this.UnitTimes.Add(unitTime);
+
+            WorkTime workTime = this.WorkTimes.FirstOrDefault(w => (w.Time.Begin <= unitTime.Time.Begin && w.Time.End >= unitTime.Time.End));
+            if (workTime != null)
+                workTime.UsedTime += unitTime.UsedTime;
         }
+        /// <summary>
+        /// Soupis položek práce
+        /// </summary>
         public List<WorkUnit> UnitTimes { get; set; }
         /// <summary>
         /// Metoda umístí do <see cref="CurrentWorkTime"/> nejbližší vyhovující pracovní čas, počínaje daným časem, v daném směru.
@@ -3375,8 +3383,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiGraph guiGraph = new GuiGraph();
             guiGraph.RowId = this.RecordGid;
 
+            bool setRealHeight = (this.PlanUnitType != TestGUI.PlanUnitType.Person);
             if (this.WorkTimes != null)
-                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(false)));
+                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(false, setRealHeight)));
 
             if (this.UnitTimes != null)
                 guiGraph.GraphItems.AddRange(this.UnitTimes.Select(unitTime => unitTime.CreateGuiGraphItem()));
@@ -3393,7 +3402,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiGraph.RowId = this.RecordGid;
 
             if (this.WorkTimes != null)
-                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(true)));
+                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(true, false)));
 
             return guiGraph;
         }
@@ -3468,6 +3477,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public bool IsEditable { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
+        /// <summary>
+        /// Využitý čas = (this.Time.End - this.Time.Begin)
+        /// </summary>
+        public TimeSpan UsedTime { get { return (this.Time != null ? (this.Time.End - this.Time.Begin) : TimeSpan.Zero); } }
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto jednotku práce.
         /// </summary>
@@ -3564,7 +3577,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="dataSource"></param>
         public WorkTime(SchedulerDataSource dataSource)
             : base(dataSource)
-        { }
+        {
+            this.UsedTime = TimeSpan.Zero;
+        }
         public override string ToString()
         {
             return this.Time.ToString();
@@ -3584,10 +3599,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public Color? RatioEndBackColor { get; set; }
         public Color? RatioLineColor { get; set; }
         /// <summary>
+        /// Součet použitého času
+        /// </summary>
+        public TimeSpan UsedTime { get; set; }
+        /// <summary>
+        /// Poměr použitého času vzhledem k celkovému času
+        /// </summary>
+        public float UsedRatio
+        {
+            get
+            {
+                double count = (this.PlanUnitC != null ? (double)this.PlanUnitC.MachinesCount : 1d);
+                double total = 0d;
+                if (this.Time != null) total = ((TimeSpan)(this.Time.End - this.Time.Begin)).TotalMinutes;
+                double used = this.UsedTime.TotalMinutes;
+                double ratio = (total > 0d ? (used / (count * total)) : 1d);
+                return (float)ratio;
+            }
+        }
+        /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto pracovní směnu.
         /// </summary>
         /// <returns></returns>
-        public GuiGraphItem CreateGuiGraphItem(bool showUseRatio)
+        public GuiGraphItem CreateGuiGraphItem(bool showUseRatio, bool setRealHeight)
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
             {
@@ -3596,7 +3630,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Layer = 0,
                 BackColor = this.BackColor,
                 BehaviorMode = GraphItemBehaviorMode.DefaultText,
-                Height = this.Height,
+                Height = 1f,
                 DataId = this.RecordGid,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
@@ -3608,11 +3642,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 //RatioLineColor = this.RatioLineColor
             };
 
+            if (this.PlanUnitC.PlanUnitType == PlanUnitType.Person)
+            {
+                guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
+                guiGraphItem.HatchColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Black, 0.667f) : Color.DimGray);
+            }
+
             if (showUseRatio)
             {
-                guiGraphItem.RatioBegin = this.RatioBegin;
+                guiGraphItem.RatioBegin = this.UsedRatio;           // .RatioBegin;
                 guiGraphItem.RatioBeginBackColor = this.RatioBeginBackColor;
             }
+
+            guiGraphItem.Height = (setRealHeight ? (float?)this.Height : (float?)null);
+
             return guiGraphItem;
         }
     }

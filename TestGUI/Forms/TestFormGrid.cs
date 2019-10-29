@@ -674,7 +674,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
-        public float Height { get; set; }
+        public float? Height { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
         /// <summary>
@@ -707,7 +707,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         int ITimeGraphItem.Layer { get { return this.Layer; } }
         int ITimeGraphItem.Level { get { return this.Level; } }
         int ITimeGraphItem.Order { get { return this.Order; } }
-        float ITimeGraphItem.Height { get { return this.Height; } }
+        float? ITimeGraphItem.Height { get { return this.Height; } }
         string ITimeGraphItem.Text { get { return this.Text; } }
         string ITimeGraphItem.ToolTip { get { return this.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
@@ -716,6 +716,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
         float? ITimeGraphItem.RatioEnd { get { return null; } }
+        TimeGraphElementRatioStyle ITimeGraphItem.RatioStyle { get { return TimeGraphElementRatioStyle.None; } }
         Color? ITimeGraphItem.RatioBeginBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }
