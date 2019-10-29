@@ -1653,15 +1653,15 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Default colors
         /// <summary>
-        /// Barva okraje buttonu
+        /// Default pro: Barva okraje buttonu
         /// </summary>
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
         /// <summary>
-        /// Barva pozadí buttonu
+        /// Default pro: Barva pozadí buttonu
         /// </summary>
         protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 216, 216, 216); } }
         /// <summary>
-        /// Barva textu buttonu
+        /// Default pro: Barva textu buttonu
         /// </summary>
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         #endregion
@@ -1717,11 +1717,11 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Default colors
         /// <summary>
-        /// Výška Tabu
+        /// Default pro: Výška Tabu
         /// </summary>
         protected virtual int DefaultHeaderHeight { get { return 28; } }
         /// <summary>
-        /// Barva prázdného prostoru
+        /// Default pro: Barva prázdného prostoru
         /// </summary>
         protected virtual Color DefaultSpaceColor { get { return Skin.Control.AmbientBackColor; } }
         /// <summary>
@@ -1729,27 +1729,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Color DefaultBorderColor { get { return Skin.Control.BorderColor; } }
         /// <summary>
-        /// Barva pozadí Tabu
+        /// Default pro: Barva pozadí Tabu
         /// </summary>
         protected virtual Color DefaultBackColor { get { return Skin.Control.ControlBackColor; } }
         /// <summary>
-        /// Barva textu
+        /// Default pro: Barva textu
         /// </summary>
         protected virtual Color DefaultTextColor { get { return Skin.Control.ControlTextColor; } }
         /// <summary>
-        /// Barva čáry podtržení u aktivního Tabu
+        /// Default pro: Barva čáry podtržení u aktivního Tabu
         /// </summary>
         protected virtual Color DefaultLineColorActive { get { return Color.FromArgb(255, 255, 255, 128); } }
         /// <summary>
-        /// Barva pozadí u aktivního Tabu
+        /// Default pro: Barva pozadí u aktivního Tabu
         /// </summary>
         protected virtual Color DefaultBackColorActive { get { return Skin.Control.ActiveBackColor; } }
         /// <summary>
-        /// Barva čáry podtržení u aktivního Tabu
+        /// Default pro: Barva čáry podtržení u aktivního Tabu
         /// </summary>
         protected virtual Color DefaultLineColorHot { get { return Color.FromArgb(255, 216, 216, 128); } }
         /// <summary>
-        /// Barva textu u aktivního Tabu
+        /// Default pro: Barva textu u aktivního Tabu
         /// </summary>
         protected virtual Color DefaultTextColorActive { get { return Skin.Control.ControlTextColor; } }
         #endregion
@@ -1766,13 +1766,31 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva pozadí scrollbaru
+        /// </summary>
         public Color BackColorArea { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorArea", DefaultBackColorArea); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorArea", value); } }
+        /// <summary>
+        /// Barva pozadí buttonů na scrollbaru
+        /// </summary>
         public Color BackColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButton", value); } }
+        /// <summary>
+        /// Barva textu - značky, ikonky na scrollbaru
+        /// </summary>
         public Color TextColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorButton", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorButton", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Barva pozadí scrollbaru
+        /// </summary>
         protected virtual Color DefaultBackColorArea { get { return Color.FromArgb(255, 160, 160, 176); } }
+        /// <summary>
+        /// Default pro: Barva pozadí buttonů na scrollbaru
+        /// </summary>
         protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 216, 216, 216); } }
+        /// <summary>
+        /// Default pro: Barva textu - značky, ikonky na scrollbaru
+        /// </summary>
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         #endregion
     }
@@ -1788,21 +1806,63 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
         public Color BackColorTrack { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorTrack", DefaultBackColorTrack); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorTrack", value); } }
+        /// <summary>
+        /// Barva linky Track = spojnice celé čáry
+        /// </summary>
         public Color LineColorTrack { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTrack", DefaultLineColorTrack); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTrack", value); } }
+        /// <summary>
+        /// Barva ticku Track = značka vzdálenosti
+        /// </summary>
         public Color LineColorTick { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTick", DefaultLineColorTick); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTick", value); } }
+        /// <summary>
+        /// Barva pozadí buttonu normální
+        /// </summary>
         public Color BackColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButton", value); } }
+        /// <summary>
+        /// Barva pozadí buttonu MouseHot
+        /// </summary>
         public Color BackColorMouseOverButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorMouseOverButton", DefaultBackColorMouseOverButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorMouseOverButton", value); } }
+        /// <summary>
+        /// Barva pozadí buttonu MouseDown
+        /// </summary>
         public Color BackColorMouseDownButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorMouseDownButton", DefaultBackColorMouseDownButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorMouseDownButton", value); } }
+        /// <summary>
+        /// Barva linek buttonu
+        /// </summary>
         public Color LineColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorButton", DefaultLineColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorButton", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Barva pozadí
+        /// </summary>
         protected virtual Color DefaultBackColorTrack { get { return Color.FromArgb(255, 180, 180, 192); } }
+        /// <summary>
+        /// Default pro: Barva linky Track = spojnice celé čáry
+        /// </summary>
         protected virtual Color DefaultLineColorTrack { get { return Color.FromArgb(255, 64, 64, 64); } }
+        /// <summary>
+        /// Default pro: Barva ticku Track = značka vzdálenosti
+        /// </summary>
         protected virtual Color DefaultLineColorTick { get { return Color.FromArgb(255, 160, 160, 168); } }
+        /// <summary>
+        /// Default pro: Barva pozadí buttonu normální
+        /// </summary>
         protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 224, 224, 240); } }
+        /// <summary>
+        /// Default pro: Barva pozadí buttonu MouseHot
+        /// </summary>
         protected virtual Color DefaultBackColorMouseOverButton { get { return Color.FromArgb(255, 232, 232, 224); } }
+        /// <summary>
+        /// Default pro: Barva pozadí buttonu MouseDown
+        /// </summary>
         protected virtual Color DefaultBackColorMouseDownButton { get { return Color.FromArgb(255, 200, 200, 180); } }
+        /// <summary>
+        /// Default pro: Barva linek buttonu
+        /// </summary>
         protected virtual Color DefaultLineColorButton { get { return Color.FromArgb(255, 80, 80, 96); } }
         #endregion
     }
@@ -1818,17 +1878,47 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva pozadí okna Progress
+        /// </summary>
         public Color BackColorWindow { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorWindow", DefaultBackColorWindow); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorWindow", value); } }
+        /// <summary>
+        /// Barva textů okna Progress
+        /// </summary>
         public Color TextColorWindow { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorWindow", DefaultTextColorWindow); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorWindow", value); } }
+        /// <summary>
+        /// Barva pozadí linky Progress
+        /// </summary>
         public Color BackColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorProgress", DefaultBackColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorProgress", value); } }
+        /// <summary>
+        /// Barva dat (již zpracovaný poměr) linky Progress
+        /// </summary>
         public Color DataColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "DataColorProgress", DefaultDataColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "DataColorProgress", value); } }
+        /// <summary>
+        /// Barva textu v lince Progress
+        /// </summary>
         public Color TextColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorProgress", DefaultTextColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorProgress", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Barva pozadí okna Progress
+        /// </summary>
         protected virtual Color DefaultBackColorWindow { get { return Color.FromArgb(255, 64, 128, 128); } }
+        /// <summary>
+        /// Default pro: Barva textů okna Progress
+        /// </summary>
         protected virtual Color DefaultTextColorWindow { get { return Color.FromArgb(255, 255, 255, 255); } }
+        /// <summary>
+        /// Default pro: Barva pozadí linky Progress
+        /// </summary>
         protected virtual Color DefaultBackColorProgress { get { return Color.FromArgb(255, 240, 240, 240); } }
+        /// <summary>
+        /// Default pro: Barva dat (již zpracovaný poměr) linky Progress
+        /// </summary>
         protected virtual Color DefaultDataColorProgress { get { return Color.FromArgb(255, 160, 255, 160); } }
+        /// <summary>
+        /// Default pro: Barva textu v lince Progress
+        /// </summary>
         protected virtual Color DefaultTextColorProgress { get { return Color.Black; } }
         #endregion
     }
@@ -1844,20 +1934,55 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva pozadí osy
+        /// </summary>
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        /// <summary>
+        /// Barva textu pro label Big
+        /// </summary>
         public Color TextColorLabelBig { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorLabelBig", DefaultTextColorLabelBig); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorLabelBig", value); } }
+        /// <summary>
+        /// Barva textu pro label Standard
+        /// </summary>
         public Color TextColorLabelStandard { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorLabelStandard", DefaultTextColorLabelStandard); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorLabelStandard", value); } }
+        /// <summary>
+        /// Barva ticku pro label Big
+        /// </summary>
         public Color LineColorTickBig { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTickBig", DefaultLineColorTickBig); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTickBig", value); } }
+        /// <summary>
+        /// Barva ticku pro label Standard
+        /// </summary>
         public Color LineColorTickStandard { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTickStandard", DefaultLineColorTickStandard); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTickStandard", value); } }
+        /// <summary>
+        /// Barva textu pro popisek Arrangement (uprostřed, zobrazuje typ arrangementu osy)
+        /// </summary>
         public Color TextColorArrangement { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorArrangement", DefaultTextColorArrangement); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorArrangement", value); } }
-        
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Barva pozadí osy
+        /// </summary>
         protected virtual Color DefaultBackColor { get { return Color.FromArgb(192, Color.LightSkyBlue); } }
+        /// <summary>
+        /// Default pro: Barva textu pro label Big
+        /// </summary>
         protected virtual Color DefaultTextColorLabelBig { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva textu pro label Standard
+        /// </summary>
         protected virtual Color DefaultTextColorLabelStandard { get { return Color.DimGray; } }
+        /// <summary>
+        /// Default pro: Barva ticku pro label Big
+        /// </summary>
         protected virtual Color DefaultLineColorTickBig { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva ticku pro label Standard
+        /// </summary>
         protected virtual Color DefaultLineColorTickStandard { get { return Color.Gray; } }
+        /// <summary>
+        /// Default pro: Barva textu pro popisek Arrangement (uprostřed, zobrazuje typ arrangementu osy)
+        /// </summary>
         protected virtual Color DefaultTextColorArrangement { get { return Color.FromArgb(128, Color.Black); } }
         #endregion
     }
@@ -1873,55 +1998,199 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Grid, Záhlaví: barva pozadí
+        /// </summary>
         public Color HeaderBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderBackColor", DefaultHeaderBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderBackColor", value); } }
+        /// <summary>
+        /// Grid, Záhlaví: barva textu
+        /// </summary>
         public Color HeaderTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderTextColor", DefaultHeaderTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderTextColor", value); } }
+        /// <summary>
+        /// Grid, Záhlaví: barva linky
+        /// </summary>
         public Color HeaderLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineColor", DefaultHeaderLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineColor", value); } }
+        /// <summary>
+        /// Grid, Záhlaví: barva levé svislé linky
+        /// </summary>
         public Color HeaderLineLeftVerticalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineLeftVerticalColor", DefaultHeaderLineLeftVerticalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineLeftVerticalColor", value); } }
+        /// <summary>
+        /// Grid, Záhlaví: barva pravé svislé linky
+        /// </summary>
         public Color HeaderLineRightVerticalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineRightVerticalColor", DefaultHeaderLineRightVerticalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineRightVerticalColor", value); } }
+        /// <summary>
+        /// Grid, Záhlaví: barva vodorovné linky
+        /// </summary>
         public Color HeaderLineHorizontalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineHorizontalColor", DefaultHeaderLineHorizontalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineHorizontalColor", value); } }
+        /// <summary>
+        /// Grid: barva pozadí tabulky
+        /// </summary>
         public Color TableBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TableBackColor", DefaultTableBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TableBackColor", value); } }
+        /// <summary>
+        /// Grid: barva pozadí řádku
+        /// </summary>
         public Color RowBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowBackColor", DefaultRowBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowBackColor", value); } }
+        /// <summary>
+        /// Grid: barva pozadí Child řádku
+        /// </summary>
         public Color RowChildBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowChildBackColor", DefaultRowChildBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowChildBackColor", value); } }
+        /// <summary>
+        /// Grid: barva textu v řádku
+        /// </summary>
         public Color RowTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowTextColor", DefaultRowTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowTextColor", value); } }
+        /// <summary>
+        /// Grid: barva pozadí Selected řádku
+        /// </summary>
         public Color SelectedRowBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowBackColor", DefaultSelectedRowBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowBackColor", value); } }
+        /// <summary>
+        /// Grid: barva pozadí Selected Child řádku
+        /// </summary>
         public Color SelectedRowChildBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowChildBackColor", DefaultSelectedRowChildBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowChildBackColor", value); } }
+        /// <summary>
+        /// Grid: barva textu Selected řádku
+        /// </summary>
         public Color SelectedRowTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowTextColor", DefaultSelectedRowTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowTextColor", value); } }
+        /// <summary>
+        /// Grid: barva pozadí Aktivní buňky
+        /// </summary>
         public Color ActiveCellBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveCellBackColor;", DefaultActiveCellBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveCellBackColor;", value); } }
+        /// <summary>
+        /// Grid: barva textu Aktivní buňky
+        /// </summary>
         public Color ActiveCellTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveCellTextColor ", DefaultActiveCellTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveCellTextColor ", value); } }
+        /// <summary>
+        /// Grid: barva border linky
+        /// </summary>
         public Color BorderLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderLineColor", DefaultBorderLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderLineColor", value); } }
+        /// <summary>
+        /// Grid: ikona třídění ASC
+        /// </summary>
         public Image SortAscendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortAscendingImage", value); } }
+        /// <summary>
+        /// Grid: ikona třídění DESC
+        /// </summary>
         public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
-        public Image RowCheckedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
-        public Image RowNotCheckedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowNotSelectedImage", DefaultRowNotSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowNotSelectedImage", value); } }
+        /// <summary>
+        /// Grid: ikona Checked v řádku
+        /// </summary>
+        public Image RowCheckedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowCheckedImage", DefaultRowCheckedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowCheckedImage", value); } }
+        /// <summary>
+        /// Grid: ikona NonChecked v řádku v tabulce, která podporue Checked
+        /// </summary>
+        public Image RowNotCheckedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowNotCheckedImage", DefaultRowNotCheckedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowNotCheckedImage", value); } }
+        /// <summary>
+        /// Grid: ikona DeselectAll v záhlaví tabulky
+        /// </summary>
         public Image RowHeaderDeselectedAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderDeselectedAllImage", DefaultRowHeaderDeselectedAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderDeselectedAllImage", value); } }
+        /// <summary>
+        /// Grid: ikona ExpandAll v záhlaví tabulky
+        /// </summary>
         public Image RowHeaderExpandAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderExpandAllImage", DefaultRowHeaderExpandAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderExpandAllImage", value); } }
+        /// <summary>
+        /// Grid: ikona CollapseAll v záhlaví tabulky
+        /// </summary>
         public Image RowHeaderCollapseAllImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowHeaderCollapseAllImage", DefaultRowHeaderCollapseAllImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowHeaderCollapseAllImage", value); } }
+        /// <summary>
+        /// Grid: barva linke TreeView
+        /// </summary>
         public Color TreeViewLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "TreeViewLineColor", DefaultTreeViewLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "TreeViewLineColor", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro: Grid, Záhlaví: barva pozadí
+        /// </summary>
         protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue.Morph(Color.White, 0.33f); } }
+        /// <summary>
+        /// Default pro: Grid, Záhlaví: barva textu
+        /// </summary>
         protected virtual Color DefaultHeaderTextColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Grid, Záhlaví: barva linky
+        /// </summary>
         protected virtual Color DefaultHeaderLineColor { get { return Color.DimGray; } }
+        /// <summary>
+        /// Default pro: Grid, Záhlaví: barva levé svislé linky
+        /// </summary>
         protected virtual Color DefaultHeaderLineLeftVerticalColor { get { return Color.Gray; } }
+        /// <summary>
+        /// Default pro: Grid, Záhlaví: barva pravé svislé linky
+        /// </summary>
         protected virtual Color DefaultHeaderLineRightVerticalColor { get { return Color.LightGray; } }
+        /// <summary>
+        /// Default pro: Grid, Záhlaví: barva vodorovné linky
+        /// </summary>
         protected virtual Color DefaultHeaderLineHorizontalColor { get { return Color.LightGray; } }
+        /// <summary>
+        /// Default pro: Grid: barva pozadí tabulky
+        /// </summary>
         protected virtual Color DefaultTableBackColor { get { return Skin.Control.AmbientBackColor; } }
+        /// <summary>
+        /// Default pro: Grid: barva pozadí řádku
+        /// </summary>
         protected virtual Color DefaultRowBackColor { get { return Color.White; } }
+        /// <summary>
+        /// Default pro: Grid: barva pozadí Child řádku
+        /// </summary>
         protected virtual Color DefaultRowChildBackColor { get { return Color.FromArgb(215, 230, 220); } }
+        /// <summary>
+        /// Default pro: Grid: barva textu v řádku
+        /// </summary>
         protected virtual Color DefaultRowTextColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Grid: barva pozadí Selected řádku
+        /// </summary>
         protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.25f); } }
+        /// <summary>
+        /// Default pro: Grid: barva pozadí Selected Child řádku
+        /// </summary>
         protected virtual Color DefaultSelectedRowChildBackColor { get { return Color.FromArgb(185, 210, 195); } }
+        /// <summary>
+        /// Default pro: Grid: barva textu Selected řádku
+        /// </summary>
         protected virtual Color DefaultSelectedRowTextColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Grid: barva pozadí Aktivní buňky
+        /// </summary>
         protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.25f); } }
+        /// <summary>
+        /// Default pro: Grid: barva textu Aktivní buňky
+        /// </summary>
         protected virtual Color DefaultActiveCellTextColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Grid: barva border linky
+        /// </summary>
         protected virtual Color DefaultBorderLineColor { get { return Color.Gray; } }
+        /// <summary>
+        /// Default pro: Grid: ikona třídění ASC
+        /// </summary>
         protected virtual Image DefaultSortAscendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoUp2Png); } }          // { get { return IconStandard.SortAsc; } }
+        /// <summary>
+        /// Default pro: Grid: ikona třídění DESC
+        /// </summary>
         protected virtual Image DefaultSortDescendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoDown2Png); } }       // { get { return IconStandard.SortDesc; } }
-        protected virtual Image DefaultRowSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogAccept2Png); } }    // { get { return IconStandard.RowSelected; } }
-        protected virtual Image DefaultRowNotSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogNotAccept2Png); } }
+        /// <summary>
+        /// Default pro: Grid: ikona Checked v řádku
+        /// </summary>
+        protected virtual Image DefaultRowCheckedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogAccept2Png); } }    // { get { return IconStandard.RowSelected; } }
+        /// <summary>
+        /// Default pro: Grid: ikona NonChecked v řádku v tabulce, která podporue Checked
+        /// </summary>
+        protected virtual Image DefaultRowNotCheckedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogNotAccept2Png); } }
+        /// <summary>
+        /// Default pro: Grid: ikona DeselectAll v záhlaví tabulky
+        /// </summary>
         protected virtual Image DefaultRowHeaderDeselectedAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogClose2Png); } }
+        /// <summary>
+        /// Default pro: Grid: ikona ExpandAll v záhlaví tabulky
+        /// </summary>
         protected virtual Image DefaultRowHeaderExpandAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowRightDouble2Png); } }
+        /// <summary>
+        /// Default pro: Grid: ikona CollapseAll v záhlaví tabulky
+        /// </summary>
         protected virtual Image DefaultRowHeaderCollapseAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowLeftDouble2Png); } }
+        /// <summary>
+        /// Default pro: Grid: barva linke TreeView
+        /// </summary>
         protected virtual Color DefaultTreeViewLineColor { get { return Color.DimGray; } }
         #endregion
         #region Další metody
@@ -1948,16 +2217,49 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Graf: výška linky
+        /// </summary>
         public Int32 LineHeight { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeight", DefaultLineHeight); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeight", value); } }
+        /// <summary>
+        /// Graf: celková výška Min
+        /// </summary>
         public Int32 TotalHeightMin { get { return this._Owner.GetValue(this._SkinSetKey, "TotalHeightMin", DefaultTotalHeightMin); } set { this._Owner.SetValue(this._SkinSetKey, "TotalHeightMin", value); } }
+        /// <summary>
+        /// Graf: celková výška Max
+        /// </summary>
         public Int32 TotalHeightMax { get { return this._Owner.GetValue(this._SkinSetKey, "TotalHeightMax", DefaultTotalHeightMax); } set { this._Owner.SetValue(this._SkinSetKey, "TotalHeightMax", value); } }
+        /// <summary>
+        /// Graf: element - barva pozadí
+        /// </summary>
         public Color ElementBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementBackColor", DefaultElementBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementBackColor", value); } }
+        /// <summary>
+        /// Graf: element - barva okraje
+        /// </summary>
         public Color ElementBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementBorderColor", DefaultElementBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementBorderColor", value); } }
+        /// <summary>
+        /// Graf: Link - barva pozadí linky
+        /// </summary>
         public Color ElementLinkBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementLinkBackColor", DefaultElementLinkBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementLinkBackColor", value); } }
+        /// <summary>
+        /// Graf: element - barva Selected orámování
+        /// </summary>
         public Color ElementSelectedLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementSelectedLineColor", DefaultElementSelectedLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementSelectedLineColor", value); } }
+        /// <summary>
+        /// Graf: Frame, barva linky
+        /// </summary>
         public Color ElementFramedLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementFramedLineColor", DefaultElementFramedLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementFramedLineColor", value); } }
+        /// <summary>
+        /// Graf: barva pozadí
+        /// </summary>
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        /// <summary>
+        /// Graf: barva linek časové osy Main
+        /// </summary>
         public Color TimeAxisTickMain { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickMain", DefaultTimeAxisTickMain); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickMain", value); } }
+        /// <summary>
+        /// Graf: barva linek časové osy Small
+        /// </summary>
         public Color TimeAxisTickSmall { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickSmall", DefaultTimeAxisTickSmall); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickSmall", value); } }
         /// <summary>
         /// Barva linky základní.
@@ -1980,23 +2282,72 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
         /// </summary>
         public Color LinkColorError { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColorError", DefaultLinkColorError); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColorError", value); } }
-
-
         #endregion
         #region Default colors
+        /// <summary>
+        /// Graf: výška linky
+        /// </summary>
         protected virtual Int32 DefaultLineHeight { get { return 18; } }
+        /// <summary>
+        /// Default pro : Graf: celková výška Min
+        /// </summary>
         protected virtual Int32 DefaultTotalHeightMin { get { return 14; } }
+        /// <summary>
+        /// Default pro : Graf: celková výška Max
+        /// </summary>
         protected virtual Int32 DefaultTotalHeightMax { get { return 480; } }
+        /// <summary>
+        /// Default pro : Graf: element - barva pozadí
+        /// </summary>
         protected virtual Color DefaultElementBackColor { get { return Color.CornflowerBlue; } }
+        /// <summary>
+        /// Default pro : Graf: element - barva okraje
+        /// </summary>
         protected virtual Color DefaultElementBorderColor { get { return Color.BlueViolet; } }
+        /// <summary>
+        /// Default pro : Graf: Link - barva pozadí linky
+        /// </summary>
         protected virtual Color DefaultElementLinkBackColor { get { return Color.FromArgb(160, Color.DimGray); } }   // Barva linku obsahuje složku Alpha = 160 == úroveň Morphingu
+        /// <summary>
+        /// Default pro : Graf: element - barva Selected orámování
+        /// </summary>
         protected virtual Color DefaultElementSelectedLineColor { get { return Color.OrangeRed; } }
+        /// <summary>
+        /// Default pro : Graf: Frame, barva linky
+        /// </summary>
         protected virtual Color DefaultElementFramedLineColor { get { return Color.IndianRed; } }
+        /// <summary>
+        /// Default pro : Graf: barva pozadí
+        /// </summary>
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
+        /// <summary>
+        /// Default pro : Graf: barva linek časové osy Main
+        /// </summary>
         protected virtual Color DefaultTimeAxisTickMain { get { return Color.FromArgb(216, 216, 216); } }
+        /// <summary>
+        /// Default pro : Graf: barva linek časové osy Small
+        /// </summary>
         protected virtual Color DefaultTimeAxisTickSmall { get { return Color.FromArgb(216, 216, 216); } }
+        /// <summary>
+        /// Default pro : Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// </summary>
         protected virtual Color DefaultLinkColorStandard { get { return Color.Green; } }
+        /// <summary>
+        /// Default pro : Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
         protected virtual Color DefaultLinkColorWarning { get { return Color.Orange; } }
+        /// <summary>
+        /// Default pro : Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
         protected virtual Color DefaultLinkColorError { get { return Color.Red; } }
         #endregion
     }
@@ -2011,17 +2362,47 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Vztah : výška linky v Gridu
+        /// </summary>
         public Int32 LineHeightInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeightInGrid", DefaultLineHeightInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeightInGrid", value); } }
+        /// <summary>
+        /// Vztah : výška linky v Formu
+        /// </summary>
         public Int32 LineHeightInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeightInForm", DefaultLineHeightInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeightInForm", value); } }
+        /// <summary>
+        /// Vztah : barva linky v Gridu
+        /// </summary>
         public Color LineColorInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorInGrid", DefaultLineColorInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorInGrid", value); } }
+        /// <summary>
+        /// Vztah : barva linky v Formu
+        /// </summary>
         public Color LineColorInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorInForm", DefaultLineColorInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorInForm", value); } }
+        /// <summary>
+        /// Poměr slábnutí barvy
+        /// </summary>
         public float LineFadingRatio { get { return this._Owner.GetValue(this._SkinSetKey, "LineFadingRatio", DefaultLineFadingRatio); } set { this._Owner.SetValue(this._SkinSetKey, "LineFadingRatio", value); } }
         #endregion
         #region Default colors
+        /// <summary>
+        /// Default pro : Vztah : výška linky v Gridu
+        /// </summary>
         protected virtual Int32 DefaultLineHeightInGrid { get { return 1; } }
+        /// <summary>
+        /// Default pro : Vztah : výška linky v Formu
+        /// </summary>
         protected virtual Int32 DefaultLineHeightInForm { get { return 2; } }
+        /// <summary>
+        /// Default pro : Vztah : barva linky v Gridu
+        /// </summary>
         protected virtual Color DefaultLineColorInGrid { get { return Color.BlueViolet; } }
+        /// <summary>
+        /// Default pro : Vztah : barva linky v Formu
+        /// </summary>
         protected virtual Color DefaultLineColorInForm { get { return Color.BlueViolet; } }
+        /// <summary>
+        /// Default pro : Poměr slábnutí barvy
+        /// </summary>
         protected virtual float DefaultLineFadingRatio { get { return 0.60f; } }
         #endregion
     }
@@ -2031,16 +2412,29 @@ namespace Asol.Tools.WorkScheduler.Components
     public abstract class SkinSet
     {
         #region Internal and protected
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="skinSetKey"></param>
         public SkinSet(string skinSetKey)
         {
             this._SkinSetKey = skinSetKey;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="skinSetKey"></param>
         public SkinSet(Skin owner, string skinSetKey)
         {
             this._Owner = owner;
             this._SkinSetKey = skinSetKey;
             this._FillPalette();
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
         public void SetOwner(Skin owner)
         {
             this._Owner = owner;
@@ -2062,7 +2456,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Vlastník
+        /// </summary>
         protected Skin _Owner;
+        /// <summary>
+        /// Název sady dat
+        /// </summary>
         protected string _SkinSetKey;
         /// <summary>
         /// Vrací výsledek matrice 2 x 2
