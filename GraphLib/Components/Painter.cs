@@ -2597,47 +2597,175 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 args.Graphics.FillRectangle(hatchBrush, boundsParts[0]);
             }
         }
+        /// <summary>
+        /// Vykreslí části Ratio (=výplň a/nebo linka zobrazující poměr Ratio)
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="boundsParts"></param>
         private static void GraphItemDrawRatio(GraphItemArgs args, Rectangle[] boundsParts)
         {
             if (!args.HasRatio) return;
+            switch (args.RatioStyle)
+            {
+                case Graph.TimeGraphElementRatioStyle.VerticalFill:
+                    GraphItemDrawRatioVertical(args, boundsParts, 0);
+                    break;
+                case Graph.TimeGraphElementRatioStyle.HorizontalFill:
+                    GraphItemDrawRatioHorizontal(args, boundsParts, 0);
+                    break;
+                case Graph.TimeGraphElementRatioStyle.HorizontalInner:
+                    GraphItemDrawRatioHorizontal(args, boundsParts, 2);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vykreslí části Ratio (=výplň a/nebo linka zobrazující poměr Ratio) pro Horizontální orientaci
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="boundsParts"></param>
+        /// <param name="offset"></param>
+        private static void GraphItemDrawRatioHorizontal(GraphItemArgs args, Rectangle[] boundsParts, int offset)
+        {
             Rectangle bounds = boundsParts[0];
-            Point p1 = GraphItemDrawRatioGetPoint(args.RatioBegin.Value, bounds, bounds.X);
-            Point p2 = GraphItemDrawRatioGetPoint((args.RatioEnd.HasValue ? args.RatioEnd.Value : args.RatioBegin.Value), bounds, bounds.Right);
+            int q1, q2;
+            GraphItemDrawRatioGetOffsetPoint(bounds.Y, bounds.Bottom, offset, out q1, out q2);
+            // Body p1 a p2 jsou umístěny vpravo na souřadnici RatioBegin:
+            Point p1 = GraphItemDrawRatioGetHorizontalPoint(args.RatioBegin.Value, bounds, q1);
+            Point p2 = GraphItemDrawRatioGetHorizontalPoint(args.RatioBegin.Value, bounds, q2);   // Horizontální Ratio neřeší hodnotu v RatioEnd !!! Nedává to význam.
 
             if (args.RatioBeginBackColor.HasValue)
             {
-                Point p0 = new Point(bounds.X, bounds.Bottom);
-                Point p3 = new Point(bounds.Right, bounds.Bottom);
-                GraphicsPath path = new GraphicsPath();
-                path.AddLine(p0, p1);
-                path.AddLine(p1, p2);
-                path.AddLine(p2, p3);
-                path.AddLine(p3, p0);
-                path.CloseFigure();
-
-                if (args.RatioEndBackColor.HasValue)
-                {
-                    using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, args.RatioBeginBackColor.Value, args.RatioEndBackColor.Value, 0f))
-                        args.Graphics.FillPath(lgb, path);
-                }
-                else
-                {
-                    args.Graphics.FillPath(Skin.Brush(args.RatioBeginBackColor.Value), path);
-                }
+                // Body p0 a p3 jsou umístěny vlevo na souřadnici bounds.X:
+                Point p0 = new Point(bounds.X, q1);
+                Point p3 = new Point(bounds.X, q2);
+                GraphItemDrawRatioFill(bounds, p0, p1, p2, p3, args.RatioBeginBackColor.Value, null, args.Graphics);
             }
 
             if (args.RatioLineColor.HasValue)
             {
-                using (GraphicsUseSmooth(args.Graphics))
-                {
-                    Pen pen = Skin.Pen(args.RatioLineColor.Value);
-                    if (args.RatioLineWidth.HasValue && args.RatioLineWidth.Value > 0)
-                        pen.Width = args.RatioLineWidth.Value;
-                    args.Graphics.DrawLine(pen, p1, p2);
-                }
+                GraphItemDrawRatioLine(p1, p2, args.RatioLineColor.Value, args.RatioLineWidth, args.Graphics);
             }
         }
-        private static Point GraphItemDrawRatioGetPoint(float ratio, Rectangle bounds, int x)
+        /// <summary>
+        /// Vykreslí části Ratio (=výplň a/nebo linka zobrazující poměr Ratio) pro Vertikální orientaci
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="boundsParts"></param>
+        /// <param name="offset"></param>
+        private static void GraphItemDrawRatioVertical(GraphItemArgs args, Rectangle[] boundsParts, int offset)
+        {
+            Rectangle bounds = boundsParts[0];
+            int q1, q2;
+            GraphItemDrawRatioGetOffsetPoint(bounds.X, bounds.Right, offset, out q1, out q2);
+            // Body p1 a p2 jsou umístěny nahoře na souřadnici RatioBegin a RatioEnd:
+            Point p1 = GraphItemDrawRatioGetVerticalPoint(args.RatioBegin.Value, bounds, q1);
+            Point p2 = GraphItemDrawRatioGetVerticalPoint((args.RatioEnd.HasValue ? args.RatioEnd.Value : args.RatioBegin.Value), bounds, q2);
+
+            if (args.RatioBeginBackColor.HasValue)
+            {
+                // Body p0 a p3 jsou umístěny vlevo na souřadnici bounds.Bottom:
+                Point p0 = new Point(q1, bounds.Bottom);
+                Point p3 = new Point(q2, bounds.Bottom);
+                GraphItemDrawRatioFill(bounds, p0, p1, p2, p3, args.RatioBeginBackColor.Value, null, args.Graphics);
+            }
+
+            if (args.RatioLineColor.HasValue)
+            {
+                GraphItemDrawRatioLine(p1, p2, args.RatioLineColor.Value, args.RatioLineWidth, args.Graphics);
+            }
+        }
+        /// <summary>
+        /// Vykreslí výplň části Ratio elementu podle dodaných souřadnic
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="p0"></param>
+        /// <param name="p1"></param>
+        /// <param name="p2"></param>
+        /// <param name="p3"></param>
+        /// <param name="color1"></param>
+        /// <param name="color2"></param>
+        /// <param name="graphics"></param>
+        private static void GraphItemDrawRatioFill(Rectangle bounds, Point p0, Point p1, Point p2, Point p3, Color color1, Color? color2, Graphics graphics)
+        {
+            GraphicsPath path = new GraphicsPath();
+            path.AddLine(p0, p1);
+            path.AddLine(p1, p2);
+            path.AddLine(p2, p3);
+            path.AddLine(p3, p0);
+            path.CloseFigure();
+
+            if (color2.HasValue)
+            {
+                using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, color1, color2.Value, 0f))
+                    graphics.FillPath(lgb, path);
+            }
+            else
+            {
+                graphics.FillPath(Skin.Brush(color1), path);
+            }
+        }
+        /// <summary>
+        /// Vykreslí ukončovací linku části Ratio elementu podle dodaných souřadnic
+        /// </summary>
+        /// <param name="p1"></param>
+        /// <param name="p2"></param>
+        /// <param name="color1"></param>
+        /// <param name="width"></param>
+        /// <param name="graphics"></param>
+        private static void GraphItemDrawRatioLine(Point p1, Point p2, Color color1, int? width, Graphics graphics)
+        {
+            using (GraphicsUseSmooth(graphics))
+            {
+                Pen pen = Skin.Pen(color1);
+                if (width.HasValue && width.Value > 0)
+                    pen.Width = width.Value;
+                graphics.DrawLine(pen, p1, p2);
+            }
+        }
+        /// <summary>
+        /// Určí souřadnice out q1 a q2 na základě b (begin) a e (end), k nimž přište dodaný offset.
+        /// Vstupní souřadnice b (begin) má mít menší hodnotu než e (end).
+        /// Zadaný offset zajistí odsunutí out q1 na pozici (begin + offset), a out q2 na (end - offset).
+        /// Pokud by offset byl záporný, pak out q1 = begin a out q2 = end.
+        /// Pokud by offset byl větší než vzdálenost ((end - begin) / 3), pak bude akceptováno jen tento největší povolený offset.
+        /// </summary>
+        /// <param name="b"></param>
+        /// <param name="e"></param>
+        /// <param name="offset"></param>
+        /// <param name="q1"></param>
+        /// <param name="q2"></param>
+        private static void GraphItemDrawRatioGetOffsetPoint(int b, int e, int offset, out int q1, out int q2)
+        {
+            q1 = b;
+            q2 = e;
+            int size = (e - b) / 3;
+            if (size <= 0) return;
+            offset = (offset < 0 ? 0 : (offset > size ? size : offset));
+            if (offset <= 0) return;
+            q1 = b + offset;
+            q2 = e - offset;
+        }
+        /// <summary>
+        /// Vrací souřadnici bodu pro Horizontal Ratio
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <param name="bounds"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        private static Point GraphItemDrawRatioGetHorizontalPoint(float ratio, Rectangle bounds, int y)
+        {
+            ratio = (ratio < 0f ? 0f : (ratio > 1f ? 1f : ratio));
+            int x = bounds.Left + (int)(Math.Round((float)bounds.Width * ratio, 0));
+            return new Point(x, y);
+        }
+        /// <summary>
+        /// Vrací souřadnici bodu pro Vertical Ratio
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <param name="bounds"></param>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        private static Point GraphItemDrawRatioGetVerticalPoint(float ratio, Rectangle bounds, int x)
         {
             ratio = (ratio < 0f ? 0f : (ratio > 1f ? 1f : ratio));
             int y = bounds.Bottom - (int)(Math.Round((float)bounds.Height * ratio, 0));
@@ -2831,6 +2959,10 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
             /// </summary>
             public Color? RatioEndBackColor { get; set; }
+            /// <summary>
+            /// Styl kreslení Ratio: Vertical = odspodu nahoru, Horizontal = Zleva doprava
+            /// </summary>
+            public Components.Graph.TimeGraphElementRatioStyle RatioStyle { get; set; }
             /// <summary>
             /// Barva linky, kreslená v úrovni Ratio.
             /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.

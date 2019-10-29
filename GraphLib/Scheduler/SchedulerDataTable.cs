@@ -5081,6 +5081,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._GroupGId = guiGraphItem.GroupId;         //  Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
             item._DataGId = guiGraphItem.DataId;
             item._Time = guiGraphItem.Time;                // Existuje implicitní konverze mezi typy TimeRange a GuiTimeRange.
+            item._RatioStyle = GetRatioStyle(guiGraphItem.RatioStyle);
             item._BehaviorMode = guiGraphItem.BehaviorMode;
 
             // ID pro grafickou vrstvu: vygenerujeme Int32 klíč pro daný GId, za pomoci indexu uloženého v hlavní tabulce (iGraphTable):
@@ -5109,7 +5110,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (sourceItem.Layer != 0) targetItem.Layer = sourceItem.Layer;
             if (sourceItem.Level != 0) targetItem.Level = sourceItem.Level;
             if (sourceItem.Order != 0) targetItem.Order = sourceItem.Order;
-            if (sourceItem.Height > 0f) targetItem.Height = sourceItem.Height;
+            if (sourceItem.Height.HasValue) targetItem.Height = sourceItem.Height;
             if (sourceItem.Text != null) targetItem.Text = sourceItem.Text;
             if (sourceItem.ToolTip != null) targetItem.ToolTip = sourceItem.ToolTip;
 
@@ -5123,6 +5124,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 targetItem.Time = sourceItem.Time;
                 this.Time = sourceItem.Time;
+            }
+            if (sourceItem.RatioStyle.HasValue)
+            {
+                targetItem.RatioStyle = sourceItem.RatioStyle;
+                this._RatioStyle = GetRatioStyle(sourceItem.RatioStyle);
             }
             if (sourceItem.BehaviorMode != GraphItemBehaviorMode.None)
             {
@@ -5205,6 +5211,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return updatedImage;
         }
         /// <summary>
+        /// Vrací hodnotu typu <see cref="TimeGraphElementRatioStyle"/> z hodnoty <see cref="Noris.LCS.Base.WorkScheduler.GuiRatioStyle"/>
+        /// </summary>
+        /// <param name="ratioStyle"></param>
+        /// <returns></returns>
+        protected static TimeGraphElementRatioStyle GetRatioStyle(GuiRatioStyle? ratioStyle)
+        {
+            if (ratioStyle.HasValue)
+            {
+                switch (ratioStyle.Value)
+                {
+                    case GuiRatioStyle.VerticalFill: return TimeGraphElementRatioStyle.VerticalFill;
+                    case GuiRatioStyle.HorizontalFill : return TimeGraphElementRatioStyle.HorizontalFill;
+                    case GuiRatioStyle.HorizontalInner: return TimeGraphElementRatioStyle.HorizontalInner;
+                }
+            }
+            return TimeGraphElementRatioStyle.VerticalFill;
+        }
+        /// <summary>
         /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphItem)"/>.
         /// </summary>
         private DataGraphItem(MainDataTable graphTable, GuiGraphItem guiGraphItem)
@@ -5264,6 +5288,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Čas prvku
         /// </summary>
         private TimeRange _Time;
+        /// <summary>
+        /// Styl kreslení Ratio
+        /// </summary>
+        private TimeGraphElementRatioStyle _RatioStyle;
         /// <summary>
         /// Režim chování
         /// </summary>
@@ -5336,6 +5364,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Časový interval tohoto prvku
         /// </summary>
         public TimeRange Time { get { return this._Time; } set { this._Time = value; } }
+        /// <summary>
+        /// Orientace hodnoty Ratio: Vertical = odspodu nahoru, Horizontal = Zleva doprava
+        /// </summary>
+        public TimeGraphElementRatioStyle RatioStyle { get { return this._RatioStyle; } set { this._RatioStyle = value; } }
         /// <summary>
         /// Režim chování položky grafu (editovatelnost, texty, atd).
         /// </summary>
@@ -5493,11 +5525,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         int ITimeGraphItem.Layer { get { return this._GuiGraphItem.Layer; } }
         int ITimeGraphItem.Level { get { return this._GuiGraphItem.Level; } }
         int ITimeGraphItem.Order { get { return this._GuiGraphItem.Order; } }
-        float ITimeGraphItem.Height { get { return this._GuiGraphItem.Height; } }
+        float? ITimeGraphItem.Height { get { return this._GuiGraphItem.Height; } }
         string ITimeGraphItem.Text { get { return this._GuiGraphItem.Text; } }
         string ITimeGraphItem.ToolTip { get { return this._GuiGraphItem.ToolTip; } }
         float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
         float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
+        TimeGraphElementRatioStyle ITimeGraphItem.RatioStyle { get { return this.RatioStyle; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.GetBackEffectEditable(); } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.GetBackEffectNonEditable(); } }

@@ -862,6 +862,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             graphItemArgs.RatioBeginBackColor = this._Owner.RatioBeginBackColor;
             graphItemArgs.RatioEnd = this._Owner.RatioEnd;
             graphItemArgs.RatioEndBackColor = this._Owner.RatioEndBackColor;
+            graphItemArgs.RatioStyle = this._Owner.RatioStyle;
             graphItemArgs.RatioLineColor = this._Owner.RatioLineColor;
             graphItemArgs.RatioLineWidth = this._Owner.RatioLineWidth;
             graphItemArgs.BackEffectStyle = (this.IsEditable ? this._Owner.BackEffectEditable : this._Owner.BackEffectNonEditable);

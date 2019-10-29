@@ -418,47 +418,80 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
                 lock (this._ValidityLock)
                 {
-                    var allGroupList = new List<List<GTimeGraphGroup>>();
                     Interval<float> totalLogicalY = new Interval<float>(0f, 0f, true);
                     float minimalFragmentHeight = 1f;
 
+                    // Připravíme si soupis (elementů dle) vrstev, které obsahují nějaký element s výškou Height == null (=jejich výška se určí podle výšky ostatních vrstev):
+                    //  Item1 = číslo vrstvy ITimeGraphItem.Layer;  Item2 = [index] do pole allGroups;  Item3 = pole prvků dané vrstvy:
+                    List<Tuple<int, int, ITimeGraphItem[]>> layerDependendGroups = new List<Tuple<int, int, ITimeGraphItem[]>>();
+
                     // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
                     List<IGrouping<int, ITimeGraphItem>> layerGroups = this.VisibleGraphItems.GroupBy(i => i.Layer).ToList();
-                    if (layerGroups.Count > 1)
-                        layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
                     layers = layerGroups.Count;
+                    if (layers > 1)
+                        layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
 
+                    // Připravím si finální pole, obsahující jednotlivé vrstvy elementů grafu:
+                    GTimeGraphGroup[][] allGroups = new GTimeGraphGroup[layers][];
+
+                    int l = 0;
                     foreach (IGrouping<int, ITimeGraphItem> layerGroup in layerGroups)
-                    {   // Každá vrstva (layerGroup) má svoje vlastní pole využití prostoru, toto pole je společné pro všechny ITimeGraphItem.Level
-                        PointArray<DateTime, IntervalArray<float>> layerUsing = new PointArray<DateTime, IntervalArray<float>>();
-
-                        // Hodnota Layer pro tuto skupinu. 
-                        // Jedna vrstva Layer je ekvivalentní jedné grafické vrstvě, položky z různých vrstev jsou kresleny jedna přes druhou.
+                    {   // Hodnota Layer pro tuto skupinu. 
+                        // Jedna vrstva (Layer) je ekvivalentní jedné grafické vrstvě, položky z různých vrstev jsou kresleny jedna přes druhou.
                         int layer = layerGroup.Key;
 
-                        // V rámci jedné vrstvy: další grupování jejích prvků podle jejich hodnoty ITimeGraphItem.Level, vzestupně:
-                        List<IGrouping<int, ITimeGraphItem>> levelGroups = layerGroup.GroupBy(i => i.Level).ToList();
-                        if (levelGroups.Count > 1)
-                            levelGroups.Sort((a, b) => a.Key.CompareTo(b.Key));    // Hladiny setřídit podle Key = ITimeGraphItem.Level, vzestupně
-                        levels += levelGroups.Count;
+                        // Zkonkrétním prvky této vrstvy (IEnumerable) do Array:
+                        ITimeGraphItem[] layerList = layerGroup.ToArray();
 
-                        // Hladina (Level) má význam "vodorovného pásu" pro více prvků stejné hladiny.
-                        // Záporné hladiny jsou kresleny dolů (jako záporné hodnoty na ose Y).
-
-                        // Nyní zpracuji grafické prvky dané vrstvy (layerGroup) po jednotlivých skupinách za hladiny Level (levelGroups),
-                        // vypočtu jejich logické souřadnice Y a přidám je do ItemGroupList:
-                        Interval<float> layerUsedLogicalY = new Interval<float>(0f, 0f, true);
-                        List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();
-                        foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
-                        {
-                            layerUsing.Clear();
-                            this.RecalculateAllGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref minimalFragmentHeight, ref groups);
+                        if (layerList.Any(i => !i.Height.HasValue))
+                        {   // Pokud v této vrstvě existuje alespoň jeden prvek, jehož Height je NULL, pak tuto vrstvu budu řešit jinak a později:
+                            layerDependendGroups.Add(new Tuple<int, int, ITimeGraphItem[]>(layer, l, layerList));
                         }
-                        totalLogicalY.MergeWith(layerUsedLogicalY);
+                        else
+                        {   // Všechny prvky ve vrstvě mají specifikovánu výšku Height:
+                            // Každá VRSTVA (layerGroup) má svoje vlastní pole využití prostoru, toto pole je společné pro všechny ITimeGraphItem.Level
+                            PointArray<DateTime, IntervalArray<float>> layerUsing = new PointArray<DateTime, IntervalArray<float>>();
 
-                        allGroupList.Add(layerGroupList);
+                            // V rámci jedné vrstvy: další grupování jejích prvků podle jejich hodnoty ITimeGraphItem.Level, vzestupně:
+                            List<IGrouping<int, ITimeGraphItem>> levelGroups = layerGroup.GroupBy(i => i.Level).ToList();
+                            if (levelGroups.Count > 1)
+                                levelGroups.Sort((a, b) => a.Key.CompareTo(b.Key));    // Hladiny setřídit podle Key = ITimeGraphItem.Level, vzestupně
+                            levels += levelGroups.Count;
+
+                            // Hladina (Level) má význam "vodorovného pásu" pro více prvků stejné hladiny.
+                            // Záporné hladiny jsou kresleny dolů (jako záporné hodnoty na ose Y).
+
+                            // Nyní zpracuji grafické prvky dané vrstvy (layerGroup) po jednotlivých skupinách za hladiny Level (levelGroups),
+                            // vypočtu jejich logické souřadnice Y a přidám je do ItemGroupList:
+                            Interval<float> layerUsedLogicalY = new Interval<float>(0f, 0f, true); // Pole použitých souřadnic na ose Y pro celou VRSTVU
+                            List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();    // Sumární pole elementů za jednu vrstvu
+                            foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
+                            {
+                                layerUsing.Clear();
+                                this.RecalculateElementsInLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref minimalFragmentHeight, ref groups);
+                            }
+                            totalLogicalY.MergeWith(layerUsedLogicalY);
+
+                            allGroups[l] = layerGroupList.ToArray();
+                        }
+                        l++;
                     }
-                    this._AllGroupList = allGroupList;
+
+                    if (layerDependendGroups.Count > 0)
+                    {   // Pokud jsme našli nějakou vrstvu, jejíž prvky mají Height == NULL, pak reálná výška těchto prvků bude rovna celé použité výšce v grafu:
+                        // Výška prvků grafu bude v rozmezí 0 (nejdeme do záporných hodnot) až totalLogicalY.End, a pokud totalLogicalY.End je menší než 1, pak 1.0:
+                        float topY = (totalLogicalY.End < 1f ? 1f : totalLogicalY.End);
+                        foreach (var layerDependendGroup in layerDependendGroups)
+                        {
+                            l = layerDependendGroup.Item1;
+                            int layer = layerDependendGroup.Item2;
+                            ITimeGraphItem[] layerList = layerDependendGroup.Item3;
+                            List<GTimeGraphGroup> layerGroupList = this.RecalculateDependentElements(layerList, topY);
+                            allGroups[l] = layerGroupList.ToArray();
+                        }
+                    }
+
+                    this._AllGroupList = allGroups;
 
                     this.SetMinimalFragmentHeight(minimalFragmentHeight);
                     this.Invalidate(InvalidateItems.CoordinateX | InvalidateItems.CoordinateYVirtual);
@@ -477,6 +510,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Zpracuje grafické prvky jedné vrstvy a jedné hladiny (z prvků <see cref="ITimeGraphItem"/> z pole items, do prvků <see cref="GTimeGraphGroup"/> do pole layerGroupList.
         /// Vstupní prvky seskupí podle hodnoty <see cref="ITimeGraphItem.GroupId"/> do skupin, pro každou skupinu najde její pozici na ose X (její datum počátku a konce), 
         /// určí její výšku na ose Y, a v objektu layerUsing najde vhodnou logickou pozici na ose Y, kde nová skupina nebude v konfliktu s jinou již zadanou skupinou.
+        /// <para/>
+        /// Do této metody vstupují pouze elementy grafu, které mají definovanou výšku prvku v <see cref="ITimeGraphItem.Height"/>
         /// </summary>
         /// <param name="items">Jednotlivé grafické prvky, které budeme zpracovávat</param>
         /// <param name="layerUsing">Objekt, který řeší využití 2D plochy, kde ve směru X je hodnota typu DateTime, a ve směru Y je pole intervalů typu float</param>
@@ -485,40 +520,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="layerUsedLogicalY">Sumární interval využití osy Y</param>
         /// <param name="minimalFragmentHeight">Nejmenší logická výška zlomku prvku, počítáno z prvků jejichž výška je kladná, z desetinné části (například z výšky 2.25 se akceptuje 0.25).</param>
         /// <param name="groups">Počet skupin, průběžné počitadlo</param>
-        protected void RecalculateAllGroupListOneLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref float minimalFragmentHeight, ref int groups)
+        protected void RecalculateElementsInLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref float minimalFragmentHeight, ref int groups)
         {
-            float searchFrom = (isDownward ? layerUsedLogicalY.Begin : layerUsedLogicalY.End);
-            float nextSearch = searchFrom;
-
-            // Grafické prvky seskupíme podle ITimeGraphItem.GroupId:
-            //  více prvků se shodným GroupId tvoří jeden logický celek, tyto prvky jsou vykresleny ve společné linii, nemíchají se s prvky s jiným GroupId.
-            // Jedna GroupId reprezentuje například jednu výrobní operaci (nebo přesněji její paralelní průchod), například dva týdny práce;
-            //  kdežto jednotlivé položky ITimeGraphItem reprezentují jednotlivé pracovní časy, například jednotlivé směny.
-            List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();     // Výsledné pole prvků GTimeGraphGroup
-            List<ITimeGraphItem> groupsItems = new List<ITimeGraphItem>();     // Sem vložíme prvky ITimeGraphItem, které mají GroupId nenulové, odsud budeme generovat grupy...
-            bool acceptZeroTime = (this.GraphItemMinPixelWidth > 0);
-            // a) Položky bez GroupId:
-            foreach (ITimeGraphItem item in items)
-            {
-                if (item.GroupId == 0)
-                    groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, item));      // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
-                else
-                    groupsItems.Add(item);
-            }
-
-            // b) Položky, které mají GroupId nenulové, podle něj seskupíme:
-            IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = groupsItems.GroupBy(i => (i.GroupId != 0 ? i.GroupId : i.ItemId));
-            foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
-                groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, group));         // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
-
-            // Setřídíme prvky GTimeGraphGroup podle jejich Order a podle času jejich počátku:
-            if (groupList.Count > 1)
-                groupList.Sort((a, b) => GTimeGraphGroup.CompareOrderTimeAsc(a, b));
+            List<GTimeGraphGroup> groupList = CreateTimeGroupList(items);
             groups += groupList.Count;
 
             // Hlavním úkolem nyní je určit logické souřadnice Y pro každou skupinu prvků GTimeGraphGroup,
             //  vycházíme přitom z jejího časového intervalu a její výšky,
             // a tuto skupinu zařazujeme do volného prostoru v instanci layerUsing:
+            float searchFrom = (isDownward ? layerUsedLogicalY.Begin : layerUsedLogicalY.End);
+            float nextSearch = searchFrom;
             foreach (GTimeGraphGroup group in groupList)
             {
                 if (group.IsValidRealTime)
@@ -540,7 +551,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     IntervalArray<float> summary = (intervalWorkItems.Count > 1 ? IntervalArray<float>.Summary(intervalWorkItems.Select(i => i.Value.Value)) : intervalWorkItems[0].Value.Value);
 
                     // Výška prvku (je kladná, to zajišťuje úvodní podmínka (group.IsValidRealTime)):
-                    float groupHeight = group.Height;
+                    float groupHeight = group.Height.Value;
 
                     // Střádání hodnoty minimalFragmentHeight:
                     float fragmentHeight = groupHeight % 1f;
@@ -577,6 +588,57 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 layerUsedLogicalY.Begin = nextSearch; // RoundLogicalY(nextSearch, isDownward);
             else if (!isDownward && nextSearch > layerUsedLogicalY.End)
                 layerUsedLogicalY.End = RoundLogicalY(nextSearch, isDownward);
+        }
+        /// <summary>
+        /// Metoda vygeneruje a vrátí pole <see cref="GTimeGraphGroup"/>, do logické výšky všech prvků vepíše rozsah 0 až <paramref name="topY"/>.
+        /// </summary>
+        /// <param name="layerList"></param>
+        /// <param name="topY"></param>
+        /// <returns></returns>
+        private List<GTimeGraphGroup> RecalculateDependentElements(ITimeGraphItem[] layerList, float topY)
+        {
+            // Vstupní prvky sgrupujeme podle GroupID:
+            List<GTimeGraphGroup> groupList = CreateTimeGroupList(layerList);
+
+            // Do každé grupy vepíšu její logické souřadnice Y:
+            foreach (GTimeGraphGroup group in groupList)
+                group.CoordinateYLogical = new Interval<float>(0f, topY);
+
+            return groupList;
+        }
+        /// <summary>
+        /// Z dodaných prvků <see cref="ITimeGraphItem"/> vytvoří a vrátí pole prvků <see cref="GTimeGraphGroup"/> podle pravidel pro prvky grafu.
+        /// Klíčem pro tvorbu <see cref="GTimeGraphGroup"/> je <see cref="ITimeGraphItem.GroupId"/>.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        private List<GTimeGraphGroup> CreateTimeGroupList(IEnumerable<ITimeGraphItem> items)
+        {
+            // Grafické prvky seskupíme podle ITimeGraphItem.GroupId:
+            //  více prvků se shodným GroupId tvoří jeden logický celek, tyto prvky jsou vykresleny ve společné linii, nemíchají se s prvky s jiným GroupId.
+            // Jedna GroupId reprezentuje například jednu výrobní operaci (nebo přesněji její paralelní průchod), například dva týdny práce;
+            //  kdežto jednotlivé položky ITimeGraphItem reprezentují jednotlivé pracovní časy, například jednotlivé směny.
+            List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();     // Výsledné pole prvků GTimeGraphGroup
+            List<ITimeGraphItem> groupsItems = new List<ITimeGraphItem>();     // Sem vložíme prvky ITimeGraphItem, které mají GroupId nenulové, odsud budeme generovat grupy...
+            bool acceptZeroTime = (this.GraphItemMinPixelWidth > 0);
+            // a) Položky bez GroupId:
+            foreach (ITimeGraphItem item in items)
+            {
+                if (item.GroupId == 0)
+                    groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, item));      // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
+                else
+                    groupsItems.Add(item);
+            }
+
+            // b) Položky, které mají GroupId nenulové, podle něj seskupíme:
+            IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = groupsItems.GroupBy(i => (i.GroupId != 0 ? i.GroupId : i.ItemId));
+            foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
+                groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, group));         // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
+
+            // Setřídíme prvky GTimeGraphGroup podle jejich Order a podle času jejich počátku:
+            if (groupList.Count > 1)
+                groupList.Sort((a, b) => GTimeGraphGroup.CompareOrderTimeAsc(a, b));
+            return groupList;
         }
         /// <summary>
         /// Zarovná logickou hodnotu y na nejbližší celé číslo (dolů/nahoru) po dokončení rekalkulace jedné hladiny.
@@ -621,7 +683,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="action"></param>
         protected void AllGroupScan(Action<GTimeGraphGroup> action)
         {
-            foreach (List<GTimeGraphGroup> layer in this.AllGroupList)
+            foreach (GTimeGraphGroup[] layer in this.AllGroupList)
                 foreach (GTimeGraphGroup group in layer)
                     action(group);
         }
@@ -630,7 +692,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Seznam má dvojitou úroveň: v první úrovni jsou vizuální vrstvy (od spodní po vrchní), 
         /// v druhé úrovni jsou pak jednotlivé prvky <see cref="GTimeGraphGroup"/> k vykreslení.
         /// </summary>
-        protected List<List<GTimeGraphGroup>> AllGroupList { get { this.CheckValidAllGroupList(); return this._AllGroupList; } } private List<List<GTimeGraphGroup>> _AllGroupList;
+        protected GTimeGraphGroup[][] AllGroupList { get { this.CheckValidAllGroupList(); return this._AllGroupList; } } private GTimeGraphGroup[][] _AllGroupList;
         #endregion
         #region CalculatorY = Kalkulátor souřadnic Y : výška grafu a přepočty souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
         /// <summary>
@@ -971,7 +1033,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 {
                     int offsetX = this._TimeConvertor.FirstPixel;
                     int[] counters = new int[3];
-                    foreach (List<GTimeGraphGroup> layerList in this.AllGroupList)
+                    foreach (GTimeGraphGroup[] layerList in this.AllGroupList)
                     {   // Jedna vizuální vrstva za druhou:
                         counters[0]++;
                         switch (timeAxisMode)
@@ -2441,8 +2503,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
+        /// <para/>
+        /// Lze explicitně vložit hodnotu NULL, pak jde o prvek, jehož výška je určena dynamicky podle výšky celého grafu.
+        /// Takový prvek se může používat například pro vykreslení pracovní doby, svátků, atd.
+        /// V jedné vrstvě prvků <see cref="Layer"/> mohou být pouze prvky s explicitní výškou (kde <see cref="Height"/> má hodnotu)
+        /// anebo jenom výšky bez hodnoty, nelze ale v jedné vrstvě <see cref="Layer"/> kombinovat oba typy. To logicky nedává smysl.
         /// </summary>
-        float Height { get; }
+        float? Height { get; }
         /// <summary>
         /// Text pro zobrazení uvnitř tohoto prvku.
         /// Pokud je null, bude se hledat v tabulce textů.
@@ -2500,6 +2567,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Ale opačně to neplatí.
         /// </summary>
         float? RatioEnd { get; }
+        /// <summary>
+        /// Styl kreslení Ratio: Vertical = odspodu nahoru, Horizontal = Zleva doprava
+        /// </summary>
+        TimeGraphElementRatioStyle RatioStyle { get; }
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
@@ -2609,7 +2680,28 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         Pipe
     }
-
+    /// <summary>
+    /// Styl vykreslení části Ratio v prvku grafu
+    /// </summary>
+    public enum TimeGraphElementRatioStyle
+    {
+        /// <summary>
+        /// Nevykreslený
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Svislé plnění odspodu nahoru
+        /// </summary>
+        VerticalFill,
+        /// <summary>
+        /// Vodorovné plnění zleva doprava, přes celou výšku elementu
+        /// </summary>
+        HorizontalFill,
+        /// <summary>
+        /// Vodorovné plnění zleva doprava, o 1-2 vnořené dovnitř elementu
+        /// </summary>
+        HorizontalInner
+    }
     #endregion
     #region Interface ITimeGraphDataSource a příslušné třídy argumentů
     /// <summary>

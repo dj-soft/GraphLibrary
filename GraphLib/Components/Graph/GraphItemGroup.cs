@@ -58,13 +58,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._Items = itemList.ToArray();
             DateTime? begin = null;
             DateTime? end = null;
-            float height = 0f;
+            float? height = null;
             bool canResize = false;
             foreach (ITimeGraphItem item in this.Items)
             {
                 this._PrepareGControlItem(item);                          // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
                 if (this._FirstItem == null) this._FirstItem = item;
-                if (item.Height > height) height = item.Height;
+                if (item.Height.HasValue && (!height.HasValue || item.Height.Value > height.Value)) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
                 if (item.Time.End.HasValue && (!end.HasValue || item.Time.End.Value > end.Value)) end = item.Time.End;
                 if (!canResize && item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime)) canResize = true;
@@ -98,11 +98,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="acceptZeroTime">Požadavek true = jako platný prvek lze akceptovat i prvek, jehož čas End == čas Begin; false = čas End musí být větší než Begin.</param>
         /// <param name="height"></param>
         /// <param name="canResize"></param>
-        private void _Store(DateTime? begin, DateTime? end, bool acceptZeroTime, float height, bool canResize)
+        private void _Store(DateTime? begin, DateTime? end, bool acceptZeroTime, float? height, bool canResize)
         {
             this._Time = new TimeRange(begin, end);
             this._Height = height;
-            this._IsValidRealTime = ((height > 0f) && (begin.HasValue && end.HasValue && (acceptZeroTime ? end.Value >= begin.Value : end.Value > begin.Value)));
+            this._IsValidRealTime = ((!height.HasValue || (height.HasValue && height.Value > 0f)) && (begin.HasValue && end.HasValue && (acceptZeroTime ? end.Value >= begin.Value : end.Value > begin.Value)));
             this.GControl.CanResize = canResize;
         }
         /// <summary>
@@ -129,7 +129,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private int _ItemId;
         private ITimeGraphItem _FirstItem;
         private ITimeGraphItem[] _Items;
-        private float _Height;
+        private float? _Height;
         private TimeRange _Time;
         private bool _IsValidRealTime;
         #endregion
@@ -283,7 +283,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
-        public float Height { get { return this._Height; } }
+        public float? Height { get { return this._Height; } }
         /// <summary>
         /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
         /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
@@ -330,6 +330,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public bool CanResize { get { return this.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime); } }
         /// <summary>
         /// Obsahuje true, když tento prvek je vhodné zobrazovat (má kladný čas i výšku).
+        /// Výška se považuje za vhodnou i tehdy, když je NULL (protože pak výška prvku je dána výškou celého grafu).
         /// </summary>
         internal bool IsValidRealTime { get { return this._IsValidRealTime; } }
         /// <summary>
@@ -791,7 +792,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         int ITimeGraphItem.Layer { get { return this._FirstItem.Layer; } }
         int ITimeGraphItem.Level { get { return this._FirstItem.Level; } }
         int ITimeGraphItem.Order { get { return this._FirstItem.Order; } }
-        float ITimeGraphItem.Height { get { return this.Height; } }
+        float? ITimeGraphItem.Height { get { return this.Height; } }
         string ITimeGraphItem.Text { get { return this._FirstItem.Text; } }
         string ITimeGraphItem.ToolTip { get { return this._FirstItem.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
@@ -800,6 +801,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._FirstItem.BackStyle; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
         float? ITimeGraphItem.RatioEnd { get { return null; } }
+        Graph.TimeGraphElementRatioStyle ITimeGraphItem.RatioStyle { get { return TimeGraphElementRatioStyle.None; } }
         Color? ITimeGraphItem.RatioBeginBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }

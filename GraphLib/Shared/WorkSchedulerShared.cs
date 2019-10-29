@@ -2868,13 +2868,21 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public int Order { get; set; }
         /// <summary>
-        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GuiGraphProperties.GraphLineHeight"/>
+        /// Relativní výška tohoto prvku. 
+        /// <para/>
+        /// Standardní hodnota = 1.0F (je nastavena v konstruktoru instance). 
+        /// Fyzická výška (v pixelech) jednoho prvku je dána součinem  <see cref="Height"/> * <see cref="GuiGraphProperties.GraphLineHeight"/>.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
+        /// <para/>
+        /// Lze explicitně vložit hodnotu NULL, pak jde o prvek, jehož výška je určena dynamicky podle výšky celého grafu.
+        /// Takový prvek se může používat například pro vykreslení pracovní doby, svátků, atd.
+        /// V jedné vrstvě prvků <see cref="Layer"/> mohou být pouze prvky s explicitní výškou (kde <see cref="Height"/> má hodnotu)
+        /// anebo jenom výšky bez hodnoty, nelze ale v jedné vrstvě <see cref="Layer"/> kombinovat oba typy. To logicky nedává smysl.
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "height", je NEPOVINNÝ.
         /// </summary>
         [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
-        public float Height { get; set; }
+        public float? Height { get; set; }
         /// <summary>
         /// Text pro zobrazení uvnitř tohoto prvku.
         /// Pokud je null, bude se hledat v tabulce textů.
@@ -2889,28 +2897,45 @@ namespace Noris.LCS.Base.WorkScheduler
         public string ToolTip { get; set; }
         /// <summary>
         /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
-        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu (pro hodnotu <see cref="RatioStyle"/> == <see cref="GuiRatioStyle.VerticalFill"/>),
+        /// která symbolizuje míru "naplnění" daného úseku.
         /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// <para/>
         /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
         /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
         /// Ale opačně to neplatí.
+        /// <para/>
+        /// Pokud je zadána hodnota <see cref="RatioStyle"/> == <see cref="GuiRatioStyle.HorizontalFill"/> nebo <see cref="GuiRatioStyle.HorizontalInner"/>
+        /// pak je hodnota <see cref="RatioBegin"/> vykreslena vodorovně = jako Progress, 
+        /// a k hodnotě <see cref="RatioEnd"/> se nepřihlíží.
         /// <para/>
         /// Z databáze se načítá ze sloupce: "ratio_begin", je NEPOVINNÝ.
         /// </summary>
         public float? RatioBegin { get; set; }
         /// <summary>
         /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
-        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu (pro hodnotu <see cref="RatioStyle"/> == <see cref="GuiRatioStyle.VerticalFill"/>),
+        /// která symbolizuje míru "naplnění" daného úseku.
         /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// <para/>
         /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
         /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
         /// Ale opačně to neplatí.
         /// <para/>
+        /// Pokud je zadána hodnota <see cref="RatioStyle"/> == <see cref="GuiRatioStyle.HorizontalFill"/> nebo <see cref="GuiRatioStyle.HorizontalInner"/>
+        /// pak se k hodnotě <see cref="RatioEnd"/> nepřihlíží. 
+        /// Vykresluje se pouze hodnota <see cref="RatioBegin"/>.
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "ratio_end", je NEPOVINNÝ.
         /// </summary>
         public float? RatioEnd { get; set; }
+        /// <summary>
+        /// Orientace splnění. Uplatní se jen pokud je zadána hodnota <see cref="RatioBegin"/>.
+        /// Pro hodnotu <see cref="GuiRatioStyle.VerticalFill"/> (nebo pro nezadanou orientaci) se Ratio vykresluje jako 
+        /// "postupně odspodu vyplněný obdélník, kde na Bottom okraji je Ratio = 0, a na souřadnici Top = Ratio 1.00.
+        /// Pro orientaci <see cref="GuiRatioStyle.HorizontalFill"/> je Ratio vykresleno zleva (Left = čas Begin : Ratio = 0) doprava (Right = čas End : Ratio = 1.00)
+        /// </summary>
+        public GuiRatioStyle? RatioStyle { get; set; }
         /// <summary>
         /// Efekt pro vykreslení prvku, pokud je Editovatelný.
         /// Pokud není zadán, převezme se hodnota z <see cref="GuiGraphProperties.BackEffectEditable"/>, nebo se použije Default.
@@ -3037,6 +3062,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
         /// Pokud bude definován styl <see cref="BackStyle"/> a nebude daná barva <see cref="HatchColor"/>,
         /// použije se barva <see cref="LineColor"/>.
+        /// <para/>
+        /// Aby bylo vykresleno nějaké šrafování, musí být zadána hodnota do property <see cref="BackStyle"/> (styl šrafování) a také do <see cref="HatchColor"/> nebo <see cref="LineColor"/> (barva šrafování).
+        /// <para/>
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? HatchColor { get { return this.SkinCurrent.HatchColor ?? this.SkinDefault.HatchColor; } set { this.SkinCurrent.HatchColor = value; } }
@@ -3050,6 +3078,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Styl vzorku kresleného v pozadí.
         /// null = Solid.
+        /// <para/>
+        /// Aby bylo vykresleno nějaké šrafování, musí být zadána hodnota do property <see cref="BackStyle"/> (styl šrafování) a také do <see cref="HatchColor"/> nebo <see cref="LineColor"/> (barva šrafování).
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
@@ -3128,8 +3159,10 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             get
             {
+                float? height = this.Height;
+                string h = (height.HasValue ? (((height % 1f) == 0f) ? ((int)height).ToString() : height.ToString()) : "N");
                 string result = ((int)this.BehaviorMode).ToString() + ";" +
-                                (((this.Height % 1f) == 0f) ? ((int)this.Height).ToString() : this.Height.ToString()) + ";" +
+                                h + ";" +
                                 this.Layer.ToString() + ";" +
                                 this.Level.ToString() + ";" +
                                 this.Order.ToString();
@@ -3138,7 +3171,7 @@ namespace Noris.LCS.Base.WorkScheduler
             set
             {
                 GraphItemBehaviorMode behaviorMode = GraphItemBehaviorMode.None;
-                float height = 1f;
+                float? height = 1f;
                 int layer = 0;
                 int level = 0;
                 int order = 0;
@@ -3147,7 +3180,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 {
                     string[] items = value.Split(';');
                     behaviorMode = (GraphItemBehaviorMode)ConvertToInt32(items, 0);
-                    height = ConvertToSingle(items, 1);
+                    height = ConvertToSingleN(items, 1);
                     layer = ConvertToInt32(items, 2);
                     level = ConvertToInt32(items, 3);
                     order = ConvertToInt32(items, 4);
@@ -3197,6 +3230,46 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výrazně trubkovitý tvar
         /// </summary>
         Pipe
+    }
+    /// <summary>
+    /// Orientace
+    /// </summary>
+    public enum GuiRatioStyle
+    {
+        /// <summary>
+        /// Nevykreslený
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Svislé plnění odspodu nahoru
+        /// </summary>
+        VerticalFill,
+        /// <summary>
+        /// Vodorovné plnění zleva doprava, přes celou výšku elementu
+        /// </summary>
+        HorizontalFill,
+        /// <summary>
+        /// Vodorovné plnění zleva doprava, o 1-2 vnořené dovnitř elementu
+        /// </summary>
+        HorizontalInner
+    }
+    /// <summary>
+    /// Orientace
+    /// </summary>
+    public enum GuiOrientation
+    {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Vodorovná
+        /// </summary>
+        Horizontal,
+        /// <summary>
+        /// Svislá
+        /// </summary>
+        Vertical
     }
     /// <summary>
     /// Definice skinu pro grafický prvek
@@ -4294,6 +4367,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public static float? ConvertToSingleN(string[] items, int index)
         {
             if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return null;
+            if (items[index] == "N") return null;
             float value;
             if (!Single.TryParse(items[index], out value)) return null;
             return value;
