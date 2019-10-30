@@ -2604,6 +2604,11 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="boundsParts"></param>
         private static void GraphItemDrawRatio(GraphItemArgs args, Rectangle[] boundsParts)
         {
+            if (args.RatioBegin.HasValue && args.RatioBegin.Value > 0f)
+            {
+#warning SMAZAT
+            }
+
             if (!args.HasRatio) return;
             switch (args.RatioStyle)
             {
@@ -2614,7 +2619,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                     GraphItemDrawRatioHorizontal(args, boundsParts, 0);
                     break;
                 case Graph.TimeGraphElementRatioStyle.HorizontalInner:
-                    GraphItemDrawRatioHorizontal(args, boundsParts, 2);
+                    GraphItemDrawRatioHorizontal(args, boundsParts, 3);
                     break;
             }
         }
@@ -2926,6 +2931,8 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
             /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
             /// Ale opačně to neplatí.
+            /// <para/>
+            /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
             /// </summary>
             public float? RatioBegin { get; set; }
             /// <summary>

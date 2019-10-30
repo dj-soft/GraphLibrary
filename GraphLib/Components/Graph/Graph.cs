@@ -2698,7 +2698,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         HorizontalFill,
         /// <summary>
-        /// Vodorovné plnění zleva doprava, o 1-2 vnořené dovnitř elementu
+        /// Vodorovné plnění zleva doprava, o 1-3 vnořené dovnitř elementu
         /// </summary>
         HorizontalInner
     }

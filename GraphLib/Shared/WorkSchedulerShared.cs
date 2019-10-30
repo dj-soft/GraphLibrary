@@ -2909,6 +2909,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// pak je hodnota <see cref="RatioBegin"/> vykreslena vodorovně = jako Progress, 
         /// a k hodnotě <see cref="RatioEnd"/> se nepřihlíží.
         /// <para/>
+        /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "ratio_begin", je NEPOVINNÝ.
         /// </summary>
         public float? RatioBegin { get; set; }
@@ -2934,6 +2936,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pro hodnotu <see cref="GuiRatioStyle.VerticalFill"/> (nebo pro nezadanou orientaci) se Ratio vykresluje jako 
         /// "postupně odspodu vyplněný obdélník, kde na Bottom okraji je Ratio = 0, a na souřadnici Top = Ratio 1.00.
         /// Pro orientaci <see cref="GuiRatioStyle.HorizontalFill"/> je Ratio vykresleno zleva (Left = čas Begin : Ratio = 0) doprava (Right = čas End : Ratio = 1.00)
+        /// <para/>
+        /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
         /// </summary>
         public GuiRatioStyle? RatioStyle { get; set; }
         /// <summary>
@@ -3094,6 +3098,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
         /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
         /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+        /// <para/>
+        /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
@@ -3115,6 +3122,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
         /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
         /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
