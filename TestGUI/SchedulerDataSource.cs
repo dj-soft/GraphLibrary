@@ -1312,7 +1312,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
-                this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC);
+                this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC, GridPositionType.Workplace);
 
             // Vztahy prvků (Link):
             gridCenterWorkplace.RowTable.GraphLinks = new List<GuiGraphLink>();
@@ -1375,7 +1375,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
-                this.AddPlanUnitCToGridCenter(gridCenterPersons.RowTable, planUnitC);
+                this.AddPlanUnitCToGridCenter(gridCenterPersons.RowTable, planUnitC, GridPositionType.Person);
 
             // Chci zavolat, když uživatel zmáčkne Delete:
             gridCenterPersons.ActiveKeys = new List<GuiKeyAction>();
@@ -1652,9 +1652,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         /// <param name="guiTable"></param>
         /// <param name="planUnitC"></param>
-        protected void AddPlanUnitCToGridCenter(GuiDataTable guiTable, PlanUnitC planUnitC)
+        /// <param name="gridType"></param>
+        protected void AddPlanUnitCToGridCenter(GuiDataTable guiTable, PlanUnitC planUnitC, GridPositionType gridType)
         {
-            guiTable.AddRow(planUnitC.CreateGuiRow(GridPositionType.Workplace));
+            guiTable.AddRow(planUnitC.CreateGuiRow(gridType));
         }
         /// <summary>
         /// Do dodané tabulky gridu Right (=Employee) přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho směn.
@@ -1794,10 +1795,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             if (rowId == null) return null;
 
-            GridPositionType type = this.SearchGridType(rowId.TableName);
+            GridPositionType gridType = this.SearchGridType(rowId.TableName);
             RecordClass row = this.SearchForData(rowId.RowId);
 
-            CompoundDataInfo dataInfo = new CompoundDataInfo(rowId, type, row);
+            CompoundDataInfo dataInfo = new CompoundDataInfo(rowId, gridType, row);
 
             return dataInfo;
         }
@@ -1810,13 +1811,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             if (itemId == null) return null;
 
-            GridPositionType type = this.SearchGridType(itemId.TableName);
+            GridPositionType gridType = this.SearchGridType(itemId.TableName);
             RecordClass row = this.SearchForData(itemId.RowId);
             RecordClass group = this.SearchForData(itemId.GroupId);
             RecordClass item = this.SearchForData(itemId.ItemId);
             RecordClass data = this.SearchForData(itemId.DataId);
 
-            CompoundDataInfo dataInfo = new CompoundDataInfo(itemId, type, row, group, item, data);
+            CompoundDataInfo dataInfo = new CompoundDataInfo(itemId, gridType, row, group, item, data);
 
             return dataInfo;
         }
@@ -1926,39 +1927,39 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             /// Konstruktor
             /// </summary>
             /// <param name="guiGridItemId"></param>
-            /// <param name="type"></param>
+            /// <param name="gridType"></param>
             /// <param name="row"></param>
-            internal CompoundDataInfo(GuiGridRowId rowId, GridPositionType type, RecordClass row)
+            internal CompoundDataInfo(GuiGridRowId rowId, GridPositionType gridType, RecordClass row)
             {
                 this.GuiGridRowId = rowId;
-                this.FillData(type, row, null, null, null);
+                this.FillData(gridType, row, null, null, null);
             }
             /// <summary>
             /// Konstruktor
             /// </summary>
             /// <param name="guiGridItemId"></param>
-            /// <param name="type"></param>
+            /// <param name="gridType"></param>
             /// <param name="row"></param>
             /// <param name="group"></param>
             /// <param name="item"></param>
             /// <param name="data"></param>
-            internal CompoundDataInfo(GuiGridItemId guiGridItemId, GridPositionType type, RecordClass row, RecordClass group = null, RecordClass item = null, RecordClass data = null)
+            internal CompoundDataInfo(GuiGridItemId guiGridItemId, GridPositionType gridType, RecordClass row, RecordClass group = null, RecordClass item = null, RecordClass data = null)
             {
                 this.GuiGridItemId = guiGridItemId;
-                this.FillData(type, row, group, item, data);
+                this.FillData(gridType, row, group, item, data);
 
             }
             /// <summary>
             /// Dodaná data do sebe naplní a dopočítá další data
             /// </summary>
-            /// <param name="type"></param>
+            /// <param name="gridType"></param>
             /// <param name="row"></param>
             /// <param name="group"></param>
             /// <param name="item"></param>
             /// <param name="data"></param>
-            private void FillData(GridPositionType type, RecordClass row, RecordClass group, RecordClass item, RecordClass data)
+            private void FillData(GridPositionType gridType, RecordClass row, RecordClass group, RecordClass item, RecordClass data)
             {
-                this.Type = type;
+                this.GridType = gridType;
                 this.Row = row;
                 this.Group = group;
                 this.Item = item;
@@ -1999,7 +2000,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             /// <summary>
             /// Typ tabulky
             /// </summary>
-            internal GridPositionType Type { get; private set; }
+            internal GridPositionType GridType { get; private set; }
             /// <summary>
             /// Záznam primární - odpovídá řádku tabulky
             /// </summary>
@@ -3377,32 +3378,35 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a vrátí graf práce za toto Pracoviště / Pracovníka (obsahuje prvky = pracovní směny a prvky práce)
         /// </summary>
+        /// <param name="gridType">Cílový graf, ovlivňuje detaily prvků grafu</param>
         /// <returns></returns>
-        public GuiGraph CreateGuiGraphWork()
+        public GuiGraph CreateGuiGraphWork(GridPositionType gridType)
         {
             GuiGraph guiGraph = new GuiGraph();
             guiGraph.RowId = this.RecordGid;
 
+            bool showUseRatio = (this.PlanUnitType == TestGUI.PlanUnitType.Person);
             bool setRealHeight = (this.PlanUnitType != TestGUI.PlanUnitType.Person);
             if (this.WorkTimes != null)
-                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(false, setRealHeight)));
+                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(gridType)));
 
             if (this.UnitTimes != null)
-                guiGraph.GraphItems.AddRange(this.UnitTimes.Select(unitTime => unitTime.CreateGuiGraphItem()));
+                guiGraph.GraphItems.AddRange(this.UnitTimes.Select(unitTime => unitTime.CreateGuiGraphItem(gridType)));
 
             return guiGraph;
         }
         /// <summary>
         /// Vytvoří a vrátí graf času za toto Pracoviště / Pracovníka (obsahuje prvky = pracovní směny a jejich Ratio)
         /// </summary>
+        /// <param name="gridType">Cílový graf, ovlivňuje detaily prvků grafu</param>
         /// <returns></returns>
-        public GuiGraph CreateGuiGraphTime()
+        public GuiGraph CreateGuiGraphTime(GridPositionType gridType)
         {
             GuiGraph guiGraph = new GuiGraph();
             guiGraph.RowId = this.RecordGid;
 
             if (this.WorkTimes != null)
-                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(true, false)));
+                guiGraph.GraphItems.AddRange(this.WorkTimes.Select(workTime => workTime.CreateGuiGraphItem(gridType)));
 
             return guiGraph;
         }
@@ -3420,11 +3424,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 case GridPositionType.Person:
                     GuiIdText mc = new GuiIdText() { GuiId = new GuiId(PlanUnitC.ClassNumber, this.RecordId), Text = this.MachinesCount.ToString() };
                     guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name, mc);
-                    guiRow.Graph = this.CreateGuiGraphWork();
+                    guiRow.Graph = this.CreateGuiGraphWork(gridType);
                     break;
                 case GridPositionType.Employee:
                     guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name);
-                    guiRow.Graph = this.CreateGuiGraphTime();
+                    guiRow.Graph = this.CreateGuiGraphTime(gridType);
                     break;
             }
             guiRow.RowGuiId = this.RecordGid;
@@ -3449,9 +3453,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Person
     }
     #endregion
-    #region class WorkUnit : Pracovní jednotka = kus práce na pracovišti
+    #region class WorkUnit : Pracovní jednotka = část práce na určité operaci na určitém pracovišti
     /// <summary>
-    /// WorkUnit : Pracovní jednotka = kus práce na pracovišti
+    /// WorkUnit : Pracovní jednotka = část práce na určité operaci na určitém pracovišti
     /// </summary>
     public class WorkUnit : RecordClass
     {
@@ -3484,8 +3488,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto jednotku práce.
         /// </summary>
+        /// <param name="gridType">Cílový graf, ovlivňuje detaily prvků grafu</param>
         /// <returns></returns>
-        public GuiGraphItem CreateGuiGraphItem()
+        public GuiGraphItem CreateGuiGraphItem(GridPositionType gridType)
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
             {
@@ -3493,7 +3498,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GroupId = this.Operation?.RecordGid,
                 DataId = this.Operation?.RecordGid,
                 RowId = this.PlanUnitC?.RecordGid,
-                Layer = 1,
+                Layer = 2,
                 BackColor = this.BackColor,
                 BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn,
                 Height = this.Height,
@@ -3501,6 +3506,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = this.ToolTip,
                 Time = this.Time
             };
+
+            // V property this.PlanUnitC.PlanUnitType je uveden typ plánovací jednotky (stroj / osoba)
+            // V parametru "target" je uveden typ cílového grafu;
 
             // Aktivita (režim chování BehaviorMode) se liší pro Pracoviště a pro Osobu:
             if (this.PlanUnitC != null)
@@ -3620,8 +3628,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto pracovní směnu.
         /// </summary>
+        /// <param name="gridType">Cílový graf, ovlivňuje detaily prvků grafu</param>
         /// <returns></returns>
-        public GuiGraphItem CreateGuiGraphItem(bool showUseRatio, bool setRealHeight)
+        public GuiGraphItem CreateGuiGraphItem(GridPositionType gridType)
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
             {
@@ -3630,32 +3639,40 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Layer = 0,
                 BackColor = this.BackColor,
                 BehaviorMode = GraphItemBehaviorMode.DefaultText,
-                Height = 1f,
+                Height = this.Height,
                 DataId = this.RecordGid,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
                 Time = this.Time
-                //RatioBegin = this.RatioBegin,
-                //RatioBeginBackColor = this.RatioBeginBackColor,
-                //RatioEnd = this.RatioEnd,
-                //RatioEndBackColor = this.RatioEndBackColor,
-                //RatioLineColor = this.RatioLineColor
             };
 
+            // V property this.PlanUnitC.PlanUnitType je uveden typ plánovací jednotky (stroj / osoba)
+            // V parametru "target" je uveden typ cílového grafu;
+
             if (this.PlanUnitC.PlanUnitType == PlanUnitType.Person)
-            {
-                guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
-                guiGraphItem.HatchColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Black, 0.667f) : Color.DimGray);
+            {   // Osoba:
+                switch (gridType)
+                {
+                    case GridPositionType.Workplace:
+                        break;
+                    case GridPositionType.Person:          // Hlavní grid, dolná tabulka
+                    case GridPositionType.Employee:        // Tabulka vpravo
+                        // Bude mít šrafovanou výplň pozadí:
+                        guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
+                        guiGraphItem.HatchColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Black, 0.667f) : Color.DimGray);
+                        // Zobrazíme poměr využití kapacity:
+                        guiGraphItem.RatioBegin = this.UsedRatio;
+                        guiGraphItem.RatioBeginBackColor = this.RatioBeginBackColor;
+                        if (!guiGraphItem.RatioBeginBackColor.HasValue)
+                            guiGraphItem.RatioBeginBackColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Red, 0.250f) : Color.LightPink);
+                        // Dolní graf bude mít RatioStyle = VerticalFill, graf vpravo = HorizontalInner:
+                        guiGraphItem.RatioStyle = (gridType == GridPositionType.Person ? GuiRatioStyle.VerticalFill : GuiRatioStyle.HorizontalInner);
+                        // Výška prvku v grafu bude pro dolní graf == null, pro graf vpravo = 1:
+                        guiGraphItem.Height = (gridType == GridPositionType.Person ? (float?)null : (float?)this.Height);
+
+                        break;
+                }
             }
-
-            if (showUseRatio)
-            {
-                guiGraphItem.RatioBegin = this.UsedRatio;           // .RatioBegin;
-                guiGraphItem.RatioBeginBackColor = this.RatioBeginBackColor;
-            }
-
-            guiGraphItem.Height = (setRealHeight ? (float?)this.Height : (float?)null);
-
             return guiGraphItem;
         }
     }
@@ -3769,7 +3786,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// <summary>
     /// Typové označení gridu
     /// </summary>
-    internal enum GridPositionType
+    public enum GridPositionType
     {
         None,
         /// <summary>
