@@ -2604,11 +2604,6 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="boundsParts"></param>
         private static void GraphItemDrawRatio(GraphItemArgs args, Rectangle[] boundsParts)
         {
-            if (args.RatioBegin.HasValue && args.RatioBegin.Value > 0f)
-            {
-#warning SMAZAT
-            }
-
             if (!args.HasRatio) return;
             switch (args.RatioStyle)
             {
