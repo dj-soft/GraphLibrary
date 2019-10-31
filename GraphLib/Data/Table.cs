@@ -3063,9 +3063,15 @@ namespace Asol.Tools.WorkScheduler.Data
             get
             {
                 TableValueType valueType = this.ValueType;
-                if (valueType == TableValueType.Text || valueType == TableValueType.TextRelation)
-                    return this.Value.ToString();
-                return valueType.ToString();
+                switch (valueType)
+                {
+                    case TableValueType.Text:
+                    case TableValueType.TextRelation:
+                        return this.Value.ToString();
+                    case TableValueType.Null:
+                        return "";
+                }
+                return "";
             }
         }
         /// <summary>
