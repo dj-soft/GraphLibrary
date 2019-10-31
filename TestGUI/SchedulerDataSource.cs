@@ -144,28 +144,28 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // OSOBY, RANNÍ SMĚNA:
             this.PersonDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCZm("NOVÁK Jiří", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("DVOŘÁK Pavel", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("STARÝ Slavomír", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("PEŠEK Petr", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("JENČÍK Jan", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("KRULIŠ Karel", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, null, WP_DILN);
-            this.CreatePlanUnitCZm("NEKOKSA Jindřich", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("POKORNÝ Dan", CalendarType.Work5d1x8hR, null, WP_DILN, WP_KONT);
-            this.CreatePlanUnitCZm("DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, WP_KONT);
+            this.CreatePlanUnitCZm("NOVÁK Jiří", CalendarType.Work5d1x8hR, "F1", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("DVOŘÁK Pavel", CalendarType.Work5d1x8hR, "A12", colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("STARÝ Slavomír", CalendarType.Work5d1x8hR, "C2", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("PEŠEK Petr", CalendarType.Work5d1x8hR, null, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("JENČÍK Jan", CalendarType.Work5d1x8hR, "H05", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("KRULIŠ Karel", CalendarType.Work5d1x8hR, "B12", colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, "S123", null, WP_DILN);
+            this.CreatePlanUnitCZm("NEKOKSA Jindřich", CalendarType.Work5d1x8hR, "X4", colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("POKORNÝ Dan", CalendarType.Work5d1x8hR, "T15", null, WP_DILN, WP_KONT);
+            this.CreatePlanUnitCZm("DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, null, WP_KONT);
 
             // OSOBY, ODPOLEDNÍ SMĚNA:
-            this.CreatePlanUnitCZm("VETCHÝ Marek", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("SUP Václav", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("ČERNÁ Marta", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("VIDÍM Dan", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("NĚMEC Jaroslav", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, WP_DILN);
-            this.CreatePlanUnitCZm("HANZAL Patrik", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, null, WP_DILN);
-            this.CreatePlanUnitCZm("DIETRICH Zdenek", CalendarType.Work5d1x8hO, null, WP_KONT);
+            this.CreatePlanUnitCZm("VETCHÝ Marek", CalendarType.Work5d1x8hO, "F07", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("SUP Václav", CalendarType.Work5d1x8hO, "J2", colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, "U02", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("ČERNÁ Marta", CalendarType.Work5d1x8hO, null, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm("VIDÍM Dan", CalendarType.Work5d1x8hO, "L50", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm("NĚMEC Jaroslav", CalendarType.Work5d1x8hO, "N80", colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, null, WP_DILN);
+            this.CreatePlanUnitCZm("HANZAL Patrik", CalendarType.Work5d1x8hO, "R25", colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm("SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, "D16", null, WP_DILN);
+            this.CreatePlanUnitCZm("DIETRICH Zdenek", CalendarType.Work5d1x8hO, "B0", null, WP_KONT);
 
             this.PlanAllProductOrdersToWorkplaces();
         }
@@ -452,14 +452,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         /// <param name="name"></param>
         /// <param name="calendar"></param>
+        /// <param name="note"></param>
         /// <param name="rowBackColor"></param>
         /// <param name="workPlaces"></param>
-        protected GuiId CreatePlanUnitCZm(string name, CalendarType calendar, Color? rowBackColor, params string[] workPlaces)
+        protected GuiId CreatePlanUnitCZm(string name, CalendarType calendar, string note, Color? rowBackColor, params string[] workPlaces)
         {
             string workplace = workPlaces.ToString(";");
             PlanUnitC planUnitC = new PlanUnitC(this)
             {
                 Name = name,
+                Note = note,
                 WorkPlace = workplace,
                 RowBackColor = rowBackColor,
                 TagTexts = null,
@@ -1001,6 +1003,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Image = RES.Images.Actions.ListRemove4Png
             });
 
+            /*
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
                 Name = GuiNameToolbarShowBottomTable,
@@ -1015,6 +1018,40 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
                 ActionTargetNames = GuiFullNameGridCenterBottom + ";!" + GuiFullNameRightPanel,
                 Image = RES.Images.Actions.EditFindUserPng
+            });
+            */
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarSwitchEmployeeA,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.ThisItemSkipToNextTable | LayoutHint.NextItemSkipToNextRow,
+                IsCheckable = true,
+                IsChecked = true,
+                StoreValueToConfig = true,
+                CheckedGroupName = "ViewSwitchEmployee",
+                GroupName = "ZAMĚSTNANCI",
+                Title = "Vpravo",
+                ToolTip = "Zobrazí tabulku zaměstnanců VPRAVO",
+                GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
+                ActionTargetNames = "!" + GuiFullNameGridCenterBottom + ";" + GuiFullNameRightPanel,
+                Image = RES.Images.Actions.ViewSplitLeftRight2Png
+            });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarSwitchEmployeeB,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.ThisItemSkipToNextRow | LayoutHint.NextItemSkipToNextTable,
+                IsCheckable = true,
+                IsChecked = false,
+                StoreValueToConfig = true,
+                CheckedGroupName = "ViewSwitchEmployee",
+                GroupName = "ZAMĚSTNANCI",
+                Title = "Dole",
+                ToolTip = "Zobrazí tabulku zaměstnanců DOLE",
+                GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
+                ActionTargetNames = GuiFullNameGridCenterBottom + ";!" + GuiFullNameRightPanel,
+                Image = RES.Images.Actions.ViewSplitTopBottom2Png
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1421,6 +1458,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = PlanUnitC.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Jméno", Width = 200 });
+            guiTable.AddColumn(new GuiDataColumn() { Name = "note", Title = "Poznámka", Width = 120 });
             gridRight.RowTable = guiTable;
 
             // Data tabulky = Plánovací jednotky Pracovníci:
@@ -2519,6 +2557,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameToolbarDelRow1 = "TlbDelRow1";
         protected const string GuiNameToolbarShowBottomTable = "ShowBottomTable";
         protected const string GuiNameToolbarShowMainLink = "ShowMainLink";
+        protected const string GuiNameToolbarSwitchEmployeeA = "SwitchEmployeeA";
+        protected const string GuiNameToolbarSwitchEmployeeB = "SwitchEmployeeB";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
@@ -3316,6 +3356,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         { }
         public const int ClassNumber = 1364;
         public override int ClassId { get { return ClassNumber; } }
+        public string Note { get; set; }
         public string WorkPlace { get; set; }
         public IEnumerable<string> TagTexts { get; set; }
         public IEnumerable<GuiTagItem> TagItems { get { IEnumerable<string> tt = this.TagTexts; return (tt == null ? new GuiTagItem[0] : tt.Select(text => new GuiTagItem() { RowId = this.RecordGid, TagText = text }).ToArray()); } }
@@ -3427,7 +3468,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     guiRow.Graph = this.CreateGuiGraphWork(gridType);
                     break;
                 case GridPositionType.Employee:
-                    guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name);
+                    guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name, this.Note);
                     guiRow.Graph = this.CreateGuiGraphTime(gridType);
                     break;
             }
