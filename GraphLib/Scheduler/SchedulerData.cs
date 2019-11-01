@@ -35,11 +35,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="sessionId"></param>
         public MainData(IAppHost host, int? sessionId)
         {
+            this._DataState = DataStateType.Initialising;
             this._AppHost = host;
             this._SessionId = sessionId;
             this.Init();
+
+            this._DataState = DataStateType.PrepareConfig;
             using (App.Trace.Scope(TracePriority.Priority2_Lowest,  "SchedulerConfig", ".ctor(null)", ""))
                 this._Config = new SchedulerConfig(null);
+
+            this._DataState = DataStateType.Initialised;
         }
         /// <summary>
         /// Obsahuje, true pokud máme vztah na datového hostitele
@@ -72,6 +77,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void Init()
         {
+            this._DataState = DataStateType.Initialising;
             this.ClosingState = MainFormClosingState.None;
         }
         #endregion
@@ -84,11 +90,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (guiData == null)
                 throw new GraphLibCodeException("Pro tvorbu Scheduler.MainData byl dodán objekt GuiData = null.");
+
+            this._DataState = DataStateType.LoadingData;
+
             guiData.FillParents();
             this._GuiData = guiData;
             this._LoadGuiToolbar(guiData.ToolbarItems);
             this._LoadGuiPanels(guiData.Pages);
             this._LoadGuiContext(guiData.ContextMenuItems);
+
+            this._DataState = DataStateType.DataLoaded;
         }
         /// <summary>
         /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat.
@@ -105,6 +116,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
             this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
+
+            this._DataState = DataStateType.Prepared;
             return this._MainControl;                      // hotovo!
         }
         /// <summary>
@@ -114,6 +127,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public System.Windows.Forms.Control CreateControl()
         {
             this._CreateMainControl();
+
+            this._DataState = DataStateType.Prepared;
             return this._MainControl;
         }
         /// <summary>
@@ -135,6 +150,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Hlavní objekt s daty <see cref="GuiData"/>
         /// </summary>
         public GuiData GuiData { get { return this._GuiData; } }
+        /// <summary>
+        /// Stav objektu z hlediska jeho inicializace a ukončování
+        /// </summary>
+        public DataStateType DataState { get { return this._DataState; } } private DataStateType _DataState = DataStateType.None;
         #endregion
         #region Vytváření controlu, jeho vložení do Formu
         /// <summary>
@@ -156,13 +175,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _CreateMainControl()
         {
+            this._DataState = DataStateType.PrepareMainControl;
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainControl", ".ctor", ""))
                 this._MainControl = new MainControl(this); // Vytvoříme new control MainControl
 
+            this._DataState = DataStateType.FillGuiControls;
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlFromGui", ""))
                 this._FillMainControlFromGui();            // Do controlu MainControl vygenerujeme všechny jeho controly
 
+            this._DataState = DataStateType.RegisterEventHandlers;
             this._AddMainControlEventHandlers();           // A zaregistrujeme si eventhandlery.
+
+            this._DataState = DataStateType.MainControlDone;
         }
         /// <summary>
         /// Vrátí WinForm styl borderu podle Plugin stylu.
@@ -967,9 +991,46 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 SchedulerConfigUserPair toolBarStatusPair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TOOLBAR_STATUS).FirstOrDefault();
                 if (toolBarStatusPair != null && toolBarStatusPair.Value != null && toolBarStatusPair.Value is string)
-                    this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;
+                    this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;     // Tady může dojít ke změně aktuální časové osy
 
-                this._PrepareDefaultTimeZoom();
+                this._PrepareDefaultTimeZoom();  // Tady může dojít ke změně aktuální časové osy
+
+                this._ApplyInitialTimeRange();
+            }
+        }
+        /// <summary>
+        /// Do časové osy vloží výchozí časový interval - podle dodaných dat GUI anebo podle poslední známé konfigurace
+        /// </summary>
+        private void _ApplyInitialTimeRange()
+        {
+            this._MainControl.SynchronizedTime.Value = this._GetInitialTimeRange();
+        }
+        /// <summary>
+        /// Aktuální hodnota času na časové ose, uložená v konfiguraci.
+        /// Může obsahovat null.
+        /// </summary>
+        private GuiTimeRange ConfigTimeAxisValue
+        {
+            get
+            {
+                SchedulerConfig config = this.Config;
+                if (config == null) return null;
+
+                SchedulerConfigUserPair timeRangePair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TIMEAXIS_VALUE).FirstOrDefault();
+                if (timeRangePair == null || timeRangePair.Value == null) return null;
+                return timeRangePair.Value as GuiTimeRange;
+            }
+            set
+            {
+                SchedulerConfig config = this.Config;
+                if (config == null) return;
+
+                if (this.DataState == DataStateType.Prepared)
+                {
+                    SchedulerConfigUserPair timeRangePair = new SchedulerConfigUserPair(_CONFIG_TIMEAXIS_VALUE, value);
+                    config.UserConfigStore<SchedulerConfigUserPair>(timeRangePair, p => p.Key == _CONFIG_TIMEAXIS_VALUE);
+                    config.Save(TimeSpan.FromSeconds(10d));
+                }
             }
         }
         /// <summary>
@@ -999,6 +1060,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         private const string _CONFIG_MAIN_CONTROL = "ConfigMainControl";
         private const string _CONFIG_TOOLBAR_STATUS = "ConfigToolBarStatus";
+        private const string _CONFIG_TIMEAXIS_VALUE = "ConfigTimeAxisValue";
         /// <summary>
         /// Konfigurace uživatelská
         /// </summary>
@@ -1574,6 +1636,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             TargetActionType targetActions = TargetActionType.SearchSourceVisibleTime;    // Cílové akce, které jsou podmíněné zobrazeným časovým intervalem
             this.RunGuiInteractions(currentSourceAction, targetActions);
             this._TimeAxisChangeRunService(e.NewValue);
+            this.ConfigTimeAxisValue = e.NewValue;
         }
         #endregion
         #region Časová osa - reakce na změny, volání servisní funkce s požadavkem GuiRequest.COMMAND_TimeChange
@@ -2156,7 +2219,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._TimeChangeSendEnlargement = this.GuiData.Properties.TimeChangeSendEnlargement;
                 this._TimeAxisKnownArray.Merge(this.GuiData.Properties.TimeChangeInitialValue);
                 this._MainControl.ClearPages();
-                this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
+                this._MainControl.SynchronizedTime.Value = this._GetInitialTimeRange();
                 this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
                 this._LoadPages();
                 this._FillDataTables();
@@ -2168,6 +2231,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 //   který bude volán až poté, kdy jednotlivé Gridy mají svoji obsluhu změny času hotovou:
                 this._MainControl.SynchronizedTime.ValueChanging += _SynchronizedTimeValueChanging;
             }
+        }
+        /// <summary>
+        /// Metoda získá a vrátí výchozí rozsah časové osy.
+        /// Hodnotu bere z <see cref="GuiProperties.InitialTimeRange"/>,
+        /// a pokud je <see cref="GuiProperties.UseInitialTimeRangeFromLastRun"/> = true pak se pokusí najít hodnotu v konfiguraci.
+        /// </summary>
+        /// <returns></returns>
+        private TimeRange _GetInitialTimeRange()
+        {
+            GuiTimeRange timeAxisValue = this.GuiData.Properties.InitialTimeRange;
+            if (this.GuiData.Properties.UseInitialTimeRangeFromLastRun)
+            {
+                GuiTimeRange configTimeAxisValue = this.ConfigTimeAxisValue;
+                if (configTimeAxisValue != null && configTimeAxisValue.Begin.Year > 2000 && configTimeAxisValue.End > configTimeAxisValue.Begin)
+                    timeAxisValue = configTimeAxisValue;
+            }
+            return timeAxisValue;
         }
         /// <summary>
         /// Načte data všech datových stránek <see cref="GuiPage"/>: vytvoří pro ně vizuální panely, načte jejich data, tabulky, grafy, atd.
@@ -3889,6 +3969,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Změna velikosti pomocí přesunu End
         /// </summary>
         ResizeEnd
+    }
+    /// <summary>
+    /// Jednotlivé stavy života MainControlu a MainData
+    /// </summary>
+    public enum DataStateType : int
+    {
+        None = 0,
+        Initialising,
+        PrepareConfig,
+        Initialised,
+        LoadingData,
+        DataLoaded,
+        PrepareMainControl,
+        FillGuiControls,
+        RegisterEventHandlers,
+        MainControlDone,
+        Prepared
     }
     #endregion
 }

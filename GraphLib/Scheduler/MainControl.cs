@@ -45,6 +45,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.CalculateLayout();
         }
         /// <summary>
+        /// Reference na hlavní datový objekt
+        /// </summary>
+        public MainData MainData { get { return this._MainData; } }
+        private MainData _MainData;
+        /// <summary>
+        /// Po změně velikosti controlu přepočítá souřadnice vnitřních prvků
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            this.CalculateLayout();
+        }
+        #endregion
+        #region Ukládání / Načítání layoutu a dalších hodnot z konfigurace (persistence stavu)
+        /// <summary>
+        /// Konfigurace uživatelská
+        /// </summary>
+        protected SchedulerConfig Config { get { return this._MainData?.Config; } }
+        /// <summary>
         /// Inicializace objektu pro Layout
         /// </summary>
         private void _LayoutInit()
@@ -65,15 +85,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private MainControlLayout _ControlLayout;
         /// <summary>
-        /// Reference na hlavní datový objekt
-        /// </summary>
-        public MainData MainData { get { return this._MainData; } }
-        private MainData _MainData;
-        /// <summary>
-        /// Konfigurace uživatelská
-        /// </summary>
-        protected SchedulerConfig Config { get { return this._MainData?.Config; } }
-        /// <summary>
         /// Zajistí uložení konfigurace. Ne hned, provede se za 30 sekund od prvního požadavku.
         /// </summary>
         protected void ConfigSaveDeffered()
@@ -81,15 +92,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             SchedulerConfig config = this.Config;
             if (config != null)
                 config.Save(TimeSpan.FromSeconds(30d));
-        }
-        /// <summary>
-        /// Po změně velikosti controlu přepočítá souřadnice vnitřních prvků
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnSizeChanged(EventArgs e)
-        {
-            base.OnSizeChanged(e);
-            this.CalculateLayout();
         }
         /// <summary>
         /// Přepočítá souřadnice vnitřních prvků v instanci <see cref="MainControl"/>

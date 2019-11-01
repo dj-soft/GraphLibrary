@@ -203,10 +203,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiTimeRange TotalTimeRange { get; set; }
         /// <summary>
-        /// Výchozí časový interval, zobrazený po startu pluginu.
+        /// Výchozí zobrazený časový interval, zobrazený po startu pluginu.
+        /// Tento interval bude zobrazen v situaci, kdy <see cref="UseInitialTimeRangeFromLastRun"/> bude false, 
+        /// anebo (pokud <see cref="UseInitialTimeRangeFromLastRun"/> je true) nebude nalezena konfigurace.
         /// Výchozí hodnota: aktuální týden od pondělí do neděle, +- 8 hodin
         /// </summary>
         public GuiTimeRange InitialTimeRange { get; set; }
+        /// <summary>
+        /// Hodnota true = Po spuštění aplikace použít jako výchozí časový rozsah hodnotu uloženou při posledním běhu aplikace (=z konfigurace).
+        /// Default = false = použije se hodnota z <see cref="InitialTimeRange"/>.
+        /// </summary>
+        public bool UseInitialTimeRangeFromLastRun { get; set; }
         /// <summary>
         /// Požadovaný režim odesílání informací o změně času na časové ose z pluginu do servisní funkce.
         /// Podle tohoto režimu bude po změně času odeslán command <see cref="GuiRequest.COMMAND_TimeChange"/>.
