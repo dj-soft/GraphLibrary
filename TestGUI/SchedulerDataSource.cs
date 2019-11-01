@@ -3710,6 +3710,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         guiGraphItem.RatioStyle = (gridType == GridPositionType.Person ? GuiRatioStyle.VerticalFill : GuiRatioStyle.HorizontalInner);
                         // Výška prvku v grafu bude pro dolní graf == null, pro graf vpravo = 1:
                         guiGraphItem.Height = (gridType == GridPositionType.Person ? (float?)null : (float?)this.Height);
+                        guiGraphItem.BackEffectNonEditable = GuiGraphItemBackEffectStyle.Flat;
 
                         break;
                 }
