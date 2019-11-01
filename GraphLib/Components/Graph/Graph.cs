@@ -422,7 +422,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     float minimalFragmentHeight = 1f;
 
                     // Připravíme si soupis (elementů dle) vrstev, které obsahují nějaký element s výškou Height == null (=jejich výška se určí podle výšky ostatních vrstev):
-                    //  Item1 = číslo vrstvy ITimeGraphItem.Layer;  Item2 = [index] do pole allGroups;  Item3 = pole prvků dané vrstvy:
                     List<Tuple<int, int, ITimeGraphItem[]>> layerDependendGroups = new List<Tuple<int, int, ITimeGraphItem[]>>();
 
                     // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
@@ -445,6 +444,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
                         if (layerList.Any(i => !i.Height.HasValue))
                         {   // Pokud v této vrstvě existuje alespoň jeden prvek, jehož Height je NULL, pak tuto vrstvu budu řešit jinak a později:
+                            //  Item1 = číslo vrstvy ITimeGraphItem.Layer;  Item2 = [index] do pole allGroups;  Item3 = pole prvků dané vrstvy:
                             layerDependendGroups.Add(new Tuple<int, int, ITimeGraphItem[]>(layer, l, layerList));
                         }
                         else
@@ -483,10 +483,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                         float topY = (totalLogicalY.End < 1f ? 1f : totalLogicalY.End);
                         foreach (var layerDependendGroup in layerDependendGroups)
                         {
-                            l = layerDependendGroup.Item1;
-                            int layer = layerDependendGroup.Item2;
+                            //  Item1 = číslo vrstvy ITimeGraphItem.Layer;  Item2 = [index] do pole allGroups;  Item3 = pole prvků dané vrstvy:
+                            int layer = layerDependendGroup.Item1;
+                            l = layerDependendGroup.Item2;
                             ITimeGraphItem[] layerList = layerDependendGroup.Item3;
-                            List<GTimeGraphGroup> layerGroupList = this.RecalculateDependentElements(layerList, topY);
+                            List<GTimeGraphGroup> layerGroupList = this.RecalculateDependentElements(layerList, topY, layer);
                             allGroups[l] = layerGroupList.ToArray();
                         }
                     }
@@ -592,17 +593,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda vygeneruje a vrátí pole <see cref="GTimeGraphGroup"/>, do logické výšky všech prvků vepíše rozsah 0 až <paramref name="topY"/>.
         /// </summary>
-        /// <param name="layerList"></param>
-        /// <param name="topY"></param>
+        /// <param name="layerList">Prvky</param>
+        /// <param name="topY">Souřadnice Y Top logická</param>
+        /// <param name="layer">Číslo vrstvy</param>
         /// <returns></returns>
-        private List<GTimeGraphGroup> RecalculateDependentElements(ITimeGraphItem[] layerList, float topY)
+        private List<GTimeGraphGroup> RecalculateDependentElements(ITimeGraphItem[] layerList, float topY, int layer)
         {
             // Vstupní prvky sgrupujeme podle GroupID:
             List<GTimeGraphGroup> groupList = CreateTimeGroupList(layerList);
 
             // Do každé grupy vepíšu její logické souřadnice Y:
             foreach (GTimeGraphGroup group in groupList)
+            {
+                if (group.Height.HasValue)
+                    throw new GraphLibDataException("GraphItem.Height disagreement: on Layer " + layer.ToString() + ", a combination of NULL and NOT NULL Height elements is not permitted.");
                 group.CoordinateYLogical = new Interval<float>(0f, topY);
+            }
 
             return groupList;
         }
