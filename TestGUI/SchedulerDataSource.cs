@@ -786,6 +786,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             this.MainData.Properties.InitialTimeRange = this.TimeRangeCurrent;
             this.MainData.Properties.TotalTimeRange = this.TimeRangeTotal;
+            this.MainData.Properties.UseInitialTimeRangeFromLastRun = true;
             this.MainData.Properties.PluginFormBorder = PluginFormBorderStyle.Sizable;
             this.MainData.Properties.PluginFormIsMaximized = true;
             this.MainData.Properties.PluginFormTitle = "Plánovací nářadí";
