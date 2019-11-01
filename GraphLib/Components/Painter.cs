@@ -2481,6 +2481,11 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             GraphItemDrawRatio(args, boundsParts);
             GraphItemDrawBorder(args, boundsParts);
         }
+        /// <summary>
+        /// Vykreslí pozadí pro prvek grafu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="boundsParts"></param>
         private static void GraphItemDrawBack(GraphItemArgs args, Rectangle[] boundsParts)
         {
             if (!args.BackColor.HasValue) return;
@@ -2490,6 +2495,9 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                     GPainter.GraphItemDrawBackPipe(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
                 case Graph.TimeGraphElementBackEffectStyle.Flat:
+                    GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
+                    break;
+                case Graph.TimeGraphElementBackEffectStyle.Simple:
                     GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
                 case Graph.TimeGraphElementBackEffectStyle.Default:
@@ -2589,6 +2597,11 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 color = Color.FromArgb(opacity.Value, color);
             graphics.FillRectangle(Skin.Brush(color), bounds);
         }
+        /// <summary>
+        /// Vykreslí HatchBrush na prvek grafu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="boundsParts"></param>
         private static void GraphItemDrawHatch(GraphItemArgs args, Rectangle[] boundsParts)
         {
             if (!args.HasHatchStyle) return;
@@ -2771,14 +2784,19 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             int y = bounds.Bottom - (int)(Math.Round((float)bounds.Height * ratio, 0));
             return new Point(x, y);
         }
+        /// <summary>
+        /// Vykreslí okraje prvku (Normální, Selected, Framed).
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="boundsParts"></param>
         private static void GraphItemDrawBorder(GraphItemArgs args, Rectangle[] boundsParts)
         {
-            Color? borderColor = (args.IsSelected ? Skin.Graph.ElementSelectedLineColor :
-                                 (args.IsFramed ? Skin.Graph.ElementFramedLineColor : args.BackColor));
+            Color? borderColor = GraphItemGetBorderColor(args);
             if (borderColor.HasValue)
             {
-                Color colorTop = Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f);
-                Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f);
+                bool apply3DEffect = (args.BackEffectStyle != Graph.TimeGraphElementBackEffectStyle.Simple);   // Styl Simple potlačuje 3D efekt
+                Color colorTop = (apply3DEffect ? Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f) : borderColor.Value);
+                Color colorBottom = (apply3DEffect ? Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f) : borderColor.Value);
                 args.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
                 args.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[4]);
                 if (!args.HasBorder)
@@ -2796,6 +2814,26 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                         args.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
                 }
             }
+        }
+        /// <summary>
+        /// Vrátí barvu pro kreslení linky okolo prvku.
+        /// Akceptuje příznaky <see cref="GraphItemArgs.IsSelected"/> a <see cref="GraphItemArgs.IsFramed"/>.
+        /// Pro tvar prvku <see cref="GraphItemArgs.BackEffectStyle"/> == <see cref="Graph.TimeGraphElementBackEffectStyle.Simple"/> vrací null = linka se nekreslí.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private static Color? GraphItemGetBorderColor(GraphItemArgs args)
+        {
+            if (args.IsSelected) return Skin.Graph.ElementSelectedLineColor;
+            if (args.IsFramed) return Skin.Graph.ElementFramedLineColor;
+            if (args.BackEffectStyle == Graph.TimeGraphElementBackEffectStyle.Simple)
+            {   // Simple prvek má barvu okraje pouze tehdy, když je explicitn definována v LineColor:
+                if (args.LineColor.HasValue) return (args.LineColor.Value.IsEmpty ? (Color?)null : args.LineColor);    // Pokud LineColor = Empty, pak se nekreslí.
+                // Pokud Simple prvek nemá definovánu barvu LineColor, pak se jeho okraj nekreslí:
+                return null;
+            }
+            if (args.LineColor.HasValue) return (args.LineColor.Value.IsEmpty ? (Color?)null : args.LineColor);        // Pokud LineColor = Empty, pak se nekreslí.
+            return args.BackColor;
         }
         /// <summary>
         /// Metoda vrátí sadu souřadnic vnitřních prvků položky grafu.
@@ -2893,6 +2931,12 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             /// Barva plného pozadí prvku
             /// </summary>
             public Color? BackColor { get; set; }
+            /// <summary>
+            /// Explicitně zadaná barva linky okolo prvku.
+            /// Pokud je null, odvodí se podle BarckColor.
+            /// Pokud není null a je Empty, nebude linka kreslena.
+            /// </summary>
+            public Color? LineColor { get; set; }
             /// <summary>
             /// Interaktivní stav
             /// </summary>

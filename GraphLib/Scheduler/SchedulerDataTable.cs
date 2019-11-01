@@ -5505,6 +5505,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 case GuiGraphItemBackEffectStyle.Flat: return TimeGraphElementBackEffectStyle.Flat;
                 case GuiGraphItemBackEffectStyle.Pipe: return TimeGraphElementBackEffectStyle.Pipe;
+                case GuiGraphItemBackEffectStyle.Simple: return TimeGraphElementBackEffectStyle.Simple;
+
             }
             return TimeGraphElementBackEffectStyle.Default;
         }

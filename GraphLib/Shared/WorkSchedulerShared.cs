@@ -3074,7 +3074,11 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? HatchColor { get { return this.SkinCurrent.HatchColor ?? this.SkinDefault.HatchColor; } set { this.SkinCurrent.HatchColor = value; } }
         /// <summary>
         /// Barva linek ohraničení prvku.
-        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
+        /// Pokud je null, pak prvek odvozuje barvu okraje od barvy pozadí (tzv. 3D efekt od barvy <see cref="BackColor"/>).
+        /// Pokud chceme potlačit kreslení okraje, zadáme barvu <see cref="Color.Empty"/>.
+        /// Pro efekt prvku <see cref="GuiGraphItemBackEffectStyle.Simple"/> se běžně okraje nekreslí (pomocí odvození barvy okraje od barvy pozadí).
+        /// Pokud ale pro Simple efekt chceme kreslit okraje, zadáme barvu do <see cref="LineColor"/>, ale okraje nebudou mít 3D efekt = vykreslí se prostá stejnobarevná čára.
+        /// <para/>
         /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
@@ -3229,17 +3233,22 @@ namespace Noris.LCS.Base.WorkScheduler
     public enum GuiGraphItemBackEffectStyle
     {
         /// <summary>
-        /// Standardní
+        /// Standardní = mírně prohnutý nahoru (tj. lehký barevný přechod)
         /// </summary>
         Default = 0,
         /// <summary>
-        /// Plochý
+        /// Plochý (tj. bez barevného přechodu), ale s naznačenými 3D okraji (vlevo a nahoře světlé, vpravo a dole tmavé)
         /// </summary>
         Flat,
         /// <summary>
-        /// Výrazně trubkovitý tvar
+        /// Výrazně trubkovitý tvar (tj. uprostřed světlejší)
         /// </summary>
-        Pipe
+        Pipe,
+        /// <summary>
+        /// Jednoduchý = bez barevných efektů a bez 3D okrajů.
+        /// Pokud nebude určena barva LineColor pak nebude mít okraje žádné, a pokud LineColor bude zadáno pak bude okraj prostá čára bez efektů.
+        /// </summary>
+        Simple
     }
     /// <summary>
     /// Orientace

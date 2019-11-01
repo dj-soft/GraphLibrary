@@ -2668,17 +2668,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     public enum TimeGraphElementBackEffectStyle
     {
         /// <summary>
-        /// Standardní
+        /// Standardní = mírně prohnutý nahoru (tj. lehký barevný přechod)
         /// </summary>
         Default = 0,
         /// <summary>
-        /// Plochý
+        /// Plochý (tj. bez barevného přechodu), ale s naznačenými 3D okraji (vlevo a nahoře světlé, vpravo a dole tmavé)
         /// </summary>
         Flat,
         /// <summary>
-        /// Výrazně trubkovitý tvar
+        /// Výrazně trubkovitý tvar (tj. uprostřed světlejší)
         /// </summary>
-        Pipe
+        Pipe,
+        /// <summary>
+        /// Jednoduchý = bez barevných efektů a bez 3D okrajů.
+        /// Pokud nebude určena barva LineColor pak nebude mít okraje žádné, a pokud LineColor bude zadáno pak bude okraj prostá čára bez efektů.
+        /// </summary>
+        Simple
     }
     /// <summary>
     /// Styl vykreslení části Ratio v prvku grafu

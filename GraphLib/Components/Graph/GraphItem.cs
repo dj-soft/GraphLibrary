@@ -851,6 +851,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GPainter.GraphItemArgs graphItemArgs = new GPainter.GraphItemArgs(e.Graphics, boundsAbsolute);
             graphItemArgs.IsGroup = false;
             graphItemArgs.BackColor = this._Group.GetColorWithOpacity(this.ItemBackColor, e.DrawLayer, drawMode, false, true);
+            graphItemArgs.LineColor = this._Group.GetColorWithOpacity(this.ItemLineColor, e.DrawLayer, drawMode, false, true);
             graphItemArgs.InteractiveState = this.GroupInteractiveState;
             graphItemArgs.Effect3D = this.CurrentEffect3DItem;
             graphItemArgs.IsFirstItem = this.IsFirstItem;
