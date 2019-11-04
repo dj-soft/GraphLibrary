@@ -219,6 +219,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void CreateProductOperations(ProductOrder productOrder, ProductTpv tpv, decimal qty)
         {
             int line = 0;
+            string tab = "\t";
+            string finalToolTip = $@"Operace:{tab}KONTROLA FINÁLNÍ
+Podmínky:{tab}Denní světlo
+Poznámka:{tab}- Všímat si poškrábání<br>- Všímat si ušpinění<br>- Ignorovat nálepky
+Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             switch (tpv)
             {
                 case ProductTpv.Simple:
@@ -226,7 +231,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0);
                     CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240);
                     CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 15, 0);
                     break;
 
                 case ProductTpv.Standard:
@@ -237,7 +242,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360);
                     CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
                     CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Luxus:
@@ -254,14 +259,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     CreateProductOperation(productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0);
                     CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Cooperation:
                     CreateProductOperation(productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
                     CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
                     CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 20, 0);
                     break;
 
             }
@@ -312,7 +317,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (operation.TTc.Ticks == 0L && IsExpectable(50))
                 operation.Icon = RES.Images.Actions24.SystemLogOut2Png;
 
-            operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
+            operation.ToolTip = "Operace:\t" + operation.ReferName + Eol + "Výrobní příkaz:\t" + productOrder.ReferName + Eol + toolTip;
 
             // Operaci do VP, a do indexu:
             productOrder.OperationList.Add(operation);
