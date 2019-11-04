@@ -98,6 +98,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiContextMenuSet ContextMenuItems { get; set; }
         /// <summary>
+        /// Definice výchozího dialogu s uživatelem po zobrazení hlavního okna pluginu, null = bez dialogu
+        /// </summary>
+        public GuiDialog InitialDialog { get; set; }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]

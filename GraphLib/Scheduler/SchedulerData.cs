@@ -2221,6 +2221,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._MainControl.ClearPages();
                 this._MainControl.SynchronizedTime.Value = this._GetInitialTimeRange();
                 this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
+                this._MainControl.InitialDialog = this.GuiData.InitialDialog;
                 this._LoadPages();
                 this._FillDataTables();
                 this._PrepareAllTablesAfterLoad();

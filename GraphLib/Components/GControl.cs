@@ -461,7 +461,34 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.DrawInProgress = false;
             }
+
+            this._RunOnDrawAfter();
         }
+        /// <summary>
+        /// Vyvolá se po každém vykreslení
+        /// </summary>
+        private void _RunOnDrawAfter()
+        {
+            if (!this._IsAtLeastOnceDrawed)
+            {
+                var form = this.FindForm();
+                if (form != null && form.Visible)
+                {
+                    this._IsAtLeastOnceDrawed = true;
+                    this.OnFirstDrawAfter();
+                }
+            }
+            this.OnDrawAfter();
+        }
+        private bool _IsAtLeastOnceDrawed = false;
+        /// <summary>
+        /// Metoda je volána POUZE PO PRVNÍM vykreslení obsahu
+        /// </summary>
+        protected virtual void OnFirstDrawAfter() { }
+        /// <summary>
+        /// Metoda je volána po každém vykreslení obsahu
+        /// </summary>
+        protected virtual void OnDrawAfter() { }
         /// <summary>
         /// Fyzicky překreslí obsah bufferů do předané grafiky.
         /// </summary>

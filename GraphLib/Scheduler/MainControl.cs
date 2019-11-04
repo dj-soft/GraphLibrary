@@ -59,6 +59,42 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.CalculateLayout();
         }
         #endregion
+        #region Po prvním vykreslení
+        /// <summary>
+        /// Metoda je volána POUZE PO PRVNÍM vykreslení obsahu
+        /// </summary>
+        protected override void OnFirstDrawAfter()
+        {
+            base.OnFirstDrawAfter();
+            GuiDialog initialDialog = this.InitialDialog;
+            if (initialDialog != null)
+                this.ShowDialog(initialDialog);
+            this.InitialDialog = null;
+        }
+        /// <summary>
+        /// Deklarace výchozího dialogu, načítá se z <see cref="GuiData.InitialDialog"/>, zpracovává se v <see cref="OnFirstDrawAfter()"/>.
+        /// </summary>
+        public GuiDialog InitialDialog
+        {
+            get { return this._InitialDialog; }
+            set
+            {
+                this._InitialDialog = null;
+                if (value != null)
+                {
+                    this._InitialDialog = new GuiDialog()
+                    {
+                        Title = value.Title,
+                        Icon = value.Icon,
+                        Message = value.Message,
+                        Buttons = value.Buttons
+                    };
+                }
+            }
+        }
+
+        private GuiDialog _InitialDialog;
+        #endregion
         #region Ukládání / Načítání layoutu a dalších hodnot z konfigurace (persistence stavu)
         /// <summary>
         /// Konfigurace uživatelská
