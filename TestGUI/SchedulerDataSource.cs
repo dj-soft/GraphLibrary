@@ -57,6 +57,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateCenterPanelPersons();
             this.CreateRightPanel();
             this.CreateContextFunctions();
+            this.CreateInitialDialog();
 
             return this.MainData;
         }
@@ -1175,6 +1176,18 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 ":" + ProductOperation.ClassNumber.ToString()
             });
 
+        }
+        /// <summary>
+        /// Nadefinuje výchozí dialog
+        /// </summary>
+        protected void CreateInitialDialog()
+        {
+            this.MainData.InitialDialog = new GuiDialog()
+            {
+                Title = "Vítejte",
+                Message = "Právě se otevřelo okno, užijte si...",
+                Buttons = GuiDialogButtons.Ok
+            };
         }
         /// <summary>
         /// Vygeneruje hlavní (a jedinou) stránku pro data, zatím bez dat
