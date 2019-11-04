@@ -1007,6 +1007,16 @@ namespace Asol.Tools.WorkScheduler.Components
             return Size.Ceiling(size);
         }
         /// <summary>
+        /// Vrací směr zarovnání textu
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="columnIndex"></param>
+        /// <returns></returns>
+        protected ContentAlignment _CalculateAlignment(ref string content, int columnIndex)
+        {
+            return ContentAlignment.TopLeft;
+        }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="graphics"></param>
@@ -1084,7 +1094,7 @@ namespace Asol.Tools.WorkScheduler.Components
             SizeF maxArea = maxSize.Multiply(1f, maxHeight);
 
             // Rozdělím text do CSV tabulky, a každý prvek změřím a uložím do pole array:
-            var textItems = text.ToTableCsv();
+            var textItems = text.ToTable(replaceInnerEOL: true);
             List<List<TextCell>> cellArray = new List<List<TextCell>>();
             List<int> columnWidths = new List<int>();
             foreach (string[] textRow in textItems)
@@ -1093,8 +1103,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 int columnIndex = 0;
                 foreach (string textCell in textRow)
                 {
-                    Size size = _CalculateLineSize(graphics, textCell, font, maxArea);
-                    TextCell cellCell = new TextCell(textCell, size);
+                    string content = textCell;
+                    Size size = _CalculateLineSize(graphics, content, font, maxArea);
+                    ContentAlignment alignment = _CalculateAlignment(ref content, columnIndex);
+                    TextCell cellCell = new TextCell(content, size, alignment);
                     cellRow.Add(cellCell);
 
                     // Nastřádávám si Max(Width + 9) u každého sloupce  (9 = 2 × 3 pixely [okraje buňky] + 3 pixely [rezerva]):
@@ -1186,6 +1198,19 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.Text = text;
                 this.TextSize = size;
+                this.Alignment = ContentAlignment.MiddleLeft;
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="size"></param>
+            /// <param name="alignment"></param>
+            public TextCell(string text, Size size, ContentAlignment alignment)
+            {
+                this.Text = text;
+                this.TextSize = size;
+                this.Alignment = alignment;
             }
             /// <summary>
             /// Vizualizace
@@ -1208,6 +1233,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public Size TextSize { get; protected set; }
             /// <summary>
+            /// Zarovnání textu, default = <see cref="ContentAlignment.MiddleLeft"/>
+            /// </summary>
+            public ContentAlignment Alignment { get; protected set; }
+            /// <summary>
             /// Souřadnice textu v tabulce, relativně k jejímu počátku
             /// </summary>
             public Rectangle Bounds { get; set; }
@@ -1223,7 +1252,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (this.IsEmpty) return;
 
                 Rectangle absoluteBounds = this.Bounds.Add(bounds.Location);
-                GPainter.DrawString(graphics, absoluteBounds, this.Text, color, font, ContentAlignment.MiddleLeft);
+                GPainter.DrawString(graphics, absoluteBounds, this.Text, color, font, this.Alignment);
             }
         }
         #endregion

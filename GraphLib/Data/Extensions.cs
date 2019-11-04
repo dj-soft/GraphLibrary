@@ -123,7 +123,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public static string[][] ToTableCsv(this string text)
         {
-            return text.ToTable("\r\n", "\t", false, false);
+            return text.ToTable("\r\n", "\t", false, false, false);
         }
         /// <summary>
         /// Rozdělí daný string na pole polí, kdy lze zadat oddělovač řádků a oddělovač sloupců.
@@ -133,8 +133,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="itemSeparator">Oddělovač prvků v řádku</param>
         /// <param name="removeEmptyLines">Nenačítat prázdné řádky(</param>
         /// <param name="trimItems">Jednotlivé prvky ukládat Trim()</param>
+        /// <param name="replaceInnerEOL">V jednotlivých prvcích zajistit náhradu EOL (~  br  BR)</param>
         /// <returns></returns>
-        public static string[][] ToTable(this string text, string rowSeparator, string itemSeparator, bool removeEmptyLines, bool trimItems)
+        public static string[][] ToTable(this string text, string rowSeparator = "\r\n", string itemSeparator = "\t", bool removeEmptyLines = false, bool trimItems = false, bool replaceInnerEOL = false)
         {
             List<string[]> result = new List<string[]>();
             if (text != null)
@@ -143,13 +144,35 @@ namespace Asol.Tools.WorkScheduler.Data
                 foreach (string line in lines)
                 {
                     string[] items = line.Split(new string[] { itemSeparator }, StringSplitOptions.None);
-                    if (trimItems)
-                        result.Add(items.Select(s => s.Trim()).ToArray());
+                    if (trimItems || replaceInnerEOL)
+                        result.Add(items.Select(t => ModifyItem(t, trimItems, replaceInnerEOL)).ToArray());
                     else
                         result.Add(items);
                 }
             }
             return result.ToArray();
+        }
+        /// <summary>
+        /// Metoda vrátí daný text upravený pomocí Trim a případně s náhradou EOL
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="trimItems"></param>
+        /// <param name="replaceInnerEOL"></param>
+        /// <returns></returns>
+        private static string ModifyItem(string text, bool trimItems, bool replaceInnerEOL)
+        {
+            if (text == null) return "";
+            if (trimItems)
+            {
+                text = text.Trim();
+            }
+            if (replaceInnerEOL)
+            {
+                if (text.Contains("<BR>")) text = text.Replace("<BR>", "\r\n");
+                else if (text.Contains("<br>")) text = text.Replace("<br>", "\r\n");
+                else if (text.Contains('~')) text = text.Replace("~", "\r\n");
+            }
+            return text;
         }
         /// <summary>
         /// Rozdělí daný string na pole prvků KeyValuePair, kdy lze zadat oddělovač řádků a oddělovač Key a Value.

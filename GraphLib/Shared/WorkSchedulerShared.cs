@@ -2900,6 +2900,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// ToolTip pro zobrazení u tohoto tohoto prvku.
         /// Pokud je null, bude se hledat v tabulce textů.
         /// Z databáze se načítá ze sloupce: "tooltip", je NEPOVINNÝ.
+        /// <para/>
+        /// Text tooltipu může obsahovat znaky TAB, pak bude vytvořena "tabulka" pro ToolTip: 
+        /// vstupní text <see cref="ToolTip"/> bude rozdělen na řádky (Cr + Lf) a na buňky (Tab), a pak bude sestavena tabulka tak, aby sloupce byly pod sebou.
+        /// Pokud chceme do jedné "buňky" v tabulce vepsat více řádků textu (typicky buňka pro Poznámku), 
+        /// pak je třeba v textu buňky nahradit stávající znaky Cr + Lf znakem ~ nebo XML řetězcem $lt;br$gt;.
+        /// <see cref="ToolTip"/> pak rozdělí celý text na buňky, 
         /// </summary>
         public string ToolTip { get; set; }
         /// <summary>

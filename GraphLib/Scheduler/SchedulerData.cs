@@ -3975,16 +3975,49 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public enum DataStateType : int
     {
+        /// <summary>
+        /// Na začátku konstruktoru
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Průběh konstruktoru
+        /// </summary>
         Initialising,
+        /// <summary>
+        /// Příprava Configu
+        /// </summary>
         PrepareConfig,
+        /// <summary>
+        /// Inicializováno
+        /// </summary>
         Initialised,
+        /// <summary>
+        /// Zahájeno načítání dat
+        /// </summary>
         LoadingData,
+        /// <summary>
+        /// Data načtena
+        /// </summary>
         DataLoaded,
+        /// <summary>
+        /// Zahájení přípravy Controlu
+        /// </summary>
         PrepareMainControl,
+        /// <summary>
+        /// Plnění vizuálních Controlů z dat v GUI
+        /// </summary>
         FillGuiControls,
+        /// <summary>
+        /// Registrování event handlerů
+        /// </summary>
         RegisterEventHandlers,
+        /// <summary>
+        /// Hlavní Control připraven
+        /// </summary>
         MainControlDone,
+        /// <summary>
+        /// Data kompletně připravena
+        /// </summary>
         Prepared
     }
     #endregion
