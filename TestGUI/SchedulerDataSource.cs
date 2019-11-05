@@ -1182,6 +1182,8 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// </summary>
         protected void CreateInitialDialog()
         {
+            if (Rand.Next(0, 100) <= 90) return;
+
             this.MainData.InitialDialog = new GuiDialog()
             {
                 Title = "Vítejte",
@@ -1742,11 +1744,47 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             CompoundDataInfo sourceRow = this.SearchForData(guiRequest.GraphItemMove.SourceRowId);
             CompoundDataInfo targetRow = this.SearchForData(guiRequest.GraphItemMove.TargetRowId);
 
+            TimeSpan timeShift = guiRequest.GraphItemMove.TargetTime.Begin - guiRequest.GraphItemMove.SourceTime.Begin;
+            MoveGraphItemModifyItems(dataInfos, timeShift, guiResponse);
+
             this.DataChanged = true;
             int time = this.Rand.Next(100, 350);
             System.Threading.Thread.Sleep(time);
 
             this.ApplyCommonToResponse(guiResponse);
+        }
+        /// <summary>
+        /// Provede náhodnou modifikaci prvků grafu v dodaném poli
+        /// </summary>
+        /// <param name="dataInfos"></param>
+        /// <param name="timeShift"></param>
+        /// <param name="guiResponse"></param>
+        protected void MoveGraphItemModifyItems(CompoundDataInfo[] dataInfos, TimeSpan timeShift, GuiResponse guiResponse)
+        {
+            if (dataInfos == null || dataInfos.Length == 0) return;
+
+            guiResponse.RefreshGraphItems = new List<GuiRefreshGraphItem>();
+
+            System.Drawing.Drawing2D.HatchStyle hatchStyle = GetRandom<System.Drawing.Drawing2D.HatchStyle>(System.Drawing.Drawing2D.HatchStyle.Horizontal, System.Drawing.Drawing2D.HatchStyle.Cross, System.Drawing.Drawing2D.HatchStyle.DiagonalBrick);
+            string imageBegin = GetRandom<string>(RES.Images.Small16.BulletBluePng, RES.Images.Small16.BulletGreenPng, RES.Images.Small16.BulletOrangePng, RES.Images.Small16.BulletPinkPng, RES.Images.Small16.BulletPurplePng, RES.Images.Small16.BulletRedPng, RES.Images.Small16.BulletStarPng);
+            Color hatchColor = GetRandom<Color>(Color.Blue, Color.Green, Color.Orange, Color.Pink, Color.Purple, Color.Red);
+            foreach (CompoundDataInfo dataInfo in dataInfos)
+            {
+                WorkUnit workUnit = dataInfo.WorkUnit;
+                if (workUnit != null && dataInfo.GridType == GridPositionType.Workplace)
+                {
+                    DateTime begin = workUnit.Time.Begin.Add(timeShift);
+                    DateTime end = workUnit.Time.End.Add(timeShift);
+                    workUnit.Time = new GuiTimeRange(begin, end);
+
+                    var graphItem = workUnit.CreateGuiGraphItem(GridPositionType.Workplace);
+                    graphItem.ImageBegin = imageBegin;
+                    graphItem.BackStyle = hatchStyle;
+                    graphItem.HatchColor = hatchColor;
+
+                    guiResponse.RefreshGraphItems.Add(new GuiRefreshGraphItem() { GridItemId = dataInfo.GuiGridItemId, ItemData = graphItem });
+                }
+            }
         }
         /// <summary>
         /// Vymazání dat plánu
@@ -1802,7 +1840,6 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 });
             }
         }
-
         /// <summary>
         /// Do dané <see cref="GuiResponse"/> vloží hodnoty ClearLinks, ClearSelected a ToolbarItems[SaveData].Enable
         /// </summary>
@@ -2004,7 +2041,6 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             {
                 this.GuiGridItemId = guiGridItemId;
                 this.FillData(gridType, row, group, item, data);
-
             }
             /// <summary>
             /// Dodaná data do sebe naplní a dopočítá další data
