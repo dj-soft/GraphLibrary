@@ -3665,6 +3665,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             if (isHidden)
                 guiGraphItem.IsVisible = false;
 
+            guiGraphItem.SkinCurrentIndex = 0;
             return guiGraphItem;
         }
     }
