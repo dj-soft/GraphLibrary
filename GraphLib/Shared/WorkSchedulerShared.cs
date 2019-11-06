@@ -3051,7 +3051,7 @@ namespace Noris.LCS.Base.WorkScheduler
                         this.SkinDict = new Dictionary<int, GuiGraphSkin>();
                     if (!this.SkinDict.TryGetValue(key, out skin))
                     {
-                        skin = new GuiGraphSkin();
+                        skin = new GuiGraphSkin() { Key = key };
                         this.SkinDict.Add(key, skin);
                     }
                 }
@@ -3315,6 +3315,10 @@ namespace Noris.LCS.Base.WorkScheduler
     {
         #region Standardní properties
         /// <summary>
+        /// Klíč skinu; defaultní skin má NULL.
+        /// </summary>
+        public int? Key { get; set; }
+        /// <summary>
         /// Prvek je viditelný?
         /// Defaultní hodnota je null, tato hodnota se interpretuje jako true (v metodách, kde je třeba binární výstup)
         /// </summary>
@@ -3323,6 +3327,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Barva pozadí prvku.
         /// </summary>
         public Color? BackColor { get; set; }
+        /// <summary>
+        /// Styl vzorku kresleného v pozadí.
+        /// null = Solid.
+        /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
+        /// </summary>
+        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get; set; }
         /// <summary>
         /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
         /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
@@ -3337,12 +3347,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
         /// </summary>
         public Color? LineColor { get; set; }
-        /// <summary>
-        /// Styl vzorku kresleného v pozadí.
-        /// null = Solid.
-        /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
-        /// </summary>
-        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get; set; }
         /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
         /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
@@ -3400,6 +3404,22 @@ namespace Noris.LCS.Base.WorkScheduler
         /// pak se jako <see cref="ImageEnd"/> má vložit <see cref="GuiImage.Empty"/>
         /// </summary>
         public GuiImage ImageEnd { get; set; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "";
+            text += ((this.Key.HasValue) ? "Key: " + this.Key.Value.ToString() + "; " : "DefaultSkin; ");
+            if (this.IsVisible.HasValue) text += "IsVisible: " + this.IsVisible.Value.ToString() + "; ";
+            if (this.BackColor.HasValue) text += "BackColor: " + this.BackColor.Value.ToString() + "; ";
+            if (this.BackStyle.HasValue) text += "BackStyle: " + this.BackStyle.Value.ToString() + "; ";
+            if (this.HatchColor.HasValue) text += "HatchColor: " + this.HatchColor.Value.ToString() + "; ";
+            if (this.ImageBegin != null && !String.IsNullOrEmpty(this.ImageBegin)) text += "ImageBegin: " + this.ImageBegin.ImageFile + "; ";
+            if (this.ImageEnd != null && !String.IsNullOrEmpty(this.ImageEnd)) text += "ImageEnd: " + this.ImageEnd.ImageFile + "; ";
+            return text;
+        }
         #endregion
     }
     #endregion
