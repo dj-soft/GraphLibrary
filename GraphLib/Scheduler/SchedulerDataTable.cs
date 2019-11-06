@@ -5163,17 +5163,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="sourceSkin"></param>
         protected static void UpdateSkinFrom(GuiGraphSkin targetSkin, GuiGraphSkin sourceSkin)
         {
-            if (sourceSkin.IsVisible.HasValue) targetSkin.IsVisible = sourceSkin.IsVisible;
-            if (sourceSkin.BackColor.HasValue) targetSkin.BackColor = GetUpdatedColor(sourceSkin.BackColor);
-            if (sourceSkin.HatchColor.HasValue) targetSkin.HatchColor = GetUpdatedColor(sourceSkin.HatchColor);
-            if (sourceSkin.HatchColor.HasValue) targetSkin.BackStyle = sourceSkin.BackStyle;      // Úmyslná změna: pokud je předána hodnota HatchColor, přebírám i BackStyle, i kdyby bylo null.
-            if (sourceSkin.LineColor.HasValue) targetSkin.LineColor = GetUpdatedColor(sourceSkin.LineColor);
-            if (sourceSkin.RatioBeginBackColor.HasValue) targetSkin.RatioBeginBackColor = GetUpdatedColor(sourceSkin.RatioBeginBackColor);
-            if (sourceSkin.RatioEndBackColor.HasValue) targetSkin.RatioEndBackColor = GetUpdatedColor(sourceSkin.RatioEndBackColor);
-            if (sourceSkin.RatioLineColor.HasValue) targetSkin.RatioLineColor = GetUpdatedColor(sourceSkin.RatioLineColor);
-            if (sourceSkin.RatioLineWidth.HasValue) targetSkin.RatioLineWidth = sourceSkin.RatioLineWidth;
-            if (sourceSkin.ImageBegin != null) targetSkin.ImageBegin = GetUpdatedImage(sourceSkin.ImageBegin);
-            if (sourceSkin.ImageEnd != null) targetSkin.ImageEnd = GetUpdatedImage(sourceSkin.ImageEnd);
+            if (!sourceSkin.DoRefreshSkin) return;         // Refresh je potlačen (to když volající strana ví, že nenaplnila data a nechce je měnit)
+            targetSkin.IsVisible = sourceSkin.IsVisible;
+            targetSkin.BackColor = GetUpdatedColor(sourceSkin.BackColor);
+            targetSkin.HatchColor = GetUpdatedColor(sourceSkin.HatchColor);
+            targetSkin.BackStyle = sourceSkin.BackStyle;
+            targetSkin.LineColor = GetUpdatedColor(sourceSkin.LineColor);
+            targetSkin.RatioBeginBackColor = GetUpdatedColor(sourceSkin.RatioBeginBackColor);
+            targetSkin.RatioEndBackColor = GetUpdatedColor(sourceSkin.RatioEndBackColor);
+            targetSkin.RatioLineColor = GetUpdatedColor(sourceSkin.RatioLineColor);
+            targetSkin.RatioLineWidth = sourceSkin.RatioLineWidth;
+            targetSkin.ImageBegin = GetUpdatedImage(sourceSkin.ImageBegin);
+            targetSkin.ImageEnd = GetUpdatedImage(sourceSkin.ImageEnd);
         }
         /// <summary>
         /// Metoda vrátí danou barvu.

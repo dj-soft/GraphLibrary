@@ -2974,7 +2974,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Nikdy není null.
         /// Přímý přístup k této property se příliš nepoužívá.
         /// </summary>
-        [PersistingEnabled(false)]               // Neprovádí se persistence.
+        [PersistingEnabled(false)]     // Neprovádí se persistence. Jedná se o aktuální používaný skin; persistuje se SkinDefault a SkinDict
         public GuiGraphSkin SkinCurrent
         {
             get
@@ -2987,7 +2987,9 @@ namespace Noris.LCS.Base.WorkScheduler
         private GuiGraphSkin _SkinCurrent;
         /// <summary>
         /// Defaultní skin, nikdy není null.
-        /// Přímý přístup k hodnotám se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
+        /// <para/>
+        /// Přímý přístup k tomuto Skinu se používá pouze při aktualizaci dat GUI vrstvy z nějaké Response.
+        /// Běžná práce s hodnotami skinu se provádí přes jednotkové property, jako <see cref="BackColor"/>, <see cref="BackStyle"/> atd.
         /// </summary>
         public GuiGraphSkin SkinDefault
         {
@@ -3033,7 +3035,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <see cref="GuiGraphItem.RatioLineColor"/>, <see cref="GuiGraphItem.RatioLineWidth"/>, 
         /// <see cref="GuiGraphItem.ImageBegin"/>, <see cref="GuiGraphItem.ImageEnd"/>.
         /// </summary>
-        [PersistingEnabled(false)]               // Neprovádí se persistence. Aktuální hodnota SkinCurrentIndex (ze strany zdroje) nemá po persistenci význam (na straně cíle).
+        [PersistingEnabled(false)]     // Neprovádí se persistence. Aktuální hodnota SkinCurrentIndex (ze strany zdroje) nemá po persistenci význam (na straně cíle).
         public int SkinCurrentIndex
         {
             get { return this._SkinCurrentIndex; }
@@ -3179,6 +3181,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public GuiImage ImageEnd { get { return this.SkinCurrent.ImageEnd ?? this.SkinDefault.ImageEnd; } set { this.SkinCurrent.ImageEnd = value; } }
+        /// <summary>
+        /// Obsahuje true, pokud se má celý obsah tohoto Skinu aktualizovat na straně GUI (=defaultní hodnota).
+        /// Pokud je true, pak se do GUI přepíšou všechny hodnoty, tj. i ty, které jsou zadány jako NULL.
+        /// <para/>
+        /// Lze setovat hodnotu false, pak se na straně GUI bude celý obsah Skinu ignorovat.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public bool DoRefreshSkin { get { return this.SkinCurrent.DoRefreshSkin; } set { this.SkinCurrent.DoRefreshSkin = value; } }
         #endregion
         #region Optimalizace pro persistenci dat : protected properties s menší velikosti v serializaci, nahrazující standardní serializaci některých public properties
         /// <summary>
@@ -3404,6 +3414,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// pak se jako <see cref="ImageEnd"/> má vložit <see cref="GuiImage.Empty"/>
         /// </summary>
         public GuiImage ImageEnd { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud se má celý obsah tohoto Skinu aktualizovat na straně GUI (=defaultní hodnota).
+        /// Pokud je true, pak se do GUI přepíšou všechny hodnoty, tj. i ty, které jsou zadány jako NULL.
+        /// <para/>
+        /// Lze setovat hodnotu false, pak se na straně GUI bude celý obsah Skinu ignorovat.
+        /// </summary>
+        public bool DoRefreshSkin { get { return !_NotRefreshSkin; } set { _NotRefreshSkin = !value; } } private bool _NotRefreshSkin = false;
         /// <summary>
         /// Vizualizace
         /// </summary>
