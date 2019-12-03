@@ -20,8 +20,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             Application.App.TracePriority = Application.TracePriority.Priority5_Normal;
 
-            Application.App.RunMainForm(typeof(SchedulerForm));            // interní testovací data
-            // Application.App.RunMainForm(typeof(PluginForm));               // data z Greenu
+            if (Control.ModifierKeys == Keys.Shift)
+            {   // Spuštění s klávesou Shift, pomocí ikonky  |> Start  :
+
+                Application.App.RunMainForm(typeof(DataForm));                 // interní testovací data
+            }
+            else
+            {
+                Application.App.RunMainForm(typeof(SchedulerForm));            // interní testovací data
+            }
+
+            // Application.App.RunMainForm(typeof(PluginForm));                // data z Greenu
 
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestOneComponent));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestSnapForm));

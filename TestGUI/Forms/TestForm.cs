@@ -116,7 +116,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         void _TimeAxisPos()
         {
-            Rectangle gic = this._GInteractiveControl.ClientRectangle;
+            Rectangle gic = this._GInteractiveControl.ClientItemsRectangle;
             int splitY = this._Splitter.Value;
             Rectangle tax = new Rectangle(gic.Left + 60, 10, gic.Width - 80, splitY - 12);
             this._TimeAxis.Bounds = tax;           // set value to Bounds ensure RepaintAll items
@@ -125,7 +125,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         void _SizeAxisPos()
         {
-            Rectangle gic = this._GInteractiveControl.ClientRectangle;
+            Rectangle gic = this._GInteractiveControl.ClientItemsRectangle;
             Rectangle tax = new Rectangle(gic.Left + 60, gic.Bottom - 45, gic.Width - 80, 25);
             this._SizeAxisH.Bounds = tax;           // set value to Bounds ensure RepaintAll items
             tax = new Rectangle(gic.Left + 5, 10, 55, gic.Height - 30);
@@ -133,7 +133,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         private void _ScrollBarPos()
         {
-            Rectangle gic = this._GInteractiveControl.ClientRectangle;
+            Rectangle gic = this._GInteractiveControl.ClientItemsRectangle;
             this._ScrollBarH.Bounds = new Rectangle(gic.X, gic.Bottom - 15, gic.Width - 15, 15);
             this._ScrollBarV.Bounds = new Rectangle(gic.Right - 15, gic.Y, 15, gic.Height - 15);
         }
