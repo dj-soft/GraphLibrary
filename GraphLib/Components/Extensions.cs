@@ -716,16 +716,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bottom">Zvětšení dolů (zvětší Height)</param>
         public static Rectangle Enlarge(this Rectangle r, int left, int top, int right, int bottom)
         {
-            r.X = r.X - left;
-            r.Y = r.Y - top;
-            r.Width = r.Width + left + right;
-            r.Height = r.Height + top + bottom;
-            return r;
+            int x = r.X - left;
+            int y = r.Y - top;
+            int w = r.Width + left + right;
+            int h = r.Height + top + bottom;
+            return new Rectangle(x, y, w, h);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí nový Rectangle, jehož velikost je do všech stran zvětšená o daný počet pixelů.
+        /// Záporné číslo velikost zmenší.
+        /// Například this RectangleF {50, 10, 30, 20} .Enlarge(1) vrátí hodnotu: {49, 9, 32, 22}.
+        /// Například this RectangleF {50, 10, 30, 20} .Enlarge(-1) vrátí hodnotu: {51, 11, 28, 18}.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="all">Změna aplikovaná na všechny strany</param>
+        public static RectangleF Enlarge(this RectangleF r, int all)
+        {
+            return r.Enlarge(all, all, all, all);
         }
         /// <summary>
         /// Create a new RectangleF, which is current rectangle enlarged by size specified for each side.
-        /// For example: this Rectangle {50, 10, 30, 20} .Enlarge(1, 1, 1, 1) will be after: {49, 9, 32, 22}.
-        /// For example: this Rectangle {50, 10, 30, 20} .Enlarge(0, 0, -1, -1) will be after: {50, 10, 29, 19}.
+        /// For example: this RectangleF {50, 10, 30, 20} .Enlarge(1, 1, 1, 1) will be after: {49, 9, 32, 22}.
+        /// For example: this RectangleF {50, 10, 30, 20} .Enlarge(0, 0, -1, -1) will be after: {50, 10, 29, 19}.
         /// </summary>
         /// <param name="r"></param>
         /// <param name="left"></param>
@@ -734,13 +746,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bottom"></param>
         public static RectangleF Enlarge(this RectangleF r, float left, float top, float right, float bottom)
         {
-            r.X = r.X - left;
-            r.Y = r.Y - top;
-            r.Width = r.Width + left + right;
-            r.Height = r.Height + top + bottom;
-            return r;
+            float x = r.X - left;
+            float y = r.Y - top;
+            float w = r.Width + left + right;
+            float h = r.Height + top + bottom;
+            return new RectangleF(x, y, w, h);
         }
-
         /// <summary>
         /// Vrátí Size, jejíž Width i Height jsou ta menší hodnota z this a max
         /// </summary>

@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GInteractiveControl : Jediný používaný interaktivní WinForm control, který se používá pro zobrazení interaktivních dat
     /// </summary>
-    public partial class GInteractiveControl : GControlLayered, IInteractiveParent
+    public partial class GInteractiveControl : GControlScrollable, IInteractiveParent
     {
         #region Konstruktor
         /// <summary>
@@ -72,6 +72,11 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         private List<IInteractiveItem> _ItemsList;
+        /// <summary>
+        /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost.
+        /// Vrací obsah property <see cref="ItemsList"/>.
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> ChildItems { get { return this.ItemsList; } }
         #endregion
         #region Items, přidávání controlů
         /// <summary>
@@ -1370,9 +1375,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected GActivePosition FindActivePositionAtPoint(Point mouseAbsolutePoint, bool withDisabled)
         {
-            GActivePosition activePosition = (this._ProgressItem.Is.Visible
-                ? GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled, this._ProgressItem)
-                : GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled));
+            GActivePosition activePosition = GActivePosition.FindItemAtPoint(
+                this.ClientSize, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled,
+                (this._ProgressItem.Is.Visible ? this._ProgressItem : null),
+                this.AutoScrollBarH, this.AutoScrollBarV);
 
             this._MouseCurrentRelativePoint = _GetRelativePoint(mouseAbsolutePoint, activePosition);
             return activePosition;
@@ -2386,8 +2392,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 DrawRequest request = e.UserData as DrawRequest;
                 scope.AddItem("e.UserData: " + ((request == null) ? "null => Full Draw" : "Explicit request"));
                 scope.AddItem("PendingFullDraw: " + (this.PendingFullDraw ? "true => Full Draw" : "false"));
-                if (request == null || this.PendingFullDraw)
-                {   // Explicit request not specified, we will draw all items:
+
+                bool createNewRequest = (request == null || this.PendingFullDraw);
+                bool drawAllItems = (createNewRequest || (request != null || request.DrawAllItems));
+
+                if (drawAllItems)
+                    this.AutoScrollDetect(e);
+
+                if (createNewRequest)
+                {   // Není zadán explicitní požadavek (request) - pak tedy vykreslíme všechny prvky:
                     request = new DrawRequest(true, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
                     request.Fill(this.ClientSize, this, this.ItemsList, true, false);
                 }
@@ -2419,6 +2432,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Graphics graphics = e.GetGraphicsForLayer(0, true);
                 this.CallDrawStandardLayer(graphics);
                 this._PaintItems(graphics, graphicsSize, request.StandardItems, GInteractiveDrawLayer.Standard);
+                this.AutoScrollDraw(graphics, graphicsSize);
                 scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
             }
         }
@@ -2769,6 +2783,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (item.NeedDrawOverChilds)
                         this.AddItemToLayers(boundsInfo, item, itemLayers, true);
                 }
+
+                if (parent is IAutoScrollContainer)
+                    this.AddScrollItemsToLayers(boundsInfo, parent as IAutoScrollContainer);
             }
             /// <summary>
             /// Vrací vrstvy, do kterých má být vykreslen daný prvek, s přihlédnutím k tomu, do jakých vrstev se kreslí jeho parent,
@@ -2806,6 +2823,23 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.InteractiveItems.Add(new DrawRequestItem(boundsInfo, item, GInteractiveDrawLayer.Interactive, drawOverChilds));
                 if (addToLayers.HasFlag(GInteractiveDrawLayer.Dynamic))
                     this.DynamicItems.Add(new DrawRequestItem(boundsInfo, item, GInteractiveDrawLayer.Dynamic, drawOverChilds));
+            }
+            /// <summary>
+            /// Zajistí přidání Scrollbarů do seznamu objektů k vykreslení do vrstvy <see cref="GInteractiveDrawLayer.Standard"/>.
+            /// Metoda je volána na konci zpracování celého objektu (tedy všech jeho Childs, i DrawOverChilds), 
+            /// takže Scrollbary budou kresleny úplně nahoru v ose Z.
+            /// </summary>
+            /// <param name="boundsInfo"></param>
+            /// <param name="scrollContainer"></param>
+            private void AddScrollItemsToLayers(BoundsInfo boundsInfo, IAutoScrollContainer scrollContainer)
+            {
+                var scrollBars = scrollContainer?.ScrollBars;
+                if (scrollBars == null) return;
+                foreach (var scrollBar in scrollBars)
+                {
+                    boundsInfo.CurrentItem = scrollBar;
+                    this.StandardItems.Add(new DrawRequestItem(boundsInfo, scrollBar, GInteractiveDrawLayer.Standard, false));
+                }
             }
         }
         /// <summary>
@@ -3030,10 +3064,10 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal fps = Math.Round(1m / avt, 1);
             string info = "     " + fps.ToString("### ##0.0").Trim() + " fps";
             Size size = new System.Drawing.Size(90, 20);
-            Rectangle bounds = size.AlignTo(this.ClientRectangle, ContentAlignment.BottomRight).Enlarge(0, 0, -1, -1);
+            Rectangle bounds = size.AlignTo(this.ClientItemsRectangle, ContentAlignment.BottomRight).Enlarge(0, 0, -1, -1);
             Graphics graphics = e.GetGraphicsCurrent();
-            Color backColor = Color.FromArgb(240, Color.LightSkyBlue);
-            Color foreColor = Color.FromArgb(240, Color.Black);
+            Color backColor = Color.FromArgb(160, Color.LightSkyBlue);
+            Color foreColor = Color.FromArgb(210, Color.Black);
             GraphicsPath gp = GPainter.CreatePathRoundRectangle(bounds, 2, 2);
 
             using (GPainter.GraphicsUseSmooth(graphics))
@@ -3538,7 +3572,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!opacityRatio.HasValue || opacityRatio.Value <= 0f) return;
 
             // Celý prostor překreslit šedou záclonou:
-            Rectangle area = new Rectangle(new Point(0, 0), this.ClientRectangle.Size);
+            Rectangle area = new Rectangle(new Point(0, 0), this.ClientItemsSize);
             Color areaColor = Skin.BlockedGui.AreaColor.ApplyOpacity(opacityRatio);
             graphics.FillRectangle(Skin.Brush(areaColor), area);
 
@@ -4036,8 +4070,8 @@ namespace Asol.Tools.WorkScheduler.Components
             if (itemList != null && itemList.Count > 0)
                 joinList.AddRange(itemList);
             if (priorityItems != null && priorityItems.Length > 0)
-                joinList.AddRange(priorityItems);
-            return itemList.ToArray();
+                joinList.AddRange(priorityItems.Where(p => p != null));
+            return joinList.ToArray();
         }
         /// <summary>
         /// Hledá prvek, který je aktivní na dané souřadnici v daném seznamu prvků.

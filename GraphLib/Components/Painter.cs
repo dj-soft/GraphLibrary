@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.Components
             graphics.FillRectangle(Skin.Brush(backColor), bounds);
         }
         #endregion
-        #region DrawBorder
+        #region DrawBorder, DrawSoftBorder
         /// <summary>
         /// Vykreslí okraje kolem daného prostoru. 
         /// Kreslí i pravou a dolní hranu na okraj daného rozměru.
@@ -44,28 +44,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </param>
         internal static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color lineColor, float? effect3D)
         {
-            Color? colorTop = lineColor;
-            Color? colorRight = lineColor;
-            Color? colorBottom = lineColor;
-            Color? colorLeft = lineColor;
-            if (effect3D.HasValue && effect3D.Value != 0f)
-            {
-                if (effect3D.Value > 0f)
-                {   // Vlevo a nahoře bude barva světlejší, vpravo a dole tmavší:
-                    colorTop = lineColor.Morph(Skin.Modifiers.Effect3DLight, effect3D.Value);
-                    colorRight = lineColor.Morph(Skin.Modifiers.Effect3DDark, effect3D.Value);
-                    colorBottom = colorRight;
-                    colorLeft = colorTop;
-                }
-                else
-                {   // Vlevo a nahoře bude barva tmavší, vpravo a dole světlejší:
-                    colorTop = lineColor.Morph(Skin.Modifiers.Effect3DDark, -effect3D.Value);
-                    colorRight = lineColor.Morph(Skin.Modifiers.Effect3DLight, -effect3D.Value);
-                    colorBottom = colorRight;
-                    colorLeft = colorTop;
-                }
-            }
-
+            Color colorTop, colorRight, colorBottom, colorLeft;
+            _ModifyColorByEffect3D(lineColor, effect3D, out colorTop, out colorRight, out colorBottom, out colorLeft);
             DrawBorder(graphics, bounds, sides, dashStyle, colorTop, colorRight, colorBottom, colorLeft);
         }
         /// <summary>
@@ -82,33 +62,88 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="colorLeft"></param>
         internal static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color? colorTop, Color? colorRight, Color? colorBottom, Color? colorLeft)
         {
+            int w = bounds.Width;
+            int h = bounds.Height;
+            if (w <= 0 || h <= 0) return;
             int x0 = bounds.X;
             int y0 = bounds.Y;
-            int x1 = x0 + bounds.Width - 1;
-            int y1 = y0 + bounds.Height - 1;
-            using (Pen pen = new Pen(Color.Black))
-            {
-                pen.DashStyle = (dashStyle.HasValue ? dashStyle.Value : DashStyle.Solid);
+            int x1 = x0 + w - 1;
+            int y1 = y0 + h - 1;
 
-                if (colorTop.HasValue && (sides & RectangleSide.Top) != 0)
-                {
-                    pen.Color = colorTop.Value;
-                    graphics.DrawLine(pen, x0, y0, x1, y0);
+            if (colorTop.HasValue && sides.HasFlag(RectangleSide.Top) && w > 0)
+                graphics.DrawLine(Skin.Pen(colorTop.Value, dashStyle: dashStyle), x0, y0, x1, y0);
+
+            if (colorRight.HasValue && sides.HasFlag(RectangleSide.Right) && h > 0)
+                graphics.DrawLine(Skin.Pen(colorRight.Value, dashStyle: dashStyle), x1, y0, x1, y1);
+            
+            if (colorBottom.HasValue && sides.HasFlag(RectangleSide.Bottom) && w > 0)
+                graphics.DrawLine(Skin.Pen(colorBottom.Value, dashStyle: dashStyle), x0, y1, x1, y1);
+            
+            if (colorLeft.HasValue && sides.HasFlag(RectangleSide.Left) && h > 0)
+                graphics.DrawLine(Skin.Pen(colorLeft.Value, dashStyle: dashStyle), x0, y0, x0, y1);
+        }
+        /// <summary>
+        /// Vykreslí Soft verzi okraje prvku.
+        /// je vhodné, aby barva <paramref name="lineColor"/> měla hodnotu Alpha menší než 255, pak vypadá vnitřní růžek sytější.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="sides"></param>
+        /// <param name="lineColor"></param>
+        internal static void DrawSoftBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, Color lineColor)
+        {
+            int w = bounds.Width;
+            int h = bounds.Height;
+            if (w <= 0 || h <= 0) return;
+            int x0 = bounds.X;
+            int y0 = bounds.Y;
+            int x1 = x0 + w - 1;
+            int y1 = y0 + h - 1;
+
+            var brush = Skin.Brush(lineColor);
+
+            if (sides.HasFlag(RectangleSide.Top) && w > 2)
+                graphics.FillRectangle(brush, x0 + 1, y0, w - 2, 2);
+
+            if (sides.HasFlag(RectangleSide.Right) && h > 2)
+                graphics.FillRectangle(brush, x1 - 1, y0 + 1, 2, h - 2);
+
+            if (sides.HasFlag(RectangleSide.Bottom) && w > 0)
+                graphics.FillRectangle(brush, x0 + 1, y1 - 1, w - 2, 2);
+
+            if (sides.HasFlag(RectangleSide.Left) && h > 0)
+                graphics.FillRectangle(brush, x0, y0 + 1, 2, h - 2);
+        }
+        /// <summary>
+        /// Provede modifikaci dané barvy pomocí dodaného 3D efektu, do výsledných barev
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="effect3D"></param>
+        /// <param name="colorTop"></param>
+        /// <param name="colorRight"></param>
+        /// <param name="colorBottom"></param>
+        /// <param name="colorLeft"></param>
+        private static void _ModifyColorByEffect3D(Color color, float? effect3D, out Color colorTop, out Color colorRight, out Color colorBottom, out Color colorLeft)
+        {
+            colorTop = color;
+            colorRight = color;
+            colorBottom = color;
+            colorLeft = color;
+            if (effect3D.HasValue && effect3D.Value != 0f)
+            {
+                if (effect3D.Value > 0f)
+                {   // Vlevo a nahoře bude barva světlejší, vpravo a dole tmavší:
+                    colorTop = color.Morph(Skin.Modifiers.Effect3DLight, effect3D.Value);
+                    colorRight = color.Morph(Skin.Modifiers.Effect3DDark, effect3D.Value);
+                    colorBottom = colorRight;
+                    colorLeft = colorTop;
                 }
-                if (colorRight.HasValue && (sides & RectangleSide.Right) != 0)
-                {
-                    pen.Color = colorRight.Value;
-                    graphics.DrawLine(pen, x1, y0, x1, y1);
-                }
-                if (colorBottom.HasValue && (sides & RectangleSide.Bottom) != 0)
-                {
-                    pen.Color = colorBottom.Value;
-                    graphics.DrawLine(pen, x0, y1, x1, y1);
-                }
-                if (colorLeft.HasValue && (sides & RectangleSide.Left) != 0)
-                {
-                    pen.Color = colorLeft.Value;
-                    graphics.DrawLine(pen, x0, y0, x0, y1);
+                else
+                {   // Vlevo a nahoře bude barva tmavší, vpravo a dole světlejší:
+                    colorTop = color.Morph(Skin.Modifiers.Effect3DDark, -effect3D.Value);
+                    colorRight = color.Morph(Skin.Modifiers.Effect3DLight, -effect3D.Value);
+                    colorBottom = colorRight;
+                    colorLeft = colorTop;
                 }
             }
         }
@@ -1978,32 +2013,58 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 graphics.DrawLine(pen, x0, y0, x1, y1);
         }
         #endregion
-        #region DrawRelationGrid
+        #region DrawRelationLine
         /// <summary>
         /// Metoda vykreslí linku na spodním okraji daného prostoru, podle pravidel pro Grid
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="width"></param>
-        /// <param name="fading"></param>
-        internal static void DrawRelationGrid(Graphics graphics, Rectangle bounds, Color? color = null, int? width = null, float? fading = null)
+        /// <param name="forGrid">Určení šířky: Zadejte false pro Form, true pro Grid</param>
+        /// <param name="forDocument">Určení barvy: Zadejte false pro Záznam, true pro Dokument</param>
+        /// <param name="color">Explicitní barva</param>
+        /// <param name="lineWidth">Explicitní šířka linky (1 až 2 pixely, rozmezí je 0 - 6; přičemž 0 se nekreslí)</param>
+        /// <param name="colorFading">Explicitní Fading = slábnutí barvy (barevný přechod), default = 0.60f</param>
+        internal static void DrawRelationLine(Graphics graphics, Rectangle bounds, bool forGrid = false, bool forDocument = false, Color? color = null, int? lineWidth = null, float? colorFading = null)
         {
-            int w = (width.HasValue ? width.Value : Skin.Relation.LineHeightInGrid);
-            Color c = (color.HasValue ? color.Value : Skin.Relation.LineColorInGrid);
-            float f = (fading.HasValue ? fading.Value : Skin.Relation.LineFadingRatio);
-            bounds.Height = bounds.Height - 2;
-            _DrawRelationGrid(graphics, bounds, c, w, f);
-        }
-        private static void _DrawRelationGrid(Graphics graphics, Rectangle bounds, Color color, int width, float fading)
-        {
-            width = (width < 0 ? 0 : (width > 6 ? 6 : width));
-            if (width == 0) return;
+            int thick = (lineWidth.HasValue ? lineWidth.Value : (!forGrid ? Skin.Relation.LineHeightInForm : Skin.Relation.LineHeightInGrid));
+            thick = (thick < 0 ? 0 : (thick > 6 ? 6 : thick));
+            if (thick == 0) return;
+
+            Color color1 = (color.HasValue ? color.Value : (!forDocument ? 
+                (!forGrid ? Skin.Relation.LineColorForRecordInForm : Skin.Relation.LineColorForRecordInGrid) :
+                (!forGrid ? Skin.Relation.LineColorForDocumentInForm1 : Skin.Relation.LineColorForDocumentInGrid)));
+            Color? color2 = (color.HasValue ? color : (!forGrid && forDocument ? (Color?)Skin.Relation.LineColorForDocumentInForm2 : null));
+
+            float fading = (colorFading.HasValue ? colorFading.Value : Skin.Relation.LineFadingRatio);
             fading = (fading < 0f ? 0f : (fading > 1f ? 1f : fading));
 
-            Rectangle boundsLine = new Rectangle(bounds.X + 1, bounds.Bottom - width, bounds.Width - 3, width);
+            Rectangle boundsLine = (!forGrid ?
+                new Rectangle(bounds.X, bounds.Bottom - thick, bounds.Width, thick) :
+                new Rectangle(bounds.X + 1, bounds.Bottom - thick - 2, bounds.Width - 3, thick));
             if (boundsLine.Width <= 0) return;
 
+            if (color2.HasValue && thick >= 2)
+            {   // Barva color2 je zadána jen pro Dokument a Form; a pokud je tloušťka čáry více než 1 pixel máme trochu jinou úpravu:
+                //  Horní polovina bude barvou color1, a dolní pak barvou color2:
+                Rectangle bounds1 = new Rectangle(boundsLine.X, boundsLine.Y, boundsLine.Width, thick / 2);
+                _DrawRelationLine(graphics, bounds1, color1, fading);
+                Rectangle bounds2 = new Rectangle(boundsLine.X, bounds1.Bottom, boundsLine.Width, boundsLine.Height - bounds1.Height);
+                _DrawRelationLine(graphics, bounds2, color2.Value, fading);
+            }
+            else
+            {
+                _DrawRelationLine(graphics, boundsLine, color1, fading);
+            }
+        }
+        /// <summary>
+        /// Vykreslí čáru do daného prostoru, v dané barvě a s danou hodnotou fading
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="boundsLine"></param>
+        /// <param name="color"></param>
+        /// <param name="fading"></param>
+        private static void _DrawRelationLine(Graphics graphics, Rectangle boundsLine, Color color, float fading)
+        {
             if (fading == 0f)
             {
                 graphics.FillRectangle(Skin.Brush(color), boundsLine);
@@ -2017,9 +2078,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 {
                     graphics.FillRectangle(lgb, boundsLine);
                 }
-
             }
-
         }
         #endregion
         #region DrawScrollBar
@@ -2034,24 +2093,26 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             Point location = absoluteBounds.Location;
             Orientation orientation = scrollBar.Orientation;
             bool isEnabled = scrollBar.IsEnabled;
+            GInteractiveState summaryState = (scrollBar.MinButtonState | scrollBar.MinAreaState | scrollBar.ThumbButtonState | scrollBar.MaxAreaState | scrollBar.MaxButtonState);
+            bool isScrollBarActive = summaryState.IsMouseActive();
 
             // Pozadí:
-            _DrawScrollBarBack(graphics, absoluteBounds, orientation, isEnabled, scrollBar.ScrollBarBackColor);
+            _DrawScrollBarBack(graphics, absoluteBounds, orientation, isEnabled, isScrollBarActive, scrollBar.ScrollBarBackColor);
 
             // Prostor Data (mezi Min a Max buttonem, pod Thumbem), plus UserDataDraw method:
-            _DrawScrollBarData(graphics, scrollBar.DataAreaBounds.Add(location), orientation, isEnabled, scrollBar.ScrollBarBackColor, scrollBar.UserDataDraw);
+            _DrawScrollBarData(graphics, scrollBar.DataAreaBounds.Add(location), orientation, isEnabled, isScrollBarActive, scrollBar.ScrollBarBackColor, scrollBar.UserDataDraw);
 
             // Aktivní prostor Min/Max area (prostor pro kliknutí mezi Thumb a Min/Max Buttonem):
             if (scrollBar.MinAreaState.IsMouseActive())
-                _DrawScrollBarActiveArea(graphics, scrollBar.MinAreaBounds.Add(location), orientation, isEnabled, scrollBar.MinAreaState);
+                _DrawScrollBarActiveArea(graphics, scrollBar.MinAreaBounds.Add(location), orientation, isEnabled, isScrollBarActive, scrollBar.MinAreaState);
             else if (scrollBar.MaxAreaState.IsMouseActive())
-                _DrawScrollBarActiveArea(graphics, scrollBar.MaxAreaBounds.Add(location), orientation, isEnabled, scrollBar.MaxAreaState);
+                _DrawScrollBarActiveArea(graphics, scrollBar.MaxAreaBounds.Add(location), orientation, isEnabled, isScrollBarActive, scrollBar.MaxAreaState);
 
             // Buttony:
-            _DrawScrollBarButton(graphics, scrollBar.MinButtonBounds.Add(location), orientation, isEnabled, scrollBar.MinButtonState, true, LinearShapeType.LeftArrow, LinearShapeType.UpArrow);
-            _DrawScrollBarButton(graphics, scrollBar.MaxButtonBounds.Add(location), orientation, isEnabled, scrollBar.MaxButtonState, true, LinearShapeType.RightArrow, LinearShapeType.DownArrow);
+            _DrawScrollBarButton(graphics, scrollBar.MinButtonBounds.Add(location), orientation, isEnabled, isScrollBarActive, scrollBar.MinButtonState, false, LinearShapeType.LeftArrow, LinearShapeType.UpArrow);
+            _DrawScrollBarButton(graphics, scrollBar.MaxButtonBounds.Add(location), orientation, isEnabled, isScrollBarActive, scrollBar.MaxButtonState, false, LinearShapeType.RightArrow, LinearShapeType.DownArrow);
             if (isEnabled)
-                _DrawScrollBarButton(graphics, scrollBar.ThumbButtonBounds.Add(location), orientation, isEnabled, scrollBar.ThumbButtonState, false, LinearShapeType.HorizontalLines, LinearShapeType.VerticalLines);
+                _DrawScrollBarButton(graphics, scrollBar.ThumbButtonBounds.Add(location), orientation, isEnabled, isScrollBarActive, scrollBar.ThumbButtonState, true, LinearShapeType.HorizontalLines, LinearShapeType.VerticalLines);
 
         }
         /// <summary>
@@ -2061,8 +2122,9 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
+        /// <param name="isScrollBarActive"></param>
         /// <param name="backColor"></param>
-        private static void _DrawScrollBarBack(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Color backColor)
+        private static void _DrawScrollBarBack(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, bool isScrollBarActive, Color backColor)
         {
             if (!isEnabled)
                 backColor = backColor.Morph(Skin.Modifiers.BackColorDisable, 0.35f);
@@ -2076,9 +2138,10 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
+        /// <param name="isScrollBarActive"></param>
         /// <param name="backColor"></param>
         /// <param name="userDataDraw"></param>
-        private static void _DrawScrollBarData(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Color backColor, Action<Graphics, Rectangle> userDataDraw)
+        private static void _DrawScrollBarData(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, bool isScrollBarActive, Color backColor, Action<Graphics, Rectangle> userDataDraw)
         {
             // GInteractiveState itemState = (isEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled);
             // GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, null);
@@ -2097,8 +2160,9 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
+        /// <param name="isScrollBarActive"></param>
         /// <param name="itemState"></param>
-        private static void _DrawScrollBarActiveArea(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, GInteractiveState itemState)
+        private static void _DrawScrollBarActiveArea(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, bool isScrollBarActive, GInteractiveState itemState)
         {
             GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, orientation, itemState, null, 96);
         }
@@ -2109,15 +2173,19 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
+        /// <param name="isScrollBarActive"></param>
         /// <param name="itemState"></param>
-        /// <param name="drawOnlyMouseActive"></param>
+        /// <param name="drawAlways"></param>
         /// <param name="shapeHorizontal"></param>
         /// <param name="shapeVertical"></param>
-        private static void _DrawScrollBarButton(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, GInteractiveState itemState, bool drawOnlyMouseActive, LinearShapeType shapeHorizontal, LinearShapeType shapeVertical)
+        private static void _DrawScrollBarButton(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, bool isScrollBarActive, GInteractiveState itemState, bool drawAlways, LinearShapeType shapeHorizontal, LinearShapeType shapeVertical)
         {
-            if (isEnabled && (!drawOnlyMouseActive || itemState.IsMouseActive()))
-            {   // Buttony kreslím jen pokud ScrollBar je Enabled, a (mám kreslit i za stavu bez myši = Thumb, anebo button je myšoaktivní = Min/Max):
-                GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorButton, orientation, itemState, null, null);
+            bool isItemActive = itemState.IsMouseActive();
+
+            if (isEnabled && (drawAlways || isItemActive))
+            {   // Buttony kreslím jen pokud ScrollBar je Enabled, a (mám kreslit vždy = Thumb, anebo button je myšoaktivní = Min/Max):
+                Color backColor = (isScrollBarActive ? Skin.ScrollBar.BackColorButtonActive : Skin.ScrollBar.BackColorButtonPassive);
+                GPainter.DrawAreaBase(graphics, bounds, backColor, orientation, itemState, null, null);
                 // GPainter.DrawButtonBase(graphics, bounds, Skin.ScrollBar.BackColorButton, itemState, orientation, 0, null, null);
             }
 
@@ -5286,6 +5354,28 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// Pokud konec má X rovno nebo vyšší, pak je vykreslena <see cref="ZigZagHorizontal"/> = nejprve doprava, pak nahoru/dolů, a pak doprava.
         /// </summary>
         ZigZagOptimal
+    }
+    /// <summary>
+    /// Typ borderu
+    /// </summary>
+    public enum BorderStyleType
+    {
+        /// <summary>
+        /// Žádný
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Jednobarevný
+        /// </summary>
+        Flat,
+        /// <summary>
+        /// Se 3D efektem
+        /// </summary>
+        Effect3D,
+        /// <summary>
+        /// Měkký
+        /// </summary>
+        Soft
     }
     /// <summary>
     /// Druhy transformací, pro které lze vygenerovat matrix v metodě GetMatrix(MatrixBasicTransformType).

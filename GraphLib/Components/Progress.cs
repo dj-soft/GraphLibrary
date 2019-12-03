@@ -101,7 +101,7 @@ namespace Asol.Tools.WorkScheduler.Components
             GInteractiveControl host = this.Host;
             if (host == null) return;
 
-            Rectangle hostBounds = host.ClientRectangle;
+            Rectangle hostBounds = host.ClientItemsRectangle;
 
             Size maxSize = new Size(hostBounds.Width - 12, hostBounds.Height - 12);
             Size size = new Size(420, 200);

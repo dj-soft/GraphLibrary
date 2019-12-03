@@ -362,7 +362,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Draw(object userData)
         {
             if (!this.IsPainted)
-                // Pokud jsem dosud nebyl kreslen, pak ignorujeme explicitní požadavek (ten říká: kresli ken něco), a budeme kreslit vše:
+                // Pokud jsem dosud nebyl kreslen, pak ignorujeme explicitní požadavek (ten říká: kresli jen něco), a budeme kreslit vše:
                 this._Draw(null, null);
             else
                 // Kresli podle požadavku:
@@ -406,7 +406,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             // Clear layer 0:
             if (e.NeedPaintToLayer(0))
-                e.GetGraphicsForLayer(0, true).Clear(this.BackColor);
+                e.GetGraphicsForLayer(0, true)?.Clear(this.BackColor);
         }
         /// <summary>
         /// Occured in Resize process, after prepared graphics, before Draw() process.
@@ -434,6 +434,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Was at least once painted?
         /// </summary>
         protected bool IsPainted { get { return this._IsPainted; } } private bool _IsPainted = false;
+        /// <summary>
+        /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// </summary>
+        public virtual Size ClientItemsSize { get { return this.ClientSize; } }
+        /// <summary>
+        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// </summary>
+        public virtual Rectangle ClientItemsRectangle { get { return this.ClientRectangle; } }
         #endregion
         #region Řízení kreslení: private _Draw(); protected OnPaintLayers();
         /// <summary>
@@ -998,6 +1006,557 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Nicméně aplikace může na konci metody override OnPaintLayers() vložit do argumentu do property ValidLayer libovolnou vrstvu, která se bude používat jako zdroj obrazu pro vykreslení controlu.
         /// </summary>
         public int ValidLayer { get; private set; }
+    }
+    #endregion
+    #endregion
+    #region GControlScrollable : potomek GControlLayered rozšířený o možnost Scrollování svého obsahu
+    /// <summary>
+    /// GControlScrollable : potomek GControlLayered rozšířený o možnost Scrollování svého obsahu
+    /// </summary>
+    public abstract class GControlScrollable : GControlLayered, IAutoScrollContainer
+    {
+        #region Konstruktor a AutoScrollSupport instance
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GControlScrollable()
+        {
+            this._AutoScrollSupport = new AutoScrollSupport(this);
+
+#warning    JEN PRO TESTY:   this.AutoScroll = true;
+            this.AutoScroll = true;
+        }
+        private AutoScrollSupport _AutoScrollSupport;
+        #endregion
+        #region Support pro scrollování
+        /// <summary>
+        /// Hodnota true zapíná funkci AutoScroll = zobrazí se posuvníky, pokud souřadnice položek přesahují aktuální velikost klientské velikosti controlu
+        /// </summary>
+        public bool AutoScroll { get { return this._AutoScrollSupport.AutoScroll; } set { this._AutoScrollSupport.AutoScroll = value; } }
+        /// <summary>
+        /// Přídavek velikosti doprava a dolů za prostor obsazeny controly <see cref="ChildItems"/>.
+        /// Metoda <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/> určí nejvyšší použitou souřadnici v ose X i Y, 
+        /// a pokud by se prvky nevešly do viditelného prostoru, pak určí celkový zobrazovaný prostor (přidáním tohoto okraje doprava a dolů),
+        /// a určí potřebné scrollbary.
+        /// <para/>
+        /// Tento Margin vizuálně zvýrazní, že za posledními prvky v daném směru už není nic.
+        /// <para/>
+        /// Default je hodnota: { 8, 8 }; setovat lze hodnoty v rozmezí 0 - 30 včetně.
+        /// </summary>
+        public Size AutoScrollMargin { get { return this._AutoScrollSupport.AutoScrollMargin; } set { this._AutoScrollSupport.AutoScrollMargin = value; } }
+        /// <summary>
+        /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// </summary>
+        public override Size ClientItemsSize { get { return this._AutoScrollSupport.ClientItemsSize; } }
+        /// <summary>
+        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// </summary>
+        public override Rectangle ClientItemsRectangle { get { return this._AutoScrollSupport.ClientItemsRectangle; } }
+        /// <summary>
+        /// Metodu musí zavolat potomek před každým vykreslením prvků v režimu kreslení DrawAllItems.
+        /// Metoda změří fyzickou velikost controlu, rozsah kreslených prvků a určí potřebu kreslení ScrollBarů.
+        /// Pokud budou scrollbary potřebné, zajistí jejich korektní zobrazení.
+        /// </summary>
+        /// <param name="e"></param>
+        protected void AutoScrollDetect(LayeredPaintEventArgs e)
+        {
+            if (!this.AutoScroll) return;
+            this._AutoScrollSupport.AutoScrollDetect(e);
+        }
+        /// <summary>
+        /// Metodu má volat potomek poté, kdy vykreslil svoje běžné interaktivní prvky do základní vrstvy grafiky.
+        /// V této metodě mohou být vykresleny scrollbary - podle potřeby.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="graphicsSize"></param>
+        protected void AutoScrollDraw(Graphics graphics, Size graphicsSize)
+        {
+            this._AutoScrollSupport.AutoScrollDraw(graphics, graphicsSize);
+        }
+        /// <summary>
+        /// Souřadnice, které jsou aktuálně viditelné.
+        /// Pokud obsahuje null = pak je zobrazen celý obsah controlu v nativních souřadnicích, není aktivní žádný AutoScroll (ani horizontální, ani vertikální). 
+        /// </summary>
+        protected Rectangle? AutoScrollVisibleBounds { get { return this._AutoScrollSupport.CurrentVisibleBounds; } }
+        private Rectangle? _AutoScrollVisibleBounds;
+        /// <summary>
+        /// Horizontální (vodorovný) ScrollBar
+        /// </summary>
+        protected GScrollBar AutoScrollBarH { get { return this._AutoScrollSupport.ScrollBarH; } }
+        /// <summary>
+        /// Vertikální (svislý) ScrollBar
+        /// </summary>
+        protected GScrollBar AutoScrollBarV { get { return this._AutoScrollSupport.ScrollBarV; } }
+        #endregion
+        #region abstract a interface
+        /// <summary>
+        /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost v metodě <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/>.
+        /// </summary>
+        protected abstract IEnumerable<IInteractiveItem> ChildItems { get; }
+        /// <summary>
+        /// člen interface:
+        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
+        /// Jde o celou velikost, včetně prostor Scrollbarů.
+        /// </summary>
+        Size IAutoScrollContainer.ClientVisibleSize { get { return this.ClientSize; } }
+        /// <summary>
+        /// člen interface:
+        /// Zobrazované interaktivní prvky, mimo ScrollBary
+        /// </summary>
+        IEnumerable<IInteractiveItem> IAutoScrollContainer.ChildItems { get { return this.ChildItems; } }
+        /// <summary>
+        /// člen interface:
+        /// Scrollbary aktuálně přítomné v this prvku
+        /// </summary>
+        IEnumerable<IInteractiveItem> IAutoScrollContainer.ScrollBars { get { return this._AutoScrollSupport.ScrollBars; } }
+        #endregion
+    }
+    /// <summary>
+    /// Kompletní podpora pro AutoScroll
+    /// </summary>
+    public class AutoScrollSupport
+    {
+        #region Obecné public členy
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public AutoScrollSupport(IAutoScrollContainer owner)
+        {
+            this._Owner = owner;
+            this._CurrentVisibleBounds = null;
+            this._VisibleOrigin = new Point();
+            this._AutoScrollMargin = new Size(8, 8);
+        }
+        private IAutoScrollContainer _Owner;
+        /// <summary>
+        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
+        /// Jde o celou velikost, včetně prostor Scrollbarů.
+        /// </summary>
+        protected Size ClientVisibleSize { get { return this._Owner.ClientVisibleSize; } }
+        /// <summary>
+        /// Hodnota true zapíná funkci AutoScroll = zobrazí se posuvníky, pokud souřadnice položek přesahují aktuální velikost klientské velikosti controlu
+        /// </summary>
+        public bool AutoScroll { get; set; }
+        /// <summary>
+        /// Přídavek velikosti doprava a dolů za prostor obsazený controly <see cref="IAutoScrollContainer.ChildItems"/>.
+        /// Metoda <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/> určí nejvyšší použitou souřadnici v ose X i Y, 
+        /// a pokud by se prvky nevešly do viditelného prostoru, pak určí celkový zobrazovaný prostor (přidáním tohoto okraje doprava a dolů),
+        /// a určí potřebné scrollbary.
+        /// <para/>
+        /// Tento Margin vizuálně zvýrazní, že za posledními prvky v daném směru už není nic.
+        /// <para/>
+        /// Default je hodnota: { 8, 8 }; setovat lze hodnoty v rozmezí 0 - 30 včetně.
+        /// </summary>
+        public Size AutoScrollMargin
+        {
+            get { return this._AutoScrollMargin; }
+            set
+            {
+                int w = value.Width;
+                int h = value.Height;
+                w = (w < 0 ? 0 : (w > 30 ? 30 : w));
+                h = (h < 0 ? 0 : (h > 30 ? 30 : h));
+                this._AutoScrollMargin = new Size(w, h);
+            }
+        }
+        private Size _AutoScrollMargin;
+        /// <summary>
+        /// Obsahuje true v případě, kdy je aktivní Scroll (tj. když nejsme v nativním zobrazení obsahu)
+        /// </summary>
+        public bool IsScrollActive { get { return this._CurrentVisibleBounds.HasValue; } }
+        /// <summary>
+        /// Souřadnice, které jsou aktuálně viditelné.
+        /// Pokud obsahuje null = pak je zobrazen celý obsah controlu v nativních souřadnicích, není aktivní žádný AutoScroll (ani horizontální, ani vertikální). 
+        /// </summary>
+        public Rectangle? CurrentVisibleBounds { get { return this._CurrentVisibleBounds; } }
+        /// <summary>
+        /// Scrollbary aktuálně přítomné v this prvku
+        /// </summary>
+        public IEnumerable<IInteractiveItem> ScrollBars { get { return (this.AutoScroll ? this._ScrollBars : null); } }
+        /// <summary>
+        /// Horizontální (vodorovný) ScrollBar, anebo null když není zobrazován a tedy není aktivní
+        /// </summary>
+        public GScrollBar ScrollBarH { get { return ((this.AutoScroll && this._ScrollVisibleH) ? this._ScrollBarH : null); } }
+        /// <summary>
+        /// Vertikální (svislý) ScrollBar, anebo null když není zobrazován a tedy není aktivní
+        /// </summary>
+        public GScrollBar ScrollBarV { get { return ((this.AutoScroll && this._ScrollVisibleV) ? this._ScrollBarV : null); } }
+        /// <summary>
+        /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// </summary>
+        public Size ClientItemsSize { get {  return this.ClientItemsRectangle.Size; } }
+        /// <summary>
+        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// </summary>
+        public Rectangle ClientItemsRectangle
+        {
+            get
+            {
+                Point origin = new Point(0, 0);
+                Size size = this.ClientVisibleSize;
+                if (this.AutoScroll)
+                {
+                    if (this._ScrollVisibleV) size.Width = size.Width - this._ScrollBarThick;
+                    if (this._ScrollVisibleH) size.Height = size.Height - this._ScrollBarThick;
+                }
+                return new Rectangle(origin, size);
+            }
+        }
+        #endregion
+        #region Detekce nutnosti Autoscrollu, určení viditelnosti Scrollbarů a rozsahu viditelné oblasti
+        /// <summary>
+        /// Metodu musí zavolat potomek před každým vykreslením prvků v režimu kreslení DrawAllItems.
+        /// Metoda změří fyzickou velikost controlu, rozsah kreslených prvků a určí potřebu kreslení ScrollBarů.
+        /// Pokud budou scrollbary potřebné, zajistí jejich korektní zobrazení.
+        /// </summary>
+        /// <param name="e"></param>
+        public void AutoScrollDetect(LayeredPaintEventArgs e)
+        {
+            if (!this.AutoScroll) return;
+
+            bool visibleH, visibleV;
+            int scrollBarThick;
+            Size contentSize = this._GetContentSize();
+            Size visibleSize = this._GetVisibleSize(ref contentSize, out visibleH, out visibleV, out scrollBarThick);
+
+            if (!visibleH && !visibleV)
+            {   // Pokud není problém ani Horizonal, ani Vertical => Obsah se vejde do controlu = není aktivní AutoScrolling:
+                this._AutoScrollReset(visibleSize);
+                return;
+            }
+
+            // Některý ScrollBar bude vidět - podle aktuálního prostoru a obsahu zajistím korekci bodu počátku:
+            int originX = this._GetOriginPoint(this.VisibleOrigin.X, visibleH, contentSize.Width, visibleSize.Width);
+            int originY = this._GetOriginPoint(this.VisibleOrigin.Y, visibleV, contentSize.Height, visibleSize.Height);
+
+            this._AutoScrollSet(new Point(originX, originY), visibleH, visibleV, contentSize, visibleSize, scrollBarThick);
+        }
+        /// <summary>
+        /// Vrátí sumární velikost všech základních itemů v parametru
+        /// </summary>
+        /// <returns></returns>
+        private Size _GetContentSize()
+        {
+            IEnumerable<IInteractiveItem> childItems = this._Owner.ChildItems;
+            if (childItems == null) return Size.Empty;
+            int r = 0;
+            int b = 0;
+            foreach (IInteractiveItem item in childItems)
+            {
+                Rectangle bounds = item.Bounds;
+                if (r < bounds.Right) r = bounds.Right;
+                if (b < bounds.Bottom) b = bounds.Bottom;
+            }
+            return new Size(r, b);
+        }
+        /// <summary>
+        /// Metoda zjistí, zda aktuální obsah (jehož velikost je <paramref name="contentSize"/>) se bude zobrazovat nativně = bez ScrollBarů,
+        /// anebo bude použito scrollování obsahu.
+        /// Výstupem je velikost prostoru pro zobrazený obsah (prostor je zmenšen o potřebné scrollbary) a out parametry obsahují viditelnost scrollbarů.
+        /// Metoda v případě viditelnosti scrollbaru navýší velikost obsahu = parametr ref <paramref name="contentSize"/> o patřičnou hodnotu z <see cref="AutoScrollMargin"/>.
+        /// </summary>
+        /// <param name="contentSize"></param>
+        /// <param name="visibleH"></param>
+        /// <param name="visibleV"></param>
+        /// <param name="scrollBarThick"></param>
+        /// <returns></returns>
+        private Size _GetVisibleSize(ref Size contentSize, out bool visibleH, out bool visibleV, out int scrollBarThick)
+        {
+            Size clientSize = this.ClientVisibleSize;
+            int sizeW = clientSize.Width;
+            int sizeH = clientSize.Height;
+            int contentW = contentSize.Width;
+            int contentH = contentSize.Height;
+            visibleH = (contentW >= sizeW);
+            visibleV = (contentH >= sizeH);
+            scrollBarThick = 0;
+            if (visibleH || visibleV)
+            {   // Některý scrollbar bude viditelný - budu zmenšovat velikost prostoru o prostor scrollbarů:
+                scrollBarThick = Skin.ScrollBar.ScrollThick;
+
+                if (visibleH && visibleV)
+                {   // Budou viditelné oba scrollbary: 
+                    sizeW -= scrollBarThick;
+                    sizeH -= scrollBarThick;
+                }
+                else if (visibleH && !visibleV)
+                {   // Musím zobrazit Horizontální scrollbar:
+                    sizeH -= scrollBarThick;               // Tak tedy zmenším výšku prostoru o výšku vodorovného scrollbaru
+                    visibleV = (contentH >= sizeH);        //  a zjistím, jestli po zmenšení výšky nebudu muset zobrazit i svislý scrollbar
+                    if (visibleV) sizeW -= scrollBarThick; //  pokud ano, zmenším i šířku prostoru o pravý svislý scrollbar
+                }
+                else if (!visibleH && visibleV)
+                {   // Musím zobrazit Vertikální scrollbar:
+                    sizeW -= scrollBarThick;               // Tak tedy zmenším šířku prostoru o šířku svislého scrollbaru
+                    visibleH = (contentW >= sizeW);        //  a zjistím, jestli po zmenšení šířky nebudu muset zobrazit i vodorovný scrollbar
+                    if (visibleH) sizeH -= scrollBarThick; //  pokud ano, zmenším i výšku prostoru o dolní vodorovný scrollbar
+                }
+
+                // Velikost obsahu (parametr ref contentSize) zvětším o Margin v každém směru, ve kterém bude zobrazen Scrollbar:
+                //  (tento Margin vizuálně zvýrazní, že za posledními prvky v daném směru už není nic)
+                Size margin = this.AutoScrollMargin;
+                if (visibleH) contentW += margin.Width;
+                if (visibleV) contentH += margin.Height;
+                contentSize = new Size(contentW, contentH);
+            }
+            return new Size(sizeW, sizeH);
+        }
+        /// <summary>
+        /// Metoda vrátí novou souřadnici bodu zobrazovaného počátku (<see cref="VisibleOrigin"/>) při zadání:
+        /// dosavadní souřadnice počátku, viditelnost scrollbaru, velikost obsahu, velikost prostoru
+        /// </summary>
+        /// <param name="originCurrent">Dosavadní souřadnice počátku, pokud bude možno měli bychom se jí držet</param>
+        /// <param name="visibleScrollbar">true pokud je scrollbar viditelný</param>
+        /// <param name="contentLength">Velikost obsahu (souhrn z controlů) případně navýšený o Margin</param>
+        /// <param name="visibleLength">Velikost viditelného prostoru</param>
+        /// <returns></returns>
+        private int _GetOriginPoint(int originCurrent, bool visibleScrollbar, int contentLength, int visibleLength)
+        {
+            if (!visibleScrollbar) return 0;
+
+            int originNew = originCurrent;
+
+            // Určíme přesah viditelného prostoru (jeho konec = originCurrent + visibleLength) za datový obsah (contentLength):
+            //  Pokud overlap bude kladné, pak o tolik pixelů ukazujeme vpravo/dole více, než je obsah:
+            int overlap = originNew + visibleLength - contentLength;
+
+            // Pokud máme kladný přesah, pak o něj posuneme origin doleva/nahoru:
+            if (overlap > 0) originNew -= overlap;
+
+            // Nikdy ale nemůže být výsledek menší než 0:
+            if (originNew < 0) originNew = 0;
+
+            return originNew;
+        }
+        /// <summary>
+        /// Resetuje aktuální scrollbary
+        /// </summary>
+        /// <param name="visibleSize"></param>
+        private void _AutoScrollReset(Size visibleSize)
+        {
+            this._VisibleSize = visibleSize;
+            this._ContentSize = visibleSize;
+            this._CurrentVisibleBounds = null;
+            this._ScrollVisibleH = false;
+            this._ScrollVisibleV = false;
+            this._ScrollBars = null;
+        }
+        /// <summary>
+        /// Nastaví dané hodnoty jako stav AutoScroll
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="visibleH"></param>
+        /// <param name="visibleV"></param>
+        /// <param name="contentSize"></param>
+        /// <param name="visibleSize"></param>
+        /// <param name="scrollBarThick"></param>
+        private void _AutoScrollSet(Point origin, bool visibleH, bool visibleV, Size contentSize, Size visibleSize, int scrollBarThick)
+        {
+            this._CurrentVisibleBounds = new Rectangle(origin, visibleSize);
+            bool isCordinateChange = ((origin != this._VisibleOrigin) || (visibleSize != this._VisibleSize) || (contentSize != this._ContentSize) || (scrollBarThick != this._ScrollBarThick));
+            bool isVisibleChange = ((visibleH != this._ScrollVisibleH) || (visibleV != this._ScrollVisibleV));
+            if (!isCordinateChange && !isVisibleChange) return;
+
+            if (isCordinateChange)
+            {
+                this._VisibleOrigin = origin;
+                this._VisibleSize = visibleSize;
+                this._ContentSize = contentSize;
+                this._ScrollBarThick = scrollBarThick;
+            }
+
+            if (isVisibleChange)
+            {
+                this._ScrollVisibleH = visibleH;
+                this._ScrollVisibleV = visibleV;
+            }
+
+            if (isCordinateChange || isVisibleChange)
+            {
+                this._AutoScrollBarHSet();
+                this._AutoScrollBarVSet();
+                this._AutoScrollBarSSet();
+                if (this._ScrollBars == null || isVisibleChange)
+                {
+                    this._ScrollBars = new List<IInteractiveItem>();
+                    if (visibleH) this._ScrollBars.Add(this._ScrollBarH);
+                    if (visibleV) this._ScrollBars.Add(this._ScrollBarV);
+                    if (visibleH && visibleV) this._ScrollBars.Add(this._ScrollBarS);
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda určí novou souřadnici pro viditelný prostor na základě dané hodnoty ze Scrollbaru
+        /// </summary>
+        /// <param name="orientation"></param>
+        /// <param name="value"></param>
+        private void _AutoScrollValueSet(Orientation orientation, int value)
+        {
+            Point origin = this._VisibleOrigin;
+            origin = (orientation == Orientation.Horizontal ? new Point(value, origin.Y) : new Point(origin.X, value));
+            this._VisibleOrigin = origin;
+            this._CurrentVisibleBounds = new Rectangle(origin, this._VisibleSize);
+        }
+        /// <summary>
+        /// Kompletně připraví <see cref="_ScrollBarH"/> (tj. existenci, eventhandlery, souřadnice, hodnoty)
+        /// </summary>
+        private void _AutoScrollBarHSet()
+        {
+            this._AutoScrollBarSet(ref this._ScrollBarH, this._ScrollVisibleH, Orientation.Horizontal, this._VisibleOrigin.X, this._VisibleSize.Width, this._ContentSize.Width);
+        }
+        /// <summary>
+        /// Kompletně připraví <see cref="_ScrollBarV"/> (tj. existenci, eventhandlery, souřadnice, hodnoty)
+        /// </summary>
+        private void _AutoScrollBarVSet()
+        {
+            this._AutoScrollBarSet(ref this._ScrollBarV, this._ScrollVisibleV, Orientation.Vertical, this._VisibleOrigin.Y, this._VisibleSize.Height, this._ContentSize.Height);
+        }
+        private void _AutoScrollBarSSet()
+        {
+            if (!this.AutoScroll || !this._ScrollVisibleBoth) return;
+            if (this._ScrollBarS == null)
+            {
+                this._ScrollBarS = new InteractiveObject(this._Owner as IInteractiveParent);
+            }
+            Size clientSize = this.ClientVisibleSize;
+            int scrollBarThick = this._ScrollBarThick;
+            this._ScrollBarS.Bounds = new Rectangle(clientSize.Width - scrollBarThick, clientSize.Height - scrollBarThick, scrollBarThick, scrollBarThick);
+            this._ScrollBarS.BackColor = Skin.ScrollBar.BackColorArea;
+        }
+        /// <summary>
+        /// Kompletně připraví dodaný <see cref="GScrollBar"/> (tj. existenci, eventhandlery, souřadnice, hodnoty) podle parametrů
+        /// </summary>
+        private void _AutoScrollBarSet(ref GScrollBar scrollBar, bool isVisible, Orientation orientation, int value, int visibleLength, int totalLength)
+        {
+            if (!isVisible) return;
+
+            if (scrollBar == null)
+            {   // Scrollbary vytvářím až on-demand:
+                scrollBar = new GScrollBar(this._Owner as IInteractiveParent)
+                {
+                    Orientation = orientation
+                };
+                scrollBar.ValueChanging += ScrollBar_ValueChanges;
+                scrollBar.ValueChanged += ScrollBar_ValueChanges;
+            }
+
+            Size clientSize = this.ClientVisibleSize;
+            int scrollBarThick = this._ScrollBarThick;
+            int endSpace = (this._ScrollVisibleBoth ? scrollBarThick : 0);
+            Rectangle scrollBounds = (orientation == Orientation.Horizontal ?
+                new Rectangle(0, clientSize.Height - scrollBarThick, clientSize.Width - endSpace, scrollBarThick) :
+                new Rectangle(clientSize.Width - scrollBarThick, 0, scrollBarThick, clientSize.Height - endSpace));
+
+            using (scrollBar.SuppressEvents())
+            {   // Teď mě nezajímají eventy, které bude ScrollBar generovat při vkládání hodnot:
+                scrollBar.Bounds = scrollBounds;
+                scrollBar.ValueTotal = new DecimalNRange(0, totalLength);
+                scrollBar.Value = new DecimalNRange(value, value + visibleLength);
+            }
+        }
+        /// <summary>
+        /// Obsluha událostí ValueChanging a ValueChanged pro oba ScrollBary
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ScrollBar_ValueChanges(object sender, GPropertyChangeArgs<DecimalNRange> e)
+        {
+            GScrollBar scrollBar = sender as GScrollBar;
+            if (scrollBar == null || e.NewValue == null || !e.NewValue.Begin.HasValue) return;
+            int value = (int)Math.Round(e.NewValue.Begin.Value, 0);
+            this._AutoScrollValueSet(scrollBar.Orientation, value);
+        }
+        /// <summary>
+        /// Souřadnice počátku prostoru, který je aktuálně viditelný.
+        /// Má hodnotu {0,0} až {99999,99999}; nikdy není záporný, vyjadřuje první logický bod controlu který je zobrazen na souřadnici {0,0} fyzického controlu.
+        /// Výchozí hodnota je {0,0}. 
+        /// Když se fyzicky zvětší control, pak se posouvá zobrazovaná oblast tak, aby pokud možno koncové okraje logického controlu byly co nejblíže vpravo a dole 
+        /// = zmenšuje se hodnota v <see cref="VisibleOrigin"/> (=např. při zvětšování šířky controlu nedochází k tomu, že by logický konec obsahu
+        /// zůstával hodně vlevo, a vpravo by se zobrazoval prázdný prostor)
+        /// </summary>
+        protected Point VisibleOrigin { get { return this._VisibleOrigin; } }
+        private Point _VisibleOrigin;
+        /// <summary>
+        /// Aktuální velikost viditelné oblasti (=ClientSize mínus Scrollbary)
+        /// </summary>
+        protected Size VisibleSize { get { return this._VisibleSize; } }
+        private Size _VisibleSize;
+        /// <summary>
+        /// Aktuální velikost celkové oblasti controlů (Items [+ Margin])
+        /// </summary>
+        protected Size ContentSize { get { return this._ContentSize; } }
+        private Size _ContentSize;
+        /// <summary>
+        /// Souřadnice prostoru zobrazovaného v klientské oblasti
+        /// </summary>
+        private Rectangle? _CurrentVisibleBounds;
+        /// <summary>
+        /// Obsahuje true pokud jsou zobrazovány oba Scrollbary (pak je vpravo dole zobrazen prázdný čtvereček)
+        /// </summary>
+        private bool _ScrollVisibleBoth { get { return (this._ScrollVisibleH && this._ScrollVisibleV); } }
+        /// <summary>
+        /// Objekt horizontálního (vodorovného) Scrollbaru
+        /// </summary>
+        private GScrollBar _ScrollBarH;
+        /// <summary>
+        /// Obsahuje true pokud je zobrazován vodorovný scrollbar
+        /// </summary>
+        private bool _ScrollVisibleH;
+        /// <summary>
+        /// Objekt vertikálního (svislého) Scrollbaru
+        /// </summary>
+        private GScrollBar _ScrollBarV;
+        /// <summary>
+        /// Toto není ScrollBar, ale jen výplň pravého dolního rohu mezi oběma Scrollbary (H + V), pokud jsou oba viditelné.
+        /// </summary>
+        private InteractiveObject _ScrollBarS;
+        /// <summary>
+        /// Obsahuje true pokud je zobrazován svislý scrollbar
+        /// </summary>
+        private bool _ScrollVisibleV;
+        /// <summary>
+        /// Šíře ScrollBaru, se kterou je počítáno v layoutu
+        /// </summary>
+        private int _ScrollBarThick;
+        /// <summary>
+        /// Pole Scrollbarů, pokud mají být aktivní.
+        /// </summary>
+        private List<IInteractiveItem> _ScrollBars;
+        #endregion
+        #region Vykreslení Scrollbarů
+        /// <summary>
+        /// Metodu má volat potomek poté, kdy vykreslil svoje běžné interaktivní prvky do základní vrstvy grafiky.
+        /// V této metodě mohou být vykresleny scrollbary - podle potřeby.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="graphicsSize"></param>
+        public void AutoScrollDraw(Graphics graphics, Size graphicsSize)
+        {
+            if (!this.AutoScroll) return;
+
+
+        }
+        #endregion
+    }
+    #region interface IAutoScrollContainer : Předpis pro majitele AutoScrollSupport
+    /// <summary>
+    /// Předpis pro majitele <see cref="AutoScrollSupport"/>
+    /// </summary>
+    public interface IAutoScrollContainer
+    {
+        /// <summary>
+        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
+        /// Jde o celou velikost, včetně prostor Scrollbarů.
+        /// </summary>
+        Size ClientVisibleSize { get; }
+        /// <summary>
+        /// Zobrazované interaktivní prvky, mimo ScrollBary
+        /// </summary>
+        IEnumerable<IInteractiveItem> ChildItems { get; }
+        /// <summary>
+        /// Scrollbary aktuálně přítomné v this prvku
+        /// </summary>
+        IEnumerable<IInteractiveItem> ScrollBars { get; }
     }
     #endregion
     #endregion

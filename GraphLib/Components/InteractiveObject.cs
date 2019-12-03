@@ -15,9 +15,18 @@ namespace Asol.Tools.WorkScheduler.Components
     /// InteractiveObject : abstraktní předek všech běžně používaných grafických prvků.
     /// Může mít své vlastní Child (<see cref="Childs"/>).
     /// </summary>
-    public abstract class InteractiveObject : IInteractiveItem, IInteractiveParent
+    public class InteractiveObject : IInteractiveItem, IInteractiveParent
     {
         #region Public properties
+        /// <summary>
+        /// Základní konstruktor
+        /// </summary>
+        public InteractiveObject() { }
+        /// <summary>
+        /// Konstruktor pro konkrétního parenta
+        /// </summary>
+        /// <param name="parent"></param>
+        public InteractiveObject(IInteractiveParent parent) { this.Parent = parent; }
         /// <summary>
         /// Jednoznačné ID
         /// </summary>
@@ -80,8 +89,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual IEnumerable<IInteractiveItem> Childs { get { return null; } }
         /// <summary>
+        /// Souřadnice počátku <see cref="Bounds"/>:<see cref="Rectangle.Location"/>
+        /// <para/>
+        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.ChangeAll"/>).
+        /// </summary>
+        public Point Location
+        {
+            get { return this.Bounds.Location; }
+            set { Rectangle bounds = new Rectangle(value, this._Bounds.Size); this.SetBounds(bounds, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode); }
+        }
+        /// <summary>
+        /// Velikost controlu <see cref="Bounds"/>:<see cref="Rectangle.Size"/>
+        /// <para/>
+        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.ChangeAll"/>).
+        /// </summary>
+        public Size Size
+        {
+            get { return this.Bounds.Size; }
+            set { Rectangle bounds = new Rectangle(this._Bounds.Location, value); this.SetBounds(bounds, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode); }
+        }
+        /// <summary>
         /// Souřadnice tohoto prvku v rámci jeho Parenta.
         /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
+        /// <para/>
         /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.ChangeAll"/>).
         /// </summary>
         public virtual Rectangle Bounds 
@@ -145,6 +175,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Defaultní barva pozadí. Potomek může přepsat na svoji dle Skinu
         /// </summary>
         protected virtual Color DefaultBackColor { get { return Skin.Control.ControlBackColor; } }
+        /// <summary>
+        /// Režim kreslení pozadí tohoto prvku
+        /// </summary>
+        public DrawBackgroundMode BackgroundMode
+        {
+            get { return this._BackgroundMode; }
+            set { this._BackgroundMode = value; }
+        }
+        private DrawBackgroundMode _BackgroundMode;
         /// <summary>
         /// Libovolný popisný údaj, na funkci nemá vliv.
         /// </summary>
@@ -417,8 +456,17 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint()"/>.
+        /// Bázová třída obsahuje hodnotu odvozenou od <see cref="BackgroundMode"/> a <see cref="BackColor"/>:<see cref="Color.A"/>
         /// </summary>
-        protected virtual RepaintParentMode RepaintParent { get { return RepaintParentMode.None; } }
+        protected virtual RepaintParentMode RepaintParent
+        {
+            get
+            {
+                if (this.BackgroundMode == DrawBackgroundMode.Transparent) return RepaintParentMode.Always;
+                if (this.BackColor.A < 255) return RepaintParentMode.OnBackColorAlpha;
+                return RepaintParentMode.None;
+            }
+        }
         /// <summary>
         /// Obsahuje true, pokud this objekt je nyní přemisťován akcí DragMove 
         /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftDrag"/> nebo <see cref="GInteractiveState.RightDrag"/>)
@@ -494,6 +542,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseEnter:
                     this._HasMouse = true;
                     this.AfterStateChangedMouseEnter(e);
+                    this._CallPrepareToolTip(e);
                     this.PrepareToolTip(e);
                     this.Repaint();
                     break;
@@ -638,6 +687,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected virtual void AfterStateChangedDragFrameDone(GInteractiveChangeStateArgs e) { }
         /// <summary>
+        /// Obsahuje true, pokud přípravu ToolTip pro tento objekt má řešit jeho Parent.
+        /// </summary>
+        public virtual bool PrepareToolTipInParent { get; set; }
+        /// <summary>
+        /// Vyvolá přípravu tooltipu
+        /// </summary>
+        /// <param name="e"></param>
+        private void _CallPrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            if (this.PrepareToolTipInParent)
+                (this.Parent as InteractiveObject)?._CallPrepareToolTip(e);
+            else
+                this.PrepareToolTip(e);
+        }
+        /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je připravit data pro ToolTip.
         /// Metoda je volána poté, kdy byla volána metoda <see cref="AfterStateChangedMouseEnter"/>.
         /// Zobrazení ToolTipu zajišťuje jádro.
@@ -671,9 +735,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         protected virtual void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { }
         /// <summary>
-        /// Metoda pro standardní vykreslení prvku.
+        /// Základní metoda pro standardní vykreslení prvku.
         /// Bázová třída <see cref="InteractiveObject"/> v této metodě pouze vykreslí svůj prostor barvou pozadí <see cref="InteractiveObject.BackColor"/>.
         /// Pokud je předán režim kreslení drawMode, obsahující příznak <see cref="DrawItemMode.Ghost"/>, pak je barva pozadí modifikována tak, že její Alpha je 75% původního Alpha.
+        /// Tato metoda akceptuje hodnotu <see cref="BackgroundMode"/>.
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
@@ -681,10 +746,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected virtual void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            Color backColor = this.BackColor;
-            if (drawMode.HasFlag(DrawItemMode.Ghost))
-                backColor = backColor.CreateTransparent(0.75f);
-            e.Graphics.FillRectangle(Skin.Brush(backColor), absoluteBounds);
+            this.DrawBackground(e, absoluteBounds, absoluteVisibleBounds, drawMode, this.BackColor);
+        }
+        /// <summary>
+        /// Metoda vykreslí pozadí this prvku danou barvou
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
+        /// <param name="backColor"></param>
+        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode, Color backColor)
+        {
+            switch (this.BackgroundMode)
+            {
+                case DrawBackgroundMode.Solid:
+                    if (drawMode.HasFlag(DrawItemMode.Ghost))
+                        backColor = backColor.CreateTransparent(0.75f);
+                    e.Graphics.FillRectangle(Skin.Brush(backColor), absoluteBounds);
+                    break;
+            }
         }
         /// <summary>
         /// Metoda pro vykreslení prvku "OverChilds".
@@ -1186,6 +1267,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static UInt32 GetNextId() { return ++LastId; }
         #endregion
+    }
+    /// <summary>
+    /// Režim vykreslení Background
+    /// </summary>
+    public enum DrawBackgroundMode
+    {
+        /// <summary>
+        /// Vykreslit barvou <see cref="InteractiveObject.BackColor"/>
+        /// </summary>
+        Solid = 0,
+        /// <summary>
+        /// Pozadí vůbec nekreslit
+        /// </summary>
+        Transparent
     }
     /// <summary>
     /// Režim kreslení prvku

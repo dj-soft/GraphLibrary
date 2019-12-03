@@ -143,10 +143,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool InfoUseTabs { get { return (this.DataIsValid ? this._Data.InfoUseTabs : false); } }
         /// <summary>
-        /// Icon before Info Text to ToolTip
-        /// </summary>
-        protected Image Icon { get { return (this.DataIsValid ? this._Data.Icon : null); } }
-        /// <summary>
         /// Image namísto hlavního textu
         /// </summary>
         protected Image Image { get { return (this.DataIsValid ? this._Data.Image : null); } }
@@ -202,6 +198,60 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Font for Info text
         /// </summary>
         protected static FontInfo DefaultInfoFont { get { return FontInfo.IconTitle; } }
+        #endregion
+        #region Ikona
+        /// <summary>
+        /// Ikona v záhlaví ToolTipu.
+        /// </summary>
+        protected Image Icon { get { return (this.DataIsValid ? this._Data.Icon : null); } }
+        /// <summary>
+        /// Typ ikonky v záhlaví ToolTipu.
+        /// </summary>
+        protected IconImageType? IconType { get { return (this.DataIsValid ? this._Data.IconType : null); } }
+        /// <summary>
+        /// Obsahuje true, pokud máme k dispozici obrázek ikony
+        /// </summary>
+        protected bool HasIcon
+        {
+            get
+            {
+                Image icon = this.Icon;
+                if (icon != null) return true;
+
+                IconImageType? iconType = this.IconType;
+                if (iconType.HasValue) return (iconType.Value != IconImageType.None);
+
+                return false;
+            }
+        }
+        /// <summary>
+        /// Obsahuje aktuální ikonu
+        /// </summary>
+        protected Image CurrentIcon
+        {
+            get
+            {
+                Image icon = this.Icon;
+                if (icon != null) return icon;
+
+                IconImageType? iconType = this.IconType;
+                if (iconType.HasValue) return Skin.Icons.GetIcon(iconType.Value, true);
+
+                return null;
+            }
+        }
+        /// <summary>
+        /// Obsahuje aktuální ikonu
+        /// </summary>
+        protected Size? CurrentIconSize
+        {
+            get
+            {
+                Image icon = this.CurrentIcon;
+                if (icon == null) return null;
+                return icon.Size;
+            }
+        }
         #endregion
         #region Animation (fade-in, wait, fade-out)
         /// <summary>
@@ -674,7 +724,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true when exists Icon (is not null)
         /// </summary>
-        protected bool IconExist { get { return (this.Icon != null); } }
+        protected bool IconExist { get { return (this.HasIcon); } }
         /// <summary>
         /// true pokud je zadán velký obrázek (Image)
         /// </summary>
@@ -797,7 +847,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 if (this.IconExist)
                 {
-                    graphics.DrawImage(this.Icon, this._IconBounds.Value);
+                    graphics.DrawImage(this.CurrentIcon, this._IconBounds.Value);
                 }
                 if (this.InfoExist)
                 {
@@ -853,7 +903,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 if (this.IconExist)
                 {
-                    graphics.DrawImage(this.Icon, this._IconBounds.Value);
+                    graphics.DrawImage(this.CurrentIcon, this._IconBounds.Value);
                 }
                 if (this.InfoExist)
                 {
@@ -952,8 +1002,8 @@ namespace Asol.Tools.WorkScheduler.Components
             SizeF maxSize = this.ToolTipMaxSize;
             Size titleSize = _CalculateLineSize(graphics, this.TitleText, this.TitleFont, maxSize, 0.15f);
             Size textSize = _CalculateInfoSize(graphics, this.InfoText, this.InfoUseTabs, this.InfoFont, maxSize, 0.85f);
-            Size iconSize = _CalculateIconSize(this.Icon, IconMaxSize);
-            Size imageSize = _CalculateIconSize(this.Image, ImageMaxSize);
+            Size iconSize = _CalculateImageSize((this.HasIcon ? this.CurrentIcon : null), IconMaxSize);
+            Size imageSize = _CalculateImageSize(this.Image, ImageMaxSize);
             int titleWidth = (titleSize.Height > 0 ? titleSize.Width + 20 : 0);
             int infoWidth = (textSize.Height > 0 ? textSize.Width : 0);
             int infoHeight = textSize.Height;
@@ -1038,7 +1088,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="image"></param>
         /// <param name="maxSize"></param>
         /// <returns></returns>
-        protected Size _CalculateIconSize(Image image, Size maxSize)
+        protected Size _CalculateImageSize(Image image, Size maxSize)
         {
             Size size = Size.Empty;
             if (image != null)
@@ -1793,7 +1843,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.AnimationType = TooltipAnimationType.DefaultFade;
             this.ShapeType = TooltipShapeType.Rectangle;
-            this.Icon = IconStandard.IconInfo;
+            this.IconType = IconImageType.Info;
             this.ToolTipLayout = ToolTipLayoutType.IconBeforeTitle;
         }
         /// <summary>
@@ -1839,11 +1889,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool InfoUseTabs { get { return this._InfoUseTabs; } set { this._InfoUseTabs = value; } } private bool _InfoUseTabs;
         /// <summary>
-        /// Icon before Info Text to ToolTip
+        /// Ikona v záhlaví ToolTipu.
+        /// Defaultní ikona je null, defaultní <see cref="IconType"/> je <see cref="IconImageType.Info"/>.
+        /// Aplikace může vložit svoji explicitní ikonu, nebo null.
+        /// Setování jakékoli ikony do <see cref="Icon"/> (tj. i null) vloží null do <see cref="IconType"/>.
+        /// Aplikace také může nastavit požadovaný druh ikony do property <see cref="IconType"/>.
         /// </summary>
-        public Image Icon { get { return this._Icon; } set { this._Icon = value; } } private Image _Icon;
+        public Image Icon { get { return this._Icon; } set { this._Icon = value; this._IconType = null; } } private Image _Icon;
         /// <summary>
-        /// Image namísto hlavního textu
+        /// Typ ikony v záhlaví ToolTipu.
+        /// Defaultní typ ikony je <see cref="IconImageType.Info"/>. 
+        /// Aplikace může vložit jiný typ, nebo null.
+        /// Vložení jakékoli hodnoty (tj. i null) do <see cref="IconType"/> způsobí vložení null do <see cref="Icon"/>.
+        /// Aplikace také může nastavit svoji explicitní ikonu do property <see cref="Icon"/>.
+        /// </summary>
+        public IconImageType? IconType { get { return this._IconType; } set { this._IconType = value; this._Icon = null; } } private IconImageType? _IconType;
+        /// <summary>
+        /// Image zobrazovaný namísto hlavního textu
         /// </summary>
         public Image Image { get { return this._Image; } set { this._Image = value; } } private Image _Image;
         /// <summary>

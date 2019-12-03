@@ -58,6 +58,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinTagFilterSet TagFilter { get { return Instance._TagFilter; } }
         /// <summary>
+        /// Barvy pro TextBox
+        /// </summary>
+        public static SkinTextboxSet TextBox { get { return Instance._TextBox; } }
+        /// <summary>
         /// Color items for button (BackColor, TextColor)
         /// </summary>
         public static SkinButtonSet Button { get { return Instance._Button; } }
@@ -93,6 +97,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Grafické prvky pro kreslení objektů typu Relation
         /// </summary>
         public static SkinRelationSet Relation { get { return Instance._Relation; } }
+        /// <summary>
+        /// Ikony pro dialogy
+        /// </summary>
+        public static SkinIcons Icons { get { return Instance._Icons; } }
         /// <summary>
         /// All items, for configuration
         /// </summary>
@@ -135,6 +143,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolBar = new SkinToolBarSet(this, "ToolBar");
             this._Button = new SkinButtonSet(this, "Button");
             this._TagFilter = new SkinTagFilterSet(this, "TagFilter");
+            this._TextBox = new SkinTextboxSet(this, "TextBox");
             this._TabHeader = new SkinTabHeaderSet(this, "TabHeader");
             this._ScrollBar = new SkinScrollBarSet(this, "ScrollBar");
             this._TrackBar = new SkinTrackBarSet(this, "TrackBar");
@@ -143,6 +152,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Grid = new SkinGridSet(this, "Grid");
             this._Graph = new SkinGraphSet(this, "Graph");
             this._Relation = new SkinRelationSet(this, "Relation");
+            this._Icons = new SkinIcons(this, "Icons");
         }
         /// <summary>
         /// Add a new instance of SkinSet to Skin.
@@ -161,6 +171,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinToolTipSet _ToolTip;
         private SkinToolBarSet _ToolBar;
         private SkinTagFilterSet _TagFilter;
+        private SkinTextboxSet _TextBox;
         private SkinButtonSet _Button;
         private SkinTabHeaderSet _TabHeader;
         private SkinScrollBarSet _ScrollBar;
@@ -170,6 +181,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinGridSet _Grid;
         private SkinGraphSet _Graph;
         private SkinRelationSet _Relation;
+        private SkinIcons _Icons;
         private Dictionary<string, object> _ValueDict;
         #endregion
         #region Get and Set Values
@@ -1627,6 +1639,141 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     /// <summary>
+    /// Skin set for Textbox.
+    /// </summary>
+    public class SkinTextboxSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinTextboxSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        /// <summary>
+        /// Typ rámečku
+        /// </summary>
+        public BorderStyleType BorderStyle { get { return this._Owner.GetValue(this._SkinSetKey, "BorderStyle", DefaultBorderStyle); } set { this._Owner.SetValue(this._SkinSetKey, "BorderStyle", value); } }
+        /// <summary>
+        /// Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
+        /// </summary>
+        public Color PassiveBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "PassiveBorderColor", DefaultPassiveBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "PassiveBorderColor", value); } }
+        /// <summary>
+        /// Barva okraje textboxu s focusem (Focus, MouseDown)
+        /// </summary>
+        public Color ActiveBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBorderColor", DefaultActiveBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBorderColor", value); } }
+        /// <summary>
+        /// Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver), soft verze
+        /// </summary>
+        public Color PassiveSoftBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "PassiveSoftBorderColor", DefaultPassiveSoftBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "PassiveSoftBorderColor", value); } }
+        /// <summary>
+        /// Barva okraje textboxu s focusem (Focus, MouseDown), soft verze
+        /// </summary>
+        public Color ActiveSoftBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveSoftBorderColor", DefaultActiveSoftBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveSoftBorderColor", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu Disabled
+        /// </summary>
+        public Color DisabledBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "DisabledBackColor", DefaultDisabledBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "DisabledBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu Enabled
+        /// </summary>
+        public Color EnabledBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "EnabledBackColor", DefaultEnabledBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "EnabledBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu MouseOver
+        /// </summary>
+        public Color MouseOverBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverBackColor", DefaultMouseOverBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu Active = máme focus
+        /// </summary>
+        public Color ActiveBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBackColor", DefaultActiveBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu, část SelectedText
+        /// </summary>
+        public Color SelectedTextBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedTextBackColor", DefaultSelectedTextBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedTextBackColor", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu Disabled
+        /// </summary>
+        public Color DisabledForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "DisabledForeColor", DefaultDisabledForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "DisabledForeColor", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu Enabled
+        /// </summary>
+        public Color EnabledForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "EnabledForeColor", DefaultEnabledForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "EnabledForeColor", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu MouseOver
+        /// </summary>
+        public Color MouseOverForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverForeColor", DefaultMouseOverForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverForeColor", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu Active = máme focus
+        /// </summary>
+        public Color ActiveForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveForeColor", DefaultActiveForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveForeColor", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu, část SelectedText
+        /// </summary>
+        public Color SelectedTextForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedTextForeColor", DefaultSelectedTextForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedTextForeColor", value); } }
+        #endregion
+        #region Default colors
+        /// <summary>
+        /// Default pro: Styl rámečku
+        /// </summary>
+        protected virtual BorderStyleType DefaultBorderStyle { get { return BorderStyleType.Effect3D; } }
+        /// <summary>
+        /// Default pro: Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
+        /// </summary>
+        protected virtual Color DefaultPassiveBorderColor { get { return Color.FromArgb(128, 128, 128); } }
+        /// <summary>
+        /// Default pro: Barva okraje textboxu s focusem (Focus, MouseDown)
+        /// </summary>
+        protected virtual Color DefaultActiveBorderColor { get { return Color.FromArgb(32, 32, 32); } }
+        /// <summary>
+        /// Default pro: Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
+        /// </summary>
+        protected virtual Color DefaultPassiveSoftBorderColor { get { return Color.FromArgb(192, 186, 186, 186); } }
+        /// <summary>
+        /// Default pro: Barva okraje textboxu s focusem (Focus, MouseDown)
+        /// </summary>
+        protected virtual Color DefaultActiveSoftBorderColor { get { return Color.FromArgb(192, 150, 150, 150); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu Disabled
+        /// </summary>
+        protected virtual Color DefaultDisabledBackColor { get { return Color.FromArgb(210, 210, 210); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu Enabled
+        /// </summary>
+        protected virtual Color DefaultEnabledBackColor { get { return Color.FromArgb(240, 240, 240); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu MouseOver
+        /// </summary>
+        protected virtual Color DefaultMouseOverBackColor { get { return Color.FromArgb(240, 240, 255); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu Active = máme focus
+        /// </summary>
+        protected virtual Color DefaultActiveBackColor { get { return Color.FromArgb(255, 255, 245); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu, část SelectedText
+        /// </summary>
+        protected virtual Color DefaultSelectedTextBackColor { get { return Color.FromArgb(140, 140, 250); } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu Disabled
+        /// </summary>
+        protected virtual Color DefaultDisabledForeColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu Enabled
+        /// </summary>
+        protected virtual Color DefaultEnabledForeColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu MouseOver
+        /// </summary>
+        protected virtual Color DefaultMouseOverForeColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu Active = máme focus
+        /// </summary>
+        protected virtual Color DefaultActiveForeColor { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu, část SelectedText
+        /// </summary>
+        protected virtual Color DefaultSelectedTextForeColor { get { return Color.BlueViolet; } }
+        #endregion
+    }
+    /// <summary>
     /// Skin set for Buttons.
     /// Has colors: BackColor; TextColor;
     /// </summary>
@@ -1767,13 +1914,21 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public colors
         /// <summary>
+        /// Šířka ScrollBaru (šířka u svislého, výška u vodorovného)
+        /// </summary>
+        public int ScrollThick { get { return this._Owner.GetValue(this._SkinSetKey, "ScrollThick", DefaultScrollThick); } set { this._Owner.SetValue(this._SkinSetKey, "ScrollThick", value); } }
+        /// <summary>
         /// Barva pozadí scrollbaru
         /// </summary>
         public Color BackColorArea { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorArea", DefaultBackColorArea); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorArea", value); } }
         /// <summary>
-        /// Barva pozadí buttonů na scrollbaru
+        /// Barva pozadí buttonů na scrollbaru - pasivní stav (bez myši)
         /// </summary>
-        public Color BackColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButton", value); } }
+        public Color BackColorButtonPassive { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButtonPassive", DefaultBackColorButtonPassive); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButtonPassive", value); } }
+        /// <summary>
+        /// Barva pozadí buttonů na scrollbaru - aktivní stav (MouseOver, MouseDown)
+        /// </summary>
+        public Color BackColorButtonActive { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButtonActive", DefaultBackColorButtonActive); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButtonActive", value); } }
         /// <summary>
         /// Barva textu - značky, ikonky na scrollbaru
         /// </summary>
@@ -1781,13 +1936,21 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Default colors
         /// <summary>
+        /// Default pro: Šířka ScrollBaru (šířka u svislého, výška u vodorovného)
+        /// </summary>
+        protected virtual int DefaultScrollThick { get { return 14; } }
+        /// <summary>
         /// Default pro: Barva pozadí scrollbaru
         /// </summary>
         protected virtual Color DefaultBackColorArea { get { return Color.FromArgb(255, 160, 160, 176); } }
         /// <summary>
-        /// Default pro: Barva pozadí buttonů na scrollbaru
+        /// Default pro: Barva pozadí buttonů na scrollbaru - pasivní stav (bez myši)
         /// </summary>
-        protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 216, 216, 216); } }
+        protected virtual Color DefaultBackColorButtonPassive { get { return Color.FromArgb(255, 192, 192, 192); } }
+        /// <summary>
+        /// Default pro: Barva pozadí buttonů na scrollbaru - aktivní stav (MouseOver, MouseDown)
+        /// </summary>
+        protected virtual Color DefaultBackColorButtonActive { get { return Color.FromArgb(255, 216, 216, 216); } }
         /// <summary>
         /// Default pro: Barva textu - značky, ikonky na scrollbaru
         /// </summary>
@@ -2371,13 +2534,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Int32 LineHeightInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeightInForm", DefaultLineHeightInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeightInForm", value); } }
         /// <summary>
-        /// Vztah : barva linky v Gridu
+        /// Vztah : barva linky pro vztažený Záznam v Formu
         /// </summary>
-        public Color LineColorInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorInGrid", DefaultLineColorInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorInGrid", value); } }
+        public Color LineColorForRecordInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorForRecordInForm", DefaultLineColorForRecordInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorForRecordInForm", value); } }
         /// <summary>
-        /// Vztah : barva linky v Formu
+        /// Vztah : barva linky pro vztažený Záznam v Gridu
         /// </summary>
-        public Color LineColorInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorInForm", DefaultLineColorInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorInForm", value); } }
+        public Color LineColorForRecordInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorForRecordInGrid", DefaultLineColorForRecordInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorForRecordInGrid", value); } }
+        /// <summary>
+        /// Vztah : barva linky pro vztažený Dokument v Formu, horní část
+        /// </summary>
+        public Color LineColorForDocumentInForm1 { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorForDocumentInForm1", DefaultLineColorForDocumentInForm1); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorForDocumentInForm1", value); } }
+        /// <summary>
+        /// Vztah : barva linky pro vztažený Dokument v Formu, dolní část
+        /// </summary>
+        public Color LineColorForDocumentInForm2 { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorForDocumentInForm2", DefaultLineColorForDocumentInForm2); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorForDocumentInForm2", value); } }
+        /// <summary>
+        /// Vztah : barva linky pro vztažený Dokument v Gridu
+        /// </summary>
+        public Color LineColorForDocumentInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorForDocumentInGrid", DefaultLineColorForDocumentInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorForDocumentInGrid", value); } }
         /// <summary>
         /// Poměr slábnutí barvy
         /// </summary>
@@ -2393,19 +2568,277 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Int32 DefaultLineHeightInForm { get { return 2; } }
         /// <summary>
-        /// Default pro : Vztah : barva linky v Gridu
+        /// Default pro : Vztah : barva vztahu na Záznam v Gridu
         /// </summary>
-        protected virtual Color DefaultLineColorInGrid { get { return Color.BlueViolet; } }
+        protected virtual Color DefaultLineColorForRecordInGrid { get { return Color.FromArgb(71, 130, 180); } }
         /// <summary>
-        /// Default pro : Vztah : barva linky v Formu
+        /// Default pro : Vztah : barva vztahu na Záznam v Formu
         /// </summary>
-        protected virtual Color DefaultLineColorInForm { get { return Color.BlueViolet; } }
+        protected virtual Color DefaultLineColorForRecordInForm { get { return Color.FromArgb(0, 116, 206); } }
+        /// <summary>
+        /// Default pro : Vztah : barva linky na Dokument v Formu, horní část
+        /// </summary>
+        protected virtual Color DefaultLineColorForDocumentInForm1 { get { return Color.FromArgb(214, 214, 1); } }
+        /// <summary>
+        /// Default pro : Vztah : barva linky na Dokument v Formu, dolní část
+        /// </summary>
+        protected virtual Color DefaultLineColorForDocumentInForm2 { get { return Color.FromArgb(255, 255, 0); } }
+        /// <summary>
+        /// Default pro : Vztah : barva linky na Dokument v Gridu
+        /// </summary>
+        protected virtual Color DefaultLineColorForDocumentInGrid { get { return Color.FromArgb(214, 214, 1); } }
         /// <summary>
         /// Default pro : Poměr slábnutí barvy
         /// </summary>
         protected virtual float DefaultLineFadingRatio { get { return 0.60f; } }
         #endregion
     }
+    /// <summary>
+    /// Sada standardních ikon
+    /// </summary>
+    public class SkinIcons : SkinSet
+    {
+        #region Internal and private
+        internal SkinIcons(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public prvky
+        /// <summary>
+        /// Ikona Info - velká - její název
+        /// </summary>
+        public string IconInfoNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconInfoBig", DefaultIconInfoNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconInfoBig", value); } }
+        /// <summary>
+        /// Ikona Info - malá - její název
+        /// </summary>
+        public string IconInfoNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconInfoSmall", DefaultIconInfoNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconInfoSmall", value); } }
+
+        /// <summary>
+        /// Ikona Warning - velká - její název
+        /// </summary>
+        public string IconWarningNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconWarningBig", DefaultIconWarningNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconWarningBig", value); } }
+        /// <summary>
+        /// Ikona Warning - malá - její název
+        /// </summary>
+        public string IconWarningNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconWarningSmall", DefaultIconWarningNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconWarningSmall", value); } }
+
+        /// <summary>
+        /// Ikona Error - velká - její název
+        /// </summary>
+        public string IconErrorNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconErrorBig", DefaultIconErrorNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconErrorBig", value); } }
+        /// <summary>
+        /// Ikona Error - malá - její název
+        /// </summary>
+        public string IconErrorNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconErrorSmall", DefaultIconErrorNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconErrorSmall", value); } }
+
+        /// <summary>
+        /// Ikona Stop - velká - její název
+        /// </summary>
+        public string IconStopNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconStopBig", DefaultIconStopNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconStopBig", value); } }
+        /// <summary>
+        /// Ikona Stop - malá - její název
+        /// </summary>
+        public string IconStopNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconStopSmall", DefaultIconStopNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconStopSmall", value); } }
+
+        /// <summary>
+        /// Ikona Question - velká - její název
+        /// </summary>
+        public string IconQuestionNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconQuestionBig", DefaultIconQuestionNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconQuestionBig", value); } }
+        /// <summary>
+        /// Ikona Question - malá - její název
+        /// </summary>
+        public string IconQuestionNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconQuestionSmall", DefaultIconQuestionNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconQuestionSmall", value); } }
+
+        /// <summary>
+        /// Ikona Tip - velká - její název
+        /// </summary>
+        public string IconTipNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconTipBig", DefaultIconTipNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconTipBig", value); } }
+        /// <summary>
+        /// Ikona Tip - malá - její název
+        /// </summary>
+        public string IconTipNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconTipSmall", DefaultIconTipNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconTipSmall", value); } }
+
+        /// <summary>
+        /// Ikona OK - velká - její název
+        /// </summary>
+        public string IconOKNameBig { get { return this._Owner.GetValue(this._SkinSetKey, "IconOKBig", DefaultIconOKNameBig); } set { this._Owner.SetValue(this._SkinSetKey, "IconOKBig", value); } }
+        /// <summary>
+        /// Ikona OK - malá - její název
+        /// </summary>
+        public string IconOKNameSmall { get { return this._Owner.GetValue(this._SkinSetKey, "IconOKSmall", DefaultIconOKNameSmall); } set { this._Owner.SetValue(this._SkinSetKey, "IconOKSmall", value); } }
+
+        #endregion
+        #region Public property pro přímé získání objektu ikony
+        /// <summary>Ikona : Info, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconInfoBig { get { return this.GetIcon(IconImageType.Info, true); } }
+        /// <summary>Ikona : Info, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconInfoSmall { get { return this.GetIcon(IconImageType.Info, false); } }
+        /// <summary>Ikona : Warning, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconWarningBig { get { return this.GetIcon(IconImageType.Warning, true); } }
+        /// <summary>Ikona : Warning, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconWarningSmall { get { return this.GetIcon(IconImageType.Warning, false); } }
+        /// <summary>Ikona : Error, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconErrorBig { get { return this.GetIcon(IconImageType.Error, true); } }
+        /// <summary>Ikona : Error, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconErrorSmall { get { return this.GetIcon(IconImageType.Error, false); } }
+        /// <summary>Ikona : Stop, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconStopBig { get { return this.GetIcon(IconImageType.Stop, true); } }
+        /// <summary>Ikona : Stop, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconStopSmall { get { return this.GetIcon(IconImageType.Stop, false); } }
+        /// <summary>Ikona : Question, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconQuestionBig { get { return this.GetIcon(IconImageType.Question, true); } }
+        /// <summary>Ikona : Question, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconQuestionSmall { get { return this.GetIcon(IconImageType.Question, false); } }
+        /// <summary>Ikona : Tip, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconTipBig { get { return this.GetIcon(IconImageType.Tip, true); } }
+        /// <summary>Ikona : Tip, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconTipSmall { get { return this.GetIcon(IconImageType.Tip, false); } }
+        /// <summary>Ikona : OK, velká. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconOKBig { get { return this.GetIcon(IconImageType.OK, true); } }
+        /// <summary>Ikona : OK, malá. Nesmí se použít v using patternu, nesmí se Disposovat, používá se opakovaně.</summary>
+        public Image IconOKSmall { get { return this.GetIcon(IconImageType.OK, false); } }
+        #endregion
+        #region Public získání ikony dle daného typu (enum IconImageType)
+        /// <summary>
+        /// Vrátí jméno ikony pro daný typ ikony a velikost
+        /// </summary>
+        /// <param name="imageType"></param>
+        /// <param name="bigSize"></param>
+        /// <returns></returns>
+        public string GetName(IconImageType imageType, bool bigSize = true)
+        {
+            switch (imageType)
+            {
+                case IconImageType.None: return "";
+                case IconImageType.Info: return (bigSize ? this.IconInfoNameBig : this.IconInfoNameSmall);
+                case IconImageType.Warning: return (bigSize ? this.IconWarningNameBig : this.IconWarningNameSmall);
+                case IconImageType.Error: return (bigSize ? this.IconErrorNameBig : this.IconErrorNameSmall);
+                case IconImageType.Stop: return (bigSize ? this.IconStopNameBig : this.IconStopNameSmall);
+                case IconImageType.Question: return (bigSize ? this.IconQuestionNameBig : this.IconQuestionNameSmall);
+                case IconImageType.Tip: return (bigSize ? this.IconTipNameBig : this.IconTipNameSmall);
+                case IconImageType.OK: return (bigSize ? this.IconOKNameBig : this.IconOKNameSmall);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí ikonu pro daný typ ikony a velikost.
+        /// Ikona se nesmí Disposovat, používá se opakovaně.
+        /// </summary>
+        /// <param name="imageType"></param>
+        /// <param name="bigSize"></param>
+        /// <returns></returns>
+        public Image GetIcon(IconImageType imageType, bool bigSize = true)
+        {
+            string name = this.GetName(imageType, bigSize);
+            if (String.IsNullOrEmpty(name)) return null;
+            return Application.App.Resources.GetImage(name);
+        }
+        #endregion
+        #region Default jména = vazba na konkrétní obrázky
+        /// <summary>
+        /// Default pro : Ikona Info - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconInfoNameBig { get { return R.Images.Status.DialogInformation3Png; } }
+        /// <summary>
+        /// Default pro : Ikona Info - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconInfoNameSmall { get { return R.Images.Status16.DialogInformation3Png; } }
+
+        /// <summary>
+        /// Default pro : Ikona Warning - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconWarningNameBig { get { return R.Images.Status.DialogWarning3Png; } }
+        /// <summary>
+        /// Default pro : Ikona Warning - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconWarningNameSmall { get { return R.Images.Status16.DialogWarning3Png; } }
+
+        /// <summary>
+        /// Default pro : Ikona Error - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconErrorNameBig { get { return R.Images.Status.DialogError3Png; } }
+        /// <summary>
+        /// Default pro : Ikona Error - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconErrorNameSmall { get { return R.Images.Status16.DialogError3Png; } }
+
+        /// <summary>
+        /// Default pro : Ikona Stop - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconStopNameBig { get { return R.Images.Status.DialogError5Png; } }
+        /// <summary>
+        /// Default pro : Ikona Stop - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconStopNameSmall { get { return R.Images.Status16.DialogError5Png; } }
+
+        /// <summary>
+        /// Default pro : Ikona Question - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconQuestionNameBig { get { return R.Images.Status.DialogQuestion2Png; } }
+        /// <summary>
+        /// Default pro : Ikona Question - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconQuestionNameSmall { get { return R.Images.Status16.DialogQuestion2Png; } }
+
+        /// <summary>
+        /// Default pro : Ikona Tip - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconTipNameBig { get { return R.Images.Status.DialogInformation2Png; } }
+        /// <summary>
+        /// Default pro : Ikona Tip - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconTipNameSmall { get { return R.Images.Status16.DialogInformation2Png; } }
+
+        /// <summary>
+        /// Default pro : Ikona OK - velká - její název
+        /// </summary>
+        protected virtual string DefaultIconOKNameBig { get { return R.Images.Status.DialogCleanPng; } }
+        /// <summary>
+        /// Default pro : Ikona OK - malá - její název
+        /// </summary>
+        protected virtual string DefaultIconOKNameSmall { get { return R.Images.Status16.DialogCleanPng; } }
+        #endregion
+    }
+    #region enum IconImageType
+    /// <summary>
+    /// Typ obrázku
+    /// </summary>
+    public enum IconImageType
+    {
+        /// <summary>
+        /// Bez ikony
+        /// </summary>
+        None,
+        /// <summary>
+        /// Informace (i)
+        /// </summary>
+        Info,
+        /// <summary>
+        /// Varování (vykřičník)
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Chyba (zákaz vjezdu do protisměru)
+        /// </summary>
+        Error,
+        /// <summary>
+        /// Zastavení (křížek X)
+        /// </summary>
+        Stop,
+        /// <summary>
+        /// Otázka (otauník)
+        /// </summary>
+        Question,
+        /// <summary>
+        /// Tip (žárovka)
+        /// </summary>
+        Tip,
+        /// <summary>
+        /// OK (fajfka)
+        /// </summary>
+        OK
+    }
+    #endregion
     /// <summary>
     /// Skin set abstract base.
     /// </summary>
@@ -2449,7 +2882,14 @@ namespace Asol.Tools.WorkScheduler.Components
             foreach (var property in properties)
             {   // Provedu načtení hodnoty ze všech public instančních property; tím se tyto property a jejich hodnoty dostanou do centrální cache:
                 var getMethod = property.GetGetMethod();
-                if (getMethod != null)
+                var setMethod = property.GetSetMethod();
+                // Načítat budu hodnoty pouze z těch properties, které mají i set metodu. 
+                // Proč? Abych vynechal ty property, které jsou například pomocné, a stejně je nepůjde nasetovat po deserializaci.
+                // Jako příklad: Skin.Icons.IconInfoBig = má metodu get { }, nemá set { }, 
+                //   ale get metoda provede načtení Skin.Icons.IconInfoNameBig a konverzi na typ Image.
+                // Pro ověření odkomentuj řádek a debugni si jeho vnitřní kód:
+                //   if (getMethod != null && setMethod == null) { }
+                if (getMethod != null && setMethod != null)
                 {
                     try { var value = property.GetValue(this, null); }
                     catch (Exception) { }

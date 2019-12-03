@@ -2832,7 +2832,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="value"></param>
         private void DrawContentRelation(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
-            GPainter.DrawRelationGrid(e.Graphics, boundsAbsolute);
+            GPainter.DrawRelationLine(e.Graphics, boundsAbsolute, true);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako interaktivní časový graf
