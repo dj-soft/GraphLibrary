@@ -858,7 +858,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Relativní velikost proti ostatním prvkům
         /// </summary>
-        public float? Size { get { return this._TagItem.Size; } }
+        public float? RelativeSize { get { return this._TagItem.RelativeSize; } }
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>

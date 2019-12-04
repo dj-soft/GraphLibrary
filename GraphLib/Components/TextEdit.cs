@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
-    /// TextBox
+    /// GTextEdit (=TextBox)
     /// </summary>
     public class GTextEdit : GTextObject
     {
@@ -50,7 +50,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
         /// <param name="drawMode"></param>
-        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
         {
             this.DrawBackground(e, innerBounds, absoluteVisibleBounds, drawMode, this.CurrentBackColor);
         }
@@ -62,7 +62,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
         /// <param name="drawMode"></param>
-        protected void DrawRelation(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        protected virtual void DrawRelation(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
         {
             var relationType = this.RelationType;
             if (relationType == TextRelationType.ToRecord || relationType == TextRelationType.ToDocument)
@@ -76,7 +76,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
         /// <param name="drawMode"></param>
-        protected void DrawText(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        protected virtual void DrawText(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
         {
             string text = this.Text;
             if (!String.IsNullOrEmpty(text))
@@ -92,7 +92,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
         /// <param name="drawMode"></param>
-        protected void DrawBorder(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        protected virtual void DrawBorder(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
         {
             switch (this.BorderStyle)
             {
@@ -107,7 +107,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #region Support pro kreslení obsahu
+        #region Support pro kreslení obsahu - aktuální barvy
         /// <summary>
         /// Vrací souřadnice vnitřního prostoru po odečtení prostoru pro Border (0-1-2 pixely)
         /// </summary>

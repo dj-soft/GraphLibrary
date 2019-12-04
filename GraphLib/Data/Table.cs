@@ -4480,7 +4480,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._CheckedBackColor = source._CheckedBackColor;
                 this._BorderColor = source._BorderColor;
                 this._TextColor = source._TextColor;
-                this._Size = source._Size;
+                this._RelativeSize = source._RelativeSize;
                 this._Visible = source._Visible;
                 this._Checked = source._Checked;
                 this.UserData = source.UserData;
@@ -4498,7 +4498,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.CheckedBackColor = guiTagItem.BackColorChecked;
                 this.BorderColor = null;
                 this.TextColor = null;
-                this.Size = null;
+                this.RelativeSize = null;
                 this.Visible = true;
                 this.Checked = false;
                 this.UserData = guiTagItem.UserData;
@@ -4581,8 +4581,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Relativní velikost proti ostatním prvkům
         /// </summary>
-        public float? Size { get { return this._Size; } set { this._Size = value; this._CallOwnerChange(); } }
-        private float? _Size;
+        public float? RelativeSize { get { return this._RelativeSize; } set { this._RelativeSize = value; this._CallOwnerChange(); } }
+        private float? _RelativeSize;
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>

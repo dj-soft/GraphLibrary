@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GInteractiveControl : Jediný používaný interaktivní WinForm control, který se používá pro zobrazení interaktivních dat
     /// </summary>
-    public partial class GInteractiveControl : GControlScrollable, IInteractiveParent
+    public partial class GInteractiveControl : GControlLayered, IInteractiveParent
     {
         #region Konstruktor
         /// <summary>
@@ -1359,7 +1359,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected IInteractiveItem FindNewItemAtPoint(Point mouseAbsolutePoint, bool withDisabled)
         {
-            GActivePosition activePosition = GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, null, mouseAbsolutePoint, withDisabled);
+            GActivePosition activePosition = GActivePosition.FindItemAtPoint(this, this.ItemsList, null, mouseAbsolutePoint, withDisabled);
             return (activePosition.HasItem ? activePosition.ActiveItem : null);
         }
         /// <summary>
@@ -1376,7 +1376,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected GActivePosition FindActivePositionAtPoint(Point mouseAbsolutePoint, bool withDisabled)
         {
             GActivePosition activePosition = GActivePosition.FindItemAtPoint(
-                this.ClientSize, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled,
+                this, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled,
                 (this._ProgressItem.Is.Visible ? this._ProgressItem : null),
                 this.AutoScrollBarH, this.AutoScrollBarV);
 
@@ -1488,7 +1488,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _InteractiveDrawRun()
         {
             DrawRequest request = new DrawRequest(this._RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
-            request.Fill(this.ClientSize, this, this.ItemsList, this.PendingFullDraw, true);
+            request.Fill(this, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
@@ -2246,7 +2246,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this._MouseDragFrameCurrentBounds = frameBounds;
 
-            Tuple<IInteractiveItem, Rectangle>[] items = GActivePosition.FindItemsAtBounds(this.ClientSize, this.ItemsList, frameBounds,
+            Tuple<IInteractiveItem, Rectangle>[] items = GActivePosition.FindItemsAtBounds(this, this.ItemsList, frameBounds,
                 (i, b) => _MouseDragFrameFilterScan(i, b, frameBounds),
                 (i, b) => _MouseDragFrameFilterAccept(i, b, frameBounds)
                 );
@@ -2402,7 +2402,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (createNewRequest)
                 {   // Není zadán explicitní požadavek (request) - pak tedy vykreslíme všechny prvky:
                     request = new DrawRequest(true, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
-                    request.Fill(this.ClientSize, this, this.ItemsList, true, false);
+                    request.Fill(this, this.ItemsList, true, false);
                 }
 
                 this._PaintLayerStandard(e, request, graphicsSize, scope);
@@ -2432,7 +2432,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 Graphics graphics = e.GetGraphicsForLayer(0, true);
                 this.CallDrawStandardLayer(graphics);
                 this._PaintItems(graphics, graphicsSize, request.StandardItems, GInteractiveDrawLayer.Standard);
-                this.AutoScrollDraw(graphics, graphicsSize);
                 scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
             }
         }
@@ -2719,14 +2718,13 @@ namespace Asol.Tools.WorkScheduler.Components
             /// prvky zatřídí do soupisů dle vrstev (this.StandardItems, InteractiveItems, DynamicItems).
             /// Pokud daný prvek obsahuje nějaké Childs, pak rekurzivně vyvolá tutéž metodu i pro Childs tohoto prvku.
             /// </summary>
-            /// <param name="clientSize"></param>
             /// <param name="parent"></param>
             /// <param name="items">Prvky k vykreslení</param>
             /// <param name="drawAllItems">true = vykreslit všechny prvky</param>
             /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
-            internal void Fill(Size clientSize, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
+            internal void Fill(GInteractiveControl parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
-                BoundsInfo boundsInfo = BoundsInfo.CreateForParent(clientSize);
+                BoundsInfo boundsInfo = BoundsInfo.CreateForParent(parent as IAutoScrollContainer);
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
@@ -2759,8 +2757,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this.ProcessedItems.ContainsKey(item.Id)) continue;
                     this.ProcessedItems.Add(item.Id, item);
 
-                    // Prvek vložíme do Spidera, aby nám mohl počítat jeho souřadnice:
+                    // Prvek vložíme do BoundsInfo, aby nám mohl počítat jeho souřadnice:
                     boundsInfo.CurrentItem = item;
+
+                    // Pokud prvek nebude ani zčásti viditelný (to nám řekne BoundsInfo), tak ho do Draw nebudeme dávat:
+                    if (!boundsInfo.CurrentAbsVisibleBounds.HasPixels()) continue;
 
                     // Přidat prvek do seznamů pro patřičné vrstvy:
                     GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
@@ -3242,7 +3243,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._BackThreadRunDrawGuiProcess = true;
                 DrawRequest request = new DrawRequest(this.RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, null);
                 if (drawItems)
-                    request.Fill(this.ClientSize, this, this.ItemsList, this.RepaintAllItems, false);
+                    request.Fill(this, this.ItemsList, this.RepaintAllItems, false);
                 request.InteractiveMode = true;
                 this.Draw(request);
             }
@@ -4027,35 +4028,35 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prefered current item above other items.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
-        /// <param name="hostSize"></param>
+        /// <param name="parent"></param>
         /// <param name="items"></param>
         /// <param name="prevItem"></param>
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="priorityItems"></param>
         /// <returns></returns>
-        public static GActivePosition FindItemAtPoint(Size hostSize, List<IInteractiveItem> items, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, params IInteractiveItem[] priorityItems)
+        public static GActivePosition FindItemAtPoint(GInteractiveControl parent, List<IInteractiveItem> items, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, params IInteractiveItem[] priorityItems)
         {
-            return _FindItemAtPoint(hostSize, items, prevItem, mouseAbsolutePoint, withDisabled, priorityItems);
+            return _FindItemAtPoint(parent, items, prevItem, mouseAbsolutePoint, withDisabled, priorityItems);
         }
         /// <summary>
         /// Returns a new GCurrentItem object for topmost interactive item on specified point
         /// Prefered current item above other items.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
-        /// <param name="hostSize"></param>
+        /// <param name="parent"></param>
         /// <param name="itemList"></param>
         /// <param name="prevItem"></param>
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="priorityItems"></param>
         /// <returns></returns>
-        private static GActivePosition _FindItemAtPoint(Size hostSize, List<IInteractiveItem> itemList, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem[] priorityItems)
+        private static GActivePosition _FindItemAtPoint(GInteractiveControl parent, List<IInteractiveItem> itemList, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem[] priorityItems)
         {
             GActivePosition currItem = new GActivePosition(mouseAbsolutePoint);
             IInteractiveItem[] items = _CreateJoinItems(itemList, priorityItems);
             GActiveItem[] holdItems = ((prevItem != null && prevItem.HasItem) ? prevItem.Items : null);
-            currItem._FindItemAtPoint(hostSize, items, mouseAbsolutePoint, withDisabled, holdItems);
+            currItem._FindItemAtPoint(parent, items, mouseAbsolutePoint, withDisabled, holdItems);
             return currItem;
         }
         /// <summary>
@@ -4078,18 +4079,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek musí být viditelný, musí být (enabled nebo se hledají i non-enabled prvky), musí být aktivní na dané souřadnici.
         /// Metoda prohledává stejným způsobem i Child prvky nalezeného prvku, pokud existují.
         /// </summary>
-        /// <param name="hostSize"></param>
+        /// <param name="parent"></param>
         /// <param name="items"></param>
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="holdItems"></param>
         /// <returns></returns>
-        private void _FindItemAtPoint(Size hostSize, IInteractiveItem[] items, Point mouseAbsolutePoint, bool withDisabled, GActiveItem[] holdItems)
+        private void _FindItemAtPoint(GInteractiveControl parent, IInteractiveItem[] items, Point mouseAbsolutePoint, bool withDisabled, GActiveItem[] holdItems)
         {
             List<GActiveItem> foundList = new List<GActiveItem>();
             Dictionary<uint, IInteractiveItem> scanDict = new Dictionary<uint, IInteractiveItem>();
             Queue<GActiveItem> holdQueue = (holdItems == null ? null : new Queue<GActiveItem>(holdItems));   // Fronta "přidržených" prvků (od posledně)
-            BoundsInfo boundsInfo = BoundsInfo.CreateForParent(hostSize);
+            BoundsInfo boundsInfo = BoundsInfo.CreateForParent(parent);
             bool run = true;
             while (run)
             {
@@ -4265,15 +4266,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda najde a vrátí prvky, které se nacházejí na daných souřadnicích, a které vyhovují daným filtrům.
         /// </summary>
-        /// <param name="hostSize"></param>
+        /// <param name="parent"></param>
         /// <param name="items"></param>
         /// <param name="frameBounds"></param>
         /// <param name="filterScan"></param>
         /// <param name="filterAccept"></param>
         /// <returns></returns>
-        public static Tuple<IInteractiveItem, Rectangle>[] FindItemsAtBounds(Size hostSize, List<IInteractiveItem> items, Rectangle frameBounds, Func<IInteractiveItem, Rectangle, bool> filterScan, Func<IInteractiveItem, Rectangle, bool> filterAccept)
+        public static Tuple<IInteractiveItem, Rectangle>[] FindItemsAtBounds(GInteractiveControl parent, List<IInteractiveItem> items, Rectangle frameBounds, Func<IInteractiveItem, Rectangle, bool> filterScan, Func<IInteractiveItem, Rectangle, bool> filterAccept)
         {
-            BoundsInfo boundsInfo = BoundsInfo.CreateForParent(hostSize);
+            BoundsInfo boundsInfo = BoundsInfo.CreateForParent(parent);
 
             bool hasFilterScan = (filterScan != null);
             bool hasFilterAccept = (filterAccept != null);

@@ -239,7 +239,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Třída určená ke kreslení grafiky na plochu - absolutně bez blikání.
     /// Varianta pro složitější interaktivní motivy: nabízí více vrstev pro kreslení.
     /// </summary>
-    public class GControlLayered : Control, IDisposable
+    public class GControlLayered : Control, IAutoScrollContainer, IDisposable
     {
         #region Konstruktor, private event handlers
         /// <summary>
@@ -434,14 +434,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Was at least once painted?
         /// </summary>
         protected bool IsPainted { get { return this._IsPainted; } } private bool _IsPainted = false;
-        /// <summary>
-        /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
-        /// </summary>
-        public virtual Size ClientItemsSize { get { return this.ClientSize; } }
-        /// <summary>
-        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
-        /// </summary>
-        public virtual Rectangle ClientItemsRectangle { get { return this.ClientRectangle; } }
         #endregion
         #region Řízení kreslení: private _Draw(); protected OnPaintLayers();
         /// <summary>
@@ -575,6 +567,119 @@ namespace Asol.Tools.WorkScheduler.Components
         private int _LayerCount;
         private string[] _LayerNames;
         private GraphicLayer[] _GraphicLayers;
+        #endregion
+        #region AutoScroll
+        #region Public členy
+        /// <summary>
+        /// Hodnota true zapíná funkci AutoScroll = v případě potřeby se zobrazí posuvníky (pokud souřadnice položek přesahují aktuální velikost klientské velikosti controlu).
+        /// Default : false = nic není zapnuté, ani není vytvářen objekt pro support AutoScroll
+        /// </summary>
+        public bool AutoScroll
+        {
+            get
+            {
+                return this._HasAutoScroll;
+            }
+            set
+            {
+                bool autoScroll = value;
+                if (autoScroll)
+                {
+                    if (this._AutoScrollSupport == null)
+                        this._AutoScrollSupport = new AutoScrollSupport(this); // Instanci vytvoříme až při nastavení na true (případné vypnutí se běžně nedělá, pak instanci ponecháme a nastavíme ji false)
+                    this._AutoScrollSupport.AutoScroll = true;
+                }
+                else if (this._AutoScrollSupport != null)
+                {
+                    this._AutoScrollSupport.AutoScroll = false;
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true pokud this control má implementován a aktivní AutoScroll,
+        /// tedy existuje instance <see cref="_AutoScrollSupport"/> a má <see cref="AutoScrollSupport.AutoScroll"/> = true
+        /// </summary>
+        private bool _HasAutoScroll { get { return (this._AutoScrollSupport != null ? this._AutoScrollSupport.AutoScroll : false); } }
+        /// <summary>
+        /// Instance pro podporu AutoScroll, vytváří se jen když je potřeba
+        /// </summary>
+        private AutoScrollSupport _AutoScrollSupport;
+        /// <summary>
+        /// Přídavek velikosti doprava a dolů za prostor obsazeny controly <see cref="ChildItems"/>.
+        /// Metoda <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/> určí nejvyšší použitou souřadnici v ose X i Y, 
+        /// a pokud by se prvky nevešly do viditelného prostoru, pak určí celkový zobrazovaný prostor (přidáním tohoto okraje doprava a dolů),
+        /// a určí potřebné scrollbary.
+        /// <para/>
+        /// Tento Margin vizuálně zvýrazní, že za posledními prvky v daném směru už není nic.
+        /// <para/>
+        /// Default je hodnota: { 8, 8 }; setovat lze hodnoty v rozmezí 0 - 30 včetně.
+        /// Pozor: pokud <see cref="AutoScroll"/> = false, pak nemá význam setovat hodnotu (neuloží se), a čtení hodnoty vrací <see cref="Size.Empty"/>.
+        /// </summary>
+        public Size AutoScrollMargin
+        {
+            get { return (this._HasAutoScroll ? this._AutoScrollSupport.AutoScrollMargin : Size.Empty); }
+            set { this._AutoScrollSupport.AutoScrollMargin = value; } }
+        /// <summary>
+        /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary.
+        /// Pokud <see cref="AutoScroll"/> = false, pak vrací hodnotu ClientSize.
+        /// </summary>
+        public virtual Size ClientItemsSize { get { return (this._HasAutoScroll ? this._AutoScrollSupport.ClientItemsSize : this.ClientSize); } }
+        /// <summary>
+        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// Pokud <see cref="AutoScroll"/> = false, pak vrací hodnotu ClientRectangle.
+        /// </summary>
+        public virtual Rectangle ClientItemsRectangle { get { return (this._HasAutoScroll ? this._AutoScrollSupport.ClientItemsRectangle : this.ClientRectangle); } }
+        /// <summary>
+        /// Metodu musí zavolat potomek před každým vykreslením prvků v režimu kreslení DrawAllItems.
+        /// Musí se volat ještě před sestavením kolekce prvků (DrawAllItems) ke kreslení, 
+        /// protože tato metoda upravuje viditelné souřadnice this controlu i souřadnice svých ScrollBarů!
+        /// <para/>
+        /// Metoda změří fyzickou velikost controlu, rozsah kreslených prvků a určí potřebu kreslení ScrollBarů.
+        /// Pokud budou scrollbary potřebné, zajistí jejich korektní zobrazení = viditelnost, souřadnice a zobrazené hodnoty.
+        /// </summary>
+        /// <param name="e"></param>
+        protected void AutoScrollDetect(LayeredPaintEventArgs e)
+        {
+            if (this._HasAutoScroll) this._AutoScrollSupport.AutoScrollDetect(e);
+        }
+        /// <summary>
+        /// Souřadnice, které jsou aktuálně viditelné.
+        /// Pokud obsahuje null = pak je zobrazen celý obsah controlu v nativních souřadnicích, není aktivní žádný AutoScroll (ani horizontální, ani vertikální). 
+        /// </summary>
+        protected Rectangle? AutoScrollVisibleBounds { get { return this._AutoScrollSupport?.CurrentVisibleBounds; } }
+        /// <summary>
+        /// Horizontální (vodorovný) ScrollBar.
+        /// </summary>
+        protected GScrollBar AutoScrollBarH { get { return this._AutoScrollSupport?.ScrollBarH; } }
+        /// <summary>
+        /// Vertikální (svislý) ScrollBar
+        /// </summary>
+        protected GScrollBar AutoScrollBarV { get { return this._AutoScrollSupport?.ScrollBarV; } }
+        #endregion
+        #region virtual ChildItems a interface
+        /// <summary>
+        /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost v metodě <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/>.
+        /// Tuto property musí řešit potomek this třídy <see cref="GControlLayered"/>, protože this třída nemá Child prvky.
+        /// Tuto property využívá člen interface <see cref="IAutoScrollContainer.ChildItems"/>, kudy předává Child prvky do <see cref="AutoScrollSupport"/>.
+        /// </summary>
+        protected virtual IEnumerable<IInteractiveItem> ChildItems { get { return null; } }
+        /// <summary>
+        /// člen interface:
+        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
+        /// Jde o celou fyzickou velikost, včetně prostor Scrollbarů.
+        /// </summary>
+        Size IAutoScrollContainer.ClientVisibleSize { get { return this.ClientSize; } }
+        /// <summary>
+        /// člen interface:
+        /// Zobrazované interaktivní prvky, mimo ScrollBary
+        /// </summary>
+        IEnumerable<IInteractiveItem> IAutoScrollContainer.ChildItems { get { return this.ChildItems; } }
+        /// <summary>
+        /// člen interface:
+        /// Scrollbary aktuálně přítomné v this prvku
+        /// </summary>
+        IEnumerable<IInteractiveItem> IAutoScrollContainer.ScrollBars { get { return this._AutoScrollSupport?.ScrollBars; } }
+        #endregion
         #endregion
         #region Dispose
         void IDisposable.Dispose()
@@ -1009,108 +1114,7 @@ namespace Asol.Tools.WorkScheduler.Components
     }
     #endregion
     #endregion
-    #region GControlScrollable : potomek GControlLayered rozšířený o možnost Scrollování svého obsahu
-    /// <summary>
-    /// GControlScrollable : potomek GControlLayered rozšířený o možnost Scrollování svého obsahu
-    /// </summary>
-    public abstract class GControlScrollable : GControlLayered, IAutoScrollContainer
-    {
-        #region Konstruktor a AutoScrollSupport instance
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public GControlScrollable()
-        {
-            this._AutoScrollSupport = new AutoScrollSupport(this);
-
-#warning    JEN PRO TESTY:   this.AutoScroll = true;
-            this.AutoScroll = true;
-        }
-        private AutoScrollSupport _AutoScrollSupport;
-        #endregion
-        #region Support pro scrollování
-        /// <summary>
-        /// Hodnota true zapíná funkci AutoScroll = zobrazí se posuvníky, pokud souřadnice položek přesahují aktuální velikost klientské velikosti controlu
-        /// </summary>
-        public bool AutoScroll { get { return this._AutoScrollSupport.AutoScroll; } set { this._AutoScrollSupport.AutoScroll = value; } }
-        /// <summary>
-        /// Přídavek velikosti doprava a dolů za prostor obsazeny controly <see cref="ChildItems"/>.
-        /// Metoda <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/> určí nejvyšší použitou souřadnici v ose X i Y, 
-        /// a pokud by se prvky nevešly do viditelného prostoru, pak určí celkový zobrazovaný prostor (přidáním tohoto okraje doprava a dolů),
-        /// a určí potřebné scrollbary.
-        /// <para/>
-        /// Tento Margin vizuálně zvýrazní, že za posledními prvky v daném směru už není nic.
-        /// <para/>
-        /// Default je hodnota: { 8, 8 }; setovat lze hodnoty v rozmezí 0 - 30 včetně.
-        /// </summary>
-        public Size AutoScrollMargin { get { return this._AutoScrollSupport.AutoScrollMargin; } set { this._AutoScrollSupport.AutoScrollMargin = value; } }
-        /// <summary>
-        /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
-        /// </summary>
-        public override Size ClientItemsSize { get { return this._AutoScrollSupport.ClientItemsSize; } }
-        /// <summary>
-        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
-        /// </summary>
-        public override Rectangle ClientItemsRectangle { get { return this._AutoScrollSupport.ClientItemsRectangle; } }
-        /// <summary>
-        /// Metodu musí zavolat potomek před každým vykreslením prvků v režimu kreslení DrawAllItems.
-        /// Metoda změří fyzickou velikost controlu, rozsah kreslených prvků a určí potřebu kreslení ScrollBarů.
-        /// Pokud budou scrollbary potřebné, zajistí jejich korektní zobrazení.
-        /// </summary>
-        /// <param name="e"></param>
-        protected void AutoScrollDetect(LayeredPaintEventArgs e)
-        {
-            if (!this.AutoScroll) return;
-            this._AutoScrollSupport.AutoScrollDetect(e);
-        }
-        /// <summary>
-        /// Metodu má volat potomek poté, kdy vykreslil svoje běžné interaktivní prvky do základní vrstvy grafiky.
-        /// V této metodě mohou být vykresleny scrollbary - podle potřeby.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="graphicsSize"></param>
-        protected void AutoScrollDraw(Graphics graphics, Size graphicsSize)
-        {
-            this._AutoScrollSupport.AutoScrollDraw(graphics, graphicsSize);
-        }
-        /// <summary>
-        /// Souřadnice, které jsou aktuálně viditelné.
-        /// Pokud obsahuje null = pak je zobrazen celý obsah controlu v nativních souřadnicích, není aktivní žádný AutoScroll (ani horizontální, ani vertikální). 
-        /// </summary>
-        protected Rectangle? AutoScrollVisibleBounds { get { return this._AutoScrollSupport.CurrentVisibleBounds; } }
-        private Rectangle? _AutoScrollVisibleBounds;
-        /// <summary>
-        /// Horizontální (vodorovný) ScrollBar
-        /// </summary>
-        protected GScrollBar AutoScrollBarH { get { return this._AutoScrollSupport.ScrollBarH; } }
-        /// <summary>
-        /// Vertikální (svislý) ScrollBar
-        /// </summary>
-        protected GScrollBar AutoScrollBarV { get { return this._AutoScrollSupport.ScrollBarV; } }
-        #endregion
-        #region abstract a interface
-        /// <summary>
-        /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost v metodě <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/>.
-        /// </summary>
-        protected abstract IEnumerable<IInteractiveItem> ChildItems { get; }
-        /// <summary>
-        /// člen interface:
-        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
-        /// Jde o celou velikost, včetně prostor Scrollbarů.
-        /// </summary>
-        Size IAutoScrollContainer.ClientVisibleSize { get { return this.ClientSize; } }
-        /// <summary>
-        /// člen interface:
-        /// Zobrazované interaktivní prvky, mimo ScrollBary
-        /// </summary>
-        IEnumerable<IInteractiveItem> IAutoScrollContainer.ChildItems { get { return this.ChildItems; } }
-        /// <summary>
-        /// člen interface:
-        /// Scrollbary aktuálně přítomné v this prvku
-        /// </summary>
-        IEnumerable<IInteractiveItem> IAutoScrollContainer.ScrollBars { get { return this._AutoScrollSupport.ScrollBars; } }
-        #endregion
-    }
+    #region AutoScrollSupport : Kompletní podpora pro AutoScroll jak pro vizuální Control, tak pro InteractiveContainery
     /// <summary>
     /// Kompletní podpora pro AutoScroll
     /// </summary>
@@ -1523,20 +1527,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private List<IInteractiveItem> _ScrollBars;
         #endregion
-        #region Vykreslení Scrollbarů
-        /// <summary>
-        /// Metodu má volat potomek poté, kdy vykreslil svoje běžné interaktivní prvky do základní vrstvy grafiky.
-        /// V této metodě mohou být vykresleny scrollbary - podle potřeby.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="graphicsSize"></param>
-        public void AutoScrollDraw(Graphics graphics, Size graphicsSize)
-        {
-            if (!this.AutoScroll) return;
-
-
-        }
-        #endregion
+      
     }
     #region interface IAutoScrollContainer : Předpis pro majitele AutoScrollSupport
     /// <summary>
@@ -1550,11 +1541,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Size ClientVisibleSize { get; }
         /// <summary>
-        /// Zobrazované interaktivní prvky, mimo ScrollBary
+        /// Zobrazované interaktivní prvky, mimo ScrollBary.
+        /// Tuto property čte <see cref="AutoScrollSupport"/> ze svého Ownera, pro tyto prvky počítá jejich sumární zobrazené souřadnice.
         /// </summary>
         IEnumerable<IInteractiveItem> ChildItems { get; }
         /// <summary>
-        /// Scrollbary aktuálně přítomné v this prvku
+        /// Scrollbary aktuálně přítomné v this prvku. 
+        /// Toto pole může obsahovat i "prázdný čtvereček" vpravo dole, pokud jsou zobrazeny oba ScrollBary = pro "překreslení" případných prvků (tam se běžné prvky nemají vyskytovat)
+        /// Tuto property čtou metody pro zobrazování v rámci controlu.
         /// </summary>
         IEnumerable<IInteractiveItem> ScrollBars { get; }
     }

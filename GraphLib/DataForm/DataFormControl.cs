@@ -44,6 +44,12 @@ namespace Asol.Tools.WorkScheduler.DataForm
         public GDataFormControl()
         {
             this.AddDataFormItems(4500);
+
+
+#warning    JEN PRO TESTY:   this.AutoScroll = true;
+            this.AutoScroll = true;
+
+
         }
         /// <summary>
         /// Naplní controly
@@ -55,25 +61,27 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int firstY = 8;
             int spaceX = 3;
             int spaceY = 3;
-            int topX = 1600;
+            int topX = 1100;
             int maxX = 0;
             int maxY = 0;
             int currentX = firstX;
             int currentY = firstY;
 
+            int lo = 216;
+            int hi = 240;
             Color[] colors = new Color[]
             {
-                Color.FromArgb(225,200,200),
-                Color.FromArgb(200,225,200),
-                Color.FromArgb(200,200,225),
-                Color.FromArgb(225,225,200),
-                Color.FromArgb(200,225,225),
-                Color.FromArgb(225,200,225),
-                Color.FromArgb(200,200,200),
-                Color.FromArgb(225,225,225)
+                Color.FromArgb(hi, lo, lo),
+                Color.FromArgb(lo, hi, lo),
+                Color.FromArgb(lo, lo, hi),
+                Color.FromArgb(hi, hi, lo),
+                Color.FromArgb(lo, hi, hi),
+                Color.FromArgb(hi, lo, hi),
+                Color.FromArgb(lo, lo, lo),
+                Color.FromArgb(hi, hi, hi)
             };
             int colorCnt = colors.Length;
-            string[] values = new string[] { "VFA-2019", "VP", "DOC-INT", "PRJ", "VYD", "IUD-2019", "MAT", "ZFO", "ČJ." };
+            string[] values = new string[] { "VFA-2019", "VP", "DOC-INT", "PRJ", "VYD", "IUD-2019", "MAT", "ZFO", "ČJ" };
             int valuesCnt = values.Length;
             Random rand = new Random();
 

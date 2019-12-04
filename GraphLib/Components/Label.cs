@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    #region class GLabel : běžný label u textů
+
+    #endregion
     /// <summary>
     /// Vykreslovaný Label
     /// </summary>
@@ -33,7 +36,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawString(e.Graphics, absoluteBounds, text, Skin.Brush(this.ForeColorCurrent), this.FontCurrent, this.Alignment);
         }
     }
-
+    #region class GTextObject : obecný předek prvků, které zobrazují jeden text
     /// <summary>
     /// Bázová třída pro Label, Textbox atd = jeden rámeček s jedním prvkem textu, fontem a barvou textu
     /// </summary>
@@ -95,7 +98,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktuální font (<see cref="Font"/> ?? <see cref="FontInfo.Default"/>)
         /// </summary>
-        protected FontInfo FontCurrent { get { return this.Font ?? FontInfo.Default; } }
+        protected virtual FontInfo FontCurrent { get { return this.Font ?? FontInfo.Default; } }
         /// <summary>
         /// Aktuální barva písma (<see cref="ForeColor"/> ?? <see cref="Skin.Control"/>:<see cref="SkinControlSet.ControlTextColor"/>)
         /// </summary>
@@ -109,7 +112,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color? ForeColor { get; set; }
         /// <summary>
-        /// Aktuální písmo. Pokud bude null, použije se <see cref="FontInfo.Default"/>
+        /// Aktuální písmo. Pokud bude null (=default), použije se <see cref="FontInfo.Default"/>
         /// </summary>
         public FontInfo Font { get; set; }
         /// <summary>
@@ -125,5 +128,5 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool Enabled { get { return this.Is.Enabled; } set { this.Is.Enabled = value; } }
     }
-
+    #endregion
 }
