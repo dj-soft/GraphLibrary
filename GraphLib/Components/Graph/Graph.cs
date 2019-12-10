@@ -1329,7 +1329,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (e.MouseAbsolutePoint.HasValue) return e.MouseAbsolutePoint.Value.Add(-20, 5);
             if (e.ExistsItem)
             {
-                Rectangle absBounds = BoundsInfo.GetAbsoluteBounds(e.CurrentItem);
+                Rectangle absBounds = BoundsInfo.GetAbsolutePhysicalBounds(e.CurrentItem);
                 return new Point(absBounds.X, absBounds.Bottom);
             }
             return System.Windows.Forms.Control.MousePosition;
@@ -3159,7 +3159,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 if (!homeBounds.HasValue && this.TargetItem != null)
                 {
                     BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this.TargetItem);
-                    homeBounds = boundsInfo.CurrentAbsBounds;
+                    homeBounds = boundsInfo.CurrentItemAbsolutePhysicalBounds;
                 }
 
                 return homeBounds;
@@ -3300,7 +3300,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._ResizeArgs = resizeArgs;
             this._ItemBoundsInfo = itemBoundsInfo;
             this._TimeRangeTarget = timeRangeTarget;
-            this._AbsOrigin = itemBoundsInfo.AbsOrigin;
+            this._AbsOrigin = itemBoundsInfo.AbsolutePhysicalOriginPoint;
             this.BoundsFinal = resizeArgs.BoundsTarget;
             this.TimeRangeFinal = timeRangeTarget;
         }

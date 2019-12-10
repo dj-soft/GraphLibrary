@@ -449,7 +449,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 item.AfterStateChanged(stateArgs);
 
-                Point? toolTipPoint = (stateArgs.HasToolTipData ? (Point?)(BoundsInfo.GetAbsoluteBounds(item).Location) : (Point?)null);
+                Point? toolTipPoint = (stateArgs.HasToolTipData ? (Point?)(BoundsInfo.GetAbsolutePhysicalBounds(item).Location) : (Point?)null);
                 this._InteractiveDrawStore(toolTipPoint, stateArgs);
             }
         }
@@ -2040,7 +2040,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 if (!this._ContextMenuMousePoint.HasValue && stateArgs.BoundsInfo != null)
                 {
-                    Rectangle bounds = stateArgs.BoundsInfo.CurrentAbsBounds;
+                    Rectangle bounds = stateArgs.BoundsInfo.CurrentItemAbsolutePhysicalBounds;
                     this._ContextMenuMousePoint = new Point(bounds.X, bounds.Bottom);
                 }
             }
@@ -2761,7 +2761,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     boundsInfo.CurrentItem = item;
 
                     // Pokud prvek nebude ani zčásti viditelný (to nám řekne BoundsInfo), tak ho do Draw nebudeme dávat:
-                    if (!boundsInfo.CurrentAbsVisibleBounds.HasPixels()) continue;
+                    if (!boundsInfo.CurrentItemAbsolutePhysicalIsVisible) continue;
 
                     // Přidat prvek do seznamů pro patřičné vrstvy:
                     GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
@@ -2776,7 +2776,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         IInteractiveItem[] childItems = childs.ToArray();
                         if (childItems.Length > 0)
                         {
-                            BoundsInfo boundsInfoChilds = boundsInfo.CurrentChildsSpider;          // Souřadný systém, který platí uvnitř aktuálního prvku "item" = ten platí pro všechny jeho Childs prvky
+                            BoundsInfo boundsInfoChilds = boundsInfo.CurrentChildsBoundsInfo;          // Souřadný systém, který platí uvnitř aktuálního prvku "item" = ten platí pro všechny jeho Childs prvky
                             this.FillFromItems(boundsInfoChilds, item, childItems, itemLayers);    // Čistokrevná rekurze
                         }
                     }
@@ -2858,10 +2858,10 @@ namespace Asol.Tools.WorkScheduler.Components
             public DrawRequestItem(BoundsInfo boundsInfo, IInteractiveItem item, GInteractiveDrawLayer layer, bool isDrawOverChilds)
             {
                 this.Item = item;
-                this.AbsoluteOrigin = boundsInfo.AbsOrigin;
-                this.AbsoluteBounds = boundsInfo.CurrentAbsBounds;
-                this.AbsoluteVisibleBounds = boundsInfo.CurrentAbsVisibleBounds;
-                this.AbsoluteVisibleClip = boundsInfo.AbsVisibleBounds;
+                this.AbsoluteOrigin = boundsInfo.AbsolutePhysicalOriginPoint;
+                this.AbsoluteBounds = boundsInfo.CurrentItemAbsolutePhysicalBounds;
+                this.AbsoluteVisibleBounds = boundsInfo.CurrentItemAbsolutePhysicalVisibleBounds;
+                this.AbsoluteVisibleClip = boundsInfo.AbsolutePhysicalVisibleBounds;
                 this.Layer = layer;
                 this.IsDrawOverChilds = isDrawOverChilds;
             }
@@ -4132,7 +4132,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         if (items.Length > 0)
                         {
                             run = true;
-                            boundsInfo = boundsInfo.CurrentChildsSpider;
+                            boundsInfo = boundsInfo.CurrentChildsBoundsInfo;
                         }
                     }
                 }
@@ -4184,7 +4184,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private static bool _TryFindItemInList(IInteractiveItem[] items, BoundsInfo boundsInfo, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
         {
-            Point mouseRelativePoint = mouseAbsolutePoint.Sub(boundsInfo.AbsOrigin);
+            Point mouseRelativePoint = mouseAbsolutePoint.Sub(boundsInfo.AbsolutePhysicalOriginPoint);
 
             for (int idx = items.Length - 1; idx >= 0; idx--)
             {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
@@ -4297,14 +4297,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (!currentItem.Is.Visible || !currentItem.Is.Enabled) continue;
 
                     currentBoundsInfo.CurrentItem = currentItem;
-                    Rectangle currentItemBounds = currentBoundsInfo.CurrentAbsVisibleBounds;
+                    Rectangle currentItemBounds = currentBoundsInfo.CurrentItemAbsolutePhysicalVisibleBounds;
                     if (!frameBounds.IntersectsWith(currentItemBounds)) continue;
 
                     if ((!hasFilterScan || (hasFilterScan && filterScan(currentItem, currentItemBounds))))
                     {   // Scanovat prvek do hloubky:
                         IEnumerable<IInteractiveItem> currentChilds = currentItem.Childs;
                         if (currentChilds != null)
-                            scanQueue.Enqueue(new Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>(currentBoundsInfo.CurrentChildsSpider, currentChilds));
+                            scanQueue.Enqueue(new Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>(currentBoundsInfo.CurrentChildsBoundsInfo, currentChilds));
                     }
 
                     if (!hasFilterAccept || (hasFilterAccept && filterAccept(currentItem, currentItemBounds)))
@@ -4367,7 +4367,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Souřadnice prvku <see cref="Item"/> v absolutních koordinátech Controlu
             /// </summary>
-            public Rectangle ItemAbsBounds { get { return this.BoundsInfo.CurrentAbsBounds; } }
+            public Rectangle ItemAbsBounds { get { return this.BoundsInfo.CurrentItemAbsolutePhysicalBounds; } }
         }
         #endregion
         #region Static services

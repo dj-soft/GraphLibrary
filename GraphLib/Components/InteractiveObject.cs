@@ -319,12 +319,12 @@ namespace Asol.Tools.WorkScheduler.Components
             get
             {
                 BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this);
-                return boundsInfo.CurrentAbsBounds;
+                return boundsInfo.CurrentItemAbsolutePhysicalBounds;
             }
         }
         /// <summary>
         /// Komplexní informace o souřadném systému a dalších náležitostech this objektu:
-        /// <see cref="BoundsInfo.IsVisible"/>; <see cref="BoundsInfo.IsEnabled"/>; <see cref="BoundsInfo.CurrentIsVisible"/>; <see cref="BoundsInfo.CurrentIsEnabled"/>; 
+        /// <see cref="BoundsInfo.IsVisible"/>; <see cref="BoundsInfo.IsEnabled"/>; <see cref="BoundsInfo.CurrentItemIsVisible"/>; <see cref="BoundsInfo.CurrentItemIsEnabled"/>; 
         /// </summary>
         public virtual BoundsInfo BoundsInfo { get { return BoundsInfo.CreateForChild(this); } }
         /// <summary>
@@ -1555,7 +1555,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // Aktuálně PROBÍHÁ Drag and Drop:
                 if (currentLayer == GInteractiveDrawLayer.Standard)
                 {   // Nyní kreslíme do vrstvy Standard, tedy kreslíme do výchozích souřadnic BoundsDragOrigin:
-                    absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragOrigin.Value);
+                    absoluteBoundsDraw = BoundsInfo.GetAbsolutePhysicalBoundsInContainer(this.Parent, this.BoundsDragOrigin.Value);
                     drawMode |= DrawItemMode.OriginalBounds;
                     drawOpacity = this.DragDropDrawStandardOpacity;
                     if (ghostInOriginalBounds)
@@ -1572,7 +1572,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 else if (currentLayer == GInteractiveDrawLayer.Interactive)
                 {   // Nyní kreslíme do vrstvy Interactive, tedy kreslíme do cílových souřadnic BoundsDragTarget:
-                    absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragTarget.Value);
+                    absoluteBoundsDraw = BoundsInfo.GetAbsolutePhysicalBoundsInContainer(this.Parent, this.BoundsDragTarget.Value);
                     drawMode |= DrawItemMode.DraggedBounds;
                     drawOpacity = this.DragDropDrawInteractiveOpacity;
                     if (ghostInDraggedBounds)
@@ -1589,7 +1589,7 @@ namespace Asol.Tools.WorkScheduler.Components
             else if (currentLayer != GInteractiveDrawLayer.Standard)
             {   // Prvek sám sice není předmětem Drag and Drop, ale nejspíš jeho Parent ano, protože nyní probíhá kreslení do Interaktivní vrstvy (jiná asi ne):
                 absoluteBoundsDraw = this.BoundsAbsolute;
-                absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.Bounds, currentLayer);
+                absoluteBoundsDraw = BoundsInfo.GetAbsolutePhysicalBoundsInContainer(this.Parent, this.Bounds, currentLayer);
                 drawMode = DrawItemMode.Ghost;
             }
             else

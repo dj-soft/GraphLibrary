@@ -625,7 +625,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual Size ClientItemsSize { get { return (this._HasAutoScroll ? this._AutoScrollSupport.ClientItemsSize : this.ClientSize); } }
         /// <summary>
-        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// Nativní souřadnice prostoru (tj. bez posunutí obsahu vlivem AutoScrollu) pro kreslení prvků, po odečtení prostoru pro Scrollbary
         /// Pokud <see cref="AutoScroll"/> = false, pak vrací hodnotu ClientRectangle.
         /// </summary>
         public virtual Rectangle ClientItemsRectangle { get { return (this._HasAutoScroll ? this._AutoScrollSupport.ClientItemsRectangle : this.ClientRectangle); } }
@@ -643,11 +643,6 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this._HasAutoScroll) this._AutoScrollSupport.AutoScrollDetect(e);
         }
         /// <summary>
-        /// Souřadnice, které jsou aktuálně viditelné.
-        /// Pokud obsahuje null = pak je zobrazen celý obsah controlu v nativních souřadnicích, není aktivní žádný AutoScroll (ani horizontální, ani vertikální). 
-        /// </summary>
-        protected Rectangle? AutoScrollVisibleBounds { get { return this._AutoScrollSupport?.CurrentVisibleBounds; } }
-        /// <summary>
         /// Horizontální (vodorovný) ScrollBar.
         /// </summary>
         protected GScrollBar AutoScrollBarH { get { return this._AutoScrollSupport?.ScrollBarH; } }
@@ -656,7 +651,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected GScrollBar AutoScrollBarV { get { return this._AutoScrollSupport?.ScrollBarV; } }
         #endregion
-        #region virtual ChildItems a interface
+        #region virtual ChildItems a interface IAutoScrollContainer
         /// <summary>
         /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost v metodě <see cref="AutoScrollDetect(LayeredPaintEventArgs)"/>.
         /// Tuto property musí řešit potomek this třídy <see cref="GControlLayered"/>, protože this třída nemá Child prvky.
@@ -664,11 +659,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual IEnumerable<IInteractiveItem> ChildItems { get { return null; } }
         /// <summary>
-        /// člen interface:
-        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
-        /// Jde o celou fyzickou velikost, včetně prostor Scrollbarů.
+        /// Aktuálně viditelná oblast dat ve fyzických souřadnicích, je určena pro výpočty ScrollBarů (=prvky zobrazované v this containeru, ale nescrollované).
+        /// Tato oblast je vždy dána pixelovým počátkem prostoru a plnou velikosti (ClientSize = Bounds.Size zmenšeno o vnitřní Margins).
         /// </summary>
-        Size IAutoScrollContainer.ClientVisibleSize { get { return this.ClientSize; } }
+        Rectangle IAutoScrollContainer.CurrentPhysicalVisibleBounds { get { return new Rectangle(Point.Empty, this.ClientSize); } }
+        /// <summary>
+        /// Aktuálně zobrazovaná oblast dat ve virtuálních (=logických) souřadnicích, je určena pro výpočty Child prvků (=scrollované prvky).
+        /// <para/>
+        /// Pokud je aktivní AutoScroll, pak hodnota <see cref="IAutoScrollContainer.CurrentVirtualVisibleBounds"/> odpovídá virtuálním souřadnicím:
+        /// hodnota počátku prostoru je posunutá podle Scrollbarů, velikost prostoru je zmenšená o Scrollbary.
+        /// <para/>
+        /// Pokud není aktivní AutoScroll, pak je zde hodnota shodná s <see cref="IAutoScrollContainer.CurrentPhysicalVisibleBounds"/>.
+        /// </summary>
+        Rectangle IAutoScrollContainer.CurrentVirtualVisibleBounds { get { return (this._HasAutoScroll ? this._AutoScrollSupport.CurrentVisibleBounds : new Rectangle(Point.Empty, this.ClientSize)); } }
         /// <summary>
         /// člen interface:
         /// Zobrazované interaktivní prvky, mimo ScrollBary
@@ -1127,16 +1130,18 @@ namespace Asol.Tools.WorkScheduler.Components
         public AutoScrollSupport(IAutoScrollContainer owner)
         {
             this._Owner = owner;
+            int margin = Skin.Control.AutoScrollMargins;
+            this._AutoScrollMargin = new Size(margin, margin);
             this._CurrentVisibleBounds = null;
             this._VisibleOrigin = new Point();
-            this._AutoScrollMargin = new Size(8, 8);
+            this._AutoScrollReset();
         }
         private IAutoScrollContainer _Owner;
         /// <summary>
         /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
         /// Jde o celou velikost, včetně prostor Scrollbarů.
         /// </summary>
-        protected Size ClientVisibleSize { get { return this._Owner.ClientVisibleSize; } }
+        protected Size ClientVisibleSize { get { return this._Owner.CurrentPhysicalVisibleBounds.Size; } }
         /// <summary>
         /// Hodnota true zapíná funkci AutoScroll = zobrazí se posuvníky, pokud souřadnice položek přesahují aktuální velikost klientské velikosti controlu
         /// </summary>
@@ -1170,9 +1175,11 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool IsScrollActive { get { return this._CurrentVisibleBounds.HasValue; } }
         /// <summary>
         /// Souřadnice, které jsou aktuálně viditelné.
-        /// Pokud obsahuje null = pak je zobrazen celý obsah controlu v nativních souřadnicích, není aktivní žádný AutoScroll (ani horizontální, ani vertikální). 
+        /// Pokud je aktivní <see cref="AutoScroll"/>, pak hodnota <see cref="CurrentVisibleBounds"/> odpovídá virtuálním souřadnicím:
+        /// hodnota počátku prostoru je posunutá podle Scrollbarů, velikost prostoru je zmenšená o Scrollbary.
+        /// Pokud <see cref="AutoScroll"/> není aktivní, pak počátek = 0 a velikost = ClientSize.
         /// </summary>
-        public Rectangle? CurrentVisibleBounds { get { return this._CurrentVisibleBounds; } }
+        public Rectangle CurrentVisibleBounds { get { return (this.IsScrollActive ? this._CurrentVisibleBounds.Value : new Rectangle(Point.Empty, this.ClientVisibleSize)); } }
         /// <summary>
         /// Scrollbary aktuálně přítomné v this prvku
         /// </summary>
@@ -1190,7 +1197,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Size ClientItemsSize { get {  return this.ClientItemsRectangle.Size; } }
         /// <summary>
-        /// Souřadnice prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
+        /// Nativní souřadnice prostoru (tj. bez posunutí obsahu vlivem AutoScrollu) pro kreslení prvků, po odečtení prostoru pro Scrollbary
         /// </summary>
         public Rectangle ClientItemsRectangle
         {
@@ -1335,12 +1342,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Resetuje aktuální scrollbary
         /// </summary>
+        private void _AutoScrollReset()
+        {
+            this._AutoScrollReset(this.ClientVisibleSize);
+        }
+        /// <summary>
+        /// Resetuje aktuální scrollbary
+        /// </summary>
         /// <param name="visibleSize"></param>
         private void _AutoScrollReset(Size visibleSize)
         {
+            this._CurrentVisibleBounds = null;
             this._VisibleSize = visibleSize;
             this._ContentSize = visibleSize;
-            this._CurrentVisibleBounds = null;
             this._ScrollVisibleH = false;
             this._ScrollVisibleV = false;
             this._ScrollBars = null;
@@ -1357,6 +1371,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _AutoScrollSet(Point origin, bool visibleH, bool visibleV, Size contentSize, Size visibleSize, int scrollBarThick)
         {
             this._CurrentVisibleBounds = new Rectangle(origin, visibleSize);
+
             bool isCordinateChange = ((origin != this._VisibleOrigin) || (visibleSize != this._VisibleSize) || (contentSize != this._ContentSize) || (scrollBarThick != this._ScrollBarThick));
             bool isVisibleChange = ((visibleH != this._ScrollVisibleH) || (visibleV != this._ScrollVisibleV));
             if (!isCordinateChange && !isVisibleChange) return;
@@ -1415,12 +1430,16 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._AutoScrollBarSet(ref this._ScrollBarV, this._ScrollVisibleV, Orientation.Vertical, this._VisibleOrigin.Y, this._VisibleSize.Height, this._ContentSize.Height);
         }
+        /// <summary>
+        /// Připraví objekt Space (rožek vpravo dole pro případ zobrazení obou Scrollbarů)
+        /// </summary>
         private void _AutoScrollBarSSet()
         {
             if (!this.AutoScroll || !this._ScrollVisibleBoth) return;
             if (this._ScrollBarS == null)
             {
                 this._ScrollBarS = new InteractiveObject(this._Owner as IInteractiveParent);
+                this._ScrollBarS.Is.OnPhysicalBounds = true;
             }
             Size clientSize = this.ClientVisibleSize;
             int scrollBarThick = this._ScrollBarThick;
@@ -1440,6 +1459,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     Orientation = orientation
                 };
+                scrollBar.Is.OnPhysicalBounds = true;
                 scrollBar.ValueChanging += ScrollBar_ValueChanges;
                 scrollBar.ValueChanged += ScrollBar_ValueChanges;
             }
@@ -1527,7 +1547,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private List<IInteractiveItem> _ScrollBars;
         #endregion
-      
     }
     #region interface IAutoScrollContainer : Předpis pro majitele AutoScrollSupport
     /// <summary>
@@ -1536,10 +1555,19 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface IAutoScrollContainer
     {
         /// <summary>
-        /// Velikost prostoru v hostiteli, do kterého je zobrazován obsah.
-        /// Jde o celou velikost, včetně prostor Scrollbarů.
+        /// Aktuálně viditelná oblast dat ve fyzických souřadnicích, je určena pro výpočty ScrollBarů (=prvky zobrazované v this containeru, ale nescrollované).
+        /// Tato oblast je vždy dána pixelovým počátkem prostoru a plnou velikosti (ClientSize = Bounds.Size zmenšeno o vnitřní Margins).
         /// </summary>
-        Size ClientVisibleSize { get; }
+        Rectangle CurrentPhysicalVisibleBounds { get; }
+        /// <summary>
+        /// Aktuálně zobrazovaná oblast dat ve virtuálních (=logických) souřadnicích, je určena pro výpočty Child prvků (=scrollované prvky).
+        /// <para/>
+        /// Pokud je aktivní AutoScroll, pak hodnota <see cref="CurrentVirtualVisibleBounds"/> odpovídá virtuálním souřadnicím:
+        /// hodnota počátku prostoru je posunutá podle Scrollbarů, velikost prostoru je zmenšená o Scrollbary.
+        /// <para/>
+        /// Pokud není aktivní AutoScroll, pak je zde hodnota shodná s <see cref="CurrentPhysicalVisibleBounds"/>.
+        /// </summary>
+        Rectangle CurrentVirtualVisibleBounds { get; }
         /// <summary>
         /// Zobrazované interaktivní prvky, mimo ScrollBary.
         /// Tuto property čte <see cref="AutoScrollSupport"/> ze svého Ownera, pro tyto prvky počítá jejich sumární zobrazené souřadnice.
@@ -1548,7 +1576,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Scrollbary aktuálně přítomné v this prvku. 
         /// Toto pole může obsahovat i "prázdný čtvereček" vpravo dole, pokud jsou zobrazeny oba ScrollBary = pro "překreslení" případných prvků (tam se běžné prvky nemají vyskytovat)
-        /// Tuto property čtou metody pro zobrazování v rámci controlu.
+        /// Tuto property čtou metody pro vykreslování jednotlivých prvků v rámci controlu.
         /// </summary>
         IEnumerable<IInteractiveItem> ScrollBars { get; }
     }

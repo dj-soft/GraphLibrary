@@ -1232,6 +1232,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Barva linky rámečku FrameSelect
         /// </summary>
         public Color FrameSelectLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "FrameSelectLineColor", DefaultFrameSelectLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "FrameSelectLineColor", value); } }
+        /// <summary>
+        /// Velikost přidaného okraje v AutoScroll containerech (vpravo a dole pod posledním prvkem)
+        /// </summary>
+        public int AutoScrollMargins { get { return this._Owner.GetValue(this._SkinSetKey, "AutoScrollMargins", DefaultAutoScrollMargins); } set { this._Owner.SetValue(this._SkinSetKey, "AutoScrollMargins", value); } }
         #endregion
         #region Default colors
         /// <summary>
@@ -1262,6 +1266,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default Barva linky rámečku FrameSelect
         /// </summary>
         protected virtual Color DefaultFrameSelectLineColor { get { return Color.DarkViolet; } }
+        /// <summary>
+        /// Default pro : Velikost přidaného okraje v AutoScroll containerech (vpravo a dole pod posledním prvkem)
+        /// </summary>
+        protected virtual int DefaultAutoScrollMargins { get { return 8; } }
         #endregion
     }
     /// <summary>

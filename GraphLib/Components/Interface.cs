@@ -19,7 +19,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Relativní souřadnice this prvku v rámci parenta.
         /// Toto jsou souřadnice objektu ve Standardní vrstvě.
         /// Pokud je objekt přetahován na jiné místo, pak tyto souřadnice jsou v <see cref="BoundsInteractive"/>.
-        /// Absolutní souřadnice mohou být určeny pomocí třídy <see cref="BoundsInfo"/> metodou <see cref="BoundsInfo.GetAbsBounds(IInteractiveItem)"/>.
+        /// Absolutní souřadnice mohou být určeny pomocí třídy <see cref="BoundsInfo"/>.
         /// </summary>
         Rectangle Bounds { get; set; }
         /// <summary>
@@ -276,6 +276,28 @@ namespace Asol.Tools.WorkScheduler.Components
         public Action<bool> SetEnabled;
 
         /// <summary>
+        /// OnPhysicalBounds? 
+        /// <para/>
+        /// Hodnota true znamená, že souřadnice (Bounds) tohoto prvku jsou vázané na fyzické souřadnice Parenta.
+        ///  Toto nastavení se používá pouze u controlů, které reprezentují Scrollbary v AutoScroll containerech,
+        ///  protože ty jsou vázané na fyzické souřadnice svého containeru (jsou vpravo a dole), 
+        ///  a nemají se pohybovat na virtuální ploše spolu s běžnými Child prvky.
+        /// <para/>
+        /// Defaultní hodnota je false, znamená že this prvek má souřadnice (Bounds) vztažené k virtuálnímu souřadnému systému.
+        ///  Takový control je pak scrollován uvnitř Parent containeru podle pravidel AutoScroll.
+        ///  Jde o běžné uživatelské controly.
+        /// </summary>
+        public bool OnPhysicalBounds { get { return this.GetBitValue((uint)Bit.OnPhysicalBounds, GetOnPhysicalBounds); } set { this.SetBitValue((uint)Bit.OnPhysicalBounds, value, SetOnPhysicalBounds); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="Enabled"/>
+        /// </summary>
+        public Func<bool, bool> GetOnPhysicalBounds;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="OnPhysicalBounds"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetOnPhysicalBounds;
+
+        /// <summary>
         /// Je aktuálně označen (Checked)?
         /// </summary>
         public virtual bool Checked { get { return this.GetBitValue((uint)Bit.Checked, GetChecked); } set { this.SetBitValue((uint)Bit.Checked, value, SetChecked); } }
@@ -414,46 +436,48 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             /// <summary>Žádný bit</summary>
             None = 0,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Interactive"/></summary>
             Interactive = 0x00000001,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Visible"/></summary>
             Visible = 0x00000002,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Enabled"/></summary>
             Enabled = 0x00000004,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Checked"/></summary>
             Checked = 0x00000008,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Selectable"/></summary>
             Selectable = 0x00000010,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectParent"/></summary>
             SelectParent = 0x00000020,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HoldMouse"/></summary>
             HoldMouse = 0x00000040,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SuppressEvents"/></summary>
             SuppressEvents = 0x00000080,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseActive"/></summary>
             MouseActive = 0x00000100,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseMoveOver"/></summary>
             MouseMoveOver = 0x00000200,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseClick"/></summary>
             MouseClick = 0x00000400,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDoubleClick"/></summary>
             MouseDoubleClick = 0x00000800,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseLongClick"/></summary>
             MouseLongClick = 0x00001000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragMove"/></summary>
             MouseDragMove = 0x00002000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragResizeX"/></summary>
             MouseDragResizeX = 0x00004000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragResizeY"/></summary>
             MouseDragResizeY = 0x00008000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="DrawDragMoveGhostInteractive"/></summary>
             DrawDragMoveGhostInteractive = 0x00010000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="DrawDragMoveGhostStandard"/></summary>
             DrawDragMoveGhostStandard = 0x00020000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="KeyboardInput"/></summary>
             KeyboardInput = 0x00040000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="ActiveTarget"/></summary>
             ActiveTarget = 0x00100000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="OnPhysicalBounds"/></summary>
+            OnPhysicalBounds = 0x00200000,
 
             /// <summary>
             /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti.
@@ -462,7 +486,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Defaultní sada pro běžný prvek běžně aktivní na myš, včetně MouseMoveOver. Nemá žádné Drag vlastnosti.
             /// </summary>
-            DefaultMouseOverProperties = DefaultMouseProperties | MouseMoveOver,
+            DefaultMouseOverProperties = DefaultMouseProperties | MouseMoveOver
         }
         /// <summary>
         /// Defaultní hodnota pro bezparametrický konstruktor = <see cref="Bit.DefaultMouseProperties"/>

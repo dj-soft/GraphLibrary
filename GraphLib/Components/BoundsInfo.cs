@@ -32,89 +32,33 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Metody pro směr Parent to Child
         #region Konstruktory
         /// <summary>
-        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro danou velikost klientského prostoru.
-        /// Používá se pro prvotní tvorbu z fyzického Controlu, a to pro Control který není Scrollable = jeho počátek je 0/0 a odpovídá viditelné oblasti.
-        /// </summary>
-        /// <param name="clientSize"></param>
-        /// <returns></returns>
-        public static BoundsInfo CreateForParent(Size clientSize)
-        {
-            return new BoundsInfo(0, 0, 0, 0, clientSize, true, true);
-        }
-        /// <summary>
         /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daného parenta, který je Scrollable.
         /// </summary>
         /// <param name="parent"></param>
         /// <returns></returns>
         public static BoundsInfo CreateForParent(IAutoScrollContainer parent)
         {
-            Size clientSize = parent.ClientVisibleSize;
-            return new BoundsInfo(0, 0, 0, 0, clientSize, true, true);
+            Coordinates physicalCoordinates = Coordinates.FromRectangle(parent.CurrentPhysicalVisibleBounds);
+            Coordinates virtualCoordinates = Coordinates.FromRectangle(parent.CurrentVirtualVisibleBounds);
+            return new BoundsInfo(physicalCoordinates, virtualCoordinates, true, true);
         }
         /// <summary>
-        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
+        /// Konstruktor pro dané koordináty
         /// </summary>
-        /// <param name="absOriginPoint"></param>
-        /// <param name="absVisibleBounds"></param>
+        /// <param name="physicalCoordinates"></param>
+        /// <param name="virtualCoordinates"></param>
         /// <param name="isVisible"></param>
         /// <param name="isEnabled"></param>
-        /// <returns></returns>
-        private static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds, bool isVisible, bool isEnabled)
+        private BoundsInfo(Coordinates physicalCoordinates, Coordinates virtualCoordinates, bool isVisible, bool isEnabled)
         {
-            return new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom, isVisible, isEnabled);
-        }
-        /// <summary>
-        /// Konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě Rectangle.
-        /// </summary>
-        /// <param name="originX"></param>
-        /// <param name="originY"></param>
-        /// <param name="visibleBounds"></param>
-        private BoundsInfo(int originX, int originY, Rectangle visibleBounds)
-            : this(originX, originY, visibleBounds.Left, visibleBounds.Top, visibleBounds.Right, visibleBounds.Bottom, true, true)
-        { }
-        /// <summary>
-        /// Konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě L-T-Size.
-        /// </summary>
-        /// <param name="originX"></param>
-        /// <param name="originY"></param>
-        /// <param name="visibleL"></param>
-        /// <param name="visibleT"></param>
-        /// <param name="visibleSize"></param>
-        /// <param name="isVisible"></param>
-        /// <param name="isEnabled"></param>
-        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, Size visibleSize, bool isVisible, bool isEnabled)
-            : this(originX, originY, visibleL, visibleT, visibleL + visibleSize.Width, visibleT + visibleSize.Height, isVisible, isEnabled)
-        { }
-        /// <summary>
-        /// Základní konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě L-T-R-B.
-        /// </summary>
-        /// <param name="originX"></param>
-        /// <param name="originY"></param>
-        /// <param name="visibleL"></param>
-        /// <param name="visibleT"></param>
-        /// <param name="visibleR"></param>
-        /// <param name="visibleB"></param>
-        /// <param name="isVisible"></param>
-        /// <param name="isEnabled"></param>
-        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, int visibleR, int visibleB, bool isVisible, bool isEnabled)
-        {
-            this._UseCache = false;
-            this._OriginX = originX;
-            this._OriginY = originY;
-            this._VisibleL = visibleL;
-            this._VisibleT = visibleT;
-            this._VisibleR = visibleR;
-            this._VisibleB = visibleB;
+            this._PhysicalCoordinates = physicalCoordinates;
+            this._VirtualCoordinates = virtualCoordinates;
             this._IsVisible = isVisible;
             this._IsEnabled = isEnabled;
         }
-        private bool _UseCache;
-        private int _OriginX;
-        private int _OriginY;
-        private int _VisibleL;
-        private int _VisibleT;
-        private int _VisibleR;
-        private int _VisibleB;
+
+        private Coordinates _PhysicalCoordinates;
+        private Coordinates _VirtualCoordinates;
         private bool _IsVisible;
         private bool _IsEnabled;
         /// <summary>
@@ -123,19 +67,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return "Origin: { X=" + this._OriginX + ", Y=" + this._OriginY + " };  " +
-                   "Visible: { L=" + this._VisibleL + ", T=" + this._VisibleT + ", R=" + this._VisibleR + ", B=" + this._VisibleB + " }";
+            return "Physical Coordinates: " + this._PhysicalCoordinates.ToString();
         }
         #endregion
-        #region Zásadní hodnoty: AbsOrigin a AbsVisibleBounds
+        #region Hodnoty pro aktuální container, nikoli pro aktuální prvek CurrentItem
         /// <summary>
         /// Absolutní souřadnice bodu, který reprezentuje bod 0/0 aktuálního containeru.
         /// </summary>
-        public Point AbsOrigin { get { return new Point(this._OriginX, this._OriginY); } }
+        public Point AbsolutePhysicalOriginPoint { get { return this._PhysicalCoordinates.OriginPoint; } }
         /// <summary>
-        /// Absolutní souřadnice prostoru, který je nyní viditelný, a v němž je možno hledat interaktivní prvky.
+        /// Absolutní fyzické souřadnice prostoru, který je nyní viditelný.
+        /// Slouží k provedení <see cref="Graphics.IntersectClip(Rectangle)"/> při kreslení.
         /// </summary>
-        public Rectangle AbsVisibleBounds { get { return Rectangle.FromLTRB(this._VisibleL, this._VisibleT, this._VisibleR, this._VisibleB); } }
+        public Rectangle AbsolutePhysicalVisibleBounds { get { return this._PhysicalCoordinates.VisibleBounds; } }
         /// <summary>
         /// Je viditelný základní prostor (tj. on a jeho Parenti mají Is.Visible = true)?
         /// Tato property nemluví o konkrétním prvku <see cref="CurrentItem"/>, ale o jeho Parent prostoru.
@@ -146,319 +90,107 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Tato property nemluví o konkrétním prvku <see cref="CurrentItem"/>, ale o jeho Parent prostoru.
         /// </summary>
         public bool IsEnabled { get { return this._IsEnabled; } }
+
         #endregion
-        #region Objekt CurrentItem a jeho pozice
+        #region CurrentItem a jeho hodnoty
         /// <summary>
-        /// Aktuální prvek. Pro něj jsou nastaveny všechny properties typu Current*
+        /// Aktuální prvek. Pro něj jsou platné všechny properties typu Current*
         /// </summary>
-        public IInteractiveItem CurrentItem { get { return this._CurrentItem; } set { this._ResetCurrentItemCache(); this._CurrentItem = value; } }
+        public IInteractiveItem CurrentItem { get { return this._CurrentItem; } set { this._CurrentItem = value; } } private IInteractiveItem _CurrentItem;
         /// <summary>
-        /// Absolutní souřadnice aktuálního prvku <see cref="CurrentItem"/>.
+        /// Absolutní fyzické souřadnice aktuálního prvku <see cref="CurrentItem"/>.
+        /// Tedy jde o souřadnice, na kterých je prvek fyzicky vykreslen v rámci controlu.
+        /// Tato hodnota obsahuje i neviditelné části prvku, na rozdíl od <see cref="CurrentItemAbsolutePhysicalVisibleBounds"/>.
         /// </summary>
-        public Rectangle CurrentAbsBounds { get { if (!this._UseCache || !this._CurrentAbsBounds.HasValue) this._CurrentAbsBounds = this.GetAbsBounds(this.CurrentItem); return this._CurrentAbsBounds.Value; } }
+        public Rectangle CurrentItemAbsolutePhysicalBounds { get { CheckCurrentItem("AbsolutePhysicalBounds"); return this.GetAbsoluteBounds(this.CurrentItem); } }
         /// <summary>
-        /// Absolutní souřadnice viditelné části aktuálního prvku <see cref="CurrentItem"/>.
-        /// Toto je oblast, na kterou by měl být oříznut (Clip) grafiky při kreslení prvku.
+        /// Absolutní fyzické souřadnice aktuálního prvku <see cref="CurrentItem"/>, na kterých je viditelný.
+        /// Tedy jde o podmnožinu <see cref="CurrentItemAbsolutePhysicalBounds"/> = jen viditelné pixely.
         /// </summary>
-        public Rectangle CurrentAbsVisibleBounds { get { if (!this._UseCache || !this._CurrentAbsVisibleBounds.HasValue) this._CurrentAbsVisibleBounds = this.GetAbsVisibleBounds(this.CurrentItem); return this._CurrentAbsVisibleBounds.Value; } }
+        public Rectangle CurrentItemAbsolutePhysicalVisibleBounds { get { CheckCurrentItem("AbsolutePhysicalVisibleBounds"); return this.GetAbsoluteVisibleBounds(this.CurrentItem); } }
         /// <summary>
-        /// Absolutní souřadnice interaktivního prostoru aktuálního prvku <see cref="CurrentItem"/>.
-        /// Pokud se bude myš nacházet v tomto prostoru, může být aktuální prvek tím aktivním.
-        /// Prostor je oříznut pouze do viditelné oblasti, takže prvek by prvek tuto oblast přesahoval, pak jeho přesahující část nebude brána za interaktivní.
-        /// Obecně nemáme metodu pro určení interaktivních souřadnic bez oříznutí do viditelné oblasti, protože to nedává smysl.
+        /// Obsahuje true, pokud aktuální prvek <see cref="CurrentItem"/> je alespoň zčásti viditelný 
+        /// (jeho <see cref="CurrentItemAbsolutePhysicalVisibleBounds"/> má nějaký viditelný pixel).
         /// </summary>
-        public Rectangle CurrentAbsInteractiveBounds { get { if (!this._UseCache || !this._CurrentAbsInteractiveBounds.HasValue) this._CurrentAbsInteractiveBounds = this.GetAbsInteractiveBounds(this.CurrentItem); return this._CurrentAbsInteractiveBounds.Value; } }
+        public bool CurrentItemAbsolutePhysicalIsVisible { get { CheckCurrentItem("AbsolutePhysicalIsVisible"); return this.CurrentItemAbsolutePhysicalVisibleBounds.HasPixels(); } }
         /// <summary>
-        /// Absolutní souřadnice celého prostoru pro Childs prvky aktuálního prvku <see cref="CurrentItem"/>.
-        /// Odpovídá souřadnici Bounds aktuálního prvku <see cref="CurrentItem"/>, zmenšeného o <see cref="IInteractiveItem.ClientBorder"/>.
-        /// Tento prostor není oříznutý do viditelné oblasti.
+        /// Obsahuje true, pokud aktuální container je zobrazován (má <see cref="IsVisible"/> = true)
+        /// a současně i aktuální prvek <see cref="CurrentItem"/> je zobrazován (jeho IsVisible = true).
         /// </summary>
-        public Rectangle CurrentAbsChildsBounds { get { if (!this._UseCache || !this._CurrentAbsChildsBounds.HasValue) this._CurrentAbsChildsBounds = this.GetAbsChildsBounds(this.CurrentItem); return this._CurrentAbsChildsBounds.Value; } }
+        public bool CurrentItemIsVisible { get { CheckCurrentItem("IsVisible"); return (this._IsVisible && this.CurrentItem.Is.Visible); } }
         /// <summary>
-        /// Absolutní souřadnice viditelného prostoru pro Childs prvky aktuálního prvku <see cref="CurrentItem"/>.
-        /// Toto je prostor, v němž se mohou vyskytovat (zobrazovat a být interaktivní) Childs prvky. Jejich případné části, které přisahují mimo tento prostor, jsou neviditelné a neaktivní.
-        /// Jde o VIDITELNÝ prostor, jehož počáteční bod (<see cref="Rectangle.Location"/> nemusí být shodný s bodem počátku <see cref="CurrentAbsChildsOrigin"/>,
-        /// protože počáteční pixely tohoto prostoru mohou být odsunuté nahoru/doleva ve svém Parentu a tudíž nejsou viditelné.
+        /// Obsahuje true, pokud aktuální container je zobrazován (má <see cref="IsEnabled"/> = true)
+        /// a současně i aktuální prvek <see cref="CurrentItem"/> je zobrazován (jeho IsEnabled = true).
         /// </summary>
-        public Rectangle CurrentAbsChildsVisibleBounds { get { if (!this._UseCache || !this._CurrentAbsChildsVisibleBounds.HasValue) this._CurrentAbsChildsVisibleBounds = this.GetAbsChildsVisibleBounds(this.CurrentItem); return this._CurrentAbsChildsVisibleBounds.Value; } }
-        /// <summary>
-        /// Relativní souřadnice viditelného prostoru pro Childs prvky aktuálního prvku <see cref="CurrentItem"/>.
-        /// Relativní = v rámci parenta aktuálního prvku.
-        /// Vrací <see cref="IInteractiveItem.Bounds"/> zmenšené o klientské okraje <see cref="IInteractiveItem.ClientBorder"/>.
-        /// Pokud aktuální prvek nemá naplněny klientské okraje <see cref="IInteractiveItem.ClientBorder"/>, pak vrací nezměněné <see cref="IInteractiveItem.Bounds"/>.
-        /// </summary>
-        public Rectangle CurrentChildsBounds { get { if (!this._UseCache || !this._CurrentChildsBounds.HasValue) this._CurrentChildsBounds = GetChildBounds(this.CurrentItem); return this._CurrentChildsBounds.Value; } }
-        /// <summary>
-        /// Absolutní souřadnice bodu, který je počátkem souřadného systému Childs prvků aktuálního prvku <see cref="CurrentItem"/>.
-        /// </summary>
-        public Point CurrentAbsChildsOrigin { get { if (!this._UseCache || !this._CurrentAbsChildsOrigin.HasValue) this._CurrentAbsChildsOrigin = this.GetAbsChildsOrigin(this.CurrentItem); return this._CurrentAbsChildsOrigin.Value; } }
-        /// <summary>
-        /// Aktuální prvek je viditelný? To je tehdy, když všichni parenti i daný prvek mají Is.Visible = true
-        /// </summary>
-        public bool CurrentIsVisible { get { if (!this._UseCache || !this._CurrentIsVisible.HasValue) this._CurrentIsVisible = this.IsItemVisible(this.CurrentItem); return this._CurrentIsVisible.Value; } }
-        /// <summary>
-        /// Aktuální prvek je dostupný? To je tehdy, když všichni parenti i daný prvek mají Is.Enabled = true
-        /// </summary>
-        public bool CurrentIsEnabled { get { if (!this._UseCache || !this._CurrentIsEnabled.HasValue) this._CurrentIsEnabled = this.IsItemEnabled(this.CurrentItem); return this._CurrentIsEnabled.Value; } }
+        public bool CurrentItemIsEnabled { get { CheckCurrentItem("IsVisible"); return (this._IsEnabled && this.CurrentItem.Is.Enabled); } }
         /// <summary>
         /// Obsahuje nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř aktuálního prvku <see cref="CurrentItem"/>.
         /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro <see cref="CurrentItem"/>, ale ne pro jeho Childs.
         /// </summary>
-        public BoundsInfo CurrentChildsSpider { get { if (!this._UseCache || this._CurrentChildsSpider == null) this._CurrentChildsSpider = _GetChildBoundsInfo(this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds, this.CurrentIsVisible, this.CurrentIsEnabled); return this._CurrentChildsSpider; } }
+        public BoundsInfo CurrentChildsBoundsInfo { get { return GetChildsBoundsInfo(this.CurrentItem); } }
         /// <summary>
-        /// Resetuje cache výsledných hodnot pro prvek <see cref="_CurrentItem"/>
-        /// </summary>
-        private void _ResetCurrentItemCache()
-        {
-            this._CurrentAbsBounds = null;
-            this._CurrentAbsVisibleBounds = null;
-            this._CurrentAbsInteractiveBounds = null;
-            this._CurrentAbsChildsBounds = null;
-            this._CurrentAbsChildsVisibleBounds = null;
-            this._CurrentChildsBounds = null;
-            this._CurrentAbsChildsOrigin = null;
-            this._CurrentChildsSpider = null;
-            this._CurrentIsVisible = null;
-            this._CurrentIsEnabled = null;
-        }
-        private IInteractiveItem _CurrentItem;
-        private Rectangle? _CurrentAbsBounds;
-        private Rectangle? _CurrentAbsVisibleBounds;
-        private Rectangle? _CurrentAbsInteractiveBounds;
-        private Rectangle? _CurrentAbsChildsBounds;
-        private Rectangle? _CurrentAbsChildsVisibleBounds;
-        private Rectangle? _CurrentChildsBounds;
-        private Point? _CurrentAbsChildsOrigin;
-        private BoundsInfo _CurrentChildsSpider;
-        private bool? _CurrentIsVisible;
-        private bool? _CurrentIsEnabled;
-        #endregion
-        #region Metody pro získání souřadnic pro libovolný prvek (v aktuálním containeru)
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnici Bounds daného prvku.
+        /// Vrátí absolutní souřadnice (AbsoluteBounds) pro daný Child prvek.
+        /// Souřadný systém prvku volí podle toho, zda prvek je umístěn ve fyzických nebo ve virtuálních souřadnicích.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public Rectangle GetAbsBounds(IInteractiveItem item)
+        protected Rectangle GetAbsoluteBounds(IInteractiveItem item)
         {
-            CheckItem(item, "AbsBounds");
-            return this.GetAbsBounds(item.Bounds);
+            Coordinates coordinates = (item.Is.OnPhysicalBounds ? this._PhysicalCoordinates : this._VirtualCoordinates);
+            return item.Bounds.Add(coordinates.OriginPoint);
         }
         /// <summary>
-        /// Metoda vrátí absolutní souřadnice viditelné části daného prvku.
-        /// Toto je oblast, na kterou by měl být oříznut (Clip) grafiky při kreslení prvku.
+        /// Vrátí absolutní souřadnice (AbsoluteBounds) viditelné části pro daný Child prvek.
+        /// Souřadný systém prvku volí podle toho, zda prvek je umístěn ve fyzických nebo ve virtuálních souřadnicích.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public Rectangle GetAbsVisibleBounds(IInteractiveItem item)
+        protected Rectangle GetAbsoluteVisibleBounds(IInteractiveItem item)
         {
-            CheckItem(item, "AbsVisibleBounds");
-            return this.GetVisibleAbsBounds(item.Bounds);
+            Coordinates coordinates = (item.Is.OnPhysicalBounds ? this._PhysicalCoordinates : this._VirtualCoordinates);
+            Rectangle absoluteBounds = item.Bounds.Add(coordinates.OriginPoint);
+            Rectangle visibleBounds = coordinates.VisibleBounds;
+            return Rectangle.Intersect(absoluteBounds, visibleBounds);
         }
         /// <summary>
-        /// Metoda vrátí absolutní souřadnice interaktivního prostoru daného prvku.
-        /// Pokud se bude myš nacházet v tomto prostoru, může být daný prvek tím aktivním.
-        /// Prostor je oříznut pouze do viditelné oblasti, takže pokud by prvek tuto oblast přesahoval, pak jeho přesahující část nebude brána za interaktivní.
-        /// Obecně nemáme metodu pro určení interaktivních souřadnic bez oříznutí do viditelné oblasti, protože to nedává smysl.
+        /// Vrátí novou instanci <see cref="BoundsInfo"/> pro daný Child objekt, který od té chvíle bude Parent objektem 
+        /// pro souřadnice ve vráceném objektu <see cref="BoundsInfo"/>.
+        /// Respektuje přitom, že Child objekt se může pohybovat ve virtuálních anebo ve fyzických souřadnicích.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public Rectangle GetAbsInteractiveBounds(IInteractiveItem item)
+        protected BoundsInfo GetChildsBoundsInfo(IInteractiveItem item)
         {
-            CheckItem(item, "AbsInteractiveBounds");
-            Rectangle bounds = item.Bounds;                                                             // Základ = souřadnice prvku
-            if (item.InteractivePadding.HasValue) bounds = bounds.Add(item.InteractivePadding.Value);   // Zvětšit je o interaktivní rozšíření
-            return this.GetVisibleAbsBounds(bounds);
-        }
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnice celého prostoru pro Childs prvky daného prvku.
-        /// Odpovídá souřadnici Bounds aktuálního prvku <see cref="CurrentItem"/>, zmenšeného o <see cref="IInteractiveItem.ClientBorder"/>.
-        /// Tento prostor není oříznutý do viditelné oblasti.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public Rectangle GetAbsChildsBounds(IInteractiveItem item)
-        {
-            CheckItem(item, "AbsChildsBounds");
-            Rectangle bounds = item.Bounds;                                                             // Základ = souřadnice prvku
-            if (item.ClientBorder.HasValue) bounds = bounds.Sub(item.ClientBorder.Value);               // Zmenšit je o vnitřní klientský okraj
-            return this.GetAbsBounds(bounds);
-        }
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnice viditelného prostoru pro Childs prvky daného prvku.
-        /// Toto je prostor, v němž se mohou vyskytovat (zobrazovat a být interaktivní) Childs prvky. Jejich případné části, které přisahují mimo tento prostor, jsou neviditelné a neaktivní.
-        /// Jde o VIDITELNÝ prostor, jehož počáteční bod (<see cref="Rectangle.Location"/> nemusí být shodný s bodem počátku <see cref="GetAbsChildsOrigin(IInteractiveItem)"/>,
-        /// protože počáteční pixely tohoto prostoru mohou být odsunuté nahoru/doleva ve svém Parentu a tudíž nejsou viditelné.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public Rectangle GetAbsChildsVisibleBounds(IInteractiveItem item)
-        {
-            CheckItem(item, "AbsChildsVisibleBounds");
-            Rectangle bounds = item.Bounds;                                                             // Základ = souřadnice prvku
-            if (item.ClientBorder.HasValue) bounds = bounds.Sub(item.ClientBorder.Value);               // Zmenšit je o vnitřní klientský okraj
-            return this.GetVisibleAbsBounds(bounds);
-        }
-        /// <summary>
-        /// Metoda vrátí relativní souřadnice viditelného prostoru pro Childs prvky daného prvku.
-        /// Relativní = v rámci parenta daného prvku, tedy ve stejném souřadném systému jako <see cref="IInteractiveItem.Bounds"/>.
-        /// Vrací <see cref="IInteractiveItem.Bounds"/> zmenšené o klientské okraje <see cref="IInteractiveItem.ClientBorder"/>.
-        /// Pokud prvek nemá naplněny klientské okraje <see cref="IInteractiveItem.ClientBorder"/>, pak vrací nezměněné <see cref="IInteractiveItem.Bounds"/>.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public static Rectangle GetChildBounds(IInteractiveItem item)
-        {
-            Rectangle bounds = item.Bounds;                                                             // Základ = souřadnice prvku, Zmenšit je o vnitřní klientský okraj
-            if (item.ClientBorder.HasValue) bounds = bounds.Sub(item.ClientBorder.Value);               // Zmenšit je o vnitřní klientský okraj
-            return bounds;
-        }
-        /// <summary>
-        /// Metoda vrátí velikost prostoru pro Childs prvky v rámci daného objektu.
-        /// V podstatě vrací <see cref="IInteractiveItem.Bounds"/>.Size - <see cref="IInteractiveItem.ClientBorder"/>.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public static Size GetClientSize(IInteractiveItem item)
-        {
-            Size size = item.Bounds.Size.Sub(item.ClientBorder);                                        // Základ = velikost prvku, Zmenšit je o vnitřní klientský okraj
-            return size;
-        }
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnice bodu, který je počátkem souřadného systému Childs prvků daného prvku.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public Point GetAbsChildsOrigin(IInteractiveItem item)
-        {
-            CheckItem(item, "AbsChildsOrigin");
-            Rectangle bounds = this.GetAbsChildsBounds(item);
-            return bounds.Location;
-        }
-        /// <summary>
-        /// Metoda vrátí true, pokud daný prvek v aktuálním parentovi je dostupný.
-        /// To je tehdy, když všichni parenti i daný prvek mají Is.Visible = true.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool IsItemVisible(IInteractiveItem item)
-        {
-            CheckItem(item, "ItemIsVisible");
-            return this.IsVisible && item.Is.Visible;
-        }
-        /// <summary>
-        /// Metoda vrátí true, pokud daný prvek v aktuálním parentovi je viditelný.
-        /// To je tehdy, když všichni parenti i daný prvek mají Is.Enabled = true
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool IsItemEnabled(IInteractiveItem item)
-        {
-            CheckItem(item, "ItemIsEnabled");
-            return this.IsEnabled && item.Is.Enabled;
-        }
-        /// <summary>
-        /// Metoda vrátí nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř daného prvku.
-        /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro daný prvku, ale ne pro jeho Childs.
-        /// </summary>
-        public BoundsInfo GetChildBoundsInfo(IInteractiveItem item)
-        {
-            CheckItem(item, "ChildsSpider");
+            // Child prvek je umístěn ve svých souřadnicích Bounds, a to buď ve fyzickém nebo ve virtuálním prostoru (koordinátech):
+            Coordinates parentCoordinates = (item.Is.OnPhysicalBounds ? this._PhysicalCoordinates : this._VirtualCoordinates);
 
-            Point originPoint = this.GetAbsChildsOrigin(item);
-            Rectangle clientVisibleBounds = this.GetAbsChildsVisibleBounds(item);
-            bool isVisible = this.IsItemVisible(item);
-            bool isEnabled = this.IsItemEnabled(item);
-            return _GetChildBoundsInfo(originPoint, clientVisibleBounds, isVisible, isEnabled);
-        }
-        /// <summary>
-        /// Metoda vrátí nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř daného prvku.
-        /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro daný prvku, ale ne pro jeho Childs.
-        /// </summary>
-        /// <param name="originPoint"></param>
-        /// <param name="clientVisibleBounds"></param>
-        /// <param name="isVisible"></param>
-        /// <param name="isEnabled"></param>
-        private static BoundsInfo _GetChildBoundsInfo(Point originPoint, Rectangle clientVisibleBounds, bool isVisible, bool isEnabled)
-        {
-            return BoundsInfo.CreateForParent(originPoint, clientVisibleBounds, isVisible, isEnabled);
-        }
-        /// <summary>
-        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
-        /// </summary>
-        /// <param name="relativeBounds"></param>
-        /// <returns></returns>
-        public Rectangle GetAbsBounds(Rectangle relativeBounds)
-        {
-            return relativeBounds.Add(this._OriginX, this._OriginY);
-        }
-        /// <summary>
-        /// Vrátí danou absolutní souřadnici posunutou do relativních koordinátů (k souřadnici se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
-        /// </summary>
-        /// <param name="absoluteBounds"></param>
-        /// <returns></returns>
-        public Rectangle GetRelBounds(Rectangle absoluteBounds)
-        {
-            return absoluteBounds.Sub(this._OriginX, this._OriginY);
-        }
-        /// <summary>
-        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>).
-        /// Pro hodnotu null vrací null.
-        /// </summary>
-        /// <param name="relativeBounds"></param>
-        /// <returns></returns>
-        public Rectangle? GetAbsBoundsN(Rectangle? relativeBounds)
-        {
-            return (relativeBounds.HasValue ? (Rectangle?)relativeBounds.Value.Add(this._OriginX, this._OriginY) : (Rectangle?)null);
-        }
-        /// <summary>
-        /// Vrátí danou absolutní souřadnici posunutou do relativních koordinátů (k souřadnici se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
-        /// Pro hodnotu null vrací null.
-        /// </summary>
-        /// <param name="absoluteBounds"></param>
-        /// <returns></returns>
-        public Rectangle? GetRelBoundsN(Rectangle? absoluteBounds)
-        {
-            return (absoluteBounds.HasValue ? (Rectangle?)absoluteBounds.Value.Sub(this._OriginX, this._OriginY) : (Rectangle?)null);
-        }
-        /// <summary>
-        /// Vrátí daný relativní bod posunutý do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
-        /// </summary>
-        /// <param name="relativePoint"></param>
-        /// <returns></returns>
-        public Point GetAbsPoint(Point relativePoint)
-        {
-            return relativePoint.Add(this._OriginX, this._OriginY);
-        }
-        /// <summary>
-        /// Vrátí daný absolutní bod posunutý do relativních koordinátů (od souřadnice se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
-        /// </summary>
-        /// <param name="absolutePoint"></param>
-        /// <returns></returns>
-        public Point GetRelPoint(Point absolutePoint)
-        {
-            return absolutePoint.Sub(this._OriginX, this._OriginY);
-        }
-        /// <summary>
-        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>),
-        /// a oříznutou do viditelných souřadnic.
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        protected Rectangle GetVisibleAbsBounds(Rectangle bounds)
-        {
-            int l = bounds.Left + this._OriginX;
-            int t = bounds.Top + this._OriginY;
-            int r = l + bounds.Width;
-            int b = t + bounds.Height;
+            // Určíme jeho absolutní souřadnice = jeho Bounds posunuté do odpovdajících koordinátů:
+            Rectangle absoluteBounds = item.Bounds.Add(parentCoordinates.OriginPoint);
+            //  a určíme jeho viditelnou oblast:
+            Rectangle visibleBounds = Rectangle.Intersect(absoluteBounds, parentCoordinates.VisibleBounds);
 
-            if (l < this._VisibleL) l = this._VisibleL;
-            if (t < this._VisibleT) t = this._VisibleT;
-            if (r > this._VisibleR) r = this._VisibleR;
-            if (b > this._VisibleB) b = this._VisibleB;
+            // V rámci těchto souřadnic prvek item může poskytovat svůj souřadný systém standardní (fyzický) anebo i virtuální:
+            Coordinates physicalCoordinates, virtualCoordinates;
+            if (item is IAutoScrollContainer)
+            {
+                physicalCoordinates
+            }
 
-            return Rectangle.FromLTRB(l, t, r, b);
+
+            Coordinates physicalCoordinates = Coordinates.FromRectangle(parent.CurrentPhysicalVisibleBounds);
+            Coordinates virtualCoordinates = Coordinates.FromRectangle(parent.CurrentVirtualVisibleBounds);
+
+
+            // Prostor, který prvek poskyt
+            Coordinates physicalCoordinates;
+            Coordinates virtualCoordinates
+
         }
+        /// <summary>
+        /// Prověří, že prvek <see cref="_CurrentItem"/> není null. Pokud je null, vyhodí chybu.
+        /// </summary>
+        /// <param name="action"></param>
+        protected void CheckCurrentItem(string action) { CheckItem(this._CurrentItem, action); }
         /// <summary>
         /// Prověří, že daný prvek není null. Pokud je null, vyhodí chybu.
         /// </summary>
@@ -476,7 +208,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pro daný prvek (který je na pozici Child) určí a vrátí souřadný systém, v kterém se pohybuje.
         /// Jde tedy o systém, v němž se daný prvek pohybuje, nikoli o systém který poskytuje svým Childs prvkům.
         /// Daný prvek bude umístěn do property <see cref="BoundsInfo.CurrentItem"/>, a v ostatních properties vráceného systému budou k dispozici jeho jednotlivé koordináty
-        /// (např. <see cref="BoundsInfo.CurrentAbsBounds"/> bude obsahovat absolutní souřadnice daného prvku).
+        /// (např. <see cref="BoundsInfo.CurrentItemAbsolutePhysicalBounds"/> bude obsahovat absolutní souřadnice daného prvku).
         /// </summary>
         /// <param name="currentItem"></param>
         /// <returns></returns>
@@ -562,8 +294,8 @@ namespace Asol.Tools.WorkScheduler.Components
             int y = 0;
             int l = 0;
             int t = 0;
-            int r = MaxRight;
-            int b = MaxBottom;
+            int r = Coordinates.Max;
+            int b = Coordinates.Max;
 
             for (int i = boundsList.Count - 1; i >= 0; i--)
             {   // Pole boundsList procházíme od posledního prvku, neboť tam je umístěn root Control:
@@ -582,63 +314,6 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!asContainer && forItem is IInteractiveItem)
                 boundsInfo.CurrentItem = forItem as IInteractiveItem;
             return boundsInfo;
-        }
-        #endregion
-        #region Statické metody
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnice daného objektu.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteBounds(IInteractiveItem item)
-        {
-            BoundsInfo boundsInfo = BoundsInfo.CreateForChild(item);
-            return boundsInfo.CurrentAbsBounds;
-        }
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnice prostoru, který je zadán jako relativní souřadnice v daném containeru.
-        /// Pokud tedy například daný container je umístěn na (absolutní) souřadnici Bounds = { 100,20,200,50 }, a dané relativní souřadnice jsou { 5,5,10,10 },
-        /// pak výsledné absolutní souřadnice jsou { 105,25,10,10 }.
-        /// </summary>
-        /// <param name="container"></param>
-        /// <param name="relativeBounds"></param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds)
-        {
-            if (container == null) return relativeBounds;
-            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container);
-            return relativeBounds.Add(boundsInfo.AbsOrigin);
-        }
-        /// <summary>
-        /// Metoda vrátí absolutní souřadnice prostoru, který je zadán jako relativní souřadnice v daném containeru.
-        /// Pokud tedy například daný container je umístěn na (absolutní) souřadnici Bounds = { 100,20,200,50 }, a dané relativní souřadnice jsou { 5,5,10,10 },
-        /// pak výsledné absolutní souřadnice jsou { 105,25,10,10 }.
-        /// </summary>
-        /// <param name="container"></param>
-        /// <param name="relativeBounds"></param>
-        /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
-        /// To je důsledek procesu Drag and Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
-        /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds, GInteractiveDrawLayer currentLayer)
-        {
-            if (container == null) return relativeBounds;
-            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container, currentLayer);
-            return relativeBounds.Add(boundsInfo.AbsOrigin);
-        }
-        /// <summary>
-        /// Metoda vrací relativní souřadnici bodu v daném containeru pro danou absolutní souřadnici.
-        /// Metoda určí souřadný systém <see cref="BoundsInfo"/> uvnitř daného containeru, 
-        /// získá jeho <see cref="BoundsInfo.AbsOrigin"/>, a vrátí rozdíl.
-        /// </summary>
-        /// <param name="container"></param>
-        /// <param name="absolutePoint"></param>
-        /// <returns></returns>
-        public static Point GetRelativePointInContainer(IInteractiveParent container, Point absolutePoint)
-        {
-            if (container == null) return absolutePoint;
-            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container);
-            return absolutePoint.Sub(boundsInfo.AbsOrigin);
         }
         /// <summary>
         /// Vrátí rectangle, který reprezentuje souřadnice klientského prostoru v rámci daného parenta
@@ -662,17 +337,333 @@ namespace Asol.Tools.WorkScheduler.Components
 #warning IScrollContainer?
             return new Rectangle(new Point(0, 0), parent.ClientSize);
         }
-        /// <summary>
-        /// Maximální souřadnice Right.
-        /// Něco tu být musí :-)
-        /// </summary>
-        protected const int MaxRight = 20480;
-        /// <summary>
-        /// Maximální souřadnice Bottom.
-        /// Něco tu být musí :-)
-        /// </summary>
-        protected const int MaxBottom = 20480;
         #endregion
+        #region Static služby
+
+        /// <summary>
+        /// Metoda vrátí velikost prostoru pro Childs prvky v rámci daného objektu.
+        /// V podstatě vrací <see cref="IInteractiveItem.Bounds"/>.Size - <see cref="IInteractiveItem.ClientBorder"/>.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public static Size GetClientSize(IInteractiveItem item)
+        {
+            Size size = item.Bounds.Size.Sub(item.ClientBorder);                                        // Základ = velikost prvku, Zmenšit je o vnitřní klientský okraj
+            return size;
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice daného objektu.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public static Rectangle GetAbsolutePhysicalBounds(IInteractiveItem item)
+        {
+            BoundsInfo boundsInfo = BoundsInfo.CreateForChild(item);
+            return boundsInfo.CurrentItemAbsolutePhysicalBounds;
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice prostoru, který je zadán jako relativní souřadnice v daném containeru.
+        /// Pokud tedy například daný container je umístěn na (absolutní) souřadnici Bounds = { 100,20,200,50 }, a dané relativní souřadnice jsou { 5,5,10,10 },
+        /// pak výsledné absolutní souřadnice jsou { 105,25,10,10 }.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="relativeBounds"></param>
+        /// <returns></returns>
+        public static Rectangle GetAbsolutePhysicalBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds)
+        {
+            if (container == null) return relativeBounds;
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container);
+            return relativeBounds.Add(boundsInfo.AbsolutePhysicalOriginPoint);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice prostoru, který je zadán jako relativní souřadnice v daném containeru.
+        /// Pokud tedy například daný container je umístěn na (absolutní) souřadnici Bounds = { 100,20,200,50 }, a dané relativní souřadnice jsou { 5,5,10,10 },
+        /// pak výsledné absolutní souřadnice jsou { 105,25,10,10 }.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="relativeBounds"></param>
+        /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
+        /// To je důsledek procesu Drag and Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
+        /// <returns></returns>
+        public static Rectangle GetAbsolutePhysicalBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds, GInteractiveDrawLayer currentLayer)
+        {
+            if (container == null) return relativeBounds;
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container, currentLayer);
+            return relativeBounds.Add(boundsInfo.AbsolutePhysicalOriginPoint);
+        }
+        /// <summary>
+        /// Metoda vrací relativní souřadnici bodu v daném containeru pro danou absolutní souřadnici.
+        /// Metoda určí souřadný systém <see cref="BoundsInfo"/> uvnitř daného containeru, 
+        /// získá jeho <see cref="BoundsInfo.AbsOrigin"/>, a vrátí rozdíl.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        public static Point GetRelativePhysicalPointInContainer(IInteractiveParent container, Point absolutePoint)
+        {
+            if (container == null) return absolutePoint;
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container);
+            return absolutePoint.Sub(boundsInfo.AbsolutePhysicalOriginPoint);
+        }
+
+        #endregion
+        #region class Coordinates
+        /// <summary>
+        /// Střadač souřadnic
+        /// </summary>
+        protected class Coordinates
+        {
+            #region Konstruktory a základní property
+            /// <summary>
+            /// Výchozí prostor
+            /// </summary>
+            public static Coordinates Root { get { return new Coordinates(0, 0, 0, 0, 20480, 20480); } }
+            /// <summary>
+            /// Maximální zpracovaná souřadnice (Right, Bottom)
+            /// </summary>
+            public const int Max = 20480;
+            /// <summary>
+            /// Vrátí prostor odpovídající danému Rectangle, s tím že celý prostor Rectangle je viditelný
+            /// </summary>
+            /// <param name="bounds"></param>
+            /// <returns></returns>
+            public static Coordinates FromRectangle(Rectangle bounds)
+            {
+                return new Coordinates(bounds.X, bounds.Y, bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="originX"></param>
+            /// <param name="originY"></param>
+            /// <param name="visibleL"></param>
+            /// <param name="visibleT"></param>
+            /// <param name="visibleR"></param>
+            /// <param name="visibleB"></param>
+            public Coordinates(int originX, int originY, int visibleL, int visibleT, int visibleR, int visibleB)
+            {
+                this.OriginX = originX;
+                this.OriginY = originY;
+                this.VisibleL = visibleL;
+                this.VisibleT = visibleT;
+                this.VisibleR = visibleR;
+                this.VisibleB = visibleB;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return "Origin: { X=" + this.OriginX + ", Y=" + this.OriginY + " };  " +
+                       "Visible: { L=" + this.VisibleL + ", T=" + this.VisibleT + ", R=" + this.VisibleR + ", B=" + this.VisibleB + " }";
+            }
+            /// <summary>
+            /// Absolutní souřadnice X bodu, který reprezentuje relativní 0/0 v aktuálním containeru.
+            /// <see cref="Root"/> control pro fyzickou souřadnici zde má 0/0 = to je výchozí bod souřadného systému.
+            /// Jeho Child control zde má svoji souřadnici Bounds.X; jeho vnořený control zde má součet souřadnic X, atd.
+            /// Na rozdíl od toho je souřadnice <see cref="VisibleL"/> nastřádaná hodnota Max() z těchto souřadnic <see cref="OriginX"/>, 
+            /// protože když nějaký control bude umístěn vlevo (jeho Bounds.X bude záporné), 
+            /// pak <see cref="VisibleL"/> zůstane na své hodnotě = levá část vnořeného controlu není vidět.
+            /// </summary>
+            public int OriginX { get; private set; }
+            /// <summary>
+            /// Absolutní souřadnice Y bodu, který reprezentuje relativní 0/0 v aktuálním containeru.
+            /// <see cref="Root"/> control pro fyzickou souřadnici zde má 0/0 = to je výchozí bod souřadného systému.
+            /// Jeho Child control zde má svoji souřadnici Bounds.Y; jeho vnořený control zde má součet souřadnic Y, atd.
+            /// Na rozdíl od toho je souřadnice <see cref="VisibleT"/> nastřádaná hodnota Max() z těchto souřadnic <see cref="OriginY"/>, 
+            /// protože když nějaký control bude umístěn nahoře (jeho Bounds.Y bude záporné), 
+            /// pak <see cref="VisibleT"/> zůstane na své hodnotě = horní část vnořeného controlu není vidět.
+            /// </summary>
+            public int OriginY { get; private set; }
+            /// <summary>
+            /// Absolutní hodnota Left v aktuálním containeru, která reprezentuje první viditelný pixel.
+            /// </summary>
+            public int VisibleL { get; private set; }
+            /// <summary>
+            /// Absolutní hodnota Top v aktuálním containeru, která reprezentuje první viditelný pixel.
+            /// </summary>
+            public int VisibleT { get; private set; }
+            /// <summary>
+            /// Absolutní hodnota Right v aktuálním containeru, která reprezentuje první už nezobrazovaný pixel doprava za posledním viditelným.
+            /// Pokud tedy <see cref="VisibleR"/> == <see cref="VisibleL"/>, pak na ose X už není nic vidět.
+            /// </summary>
+            public int VisibleR { get; private set; }
+            /// <summary>
+            /// Absolutní hodnota Bottom v aktuálním containeru, která reprezentuje první už nezobrazovaný pixel dolů pod posledním viditelným.
+            /// Pokud tedy <see cref="VisibleB"/> == <see cref="VisibleT"/>, pak na ose Y už není nic vidět.
+            /// </summary>
+            public int VisibleB { get; private set; }
+            #endregion
+
+            /// <summary>
+            /// Absolutní souřadnice bodu, který reprezentuje relativní 0/0 v aktuálním containeru.
+            /// <see cref="Root"/> control pro fyzickou souřadnici zde má bod 0/0 = to je výchozí bod souřadného systému.
+            /// Jeho Child control zde má svoji souřadnici Bounds.Location; jeho vnořený control zde má součet souřadnic Bounds.Location, atd.
+            /// </summary>
+            public Point OriginPoint { get { return new Point(this.OriginX, this.OriginY); } }
+            /// <summary>
+            /// Souřadnice viditelného prostoru
+            /// </summary>
+            public Rectangle VisibleBounds { get { return Rectangle.FromLTRB(this.VisibleL, this.VisibleT, this.VisibleR, this.VisibleB); } }
+            /// <summary>
+            /// Obsahuje true pokud <see cref="VisibleBounds"/> obsahuje nějaké reálně viditelné pixely.
+            /// </summary>
+            public bool IsVisible { get { return ((this.VisibleR > this.VisibleL) && (this.VisibleB > this.VisibleT)); } }
+        }
+        #endregion
+
+
+
+        private int _OriginX;
+        private int _OriginY;
+        private int _VisibleL;
+        private int _VisibleT;
+        private int _VisibleR;
+        private int _VisibleB;
+
+        /// <summary>
+        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
+        /// </summary>
+        /// <param name="absOriginPoint"></param>
+        /// <param name="absVisibleBounds"></param>
+        /// <param name="isVisible"></param>
+        /// <param name="isEnabled"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        private static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds, bool isVisible, bool isEnabled)
+        {
+            return new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom, isVisible, isEnabled);
+        }
+        /// <summary>
+        /// Základní konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě L-T-R-B.
+        /// </summary>
+        /// <param name="originX"></param>
+        /// <param name="originY"></param>
+        /// <param name="visibleL"></param>
+        /// <param name="visibleT"></param>
+        /// <param name="visibleR"></param>
+        /// <param name="visibleB"></param>
+        /// <param name="isVisible"></param>
+        /// <param name="isEnabled"></param>
+        [Obsolete("Už jen Coordinates", true)]
+        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, int visibleR, int visibleB, bool isVisible, bool isEnabled)
+        {
+            this._UseCache = false;
+            this._OriginX = originX;
+            this._OriginY = originY;
+            this._VisibleL = visibleL;
+            this._VisibleT = visibleT;
+            this._VisibleR = visibleR;
+            this._VisibleB = visibleB;
+            this._IsVisible = isVisible;
+            this._IsEnabled = isEnabled;
+        }
+        private bool _UseCache;
+
+        /// <summary>
+        /// Absolutní souřadnice bodu, který reprezentuje bod 0/0 aktuálního containeru.
+        /// </summary>
+        [Obsolete("Už jen Coordinates", true)]
+        public Point AbsOrigin { get { return new Point(this._OriginX, this._OriginY); } }
+
+
+        private Rectangle? _CurrentAbsBounds;
+        private Rectangle? _CurrentAbsVisibleBounds;
+        private Point? _CurrentAbsChildsOrigin;
+        private BoundsInfo _CurrentChildsBoundsInfo;
+        private bool? _CurrentIsVisible;
+        private bool? _CurrentIsEnabled;
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice celého prostoru pro Childs prvky daného prvku.
+        /// Odpovídá souřadnici Bounds aktuálního prvku <see cref="CurrentItem"/>, zmenšeného o <see cref="IInteractiveItem.ClientBorder"/>.
+        /// Tento prostor není oříznutý do viditelné oblasti.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        public Rectangle GetAbsChildsBounds(IInteractiveItem item)
+        {
+            CheckItem(item, "AbsChildsBounds");
+            Rectangle bounds = item.Bounds;                                                             // Základ = souřadnice prvku
+            if (item.ClientBorder.HasValue) bounds = bounds.Sub(item.ClientBorder.Value);               // Zmenšit je o vnitřní klientský okraj
+            return this.GetAbsBounds(bounds);
+        }
+        /// <summary>
+        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// </summary>
+        /// <param name="relativeBounds"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        public Rectangle  GetAbsBounds(Rectangle relativeBounds)
+        {
+            return relativeBounds.Add(this._OriginX, this._OriginY);
+        }
+        /// <summary>
+        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>).
+        /// Pro hodnotu null vrací null.
+        /// </summary>
+        /// <param name="relativeBounds"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        public Rectangle? GetAbsBoundsN(Rectangle? relativeBounds)
+        {
+            return (relativeBounds.HasValue ? (Rectangle?)relativeBounds.Value.Add(this._OriginX, this._OriginY) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Vrátí danou absolutní souřadnici posunutou do relativních koordinátů (k souřadnici se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// Pro hodnotu null vrací null.
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        public Rectangle? GetRelBoundsN(Rectangle? absoluteBounds)
+        {
+            return (absoluteBounds.HasValue ? (Rectangle?)absoluteBounds.Value.Sub(this._OriginX, this._OriginY) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Vrátí daný relativní bod posunutý do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// </summary>
+        /// <param name="relativePoint"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        public Point GetAbsPoint(Point relativePoint)
+        {
+            return relativePoint.Add(this._OriginX, this._OriginY);
+        }
+        /// <summary>
+        /// Vrátí daný absolutní bod posunutý do relativních koordinátů (od souřadnice se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        public Point GetRelPoint(Point absolutePoint)
+        {
+            return absolutePoint.Sub(this._OriginX, this._OriginY);
+        }
+        /// <summary>
+        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>),
+        /// a oříznutou do viditelných souřadnic.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        [Obsolete("Už jen Coordinates", true)]
+        protected Rectangle GetVisibleAbsBounds(Rectangle bounds)
+        {
+            int l = bounds.Left + this._OriginX;
+            int t = bounds.Top + this._OriginY;
+            int r = l + bounds.Width;
+            int b = t + bounds.Height;
+
+            if (l < this._VisibleL) l = this._VisibleL;
+            if (t < this._VisibleT) t = this._VisibleT;
+            if (r > this._VisibleR) r = this._VisibleR;
+            if (b > this._VisibleB) b = this._VisibleB;
+
+            return Rectangle.FromLTRB(l, t, r, b);
+        }
+
     }
 }
 
@@ -719,8 +710,9 @@ namespace Asol.Tools.WorkScheduler.Components.Old
         /// <returns></returns>
         public static BoundsInfo CreateForParent(IAutoScrollContainer parent)
         {
-            Size clientSize = parent.ClientVisibleSize;
-            return new BoundsInfo(0, 0, 0, 0, clientSize, true, true);
+            Size clientSize = parent.CurrentPhysicalVisibleBounds.Size;
+            Rectangle visibleBounds = parent.CurrentVirtualVisibleBounds;
+            return new BoundsInfo(-visibleBounds.X, -visibleBounds.Y, 0, 0, visibleBounds.Size, true, true);
         }
         /// <summary>
         /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
@@ -875,7 +867,7 @@ namespace Asol.Tools.WorkScheduler.Components.Old
         /// Obsahuje nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř aktuálního prvku <see cref="CurrentItem"/>.
         /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro <see cref="CurrentItem"/>, ale ne pro jeho Childs.
         /// </summary>
-        public BoundsInfo CurrentChildsSpider { get { if (!this._UseCache || this._CurrentChildsSpider == null) this._CurrentChildsSpider = _GetChildBoundsInfo(this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds, this.CurrentIsVisible, this.CurrentIsEnabled); return this._CurrentChildsSpider; } }
+        public BoundsInfo CurrentChildsBoundsInfo { get { if (!this._UseCache || this._CurrentChildsBoundsInfo == null) this._CurrentChildsBoundsInfo = _GetChildBoundsInfo(this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds, this.CurrentIsVisible, this.CurrentIsEnabled); return this._CurrentChildsBoundsInfo; } }
         /// <summary>
         /// Resetuje cache výsledných hodnot pro prvek <see cref="_CurrentItem"/>
         /// </summary>
@@ -888,7 +880,7 @@ namespace Asol.Tools.WorkScheduler.Components.Old
             this._CurrentAbsChildsVisibleBounds = null;
             this._CurrentChildsBounds = null;
             this._CurrentAbsChildsOrigin = null;
-            this._CurrentChildsSpider = null;
+            this._CurrentChildsBoundsInfo = null;
             this._CurrentIsVisible = null;
             this._CurrentIsEnabled = null;
         }
@@ -900,7 +892,7 @@ namespace Asol.Tools.WorkScheduler.Components.Old
         private Rectangle? _CurrentAbsChildsVisibleBounds;
         private Rectangle? _CurrentChildsBounds;
         private Point? _CurrentAbsChildsOrigin;
-        private BoundsInfo _CurrentChildsSpider;
+        private BoundsInfo _CurrentChildsBoundsInfo;
         private bool? _CurrentIsVisible;
         private bool? _CurrentIsEnabled;
         #endregion
