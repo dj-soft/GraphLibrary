@@ -844,7 +844,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (count == 0) return;
 
             // Určím souřadnici myši ve směru X, relativně k tabulce (protože relativně k tabulce jsou určeny souřadnice sloupců):
-            int mouseX = BoundsInfo.GetRelativePhysicalPointInContainer(this.OwnerGTable, e.MouseCurrentAbsolutePoint.Value).X;
+            int mouseX = BoundsInfo.GetRelativePointInContainer(this.OwnerGTable, e.MouseCurrentAbsolutePoint.Value).X;
 
             // Najdu sloupec, nad kterým se aktuálně pohybuje myš v ose X:
             int index = -1;

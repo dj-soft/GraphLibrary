@@ -449,7 +449,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 item.AfterStateChanged(stateArgs);
 
-                Point? toolTipPoint = (stateArgs.HasToolTipData ? (Point?)(BoundsInfo.GetAbsolutePhysicalBounds(item).Location) : (Point?)null);
+                Point? toolTipPoint = (stateArgs.HasToolTipData ? (Point?)(BoundsInfo.GetAbsoluteBounds(item).Location) : (Point?)null);
                 this._InteractiveDrawStore(toolTipPoint, stateArgs);
             }
         }
@@ -2040,7 +2040,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 if (!this._ContextMenuMousePoint.HasValue && stateArgs.BoundsInfo != null)
                 {
-                    Rectangle bounds = stateArgs.BoundsInfo.CurrentItemAbsolutePhysicalBounds;
+                    Rectangle bounds = stateArgs.BoundsInfo.CurrentItemAbsoluteBounds;
                     this._ContextMenuMousePoint = new Point(bounds.X, bounds.Bottom);
                 }
             }
@@ -2397,7 +2397,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 bool drawAllItems = (createNewRequest || (request != null || request.DrawAllItems));
 
                 if (drawAllItems)
-                    this.AutoScrollDetect(e);
+                    this.AutoScrollDetect();
 
                 if (createNewRequest)
                 {   // Není zadán explicitní požadavek (request) - pak tedy vykreslíme všechny prvky:
@@ -2724,7 +2724,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
             internal void Fill(GInteractiveControl parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
-                BoundsInfo boundsInfo = BoundsInfo.CreateForParent(parent as IAutoScrollContainer);
+                BoundsInfo boundsInfo = BoundsInfo.CreateForParent(parent);
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
@@ -2761,7 +2761,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     boundsInfo.CurrentItem = item;
 
                     // Pokud prvek nebude ani zčásti viditelný (to nám řekne BoundsInfo), tak ho do Draw nebudeme dávat:
-                    if (!boundsInfo.CurrentItemAbsolutePhysicalIsVisible) continue;
+                    if (!boundsInfo.CurrentItemAbsoluteIsVisible) continue;
 
                     // Přidat prvek do seznamů pro patřičné vrstvy:
                     GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
@@ -2859,8 +2859,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.Item = item;
                 this.AbsoluteOrigin = boundsInfo.AbsolutePhysicalOriginPoint;
-                this.AbsoluteBounds = boundsInfo.CurrentItemAbsolutePhysicalBounds;
-                this.AbsoluteVisibleBounds = boundsInfo.CurrentItemAbsolutePhysicalVisibleBounds;
+                this.AbsoluteBounds = boundsInfo.CurrentItemAbsoluteBounds;
+                this.AbsoluteVisibleBounds = boundsInfo.CurrentItemAbsoluteVisibleBounds;
                 this.AbsoluteVisibleClip = boundsInfo.AbsolutePhysicalVisibleBounds;
                 this.Layer = layer;
                 this.IsDrawOverChilds = isDrawOverChilds;
@@ -4184,7 +4184,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private static bool _TryFindItemInList(IInteractiveItem[] items, BoundsInfo boundsInfo, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
         {
-            Point mouseRelativePoint = mouseAbsolutePoint.Sub(boundsInfo.AbsolutePhysicalOriginPoint);
+            Point mouseRelativeVirtualPoint = boundsInfo.GetRelativePoint(mouseAbsolutePoint, false);
+            Point mouseRelativePhysicalPoint = boundsInfo.GetRelativePoint(mouseAbsolutePoint, true);
 
             for (int idx = items.Length - 1; idx >= 0; idx--)
             {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
@@ -4192,7 +4193,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if ((preferredItem == null || Object.ReferenceEquals(preferredItem, item))
                     && item.Is.Visible
                     && (withDisabled || item.Is.Enabled)
-                    && item.IsActiveAtPoint(mouseRelativePoint))
+                    && (item.Is.OnPhysicalBounds ? item.IsActiveAtPoint(mouseRelativePhysicalPoint) : item.IsActiveAtPoint(mouseRelativeVirtualPoint)))
                 {   // Daný prvek vyhovuje => máme hotovo:
                     foundItem = item;
                     return true;
@@ -4297,7 +4298,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (!currentItem.Is.Visible || !currentItem.Is.Enabled) continue;
 
                     currentBoundsInfo.CurrentItem = currentItem;
-                    Rectangle currentItemBounds = currentBoundsInfo.CurrentItemAbsolutePhysicalVisibleBounds;
+                    Rectangle currentItemBounds = currentBoundsInfo.CurrentItemAbsoluteVisibleBounds;
                     if (!frameBounds.IntersectsWith(currentItemBounds)) continue;
 
                     if ((!hasFilterScan || (hasFilterScan && filterScan(currentItem, currentItemBounds))))
@@ -4367,7 +4368,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Souřadnice prvku <see cref="Item"/> v absolutních koordinátech Controlu
             /// </summary>
-            public Rectangle ItemAbsBounds { get { return this.BoundsInfo.CurrentItemAbsolutePhysicalBounds; } }
+            public Rectangle ItemAbsBounds { get { return this.BoundsInfo.CurrentItemAbsoluteBounds; } }
         }
         #endregion
         #region Static services

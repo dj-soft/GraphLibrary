@@ -4613,7 +4613,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu GetContextMenu(ItemActionArgs args)
         {
-            int x = args.Graph.BoundsInfo.GetRelPoint(args.ActionPoint.Value).X;
+            int x = args.Graph.BoundsInfo.GetRelativePoint(args.ActionPoint.Value).X;
             GuiContextMenuRunArgs menuRunArgs = new GuiContextMenuRunArgs();
             menuRunArgs.ContextItemId = this.GetGridItemId(args);
             menuRunArgs.ClickTime = args.Graph.GetTimeForPosition(x);

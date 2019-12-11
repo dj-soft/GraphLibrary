@@ -43,7 +43,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public GDataFormControl()
         {
-            this.AddDataFormItems(4500);
+            this.AddDataFormItems(10, 450);
 
 
 #warning    JEN PRO TESTY:   this.AutoScroll = true;
@@ -54,7 +54,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// <summary>
         /// Naplní controly
         /// </summary>
-        protected void AddDataFormItems(int count)
+        protected void AddDataFormItems(int countX, int countY)
         {
             this.ItemsList.Clear();
             int firstX = 8;
@@ -85,60 +85,42 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int valuesCnt = values.Length;
             Random rand = new Random();
 
-            for (int n = 0; n < count; n++)
+            Rectangle bounds = Rectangle.Empty;
+            int n = 0;
+            for (int ny = 0; ny < countY; ny++)
             {
-                GDataFormItem item = new GDataFormItem()
+                currentX = firstX;
+                for (int nx = 0; nx < countX; nx++)
                 {
-                    BackColor = colors[rand.Next(colorCnt)],
-                    Location = new Point(currentX, currentY),
-                    Label = "Item " + (n + 1).ToString(),
-                    Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString()
-                };
-                item.ToolTipText = $@"Další informace k této položce
+                    n++;
+                    GDataFormItem item = new GDataFormItem()
+                    {
+                        BackColor = colors[rand.Next(colorCnt)],
+                        Location = new Point(currentX, currentY),
+                        Label = "Item " + n.ToString(),
+                        Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString()
+                    };
+                    item.ToolTipText = $@"Další informace k této položce
 byste našli v této bublině.
-Číslo prvku: {(n+1)}
+Číslo prvku: {n}
 Obsah prvku: {item.Value1}
+Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {currentX}/{currentY}
 ";
-                if (rand.Next(10) > 6)
-                    item.RelationType = (rand.Next(5) > 2) ? TextRelationType.ToRecord : TextRelationType.ToDocument;
-                this.AddItem(item);
+                    if (rand.Next(10) > 6)
+                        item.RelationType = (rand.Next(5) > 2) ? TextRelationType.ToRecord : TextRelationType.ToDocument;
+                    this.AddItem(item);
+                    bounds = item.Bounds;
 
-                Rectangle bounds = item.Bounds;
-                int r = bounds.Right;
-                int b = bounds.Bottom;
-                if (maxX < r) maxX = r;
-                if (maxY < b) maxY = b;
-                if (r + spaceX + bounds.Width <= topX)
-                {   // Za tento prvek se ještě vejde další => posunu pozici doprava:
-                    currentX = r + spaceX;
+                    if (maxX < bounds.Right) maxX = bounds.Right;
+                    currentX = bounds.Right + spaceX;
                 }
-                else
-                {   // Za tento prvek se žádný další už nevejde => posunu pozici dolů:
-                    currentX = firstX;
-                    currentY = b + spaceY;
-                }
+
+                if (maxY < bounds.Bottom) maxY = bounds.Bottom;
+                currentY = bounds.Bottom + spaceY;
             }
 
-            this.Size = new Size(maxX + firstX, maxY + firstY);
-
-
-            /*
-            this.AddItem(new GDataFormItem()
-            {
-                Location = new Point(10, 10), Label = "Ukázka 1:", Value1 = "VFA-12-2019",
-                ToolTipText = "Další informace k této položce\r\nmohou být zde",
-                RelationType = TextRelationType.ToRecord
-            });
-            this.AddItem(new GDataFormItem()
-            {
-                Location = new Point(310, 10), Label = "Ukázka 2:", Value1 = "VFA-13-2019",
-                ToolTipText = "Další informace k této položce\r\nmohou být zde",
-                RelationType = TextRelationType.ToDocument,
-                BorderStyle = BorderStyleType.Soft
-            });
-            this.Size = new Size(1200, 850);
-            */
+            // this.Size = new Size(maxX + firstX, maxY + firstY);
         }
     }
 }

@@ -726,7 +726,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (item == null) return null;
             BoundsInfo boundsInfo = item.BoundsInfo;
             if (onlyVisible && !boundsInfo.CurrentItemIsVisible) return null;
-            Rectangle absBounds = boundsInfo.CurrentItemAbsolutePhysicalBounds;
+            Rectangle absBounds = boundsInfo.CurrentItemAbsoluteBounds;
             if (shiftInner)
                 absBounds = GetInnerBounds(absBounds);
             return absBounds.GetPoint(side);

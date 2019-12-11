@@ -533,7 +533,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             e.MouseCurrentAbsolutePoint = targetAbsolutePoint;
 
             // Sestavím argument (pro this prvek) a doplním do něj údaje o dalších prvcích:
-            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
+            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsoluteBounds(targetRelativeBounds);
             ItemDragDropArgs args = new ItemDragDropArgs(e, this.Graph, this._Group, this._Owner, this._Position, targetAbsoluteBounds);
             args.ParentGraph = this.Graph;
             args.ParentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;

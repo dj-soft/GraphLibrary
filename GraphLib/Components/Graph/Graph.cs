@@ -1329,7 +1329,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (e.MouseAbsolutePoint.HasValue) return e.MouseAbsolutePoint.Value.Add(-20, 5);
             if (e.ExistsItem)
             {
-                Rectangle absBounds = BoundsInfo.GetAbsolutePhysicalBounds(e.CurrentItem);
+                Rectangle absBounds = BoundsInfo.GetAbsoluteBounds(e.CurrentItem);
                 return new Point(absBounds.X, absBounds.Bottom);
             }
             return System.Windows.Forms.Control.MousePosition;
@@ -3051,7 +3051,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public Rectangle? GetBoundsAbsolute(Rectangle? boundsRelative)
         {
-            return this.ItemBoundsInfo.GetAbsBoundsN(boundsRelative);
+            return this.ItemBoundsInfo.GetAbsoluteBounds(boundsRelative);
         }
         /// <summary>
         /// Vrátí relativní souřadnice pro dané absolutní hodnoty
@@ -3060,7 +3060,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public Rectangle? GetBoundsRelative(Rectangle? boundsAbsolute)
         {
-            return this.ItemBoundsInfo.GetRelBoundsN(boundsAbsolute);
+            return this.ItemBoundsInfo.GetRelativeBounds(boundsAbsolute);
         }
         /// <summary>
         /// Souřadný systém aktuálního prvku (Grupy v rámci Grafu), lze jej použít pro převody relativních a absolutních souřadnic
@@ -3159,7 +3159,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 if (!homeBounds.HasValue && this.TargetItem != null)
                 {
                     BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this.TargetItem);
-                    homeBounds = boundsInfo.CurrentItemAbsolutePhysicalBounds;
+                    homeBounds = boundsInfo.CurrentItemAbsoluteBounds;
                 }
 
                 return homeBounds;
@@ -3195,7 +3195,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public DateTime? GetTimeForPosition(int absolutePositionX, AxisTickType roundTickType)
         {
-            int relativePositionX = this.DragArgs.BoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
+            int relativePositionX = this.DragArgs.BoundsInfo.GetRelativePoint(new Point(absolutePositionX, 0)).X;
             return this.Graph.GetTimeForPosition(relativePositionX, roundTickType);
         }
         /// <summary>
@@ -3208,7 +3208,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             int? relativePositionX = this.Graph.GetPositionForTime(time);
             if (!relativePositionX.HasValue) return null;
-            return this.DragArgs.BoundsInfo.GetAbsPoint(new Point(relativePositionX.Value, 0)).X;
+            return this.DragArgs.BoundsInfo.GetAbsolutePoint(new Point(relativePositionX.Value, 0)).X;
         }
         /// <summary>
         /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
@@ -3381,7 +3381,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public Rectangle? GetBoundsAbsolute(Rectangle? boundsRelative)
         {
-            return this.ItemBoundsInfo.GetAbsBoundsN(boundsRelative);
+            return this.ItemBoundsInfo.GetAbsoluteBounds(boundsRelative);
         }
         /// <summary>
         /// Vrátí relativní souřadnice pro dané absolutní hodnoty
@@ -3390,7 +3390,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public Rectangle? GetBoundsRelative(Rectangle? boundsAbsolute)
         {
-            return this.ItemBoundsInfo.GetRelBoundsN(boundsAbsolute);
+            return this.ItemBoundsInfo.GetRelativeBounds(boundsAbsolute);
         }
         /// <summary>
         /// Souřadný systém aktuálního prvku (Grupy v rámci Grafu), lze jej použít pro převody relativních a absolutních souřadnic
@@ -3415,7 +3415,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public DateTime? GetTimeForPosition(int absolutePositionX, AxisTickType roundTickType)
         {
-            int relativePositionX = this._ItemBoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
+            int relativePositionX = this._ItemBoundsInfo.GetRelativePoint(new Point(absolutePositionX, 0)).X;
             return this.Graph.GetTimeForPosition(relativePositionX, roundTickType);
         }
         /// <summary>
@@ -3428,7 +3428,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             int? relativePositionX = this.Graph.GetPositionForTime(time);
             if (!relativePositionX.HasValue) return null;
-            return this._ItemBoundsInfo.GetAbsPoint(new Point(relativePositionX.Value, 0)).X;
+            return this._ItemBoundsInfo.GetAbsolutePoint(new Point(relativePositionX.Value, 0)).X;
         }
         /// <summary>
         /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.

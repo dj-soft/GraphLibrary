@@ -921,7 +921,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle? dragToRelativeBounds = this.DragToRelativeBounds;
                 BoundsInfo boundsInfo = this.BoundsInfo;
                 if (boundsInfo == null || !dragToRelativeBounds.HasValue) return null;
-                return boundsInfo.GetAbsBounds(dragToRelativeBounds.Value);
+                return boundsInfo.GetAbsoluteBounds(dragToRelativeBounds.Value);
             }
         }
         /// <summary>
