@@ -25,6 +25,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GScrollBar()
         {
+            this._ValueRatioSmallChange = Skin.ScrollBar.SmallStepRatio;
+            this._ValueRatioBigChange = Skin.ScrollBar.BigStepRatio;
             this.ChildItemsInit();
         }
         /// <summary>
@@ -109,7 +111,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return this._ValueRatioSmallChange; }
             set { this._ValueRatioSmallChange = (value < 0m ? 0.001m : (value > 1m ? 1m : value)); }
-        } private decimal? _ValueRatioSmallChange = 0.10m;
+        } private decimal? _ValueRatioSmallChange;
         /// <summary>
         /// Aktuální absolutní hodnota malého posunu ( = ValueRatioSmallChange * Value.Size)
         /// </summary>
@@ -123,7 +125,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return this._ValueRatioBigChange; }
             set { this._ValueRatioBigChange = (value < 0m ? 0.002m : (value > 1m ? 1m : value)); }
-        } private decimal? _ValueRatioBigChange = 0.90m;
+        } private decimal? _ValueRatioBigChange;
         /// <summary>
         /// Aktuální absolutní hodnota velkého posunu ( = ValueRatioBigChange * Value.Size)
         /// </summary>
@@ -355,6 +357,32 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             return DecimalNRange.CreateFromBeginSize(begin, size);
+        }
+        #endregion
+        #region DoScroll()
+        /// <summary>
+        /// Posune aktuální obsah o danou hodnotu.
+        /// </summary>
+        /// <param name="change"></param>
+        /// <param name="modifierKeys"></param>
+        public void DoScrollBy(GInteractiveChangeState change, Keys modifierKeys = Keys.None)
+        {
+            bool isBigStep = (modifierKeys == Keys.Shift);
+            decimal relativeChange = (isBigStep ? this.ValueRatioBigChangeCurrent : this.ValueRatioSmallChangeCurrent);
+            if (change == GInteractiveChangeState.WheelUp) relativeChange = -relativeChange;
+            this.DoScrollBy(relativeChange);
+        }
+        /// <summary>
+        /// Posune aktuální obsah o danou hodnotu.
+        /// </summary>
+        /// <param name="relativeChange"></param>
+        public void DoScrollBy(decimal relativeChange)
+        {
+            decimal begin = this._Value.Begin.Value + relativeChange;
+            DecimalNRange value = DecimalNRange.CreateFromBeginSize(begin, this._Value.Size.Value);
+            this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.InteractiveChanged);
+
+            this.Repaint();
         }
         #endregion
         #region Raise events (ValueChanged, ValueRangeChanged, ScaleChanged, ScaleRangeChanged, AreaChanged, DrawRequest)
@@ -1097,6 +1125,11 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.ChildItemsReset();
                         e.RequiredCursorType = (childItem.OverCursorType.HasValue ? childItem.OverCursorType.Value : SysCursorType.Default);
                     }
+                    break;
+                case GInteractiveChangeState.WheelUp:
+                case GInteractiveChangeState.WheelDown:
+                    this.DoScrollBy(e.ChangeState, e.ModifierKeys);
+                    e.ActionIsSolved = true;
                     break;
                 default:
                     GInteractiveChangeState s = e.ChangeState;

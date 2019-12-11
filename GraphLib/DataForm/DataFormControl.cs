@@ -61,7 +61,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int firstY = 8;
             int spaceX = 3;
             int spaceY = 3;
-            int topX = 1100;
+            // int topX = 1100;
             int maxX = 0;
             int maxY = 0;
             int currentX = firstX;

@@ -1926,6 +1926,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int ScrollThick { get { return this._Owner.GetValue(this._SkinSetKey, "ScrollThick", DefaultScrollThick); } set { this._Owner.SetValue(this._SkinSetKey, "ScrollThick", value); } }
         /// <summary>
+        /// Malý krok na scrollbaru (standardní), poměrně k velikosti viditelné plochy
+        /// </summary>
+        public decimal SmallStepRatio { get { return this._Owner.GetValue(this._SkinSetKey, "SmallStepRatio", DefaultSmallStepRatio); } set { this._Owner.SetValue(this._SkinSetKey, "SmallStepRatio", value); } }
+        /// <summary>
+        /// Velký krok na scrollbaru (zvětšený vlivem Shift), poměrně k velikosti viditelné plochy
+        /// </summary>
+        public decimal BigStepRatio { get { return this._Owner.GetValue(this._SkinSetKey, "BigStepRatio", DefaultBigStepRatio); } set { this._Owner.SetValue(this._SkinSetKey, "BigStepRatio", value); } }
+        /// <summary>
         /// Barva pozadí scrollbaru
         /// </summary>
         public Color BackColorArea { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorArea", DefaultBackColorArea); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorArea", value); } }
@@ -1947,6 +1955,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default pro: Šířka ScrollBaru (šířka u svislého, výška u vodorovného)
         /// </summary>
         protected virtual int DefaultScrollThick { get { return 14; } }
+        /// <summary>
+        /// Default pro: Malý krok na scrollbaru (standardní), poměrně k velikosti viditelné plochy
+        /// </summary>
+        protected virtual decimal DefaultSmallStepRatio { get { return 0.05m; } }
+        /// <summary>
+        /// Default pro: Velký krok na scrollbaru (zvětšený vlivem Shift), poměrně k velikosti viditelné plochy
+        /// </summary>
+        protected virtual decimal DefaultBigStepRatio { get { return 0.60m; } }
         /// <summary>
         /// Default pro: Barva pozadí scrollbaru
         /// </summary>

@@ -790,7 +790,7 @@ namespace Asol.Tools.WorkScheduler.Components
             GActivePosition oldActiveItem = this._CurrentActiveItem;
             if (e != null)
             {   // Standardní pohyb myši nad Controlem:
-                GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, true);
+                GActivePosition newActiveItem = this._FindActivePositionAtPoint(e.Location, true);
                 this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
                 this._MousePaintMove(e, newActiveItem);
                 this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
@@ -812,7 +812,7 @@ namespace Asol.Tools.WorkScheduler.Components
             bool mouseButtonsLeft = (mouseButtons == MouseButtons.Left);
 
             GActivePosition oldActiveItem = this._CurrentActiveItem;
-            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            GActivePosition newActiveItem = this._FindActivePositionAtPoint(e.Location, false);
             newActiveItem.CurrentStateFill(e.Location);
             this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
             this._ItemKeyboardExchange(this._KeyboardCurrentItem, newActiveItem.ActiveItem, false);
@@ -875,7 +875,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MouseOneWheel(MouseEventArgs e)
         {
             GActivePosition oldActiveItem = this._CurrentActiveItem;
-            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            GActivePosition newActiveItem = this._FindActivePositionAtPoint(e.Location, false);
             newActiveItem.CurrentStateFill(e.Location);
             this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
             GInteractiveChangeState change = (e.Delta > 0 ? GInteractiveChangeState.WheelUp : GInteractiveChangeState.WheelDown);
@@ -903,7 +903,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseDragMoveStep(MouseEventArgs e)
         {
-            this._CurrentTargetItem = this.FindActivePositionAtPoint(e.Location, false);
+            this._CurrentTargetItem = this._FindActivePositionAtPoint(e.Location, false);
             GActivePosition mouseSourceItem = this._CurrentActiveItem;
             GActivePosition mouseTargetItem = this._CurrentTargetItem;
             if (this._MouseDragMoveItem != null && mouseSourceItem.CanDrag)
@@ -1277,9 +1277,11 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (activePosition.HasItem)
             {
-                activePosition.CallAfterStateChanged(stateArgs, recurseToSolver);
+                activePosition.CallAfterStateChanged(stateArgs, ref recurseToSolver);
                 this._ItemMouseCallDragEvent(activePosition.ActiveItem, stateArgs);
             }
+            if (recurseToSolver)
+                this._SolveStateChanged(stateArgs);
             this._FlowToolTipData = (stateArgs.HasToolTipData ? stateArgs.ToolTipData : null);
             this._MouseDragStoreActiveItem(stateArgs);
             this._CallInteractiveStateChanged(stateArgs);
@@ -1287,6 +1289,29 @@ namespace Asol.Tools.WorkScheduler.Components
             this._StoreContextMenu(stateArgs);
 
             return stateArgs;
+        }
+        /// <summary>
+        /// Tato metoda může vyřešit některé interaktivní události na úrovni vlastního Controlu
+        /// </summary>
+        /// <param name="stateArgs"></param>
+        private void _SolveStateChanged(GInteractiveChangeStateArgs stateArgs)
+        {
+            switch (stateArgs.ChangeState)
+            {
+                case GInteractiveChangeState.WheelDown:
+                case GInteractiveChangeState.WheelUp:
+                    this._SolveStateChangedMouseWheel(stateArgs);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Zajistí provedení Scrollu celého containeru na základě kolečka myši
+        /// </summary>
+        /// <param name="stateArgs"></param>
+        private void _SolveStateChangedMouseWheel(GInteractiveChangeStateArgs stateArgs)
+        {
+            if (this.AutoScrollActive)
+                this.AutoScrollDoScrollBy(Orientation.Vertical, stateArgs.ChangeState, stateArgs.ModifierKeys);
         }
         /// <summary>
         /// Úložiště pro data ToolTipu v rámci jedné WinForm události.
@@ -1352,7 +1377,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Tato metoda nebere ohled na aktuálně nalezený prvek (<see cref="_CurrentActiveItem"/>), ignoruje tedy vlastnost <see cref="InteractiveProperties.HoldMouse"/> prvku,
         /// který je nalezen jako aktivní v <see cref="_CurrentActiveItem"/>.
         /// Tato metoda se používá jako delegát "item searcher" (searchItemMethod) v konstruktoru argumentu <see cref="GInteractiveChangeStateArgs"/>,
-        /// a slouží aplikačnímu kódu, proto se liší od běžné metody <see cref="FindActivePositionAtPoint(Point, bool)"/>.
+        /// a slouží aplikačnímu kódu, proto se liší od běžné metody <see cref="_FindActivePositionAtPoint(Point, bool)"/>.
         /// </summary>
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
@@ -1373,12 +1398,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <returns></returns>
-        protected GActivePosition FindActivePositionAtPoint(Point mouseAbsolutePoint, bool withDisabled)
+        private GActivePosition _FindActivePositionAtPoint(Point mouseAbsolutePoint, bool withDisabled)
         {
             GActivePosition activePosition = GActivePosition.FindItemAtPoint(
                 this, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled,
-                (this._ProgressItem.Is.Visible ? this._ProgressItem : null),
-                this.AutoScrollBarH, this.AutoScrollBarV);
+                (this._ProgressItem.Is.Visible ? this._ProgressItem : null));
 
             this._MouseCurrentRelativePoint = _GetRelativePoint(mouseAbsolutePoint, activePosition);
             return activePosition;
@@ -1402,7 +1426,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="point"></param>
         /// <param name="activePosition"></param>
         /// <returns></returns>
-        protected static Point? _GetRelativePoint(Point point, GActivePosition activePosition)
+        private static Point? _GetRelativePoint(Point point, GActivePosition activePosition)
         {
             return (activePosition == null ? (Point?)null : (Point?)activePosition.GetRelativePointToCurrentItem(point));
         }
@@ -1566,7 +1590,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (!this._MousePaintIsEnabled) return;
             Point mousePoint = Control.MousePosition;
-            GActivePosition newActiveItem = this.FindActivePositionAtPoint(mousePoint, false);
+            GActivePosition newActiveItem = this._FindActivePositionAtPoint(mousePoint, false);
             GInteractiveMousePaintArgs paintArgs = this._MousePaintStartIsEnabled(newActiveItem, GInteractiveChangeState.MouseOver);
             this._MousePaintShowCursorMove(paintArgs);
         }
@@ -1614,7 +1638,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _MousePaintStep(MouseEventArgs e)
         {
-            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            GActivePosition newActiveItem = this._FindActivePositionAtPoint(e.Location, false);
             this._MousePaintStep(e, newActiveItem);
         }
         /// <summary>
@@ -1647,7 +1671,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _MousePaintDone(MouseEventArgs e)
         {
-            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            GActivePosition newActiveItem = this._FindActivePositionAtPoint(e.Location, false);
             GInteractiveMousePaintArgs paintArgs = this._MousePaintTargetIsCommited(newActiveItem);
             this._MousePaintToolTipSet(e.Location, paintArgs, false);
             this._MousePaintEnd(true);
@@ -3850,7 +3874,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GActivePosition : Pracovní třída pro vyhledání prvku <see cref="IInteractiveItem"/> a seznamu jeho parentů
     /// </summary>
-    public class GActivePosition
+    internal class GActivePosition
     {
         #region Konstruktor, základní proměnné
         private GActivePosition(Point mouseAbsolutePoint)
@@ -4054,7 +4078,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private static GActivePosition _FindItemAtPoint(GInteractiveControl parent, List<IInteractiveItem> itemList, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem[] priorityItems)
         {
             GActivePosition currItem = new GActivePosition(mouseAbsolutePoint);
-            IInteractiveItem[] items = _CreateJoinItems(itemList, priorityItems);
+            List<IInteractiveItem> items = _CreateJoinItems(itemList, priorityItems);    // Tady vznikne new instance Listu !   Tady se NEPŘIDÁVÁJÍ AutoScroll Srollbary. To až později v metodě _AddAutoScrollItemsToList().
             GActiveItem[] holdItems = ((prevItem != null && prevItem.HasItem) ? prevItem.Items : null);
             currItem._FindItemAtPoint(parent, items, mouseAbsolutePoint, withDisabled, holdItems);
             return currItem;
@@ -4065,14 +4089,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="itemList"></param>
         /// <param name="priorityItems"></param>
         /// <returns></returns>
-        private static IInteractiveItem[] _CreateJoinItems(List<IInteractiveItem> itemList, IInteractiveItem[] priorityItems)
+        private static List<IInteractiveItem> _CreateJoinItems(List<IInteractiveItem> itemList, IInteractiveItem[] priorityItems)
         {
             List<IInteractiveItem> joinList = new List<IInteractiveItem>();
             if (itemList != null && itemList.Count > 0)
                 joinList.AddRange(itemList);
             if (priorityItems != null && priorityItems.Length > 0)
                 joinList.AddRange(priorityItems.Where(p => p != null));
-            return joinList.ToArray();
+            return joinList;
         }
         /// <summary>
         /// Hledá prvek, který je aktivní na dané souřadnici v daném seznamu prvků.
@@ -4085,13 +4109,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="withDisabled"></param>
         /// <param name="holdItems"></param>
         /// <returns></returns>
-        private void _FindItemAtPoint(GInteractiveControl parent, IInteractiveItem[] items, Point mouseAbsolutePoint, bool withDisabled, GActiveItem[] holdItems)
+        private void _FindItemAtPoint(GInteractiveControl parent, List<IInteractiveItem> items, Point mouseAbsolutePoint, bool withDisabled, GActiveItem[] holdItems)
         {
             List<GActiveItem> foundList = new List<GActiveItem>();
             Dictionary<uint, IInteractiveItem> scanDict = new Dictionary<uint, IInteractiveItem>();
             Queue<GActiveItem> holdQueue = (holdItems == null ? null : new Queue<GActiveItem>(holdItems));   // Fronta "přidržených" prvků (od posledně)
             BoundsInfo boundsInfo = BoundsInfo.CreateForParent(parent);
             bool run = true;
+            _AddAutoScrollItemsToList(parent, items);
             while (run)
             {
                 run = false;
@@ -4124,16 +4149,12 @@ namespace Asol.Tools.WorkScheduler.Components
                     foundList.Add(new GActiveItem(this, foundItem, boundsInfo));
 
                     // Pokud prvek má Childs, projdeme je rovněž, hned v další smyčce:
-                    // Nemusíme řešit posun souřadnic myši, jedeme stále v souřadnicích absolutních:
-                    IEnumerable<IInteractiveItem> childs = foundItem.Childs;
-                    if (childs != null)
+                    items = _CreateChildItemsForItem(foundItem);
+                    if (items != null && items.Count > 0)
                     {
-                        items = childs.ToArray();
-                        if (items.Length > 0)
-                        {
-                            run = true;
-                            boundsInfo = boundsInfo.CurrentChildsBoundsInfo;
-                        }
+                        // Vyměníme souřadný systém za systém platný v rámci daného Itemu jakožto containeru:
+                        boundsInfo = boundsInfo.CurrentChildsBoundsInfo;
+                        run = true;
                     }
                 }
             }
@@ -4148,6 +4169,42 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Item = foundList[count - 1];
                     this.HasItem = true;
                 }
+            }
+        }
+        /// <summary>
+        /// Metoda sestaví a vrátí List obsahující všechny Child prvky daného interaktivního prvku.
+        /// Tato metoda tedy vytváří new instanci Listu.
+        /// Pokud daný container implementuje <see cref="IAutoScrollContainer"/> a to je aktivní, 
+        /// pak do vygenerovaného seznamu prvků přidá i jeho Scrollbary.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <returns></returns>
+        private static List<IInteractiveItem> _CreateChildItemsForItem(IInteractiveItem container)
+        {
+            IEnumerable<IInteractiveItem> childs = container.Childs;
+            // Tady si dovolím nepřesnost: pokud prvek (container) nemá prvky Childs, pak nebudu ani testovat, zda má nastavený AutoScroll.
+            // Neměl by mít, protože ten je aktivní jen když nějaký jeho Child prvek přesahuje z fyzického vizuálního prostoru - a protože není, tak nepřesahuje:
+            if (childs == null) return null;
+            List<IInteractiveItem> items = childs.ToList();
+            _AddAutoScrollItemsToList(container, items);
+            return items;
+        }
+        /// <summary>
+        /// Metoda zjistí, zda daný container implementuje <see cref="IAutoScrollContainer"/>, 
+        /// a pokud ano a pokud je aktivní, pak do daného Listu <paramref name="items"/> přidá jeho Scrollbary <see cref="IAutoScrollContainer.ScrollBars"/>.
+        /// Tady se skutečně do předaného Listu PŘIDÁVAJÍ nové prvky!
+        /// Předaný List <paramref name="items"/> tedy nikdy nesmí být tentýž, který je obsažen jako permanentní ve vizuální vrstvě!
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="items"></param>
+        private static void _AddAutoScrollItemsToList(object container, List<IInteractiveItem> items)
+        {
+            if (container != null && container is IAutoScrollContainer)
+            {
+                IAutoScrollContainer autoScrollContainer = container as IAutoScrollContainer;
+                if (autoScrollContainer.AutoScrollActive)
+                    items.AddRange(autoScrollContainer.ScrollBars);
             }
         }
         /// <summary>
@@ -4182,12 +4239,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="preferredItem"></param>
         /// <param name="foundItem"></param>
         /// <returns></returns>
-        private static bool _TryFindItemInList(IInteractiveItem[] items, BoundsInfo boundsInfo, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
+        private static bool _TryFindItemInList(List<IInteractiveItem> items, BoundsInfo boundsInfo, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
         {
-            Point mouseRelativeVirtualPoint = boundsInfo.GetRelativePoint(mouseAbsolutePoint, false);
-            Point mouseRelativePhysicalPoint = boundsInfo.GetRelativePoint(mouseAbsolutePoint, true);
+            Point mouseRelativeVirtualPoint = boundsInfo.GetRelativePoint(mouseAbsolutePoint, false);   // Pro prvky, které jsou OnPhysicalBounds (typicky Scrollbary od AutoScrollContaineru)
+            Point mouseRelativePhysicalPoint = boundsInfo.GetRelativePoint(mouseAbsolutePoint, true);   // Pro běžné prvky, na virtuálních souřadnicích
 
-            for (int idx = items.Length - 1; idx >= 0; idx--)
+            for (int idx = items.Count - 1; idx >= 0; idx--)
             {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
                 IInteractiveItem item = items[idx];
                 if ((preferredItem == null || Object.ReferenceEquals(preferredItem, item))
@@ -4320,19 +4377,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// GActiveItem : Informace o jednom nalezeném prvku a jeho souřadném systému
         /// </summary>
-        public class GActiveItem
+        internal class GActiveItem
         {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="item"></param>
-            /// <param name="boundsInfo"></param>
-            public GActiveItem(IInteractiveItem item, BoundsInfo boundsInfo)
-            {
-                this.Owner = null;
-                this.Item = item;
-                this.BoundsInfo = boundsInfo;
-            }
             /// <summary>
             /// Konstruktor
             /// </summary>
@@ -4431,7 +4477,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="stateArgs"></param>
         /// <param name="recurseToSolver"></param>
-        internal void CallAfterStateChanged(GInteractiveChangeStateArgs stateArgs, bool recurseToSolver)
+        internal void CallAfterStateChanged(GInteractiveChangeStateArgs stateArgs, ref bool recurseToSolver)
         {
             int i = this.Count - 1;
             while (i >= 0)
@@ -4439,8 +4485,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 //  a) není požadováno recurseToSolver
                 //  b) je nastaveno, že prvek akci vyřešil:
                 this.Items[i].Item.AfterStateChanged(stateArgs);
-                if (!recurseToSolver || stateArgs.ActionIsSolved)
-                    break;
+                if (recurseToSolver && stateArgs.ActionIsSolved) recurseToSolver = false;     // Pokud je požadováno řešení i do hloubky, a zde bylo vyřešeno, pak požadavek shodím na false
+                if (!recurseToSolver) break;     // Pokud už není požadavek na rekurzní řešení, skončíme.
                 i--;
             }
         }

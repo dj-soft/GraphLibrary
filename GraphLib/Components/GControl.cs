@@ -664,6 +664,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private AutoScrollSupport _AutoScrollSupport;
         #endregion
+        #region Posunutí obsahu vyžádané externě
+        /// <summary>
+        /// Posune aktuální obsah o danou hodnotu.
+        /// </summary>
+        /// <param name="orientation"></param>
+        /// <param name="change"></param>
+        /// <param name="modifierKeys"></param>
+        public void AutoScrollDoScrollBy(Orientation orientation, GInteractiveChangeState change, Keys modifierKeys = Keys.None)
+        {
+            if (this._AutoScrollActive) this._AutoScrollSupport.AutoScrollDoScrollBy(orientation, change, modifierKeys);
+        }
+        #endregion
         #region virtual ChildItems a interface IAutoScrollContainer
         /// <summary>
         /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost v metodě <see cref="AutoScrollDetect()"/>.
@@ -1617,6 +1629,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pole Scrollbarů, pokud mají být aktivní.
         /// </summary>
         private List<IInteractiveItem> _ScrollBars;
+        #endregion
+        #region Posunutí obsahu vyžádané externě
+        /// <summary>
+        /// Posune aktuální obsah o danou hodnotu.
+        /// </summary>
+        /// <param name="orientation"></param>
+        /// <param name="change"></param>
+        /// <param name="modifierKeys"></param>
+        public void AutoScrollDoScrollBy(Orientation orientation, GInteractiveChangeState change, Keys modifierKeys = Keys.None)
+        {
+            if (!this._AutoScrollActive) return;
+            switch (orientation)
+            {
+                case Orientation.Horizontal:
+                    if (this._ScrollVisibleH)
+                        this._ScrollBarH.DoScrollBy(change, modifierKeys);
+                    break;
+                case Orientation.Vertical:
+                    if (this._ScrollVisibleV)
+                        this._ScrollBarV.DoScrollBy(change, modifierKeys);
+                    break;
+            }
+        }
         #endregion
     }
     #region interface IAutoScrollContainer : Předpis pro majitele AutoScrollSupport

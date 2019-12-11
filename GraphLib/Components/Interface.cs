@@ -587,7 +587,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="dragOriginBounds">Original area before current Drag operacion begun (in DragMove events)</param>
         /// <param name="dragToBounds">Target area during Drag operation (in DragMove event)</param>
         /// <param name="targetPosition">Target prvek při Drag and Move operacích</param>
-        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
+        internal GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
             Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
             Rectangle? dragOriginBounds, Rectangle? dragToBounds, GActivePosition targetPosition)
               : this()
@@ -718,7 +718,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Prvek, nad kterým se nyní pohybuje myš v procesu Drag and Move (při akci DragStep).
         /// </summary>
-        public GActivePosition DragMoveToTarget { get; protected set; }
+        internal GActivePosition DragMoveToTarget { get; private set; }
         /// <summary>
         /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
         /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
@@ -1169,7 +1169,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="startActiveItem"></param>
         /// <param name="mousePaintInfo"></param>
         /// <param name="toolTipData"></param>
-        public GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, GActivePosition currentActiveItem, GActivePosition startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
+        internal GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, GActivePosition currentActiveItem, GActivePosition startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
         {
             this._InteractiveChange = interactiveChange;
             this._CurrentActiveItem = currentActiveItem;
