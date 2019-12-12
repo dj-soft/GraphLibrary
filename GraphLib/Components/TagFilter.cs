@@ -1031,7 +1031,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 using (GPainter.GraphicsUseText(e.Graphics))
                 {
                     Color textColor = this.CurrentTextColor;
-                    GPainter.DrawString(e.Graphics, textBounds, this.Text, textColor, FontInfo.Caption, ContentAlignment.MiddleCenter);
+                    GPainter.DrawString(e.Graphics, this.Text, FontInfo.Caption, textBounds, ContentAlignment.MiddleCenter, textColor);
                 }
             }
         }

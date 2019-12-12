@@ -404,137 +404,43 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region DrawString
+        #region DrawString, DrawStringMeasure, MeasureString
         /// <summary>
-        /// Draw a text to specified area
+        /// Vykreslí zadaný text
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
         /// <param name="text"></param>
-        /// <param name="color"></param>
         /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment)
-        {
-            Rectangle textArea;
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="text"></param>
-        /// <param name="color"></param>
-        /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
+        /// <param name="color"></param>
+        /// <param name="brush"></param>
         /// <param name="transformation"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation)
+        /// <param name="drawBackground"></param>
+        /// <returns></returns>
+        internal static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null)
         {
-            Rectangle textArea;
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, transformation, null, out textArea);
+            RectangleF[] positions;
+            return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, false, out positions);
         }
         /// <summary>
-        /// Draw a text to specified area
+        /// Vykreslí zadaný text
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
         /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <param name="bounds"></param>
+        /// <param name="alignment"></param>
         /// <param name="color"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        /// <param name="drawBackground"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
-        {
-            Rectangle textArea;
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="text"></param>
         /// <param name="brush"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment)
-        {
-            Rectangle textArea;
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="text"></param>
-        /// <param name="brush"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
+        /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
+        /// <returns></returns>
+        internal static RectangleF[] DrawStringMeasureChars(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null)
         {
-            Rectangle textArea;
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="text"></param>
-        /// <param name="color"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        /// <param name="textArea"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
-        {
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="text"></param>
-        /// <param name="color"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        /// <param name="drawBackground"></param>
-        /// <param name="textArea"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
-        {
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="text"></param>
-        /// <param name="brush"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        /// <param name="textArea"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
-        {
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
-        }
-        /// <summary>
-        /// Draw a text to specified area
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="text"></param>
-        /// <param name="brush"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
-        /// <param name="drawBackground"></param>
-        /// <param name="textArea"></param>
-        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
-        {
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
+            RectangleF[] positions;
+            _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, true, out positions);
+            return positions;
         }
         /// <summary>
         /// Draw a text to specified area
@@ -548,17 +454,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
-        /// <param name="textArea"></param>
-        private static void _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation, Action<Rectangle> drawBackground, out Rectangle textArea)
+        /// <param name="measureChars"></param>
+        /// <param name="positions"></param>
+        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, bool measureChars, out RectangleF[] positions)
         {
-            textArea = new Rectangle(bounds.X, bounds.Y, 0, 0);           // out parametr
-            if (fontInfo == null || String.IsNullOrEmpty(text)) return;
-            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+            positions = null;
 
-            bool isVertical = (transformation == MatrixTransformationType.Rotate90 || transformation == MatrixTransformationType.Rotate270);
+            Rectangle textArea = new Rectangle(bounds.X, bounds.Y, 0, 0);
+            if (fontInfo == null || String.IsNullOrEmpty(text)) return textArea;
+            if (bounds.Width <= 0 || bounds.Height <= 0) return textArea;
+
+            bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
             int boundsLength = (isVertical ? bounds.Height : bounds.Width);
 
-            using (GraphicsUseText(graphics))
+            using (GraphicsUseText(graphics, bounds))
             {
                 // graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
@@ -583,7 +492,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     textArea = textArea.Swap();                           // Pro vertikální text převedu prostor textu "na šířku", protože otáčet "na výšku" ho bude Matrix aplikovaný do Graphics
                     matrixOld = graphics.Transform;
-                    graphics.Transform = GetMatrix(transformation, textArea);
+                    graphics.Transform = GetMatrix(transformation.Value, textArea);
                 }
 
                 if (brush != null)
@@ -593,11 +502,81 @@ namespace Asol.Tools.WorkScheduler.Components
                 else
                     graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sFormat);
 
+                if (measureChars)
+                    positions = _DrawStringMeasurePositions(graphics, text, font, textArea, sFormat);
+
                 if (isVertical)
                 {
                     graphics.Transform = matrixOld;
                 }
             }
+
+            return textArea;
+        }
+        /// <summary>
+        /// Vrátí souřadnice, na kterých jsou vykresleny jednotlivé znaky při kreslení textu.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <param name="textArea"></param>
+        /// <param name="sFormat"></param>
+        /// <returns></returns>
+        private static RectangleF[] _DrawStringMeasurePositions(Graphics graphics, string text, Font font, Rectangle textArea, StringFormat sFormat)
+        {
+            List<CharacterRange> characterRanges = new List<CharacterRange>();
+            int length = text.Length;
+            for (int i = 0; i < length; i++)
+                characterRanges.Add(new CharacterRange(i, 1));
+
+            try
+            {
+                sFormat.SetMeasurableCharacterRanges(characterRanges.ToArray());
+                Region[] charRanges = graphics.MeasureCharacterRanges(text, font, textArea, sFormat);
+                List<RectangleF> positions = new List<RectangleF>();
+                foreach (Region charRange in charRanges)
+                    positions.Add(charRange.GetBounds(graphics));
+                return positions.ToArray();
+            }
+            catch (Exception exc)
+            {
+                string msg = exc.Message + "\r\n" + exc.StackTrace;
+            }
+
+            return null;
+        }
+        /// <summary>
+        /// Metoda vrátí rozměry daného textu v daném fontu, rozměr odhadne jen podle vlastností fontu.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
+        internal static Size MeasureString(string text, FontInfo fontInfo)
+        {
+            if (String.IsNullOrEmpty(text)) return new Size(0, 0);
+
+            Font font = fontInfo.Font;
+            int height = font.Height;
+            float width = font.Size * (float)text.Length + 6f;
+            return new Size((int)width, height);
+        }
+        /// <summary>
+        /// Metoda změří daný text v daném fontu a v dané grafice.
+        /// Pokud je grafika null, pak text změří jen odhadem.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
+        internal static Size MeasureString(Graphics graphics, string text, FontInfo fontInfo)
+        {
+            if (String.IsNullOrEmpty(text)) return new Size(0, 0);
+            if (graphics == null) return MeasureString(text, fontInfo);
+
+            Font font = fontInfo.Font;
+            SizeF sizeF = graphics.MeasureString(text, font);
+            Size size = sizeF.Enlarge(1f, 3f).ToSize();
+            return size;
         }
         #endregion
         #region DrawTableText
@@ -652,7 +631,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 DrawEffect3D(graphics, cellBounds, backColor.Value, Orientation.Horizontal, cell.CurrentBackEffect3D);
 
             Rectangle textBounds = cell.GetTextBounds(cellBounds);
-            DrawString(graphics, textBounds, cell.Text, cell.CurrentTextColor, cell.CurrentFont, cell.CurrentAlignment);
+            DrawString(graphics, cell.Text, cell.CurrentFont, textBounds, cell.CurrentAlignment, cell.CurrentTextColor);
 
             Color? lineHColor = cell.CurrentLineHColor;
             Color? lineVColor = cell.CurrentLineVColor;
@@ -664,41 +643,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (lineVColor.HasValue)
                     graphics.FillRectangle(Skin.Brush(lineVColor.Value), borders[1]);
             }
-        }
-        #endregion
-        #region MeasureString
-        /// <summary>
-        /// Metoda vrátí rozměry daného textu v daném fontu, rozměr odhadne jen podle vlastností fontu.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="fontInfo"></param>
-        /// <returns></returns>
-        internal static Size MeasureString(string text, FontInfo fontInfo)
-        {
-            if (String.IsNullOrEmpty(text)) return new Size(0, 0);
-
-            Font font = fontInfo.Font;
-            int height = font.Height;
-            float width = font.Size * (float)text.Length + 6f;
-            return new Size((int)width, height);
-        }
-        /// <summary>
-        /// Metoda změří daný text v daném fontu a v dané grafice.
-        /// Pokud je grafika null, pak text změří jen odhadem.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="text"></param>
-        /// <param name="fontInfo"></param>
-        /// <returns></returns>
-        internal static Size MeasureString(Graphics graphics, string text, FontInfo fontInfo)
-        {
-            if (String.IsNullOrEmpty(text)) return new Size(0, 0);
-            if (graphics == null) return MeasureString(text, fontInfo);
-
-            Font font = fontInfo.Font;
-            SizeF sizeF = graphics.MeasureString(text, font);
-            Size size = sizeF.Enlarge(1f, 3f).ToSize();
-            return size;
         }
         #endregion
         #region DrawRadiance
@@ -2366,7 +2310,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             Rectangle textBounds = tabHeader.TextBounds.Add(absoluteBounds.Location);
             bool isActive = tabHeader.IsActive;
             Color textColor = (isActive ? Skin.TabHeader.TextColorActive : Skin.TabHeader.TextColor);
-            GPainter.DrawString(graphics, textBounds, tabHeader.Text, textColor, tabHeader.Font, ContentAlignment.MiddleCenter, transformation);
+            GPainter.DrawString(graphics, tabHeader.Text, tabHeader.Font, textBounds, ContentAlignment.MiddleCenter, color: textColor, transformation: transformation);
         }
         /// <summary>
         /// Vykreslí CloseButton, pokud má být viditelný
@@ -4526,44 +4470,17 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// Return a disposable object, which at its Dispose returns graphics to the original state.
         /// You must use this method in using pattern:
         /// using(Painter.GraphicsUseSmooth(graphics) { any drawing... }.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <returns></returns>
-        internal static IDisposable GraphicsUseSmooth(Graphics graphics)
-        {
-            IDisposable state = new GraphicsStateRestore(graphics);
-            _GraphicsSetSmooth(graphics);
-            return state;
-        }
-        /// <summary>
-        /// Prepare Graphics for smooth drawing (curve, text), quality smooth rendering.
-        /// Return a disposable object, which at its Dispose returns graphics to the original state.
-        /// You must use this method in using pattern:
-        /// using(Painter.GraphicsUseSmooth(graphics) { any drawing... }.
         /// Set specified rectangle as Clip region to Graphics. On Dispose returns original Clip region.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="setClip"></param>
         /// <returns></returns>
-        internal static IDisposable GraphicsUseSmooth(Graphics graphics, Rectangle setClip)
+        internal static IDisposable GraphicsUseSmooth(Graphics graphics, Rectangle? setClip = null)
         {
-            IDisposable state = new GraphicsStateRestore(graphics, setClip);
-            graphics.SetClip(setClip);
+            IDisposable state = (setClip.HasValue ? new GraphicsStateRestore(graphics, setClip.Value) : new GraphicsStateRestore(graphics));
+            if (setClip.HasValue)
+                graphics.SetClip(setClip.Value);
             _GraphicsSetSmooth(graphics);
-            return state;
-        }
-        /// <summary>
-        /// Prepare Graphics for text drawing (lines, text), fast rendering lines and quality rendering of texts.
-        /// Return a disposable object, which at its Dispose returns graphics to the original state.
-        /// You must use this method in using pattern:
-        /// using(Painter.GraphicsUseSmooth(graphics) { any drawing... }.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <returns></returns>
-        internal static IDisposable GraphicsUseText(Graphics graphics)
-        {
-            IDisposable state = new GraphicsStateRestore(graphics);
-            _GraphicsSetText(graphics);
             return state;
         }
         /// <summary>
@@ -4575,12 +4492,14 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="setClip"></param>
+        /// <param name="renderingHint"></param>
         /// <returns></returns>
-        internal static IDisposable GraphicsUseText(Graphics graphics, Rectangle setClip)
+        internal static IDisposable GraphicsUseText(Graphics graphics, Rectangle? setClip = null, System.Drawing.Text.TextRenderingHint renderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias)
         {
-            IDisposable state = new GraphicsStateRestore(graphics, setClip);
-            graphics.SetClip(setClip);
-            _GraphicsSetText(graphics);
+            IDisposable state = (setClip.HasValue ? new GraphicsStateRestore(graphics, setClip.Value) : new GraphicsStateRestore(graphics));
+            if (setClip.HasValue)
+                graphics.SetClip(setClip.Value);
+            _GraphicsSetText(graphics, renderingHint);
             return state;
         }
         /// <summary>
@@ -4656,7 +4575,8 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// Nastaví Graphics tak, aby ideálně kreslil text
         /// </summary>
         /// <param name="graphics"></param>
-        private static void _GraphicsSetText(Graphics graphics)
+        /// <param name="renderingHint"></param>
+        private static void _GraphicsSetText(Graphics graphics, System.Drawing.Text.TextRenderingHint renderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias)
         {
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // SmoothingMode.AntiAlias poskytuje ideální hladké kreslení grafiky
             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;  // Nemá vliv na vykreslování čehokoliv

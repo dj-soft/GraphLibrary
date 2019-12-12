@@ -932,7 +932,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 e.Graphics.FillRectangle(lgb, bounds);
 
             bounds = new Rectangle(2, 1, titleWidth - 4, this.TextLineHeight - 2);
-            GPainter.DrawString(e.Graphics, bounds, this._Caption, Skin.Brush(this._TextColor), this._FontInfo, ContentAlignment.MiddleLeft);
+            GPainter.DrawString(e.Graphics, this._Caption, this._FontInfo, bounds, ContentAlignment.MiddleLeft, color: this._TextColor);
         }
         /// <summary>
         /// Určí optimální výšku prvku pro zobrazení v režimu <see cref="OnlyOneLine"/> 

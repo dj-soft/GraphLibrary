@@ -146,7 +146,7 @@ namespace Asol.Tools.WorkScheduler.Components
             host.FillRectangle(graphics, dataBounds, this.DataProgressForeColor);
 
             string progressText = this.GetDataProgressText();
-            GPainter.DrawString(graphics, progBounds, progressText, Brushes.Black, FontInfo.Caption, ContentAlignment.MiddleCenter);
+            GPainter.DrawString(graphics, progressText, FontInfo.Caption, progBounds, ContentAlignment.MiddleCenter, color: Color.Black);
 
             string infoCurrent = this.DataInfoCurrent;
             if (!String.IsNullOrEmpty(infoCurrent))
@@ -156,7 +156,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 fontInfo.Bold = true;
                 fontInfo.RelativeSize = 120;
                 Rectangle realBounds;
-                GPainter.DrawString(graphics, infoBounds, infoCurrent, this.DataForeColor, fontInfo, ContentAlignment.TopLeft, out realBounds);
+                realBounds = GPainter.DrawString(graphics, infoCurrent, fontInfo, infoBounds, ContentAlignment.TopLeft, color: this.DataForeColor);
             }
         }
         /// <summary>

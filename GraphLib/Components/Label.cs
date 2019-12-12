@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             string text = this.Text;
             if (!String.IsNullOrEmpty(text))
-                GPainter.DrawString(e.Graphics, absoluteBounds, text, Skin.Brush(this.ForeColorCurrent), this.FontCurrent, this.Alignment);
+                GPainter.DrawString(e.Graphics, text, this.FontCurrent, absoluteBounds, this.Alignment, color: this.ForeColorCurrent);
         }
     }
     #region class GTextObject : obecný předek prvků, které zobrazují jeden text

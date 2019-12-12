@@ -2791,7 +2791,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Color textColor = this._GetTextColor(row, cell);
 
             Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
-            GPainter.DrawString(e.Graphics, boundsContent, text, textColor, font, alignment);
+            GPainter.DrawString(e.Graphics, text, font, boundsContent, alignment, textColor);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako Image

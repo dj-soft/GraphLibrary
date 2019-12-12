@@ -20,11 +20,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.BackgroundMode = DrawBackgroundMode.Solid;
             this.BorderStyle = Skin.TextBox.BorderStyle;
-            this.Is.KeyboardInput = true;
+            this.Is.Set(InteractiveProperties.Bit.DefaultMouseOverProperties
+                      | InteractiveProperties.Bit.KeyboardInput);
         }
         #endregion
         #region Klávesnice
-
         #endregion
         #region Vykreslení obsahu
         /// <summary>
@@ -81,7 +81,25 @@ namespace Asol.Tools.WorkScheduler.Components
             string text = this.Text;
             if (!String.IsNullOrEmpty(text))
             {
-                GPainter.DrawString(e.Graphics, innerBounds, text, Skin.Brush(this.ForeColorCurrent), this.FontCurrent, this.Alignment);
+                if (this.HasFocus)
+                {
+                    RectangleF[] charPoss = GPainter.DrawStringMeasureChars(e.Graphics, text, this.FontCurrent, innerBounds, this.Alignment, color: this.ForeColorCurrent);
+
+                    Color[] overColors = new Color[] { Color.FromArgb(64, 220, 255, 220), Color.FromArgb(64, 255, 220, 220), Color.FromArgb(64, 220, 220, 255) };
+                    int alpha = 128;
+                    int loval = 160;
+                    int hival = 220;
+                    overColors = new Color[] { Color.FromArgb(alpha, loval, hival, loval), Color.FromArgb(alpha, hival, loval, loval), Color.FromArgb(alpha, loval, loval, hival) };
+                    int idx = 0;
+                    foreach (var charPos in charPoss)
+                    {
+                        Color color = overColors[idx % 3];
+                        e.Graphics.FillRectangle(Skin.Brush(color), charPos);
+                        idx++;
+                    }
+                }
+                else
+                    GPainter.DrawString(e.Graphics, text, this.FontCurrent, innerBounds, this.Alignment, color: this.ForeColorCurrent);
             }
         }
         /// <summary>

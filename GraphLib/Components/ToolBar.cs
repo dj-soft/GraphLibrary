@@ -1155,7 +1155,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawAreaBase(e.Graphics, titleAbsoluteBounds, Skin.ToolBar.TitleBackColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled, null, null);
 
             if (!String.IsNullOrEmpty(this.DataTitle))
-                GPainter.DrawString(e.Graphics, titleAbsoluteBounds, this.DataTitle, Skin.ToolBar.TextColor, tBarSetting.TitleFont, ContentAlignment.MiddleCenter);
+                GPainter.DrawString(e.Graphics, this.DataTitle, tBarSetting.TitleFont, titleAbsoluteBounds, ContentAlignment.MiddleCenter, Skin.ToolBar.TextColor);
         }
         /// <summary>
         /// Metoda vrací všechny členy selectovací skupiny (<see cref="FunctionItem.CheckedGroupName"/>) daného jména.
@@ -2064,7 +2064,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle boundsTextAbsolute = this.GetAbsoluteBoundsForPart(boundsAbsolute, this.BoundsText); // this.BoundsText.ShiftBy(boundsAbsolute.Location);
                 FontInfo fontInfo = this.CurrentItemFont;
                 Color textColor = Skin.ModifyForeColorByState(Skin.ToolBar.TextColor, this.InteractiveState);
-                GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter);
+                GPainter.DrawString(e.Graphics, text, fontInfo, boundsTextAbsolute, ContentAlignment.MiddleCenter, textColor);
             }
         }
         /// <summary>

@@ -836,7 +836,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Color foreColor = itemBackColor.Value.Contrast();
             Rectangle boundsText = boundsAbsolute;
             boundsText.Y = boundsText.Y;
-            GPainter.DrawString(e.Graphics, boundsText, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
+            GPainter.DrawString(e.Graphics, text, fontInfo, boundsText, ContentAlignment.MiddleCenter, foreColor);
         }
         #endregion
         #region Fyzické kreslení konkrétního prvku

@@ -3104,7 +3104,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     graphics.DrawPath(p, gp);
                 }
 
-                GPainter.DrawString(graphics, bounds, info, foreColor, FontInfo.Status, ContentAlignment.MiddleCenter);
+                GPainter.DrawString(graphics, info, FontInfo.Status, bounds, ContentAlignment.MiddleCenter, foreColor);
             }
         }
         /// <summary>
@@ -3614,7 +3614,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Vykreslit texty jednotlivých řádků:
                 Color textColor = Skin.BlockedGui.TextInfoForeColor.ApplyOpacity(opacityRatio);
                 foreach (BlockedGuiTextInfo text in this.BlockedGuiMsgTextInfos)
-                    GPainter.DrawString(graphics, text.TextBounds, text.Text, textColor, text.Font, ContentAlignment.MiddleCenter);
+                    GPainter.DrawString(graphics, text.Text, text.Font, text.TextBounds, ContentAlignment.MiddleCenter, textColor);
             }
         }
         /// <summary>

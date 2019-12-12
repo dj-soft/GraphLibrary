@@ -706,7 +706,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Point? point = ((this.InteractiveState == GInteractiveState.MouseOver) ? this.CurrentMouseRelativePoint : (Point?)null);
             GPainter.DrawAreaBase(e.Graphics, bounds, this.BackColor, Orientation.Horizontal, this.InteractiveState, point, null);
-            GPainter.DrawString(e.Graphics, bounds, "GEditableArea", Color.Black, FontInfo.Default, ContentAlignment.MiddleCenter);
+            GPainter.DrawString(e.Graphics, "GEditableArea", FontInfo.Default, bounds, ContentAlignment.MiddleCenter, Color.Black);
         }
         /// <summary>
         /// Draw a background of EditableArea in Ghost mode

@@ -1220,7 +1220,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.InfoTextTable == null)
             {   // Nouzová cesta:
-                GPainter.DrawString(graphics, bounds, this.InfoText, color, font, ContentAlignment.TopLeft);
+                GPainter.DrawString(graphics, this.InfoText, font, bounds, ContentAlignment.TopLeft, color);
             }
             else
             {
@@ -1302,7 +1302,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (this.IsEmpty) return;
 
                 Rectangle absoluteBounds = this.Bounds.Add(bounds.Location);
-                GPainter.DrawString(graphics, absoluteBounds, this.Text, color, font, this.Alignment);
+                GPainter.DrawString(graphics, this.Text, font, absoluteBounds, this.Alignment, color);
             }
         }
         #endregion

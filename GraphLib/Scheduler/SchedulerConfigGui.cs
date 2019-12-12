@@ -232,7 +232,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             Rectangle textBounds = new Rectangle(nodeBounds.X + 3, nodeBounds.Y + 1, treeSize.Width - nodeBounds.X - 6, nodeBounds.Height - 2);
             FontInfo fontInfo = this.NodeFontInfoStandard;
-            GPainter.DrawString(e.Graphics, textBounds, e.Node.Text, Skin.Brush(this.ConfigTree.ForeColor), fontInfo, ContentAlignment.MiddleLeft);
+            GPainter.DrawString(e.Graphics, e.Node.Text, fontInfo, textBounds, ContentAlignment.MiddleLeft, color: this.ConfigTree.ForeColor);
 
             e.DrawDefault = false;
         }

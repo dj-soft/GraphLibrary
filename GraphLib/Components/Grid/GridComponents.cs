@@ -1002,7 +1002,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 FontInfo fontInfo = FontInfo.Caption;
                 fontInfo.Bold = (column.SortCurrent == ItemSortType.Ascending || column.SortCurrent == ItemSortType.Descending);
                 Color textColor = Skin.Grid.HeaderTextColor.SetOpacity(opacity);
-                GPainter.DrawString(e.Graphics, boundsAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter, out textArea);
+                textArea = GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, color: textColor);
 
                 // Obrázek odpovídající aktuálnímu třídění sloupce:
                 Image sortImage = this.SortCurrentImage;
