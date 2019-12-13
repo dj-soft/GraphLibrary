@@ -24,19 +24,32 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this._ListTypes.HeaderStyle = ColumnHeaderStyle.Nonclickable;
             this._ListTypes.View = View.Details;
             this._ListTypes.FullRowSelect = true;
+            this._ListTypes.MultiSelect = false;
             this._ListTypes.Columns.Add(new ColumnHeader() { Name = "UserName", Text = "Formulář", Width = 280 });
             this._ListTypes.Columns.Add(new ColumnHeader() { Name = "TypeName", Text = "Type", Width = 160 });
 
             var mainFormTypes = Program.GetAvailableForms();
+
+            int index = 0;
             foreach (var mainFormType in mainFormTypes)
             {
                 var imfa = Program.GetMainFormAttribute(mainFormType);
                 string userName = imfa.FormName;
                 string typeName = mainFormType.Name;
-                this._ListTypes.Items.Add(new ListViewItem(new string[] { userName, typeName }) { Tag = mainFormType });
+                ListViewItem item = new ListViewItem(new string[] { userName, typeName }) { Tag = mainFormType };
+                this._ListTypes.Items.Add(item);
+                if (index == 0) item.Selected = true;
+                index++;
             }
 
             this._ListTypes.MouseDoubleClick += _ListTypes_MouseDoubleClick;
+            this._ListTypes.KeyDown += _ListTypes_KeyDown;
+
+        }
+        private void _ListTypes_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+                this._RunSelectedForm();
         }
         private void _ListTypes_MouseDoubleClick(object sender, MouseEventArgs e)
         {
@@ -59,6 +72,5 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             Application.App.RunForm(selectedType);
             this.Close();
         }
-
     }
 }
