@@ -120,6 +120,12 @@
     <Compile Include="Forms\TestGraphSettingForm.Designer.cs">
       <DependentUpon>TestGraphSettingForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\TestMaxControlsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TestMaxControlsForm.Designer.cs">
+      <SubType>TestMaxControlsForm.cs</SubType>
+    </Compile>
     <Compile Include="Forms\TestOneComponent.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -166,6 +172,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\TestGraphSettingForm.resx">
       <DependentUpon>TestGraphSettingForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TestMaxControlsForm.resx">
+      <DependentUpon>TestMaxControlsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\TestOneComponent.resx">
       <DependentUpon>TestOneComponent.cs</DependentUpon>

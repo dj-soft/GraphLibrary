@@ -102,10 +102,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Rectangle areaB = new Rectangle(area.X, area.Bottom - h, area.Width, h);
             Rectangle areaL = new Rectangle(area.X, area.Y, h, area.Height);
 
-            GPainter.DrawString(e.Graphics, "Normal => Normal => Normal => Normal", fontInfo, areaB, ContentAlignment.MiddleCenter, Color.Black, MatrixTransformationType.NoTransform);
-            GPainter.DrawString(e.Graphics, "Rotate90 => Rotate90 => Rotate90 => Rotate90", fontInfo, areaL, ContentAlignment.MiddleCenter, Color.Black, MatrixTransformationType.Rotate90);
-            GPainter.DrawString(e.Graphics, "Rotate180 => Rotate180 => Rotate180 => Rotate180", fontInfo, areaT, ContentAlignment.MiddleCenter, Color.Black, MatrixTransformationType.Rotate180);
-            GPainter.DrawString(e.Graphics, "Rotate270 => Rotate270 => Rotate270 => Rotate270", fontInfo, areaR, ContentAlignment.MiddleCenter, Color.Black, MatrixTransformationType.Rotate270);
+            GPainter.DrawString(e.Graphics, "Normal => Normal => Normal => Normal", fontInfo, areaB, ContentAlignment.MiddleCenter, Color.Black, transformation: MatrixTransformationType.NoTransform);
+            GPainter.DrawString(e.Graphics, "Rotate90 => Rotate90 => Rotate90 => Rotate90", fontInfo, areaL, ContentAlignment.MiddleCenter, Color.Black, transformation: MatrixTransformationType.Rotate90);
+            GPainter.DrawString(e.Graphics, "Rotate180 => Rotate180 => Rotate180 => Rotate180", fontInfo, areaT, ContentAlignment.MiddleCenter, Color.Black, transformation: MatrixTransformationType.Rotate180);
+            GPainter.DrawString(e.Graphics, "Rotate270 => Rotate270 => Rotate270 => Rotate270", fontInfo, areaR, ContentAlignment.MiddleCenter, Color.Black, transformation: MatrixTransformationType.Rotate270);
         }
         void GControl_ResizeControl(object sender, EventArgs e)
         {
