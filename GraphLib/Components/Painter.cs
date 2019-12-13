@@ -467,7 +467,7 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
             int boundsLength = (isVertical ? bounds.Height : bounds.Width);
 
-            using (GraphicsUseText(graphics, bounds))
+            using (GraphicsUseText(graphics))    // Nedávej tady CLIP na grafiku pro bounds: ona grafika už touhle dobou je korektně clipnutá na správný prostor controlu. Clipnutím na bounds se může část textu vykreslit i mimo control !!!
             {
                 // graphics.SmoothingMode = SmoothingMode.HighQuality;
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
@@ -506,9 +506,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     positions = _DrawStringMeasurePositions(graphics, text, font, textArea, sFormat);
 
                 if (isVertical)
-                {
                     graphics.Transform = matrixOld;
-                }
             }
 
             return textArea;

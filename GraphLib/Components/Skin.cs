@@ -798,7 +798,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva použitá pro zvýraznění prostoru, kde se pohybuje myš (použito např. na časové ose)
         /// </summary>
@@ -920,7 +920,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color BackColorDropTargetItem { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDropTargetItem", DefaultBackColorDropTargetItem); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDropTargetItem", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
         /// <summary>
         /// Defaultní barva: DefaultMouseMoveTracking
@@ -1171,7 +1171,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Vnější barva
         /// </summary>
@@ -1181,7 +1181,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color InnerColor { get { return this._Owner.GetValue(this._SkinSetKey, "InnerColor", DefaultInnerColor); } set { this._Owner.SetValue(this._SkinSetKey, "InnerColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default Vnější barva
         /// </summary>
@@ -1203,7 +1203,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva pozadí Ambient
         /// </summary>
@@ -1237,7 +1237,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int AutoScrollMargins { get { return this._Owner.GetValue(this._SkinSetKey, "AutoScrollMargins", DefaultAutoScrollMargins); } set { this._Owner.SetValue(this._SkinSetKey, "AutoScrollMargins", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default Barva pozadí Ambient
         /// </summary>
@@ -1282,7 +1282,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva pro Splitter neaktivní
         /// </summary>
@@ -1320,7 +1320,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int InteractivePaddingSize { get { return this._Owner.GetValue(this._SkinSetKey, "InteractivePaddingSize", DefaultInteractivePaddingSize); } set { this._Owner.SetValue(this._SkinSetKey, "InteractivePaddingSize", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva pro Splitter neaktivní
         /// </summary>
@@ -1369,7 +1369,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva okolí = překryvná pro celý control
         /// </summary>
@@ -1387,7 +1387,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TextInfoForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextInfoForeColor", DefaultTextInfoForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextInfoForeColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva okolí = překryvná pro celý control
         /// </summary>
@@ -1417,7 +1417,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva okraje
         /// </summary>
@@ -1435,7 +1435,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color InfoColor { get { return this._Owner.GetValue(this._SkinSetKey, "InfoColor", DefaultInfoColor); } set { this._Owner.SetValue(this._SkinSetKey, "InfoColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva okraje
         /// </summary>
@@ -1465,7 +1465,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva okraje
         /// </summary>
@@ -1507,7 +1507,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color SeparatorDarkColor { get { return this._Owner.GetValue(this._SkinSetKey, "SeparatorDarkColor", DefaultSeparatorDarkColor); } set { this._Owner.SetValue(this._SkinSetKey, "SeparatorDarkColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva okraje
         /// </summary>
@@ -1561,7 +1561,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva pozadí
         /// </summary>
@@ -1603,7 +1603,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Image ItemSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSelectedImage", DefaultItemSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSelectedImage", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva pozadí
         /// </summary>
@@ -1656,7 +1656,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Typ rámečku
         /// </summary>
@@ -1718,7 +1718,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color SelectedTextForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedTextForeColor", DefaultSelectedTextForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedTextForeColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Styl rámečku
         /// </summary>
@@ -1792,7 +1792,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva okraje buttonu
         /// </summary>
@@ -1806,7 +1806,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva okraje buttonu
         /// </summary>
@@ -1832,7 +1832,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Výška Tabu
         /// </summary>
@@ -1870,7 +1870,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TextColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorActive", DefaultTextColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorActive", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Výška Tabu
         /// </summary>
@@ -1920,7 +1920,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Šířka ScrollBaru (šířka u svislého, výška u vodorovného)
         /// </summary>
@@ -1950,7 +1950,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TextColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorButton", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorButton", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Šířka ScrollBaru (šířka u svislého, výška u vodorovného)
         /// </summary>
@@ -1958,7 +1958,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Malý krok na scrollbaru (standardní), poměrně k velikosti viditelné plochy
         /// </summary>
-        protected virtual decimal DefaultSmallStepRatio { get { return 0.05m; } }
+        protected virtual decimal DefaultSmallStepRatio { get { return 0.10m; } }
         /// <summary>
         /// Default pro: Velký krok na scrollbaru (zvětšený vlivem Shift), poměrně k velikosti viditelné plochy
         /// </summary>
@@ -1992,7 +1992,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva pozadí
         /// </summary>
@@ -2022,7 +2022,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color LineColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorButton", DefaultLineColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorButton", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva pozadí
         /// </summary>
@@ -2064,7 +2064,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva pozadí okna Progress
         /// </summary>
@@ -2086,7 +2086,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TextColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorProgress", DefaultTextColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorProgress", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva pozadí okna Progress
         /// </summary>
@@ -2120,7 +2120,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Barva pozadí osy
         /// </summary>
@@ -2146,7 +2146,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TextColorArrangement { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorArrangement", DefaultTextColorArrangement); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorArrangement", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Barva pozadí osy
         /// </summary>
@@ -2184,7 +2184,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Grid, Záhlaví: barva pozadí
         /// </summary>
@@ -2282,7 +2282,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color TreeViewLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "TreeViewLineColor", DefaultTreeViewLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "TreeViewLineColor", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro: Grid, Záhlaví: barva pozadí
         /// </summary>
@@ -2403,7 +2403,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Graf: výška linky
         /// </summary>
@@ -2470,7 +2470,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color LinkColorError { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColorError", DefaultLinkColorError); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColorError", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Graf: výška linky
         /// </summary>
@@ -2548,7 +2548,7 @@ namespace Asol.Tools.WorkScheduler.Components
             : base(owner, skinSetKey)
         { }
         #endregion
-        #region Public colors
+        #region Public values
         /// <summary>
         /// Vztah : výška linky v Gridu
         /// </summary>
@@ -2582,7 +2582,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public float LineFadingRatio { get { return this._Owner.GetValue(this._SkinSetKey, "LineFadingRatio", DefaultLineFadingRatio); } set { this._Owner.SetValue(this._SkinSetKey, "LineFadingRatio", value); } }
         #endregion
-        #region Default colors
+        #region Default values
         /// <summary>
         /// Default pro : Vztah : výška linky v Gridu
         /// </summary>

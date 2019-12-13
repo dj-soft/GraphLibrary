@@ -155,6 +155,14 @@ namespace Asol.Tools.WorkScheduler.Application
             Instance._RunMainForm(formType);
         }
         /// <summary>
+        /// Spustí formulář aplikace
+        /// </summary>
+        /// <param name="formType"></param>
+        public static void RunForm(Type formType)
+        {
+            Instance._RunForm(formType);
+        }
+        /// <summary>
         /// Hlavní formulář aplikace
         /// </summary>
         public static System.Windows.Forms.Form MainForm { get { return Instance._AppMainForm; } }
@@ -199,6 +207,41 @@ namespace Asol.Tools.WorkScheduler.Application
 
             Application.App.End();
         }
+        /// <summary>
+        /// Spustí main formulář aplikace
+        /// </summary>
+        /// <param name="formType"></param>
+        private void _RunForm(Type formType)
+        {
+            try
+            {
+                this._AppMainForm = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
+                this._AppContext.MainForm = this._AppMainForm;
+                this._AppMainForm.ShowDialog();
+            }
+            catch (Exception exc)
+            {
+                Trace.Exception(exc);
+
+                Exception e = exc;
+                while (e.InnerException != null)
+                    e = e.InnerException;
+
+                string message = e.Message + Environment.NewLine + e.StackTrace;
+                ShowError(message);
+
+                if (System.Diagnostics.Debugger.IsAttached)
+                    throw;
+            }
+            finally
+            {
+                this._AppMainForm = null;
+                this._AppContext = null;
+            }
+
+            Application.App.End();
+        }
+
         private System.Windows.Forms.ApplicationContext _AppContext;
         private System.Windows.Forms.Form _AppMainForm;
         #endregion
