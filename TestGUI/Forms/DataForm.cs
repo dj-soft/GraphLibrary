@@ -14,6 +14,7 @@ using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
+    [IsMainForm("Testy FreeForm komponent")]
     public partial class DataForm : Form
     {
         public DataForm()

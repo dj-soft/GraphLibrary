@@ -20,15 +20,27 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             Application.App.TracePriority = Application.TracePriority.Priority5_Normal;
 
+            var formTypes = GetAvailableForms();
+            int count = formTypes.Length;
+            if (count == 0)
+                Application.App.ShowError("V projektu 'TestGUI' nebyl nalezen žádný hlavní formulář [IsMainForm]");
+            else if (count == 1)
+                Application.App.RunMainForm(formTypes[0]);
+            else
+                Application.App.RunMainForm(typeof(Forms.SelectMainForm));
+            
+
+
+            /*
             if (Control.ModifierKeys == Keys.Shift)
             {   // Spuštění s klávesou Shift, pomocí ikonky  |> Start  :
-
                 Application.App.RunMainForm(typeof(DataForm));                 // interní testovací data
             }
             else
             {
                 Application.App.RunMainForm(typeof(SchedulerForm));            // interní testovací data
             }
+            */
 
             // Application.App.RunMainForm(typeof(PluginForm));                // data z Greenu
 
@@ -42,6 +54,39 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestGraphSettingForm));
             // Tests.TestLinq(6);
         }
+
+        public static Type[] GetAvailableForms()
+        {
+            bool isShiftKey = (Control.ModifierKeys == Keys.Shift);
+            bool isDebugMode = System.Diagnostics.Debugger.IsAttached;
+            var myType = typeof(Asol.Tools.WorkScheduler.TestGUI.Program);
+            var myAssembly = myType.Assembly;
+            var myAssemblyTypes = myAssembly.GetTypes();
+            var formTypes = myAssemblyTypes.Where(t => IsMainForm(t, isShiftKey, isDebugMode)).ToList();
+            formTypes.Sort((a, b) => (String.Compare(a.Name, b.Name)));
+            return formTypes.ToArray();
+        }
+        private static bool IsMainForm(Type type, bool isShiftKey, bool isDebugMode)
+        {
+            if (!type.IsClass || type.IsAbstract || type.IsArray) return false;
+            if (!type.IsSubclassOf(typeof(Form))) return false;
+            var imfa = GetMainFormAttribute(type);
+            if (imfa == null) return false;
+
+            if (imfa.OnlyWithShiftKey && !isShiftKey) return false;
+            if (imfa.OnlyInDebugMode && !isDebugMode) return false;
+
+            return true;
+        }
+        public static IsMainFormAttribute GetMainFormAttribute(Type formType)
+        {
+            var imfas = formType.GetCustomAttributes(typeof(IsMainFormAttribute), true);
+            if (imfas.Length == 0) return null;
+            var imfa = imfas[0] as IsMainFormAttribute;
+            if (imfa == null) return null;
+            return imfa;
+        }
+
         #region Nepoužívané metody
         /*
         internal static Form CreateNewestForm()
@@ -128,5 +173,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         */
         #endregion
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
+    public sealed class IsMainFormAttribute : Attribute
+    {
+        public IsMainFormAttribute(string formName)
+        {
+            this._FormName = formName;
+        }
+        public IsMainFormAttribute(string formName, bool onlyWithShiftKey, bool onlyInDebugMode)
+        {
+            this._FormName = formName;
+        }
+        readonly string _FormName;
+        readonly bool _OnlyWithShiftKey;
+        readonly bool _OnlyInDebugMode;
+        /// <summary>
+        /// Uživatelské jméno formuláře
+        /// </summary>
+        public string FormName { get { return _FormName; } }
+        /// <summary>
+        /// Zobrazovat pouze když je při startu stisknutý Shift
+        /// </summary>
+        public bool OnlyWithShiftKey { get { return _OnlyWithShiftKey; } }
+        /// <summary>
+        /// Zobrazovat pouze když je aplikace spuštěna v Debug režimu
+        /// </summary>
+        public bool OnlyInDebugMode { get { return _OnlyInDebugMode; } }
     }
 }
