@@ -940,7 +940,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            Color spaceColor = this.BackColor;                  // tam je default: Skin.TabHeader.SpaceColor;
+            Color spaceColor = this.BackColor.Value;                  // tam je default: Skin.TabHeader.SpaceColor;
             if (spaceColor.A > 0)
                 e.Graphics.FillRectangle(Skin.Brush(spaceColor), absoluteBounds);
 
@@ -985,8 +985,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Aby fungovalo přemalování parenta v režimu <see cref="RepaintParentMode.OnBackColorAlpha"/>, musíme vracet korektní barvu BackColor.
         /// Výchozí je <see cref="Skin.TabHeader"/>.SpaceColor
         /// </summary>
-        public override Color BackColor { get { return (this._BackColorExplicit.HasValue ? this._BackColorExplicit.Value : Skin.TabHeader.SpaceColor); } set { this._BackColorExplicit = value; base.BackColor = value; } }
-        private Color? _BackColorExplicit;
+        public override Color BackColorDefault { get { return Skin.TabHeader.SpaceColor; } }
         /// <summary>
         /// Child prvky
         /// </summary>

@@ -68,7 +68,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// <summary>
         /// Typ borderu
         /// </summary>
-        public BorderStyleType BorderStyle { get { return this.Text1.BorderStyle; } set { this.Text1.BorderStyle = value; this.Text2.BorderStyle = value; } }
+        public BorderStyleType BorderStyle { get { return this.Text1.BorderStyle.Value; } set { this.Text1.BorderStyle = value; this.Text2.BorderStyle = value; } }
         /// <summary>
         /// Je tento prvek Visible
         /// </summary>

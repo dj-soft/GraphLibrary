@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             string text = this.Text;
             if (!String.IsNullOrEmpty(text))
-                GPainter.DrawString(e.Graphics, text, this.FontCurrent, absoluteBounds, this.Alignment, color: this.ForeColorCurrent);
+                GPainter.DrawString(e.Graphics, text, this.Font, absoluteBounds, this.Alignment, color: this.ForeColor);
         }
     }
     #region class GTextObject : obecný předek prvků, které zobrazují jeden text
@@ -48,6 +48,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTextObject()
         {
             this.BackgroundMode = DrawBackgroundMode.Transparent;
+            this.Alignment = ContentAlignment.MiddleLeft;
         }
         /// <summary>
         /// Vykreslí text
@@ -95,26 +96,45 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawBorder(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
         }
-        /// <summary>
-        /// Aktuální font (<see cref="Font"/> ?? <see cref="FontInfo.Default"/>)
-        /// </summary>
-        protected virtual FontInfo FontCurrent { get { return this.Font ?? FontInfo.Default; } }
-        /// <summary>
-        /// Aktuální barva písma (<see cref="ForeColor"/> ?? <see cref="Skin.Control"/>:<see cref="SkinControlSet.ControlTextColor"/>)
-        /// </summary>
-        protected Color ForeColorCurrent { get { return this.ForeColor ?? Skin.Control.ControlTextColor; } }
+
         /// <summary>
         /// Vykreslovaný text
         /// </summary>
         public string Text { get; set; }
+
         /// <summary>
-        /// Aktuální barva písma. Pokud bude null, použije se <see cref="Skin.Control"/>:<see cref="SkinControlSet.ControlTextColor"/>
+        /// Aktuální barva písma. Při čtení má vždy hodnotu (nikdy není null).
+        /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="ForeColorDefault"/>.
+        /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="ForeColorDefault"/>.
         /// </summary>
-        public Color? ForeColor { get; set; }
+        public Color? ForeColor
+        {
+            get { return this.__ForeColor ?? this.ForeColorDefault; }
+            set { this.__ForeColor = value; }
+        }
+        private Color? __ForeColor;
         /// <summary>
-        /// Aktuální písmo. Pokud bude null (=default), použije se <see cref="FontInfo.Default"/>
+        /// Defaultní písmo
         /// </summary>
-        public FontInfo Font { get; set; }
+        public virtual Color ForeColorDefault { get { return Skin.Control.ControlTextColor; } }
+        /// <summary>
+        /// Aktuálně platný typ písma. Při čtení má vždy hodnotu (nikdy není null).
+        /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="FontDefault"/>.
+        /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="FontDefault"/>.
+        /// </summary>
+        public FontInfo Font
+        {
+            get { return this.__Font ?? this.FontDefault; }
+            set { this.__Font = value; }
+        }
+        private FontInfo __Font;
+        /// <summary>
+        /// Defaultní písmo
+        /// </summary>
+        public virtual FontInfo FontDefault { get { return FontInfo.Default; } }
+
+
+
         /// <summary>
         /// Umístění obsahu (textu) v rámci prostoru prvku
         /// </summary>

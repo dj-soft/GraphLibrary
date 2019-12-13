@@ -2396,7 +2396,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         protected void DrawBackground(Graphics graphics, Rectangle absoluteBounds)
         {
-            this.DrawBackground(graphics, absoluteBounds, this.BackColor);
+            this.DrawBackground(graphics, absoluteBounds, this.BackColor.Value);
             this.DrawSegments(graphics, absoluteBounds);
         }
         /// <summary>

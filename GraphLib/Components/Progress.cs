@@ -55,7 +55,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Barva pozadí
         /// </summary>
-        protected Color DataBackColor { get { return (this.HasData && this._ProgressData.BackColor.HasValue ? this._ProgressData.BackColor.Value : this.DefaultBackColor).SetOpacity(this.DataOpacity); } }
+        protected Color DataBackColor { get { return (this.HasData && this._ProgressData.BackColor.HasValue ? this._ProgressData.BackColor.Value : this.BackColorDefault).SetOpacity(this.DataOpacity); } }
         /// <summary>
         /// Barva popředí
         /// </summary>
@@ -79,7 +79,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Výchozí barva pozadí
         /// </summary>
-        protected override Color DefaultBackColor { get { return Color.DarkOrchid; } }
+        public override Color BackColorDefault { get { return Color.DarkOrchid; } }
         /// <summary>
         /// Výchozí barva popředí
         /// </summary>

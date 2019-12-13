@@ -13,26 +13,6 @@ using Asol.Tools.WorkScheduler.Application;
 namespace Asol.Tools.WorkScheduler.DataForm
 {
     /// <summary>
-    /// WinForm Panel obsahující DataForm control
-    /// </summary>
-    public class DataFormContainer : Panel
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DataFormContainer()
-        {
-            this.GDataForm = new GDataFormControl();
-            this.Controls.Add(this.GDataForm);
-            this.AutoScroll = true;
-
-        }
-        /// <summary>
-        /// Vlastní control
-        /// </summary>
-        protected GDataFormControl GDataForm;
-    }
-    /// <summary>
     /// DataFormControl
     /// </summary>
     /// <remarks>David Janáček, počátek 1.12.2019</remarks>
@@ -107,6 +87,8 @@ Obsah prvku: {item.Value1}
 Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {currentX}/{currentY}
 ";
+                    item.BorderStyle = BorderStyleType.Soft;
+
                     if (rand.Next(10) > 6)
                         item.RelationType = (rand.Next(5) > 2) ? TextRelationType.ToRecord : TextRelationType.ToDocument;
                     this.AddItem(item);

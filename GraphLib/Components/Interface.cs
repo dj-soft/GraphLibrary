@@ -1879,7 +1879,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Je třeba vykreslit prvek
         /// </summary>
-        Draw = 1,
+        DrawAll = 1,
         /// <summary>
         /// Aktuální animační funkci je možno ukončit (vyřadit z animačního vlákna)
         /// </summary>

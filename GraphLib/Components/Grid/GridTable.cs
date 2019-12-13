@@ -1527,7 +1527,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Barva pozadí filtru TagFilter
         /// </summary>
-        public Color? TagFilterBackColor { get { return this._TagFilter.BackColorUser; } set { this._TagFilter.BackColorUser = value; this.Invalidate(InvalidateItem.Paint); } }
+        public Color? TagFilterBackColor { get { return this._TagFilter.BackColor; } set { this._TagFilter.BackColor = value; this.Invalidate(InvalidateItem.Paint); } }
         /// <summary>
         /// Filtr řádků TagFilter:
         /// Výška jednoho prvku.

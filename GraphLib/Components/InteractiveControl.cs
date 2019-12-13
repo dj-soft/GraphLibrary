@@ -3218,7 +3218,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     // Jakákoli jiná animace:
                     if (this._AnimationNeedTick)
                     {
-                        bool needDrawAnimation = this._AnimatorTick();
+                        AnimationArgs args = this._AnimatorTick();
                         needDraw |= needDrawAnimation;
                         drawItems = needDrawAnimation;
                     }
@@ -3309,11 +3309,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Daná funkce bude volána 1x za 40 milisekund (25x za sekundu).
         /// Funkce má zařídit svoji animaci a vrátit informaci, co dál.
         /// </summary>
-        /// <param name="animatorTick"></param>
-        public void AnimationStart(Func<AnimationResult> animatorTick)
+        /// <param name="animatorAction"></param>
+        public void AnimationStart(Func<AnimationArgs, AnimationResult> animatorAction)
         {
-            if (animatorTick == null) return;
-            this._AnimatorTickList.Add(animatorTick);
+            if (animatorAction == null) return;
+            this._AnimatorTickList.Add(new AnimatorInfo(animatorAction));
             this._BackThreadResume();
         }
         /// <summary>
@@ -3325,35 +3325,45 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí true = je třeba provést překreslení.
         /// </summary>
         /// <returns></returns>
-        private bool _AnimatorTick()
+        private AnimationArgs _AnimatorTick()
         {
-            bool needDraw = false;
+            AnimationArgs args = new AnimationArgs();
             for (int i = 0; i < this._AnimatorTickList.Count; i++)
             {
-                Func<AnimationResult> animatorTick = this._AnimatorTickList[i];
-                AnimationResult result = (animatorTick != null ? animatorTick() : AnimationResult.Stop);
-                if (result.HasFlag(AnimationResult.Draw) && !needDraw)
+                AnimatorInfo animatorInfo = this._AnimatorTickList[i];
+                AnimationResult result = ((animatorInfo != null && animatorInfo.Action != null) ? animatorInfo.Action(args) : AnimationResult.Stop);
+                if (result.HasFlag(AnimationResult.DrawAll) && !args.RedrawAll)
                     // Daná animační akce vyžaduje Draw => zajistíme to:
-                    needDraw = true;
+                    args.RedrawAll = true;
                 if (result.HasFlag(AnimationResult.Stop))
                 {   // Daná animační akce již skončila => odeberu si ji ze svého seznamu:
                     this._AnimatorTickList.RemoveAt(i);
                     i--;
                 }
             }
-            return needDraw;
+            return args;
         }
         /// <summary>
         /// Inicializace systému Animátor
         /// </summary>
         private void _AnimatorInit()
         {
-            this._AnimatorTickList = new List<Func<AnimationResult>>();
+            this._AnimatorTickList = new List<AnimatorInfo>();
         }
         /// <summary>
         /// Pole aktivních animátorů
         /// </summary>
-        private List<Func<AnimationResult>> _AnimatorTickList;
+        private List<AnimatorInfo> _AnimatorTickList;
+        private class AnimatorInfo
+        {
+            public AnimatorInfo(Func<AnimationArgs, AnimationResult> animatorAction)
+            {
+                this.Action = animatorAction;
+                this.AnimationStep = 0L;
+            }
+            public Func<AnimationArgs, AnimationResult> Action { get; private set; }
+            public long AnimationStep { get; set; }
+        }
         #endregion
         #region Blokování GUI, vykreslení blokovaného GUI; podpora pro zavírání okna
         /// <summary>
@@ -3510,7 +3520,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.BlockGuiAnimator.Tick(out ratio))
             {   // Pokud animátor obsahuje data, která vedou k animaci (=float ratio):
                 this.BlockGuiOpacityRatio = ratio;
-                return AnimationResult.Draw;
+                return AnimationResult.DrawAll;
             }
 
             // Animátor nemá data: animace nebude, a možná bude konec animace = uplynul stanovený timeout:
@@ -3833,6 +3843,43 @@ namespace Asol.Tools.WorkScheduler.Components
         void IInteractiveParent.Repaint() { this.Repaint(); }
         void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }
         #endregion
+    }
+    /// <summary>
+    /// Data pro jeden animační krok v jednom objektu
+    /// </summary>
+    public class AnimationArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public AnimationArgs()
+        {
+            this._RedrawAll = false;
+            this._RedrawItems = new Dictionary<uint, IInteractiveItem>();
+        }
+        /// <summary>
+        /// Požadavek na překreslení celého controlu
+        /// </summary>
+        public bool RedrawAll
+        {
+            get { return this._RedrawAll; }
+            set { this._RedrawAll |= value; }
+        }
+        private bool _RedrawAll;
+        /// <summary>
+        /// Pole prvků, které se mají překreslit jako výsledek animačního kroku
+        /// </summary>
+        public IInteractiveItem[] RedrawItems { get { return this._RedrawItems.Values.ToArray(); } }
+        private Dictionary<uint, IInteractiveItem> _RedrawItems;
+        /// <summary>
+        /// Přidá prvek k překreslení
+        /// </summary>
+        /// <param name="item"></param>
+        public void AddRedrawItem(IInteractiveItem item)
+        {
+            if (item != null && !this._RedrawItems.ContainsKey(item.Id))
+                this._RedrawItems.Add(item.Id, item);
+        }
     }
     /// <summary>
     /// Stavy procesu Drag na základě pohybu myši a stavu controlu

@@ -19,10 +19,17 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTextEdit()
         {
             this.BackgroundMode = DrawBackgroundMode.Solid;
-            this.BorderStyle = Skin.TextBox.BorderStyle;
             this.Is.Set(InteractiveProperties.Bit.DefaultMouseOverProperties
                       | InteractiveProperties.Bit.KeyboardInput);
         }
+        #endregion
+        #region Myš
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedLeftClick(e);
+            this.MouseClickPoint = e.MouseAbsolutePoint;
+        }
+        protected Point? MouseClickPoint;
         #endregion
         #region Klávesnice
         #endregion
@@ -83,7 +90,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (this.HasFocus)
                 {
-                    RectangleF[] charPoss = GPainter.DrawStringMeasureChars(e.Graphics, text, this.FontCurrent, innerBounds, this.Alignment, color: this.ForeColorCurrent);
+                    RectangleF[] charPoss = GPainter.DrawStringMeasureChars(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
 
                     Color[] overColors = new Color[] { Color.FromArgb(64, 220, 255, 220), Color.FromArgb(64, 255, 220, 220), Color.FromArgb(64, 220, 220, 255) };
                     int alpha = 128;
@@ -97,10 +104,41 @@ namespace Asol.Tools.WorkScheduler.Components
                         e.Graphics.FillRectangle(Skin.Brush(color), charPos);
                         idx++;
                     }
+
+                    if (this.MouseClickPoint.HasValue)
+                    {
+                        RectangleF? cursor = FindCursorByPoint(this.MouseClickPoint.Value, charPoss);
+                        if (cursor.HasValue)
+                            e.Graphics.FillRectangle(Brushes.Black, cursor.Value);
+                        Host.AnimationStart(this.ShowCursorTick);
+                    }
                 }
                 else
-                    GPainter.DrawString(e.Graphics, text, this.FontCurrent, innerBounds, this.Alignment, color: this.ForeColorCurrent);
+                    GPainter.DrawString(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
             }
+        }
+        protected AnimationResult ShowCursorTick()
+        {
+
+
+            return AnimationResult.Stop;
+        }
+        protected RectangleF? FindCursorByPoint(Point point, RectangleF[] charPoss)
+        {
+            int count = charPoss.Length;
+            float x = point.X;
+            float y = point.Y;
+            for (int i = 0; i < count; i++)
+            {
+                RectangleF pos = charPoss[i];
+                if (x >= pos.X && x < pos.Right)
+                {
+                    if (x < (pos.X + 0.667f * pos.Width))
+                        return new RectangleF(pos.X, pos.Y, 1, pos.Height);
+                    return new RectangleF(pos.Right, pos.Y, 1, pos.Height);
+                }
+            }
+            return null;
         }
         /// <summary>
         /// Vykreslí border
@@ -112,7 +150,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode"></param>
         protected virtual void DrawBorder(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
         {
-            switch (this.BorderStyle)
+            switch (this.BorderStyle.Value)
             {
                 case BorderStyleType.Flat:
                     GPainter.DrawBorder(e.Graphics, absoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, 0f);
@@ -133,7 +171,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Rectangle GetInnerBounds(Rectangle bounds)
         {
-            switch (this.BorderStyle)
+            switch (this.BorderStyle.Value)
             {
                 case BorderStyleType.None: return bounds;
                 case BorderStyleType.Flat:
@@ -222,7 +260,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Typ borderu
         /// </summary>
-        public BorderStyleType BorderStyle { get; set; }
+        public BorderStyleType xBorderStyle { get; set; }
+
+
+        /// <summary>
+        /// Aktuální typ rámečku textboxu. Při čtení má vždy hodnotu (nikdy není null).
+        /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="BorderStyleDefault"/>.
+        /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="BorderStyleDefault"/>.
+        /// </summary>
+        public BorderStyleType? BorderStyle
+        {
+            get { return this.__BorderStyle ?? this.BorderStyleDefault; }
+            set { this.__BorderStyle = value; }
+        }
+        private BorderStyleType? __BorderStyle;
+        /// <summary>
+        /// Defaultní písmo
+        /// </summary>
+        public virtual BorderStyleType BorderStyleDefault { get { return Skin.TextBox.BorderStyle; } }
+
         #endregion
     }
     #region enum TextRelationType

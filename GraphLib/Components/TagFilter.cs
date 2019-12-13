@@ -679,7 +679,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle bounds = this.Bounds;
             this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, value);
             this.Parent.Repaint();
-            AnimationResult result = AnimationResult.Draw;
+            AnimationResult result = AnimationResult.DrawAll;
             index++;
             this._HeightAnimationStepIndex = index;
             if (index >= count)

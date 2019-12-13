@@ -916,7 +916,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Orientation ITrackBarPaintData.Orientation { get { return this._TrackBar.Orientation; } }
             GInteractiveState ITrackBarPaintData.InteractiveState { get { return this._TrackBar.InteractiveState; } }
             TrackBarAreaType ITrackBarPaintData.CurrentMouseArea { get { return this._TrackBar.LastMouseOverPart; } }
-            Color ITrackBarPaintData.BackColor { get { return this._TrackBar.BackColor; } }
+            Color ITrackBarPaintData.BackColor { get { return this._TrackBar.BackColor.Value; } }
             Rectangle ITrackBarPaintData.ActiveBounds { get { return this._TrackBar.ActiveBounds; } }
             Rectangle ITrackBarPaintData.TrackBounds { get { return this._TrackBar.TrackBounds; } }
             Rectangle ITrackBarPaintData.TrackLineBounds { get { return this._TrackBar.TrackLineBounds; } }

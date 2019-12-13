@@ -705,7 +705,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawStandardBackground(GInteractiveDrawArgs e, Rectangle bounds)
         {
             Point? point = ((this.InteractiveState == GInteractiveState.MouseOver) ? this.CurrentMouseRelativePoint : (Point?)null);
-            GPainter.DrawAreaBase(e.Graphics, bounds, this.BackColor, Orientation.Horizontal, this.InteractiveState, point, null);
+            GPainter.DrawAreaBase(e.Graphics, bounds, this.BackColor.Value, Orientation.Horizontal, this.InteractiveState, point, null);
             GPainter.DrawString(e.Graphics, "GEditableArea", FontInfo.Default, bounds, ContentAlignment.MiddleCenter, Color.Black);
         }
         /// <summary>
@@ -715,7 +715,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds">Absolute bounds</param>
         protected virtual void DrawGhostBackground(GInteractiveDrawArgs e, Rectangle bounds)
         {
-            GPainter.DrawAreaBase(e.Graphics, bounds, Color.FromArgb(128, this.BackColor), Orientation.Horizontal, GInteractiveState.None, null, null);
+            GPainter.DrawAreaBase(e.Graphics, bounds, Color.FromArgb(128, this.BackColor.Value), Orientation.Horizontal, GInteractiveState.None, null, null);
         }
         /// <summary>
         /// Draw a editable clips of EditableArea

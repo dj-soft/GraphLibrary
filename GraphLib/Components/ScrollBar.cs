@@ -1226,7 +1226,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Defaultní barva BackColor
         /// </summary>
-        protected override Color DefaultBackColor { get { return Skin.ScrollBar.BackColorArea; } }
+        public override Color BackColorDefault { get { return Skin.ScrollBar.BackColorArea; } }
         /// <summary>
         /// Vyvolá událost <see cref="UserDraw"/> pro uživatelské kreslení pozadí ScrollBaru
         /// </summary>
@@ -1255,7 +1255,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Orientation IScrollBarPaintData.Orientation { get { return this.Orientation; } }
         bool IScrollBarPaintData.IsEnabled { get { return this.Is.Enabled; } }
         Rectangle IScrollBarPaintData.ScrollBarBounds { get { return this.ChildItemAllArea.Bounds; } }
-        Color IScrollBarPaintData.ScrollBarBackColor { get { return this.BackColor; } }
+        Color IScrollBarPaintData.ScrollBarBackColor { get { return this.BackColor.Value; } }
         Rectangle IScrollBarPaintData.MinButtonBounds { get { return this.ChildItemMinArrow.Bounds; } }
         GInteractiveState IScrollBarPaintData.MinButtonState { get { return this.ChildItemMinArrow.ItemState; } }
         Rectangle IScrollBarPaintData.DataAreaBounds { get { return this.ChildItemDataArea.Bounds; } }
@@ -1269,7 +1269,6 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveState IScrollBarPaintData.ThumbButtonState { get { return this.ChildItemThumb.ItemState; } }
         Rectangle IScrollBarPaintData.ThumbImageBounds { get { return this.ChildItemCenterThumb.Bounds; } }
         void IScrollBarPaintData.UserDataDraw(Graphics graphics, Rectangle bounds) { this.UserDataDraw(graphics, bounds); }
-
         #endregion
         #endregion
     }
