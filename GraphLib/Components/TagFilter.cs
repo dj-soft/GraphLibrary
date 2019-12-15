@@ -653,7 +653,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda nemá provádět jakýkoli pokus o Refresh nebo Invalidaci, jen má vrátit informaci o svých požadavcích.
         /// </summary>
         /// <returns></returns>
-        private AnimationResult _HeightAnimationTick()
+        private AnimationResult _HeightAnimationTick(AnimationArgs args)
         {
             AnimationResult result = this._HeightAnimationTickRun();
             if (result.HasFlag(AnimationResult.Stop))

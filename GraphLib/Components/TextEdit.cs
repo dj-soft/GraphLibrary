@@ -27,13 +27,13 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftClick(e);
-            this.MouseClickPoint = e.MouseAbsolutePoint;
+            this.CursorIndex = null;                       // Po MouseClick dojde k překreslení TextBoxu, a v metodě Draw se vyvolá FindCursorBounds();
+            this.MouseClickPoint = e.MouseAbsolutePoint;   //  tam se detekuje že není známá pozice kurzoru (CursorIndex = null), ale je známý bod myši (MouseClickPoint)...
         }
-        protected Point? MouseClickPoint;
         #endregion
         #region Klávesnice
         #endregion
-        #region Vykreslení obsahu
+        #region Vykreslení obsahu - základní
         /// <summary>
         /// Zajistí krslení TextBoxu
         /// </summary>
@@ -86,59 +86,12 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawText(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
         {
             string text = this.Text;
-            if (!String.IsNullOrEmpty(text))
-            {
-                if (this.HasFocus)
-                {
-                    RectangleF[] charPoss = GPainter.DrawStringMeasureChars(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
-
-                    Color[] overColors = new Color[] { Color.FromArgb(64, 220, 255, 220), Color.FromArgb(64, 255, 220, 220), Color.FromArgb(64, 220, 220, 255) };
-                    int alpha = 128;
-                    int loval = 160;
-                    int hival = 220;
-                    overColors = new Color[] { Color.FromArgb(alpha, loval, hival, loval), Color.FromArgb(alpha, hival, loval, loval), Color.FromArgb(alpha, loval, loval, hival) };
-                    int idx = 0;
-                    foreach (var charPos in charPoss)
-                    {
-                        Color color = overColors[idx % 3];
-                        e.Graphics.FillRectangle(Skin.Brush(color), charPos);
-                        idx++;
-                    }
-
-                    if (this.MouseClickPoint.HasValue)
-                    {
-                        RectangleF? cursor = FindCursorByPoint(this.MouseClickPoint.Value, charPoss);
-                        if (cursor.HasValue)
-                            e.Graphics.FillRectangle(Brushes.Black, cursor.Value);
-                        Host.AnimationStart(this.ShowCursorTick);
-                    }
-                }
-                else
-                    GPainter.DrawString(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
-            }
-        }
-        protected AnimationResult ShowCursorTick()
-        {
-
-
-            return AnimationResult.Stop;
-        }
-        protected RectangleF? FindCursorByPoint(Point point, RectangleF[] charPoss)
-        {
-            int count = charPoss.Length;
-            float x = point.X;
-            float y = point.Y;
-            for (int i = 0; i < count; i++)
-            {
-                RectangleF pos = charPoss[i];
-                if (x >= pos.X && x < pos.Right)
-                {
-                    if (x < (pos.X + 0.667f * pos.Width))
-                        return new RectangleF(pos.X, pos.Y, 1, pos.Height);
-                    return new RectangleF(pos.Right, pos.Y, 1, pos.Height);
-                }
-            }
-            return null;
+            if (this.HasFocus)
+                // Máme Focus = budeme řešit Kurzor:
+                this.DrawTextFocus(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode);
+            else if (!String.IsNullOrEmpty(text))
+                // Bez Focusu = jen vypíšu text:
+                GPainter.DrawString(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
         }
         /// <summary>
         /// Vykreslí border
@@ -163,7 +116,186 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #region Support pro kreslení obsahu - aktuální barvy
+        #endregion
+        #region Vykreslení textu a kurzoru, na základě stavu editace
+
+        protected void DrawTextFocus(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        {
+            string text = this.Text ?? "";
+            if (text.Length == 0) text = " ";              // Kvůli souřadnicím
+            RectangleF[] charPositions = GPainter.DrawStringMeasureChars(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
+            this.CharacterBounds = CharacterPositionInfo.CreateArray(text, charPositions);
+            this.CursorBounds = this.FindCursorBounds();
+
+            if (this.CursorBounds.HasValue)
+                e.Graphics.FillRectangle(Brushes.Black, this.CursorBounds.Value);
+
+            /*
+
+            Color[] overColors = new Color[] { Color.FromArgb(64, 220, 255, 220), Color.FromArgb(64, 255, 220, 220), Color.FromArgb(64, 220, 220, 255) };
+            int alpha = 128;
+            int loval = 160;
+            int hival = 220;
+            overColors = new Color[] { Color.FromArgb(alpha, loval, hival, loval), Color.FromArgb(alpha, hival, loval, loval), Color.FromArgb(alpha, loval, loval, hival) };
+            int idx = 0;
+            foreach (var charPos in charPositions)
+            {
+                Color color = overColors[idx % 3];
+                e.Graphics.FillRectangle(Skin.Brush(color), charPos);
+                idx++;
+            }
+
+            if (this.MouseClickPoint.HasValue)
+            {
+                RectangleF? cursor = FindCursorByPoint(this.MouseClickPoint.Value, charPositions);
+                if (cursor.HasValue)
+                    e.Graphics.FillRectangle(Brushes.Black, cursor.Value);
+                Host.AnimationStart(this.ShowCursorTick);
+            }
+            */
+        }
+        protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusEnter(e);
+        }
+        protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusLeave(e);
+        }
+
+        protected AnimationResult ShowCursorTick(AnimationArgs args)
+        {
+
+
+            return AnimationResult.Stop;
+        }
+       
+        protected Rectangle? FindCursorBounds()
+        {
+            int? cursorIndex = this.CursorIndex;
+            if (cursorIndex == null && this.MouseClickPoint.HasValue)
+            {
+                this.CursorIndex = this.FindCursorIndex(this.MouseClickPoint.Value);
+                cursorIndex = this.CursorIndex;
+            }
+            if (!cursorIndex.HasValue) return null;
+            int charLength = (this.CharacterBounds == null ? 0 : this.CharacterBounds.Length);
+            if (charLength <= 0) return null;
+            CharacterPositionInfo charInfo;
+            if (cursorIndex.Value < charLength)
+            {
+                charInfo = this.CharacterBounds[cursorIndex.Value];
+                return new Rectangle(charInfo.Bounds.X, charInfo.Bounds.Y, 1, charInfo.Bounds.Height);
+            }
+            charInfo = this.CharacterBounds[charLength - 1];
+            return new Rectangle(charInfo.Bounds.Right, charInfo.Bounds.Y, 1, charInfo.Bounds.Height);
+        }
+        /// <summary>
+        /// Vrátí pozici kurzoru odpovídající danému absolutnímu bodu
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        protected int FindCursorIndex(Point absolutePoint)
+        {
+            if (this.CharacterBounds == null || this.CharacterBounds.Length == 0) return 0;
+
+            int count = this.CharacterBounds.Length;
+            float x = absolutePoint.X;
+            float y = absolutePoint.Y;
+            int? found = null;
+            for (int i = 0; i < count; i++)
+            {
+                Rectangle charBounds = this.CharacterBounds[i].Bounds;
+                if (y < charBounds.Y && i == 0) { found = i; break; }     // Myší klik byl nad prvním řádkem => pozice kurzoru je na prvním znaku
+                if (y >= charBounds.Bottom) continue;                     // Myší klik byl pod daným znakem => budeme hledat dál
+                if (x < charBounds.X) { found = i; break; }               // Myší klik byl vlevo od aktuálního znaku => pozice kurzoru je na tomto znaku
+                if (x >= charBounds.Right) continue;                      // Myší klik byl vpravo od aktuálního znaku => budeme hledat dál
+                if (x <= (charBounds.X + (charBounds.Width / 2)))         // Myší klik byl v první polovině (na ose X) aktuálního znaku:
+                    found = i;
+                else
+                    found = i + 1;
+                break;
+            }
+
+            return (found.HasValue ? found.Value : 0);
+        }
+        /// <summary>
+        /// Absolutní souřadnice myši, kde bylo kliknuto
+        /// </summary>
+        protected Point? MouseClickPoint { get; set; }
+        /// <summary>
+        /// Index pozice kurzoru.
+        /// Hodnota null = dosud neurčeno.
+        /// Hodnota 0 = před prvním znakem; hodnota za poslední pozicí <see cref="CharacterBounds"/> je přípustná.
+        /// </summary>
+        protected int? CursorIndex { get; set; }
+        /// <summary>
+        /// Souřadnice kurzoru
+        /// </summary>
+        protected Rectangle? CursorBounds { get; set; }
+        /// <summary>
+        /// Relativní souřadnice jednotlivých znaků
+        /// </summary>
+        protected CharacterPositionInfo[] CharacterBounds { get; set; }
+        /// <summary>
+        /// Třída, která udržuje informace o každém jednom znaku v rámci textboxu (index, znak, souřadnice)
+        /// </summary>
+        protected class CharacterPositionInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="index"></param>
+            /// <param name="content"></param>
+            /// <param name="bounds"></param>
+            public CharacterPositionInfo(int index, char content, Rectangle bounds)
+            {
+                this.Index = index;
+                this.Content = content;
+                this.Bounds = bounds;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"[{Index}] : '{Content}'; Bounds: ({Bounds.X},{Bounds.X},{Bounds.Width},{Bounds.Height})";
+            }
+            /// <summary>
+            /// Index znaku v textu (počínaje 0)
+            /// </summary>
+            public int Index { get; private set; }
+            /// <summary>
+            /// Obsaz = znak
+            /// </summary>
+            public char Content { get; private set; }
+            /// <summary>
+            /// Souřadnice tohoto znaku, v absolutní hodnotě
+            /// </summary>
+            public Rectangle Bounds { get; private set; }
+            /// <summary>
+            /// Vytvoří a vrátí pole <see cref="CharacterPositionInfo"/> pro zadaný text a souřadnice znaků
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="charPositions"></param>
+            /// <returns></returns>
+            internal static CharacterPositionInfo[] CreateArray(string text, RectangleF[] charPositions)
+            {
+                char[] items = text.ToCharArray();
+                int length = (items.Length < charPositions.Length ? items.Length : charPositions.Length);
+                CharacterPositionInfo[] result = new CharacterPositionInfo[length];
+                for (int i = 0; i < length; i++)
+                {
+                    char item = items[i];
+                    RectangleF charPosition = charPositions[i];
+                    result[i] = new CharacterPositionInfo(i, item, Rectangle.Ceiling(charPosition));
+                }
+                return result;
+            }
+        }
+        #endregion
+        #region Support pro kreslení obsahu - aktuální barvy (Inner, Border, Back, Fore) podle stavu interaktivity
         /// <summary>
         /// Vrací souřadnice vnitřního prostoru po odečtení prostoru pro Border (0-1-2 pixely)
         /// </summary>
@@ -250,7 +382,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 return -0.15f;
             }
         }
-        #endregion
         #endregion
         #region Public členové
         /// <summary>

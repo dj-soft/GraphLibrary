@@ -1511,16 +1511,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _InteractiveDrawRun()
         {
-            DrawRequest request = new DrawRequest(this._RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
-            request.Fill(this, this.ItemsList, this.PendingFullDraw, true);
-            if (request.NeedAnyDraw)
+            DrawRequest drawRequest = new DrawRequest(this._RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, this._ProgressItem);
+            drawRequest.Fill(this, this.ItemsList, this.PendingFullDraw, true);
+            if (drawRequest.NeedAnyDraw)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
                 {
                     try
                     {
                         this._DrawState = InteractiveDrawState.InteractiveRepaint;
-                        this.Draw(request);
+                        this.Draw(drawRequest);
                     }
                     finally
                     {
@@ -3203,24 +3203,24 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this._BackThreadProcess = true;
 
-                bool needDraw = false;
-                bool drawItems = false;
+                AnimationRequest animationRequest = new AnimationRequest();
 
                 try
                 {
                     // Zeptáme se ToolTipu, zda má potřebu nějaké animace:
                     if (this._ToolTipNeedTick)
                     {   // Pošleme do ToolTipu Tick, on nám vrátí true, pokud potřebuje překreslit:
-                        bool needDrawToolTip = this._ToolTip.AnimateTick();
-                        needDraw |= needDrawToolTip;
+                        animationRequest.NeedDrawToolTip = this._ToolTip.AnimateTick();
                     }
 
                     // Jakákoli jiná animace:
                     if (this._AnimationNeedTick)
                     {
                         AnimationArgs args = this._AnimatorTick();
-                        needDraw |= needDrawAnimation;
-                        drawItems = needDrawAnimation;
+                        if (args.RedrawAll)
+                            animationRequest.NeedDrawAllItems = true;
+                        if (args.RedrawItemsCount > 0)
+                            animationRequest.ReDrawItems = args.RedrawItems;
                     }
                 }
                 catch (Exception) { }
@@ -3229,8 +3229,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._BackThreadTrySuspend();
 
                 // Kreslení:
-                if (needDraw)
-                    this._BackThreadRunDraw(drawItems);
+                if (animationRequest.IsValid)
+                    this._BackThreadRunDraw(animationRequest);
 
             }
             finally
@@ -3246,30 +3246,32 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vyvolá překreslení tohoto controlu, a to buď kompletně celý objekt anebo pouze vrstu ToolTip, Progress Animace.
         /// Tato metoda převoává GUI thread, může se tedy spouštět z threadu Background.
         /// </summary>
-        /// <param name="drawItems">true = vykreslit i běžné prvky (=naplnit request pro kreslení)</param>
-        private void _BackThreadRunDraw(bool drawItems)
+        /// <param name="animationRequest"></param>
+        private void _BackThreadRunDraw(AnimationRequest animationRequest)
         {
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action<bool>(this._BackThreadRunDrawGui), drawItems);
+                this.BeginInvoke(new Action<AnimationRequest>(this._BackThreadRunDrawGui), animationRequest);
             else
-                this._BackThreadRunDrawGui(drawItems);
+                this._BackThreadRunDrawGui(animationRequest);
         }
         /// <summary>
         /// Vyvolá překreslení tohoto controlu, a to buď kompletně celý objekt anebo pouze vrstu ToolTip, Progress Animace.
         /// Běží v GUI threadu.
         /// </summary>
-        /// <param name="drawItems">true = vykreslit i běžné prvky (=naplnit request pro kreslení)</param>
-        private void _BackThreadRunDrawGui(bool drawItems)
+        /// <param name="animationRequest"></param>
+        private void _BackThreadRunDrawGui(AnimationRequest animationRequest)
         {
             if (this._BackThreadRunDrawGuiProcess) return;
             try
             {
                 this._BackThreadRunDrawGuiProcess = true;
-                DrawRequest request = new DrawRequest(this.RepaintAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, null);
-                if (drawItems)
-                    request.Fill(this, this.ItemsList, this.RepaintAllItems, false);
-                request.InteractiveMode = true;
-                this.Draw(request);
+                DrawRequest drawRequest = new DrawRequest(animationRequest.NeedDrawAllItems, this._NeedDrawFrameBounds, this._MousePaintNeedDraw, this._ToolTip, null);
+                if (animationRequest.NeedDrawAllItems)
+                    drawRequest.Fill(this, this.ItemsList, true, false);
+                else if (animationRequest.HasItems)
+                    drawRequest.Fill(this, this.ItemsList, false, false);  // V metodě pro myší redraw se dává poslední argument (interactive) = true...
+                drawRequest.InteractiveMode = true;
+                this.Draw(drawRequest);
             }
             catch (Exception) { }
             finally
@@ -3278,7 +3280,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// true = právě probíhá výkon v metodě <see cref="_BackThreadRunDrawGui(bool)"/>, nebudeme spouštět její další instanci
+        /// true = právě probíhá výkon v metodě <see cref="_BackThreadRunDrawGui(AnimationRequest)"/>, nebudeme spouštět její další instanci
         /// </summary>
         private bool _BackThreadRunDrawGuiProcess;
         /// <summary>
@@ -3302,6 +3304,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// true = Back thread has been exited
         /// </summary>
         private bool _BackThreadStop;
+        /// <summary>
+        /// Nastřádaná data pro animační Draw
+        /// </summary>
+        private class AnimationRequest
+        {
+            public bool NeedDrawToolTip { get; set; }
+            public bool NeedDrawAllItems { get; set; }
+            public IInteractiveItem[] ReDrawItems { get; set; }
+            public bool HasItems { get { return (this.ReDrawItems != null && this.ReDrawItems.Length > 0); } }
+            public bool IsValid { get { return (this.NeedDrawToolTip || this.NeedDrawAllItems || this.HasItems); } }
+        }
         #endregion
         #region Animace
         /// <summary>
@@ -3331,9 +3344,9 @@ namespace Asol.Tools.WorkScheduler.Components
             for (int i = 0; i < this._AnimatorTickList.Count; i++)
             {
                 AnimatorInfo animatorInfo = this._AnimatorTickList[i];
-                AnimationResult result = ((animatorInfo != null && animatorInfo.Action != null) ? animatorInfo.Action(args) : AnimationResult.Stop);
+                AnimationResult result = ((animatorInfo != null) ? animatorInfo.DoTick(args) : AnimationResult.Stop);  // Defenzivně = Stop
                 if (result.HasFlag(AnimationResult.DrawAll) && !args.RedrawAll)
-                    // Daná animační akce vyžaduje Draw => zajistíme to:
+                    // Daná animační akce vyžaduje DrawAll => zajistíme to:
                     args.RedrawAll = true;
                 if (result.HasFlag(AnimationResult.Stop))
                 {   // Daná animační akce již skončila => odeberu si ji ze svého seznamu:
@@ -3354,15 +3367,41 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pole aktivních animátorů
         /// </summary>
         private List<AnimatorInfo> _AnimatorTickList;
+        /// <summary>
+        /// Třída zachycující data jednoho žadatele o AnimationTick
+        /// </summary>
         private class AnimatorInfo
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="animatorAction"></param>
             public AnimatorInfo(Func<AnimationArgs, AnimationResult> animatorAction)
             {
                 this.Action = animatorAction;
-                this.AnimationStep = 0L;
+                this.TickCount = 0L;
             }
+            /// <summary>
+            /// Akce animátora
+            /// </summary>
             public Func<AnimationArgs, AnimationResult> Action { get; private set; }
-            public long AnimationStep { get; set; }
+            /// <summary>
+            /// Počet dosud odeslaných Ticků, před vyvoláním <see cref="Action"/> se navýší o 1
+            /// </summary>
+            public long TickCount { get; set; }
+            /// <summary>
+            /// Metoda provede jeden Tick animátoru
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            internal AnimationResult DoTick(AnimationArgs args)
+            {
+                if (this.Action == null) return AnimationResult.Stop;
+                args.TickCount = this.TickCount + 1;
+                AnimationResult result = this.Action(args);              // Animační metoda může hodnotu TickCount změnit!
+                this.TickCount = args.TickCount;
+                return result;
+            }
         }
         #endregion
         #region Blokování GUI, vykreslení blokovaného GUI; podpora pro zavírání okna
@@ -3502,12 +3541,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda animace jednoho kroku v animátoru BlockGui
         /// </summary>
         /// <returns></returns>
-        protected AnimationResult BlockGuiAnimatorTick()
+        protected AnimationResult BlockGuiAnimatorTick(AnimationArgs args)
         {
             AnimationResult result = this._BlockGuiAnimatorTick();
             this.BlockGuiAnimatorRunning = (result != AnimationResult.Stop);
             return result;
         }
+        /// <summary>
+        /// Fyzické provedení jednoho kroku animace BlockGui
+        /// </summary>
+        /// <returns></returns>
         private AnimationResult _BlockGuiAnimatorTick()
         {
             if (this.BlockGuiAnimator == null) return AnimationResult.Stop;    // Chybový stav
@@ -3844,8 +3887,9 @@ namespace Asol.Tools.WorkScheduler.Components
         void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }
         #endregion
     }
+    #region class AnimationArgs : Data pro jeden animační krok v jednom objektu
     /// <summary>
-    /// Data pro jeden animační krok v jednom objektu
+    /// AnimationArgs : Data pro jeden animační krok v jednom objektu
     /// </summary>
     public class AnimationArgs
     {
@@ -3858,7 +3902,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this._RedrawItems = new Dictionary<uint, IInteractiveItem>();
         }
         /// <summary>
-        /// Požadavek na překreslení celého controlu
+        /// Počet uplynulých ticků v rámci jednoho aktuálního animátoru.
+        /// Systém tuto hodnotu udržuje platnou (tj. před odesláním ticku tuto hodnotu navýší), a do každého animátoru posílá odpovídající hodnotu.
+        /// Pokud animátor hodnotu změní, bude uložena do příštího ticku, před ním bude zase inkremetnovaná a odeslaná do animátoru.
+        /// </summary>
+        public long TickCount { get; set; }
+        /// <summary>
+        /// Požadavek na překreslení celého controlu. Lze nastavit pouze na true; nelze shodit na false.
         /// </summary>
         public bool RedrawAll
         {
@@ -3867,12 +3917,16 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private bool _RedrawAll;
         /// <summary>
+        /// Počet prvků k překreslení = souhrn ze všech animací
+        /// </summary>
+        public int RedrawItemsCount { get { return this._RedrawItems.Count; } }
+        /// <summary>
         /// Pole prvků, které se mají překreslit jako výsledek animačního kroku
         /// </summary>
         public IInteractiveItem[] RedrawItems { get { return this._RedrawItems.Values.ToArray(); } }
         private Dictionary<uint, IInteractiveItem> _RedrawItems;
         /// <summary>
-        /// Přidá prvek k překreslení
+        /// Přidá jeden daný prvek do pole prvků k překreslení
         /// </summary>
         /// <param name="item"></param>
         public void AddRedrawItem(IInteractiveItem item)
@@ -3881,6 +3935,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._RedrawItems.Add(item.Id, item);
         }
     }
+    #endregion
     /// <summary>
     /// Stavy procesu Drag na základě pohybu myši a stavu controlu
     /// </summary>
