@@ -55,8 +55,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         protected override void OnSizeChanged(EventArgs e)
         {
-            base.OnSizeChanged(e);
-            this.CalculateLayout();
+            try
+            {   // Tuhle metodu volá Windows podle potřeby, ...
+                this.CalculateLayout();          // Nejdříve rozmístím vizuální prvky...
+                base.OnSizeChanged(e);           //  a tady se provádí Draw
+            }
+            catch (Exception exc)
+            {   //  ... a jakákoli chyba by zbořila celou aplikaci:
+                Application.App.ShowError(exc);
+            }
         }
         #endregion
         #region Po prvním vykreslení
