@@ -257,11 +257,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnSizeChanged(EventArgs e)
         {
-            base.OnSizeChanged(e);               // WinForm kód: zde proběhnou volání eventhandlerů Resize i SizeChanged (v tomto pořadí)
+            try
+            {   // Tuhle metodu volá Windows podle potřeby, ...
+                base.OnSizeChanged(e);               // WinForm kód: zde proběhnou volání eventhandlerů Resize i SizeChanged (v tomto pořadí)
 
-            this._OnResizeControl();
-            this._ResizeLayers(false);
-            this.Draw();
+                this._OnResizeControl();
+                this._ResizeLayers(false);
+                this.Draw();
+            }
+            catch (Exception exc)
+            {   //  ... a jakákoli chyba by zbořila celou aplikaci:
+                Application.App.ShowError(exc);
+            }
         }
         /// <summary>
         /// Vykreslení controlu
@@ -297,9 +304,16 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {
-                this.Draw();
-                this.Invalidate();
-                base.Refresh();
+                try
+                {   // Tuhle metodu volá Windows podle potřeby, ...
+                    this.Draw();
+                    this.Invalidate();
+                    base.Refresh();
+                }
+                catch (Exception exc)
+                {   //  ... a jakákoli chyba by zbořila celou aplikaci:
+                    Application.App.ShowError(exc);
+                }
             }
         }
         #endregion

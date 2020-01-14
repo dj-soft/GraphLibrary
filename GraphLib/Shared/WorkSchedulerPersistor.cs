@@ -1030,6 +1030,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         #endregion
         #region Nullable types
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string Int32NToString(object value)
         {
             Int32? v = (Int32?)value;
@@ -1047,6 +1052,29 @@ namespace Noris.LCS.Base.WorkScheduler
             Int32 value;
             if (!Int32.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Int32?)null;
             return (Int32?)value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string SingleNToString(object value)
+        {
+            Single? v = (Single?)value;
+            return (v.HasValue ? SingleToString(v.Value) : "null");
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToSingleN(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Single?)null;
+            if (text.ToLower().Trim() == "null") return (Single?)null;
+            Single value;
+            if (!Single.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Single?)null;
+            return (Single?)value;
         }
         #endregion
         #region Sql Types (removed)

@@ -3200,10 +3200,8 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             get
             {
-                float? height = this.Height;
-                string h = (height.HasValue ? (((height % 1f) == 0f) ? ((int)height).ToString() : height.ToString()) : "N");
                 string result = ((int)this.BehaviorMode).ToString() + ";" +
-                                h + ";" +
+                                ConvertToSerial(this.Height) + ";" +
                                 this.Layer.ToString() + ";" +
                                 this.Level.ToString() + ";" +
                                 this.Order.ToString();
@@ -4393,6 +4391,26 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
         #region Support pro serializaci - statické konvertory
         /// <summary>
+        /// Vrátí string, který reprezentuje tuto hodnotu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ConvertToSerial(float value)
+        {
+            if ((value % 1) == 0f) return Convertor.Int32ToString((int)value);
+            return Convertor.SingleToString(value);
+        }
+        /// <summary>
+        /// Vrátí string, který reprezentuje tuto hodnotu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ConvertToSerial(float? value)
+        {
+            if (!value.HasValue) return "N";
+            return ConvertToSerial(value.Value);
+        }
+        /// <summary>
         /// Metoda vrací Int32 hodnotu z dané buňky daného pole
         /// </summary>
         /// <param name="items"></param>
@@ -4400,10 +4418,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public static int ConvertToInt32(string[] items, int index)
         {
-            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return 0;
-            int value;
-            if (!Int32.TryParse(items[index], out value)) return 0;
-            return value;
+            if (items == null || index < 0 || index >= items.Length) return 0;
+            string text = items[index];
+            if (String.IsNullOrEmpty(text) || text == "N") return 0;
+            return (Int32)Convertor.StringToInt32(text);
         }
         /// <summary>
         /// Metoda vrací Int32? hodnotu z dané buňky daného pole
@@ -4413,10 +4431,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public static int? ConvertToInt32N(string[] items, int index)
         {
-            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return null;
-            int value;
-            if (!Int32.TryParse(items[index], out value)) return null;
-            return value;
+            if (items == null || index < 0 || index >= items.Length) return null;
+            string text = items[index];
+            if (String.IsNullOrEmpty(text) || text == "N") return null;
+            return (Int32?)Convertor.StringToInt32N(text);
         }
         /// <summary>
         /// Metoda vrací Single hodnotu z dané buňky daného pole
@@ -4426,10 +4444,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public static float ConvertToSingle(string[] items, int index)
         {
-            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return 0f;
-            float value;
-            if (!Single.TryParse(items[index], out value)) return 0f;
-            return value;
+            if (items == null || index < 0 || index >= items.Length) return 0f;
+            string text = items[index];
+            if (String.IsNullOrEmpty(text) || text == "N") return 0f;
+            return (float)Convertor.StringToSingle(text);
         }
         /// <summary>
         /// Metoda vrací Single? hodnotu z dané buňky daného pole
@@ -4439,11 +4457,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public static float? ConvertToSingleN(string[] items, int index)
         {
-            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return null;
-            if (items[index] == "N") return null;
-            float value;
-            if (!Single.TryParse(items[index], out value)) return null;
-            return value;
+            if (items == null || index < 0 || index >= items.Length) return null;
+            string text = items[index];
+            if (String.IsNullOrEmpty(text) || text == "N") return null;
+            return (float?)Convertor.StringToSingleN(text);
         }
         #endregion
         #region Implementace IGuiBase
