@@ -220,6 +220,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void CreateProductOperations(ProductOrder productOrder, ProductTpv tpv, decimal qty)
         {
             int line = 0;
+            Color[] cols = CreateBackColors();
             string tab = "\t";
             string finalToolTip = $@"Operace:{tab}KONTROLA FINÁLNÍ
 Podmínky:{tab}Denní světlo
@@ -228,49 +229,79 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             switch (tpv)
             {
                 case ProductTpv.Simple:
-                    CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
-                    CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0);
-                    CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240);
-                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 15, 0);
+                    CreateProductOperation(productOrder, ++line, cols[0], "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
+                    CreateProductOperation(productOrder, ++line, cols[8], "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0);
+                    CreateProductOperation(productOrder, ++line, cols[10], "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240);
+                    CreateProductOperation(productOrder, ++line, cols[14], "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 15, 0);
                     break;
 
                 case ProductTpv.Standard:
-                    CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
-                    CreateProductOperation(productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20));
-                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5));
-                    CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360);
-                    CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
-                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "O", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, cols[0], "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60));
+                    CreateProductOperation(productOrder, ++line, cols[7], "Broušení hran", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(20));
+                    CreateProductOperation(productOrder, ++line, cols[5], "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 15, 15, 30, Pbb(5));
+                    CreateProductOperation(productOrder, ++line, cols[2], "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0);
+                    CreateProductOperation(productOrder, ++line, cols[8], "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360);
+                    CreateProductOperation(productOrder, ++line, cols[10], "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
+                    CreateProductOperation(productOrder, ++line, cols[14], "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", finalToolTip, WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Luxus:
-                    CreateProductOperation(productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, "D", false, 30, 25, 45, Pbb(70));
-                    CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50));
-                    CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40));
-                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30));
-                    CreateProductOperation(productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20));
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10));
-                    CreateProductOperation(productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0);
-                    CreateProductOperation(productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
-                    CreateProductOperation(productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5);
-                    CreateProductOperation(productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0);
-                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "O", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, cols[0], "Řez délky", "Přeříznout", WP_PILA, qty, "D", false, 30, 25, 45, Pbb(70));
+                    CreateProductOperation(productOrder, ++line, cols[7], "Brousit hrany", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 45, Pbb(50));
+                    CreateProductOperation(productOrder, ++line, cols[7], "Brousit povrch", "Zabrousit", WP_DILN, qty, "", false, 0, 20, 30, Pbb(40));
+                    CreateProductOperation(productOrder, ++line, cols[5], "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, "", false, 30, 15, 45, Pbb(30));
+                    CreateProductOperation(productOrder, ++line, cols[2], "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 45, 0, Pbb(20));
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, "", false, 0, 30, 0, Pbb(10));
+                    CreateProductOperation(productOrder, ++line, cols[8], "Klížit celek", "Sklížit díly", WP_DILN, qty, "K", false, 45, 60, 360);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, "", false, 0, 30, 0);
+                    CreateProductOperation(productOrder, ++line, cols[10], "Lakovat základ", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240);
+                    CreateProductOperation(productOrder, ++line, cols[7], "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5);
+                    CreateProductOperation(productOrder, ++line, cols[10], "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0);
+                    CreateProductOperation(productOrder, ++line, cols[14], "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", finalToolTip, WP_KONT, qty, "O", false, 30, 20, 0);
                     break;
 
                 case ProductTpv.Cooperation:
-                    CreateProductOperation(productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
-                    CreateProductOperation(productOrder, ++line, Color.BlueViolet, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, Color.DimGray, "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, cols[13], "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
+                    CreateProductOperation(productOrder, ++line, cols[14], "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
+                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 20, 0);
                     break;
 
             }
+        }
+        /// <summary>
+        /// Vytvoří barevnou paletu
+        /// </summary>
+        /// <returns></returns>
+        protected Color[] CreateBackColors()
+        {
+            int f0 = 160;
+            int f1 = 190;
+            int f2 = 220;
+            Color[] colors = new Color[]
+                {
+                    Color.FromArgb(f0, f1, f2),
+                    Color.FromArgb(f1, f2, f1),
+                    Color.FromArgb(f0, f1, f2),
+                    Color.FromArgb(f1, f2, f1),
+                    Color.FromArgb(f0, f2, f1),
+                    Color.FromArgb(f1, f1, f2),
+                    Color.FromArgb(f0, f2, f1),
+                    Color.FromArgb(f1, f2, f2),
+                    Color.FromArgb(f2, f0, f2),
+                    Color.FromArgb(f2, f2, f0),
+                    Color.FromArgb(f2, f0, f2),
+                    Color.FromArgb(f2, f2, f0),
+                    Color.FromArgb(f2, f2, f0),
+                    Color.FromArgb(f2, f0, f2),
+                    Color.FromArgb(f2, f2, f0),
+                    Color.FromArgb(f2, f1, f2)
+                };
+            return colors;
         }
         /// <summary>
         /// Vytvoří a vrátí jednu operaci pro dané zadání.
@@ -292,7 +323,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         protected ProductOperation CreateProductOperation(ProductOrder productOrder, int line, Color backColor, string name, string toolTip,
             string workPlace, decimal qty, string components, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
         {
-            Color textColor = (((line % 4) == 0) ? Color.DarkViolet : Color.Black);
+            Color textColor = (((line % 4) == 0) ? Color.IndianRed : Color.Black);
             float height = CreateOperationHeight(isFragment);
             ProductOperation operation = new ProductOperation(this)
             {
