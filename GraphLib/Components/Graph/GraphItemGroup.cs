@@ -307,6 +307,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public Color? BackColor { get { return this._FirstItem.BackColor; } }
         /// <summary>
+        /// Barva textu (písma).
+        /// </summary>
+        public Color? TextColor { get { return this._FirstItem.TextColor; } }
+        /// <summary>
         /// Barva linek ohraničení prvku.
         /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// </summary>
@@ -796,6 +800,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         string ITimeGraphItem.Text { get { return this._FirstItem.Text; } }
         string ITimeGraphItem.ToolTip { get { return this._FirstItem.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.TextColor { get { return this.TextColor; } }
         Color? ITimeGraphItem.HatchColor { get { return this._FirstItem.HatchColor; } }
         Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._FirstItem.BackStyle; } }

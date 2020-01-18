@@ -5540,6 +5540,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
         // Následující properties se načítají i ze Skinu:
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
+        Color? ITimeGraphItem.TextColor { get { return this._GuiGraphItem.TextColor; } }
         Color? ITimeGraphItem.HatchColor { get { return this._GuiGraphItem.HatchColor; } }
         Color? ITimeGraphItem.LineColor { get { return this._GuiGraphItem.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._GuiGraphItem.BackStyle; } }

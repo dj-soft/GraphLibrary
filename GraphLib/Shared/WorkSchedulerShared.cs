@@ -3080,6 +3080,13 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? BackColor { get { return this.SkinCurrent.BackColor ?? this.SkinDefault.BackColor; } set { this.SkinCurrent.BackColor = value; } }
         /// <summary>
+        /// Barva textu (písma).
+        /// Pokud bude null, pak se barva textu odvodí jako kontrastní barva (černá/bílá) k barvě pozadí <see cref="BackColor"/> 
+        /// nebo k barvě Ratio <see cref="RatioBeginBackColor"/>.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public Color? TextColor { get { return this.SkinCurrent.TextColor ?? this.SkinDefault.TextColor; } set { this.SkinCurrent.TextColor = value; } }
+        /// <summary>
         /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
         /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
         /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
@@ -3336,6 +3343,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
+        /// Barva textu (písma)
+        /// </summary>
+        public Color? TextColor { get; set; }
+        /// <summary>
         /// Styl vzorku kresleného v pozadí.
         /// null = Solid.
         /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
@@ -3429,6 +3440,7 @@ namespace Noris.LCS.Base.WorkScheduler
             text += ((this.Key.HasValue) ? "Key: " + this.Key.Value.ToString() + "; " : "DefaultSkin; ");
             if (this.IsVisible.HasValue) text += "IsVisible: " + this.IsVisible.Value.ToString() + "; ";
             if (this.BackColor.HasValue) text += "BackColor: " + this.BackColor.Value.ToString() + "; ";
+            if (this.TextColor.HasValue) text += "TextColor: " + this.TextColor.Value.ToString() + "; ";
             if (this.BackStyle.HasValue) text += "BackStyle: " + this.BackStyle.Value.ToString() + "; ";
             if (this.HatchColor.HasValue) text += "HatchColor: " + this.HatchColor.Value.ToString() + "; ";
             if (this.ImageBegin != null && !String.IsNullOrEmpty(this.ImageBegin)) text += "ImageBegin: " + this.ImageBegin.ImageFile + "; ";

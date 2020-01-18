@@ -2536,6 +2536,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         Color? BackColor { get; }
         /// <summary>
+        /// Barva písma
+        /// </summary>
+        Color? TextColor { get; }
+        /// <summary>
         /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
         /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
         /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.

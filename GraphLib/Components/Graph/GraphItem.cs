@@ -179,6 +179,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected Color? ItemBackColor { get { return this._Owner.BackColor; } }
         /// <summary>
+        /// Barva textu (písma).
+        /// </summary>
+        protected Color? ItemTextColor { get { return this._Owner.TextColor; } }
+        /// <summary>
         /// Barva šrafování pozadí prvku grafu, načtená z <see cref="ITimeGraphItem.HatchColor"/>. 
         /// Může být null.
         /// </summary>
@@ -828,15 +832,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="fontInfo"></param>
         internal void DrawText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, string text, FontInfo fontInfo)
         {
-            Color? itemBackColor = this.ItemBackColor;
-            if (!itemBackColor.HasValue)
-                itemBackColor = this.RatioBeginBackColor;
-            if (!itemBackColor.HasValue)
-                itemBackColor = Skin.Graph.BackColor;
-            Color foreColor = itemBackColor.Value.Contrast();
+            Color textColor = this.TextColorCurrent;
             Rectangle boundsText = boundsAbsolute;
             boundsText.Y = boundsText.Y;
-            GPainter.DrawString(e.Graphics, text, fontInfo, boundsText, ContentAlignment.MiddleCenter, foreColor);
+            GPainter.DrawString(e.Graphics, text, fontInfo, boundsText, ContentAlignment.MiddleCenter, textColor);
+        }
+        /// <summary>
+        /// Barva textu (písma) získaná dle pravidel z prvku
+        /// </summary>
+        private Color TextColorCurrent
+        {
+            get
+            {
+                if (this.ItemTextColor.HasValue) return this.ItemTextColor.Value;
+                Color backColor = this.ItemBackColor ?? this.RatioBeginBackColor ?? Skin.Graph.BackColor;
+                return backColor.Contrast();
+            }
         }
         #endregion
         #region Fyzické kreslení konkrétního prvku
