@@ -292,6 +292,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         protected ProductOperation CreateProductOperation(ProductOrder productOrder, int line, Color backColor, string name, string toolTip,
             string workPlace, decimal qty, string components, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
         {
+            Color textColor = (((line % 4) == 0) ? Color.DarkViolet : Color.Black);
             float height = CreateOperationHeight(isFragment);
             ProductOperation operation = new ProductOperation(this)
             {
@@ -301,6 +302,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Name = name,
                 IsFixed = isFixed,
                 BackColor = backColor,
+                TextColor = textColor,
                 Qty = qty,
                 Height = height,
                 WorkPlace = workPlace,
@@ -3079,6 +3081,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         {
             this.Height = 1f;
             this.BackColor = Color.FromArgb(64, 64, 160);
+            this.TextColor = Color.FromArgb(32, 0, 0);
             this.StructureList = new List<ProductStructure>();
             this.WorkUnitDict = new Dictionary<GuiId, WorkUnit>();
         }
@@ -3111,6 +3114,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         public GuiTimeRange TimeTAc { get; set; }
         public GuiTimeRange TimeTEc { get; set; }
         public Color BackColor { get; set; }
+        public Color? TextColor { get; set; }
         /// <summary>
         /// Obsahuje pole všech <see cref="GuiId"/>, které spadají do této Operace VP: samotná Operace, a její komponenty
         /// </summary>
@@ -3154,6 +3158,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 ItemId = this.RecordGid,
                 GroupId = this.ProductOrder?.RecordGid,
                 BackColor = this.BackColor,
+                TextColor = this.TextColor,
                 BehaviorMode = GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.ShowCaptionNone,
                 DataId = this.RecordGid,
                 Text = "",           // Grafický prvek za operaci se zobrazuje v grafu OnBackground, a tam nechceme mít texty!!!
@@ -3174,9 +3179,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             if (!(direction == Direction.Positive || direction == Direction.Negative))
                 throw new Asol.Tools.WorkScheduler.Application.GraphLibCodeException("Směr plánu musí být pouze Positive nebo Negative.");
 
-            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f));
-            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TAc, this.BackColor);
-            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f));
+            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f), this.TextColor);
+            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TAc, this.BackColor, this.TextColor);
+            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f), this.TextColor);
             this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
         }
         /// <summary>
@@ -3188,7 +3193,8 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="person"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
-        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor)
+        /// <param name="textColor"></param>
+        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor, Color? textColor)
         {
             if (workplace == null || time.Ticks <= 0L) return new GuiTimeRange(flowTime, flowTime);
 
@@ -3202,7 +3208,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 for (int t = 0; t < 25; t++)         // jenom Timeout
                 {
                     if (time.Ticks <= 0L) break;     // Je hotovo.
-                    bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref time, backColor);
+                    bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref time, backColor, textColor);
                     if (!isPlanned) break;           // Nejde to.
                 }
                 if (time.Ticks <= 0L) break;         // Je hotovo.
@@ -3226,8 +3232,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="planUnits"></param>
         /// <param name="needTime"></param>
         /// <param name="backColor"></param>
+        /// <param name="textColor"></param>
         /// <returns></returns>
-        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor)
+        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor, Color? textColor)
         {
             // Provedu přípravu pracovních časů pro každou PlanUnitC tak, aby její CurrentWorkTime začínal v flowTime nebo později:
             foreach (PlanUnitC planUnit in planUnits)
@@ -3278,7 +3285,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             // Vygenerujeme pracovní časy do odpovídajících Kapacitních jednotek:
             GuiTimeRange workTimeRange = new GuiTimeRange(begin, end);
             foreach (PlanUnitC workingUnit in workingUnits)
-                workingUnit.AddUnitTime(this.CreateUnitTime(workingUnit, workTimeRange, backColor));
+                workingUnit.AddUnitTime(this.CreateUnitTime(workingUnit, workTimeRange, backColor, textColor));
 
             // Řešíme čas celé fáze (phaseBegin - phaseEnd), a posun flowTime - a to podle směru plánu:
             switch (direction)
@@ -3303,8 +3310,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="planUnitC"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
+        /// <param name="textColor"></param>
         /// <returns></returns>
-        protected WorkUnit CreateUnitTime(PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
+        protected WorkUnit CreateUnitTime(PlanUnitC planUnitC, GuiTimeRange time, Color backColor, Color? textColor)
         {
             WorkUnit workUnit = new WorkUnit(this.DataSource)
             {
@@ -3313,6 +3321,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Time = time,
                 Height = this.Height,
                 BackColor = backColor,
+                TextColor = textColor,
                 IsEditable = true,
                 ToolTip = this.ToolTip
             };
@@ -3574,6 +3583,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         public GuiTimeRange Time { get; set; }
         public float Height { get; set; }
         public Color BackColor { get; set; }
+        public Color? TextColor { get; set; }
         public bool IsEditable { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
@@ -3596,6 +3606,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 RowId = this.PlanUnitC?.RecordGid,
                 Layer = 2,
                 BackColor = this.BackColor,
+                TextColor = this.TextColor,
                 BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn,
                 Height = this.Height,
                 Text = this.Text,

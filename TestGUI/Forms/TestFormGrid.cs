@@ -682,6 +682,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
+        /// Barva textu (písma)
+        /// </summary>
+        public Color? TextColor { get; set; }
+        /// <summary>
         /// Barva spojovací linky mezi prvky jedné skupiny.
         /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
         /// </summary>
@@ -711,6 +715,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         string ITimeGraphItem.Text { get { return this.Text; } }
         string ITimeGraphItem.ToolTip { get { return this.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.TextColor { get { return this.TextColor; } }
         Color? ITimeGraphItem.HatchColor { get { return null; } }
         Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
