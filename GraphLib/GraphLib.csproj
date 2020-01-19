@@ -84,6 +84,11 @@
     <Compile Include="Components\BitStorage.cs" />
     <Compile Include="Components\BoundsInfo.cs" />
     <Compile Include="Components\FontInfo.cs" />
+    <Compile Include="GameComponents\Coord3D.cs" />
+    <Compile Include="GameComponents\GameCamera.cs" />
+    <Compile Include="GameComponents\GameControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\Graph\Graph.cs" />
     <Compile Include="Components\Graph\GraphItem.cs" />
     <Compile Include="Components\Graph\GraphItemGroup.cs" />
@@ -124,6 +129,7 @@
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Data\ValueSynchronizer.cs" />
     <Compile Include="Data\_Test.cs" />
+    <Compile Include="GameComponents\GameItem.cs" />
     <Compile Include="Localizable\Text.cs" />
     <Compile Include="Rtf\RtfDocument.cs" />
     <Compile Include="Rtf\RtfPaint.cs" />

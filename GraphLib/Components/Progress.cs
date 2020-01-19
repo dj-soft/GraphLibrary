@@ -143,7 +143,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             int progressWidth = this.GetDataProgressWidth(progBounds.Width - 4);
             Rectangle dataBounds = new Rectangle(progBounds.X + 2, progBounds.Y + 2, progressWidth, progBounds.Height - 4);
-            host.FillRectangle(graphics, dataBounds, this.DataProgressForeColor);
+            GPainter.DrawRectangle(graphics, dataBounds, this.DataProgressForeColor);
 
             string progressText = this.GetDataProgressText();
             GPainter.DrawString(graphics, progressText, FontInfo.Caption, progBounds, ContentAlignment.MiddleCenter, color: Color.Black);

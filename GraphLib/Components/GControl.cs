@@ -627,7 +627,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Size AutoScrollMargin
         {
             get { return (this._HasAutoScroll ? this._AutoScrollSupport.AutoScrollMargin : Size.Empty); }
-            set { this._AutoScrollSupport.AutoScrollMargin = value; }
+            set { if (this._HasAutoScroll) this._AutoScrollSupport.AutoScrollMargin = value; }
         }
         /// <summary>
         /// Režim AutoScroll je aktivní (=je povolen, a aktuálně je z důvodu potřeby zobrazen alespoň jeden ScrollBar)

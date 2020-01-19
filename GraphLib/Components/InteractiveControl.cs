@@ -47,7 +47,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._DrawInit();
             this._KeyboardEventsInit();
             this._MouseEventsInit();
-            this._DrawSupportInit();
             this._AnimatorInit();
             this._BackThreadInit();
         }
@@ -2951,87 +2950,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #endregion
-        #region Pomocné metody a objekty pro vykreslování, postupně utlumit
-        private void _DrawSupportInit()
-        {
-            this.DefaultBackColor = Color.LightBlue;
-            this.DefaultBorderColor = Color.Black;
-        }
-        /// <summary>
-        /// Common SolidBrush object
-        /// </summary>
-        public SolidBrush SolidBrush
-        {
-            get
-            {
-                if (this._SolidBrush == null)
-                    this._SolidBrush = new SolidBrush(Color.White);
-                return this._SolidBrush;
-            }
-        }
-        /// <summary>
-        /// Common Pen object
-        /// </summary>
-        public Pen Pen
-        {
-            get
-            {
-                if (this._Pen == null)
-                    this._Pen = new System.Drawing.Pen(Color.Black);
-                return this._Pen;
-            }
-        }
-        /// <summary>
-        /// Default color for fill rectangle
-        /// </summary>
-        public new Color DefaultBackColor { get; set; }
-        /// <summary>
-        /// Default color for border rectangle
-        /// </summary>
-        public Color DefaultBorderColor { get; set; }
-        /// <summary>
-        /// Vyplní daný prostor (absolutní souřadnice) danou barvou (default = this.DefaultBackColor).
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="backColor">Barva pozadí</param>
-        public void FillRectangle(Graphics graphics, Rectangle absoluteBounds, Color? backColor)
-        {
-            this._FillRectangle(graphics, absoluteBounds, backColor, false, 0, 0, 0, 0);
-        }
-        /// <summary>
-        /// Vyplní daný prostor (absolutní souřadnice) danou barvou (default = this.DefaultBackColor).
-        /// Dané souřadnice mohou být zvětšené o dané hodnoty pro jednotlivé hrany: kladné číslo zvětší prostor, záporné zmenší.
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="backColor">Barva pozadí</param>
-        /// <param name="enlarge">Použít dané rozšíření</param>
-        /// <param name="enlargeL">Rozšíření doleva</param>
-        /// <param name="enlargeT">Rozšíření nahoru</param>
-        /// <param name="enlargeR">Rozšíření doprava</param>
-        /// <param name="enlargeB">Rozšíření dolů</param>
-        private void _FillRectangle(Graphics graphics, Rectangle bounds, Color? backColor, bool enlarge, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            if (enlarge)
-                bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR, enlargeB);
-
-            this.SolidBrush.Color = (backColor.HasValue ? backColor.Value : this.DefaultBackColor);
-            graphics.FillRectangle(this.SolidBrush, bounds);
-        }
-        private SolidBrush _SolidBrush;
-        private Pen _Pen;
-        private void _DrawSupportDispose()
-        {
-            if (this._SolidBrush != null)
-                this._SolidBrush.Dispose();
-            this._SolidBrush = null;
-        }
         #endregion
         #region StopWatch
         /// <summary>
