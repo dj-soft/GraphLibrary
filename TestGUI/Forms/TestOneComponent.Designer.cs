@@ -51,8 +51,6 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this._Control.BackColor = System.Drawing.Color.LightBlue;
-            this._Control.DefaultBackColor = System.Drawing.Color.LightBlue;
-            this._Control.DefaultBorderColor = System.Drawing.Color.Black;
             this._Control.Location = new System.Drawing.Point(13, 15);
             this._Control.Name = "_Control";
             this._Control.RepaintAllItems = false;

@@ -54,7 +54,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestGraphSettingForm));
             // Tests.TestLinq(6);
         }
-
+        /// <summary>
+        /// Vrátí typy Main formulářů
+        /// </summary>
+        /// <returns></returns>
         public static Type[] GetAvailableForms()
         {
             bool isShiftKey = (Control.ModifierKeys == Keys.Shift);
@@ -62,10 +65,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             var myType = typeof(Asol.Tools.WorkScheduler.TestGUI.Program);
             var myAssembly = myType.Assembly;
             var myAssemblyTypes = myAssembly.GetTypes();
-            var formTypes = myAssemblyTypes.Where(t => IsMainForm(t, isShiftKey, isDebugMode)).ToList();
-            formTypes.Sort((a, b) => (String.Compare(a.Name, b.Name)));
-            return formTypes.ToArray();
+            var formTypes = myAssemblyTypes.Where(t => IsMainForm(t, isShiftKey, isDebugMode)).ToList();                        // Vhodné formuláře
+            var formSorts = formTypes.Select(t => new Tuple<IsMainFormAttribute, Type>(GetMainFormAttribute(t), t)).ToList();   // Přidat k nim metadata
+            formSorts.Sort((a, b) => IsMainFormAttribute.CompareToList(a.Item1, b.Item1));                   // Setřídit dle metadat pomocí komparátoru
+            return formSorts.Select(t => t.Item2).ToArray();         // Vrátit setříděné pole typů
         }
+        /// <summary>
+        /// Zjistí, zda daný typ je Main formulář
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="isShiftKey"></param>
+        /// <param name="isDebugMode"></param>
+        /// <returns></returns>
         private static bool IsMainForm(Type type, bool isShiftKey, bool isDebugMode)
         {
             if (!type.IsClass || type.IsAbstract || type.IsArray) return false;
@@ -78,6 +89,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return true;
         }
+        /// <summary>
+        /// Vrací informace o daném typu z hlediska Main formuláře
+        /// </summary>
+        /// <param name="formType"></param>
+        /// <returns></returns>
         public static IsMainFormAttribute GetMainFormAttribute(Type formType)
         {
             var imfas = formType.GetCustomAttributes(typeof(IsMainFormAttribute), true);
@@ -174,25 +190,38 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         */
         #endregion
     }
-
+    /// <summary>
+    /// Atribut, který říká, že daný Form má být nabízen jako Main form při spouštění aplikace
+    /// </summary>
     [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
     public sealed class IsMainFormAttribute : Attribute
     {
-        public IsMainFormAttribute(string formName)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="formName">Uživatelský název formuláře</param>
+        /// <param name="order">Pořadí v nabídce</param>
+        /// <param name="onlyWithShiftKey">Nabízet jen při stisknutém SHIFT</param>
+        /// <param name="onlyInDebugMode">Nabízet jen v Debug režimu</param>
+        public IsMainFormAttribute(string formName, int order = 0, bool onlyWithShiftKey = false, bool onlyInDebugMode = false)
         {
             this._FormName = formName;
-        }
-        public IsMainFormAttribute(string formName, bool onlyWithShiftKey, bool onlyInDebugMode)
-        {
-            this._FormName = formName;
+            this._Order = order;
+            this._OnlyWithShiftKey = onlyWithShiftKey;
+            this._OnlyInDebugMode = onlyInDebugMode;
         }
         readonly string _FormName;
+        readonly int _Order;
         readonly bool _OnlyWithShiftKey;
         readonly bool _OnlyInDebugMode;
         /// <summary>
         /// Uživatelské jméno formuláře
         /// </summary>
         public string FormName { get { return _FormName; } }
+        /// <summary>
+        /// Pořadí v nabídce
+        /// </summary>
+        public int Order { get { return _Order; } }
         /// <summary>
         /// Zobrazovat pouze když je při startu stisknutý Shift
         /// </summary>
@@ -201,5 +230,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Zobrazovat pouze když je aplikace spuštěna v Debug režimu
         /// </summary>
         public bool OnlyInDebugMode { get { return _OnlyInDebugMode; } }
+        /// <summary>
+        /// Zajistí porovnání dvou instancí tak, aby podle výsledku byl setříděn List prvků dle <see cref="Order"/> ASC, <see cref="FormName"/> ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareToList(IsMainFormAttribute a, IsMainFormAttribute b)
+        {
+            int cmp = a.Order.CompareTo(b.Order);
+            if (cmp == 0) cmp = String.Compare(a.FormName, b.FormName, StringComparison.CurrentCultureIgnoreCase);
+            return cmp;
+        }
     }
 }

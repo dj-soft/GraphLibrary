@@ -53,8 +53,6 @@
             // 
             // gInteractiveControl1
             // 
-            this.gInteractiveControl1.DefaultBackColor = System.Drawing.Color.PaleTurquoise;
-            this.gInteractiveControl1.DefaultBorderColor = System.Drawing.Color.Black;
             this.gInteractiveControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gInteractiveControl1.Location = new System.Drawing.Point(0, 46);
             this.gInteractiveControl1.Name = "gInteractiveControl1";

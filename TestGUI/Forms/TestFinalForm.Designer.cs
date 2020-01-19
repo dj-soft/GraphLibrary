@@ -34,8 +34,6 @@
             // 
             // mainControl1
             // 
-            this.mainControl1.DefaultBackColor = System.Drawing.Color.LightBlue;
-            this.mainControl1.DefaultBorderColor = System.Drawing.Color.Black;
             this.mainControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.mainControl1.Location = new System.Drawing.Point(0, 0);
             this.mainControl1.Name = "mainControl1";
