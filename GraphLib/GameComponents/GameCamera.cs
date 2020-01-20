@@ -106,6 +106,10 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             var hypXYZ = point3D.HypXYZ;
             var angle3D = point3D.Angle3D;
 
+            var vector = new Vector3D(point3D, angle3D, 50d);
+            var newPoint1 = vector.GetPointAtDistance(200d);
+            var newPoint2 = vector.GetPointMatrix(2d);
+
             var dist = point3D - this.Properties.Location;
             var angle = dist.Angle3D - this.Properties.Angle;
 
@@ -116,6 +120,11 @@ namespace Asol.Tools.WorkScheduler.GameComponents
 
 
         }
+
+        /// <summary>
+        /// Průmětná rovina
+        /// </summary>
+        public Plane3D Plane3D { get; set; }
 
         #endregion
     }

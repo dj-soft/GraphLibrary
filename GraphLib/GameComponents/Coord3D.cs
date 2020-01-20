@@ -250,8 +250,8 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public Vector3D(Point3D originPoint, Point3D targetPoint)
             : base()
         {
-            _OriginPoint = originPoint;
-            _TargetPoint = targetPoint;
+            OriginPoint = originPoint;
+            TargetPoint = targetPoint;
         }
         /// <summary>
         /// Konstruktor
@@ -262,70 +262,75 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public Vector3D(Point3D originPoint, Angle3D angle, Double length)
             : base()
         {
-            _OriginPoint = originPoint;
-            _Angle = angle;
-            _Length = length;
+            OriginPoint = originPoint;
+            Angle = angle;
+            Length = length;
         }
         /// <summary>
         /// Souřadnice bodu 1 = výchozí bod vektoru
         /// </summary>
-        public Point3D OriginPoint { get { return _OriginPoint; } set { this.ResetId(); _OriginPoint = value; _ResetAngleLength(); } }
+        public Point3D OriginPoint { get { return _OriginPoint; } set { _OriginPoint = value; _Reset(false, true); } }
         private Point3D _OriginPoint;
         private UInt64? _OriginPointId;
         /// <summary>
         /// Souřadnice bodu 2 = cílový bod vektoru
         /// </summary>
-        public Point3D TargetPoint { get { _CheckTarget(); return _TargetPoint; } set { this.ResetId(); _TargetPoint = value; _ResetAngleLength(); } }
+        public Point3D TargetPoint { get { _CheckTarget(); return _TargetPoint; } set { _TargetPoint = value; _Reset(false, true); } }
         private Point3D _TargetPoint;
         private UInt64? _TargetPointId;
         /// <summary>
         /// Úhel 3D z bodu <see cref="OriginPoint"/> do bodu <see cref="TargetPoint"/>
         /// </summary>
-        public Angle3D Angle { get { _CheckAngleLength(); return _Angle; } set { this.ResetId(); _Angle = value; _ResetTarget(); } }
+        public Angle3D Angle { get { _CheckAngleLength(); return _Angle; } set { _Angle = value; _Reset(true, false); } }
         private Angle3D _Angle;
         private UInt64? _AngleId;
         /// <summary>
         /// Vzdálenost z bodu <see cref="OriginPoint"/> do bodu <see cref="TargetPoint"/>
         /// </summary>
-        public Double Length { get { _CheckAngleLength(); return _Length.Value; } set { this.ResetId(); _Length = value; _ResetTarget(); } }
+        public Double Length { get { _CheckAngleLength(); return _Length.Value; } set { _Length = value; _Reset(true, false); } }
         private Double? _Length;
         private Double? _LengthId;
         #endregion
         #region Automatické přepočty this.Points <=> Vector
         /// <summary>
-        /// Nuluje cílový bod
+        /// Resetuje Target a/nebo Angle+Length, vždy interní ID, plus zachová ID platných dat.
         /// </summary>
-        private void _ResetTarget()
+        /// <param name="target"></param>
+        /// <param name="angle"></param>
+        private void _Reset(bool target, bool angle)
         {
-            _TargetPoint = null;
+            if (target)
+            {
+                _TargetPoint = null;
+            }
+            if (angle)
+            {
+                _Angle = null;
+                _Length = null;
+            }
+            _SaveId();
+            this.ResetId();
         }
         /// <summary>
         /// Zajistí, že cílový bod bude platný
         /// </summary>
         private void _CheckTarget()
         {
-            if (_TargetPoint is null || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_Angle, _AngleId) || IsChanged(_Length, _LengthId))
+            if (_TargetPoint == null || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_Angle, _AngleId) || IsChanged(_Length, _LengthId))
             {
                 Math3D.CalculateTarget(_OriginPoint, _Angle, _Length.Value, out _TargetPoint);
                 _SaveId();
             }
         }
         /// <summary>
-        /// Nuluje úhel a vzdálenost
-        /// </summary>
-        private void _ResetAngleLength()
-        {
-            _Angle = null;
-            _Length = null;
-        }
-        /// <summary>
         /// Zajistí, že úhel a vzdálenost bude platný
         /// </summary>
         private void _CheckAngleLength()
         {
-            if (_Angle is null || !_Length.HasValue || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_TargetPoint, _TargetPointId))
+            if (_Angle == null || !_Length.HasValue || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_TargetPoint, _TargetPointId))
             {
-                Math3D.CalculateAngleLength(_OriginPoint, _TargetPoint, out _Angle, out double length);
+                double length;
+                Math3D.CalculateAngleLength(_OriginPoint, _TargetPoint, out _Angle, out length);
                 _Length = length;
                 _SaveId();
             }
@@ -335,11 +340,69 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// </summary>
         private void _SaveId()
         {
-            _OriginPointId = _OriginPoint.Id;
-            _TargetPointId = _TargetPoint.Id;
-            _AngleId = _Angle.Id;
+            _OriginPointId = _OriginPoint?.Id;
+            _TargetPointId = _TargetPoint?.Id;
+            _AngleId = _Angle?.Id;
             _LengthId = _Length;
         }
+        #endregion
+        #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmé roviny
+        /// <summary>
+        /// Matice vektoru pro výpočty.
+        /// Řádky obsahují dimenze: [0,] = dX; [1,] = dY; [2,] = dZ;
+        /// Sloupce obsahují koeficienty: [,0] = d?0; [,1] = d?1;
+        /// Souřadnice bodu na vektoru je pak dána výpočtem Pt = { X = dX0 + t * dX1; Y = dY0 + t * dY1; Z = dZ0 + t * dZ1; },
+        /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
+        /// </summary>
+        public double[,] Matrix
+        {
+            get
+            {
+                Point3D p0 = this.OriginPoint;
+                Point3D p1 = this.TargetPoint - p0;
+                double[,] matrix = new double[3, 2]
+                {
+                    {  p0.X, p1.X },
+                    {  p0.Y, p1.Y },
+                    {  p0.Z, p1.Z }
+                };
+                return matrix;
+            }
+        }
+        /// <summary>
+        /// Vrátí bod na this vektoru, který je vzdálen (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <returns></returns>
+        public Point3D GetPointAtDistance(double distance)
+        {
+            return this.OriginPoint + (this.Angle.Point * distance);
+        }
+        /// <summary>
+        /// Vrátí bod na this vektoru, který se nachází na relativní pozici (<paramref name="t"/>);
+        /// relativně k bodu <see cref="OriginPoint"/> (pro t = 0) až <see cref="TargetPoint"/> (pro t = 1).
+        /// Hodnota t smí být libovolná, tj. i mimo rozsaj 0 ÷ 1.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public Point3D GetPointMatrix(double t)
+        {
+            var m = Matrix;
+            return new Point3D(m[0, 0] + t * m[0, 1], m[1, 0] + t * m[1, 1], m[2, 0] + t * m[2, 1]);
+        }
+        /// <summary>
+        /// Vrátí rovinu kolmou na this vektor, která jej protíná ve vzdálenosti (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <returns></returns>
+        public Plane3D GetPlanePerpendicular(double distance)
+        {
+            Point3D point1 = GetPointAtDistance(distance);
+
+
+            return null;
+        }
+
         #endregion
     }
     #endregion
@@ -734,6 +797,55 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         private Point3D _Point4;
     }
     #endregion
+    #region class Plane3D
+    /// <summary>
+    /// Plane3D : definice roviny a její matematika
+    /// </summary>
+    public class Plane3D : Base3D
+    {
+        #region Konstruktor a data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="point1"></param>
+        /// <param name="point2"></param>
+        /// <param name="point3"></param>
+        public Plane3D(Point3D point1, Point3D point2, Point3D point3)
+            : base()
+        {
+            _Point1 = point1;
+            _Point2 = point2;
+            _Point3 = point3;
+        }
+        /// <summary>
+        /// Bod 1
+        /// </summary>
+        public Point3D Point1 { get { return _Point1; } set { this.ResetId(); _Point1 = value; } }
+        private Point3D _Point1;
+        /// <summary>
+        /// Bod 2
+        /// </summary>
+        public Point3D Point2 { get { return _Point2; } set { this.ResetId(); _Point2 = value; } }
+        private Point3D _Point2;
+        /// <summary>
+        /// Bod 2
+        /// </summary>
+        public Point3D Point3 { get { return _Point3; } set { this.ResetId(); _Point3 = value; } }
+        private Point3D _Point3;
+        #endregion
+        #region Matematika
+        /// <summary>
+        /// Vrátí souřadnici průsečíku daného vektoru a this roviny
+        /// </summary>
+        /// <param name="vector"></param>
+        /// <returns></returns>
+        public Point3D GetIntersect(Vector3D vector)
+        {
+            return null;
+        }
+        #endregion
+    }
+    #endregion
     #region class Base3D
     /// <summary>
     /// Bázová třída s identifikátorem
@@ -789,7 +901,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// <returns></returns>
         public static bool IsChanged(Base3D item, UInt64? id)
         {
-            bool v1 = !(item is null);
+            bool v1 = !(item == null);
             bool v2 = id.HasValue;
             if (v1 != v2) return true;           // Pokud item je null a ID má hodnotu, anebo naopak, pak je tu změna
             if (!v1) return false;               // Pokud item je null (a ID tedy samozřejmě nemá hodnotu, protože v1 == v2), pak to není změna (stále NULL)
