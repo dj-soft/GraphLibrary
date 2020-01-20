@@ -130,6 +130,7 @@
     <Compile Include="Data\ValueSynchronizer.cs" />
     <Compile Include="Data\_Test.cs" />
     <Compile Include="GameComponents\GameItem.cs" />
+    <Compile Include="GameComponents\GameObjects.cs" />
     <Compile Include="Localizable\Text.cs" />
     <Compile Include="Rtf\RtfDocument.cs" />
     <Compile Include="Rtf\RtfPaint.cs" />

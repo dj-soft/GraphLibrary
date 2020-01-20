@@ -17,7 +17,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         {
             NeedDraw = true;
         }
-        public abstract void Draw(Graphics graphics, GameCamera camera);
+        public abstract void Draw(GameCamera camera);
        
         public bool NeedDraw { get; set; }
     }
@@ -25,9 +25,9 @@ namespace Asol.Tools.WorkScheduler.GameComponents
 
     public class GameItemRectangle : GameItem
     {
-        public override void Draw(Graphics graphics, GameCamera camera)
+        public override void Draw(GameCamera camera)
         {
-            camera.FillArea(graphics, Color.DarkGreen, this.Bounds.Point1, this.Bounds.Point2, this.Bounds.Point3, this.Bounds.Point4);
+            camera.FillArea(Color.DarkGreen, this.Bounds.Point1, this.Bounds.Point2, this.Bounds.Point3, this.Bounds.Point4);
         }
         public Rectangle3D Bounds { get; set; }
     }

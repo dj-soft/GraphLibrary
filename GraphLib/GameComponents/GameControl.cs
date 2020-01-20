@@ -41,6 +41,10 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// Kamera, která vše kreslí
         /// </summary>
         public GameCamera Camera { get; private set; }
+        /// <summary>
+        /// Vlastnosti kamery
+        /// </summary>
+        public CameraProperties CameraProperties { get { return this.Camera.Properties; } }
         #endregion
         #region Draw
         /// <summary>
@@ -58,6 +62,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         protected override void OnPaintLayers(LayeredPaintEventArgs e)
         {
             bool drawAll = true;
+            var camera = this.Camera;
             try
             {
                 for (int layer = 0; layer < this._Items.Length; layer++)
@@ -70,11 +75,10 @@ namespace Asol.Tools.WorkScheduler.GameComponents
                         if (drawBase)
                             base.OnPaintLayers(e);
 
-                        Graphics graphics = e.GetGraphicsForLayer(layer, true);
-                        using (GPainter.GraphicsUseSmooth(graphics))
+                        using (camera.PrepareGraphics(e.GetGraphicsForLayer(layer, true)))
                         {
                             foreach (var drawItem in drawItems)
-                                this.Camera.DrawItem(graphics, drawItem);
+                                drawItem.Draw(camera);
                         }
                     }
                 }
@@ -83,6 +87,9 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         }
         private List<GameItem>[] _Items;
         #endregion
+        /// <summary>
+        /// Prvky
+        /// </summary>
         public List<GameItem> GameItems { get { return this._Items[0]; } }
     }
 }
