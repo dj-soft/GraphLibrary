@@ -22,16 +22,26 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 
         protected void InitGame()
         {
-            this._GameControl.GameItems.Add(new GameItemRectangle()
-            {
-                Bounds = new Rectangle3D
-                (
-                     new Point3D(100d, 110d, 0d),
-                     new Point3D(130d, 200d, 0d),
-                     new Point3D(230d, 210d, 0d),
-                     new Point3D(210d, 100d, 0d)
-                )
-            });
+            this._GameControl.CameraProperties.Location = new Point3D(0d, 0d, 0d);
+            this._GameControl.CameraProperties.Angle = new Angle3D(1d, 0d, 1d);
+
+            GameCube cube = new GameCube();
+            cube.Vertexes[0] = new Point3D(100d, 100d, 200d);
+            cube.Vertexes[1] = new Point3D(150d, 100d, 200d);
+            cube.Vertexes[2] = new Point3D(150d, 150d, 200d);
+            cube.Vertexes[3] = new Point3D(100d, 150d, 200d);
+            cube.Vertexes[4] = new Point3D(100d, 100d, 250d);
+            cube.Vertexes[5] = new Point3D(150d, 100d, 250d);
+            cube.Vertexes[6] = new Point3D(150d, 150d, 250d);
+            cube.Vertexes[7] = new Point3D(100d, 150d, 250d);
+            cube.SideColors[0] = Color.FromArgb(160, 220, 160);
+            cube.SideColors[1] = Color.FromArgb(160, 220, 180);
+            cube.SideColors[2] = Color.FromArgb(160, 200, 180);
+            cube.SideColors[3] = Color.FromArgb(160, 200, 160);
+            cube.SideColors[4] = Color.FromArgb(160, 220, 160);
+            cube.SideColors[5] = Color.FromArgb(120, 180, 140);
+
+            this._GameControl.GameItems.Add(cube);
         }
     }
 }
