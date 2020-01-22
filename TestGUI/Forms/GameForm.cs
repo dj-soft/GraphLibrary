@@ -50,9 +50,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             cube2.Vertexes[2] = new Point3D(350d, 200d, 200d);
             cube2.Vertexes[3] = new Point3D(300d, 150d, 200d);
             cube2.Vertexes[4] = new Point3D(400d, 120d, 250d);
-            cube2.Vertexes[5] = new Point3D(450d, 120d, 250d);
-            cube2.Vertexes[6] = new Point3D(450d, 220d, 250d);
-            cube2.Vertexes[7] = new Point3D(400d, 200d, 250d);
+            cube2.Vertexes[5] = new Point3D(450d, 110d, 250d);
+            cube2.Vertexes[6] = new Point3D(470d, 220d, 250d);
+            cube2.Vertexes[7] = new Point3D(380d, 200d, 250d);
             cube2.SideColors[0] = Color.FromArgb(180, 120, 160);
             cube2.SideColors[1] = Color.FromArgb(160, 120, 180);
             cube2.SideColors[2] = Color.FromArgb(160, 100, 180);
