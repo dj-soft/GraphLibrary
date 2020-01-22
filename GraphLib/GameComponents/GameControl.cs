@@ -7,6 +7,7 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using Asol.Tools.WorkScheduler.Components;
+using System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.GameComponents
 {

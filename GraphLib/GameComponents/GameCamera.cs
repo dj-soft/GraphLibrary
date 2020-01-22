@@ -104,14 +104,14 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             var angleH = point3D.AngleH;
             var angleV = point3D.AngleV;
             var hypXYZ = point3D.HypXYZ;
-            var angle3D = point3D.Angle3D;
+            var angle3D = point3D.Angle;
 
             var vector = new Vector3D(point3D, angle3D, 50d);
             var newPoint1 = vector.GetPointAtDistance(200d);
             var newPoint2 = vector.GetPointMatrix(2d);
 
             var dist = point3D - this.Properties.Location;
-            var angle = dist.Angle3D - this.Properties.Angle;
+            var angle = dist.Angle - this.Properties.Angle;
 
 
 
