@@ -833,28 +833,23 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// Řádky matice obsahují dimenze: [0,] = dX; [1,] = dY; [2,] = dZ;
         /// Sloupce obsahují koeficienty: [,0] = d?0; [,1] = d?s; [,1] = d?t;
         /// <para/>
-        /// Souřadnice bodu "s,t" na rovině je pak dána výpočtem Pts = { X = dX0 + t * dX1; Y = dY0 + t * dY1; Z = dZ0 + t * dZ1; };
-        /// konkrétně pro m = Matrix: Pt = { X = m[0,0] + t * m[0,1]; Y = m[1,0] + t * m[1,1]; Z = m[2,0] + t * m[2,1]; };
+        /// Souřadnice bodu "s,t" na rovině je pak dána výpočtem Pts = { X = dX0 + t * dX1 + s * dX2; Y = dY0 + t * dY1 + s * dY2; Z = dZ0 + t * dZ1 + s * dZ2; };
+        /// konkrétně pro m = Matrix: Pt = { X = m[0,0] + t * m[0,1] + s * m[0,2]; Y = m[1,0] + t * m[1,1] + s * m[1,2]; Z = m[2,0] + t * m[2,1] + s * m[2,2]; };
         /// <para/>
-        /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
+        /// pro t,s = { -nekonečno až +nekonečno }.
         /// </summary>
         public double[,] Matrix
         {
             get
             {
-                Point3D pa = this.PointA;
-                Point3D pb = this.PointB;
-                Point3D pc = this.PointC;
-                Vector3D v = this.VectorAB;
-                Vector3D u = this.VectorAC;
-
-                Point3D p0 = this.OriginPoint;
-                Point3D p1 = this.TargetPoint - p0;
-                double[,] matrix = new double[3, 2]
+                Point3D p = this.PointA;
+                Point3D v = this.VectorAB.Vector;
+                Point3D u = this.VectorAC.Vector;
+                double[,] matrix = new double[3, 3]
                 {
-                    {  p0.X, p1.X },
-                    {  p0.Y, p1.Y },
-                    {  p0.Z, p1.Z }
+                    {  p.X, v.X, u.X },
+                    {  p.Y, v.Y, u.Y },
+                    {  p.Z, v.Z, u.Z }
                 };
                 return matrix;
             }
