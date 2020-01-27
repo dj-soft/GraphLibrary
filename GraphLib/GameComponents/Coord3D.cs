@@ -7,9 +7,763 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Asol.Tools.WorkScheduler.GameComponents
 {
+    #region class Point2D
+    /// <summary>
+    /// Souřadnice 2D bodu
+    /// </summary>
+    public class Point2D : BaseXD
+    {
+        #region Konstruktory a data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public Point2D(double x, double y)
+            : base()
+        {
+            _X = x;
+            _Y = y;
+        }
+        /// <summary>
+        /// Obsahuje klon sebe sama
+        /// </summary>
+        public Point2D Clone { get { return new Point2D(X, Y); } }
+        /// <summary>
+        /// Nulový bod, všechny jeho souřadnice jsou 0
+        /// </summary>
+        public static Point2D Empty { get { return new Point2D(0d, 0d); } }
+        /// <summary>
+        /// Textové vyjádření obsahu prvku
+        /// </summary>
+        public override string Text { get { return base.Text + $"; X: {_X}; Y: {_Y}"; } }
+        /// <summary>
+        /// Souřadnice X
+        /// </summary>
+        public double X { get { return _X; } set { this.ResetId(); _X = value; } }
+        private double _X;
+        /// <summary>
+        /// Souřadnice Y
+        /// </summary>
+        public double Y { get { return _Y; } set { this.ResetId(); _Y = value; } }
+        private double _Y;
+        #endregion
+        #region Délky a úhly
+        /// <summary>
+        /// Délka přepony X-Y
+        /// </summary>
+        public double HypXY { get { return Math3D.GetHypotenuse(_X, _Y); } }
+        /// <summary>
+        /// Úhel ve vodorovné rovině X-Y
+        /// </summary>
+        public Angle2D Angle { get { return new Angle2D(_X, _Y); } }
+        #endregion
+        #region Matematika
+        /// <summary>
+        /// Metoda vrátí skalární součin dvou souřadnic (dot product), 
+        /// dle vzorce: r = (a.X * b.X) +  (a.Y * b.Y).
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Double ScalarProduct(Point2D a, Point2D b)
+        {
+            return (a.X * b.X) + (a.Y + b.Y);
+        }
+        #endregion
+        #region Sčítání, odčítání, násobení, porovnání
+        /// <summary>
+        /// Sčítání: result = a + b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Point2D operator +(Point2D a, Point2D b) { return new Point2D(a.X + b.X, a.Y + b.Y); }
+        /// <summary>
+        /// Odečítání: result = a - b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Point2D operator -(Point2D a, Point2D b) { return new Point2D(a.X - b.X, a.Y - b.Y); }
+        /// <summary>
+        /// Násobení: result = a * q
+        /// </summary>
+        /// <param name="a">Výchozí bod</param>
+        /// <param name="q">Koeficient násobení, výsledek bude mít všechny souřadnice vynásobené</param>
+        /// <returns></returns>
+        public static Point2D operator *(Point2D a, double q) { return new Point2D(a.X * q, a.Y * q); }
+        /// <summary>
+        /// Operátor "je rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator ==(Point2D a, Point2D b) { return IsEqual(a, b, () => IsEqualValues(a, b)); }
+        /// <summary>
+        /// Operátor "není rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator !=(Point2D a, Point2D b) { return !IsEqual(a, b, () => IsEqualValues(a, b)); }
+        /// <summary>
+        /// Metoda vrátí true, pokud dané dvě instance obsahují shodná data.
+        /// Obě instance musí být not null, jinak dojde k chybě.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected static bool IsEqualValues(Point2D a, Point2D b) { return (a.X == b.X && a.Y == b.Y); }
+        /// <summary>
+        /// Vrátí hashcode
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode() { return CalculateHashCode(this.X, this.Y); }
+        /// <summary>
+        /// Vrací příznak rovnosti
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            return (this == (obj as Point2D));
+        }
+        #endregion
+        #region Implicitní konvertory
+        /// <summary>
+        /// Implicitní konverze
+        /// </summary>
+        /// <param name="point2D"></param>
+        public static implicit operator System.Drawing.PointF(Point2D point2D) { return new System.Drawing.PointF((float)point2D.X, (float)point2D.Y); }
+        /// <summary>
+        /// Implicitní konverze
+        /// </summary>
+        /// <param name="point"></param>
+        public static implicit operator Point2D(System.Drawing.PointF point) { return new Point2D((double)point.X, (double)point.Y); }
+        #endregion
+    }
+    #endregion
+    #region class Angle2D
+    /// <summary>
+    /// Jeden úhel (radiány, stupně)
+    /// </summary>
+    public class Angle2D : BaseXD
+    {
+        #region Konstruktory a data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="rad"></param>
+        public Angle2D(double rad)
+            : base()
+        {
+            this.Rad = rad;
+        }
+        /// <summary>
+        /// Konstruktor pro zadané hodnoty na ose X a Y
+        /// </summary>
+        /// <param name="dx"></param>
+        /// <param name="dy"></param>
+        public Angle2D(double dx, double dy)
+        {
+            //int cx = dx.CompareTo(0d);
+            //int cy = dy.CompareTo(0d);
+
+            //// Vyřeším pravé úhly: doprava, doleva; nahoru, dolů:
+            //if (cy == 0) return (cx >= 0 ? Angle.Angle0 : Angle.Angle2);
+            //if (cx == 0) return (cy >= 0 ? Angle.Angle1 : Angle.Angle3);
+
+            this.Rad = Math.Atan2(dy, dx);
+        }
+        /// <summary>
+        /// Konstruktor vycházející z hodnoty úhlu ve stupních 0° - 360°
+        /// </summary>
+        /// <param name="degrees"></param>
+        /// <returns></returns>
+        public static Angle2D FromDegrees(double degrees)
+        {
+            return new Angle2D(ConvertDegreeToRad(degrees));
+        }
+        /// <summary>
+        /// Obsahuje klon sebe sama
+        /// </summary>
+        public Angle2D Clone { get { return new Angle2D(Rad); } }
+        /// <summary>
+        /// Úhel v radiánech, v rozsahu 0d ÷ (2d * <see cref="Math.PI"/>)
+        /// </summary>
+        public double Rad { get { return _Rad; } set { this.ResetId(); _Rad = (value % R); } }
+        private double _Rad;
+        /// <summary>
+        /// Úhel ve stupních, v rozsahu 0d ÷ 360d, desetinné zlomky
+        /// </summary>
+        public double Degrees { get { return ConvertRadToDegree(Rad); } set { Rad = ConvertDegreeToRad(value); } }
+        /// <summary>
+        /// Stupně vyjádřené jako text "stupně°:minuty':vteřiny''"
+        /// </summary>
+        public string DegreeDMS { get { return ConvertRadToDMS(Rad); } }
+        /// <summary>
+        /// Hodnota Pí = 3.1415926535897932384626433832795028841971d; (na 40 míst)
+        /// </summary>
+        public const double Pi = 3.1415926535897932384626433832795028841971d;
+        /// <summary>
+        /// Hodnota 2d * <see cref="Pi"/> = 6.2831853071795862.......d; (na 40 míst)
+        /// </summary>
+        public const double R = 2d * Pi;
+        /// <summary>
+        /// Hodnota 360 (počet stupňů Degrees)
+        /// </summary>
+        public const double DEG = 360d;
+        /// <summary>
+        /// Text prvku
+        /// </summary>
+        public override string Text { get { return base.Text + $"; {DegreeDMS}"; } }
+        #endregion
+        #region Mirrory a Protilehlý úhel
+        /// <summary>
+        /// Obsahuje úhel opačného směru, tedy např. k úhlu 30° je <see cref="Negative"/> úhel = 210°, atd
+        /// </summary>
+        public Angle2D Negative { get { return new Angle2D(this.Rad + Pi); } }
+        /// <summary>
+        /// Obsahuje this úhel zrcadlený kolem osy X (=vodorovně = shora dolů a zdola nahoru)
+        /// </summary>
+        public Angle2D MirrorX { get { return GetMirror(0.00d); } }
+        /// <summary>
+        /// Obsahuje this úhel zrcadlený kolem osy Y (=svisle = zleva doprava a zprava doleva)
+        /// </summary>
+        public Angle2D MirrorY { get { return GetMirror(0.25d); } }
+        /// <summary>
+        /// Vrací this úhel zrcadlený na druhou stranu dané osy, kde osa je dána poměrem 0 - 1 z celého kruhu.
+        /// Například zadání <paramref name="relativeAxis"/> = 0.25d vrátí úhel zrcadlený kolem osy Y;
+        /// hodnota 0.00d vrátí zrcadlení kolem osy X;
+        /// lze zrcadlit kolem libovolného úhlu.
+        /// </summary>
+        /// <param name="relativeAxis"></param>
+        /// <returns></returns>
+        public Angle2D GetMirror(double relativeAxis)
+        {
+            double degrees = this.Degrees;
+            double axis = DEG * (relativeAxis % 1d);
+            degrees = 2d * axis - degrees;
+            if (degrees < 0d) degrees += DEG;
+            return Angle2D.FromDegrees(degrees);
+        }
+        #endregion
+        #region Souřadnice jednotkového bodu
+        /// <summary>
+        /// Souřadnice jednotkového bodu.
+        /// Je to bod, který je vzdálen 1.0 od bodu {0, 0} v this úhlu.
+        /// <para/>
+        /// Např. Pro úhel 30° je souřadnice X = 0.866025404d a souřadnice Y = 0.5d;
+        /// pro úhel 45° jsou obě souřadnice X = Y = 0.707106781, 
+        /// pro úhel 180% je X = -1d a Y = 0, atd.
+        /// </summary>
+        public Point2D Point
+        {
+            get
+            {
+                double rad = this.Rad;
+                double dx = Math.Cos(rad);
+                double dy = Math.Sin(rad);
+                return new Point2D(dx, dy);
+            }
+            set
+            {
+                double dx = value.X;
+                double dy = value.Y;
+                this.Rad = Math.Atan2(dy, dx);
+            }
+        }
+        #endregion
+        #region Statické konstruktory pro čtyři pravé úhly, konverze na stupně, minuty, vteřiny
+        /// <summary>
+        /// Úhel 0 = přímo v kladné ose X
+        /// </summary>
+        public static Angle2D Angle0 { get { return new Angle2D(0d); } }
+        /// <summary>
+        /// Úhel 90° = přímo v kladné ose Y
+        /// </summary>
+        public static Angle2D Angle1 { get { return new Angle2D(0.5d * Math.PI); } }
+        /// <summary>
+        /// Úhel 180° = přímo v záporné ose X
+        /// </summary>
+        public static Angle2D Angle2 { get { return new Angle2D(Math.PI); } }
+        /// <summary>
+        /// Úhel 270° = přímo v záporné ose Y
+        /// </summary>
+        public static Angle2D Angle3 { get { return new Angle2D(1.5d * Math.PI); } }
+        /// <summary>
+        /// Ze zadaného čísla v obloukové míře (radech) vrátí stupně 0-360
+        /// </summary>
+        /// <param name="rad"></param>
+        /// <returns></returns>
+        public static double ConvertRadToDegree(double rad)
+        {
+            return DEG * (rad % R) / R;
+        }
+        /// <summary>
+        /// Ze zadaného čísla ve stupních (0-360) vrátí obloukovou míru (rad)
+        /// </summary>
+        /// <param name="degree"></param>
+        /// <returns></returns>
+        public static double ConvertDegreeToRad(double degree)
+        {
+            return (degree % DEG) * R / DEG;
+        }
+        /// <summary>
+        /// Ze zadaného čísla v obloukové míře (radech) vrátí úhlové "stupně°:minuty':vteřiny''"
+        /// </summary>
+        /// <param name="rad"></param>
+        /// <returns></returns>
+        public static string ConvertRadToDMS(double rad)
+        {
+            return ConvertDegreeToDMS(ConvertRadToDegree(rad));
+        }
+        /// <summary>
+        /// Ze zadaného čísla ve stupních vrátí úhlové "stupně°:minuty':vteřiny''"
+        /// </summary>
+        /// <param name="degrees"></param>
+        /// <returns></returns>
+        public static string ConvertDegreeToDMS(double degrees)
+        {
+            int d0 = ((int)degrees) % 360;       // 0-359
+            double d = 60d * (degrees % 1d);     // 0.000 - 59.999
+            int d1 = ((int)d);                   // 0 - 59
+            d = 60d * d;
+            int d2 = ((int)d);
+            return d0.ToString() + "°"
+                + ((d1 != 0 || d2 != 0) ? ":" + d1.ToString("00") + "'" : "")
+                + ((d2 != 0) ? ":" + d2.ToString("00") + "''" : "");
+        }
+        #endregion
+        #region Sčítání, odčítání, porovnání
+        /// <summary>
+        /// Sčítání: result = a + b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Angle2D operator +(Angle2D a, Angle2D b) { return new Angle2D(a.Rad + b.Rad); }
+        /// <summary>
+        /// Odečítání: result = a - b
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Angle2D operator -(Angle2D a, Angle2D b) { return new Angle2D(a.Rad - b.Rad); }
+        /// <summary>
+        /// Operátor "je rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator ==(Angle2D a, Angle2D b) { return IsEqual(a, b, () => IsEqualValues(a, b)); }
+        /// <summary>
+        /// Operátor "není rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator !=(Angle2D a, Angle2D b) { return !IsEqual(a, b, () => IsEqualValues(a, b)); }
+        /// <summary>
+        /// Metoda vrátí true, pokud dané dvě instance obsahují shodná data.
+        /// Obě instance musí být not null, jinak dojde k chybě.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected static bool IsEqualValues(Angle2D a, Angle2D b) { return (a.Rad == b.Rad); }
+        /// <summary>
+        /// Vrátí hashcode
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode() { return CalculateHashCode(this.Rad); }
+        /// <summary>
+        /// Vrací příznak rovnosti
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            return (this == (obj as Angle2D));
+        }
+        #endregion
+        #region Implicitní konvertory
+        /// <summary>
+        /// Implicitní konverze
+        /// </summary>
+        /// <param name="angle2D"></param>
+        public static implicit operator Double(Angle2D angle2D) { return angle2D.Rad; }
+        /// <summary>
+        /// Implicitní konverze
+        /// </summary>
+        /// <param name="angle"></param>
+        public static implicit operator Angle2D(Double angle) { return new Angle2D(angle); }
+        #endregion
+    }
+    #endregion
+    #region class Vector2D
+    /// <summary>
+    /// Vektor v rovině (dva body = úhel a délka)
+    /// </summary>
+    public class Vector2D : BaseXD
+    {
+        #region Konstruktory a data
+        /// <summary>
+        /// Konstruktor pro čistý vektor = ten, jehož <see cref="OriginPoint"/> je <see cref="Point2D.Empty"/> = { 0, 0 }.
+        /// Zadaná hodnota reprezentuje <see cref="TargetPoint"/>
+        /// </summary>
+        /// <param name="targetPoint"></param>
+        public Vector2D(Point2D targetPoint)
+            : base()
+        {
+            OriginPoint = Point2D.Empty;
+            TargetPoint = targetPoint;
+        }
+        /// <summary>
+        /// Konstruktor pro čistý vektor = ten, jehož <see cref="OriginPoint"/> je <see cref="Point2D.Empty"/> = { 0, 0 }.
+        /// Zadaná hodnota reprezentuje <see cref="TargetPoint"/> = { x, y }
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public Vector2D(Double x, Double y)
+            : base()
+        {
+            OriginPoint = Point2D.Empty;
+            TargetPoint = new Point2D(x, y);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="originPoint"></param>
+        /// <param name="targetPoint"></param>
+        public Vector2D(Point2D originPoint, Point2D targetPoint)
+            : base()
+        {
+            OriginPoint = originPoint;
+            TargetPoint = targetPoint;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="originPoint"></param>
+        /// <param name="angle"></param>
+        /// <param name="length"></param>
+        public Vector2D(Point2D originPoint, Angle2D angle, Double length)
+            : base()
+        {
+            OriginPoint = originPoint;
+            Angle = angle;
+            Length = length;
+        }
+        /// <summary>
+        /// Obsahuje klon sebe sama
+        /// </summary>
+        public Vector2D Clone { get { return new Vector2D(OriginPoint, TargetPoint); } }
+        /// <summary>
+        /// Nulový vektor, vede z bodu Empty do bodu Empty
+        /// </summary>
+        public static Vector2D Empty { get { return new Vector2D(Point2D.Empty, Point2D.Empty); } }
+        /// <summary>
+        /// Souřadnice bodu 1 = výchozí bod vektoru
+        /// </summary>
+        public Point2D OriginPoint { get { return _OriginPoint; } set { _OriginPoint = value; _Reset(false, true); } }
+        private Point2D _OriginPoint;
+        private UInt64? _OriginPointId;
+        /// <summary>
+        /// Souřadnice bodu 2 = cílový bod vektoru
+        /// </summary>
+        public Point2D TargetPoint { get { _CheckTarget(); return _TargetPoint; } set { _TargetPoint = value; _Reset(false, true); } }
+        private Point2D _TargetPoint;
+        private UInt64? _TargetPointId;
+        /// <summary>
+        /// Úhel 3D z bodu <see cref="OriginPoint"/> do bodu <see cref="TargetPoint"/>
+        /// </summary>
+        public Angle2D Angle { get { _CheckAngleLength(); return _Angle; } set { _Angle = value; _Reset(true, false); } }
+        private Angle2D _Angle;
+        private UInt64? _AngleId;
+        /// <summary>
+        /// Vzdálenost z bodu <see cref="OriginPoint"/> do bodu <see cref="TargetPoint"/>
+        /// </summary>
+        public Double Length { get { _CheckAngleLength(); return _Length.Value; } set { _Length = value; _Reset(true, false); } }
+        private Double? _Length;
+        private Double? _LengthId;
+        /// <summary>
+        /// Čistý vektor = rozdíl (<see cref="TargetPoint"/> - <see cref="OriginPoint"/>), vyjadřuje pouze směr a velikost vektoru. 
+        /// Jeho počáteční bod = 0.
+        /// Slouží k matematickým výpočtům.
+        /// </summary>
+        public Point2D Vector { get { return (this.TargetPoint - this.OriginPoint); } }
+        /// <summary>
+        /// Obsahuje true, pokud this vektor je nulový : jeho počátek == konec, jeho délka == 0
+        /// </summary>
+        public bool IsZero { get { return ((this._TargetPoint.IsNotNull()) ? (this.OriginPoint == this.TargetPoint) : (this._Length.HasValue ? (this._Length.Value == 0d) : true)); } }
+        /// <summary>
+        /// Textové vyjádření obsahu prvku
+        /// </summary>
+        public override string Text { get { return base.Text + $"; Origin: {OriginPoint}; Target: {TargetPoint}"; } }
+        #endregion
+        #region Privátní přepočty mezi hodnotami TargetPoint <=> Angle+Length
+        /// <summary>
+        /// Resetuje Target a/nebo Angle+Length, vždy interní ID, plus zachová ID platných dat.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="angle"></param>
+        private void _Reset(bool target, bool angle)
+        {
+            if (target)
+            {
+                _TargetPoint = null;
+            }
+            if (angle)
+            {
+                _Angle = null;
+                _Length = null;
+            }
+            _SaveId();
+            this.ResetId();
+        }
+        /// <summary>
+        /// Zajistí, že cílový bod bude platný
+        /// </summary>
+        private void _CheckTarget()
+        {
+            if (_TargetPoint == null || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_Angle, _AngleId) || IsChanged(_Length, _LengthId))
+            {
+                Math3D.CalculateTarget(_OriginPoint, _Angle, _Length.Value, out _TargetPoint);
+                _SaveId();
+            }
+        }
+        /// <summary>
+        /// Zajistí, že úhel a vzdálenost bude platný
+        /// </summary>
+        private void _CheckAngleLength()
+        {
+            if (_Angle == null || !_Length.HasValue || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_TargetPoint, _TargetPointId))
+            {
+                double length;
+                Math3D.CalculateAngleLength(_OriginPoint, _TargetPoint, out _Angle, out length);
+                _Length = length;
+                _SaveId();
+            }
+        }
+        /// <summary>
+        /// Uloží si ID všech hodnot po jejich vypočítání
+        /// </summary>
+        private void _SaveId()
+        {
+            _OriginPointId = _OriginPoint?.Id;
+            _TargetPointId = _TargetPoint?.Id;
+            _AngleId = _Angle?.Id;
+            _LengthId = _Length;
+        }
+        #endregion
+        #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmé roviny, součiny skalární a vektorový
+        /// <summary>
+        /// Matice vektoru pro výpočty.
+        /// Řádky obsahují dimenze: [0,] = dX; [1,] = dY;
+        /// Sloupce obsahují koeficienty: [,0] = d?0; [,1] = d?1;
+        /// Souřadnice bodu na vektoru je pak dána výpočtem Pt = { X = dX0 + t * dX1; Y = dY0 + t * dY1; },
+        /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
+        /// </summary>
+        public double[,] Matrix
+        {
+            get
+            {
+                Point2D p0 = this.OriginPoint;
+                Point2D p1 = this.Vector;
+                double[,] matrix = new double[2, 2]
+                {
+                    {  p0.X, p1.X },
+                    {  p0.Y, p1.Y }
+                };
+                return matrix;
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí skalární součin dvou vektorů (dot product), 
+        /// dle vzorce: r = (a.Vector.X * b.Vector.X) +  (a.Vector.Y * b.Vector.Y).
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Double ScalarProduct(Vector2D a, Vector2D b)
+        {
+            return Point2D.ScalarProduct(a.Vector, b.Vector);
+        }
+
+        /// <summary>
+        /// Vrátí bod na this vektoru, který je vzdálen (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <returns></returns>
+        public Point2D GetPointAtDistance(double distance)
+        {
+            return this.OriginPoint + (this.Angle.Point * distance);
+        }
+        /// <summary>
+        /// Vrátí bod na this vektoru, který se nachází na relativní pozici (<paramref name="t"/>);
+        /// relativně k bodu <see cref="OriginPoint"/> (pro t = 0) až <see cref="TargetPoint"/> (pro t = 1).
+        /// Hodnota t smí být libovolná, tj. i mimo rozsaj 0 ÷ 1.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public Point2D GetPointMatrix(double t)
+        {
+            var m = Matrix;
+            return new Point2D(m[0, 0] + t * m[0, 1], m[1, 0] + t * m[1, 1]);
+        }
+        /// <summary>
+        /// Obsahuje vektor kolmý na this vektor, který jej protíná v bodě <see cref="OriginPoint"/>,
+        /// a je otočený o 90° proti směru hodinových ručiček.
+        /// </summary>
+        public Vector2D VectorPerpendicular
+        {
+            get
+            {
+                var point = OriginPoint.Clone;
+                var vector = Vector;
+                return new Vector2D(point, new Point2D(point.X - vector.Y, point.Y + vector.X));
+            }
+        }
+        /// <summary>
+        /// Obsahuje vektor obrácený na this vektor, který jej protíná v bodě <see cref="OriginPoint"/>,
+        /// a je otočený o 180° proti směru hodinových ručiček = je protisměrný co do směru
+        /// </summary>
+        public Vector2D VectorOpposite
+        {
+            get
+            {
+                var point = OriginPoint.Clone;
+                var vector = Vector;
+                return new Vector2D(point, new Point2D(point.X - vector.X, point.Y - vector.Y));
+            }
+        }
+        /// <summary>
+        /// Obsahuje vektor opačně kolmý na this vektor, který jej protíná v bodě <see cref="OriginPoint"/>,
+        /// a je otočený o 90° po směru hodinových ručiček.
+        /// </summary>
+        public Vector2D VectorPerpendicularCW
+        {
+            get
+            {
+                var point = OriginPoint.Clone;
+                var vector = Vector;
+                return new Vector2D(point, new Point2D(point.X + vector.Y, point.Y - vector.X));
+            }
+        }
+        /// <summary>
+        /// Vrátí vektor kolmý na this vektor, který jej protíná v bodě P
+        /// (který leží na this vektoru ve vzdálenosti (t) mezi <see cref="OriginPoint"/> a <see cref="TargetPoint"/>).
+        /// Vektor reprezentuje kolmici ve směru <paramref name="rotate"/> (proti směru / ve směru hodinových ručiček).
+        /// Může být specifikována i rotace <see cref="Rotate2D.Opposite"/> i <see cref="Rotate2D.None"/>, 
+        /// pak ale výsledek nepředstavuje kolmici ale o protilehlý vektor nebo o týž vektor.
+        /// </summary>
+        /// <param name="t"></param>
+        /// <param name="rotate">Směr kolmice, lze zadat kteroukoli ze čtyř možností</param>
+        /// <returns></returns>
+        public Vector2D GetVectorPerpendicular(double t, Rotate2D rotate)
+        {
+            var point = GetPointMatrix(t);
+            var vector = Vector;
+            switch (rotate)
+            {
+                case Rotate2D.None:
+                    return new Vector2D(point, new Point2D(point.X + vector.X, point.Y + vector.Y));
+                case Rotate2D.CCW:
+                    return new Vector2D(point, new Point2D(point.X - vector.Y, point.Y + vector.X));
+                case Rotate2D.Opposite:
+                    return new Vector2D(point, new Point2D(point.X - vector.X, point.Y - vector.Y));
+                case Rotate2D.CW:
+                    return new Vector2D(point, new Point2D(point.X + vector.Y, point.Y - vector.X));
+            }
+            return null;
+        }
+
+
+        #endregion
+        #region Sčítání, odčítání, porovnání
+        /// <summary>
+        /// Operátor : Point2D = Point2D + Vector2D; 
+        /// kde z vektoru je akceptována pouze jeho čistá část <see cref="Vector2D.Vector"/>,
+        /// ignoruje se jeho počáteční bod <see cref="Vector2D.OriginPoint"/>
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Point2D operator +(Point2D a, Vector2D b) { var v = b.Vector; return new Point2D(a.X + v.X, a.Y + v.Y); }
+        /// <summary>
+        /// Operátor : Point2D = Point2D - Vector2D; 
+        /// kde z vektoru je akceptována pouze jeho čistá část <see cref="Vector2D.Vector"/>,
+        /// ignoruje se jeho počáteční bod <see cref="Vector2D.OriginPoint"/>
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Point2D operator -(Point2D a, Vector2D b) { var v = b.Vector; return new Point2D(a.X - v.X, a.Y - v.Y); }
+        /// <summary>
+        /// Operátor : Vector2D = Vector2D + Vector2D;
+        /// kde z vektoru (a) je akceptován bod počátku <see cref="OriginPoint"/>, 
+        /// a výsledný čistý <see cref="Vector"/> = suma čistých vektorů (a + b) 
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Vector2D operator +(Vector2D a, Vector2D b) { var ap = a.OriginPoint.Clone; var av = a.Vector; var bv = b.Vector; return new Vector2D(ap, new Point2D(ap.X + av.X + bv.X, ap.Y + av.Y + bv.Y)); }
+        /// <summary>
+        /// Operátor : Vector2D = Vector2D - Vector2D;
+        /// kde z vektoru (a) je akceptován bod počátku <see cref="OriginPoint"/>, 
+        /// a výsledný čistý <see cref="Vector"/> = rozdíl čistých vektorů (a - b) 
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Vector2D operator -(Vector2D a, Vector2D b) { var ap = a.OriginPoint.Clone; var av = a.Vector; var bv = b.Vector; return new Vector2D(ap, new Point2D(ap.X + av.X - bv.X, ap.Y + av.Y - bv.Y)); }
+
+        /// <summary>
+        /// Operátor "je rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator ==(Vector2D a, Vector2D b) { return IsEqual(a, b, () => IsEqualValues(a, b)); }
+        /// <summary>
+        /// Operátor "není rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator !=(Vector2D a, Vector2D b) { return !IsEqual(a, b, () => IsEqualValues(a, b)); }
+        /// <summary>
+        /// Metoda vrátí true, pokud dané dvě instance obsahují shodná data.
+        /// Obě instance musí být not null, jinak dojde k chybě.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected static bool IsEqualValues(Vector2D a, Vector2D b) { return (a.OriginPoint == b.OriginPoint && a.TargetPoint == b.TargetPoint); }
+        /// <summary>
+        /// Vrátí hashcode
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode() { return CalculateHashCode(this.OriginPoint.GetHashCode(), this.TargetPoint.GetHashCode()); }
+        /// <summary>
+        /// Vrací příznak rovnosti
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            return (this == (obj as Vector2D));
+        }
+        #endregion
+
+    }
+    #endregion
     #region class Point3D
     /// <summary>
     /// Souřadnice 3D bodu
@@ -35,6 +789,10 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             _Y = y;
             _Z = z;
         }
+        /// <summary>
+        /// Obsahuje klon sebe sama
+        /// </summary>
+        public Point3D Clone { get { return new Point3D(X, Y, Z); } }
         /// <summary>
         /// Nulový bod, všechny jeho souřadnice jsou 0
         /// </summary>
@@ -202,6 +960,10 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         {
             _SetCoords(point3D.X, point3D.Y, point3D.Z);
         }
+        /// <summary>
+        /// Obsahuje klon sebe sama
+        /// </summary>
+        public Angle3D Clone { get { return new Angle3D(AngleH.Clone, AngleV.Clone); } }
         /// <summary>
         /// Text prvku
         /// </summary>
@@ -373,6 +1135,19 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             TargetPoint = targetPoint;
         }
         /// <summary>
+        /// Konstruktor pro čistý vektor = ten, jehož <see cref="OriginPoint"/> je <see cref="Point3D.Empty"/> = { 0, 0 }.
+        /// Zadaná hodnota reprezentuje <see cref="TargetPoint"/> = bod{x,y,z}
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        public Vector3D(Double x, Double y, Double z)
+            : base()
+        {
+            OriginPoint = Point3D.Empty;
+            TargetPoint = new Point3D(x, y, z);
+        }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="originPoint"></param>
@@ -396,6 +1171,14 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             Angle = angle;
             Length = length;
         }
+        /// <summary>
+        /// Obsahuje klon sebe sama
+        /// </summary>
+        public Vector3D Clone { get { return new Vector3D(OriginPoint, TargetPoint); } }
+        /// <summary>
+        /// Nulový vektor, vede z bodu Empty do bodu Empty
+        /// </summary>
+        public static Vector3D Empty { get { return new Vector3D(Point3D.Empty, Point3D.Empty); } }
         /// <summary>
         /// Souřadnice bodu 1 = výchozí bod vektoru
         /// </summary>
@@ -430,6 +1213,10 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// Obsahuje true, pokud this vektor je nulový : jeho počátek == konec, jeho délka == 0
         /// </summary>
         public bool IsZero { get { return ((this._TargetPoint.IsNotNull()) ? (this.OriginPoint == this.TargetPoint) : (this._Length.HasValue ? (this._Length.Value == 0d) : true)); } }
+        /// <summary>
+        /// Textové vyjádření obsahu prvku
+        /// </summary>
+        public override string Text { get { return base.Text + $"; Origin: {OriginPoint}; Target: {TargetPoint}"; } }
         #endregion
         #region Privátní přepočty mezi hodnotami TargetPoint <=> Angle+Length
         /// <summary>
@@ -562,6 +1349,28 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         }
 
         #endregion
+        #region Skalární a Vektorový součin
+        public static Double TripleProduct(Vector3D va, Vector3D vb, Vector3D vc)
+        {
+            return 0d;
+        }
+        /// <summary>
+        /// Vrátí vektorový součin zvaný "3D Cross Product" dvou vektorů
+        /// </summary>
+        /// <param name="va"></param>
+        /// <param name="vb"></param>
+        /// <returns></returns>
+        public static Vector3D CrossProduct(Vector3D va, Vector3D vb)
+        {
+            Point3D v = va.Vector;
+            Point3D w = vb.Vector;
+            Func<Double, Double, Double, Double, Double> crossFn = (a, b, c, d) => (a * d) - (b * c);
+            Double x = crossFn(v.Y, v.Z, w.Y, w.Z);
+            Double y = crossFn(v.Z, v.X, w.Z, w.X);
+            Double z = crossFn(v.X, v.Y, w.X, w.Y);
+            return new Vector3D(x, y, z);
+        }
+        #endregion
         #region Sčítání, odčítání, porovnání
         /// <summary>
         /// Operátor : Point2D = Point2D + Vector2D; 
@@ -581,6 +1390,24 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// <param name="b"></param>
         /// <returns></returns>
         public static Point3D operator -(Point3D a, Vector3D b) { var v = b.Vector; return new Point3D(a.X - v.X, a.Y - v.Y, a.Z - v.Z); }
+        /// <summary>
+        /// Operátor : Vector3D = Vector3D + Vector3D;
+        /// kde z vektoru (a) je akceptován bod počátku <see cref="OriginPoint"/>, 
+        /// a výsledný čistý <see cref="Vector"/> = suma čistých vektorů (a + b) 
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Vector3D operator +(Vector3D a, Vector3D b) { var ap = a.OriginPoint.Clone; var av = a.Vector; var bv = b.Vector; return new Vector3D(ap, new Point3D(ap.X + av.X + bv.X, ap.Y + av.Y + bv.Y, ap.Z + av.Z + bv.Z)); }
+        /// <summary>
+        /// Operátor : Vector3D = Vector3D - Vector3D;
+        /// kde z vektoru (a) je akceptován bod počátku <see cref="OriginPoint"/>, 
+        /// a výsledný čistý <see cref="Vector"/> = rozdíl čistých vektorů (a - b) 
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Vector3D operator -(Vector3D a, Vector3D b) { var ap = a.OriginPoint.Clone; var av = a.Vector; var bv = b.Vector; return new Vector3D(ap, new Point3D(ap.X + av.X - bv.X, ap.Y + av.Y - bv.Y, ap.Z + av.Z - bv.Z)); }
 
         /// <summary>
         /// Operátor "je rovno"
@@ -906,670 +1733,6 @@ namespace Asol.Tools.WorkScheduler.GameComponents
 
     }
     #endregion
-    #region class Point2D
-    /// <summary>
-    /// Souřadnice 2D bodu
-    /// </summary>
-    public class Point2D : BaseXD
-    {
-        #region Konstruktory a data
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        public Point2D(double x, double y)
-            : base()
-        {
-            _X = x;
-            _Y = y;
-        }
-        /// <summary>
-        /// Nulový bod, všechny jeho souřadnice jsou 0
-        /// </summary>
-        public static Point2D Empty { get { return new Point2D(0d, 0d); } }
-        /// <summary>
-        /// Textové vyjádření obsahu prvku
-        /// </summary>
-        public override string Text { get { return base.Text + $"; X: {_X}; Y: {_Y}"; } }
-        /// <summary>
-        /// Souřadnice X
-        /// </summary>
-        public double X { get { return _X; } set { this.ResetId(); _X = value; } }
-        private double _X;
-        /// <summary>
-        /// Souřadnice Y
-        /// </summary>
-        public double Y { get { return _Y; } set { this.ResetId(); _Y = value; } }
-        private double _Y;
-        #endregion
-        #region Délky a úhly
-        /// <summary>
-        /// Délka přepony X-Y
-        /// </summary>
-        public double HypXY { get { return Math3D.GetHypotenuse(_X, _Y); } }
-        /// <summary>
-        /// Úhel ve vodorovné rovině X-Y
-        /// </summary>
-        public Angle2D Angle { get { return new Angle2D(_X, _Y); } }
-        #endregion
-        #region Matematika
-        /// <summary>
-        /// Metoda vrátí skalární součin dvou souřadnic (dot product), 
-        /// dle vzorce: r = (a.X * b.X) +  (a.Y * b.Y).
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Double ScalarProduct(Point2D a, Point2D b)
-        {
-            return (a.X * b.X) + (a.Y + b.Y);
-        }
-        #endregion
-        #region Sčítání, odčítání, násobení, porovnání
-        /// <summary>
-        /// Sčítání: result = a + b
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Point2D operator +(Point2D a, Point2D b) { return new Point2D(a.X + b.X, a.Y + b.Y); }
-        /// <summary>
-        /// Odečítání: result = a - b
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Point2D operator -(Point2D a, Point2D b) { return new Point2D(a.X - b.X, a.Y - b.Y); }
-        /// <summary>
-        /// Násobení: result = a * q
-        /// </summary>
-        /// <param name="a">Výchozí bod</param>
-        /// <param name="q">Koeficient násobení, výsledek bude mít všechny souřadnice vynásobené</param>
-        /// <returns></returns>
-        public static Point2D operator *(Point2D a, double q) { return new Point2D(a.X * q, a.Y * q); }
-        /// <summary>
-        /// Operátor "je rovno"
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static bool operator ==(Point2D a, Point2D b) { return IsEqual(a, b, () => IsEqualValues(a, b)); }
-        /// <summary>
-        /// Operátor "není rovno"
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static bool operator !=(Point2D a, Point2D b) { return !IsEqual(a, b, () => IsEqualValues(a, b)); }
-        /// <summary>
-        /// Metoda vrátí true, pokud dané dvě instance obsahují shodná data.
-        /// Obě instance musí být not null, jinak dojde k chybě.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        protected static bool IsEqualValues(Point2D a, Point2D b) { return (a.X == b.X && a.Y == b.Y); }
-        /// <summary>
-        /// Vrátí hashcode
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode() { return CalculateHashCode(this.X, this.Y); }
-        /// <summary>
-        /// Vrací příznak rovnosti
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj)
-        {
-            return (this == (obj as Point2D));
-        }
-        #endregion
-        #region Implicitní konvertory
-        /// <summary>
-        /// Implicitní konverze
-        /// </summary>
-        /// <param name="point2D"></param>
-        public static implicit operator System.Drawing.PointF(Point2D point2D) { return new System.Drawing.PointF((float)point2D.X, (float)point2D.Y); }
-        /// <summary>
-        /// Implicitní konverze
-        /// </summary>
-        /// <param name="point"></param>
-        public static implicit operator Point2D(System.Drawing.PointF point) { return new Point2D((double)point.X, (double)point.Y); }
-        #endregion
-    }
-    #endregion
-    #region class Angle2D
-    /// <summary>
-    /// Jeden úhel (radiány, stupně)
-    /// </summary>
-    public class Angle2D : BaseXD
-    {
-        #region Konstruktory a data
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="rad"></param>
-        public Angle2D(double rad)
-            : base()
-        {
-            this.Rad = rad;
-        }
-        /// <summary>
-        /// Konstruktor pro zadané hodnoty na ose X a Y
-        /// </summary>
-        /// <param name="dx"></param>
-        /// <param name="dy"></param>
-        public Angle2D(double dx, double dy)
-        {
-            //int cx = dx.CompareTo(0d);
-            //int cy = dy.CompareTo(0d);
-
-            //// Vyřeším pravé úhly: doprava, doleva; nahoru, dolů:
-            //if (cy == 0) return (cx >= 0 ? Angle.Angle0 : Angle.Angle2);
-            //if (cx == 0) return (cy >= 0 ? Angle.Angle1 : Angle.Angle3);
-
-            this.Rad = Math.Atan2(dy, dx);
-        }
-        /// <summary>
-        /// Konstruktor vycházející z hodnoty úhlu ve stupních 0° - 360°
-        /// </summary>
-        /// <param name="degrees"></param>
-        /// <returns></returns>
-        public static Angle2D FromDegrees(double degrees)
-        {
-            return new Angle2D(ConvertDegreeToRad(degrees));
-        }
-        /// <summary>
-        /// Text prvku
-        /// </summary>
-        public override string Text { get { return base.Text + $"; {DegreeDMS}"; } }
-        /// <summary>
-        /// Úhel v radiánech, v rozsahu 0d ÷ (2d * <see cref="Math.PI"/>)
-        /// </summary>
-        public double Rad { get { return _Rad; } set { this.ResetId(); _Rad = (value % R); } }
-        private double _Rad;
-        /// <summary>
-        /// Úhel ve stupních, v rozsahu 0d ÷ 360d, desetinné zlomky
-        /// </summary>
-        public double Degrees { get { return ConvertRadToDegree(Rad); } set { Rad = ConvertDegreeToRad(value); } }
-        /// <summary>
-        /// Stupně vyjádřené jako text "stupně°:minuty':vteřiny''"
-        /// </summary>
-        public string DegreeDMS { get { return ConvertRadToDMS(Rad); } }
-        /// <summary>
-        /// Hodnota Pí = 3.1415926535897932384626433832795028841971d; (na 40 míst)
-        /// </summary>
-        public const double Pi = 3.1415926535897932384626433832795028841971d;
-        /// <summary>
-        /// Hodnota 2d * <see cref="Pi"/> = 6.2831853071795862.......d; (na 40 míst)
-        /// </summary>
-        public const double R = 2d * Pi;
-        /// <summary>
-        /// Hodnota 360 (počet stupňů Degrees)
-        /// </summary>
-        public const double DEG = 360d;
-        #endregion
-        #region Mirrory a Protilehlý úhel
-        /// <summary>
-        /// Obsahuje úhel opačného směru, tedy např. k úhlu 30° je <see cref="Negative"/> úhel = 210°, atd
-        /// </summary>
-        public Angle2D Negative { get { return new Angle2D(this.Rad + Pi); } }
-        /// <summary>
-        /// Obsahuje this úhel zrcadlený kolem osy X (=vodorovně = shora dolů a zdola nahoru)
-        /// </summary>
-        public Angle2D MirrorX { get { return GetMirror(0.00d); } }
-        /// <summary>
-        /// Obsahuje this úhel zrcadlený kolem osy Y (=svisle = zleva doprava a zprava doleva)
-        /// </summary>
-        public Angle2D MirrorY { get { return GetMirror(0.25d); } }
-        /// <summary>
-        /// Vrací this úhel zrcadlený na druhou stranu dané osy, kde osa je dána poměrem 0 - 1 z celého kruhu.
-        /// Například zadání <paramref name="relativeAxis"/> = 0.25d vrátí úhel zrcadlený kolem osy Y;
-        /// hodnota 0.00d vrátí zrcadlení kolem osy X;
-        /// lze zrcadlit kolem libovolného úhlu.
-        /// </summary>
-        /// <param name="relativeAxis"></param>
-        /// <returns></returns>
-        public Angle2D GetMirror(double relativeAxis)
-        {
-            double degrees = this.Degrees;
-            double axis = DEG * (relativeAxis % 1d);
-            degrees = 2d * axis - degrees;
-            if (degrees < 0d) degrees += DEG;
-            return Angle2D.FromDegrees(degrees);
-        }
-        #endregion
-        #region Souřadnice jednotkového bodu
-        /// <summary>
-        /// Souřadnice jednotkového bodu.
-        /// Je to bod, který je vzdálen 1.0 od bodu {0, 0} v this úhlu.
-        /// <para/>
-        /// Např. Pro úhel 30° je souřadnice X = 0.866025404d a souřadnice Y = 0.5d;
-        /// pro úhel 45° jsou obě souřadnice X = Y = 0.707106781, 
-        /// pro úhel 180% je X = -1d a Y = 0, atd.
-        /// </summary>
-        public Point2D Point
-        {
-            get
-            {
-                double rad = this.Rad;
-                double dx = Math.Cos(rad);
-                double dy = Math.Sin(rad);
-                return new Point2D(dx, dy);
-            }
-            set
-            {
-                double dx = value.X;
-                double dy = value.Y;
-                this.Rad = Math.Atan2(dy, dx);
-            }
-        }
-        #endregion
-        #region Statické konstruktory pro čtyři pravé úhly, konverze na stupně, minuty, vteřiny
-        /// <summary>
-        /// Úhel 0 = přímo v kladné ose X
-        /// </summary>
-        public static Angle2D Angle0 { get { return new Angle2D(0d); } }
-        /// <summary>
-        /// Úhel 90° = přímo v kladné ose Y
-        /// </summary>
-        public static Angle2D Angle1 { get { return new Angle2D(0.5d * Math.PI); } }
-        /// <summary>
-        /// Úhel 180° = přímo v záporné ose X
-        /// </summary>
-        public static Angle2D Angle2 { get { return new Angle2D(Math.PI); } }
-        /// <summary>
-        /// Úhel 270° = přímo v záporné ose Y
-        /// </summary>
-        public static Angle2D Angle3 { get { return new Angle2D(1.5d * Math.PI); } }
-        /// <summary>
-        /// Ze zadaného čísla v obloukové míře (radech) vrátí stupně 0-360
-        /// </summary>
-        /// <param name="rad"></param>
-        /// <returns></returns>
-        public static double ConvertRadToDegree(double rad)
-        {
-            return DEG * (rad % R) / R;
-        }
-        /// <summary>
-        /// Ze zadaného čísla ve stupních (0-360) vrátí obloukovou míru (rad)
-        /// </summary>
-        /// <param name="degree"></param>
-        /// <returns></returns>
-        public static double ConvertDegreeToRad(double degree)
-        {
-            return (degree % DEG) * R / DEG;
-        }
-        /// <summary>
-        /// Ze zadaného čísla v obloukové míře (radech) vrátí úhlové "stupně°:minuty':vteřiny''"
-        /// </summary>
-        /// <param name="rad"></param>
-        /// <returns></returns>
-        public static string ConvertRadToDMS(double rad)
-        {
-            return ConvertDegreeToDMS(ConvertRadToDegree(rad));
-        }
-        /// <summary>
-        /// Ze zadaného čísla ve stupních vrátí úhlové "stupně°:minuty':vteřiny''"
-        /// </summary>
-        /// <param name="degrees"></param>
-        /// <returns></returns>
-        public static string ConvertDegreeToDMS(double degrees)
-        {
-            int d0 = ((int)degrees) % 360;       // 0-359
-            double d = 60d * (degrees % 1d);     // 0.000 - 59.999
-            int d1 = ((int)d);                   // 0 - 59
-            d = 60d * d;
-            int d2 = ((int)d);
-            return d0.ToString() + "°"
-                + ((d1 != 0 || d2 != 0) ? ":" + d1.ToString("00") + "'" : "")
-                + ((d2 != 0) ? ":" + d2.ToString("00") + "''" : "");
-        }
-        #endregion
-        #region Sčítání, odčítání, porovnání
-        /// <summary>
-        /// Sčítání: result = a + b
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Angle2D operator +(Angle2D a, Angle2D b) { return new Angle2D(a.Rad + b.Rad); }
-        /// <summary>
-        /// Odečítání: result = a - b
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Angle2D operator -(Angle2D a, Angle2D b) { return new Angle2D(a.Rad - b.Rad); }
-        /// <summary>
-        /// Operátor "je rovno"
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static bool operator ==(Angle2D a, Angle2D b) { return IsEqual(a, b, () => IsEqualValues(a, b)); }
-        /// <summary>
-        /// Operátor "není rovno"
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static bool operator !=(Angle2D a, Angle2D b) { return !IsEqual(a, b, () => IsEqualValues(a, b)); }
-        /// <summary>
-        /// Metoda vrátí true, pokud dané dvě instance obsahují shodná data.
-        /// Obě instance musí být not null, jinak dojde k chybě.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        protected static bool IsEqualValues(Angle2D a, Angle2D b) { return (a.Rad == b.Rad); }
-        /// <summary>
-        /// Vrátí hashcode
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode() { return CalculateHashCode(this.Rad); }
-        /// <summary>
-        /// Vrací příznak rovnosti
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj)
-        {
-            return (this == (obj as Angle2D));
-        }
-        #endregion
-        #region Implicitní konvertory
-        /// <summary>
-        /// Implicitní konverze
-        /// </summary>
-        /// <param name="angle2D"></param>
-        public static implicit operator Double(Angle2D angle2D) { return angle2D.Rad; }
-        /// <summary>
-        /// Implicitní konverze
-        /// </summary>
-        /// <param name="angle"></param>
-        public static implicit operator Angle2D(Double angle) { return new Angle2D(angle); }
-        #endregion
-    }
-    #endregion
-    #region class Vector2D
-    /// <summary>
-    /// Vektor v rovině (dva body = úhel a délka)
-    /// </summary>
-    public class Vector2D : BaseXD
-    {
-        #region Konstruktory a data
-        /// <summary>
-        /// Konstruktor pro čistý vektor = ten, jehož <see cref="OriginPoint"/> je <see cref="Point2D.Empty"/> = { 0, 0 }.
-        /// Zadaná hodnota reprezentuje <see cref="TargetPoint"/>
-        /// </summary>
-        /// <param name="targetPoint"></param>
-        public Vector2D(Point2D targetPoint)
-            : base()
-        {
-            OriginPoint = Point2D.Empty;
-            TargetPoint = targetPoint;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="originPoint"></param>
-        /// <param name="targetPoint"></param>
-        public Vector2D(Point2D originPoint, Point2D targetPoint)
-            : base()
-        {
-            OriginPoint = originPoint;
-            TargetPoint = targetPoint;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="originPoint"></param>
-        /// <param name="angle"></param>
-        /// <param name="length"></param>
-        public Vector2D(Point2D originPoint, Angle2D angle, Double length)
-            : base()
-        {
-            OriginPoint = originPoint;
-            Angle = angle;
-            Length = length;
-        }
-        /// <summary>
-        /// Souřadnice bodu 1 = výchozí bod vektoru
-        /// </summary>
-        public Point2D OriginPoint { get { return _OriginPoint; } set { _OriginPoint = value; _Reset(false, true); } }
-        private Point2D _OriginPoint;
-        private UInt64? _OriginPointId;
-        /// <summary>
-        /// Souřadnice bodu 2 = cílový bod vektoru
-        /// </summary>
-        public Point2D TargetPoint { get { _CheckTarget(); return _TargetPoint; } set { _TargetPoint = value; _Reset(false, true); } }
-        private Point2D _TargetPoint;
-        private UInt64? _TargetPointId;
-        /// <summary>
-        /// Úhel 3D z bodu <see cref="OriginPoint"/> do bodu <see cref="TargetPoint"/>
-        /// </summary>
-        public Angle2D Angle { get { _CheckAngleLength(); return _Angle; } set { _Angle = value; _Reset(true, false); } }
-        private Angle2D _Angle;
-        private UInt64? _AngleId;
-        /// <summary>
-        /// Vzdálenost z bodu <see cref="OriginPoint"/> do bodu <see cref="TargetPoint"/>
-        /// </summary>
-        public Double Length { get { _CheckAngleLength(); return _Length.Value; } set { _Length = value; _Reset(true, false); } }
-        private Double? _Length;
-        private Double? _LengthId;
-        /// <summary>
-        /// Čistý vektor = rozdíl (<see cref="TargetPoint"/> - <see cref="OriginPoint"/>), vyjadřuje pouze směr a velikost vektoru. 
-        /// Jeho počáteční bod = 0.
-        /// Slouží k matematickým výpočtům.
-        /// </summary>
-        public Point2D Vector { get { return (this.TargetPoint - this.OriginPoint); } }
-        /// <summary>
-        /// Obsahuje true, pokud this vektor je nulový : jeho počátek == konec, jeho délka == 0
-        /// </summary>
-        public bool IsZero { get { return ((this._TargetPoint.IsNotNull()) ? (this.OriginPoint == this.TargetPoint) : (this._Length.HasValue ? (this._Length.Value == 0d) : true)); } }
-        #endregion
-        #region Privátní přepočty mezi hodnotami TargetPoint <=> Angle+Length
-        /// <summary>
-        /// Resetuje Target a/nebo Angle+Length, vždy interní ID, plus zachová ID platných dat.
-        /// </summary>
-        /// <param name="target"></param>
-        /// <param name="angle"></param>
-        private void _Reset(bool target, bool angle)
-        {
-            if (target)
-            {
-                _TargetPoint = null;
-            }
-            if (angle)
-            {
-                _Angle = null;
-                _Length = null;
-            }
-            _SaveId();
-            this.ResetId();
-        }
-        /// <summary>
-        /// Zajistí, že cílový bod bude platný
-        /// </summary>
-        private void _CheckTarget()
-        {
-            if (_TargetPoint == null || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_Angle, _AngleId) || IsChanged(_Length, _LengthId))
-            {
-                Math3D.CalculateTarget(_OriginPoint, _Angle, _Length.Value, out _TargetPoint);
-                _SaveId();
-            }
-        }
-        /// <summary>
-        /// Zajistí, že úhel a vzdálenost bude platný
-        /// </summary>
-        private void _CheckAngleLength()
-        {
-            if (_Angle == null || !_Length.HasValue || IsChanged(_OriginPoint, _OriginPointId) || IsChanged(_TargetPoint, _TargetPointId))
-            {
-                double length;
-                Math3D.CalculateAngleLength(_OriginPoint, _TargetPoint, out _Angle, out length);
-                _Length = length;
-                _SaveId();
-            }
-        }
-        /// <summary>
-        /// Uloží si ID všech hodnot po jejich vypočítání
-        /// </summary>
-        private void _SaveId()
-        {
-            _OriginPointId = _OriginPoint?.Id;
-            _TargetPointId = _TargetPoint?.Id;
-            _AngleId = _Angle?.Id;
-            _LengthId = _Length;
-        }
-        #endregion
-        #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmé roviny, součiny skalární a vektorový
-        /// <summary>
-        /// Matice vektoru pro výpočty.
-        /// Řádky obsahují dimenze: [0,] = dX; [1,] = dY;
-        /// Sloupce obsahují koeficienty: [,0] = d?0; [,1] = d?1;
-        /// Souřadnice bodu na vektoru je pak dána výpočtem Pt = { X = dX0 + t * dX1; Y = dY0 + t * dY1; },
-        /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
-        /// </summary>
-        public double[,] Matrix
-        {
-            get
-            {
-                Point2D p0 = this.OriginPoint;
-                Point2D p1 = this.Vector;
-                double[,] matrix = new double[2, 2]
-                {
-                    {  p0.X, p1.X },
-                    {  p0.Y, p1.Y }
-                };
-                return matrix;
-            }
-        }
-        /// <summary>
-        /// Metoda vrátí skalární součin dvou vektorů (dot product), 
-        /// dle vzorce: r = (a.Vector.X * b.Vector.X) +  (a.Vector.Y * b.Vector.Y).
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Double ScalarProduct(Vector2D a, Vector2D b)
-        {
-            return Point2D.ScalarProduct(a.Vector, b.Vector);
-        }
-
-        /// <summary>
-        /// Vrátí bod na this vektoru, který je vzdálen (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
-        /// </summary>
-        /// <param name="distance"></param>
-        /// <returns></returns>
-        public Point2D GetPointAtDistance(double distance)
-        {
-            return this.OriginPoint + (this.Angle.Point * distance);
-        }
-        /// <summary>
-        /// Vrátí bod na this vektoru, který se nachází na relativní pozici (<paramref name="t"/>);
-        /// relativně k bodu <see cref="OriginPoint"/> (pro t = 0) až <see cref="TargetPoint"/> (pro t = 1).
-        /// Hodnota t smí být libovolná, tj. i mimo rozsaj 0 ÷ 1.
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        public Point2D GetPointMatrix(double t)
-        {
-            var m = Matrix;
-            return new Point2D(m[0, 0] + t * m[0, 1], m[1, 0] + t * m[1, 1]);
-        }
-        /// <summary>
-        /// Vrátí vektor kolmý na this vektor, který jej protíná v bodě P
-        /// (který leží na this vektoru ve vzdálenosti (t) mezi <see cref="OriginPoint"/> a <see cref="TargetPoint"/>).
-        /// Vektor reprezentuje kolmici ve směru <paramref name="rotate"/> (proti směru / ve směru hodinových ručiček).
-        /// Může být specifikována i rotace <see cref="Rotate2D.Opposite"/> i <see cref="Rotate2D.None"/>, 
-        /// pak ale výsledek nepředstavuje kolmici ale o protilehlý vektor nebo o týž vektor.
-        /// </summary>
-        /// <param name="t"></param>
-        /// <param name="rotate">Směr kolmice, lze zadat kteroukoli ze čtyř možností</param>
-        /// <returns></returns>
-        public Vector2D GetVectorPerpendicular(double t, Rotate2D rotate)
-        {
-            var point = GetPointMatrix(t);
-            var vector = Vector;
-            switch (rotate)
-            {
-                case Rotate2D.None:
-                    return new Vector2D(point, new Point2D(point.X + vector.X, point.Y + vector.Y));
-                case Rotate2D.CCW:
-                    return new Vector2D(point, new Point2D(point.X - vector.Y, point.Y + vector.X));
-                case Rotate2D.Opposite:
-                    return new Vector2D(point, new Point2D(point.X - vector.X, point.Y - vector.Y));
-                case Rotate2D.CW:
-                    return new Vector2D(point, new Point2D(point.X + vector.Y, point.Y - vector.X));
-            }
-            return null;
-        }
-
-
-        #endregion
-        #region Sčítání, odčítání, porovnání
-        /// <summary>
-        /// Operátor : Point2D = Point2D + Vector2D; 
-        /// kde z vektoru je akceptována pouze jeho čistá část <see cref="Vector2D.Vector"/>,
-        /// ignoruje se jeho počáteční bod <see cref="Vector2D.OriginPoint"/>
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Point2D operator +(Point2D a, Vector2D b) { var v = b.Vector; return new Point2D(a.X + v.X, a.Y + v.Y); }
-        /// <summary>
-        /// Operátor : Point2D = Point2D - Vector2D; 
-        /// kde z vektoru je akceptována pouze jeho čistá část <see cref="Vector2D.Vector"/>,
-        /// ignoruje se jeho počáteční bod <see cref="Vector2D.OriginPoint"/>
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static Point2D operator -(Point2D a, Vector2D b) { var v = b.Vector; return new Point2D(a.X - v.X, a.Y - v.Y); }
-
-        /// <summary>
-        /// Operátor "je rovno"
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static bool operator ==(Vector2D a, Vector2D b) { return IsEqual(a, b, () => IsEqualValues(a, b)); }
-        /// <summary>
-        /// Operátor "není rovno"
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static bool operator !=(Vector2D a, Vector2D b) { return !IsEqual(a, b, () => IsEqualValues(a, b)); }
-        /// <summary>
-        /// Metoda vrátí true, pokud dané dvě instance obsahují shodná data.
-        /// Obě instance musí být not null, jinak dojde k chybě.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        protected static bool IsEqualValues(Vector2D a, Vector2D b) { return (a.OriginPoint == b.OriginPoint && a.TargetPoint == b.TargetPoint); }
-        /// <summary>
-        /// Vrátí hashcode
-        /// </summary>
-        /// <returns></returns>
-        public override int GetHashCode() { return CalculateHashCode(this.OriginPoint.GetHashCode(), this.TargetPoint.GetHashCode()); }
-        /// <summary>
-        /// Vrací příznak rovnosti
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj)
-        {
-            return (this == (obj as Vector2D));
-        }
-        #endregion
-
-    }
-    #endregion
     #region class BaseXD, enumy
     /// <summary>
     /// Bázová třída s ID (Timestamp)
@@ -1814,6 +1977,241 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// <param name="o"></param>
         /// <returns></returns>
         public static bool IsNotNull(this object o) { return (o != null); }
+        #endregion
+    }
+    #endregion
+    #region Testy
+    /// <summary>
+    /// Sada testů geometrie
+    /// </summary>
+    [TestClass]
+    public class Coord3DTests
+    {
+        #region Testy Point2D
+        /// <summary>
+        /// Testy Point2D
+        /// </summary>
+        [TestMethod]
+        public void TestPoint2D()
+        {
+            Point2D p1a = new Point2D(30d, 40d);
+            bool e1a = ((p1a.X == 30d) && (p1a.Y == 40d));
+            if (!e1a)
+                throw new AssertFailedException("Point2D: chyba konstruktoru");
+
+            Point2D p1b = new Point2D(30d, 40d);
+            bool eq = (p1a == p1b);
+            if (!eq)
+                throw new AssertFailedException("Point2D: chyba operátoru ==");
+            bool nq = (p1a != p1b);
+            if (nq)
+                throw new AssertFailedException("Point2D: chyba operátoru !=");
+
+            Point2D p2 = new Point2D(10d, 10d);
+            Point2D a12 = p1a + p2;
+            Point2D x12 = new Point2D(40d, 50d);
+            bool e12 = ((a12.X == x12.X) && (a12.Y == x12.Y));
+            if (!e12)
+                throw new AssertFailedException("Point2D: chyba operátoru sčítání");
+
+            if (a12 != x12)
+                throw new AssertFailedException("Point2D: chyba operátoru sčítání");
+
+            Point2D r21 = a12 - p2;
+            if (r21 != p1a)
+                throw new AssertFailedException("Point2D: chyba operátoru odečítání");
+
+            Double h1 = p1a.HypXY;               // Přepona X (30) + Y (40) = 50
+            if (h1 != 50d)
+                throw new AssertFailedException("Point2D: chyba hodnoty p1a.HypXY");
+
+            Point2D p4 = new Point2D(10d, 10d);
+            if (p4.Angle.Degrees != 45d)
+                throw new AssertFailedException("Point2D: chyba hodnoty p4.Angle");
+            if (Math.Round(((Double)p4.Angle), 6) != 0.785398d)
+                throw new AssertFailedException("Point2D: chyba hodnoty (Double)p4.Angle");
+
+            Point2D p5 = new Point2D(10d, 20d);
+            Double r5 = Math.Round(p5.Angle, 4);
+            if (r5 != 1.1071d)
+                throw new AssertFailedException("Point2D: chyba hodnoty p5.Angle");
+
+            Point2D p5b = new Point2D(148d, 296d);
+            if (Math.Round(p5.Angle, 8) != Math.Round(p5b.Angle, 8))
+                throw new AssertFailedException("Point2D: chyba hodnoty p5.AngleV != p5b.AngleV");
+        }
+        #endregion
+        #region Testy Vector2D
+        /// <summary>
+        /// Testy Vector2D
+        /// </summary>
+        [TestMethod]
+        public void TestVector2D()
+        {
+            // Vytvoření vektoru a kontrola matrixu:
+            Vector2D v1 = new Vector2D(40d, 30d);
+            var mx = v1.Matrix;
+            if (!((mx[0, 0] == 0d) && (mx[0, 1] == 40d) && (mx[1, 0] == 0d) && (mx[1, 1] == 30d)))
+                throw new AssertFailedException("Vector2D: chyba hodnoty v1.Matrix");
+
+            // Body na přímce:
+            Point2D v1h = v1.GetPointMatrix(0.5d);
+            if (v1h != new Point2D(20d, 15d))
+                throw new AssertFailedException("Vector2D: chyba hodnoty v1.GetPointMatrix(0.5d)");
+
+            Point2D v1d = v1.GetPointAtDistance(100d);
+            if (v1d != new Point2D(80d, 60d))
+                throw new AssertFailedException("Vector2D: chyba hodnoty v1.GetPointAtDistance(100d)");
+
+            // Kolmice:
+            Vector2D v2 = new Vector2D(50d, 10d);
+            Vector2D v2p = v2.VectorPerpendicular;
+            if (v2p.TargetPoint != new Point2D(-10d, 50d))
+                throw new AssertFailedException("Vector2D: chyba hodnoty v2.VectorPerpendicular");
+
+            Vector2D v2o = v2.VectorOpposite;
+            if (v2o.TargetPoint != new Point2D(-50d, -10d))
+                throw new AssertFailedException("Vector2D: chyba hodnoty v2.VectorOpposite");
+
+            Vector2D v2c = v2.VectorPerpendicularCW;
+            if (v2c.TargetPoint != new Point2D(10d, -50d))
+                throw new AssertFailedException("Vector2D: chyba hodnoty v2.VectorPerpendicularCW");
+
+            // Sčítání a odečítání vektorů:
+            Vector2D v3a = new Vector2D(new Point2D(10d, 20d), new Point2D(50d, 70d));        // Z tohoto vektoru akceptujeme Origin a Vector
+            Vector2D v3b = new Vector2D(new Point2D(100d, 200d), new Point2D(160d, 250d));    // Z tohoto vektoru akceptujeme pouze Vector
+
+            Vector2D v3x = v3a + v3b;                      // Očekáváme Origin = { 10, 20 } a Vector = { 100, 100 }
+            if (v3x.OriginPoint != v3a.OriginPoint)        // Výsledek sčítání má mít shodný OriginPoint
+                throw new AssertFailedException("Vector2D: chyba hodnoty +.OriginPoint");
+            if (v3x.Vector != new Point2D(100d, 100d))     // Výsledný čistý vektor je součet čistých vektorů = { ((50-10)+(160-100), (70-20)+(250-200)) }
+                throw new AssertFailedException("Vector2D: chyba hodnoty +.Vector");
+            if (v3x.TargetPoint != new Point2D(110d, 120d))     // = Origin + result.Vector
+                throw new AssertFailedException("Vector2D: chyba hodnoty +.Vector");
+
+            Vector2D v3y = v3b - v3a;                      // Očekáváme Origin = { 100, 200 } a Vector = {60,50} - {40,50} = { 20,0 }
+            if (v3y.OriginPoint != v3b.OriginPoint)        // Výsledek odečítání má mít shodný OriginPoint
+                throw new AssertFailedException("Vector2D: chyba hodnoty -.OriginPoint");
+            if (v3y.Vector != new Point2D(20d, 0d))        // Výsledný čistý vektor je rozdíl čistých vektorů = { ((160-100)-(50-10), (250-200)-(70-20)) }
+                throw new AssertFailedException("Vector2D: chyba hodnoty +.OriginPoint");
+            if (v3y.TargetPoint != new Point2D(120d, 200d))     // = Origin + result.Vector
+                throw new AssertFailedException("Vector2D: chyba hodnoty +.Vector");
+
+
+        }
+        #endregion
+        #region Testy Point3D
+        /// <summary>
+        /// Testy Point3D
+        /// </summary>
+        [TestMethod]
+        public void TestPoint3D()
+        {
+            Point3D p1a = new Point3D(30d, 40d, 0);
+            bool e1a = ((p1a.X == 30d) && (p1a.Y == 40d) && (p1a.Z == 0d));
+            if (!e1a)
+                throw new AssertFailedException("Point3D: chyba konstruktoru");
+
+            Point3D p1b = new Point3D(30d, 40d, 0);
+            bool eq = (p1a == p1b);
+            if (!eq)
+                throw new AssertFailedException("Point3D: chyba operátoru ==");
+            bool nq = (p1a != p1b);
+            if (nq)
+                throw new AssertFailedException("Point3D: chyba operátoru !=");
+
+            Point3D p2 = new Point3D(10d, 10d, 10d);
+            Point3D a12 = p1a + p2;
+            Point3D x12 = new Point3D(40d, 50d, 10d);
+            bool e12 = ((a12.X == x12.X) && (a12.Y == x12.Y) && (a12.Z == x12.Z));
+            if (!e12)
+                throw new AssertFailedException("Point3D: chyba operátoru sčítání");
+
+            if (a12 != x12)
+                throw new AssertFailedException("Point3D: chyba operátoru sčítání");
+
+            Point3D r21 = a12 - p2;
+            if (r21 != p1a)
+                throw new AssertFailedException("Point3D: chyba operátoru odečítání");
+
+            Double h1 = p1a.HypXY;               // Přepona X (30) + Y (40) = 50
+            if (h1 != 50d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p1a.HypXY");
+            if (p1a.HypXZ != 30d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p1a.HypXZ");
+            if (p1a.HypYZ != 40d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p1a.HypYZ");
+            if (p1a.HypXYZ != 50d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p1a.HypXYZ");
+
+            Point3D p4 = new Point3D(10d, 10d, 0d);
+            if (p4.AngleH.Degrees != 0d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p4.AngleH");
+            if (p4.AngleV.Degrees != 45d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p4.AngleV");
+            if (p4.Angle.AngleH.Degrees != 0d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p4.Angle.AngleH");
+            if (p4.Angle.AngleV.Degrees != 45d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p4.Angle.AngleV");
+
+            Point3D p5 = new Point3D(10d, 10d, 10d);
+            Double r5 = Math.Round(p5.AngleV, 4);
+            if (r5 != 0.6155d)
+                throw new AssertFailedException("Point3D: chyba hodnoty p5.AngleV");
+
+            Point3D p5b = new Point3D(148d, 148d, 148d);
+            if (Math.Round(p5.AngleV, 8) != Math.Round(p5b.AngleV, 8))
+                throw new AssertFailedException("Point3D: chyba hodnoty p5.AngleV != p5b.AngleV");
+        }
+        #endregion
+        #region Testy Vector3D
+        /// <summary>
+        /// Testy Vector3D
+        /// </summary>
+        [TestMethod]
+        public void TestVector3D()
+        {
+            // Vytvoření vektoru a kontrola matrixu:
+            Vector3D v1 = new Vector3D(40d, 30d, 20d);
+            var mx = v1.Matrix;
+            if (!((mx[0, 0] == 0d) && (mx[0, 1] == 40d) && (mx[1, 0] == 0d) && (mx[1, 1] == 30d) && (mx[2, 0] == 0d) && (mx[2, 1] == 20d)))
+                throw new AssertFailedException("Vector3D: chyba hodnoty v1.Matrix");
+
+            // Body na přímce:
+            Point3D v1h = v1.GetPointMatrix(0.5d);
+            if (v1h != new Point3D(20d, 15d, 10d))
+                throw new AssertFailedException("Vector3D: chyba hodnoty v1.GetPointMatrix(0.5d)");
+
+            Point3D v1d = v1.GetPointAtDistance(100d);
+            if (Math.Round(v1d.HypXYZ,8) != 100d)
+                throw new AssertFailedException("Vector3D: chyba hodnoty v1.GetPointAtDistance(100d)");
+
+
+
+
+
+
+            // Sčítání a odečítání vektorů:
+            Vector3D v3a = new Vector3D(new Point3D(10d, 20d, 30d), new Point3D(50d, 70d, 40d));     // Z tohoto vektoru akceptujeme Origin a Vector
+            Vector3D v3b = new Vector3D(new Point3D(100d, 200d, 50d), new Point3D(160d, 250d, 20d)); // Z tohoto vektoru akceptujeme pouze Vector
+
+            Vector3D v3x = v3a + v3b;                      // Očekáváme Origin = { 10, 20, 30 } a Vector = { 100, 100, -20 }
+            if (v3x.OriginPoint != v3a.OriginPoint)        // Výsledek sčítání má mít shodný OriginPoint
+                throw new AssertFailedException("Vector3D: chyba hodnoty +.OriginPoint");
+            if (v3x.Vector != new Point3D(100d, 100d, -20d))         // Výsledný čistý vektor je součet čistých vektorů = { ((50-10)+(160-100), (70-20)+(250-200)) }
+                throw new AssertFailedException("Vector3D: chyba hodnoty +.Vector");
+            if (v3x.TargetPoint != new Point3D(110d, 120d, 10d))     // = Origin + result.Vector
+                throw new AssertFailedException("Vector3D: chyba hodnoty +.Vector");
+
+            Vector3D v3y = v3b - v3a;                      // Očekáváme Origin = { 100, 200, 50 } a Vector = {60,50,-30} - {40,50,10} = { 20,0,-40 }
+            if (v3y.OriginPoint != v3b.OriginPoint)        // Výsledek odečítání má mít shodný OriginPoint
+                throw new AssertFailedException("Vector3D: chyba hodnoty -.OriginPoint");
+            if (v3y.Vector != new Point3D(20d, 0d, -40d))            // Výsledný čistý vektor je rozdíl čistých vektorů = { ((160-100)-(50-10), (250-200)-(70-20)) }
+                throw new AssertFailedException("Vector3D: chyba hodnoty +.OriginPoint");
+            if (v3y.TargetPoint != new Point3D(120d, 200d, 10d))     // = Origin + result.Vector
+                throw new AssertFailedException("Vector3D: chyba hodnoty +.Vector");
+
+        }
         #endregion
     }
     #endregion
