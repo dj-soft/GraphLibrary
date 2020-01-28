@@ -448,6 +448,20 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             TargetPoint = targetPoint;
         }
         /// <summary>
+        /// Konstruktor pro vektor, který je dán výchozím bodem a směrem vektoru (tj. čistým vektorem).
+        /// Pokud zadáme <paramref name="originPoint"/> = { 40, 10 } a <paramref name="vector"/>.Vector = { 50, -20 },
+        /// pak vrácený vektor bude mít <see cref="TargetPoint"/> = { 90, -10 }.
+        /// </summary>
+        /// <param name="originPoint"></param>
+        /// <param name="vector"></param>
+        public Vector2D(Point2D originPoint, Vector2D vector)
+            : base()
+        {
+            Point2D t = vector.Vector;
+            OriginPoint = originPoint;
+            TargetPoint = new Point2D(originPoint.X + t.X, originPoint.Y + t.Y);
+        }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="originPoint"></param>
@@ -562,7 +576,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             _LengthId = _Length;
         }
         #endregion
-        #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmé roviny, součiny skalární a vektorový
+        #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmého vektoru a roviny, součiny skalární a vektorový
         /// <summary>
         /// Matice vektoru pro výpočty.
         /// Řádky obsahují dimenze: [0,] = dX; [1,] = dY;
@@ -683,7 +697,25 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             }
             return null;
         }
-
+        /// <summary>
+        /// Vrátí vektor kolmý k this vektoru, jehož bod <see cref="OriginPoint"/> bude rovný zadanému bodu <paramref name="originPoint"/>
+        /// (který by měl ležet mimo this vektor), a jehož <see cref="TargetPoint"/> bude ležet na this vektoru.
+        /// Jeho úhel bude o 90° otočen proti úhlu this vektoru.
+        /// <para/>
+        /// Vrácený vektor může být použit i pro určení vzdálenosti libovolného bodu od vektoru (=délka <see cref="Length"/> vráceného vektoru) 
+        /// i pro určení průmětny libovolného bodu na vektor (=bod <see cref="TargetPoint"/> vráceného vektoru).
+        /// </summary>
+        /// <param name="originPoint"></param>
+        /// <returns></returns>
+        public Vector2D GetVectorPerpendicular(Point2D originPoint)
+        {
+            Vector2D perp = new Vector2D(originPoint, this.VectorPerpendicular);
+            Point2D targetPoint = this * perp;
+        }
+        public static Point2D GetIntersection(Point2D a, Vector2D b)
+        { }
+        public static Point2D GetIntersection(Point2D a, Vector2D b, out )
+        { }
 
         #endregion
         #region Sčítání, odčítání, porovnání
@@ -723,6 +755,14 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// <param name="b"></param>
         /// <returns></returns>
         public static Vector2D operator -(Vector2D a, Vector2D b) { var ap = a.OriginPoint.Clone; var av = a.Vector; var bv = b.Vector; return new Vector2D(ap, new Point2D(ap.X + av.X - bv.X, ap.Y + av.Y - bv.Y)); }
+        /// <summary>
+        /// Operace násobení dvou vektorů : výstupem je bod průniku.
+        /// Pozor, pokud dva vektory nemají společný bod, pak výsledkem je null.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Vector2D operator *(Vector2D a, Vector2D b) { }
 
         /// <summary>
         /// Operátor "je rovno"
@@ -1157,6 +1197,20 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         {
             OriginPoint = originPoint;
             TargetPoint = targetPoint;
+        }
+        /// <summary>
+        /// Konstruktor pro vektor, který je dán výchozím bodem a směrem vektoru (tj. čistým vektorem).
+        /// Pokud zadáme <paramref name="originPoint"/> = { 40, 10, 20 } a <paramref name="vector"/>.Vector = { 50, -20, 5 },
+        /// pak vrácený vektor bude mít <see cref="TargetPoint"/> = { 90, -10, 25 }.
+        /// </summary>
+        /// <param name="originPoint"></param>
+        /// <param name="vector"></param>
+        public Vector3D(Point3D originPoint, Vector3D vector)
+            : base()
+        {
+            Point3D t = vector.Vector;
+            OriginPoint = originPoint;
+            TargetPoint = new Point3D(originPoint.X + t.X, originPoint.Y + t.Y, originPoint.Z + t.Z);
         }
         /// <summary>
         /// Konstruktor
