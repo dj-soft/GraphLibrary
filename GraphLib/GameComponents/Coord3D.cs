@@ -38,6 +38,15 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// </summary>
         public Point2D Clone { get { return new Point2D(X, Y); } }
         /// <summary>
+        /// Vrátí this bod, jehož souřadnice budou zaokrouhleny na daný počet míst.
+        /// </summary>
+        /// <param name="decimalPoints"></param>
+        /// <returns></returns>
+        public Point2D Round(int decimalPoints)
+        {
+            return new Point2D(Math.Round(this.X, decimalPoints), Math.Round(this.Y, decimalPoints));
+        }
+        /// <summary>
         /// Nulový bod, všechny jeho souřadnice jsou 0
         /// </summary>
         public static Point2D Empty { get { return new Point2D(0d, 0d); } }
@@ -923,7 +932,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
                 case CrossPosition.Same: return a.OriginPoint;
             }
 
-
+            #region Matematika - o souřadnicích bodu průniku dvou přímek daných parametrickými rovnicemi
             /*    Bod průniku přímek je dán soustavou dvou rovnic pro dvě přímky a, b; kde průnik má hodnou X, Y vyhovující parametrické rovnici pro obě přímky.
    Lze tedy psát, že 
 X = (ax0 + t * ax1) = (bx0 + q * bx1);
@@ -957,6 +966,8 @@ X = (bx0 + q * bx1);
 Y = (by0 + q * by1);
 
             */
+            #endregion
+
             var am = a.Matrix;
             var bm = b.Matrix;
             Double d = (am.Y1 * bm.X1 - am.X1 * bm.Y1);                             // Pokud dělitel je 0, pak vektory nemají společný bod:
@@ -2385,10 +2396,25 @@ Y = (by0 + q * by1);
             if (r21 != p1a)
                 throw new AssertFailedException("Point2D: chyba operátoru odečítání");
 
+            // Testy přepony:
             Double h1 = p1a.HypXY;               // Přepona X (30) + Y (40) = 50
             if (h1 != 50d)
-                throw new AssertFailedException("Point2D: chyba hodnoty p1a.HypXY");
+                throw new AssertFailedException("Point2D: chyba hodnoty h1.HypXY");
 
+            Double h2 = (new Point2D(12d, 5d)).HypXY;
+            if (h2 != 13d)
+                throw new AssertFailedException("Point2D: chyba hodnoty HypXY; h2 = " + h2);
+            Double h3 = (new Point2D(12d, -5d)).HypXY;
+            if (h3 != 13d)
+                throw new AssertFailedException("Point2D: chyba hodnoty HypXY; h3 = " + h3);
+            Double h4 = (new Point2D(-12d, -5d)).HypXY;
+            if (h4 != 13d)
+                throw new AssertFailedException("Point2D: chyba hodnoty HypXY; h4 = " + h4);
+            Double h5 = (new Point2D(-12d, 5d)).HypXY;
+            if (h5 != 13d)
+                throw new AssertFailedException("Point2D: chyba hodnoty HypXY; h5 = " + h5);
+
+            // Testy úhlu:
             Point2D p4 = new Point2D(10d, 10d);
             if (p4.Angle.Degrees != 45d)
                 throw new AssertFailedException("Point2D: chyba hodnoty p4.Angle");
@@ -2403,6 +2429,24 @@ Y = (by0 + q * by1);
             Point2D p5b = new Point2D(148d, 296d);
             if (Math.Round(p5.Angle, 8) != Math.Round(p5b.Angle, 8))
                 throw new AssertFailedException("Point2D: chyba hodnoty p5.AngleV != p5b.AngleV");
+
+            // Testy změn v instanci:
+            Point2D p6 = new Point2D(30d, 40d);
+            double h61 = p6.HypXY;
+            if (h61 != 50d)
+                throw new AssertFailedException("Point2D: chyba hodnoty HypXY; h61 = " + h61);
+            p6.X = 12d;
+            p6.Y = 5d;
+            double h62 = p6.HypXY;
+            if (h62 != 13d)
+                throw new AssertFailedException("Point2D: chyba hodnoty HypXY; h62 = " + h62);
+            Double r61 = p6.Angle;
+            p6.X = 40d;
+            p6.Y = 40d;
+            Double r62 = p6.Angle.Degrees;
+            if (r62 != 45d)
+                throw new AssertFailedException("Point2D: chyba hodnoty Angle; r62 = " + r62);
+
         }
         #endregion
         #region Testy Vector2D
@@ -2508,6 +2552,59 @@ Y = (by0 + q * by1);
             if (c3 != new Point2D(-30d, -50d))
                 throw new AssertFailedException("Vector2D: chyba průniku, c3 = " + c3.String());
 
+            Point2D c4 = (new Vector2D(100, 0, 200, 100)) * (new Vector2D(50, 0, 150, 100));
+            if (c4.IsNotNull())
+                throw new AssertFailedException("Vector2D: chyba průniku, c4 má být NULL, c4 = " + c4.String());
+
+            Point2D c5 = (new Vector2D(100, 0, 200, 100)) * (new Vector2D(300, 200, 150, 50));
+            if (c5.IsNull())
+                throw new AssertFailedException("Vector2D: chyba průniku, c5 nemá být NULL");
+            if (c5 != new Point2D(100d, 0d))
+                throw new AssertFailedException("Vector2D: chyba průniku, c5 = " + c5.String());
+
+
+            // Testy hledání kolmice k vektoru v daném bodě:
+            Vector2D q1 = (new Vector2D(100, 0, 200, 100)).GetVectorPerpendicular(new Point2D(200, 0));
+            if (q1.TargetPoint != new Point2D(150d, 50d))
+                throw new AssertFailedException("Vector2D: chyba kolmice pro daný bod, q1 = " + q1.String());
+
+            Vector2D q2 = (new Vector2D(100, 0, 200, 50)).GetVectorPerpendicular(new Point2D(200, 0));
+            if (q2.TargetPoint != new Point2D(180d, 40d))
+                throw new AssertFailedException("Vector2D: chyba kolmice pro daný bod, q2 = " + q2.String());
+
+            Vector2D q3 = (new Vector2D(100, 0, 200, 50)).GetVectorPerpendicular(new Point2D(0, 0));
+            if (q3.TargetPoint != new Point2D(20d, -40d))
+                throw new AssertFailedException("Vector2D: chyba kolmice pro daný bod, q3 = " + q3.String());
+
+            Vector2D q4 = (new Vector2D(100, 0, 100, 50)).GetVectorPerpendicular(new Point2D(200, -50));
+            if (q4.TargetPoint != new Point2D(100d, -50d))
+                throw new AssertFailedException("Vector2D: chyba kolmice pro daný bod, q4 = " + q4.String());
+
+            Vector2D q9 = (new Vector2D(-50, 0, 50, -10)).GetVectorPerpendicular(new Point2D(150, 100));
+            if (q9.TargetPoint.Round(2) != new Point2D(138.12d, -18.81d))
+                throw new AssertFailedException("Vector2D: chyba kolmice pro daný bod, q9 = " + q9.String());
+
+
+            // Testy změn v instanci:
+            Vector2D e1 = new Vector2D(50, 0, 90, 30);
+            Double e1a = e1.Length;
+            if (e1a != 50d)
+                throw new AssertFailedException("Vector2D: chyba délky přepony, e1a = " + e1a);
+            e1.TargetPoint = new Point2D(62, 5);
+            Double e1b = e1.Length;
+            if (e1b != 13d)
+                throw new AssertFailedException("Vector2D: chyba délky přepony, e1b = " + e1b);
+            e1.OriginPoint = new Point2D(20, 10);
+            e1.TargetPoint = new Point2D(32, 19);
+            Double e1c = e1.Length;
+            if (e1c != 15d)
+                throw new AssertFailedException("Vector2D: chyba délky přepony, e1c = " + e1c);
+
+            e1.TargetPoint.X = 40;
+            e1.TargetPoint.Y = 25;
+            Double e1d = e1.Length;
+            if (e1d != 25d)
+                throw new AssertFailedException("Vector2D: chyba délky přepony, e1d = " + e1d);
 
         }
         #endregion
