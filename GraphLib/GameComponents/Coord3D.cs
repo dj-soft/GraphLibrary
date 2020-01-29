@@ -551,25 +551,45 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         {
             get
             {
-                double x = this.TargetPoint.X - this.OriginPoint.X;
-                bool xn = (x < 0d);
-                if (xn) x = -x;
-                double y = this.TargetPoint.Y - this.OriginPoint.Y;
-                bool yn = (y < 0d);
-                if (yn) y = -y;
-                if (x > y)
+                double dx = this.TargetPoint.X - this.OriginPoint.X;
+                bool xn = (dx < 0d);
+                if (xn) dx = -dx;
+                double dy = this.TargetPoint.Y - this.OriginPoint.Y;
+                bool yn = (dy < 0d);
+                if (yn) dy = -dy;
+                if (dx > dy)
                 {   // X je větší => Y zmenšíme z jeho hodnoty v poměru 1/X, a poté X zmenšíme na 1:
-                    y = y / x;
-                    x = 1d;
+                    dy = dy / dx;
+                    dx = 1d;
                 }
                 else
                 {   // Y je větší => nápodobně:
-                    x = x / y;
-                    y = 1d;
+                    dx = dx / dy;
+                    dy = 1d;
                 }
-                return new Point2D(xn ? -x : x, yn ? -y : y);
+                return new Point2D(xn ? -dx : dx, yn ? -dy : dy);
             }
         }
+        /// <summary>
+        /// Index hlavní osy: X = 0, Y = 1, ...;
+        /// Hlavní osa = ta, ve které je největší (absolutní) přírůstek.
+        /// Jinými slovy, pokud vektor je víceméně vodorovný (úhel mezi osou X a vektorem je do 45°), pak <see cref="MainAxis"/> = 0.
+        /// Pokud vektor je Empty (když <see cref="TargetPoint"/> == <see cref="OriginPoint"/>), pak <see cref="MainAxis"/> = -1.
+        /// </summary>
+        public int MainAxis
+        {
+            get
+            {
+                double dx = this.TargetPoint.X - this.OriginPoint.X;
+                if (dx < 0d) dx = -dx;
+                double dy = this.TargetPoint.Y - this.OriginPoint.Y;
+                if (dy < 0d) dy = -dy;
+                if (dx == 0d && dy == 0d) return -1;
+                if (dx >= dy) return 0;
+                return 1;
+            }
+        }
+            // : (avn.X == 1d || avn.X == -1d);
         /// <summary>
         /// Obsahuje true, pokud this vektor je nulový : jeho počátek == konec, jeho délka == 0
         /// </summary>
@@ -878,13 +898,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public static Point2D GetIntersection(Vector2D a, Vector2D b)
         {
             CrossPosition crossPosition;
-            Point2D point = GetIntersection(a, b, out crossPosition);
-            switch (crossPosition)
-            {
-                case CrossPosition.None: return null;
-                case CrossPosition.Same: return a.OriginPoint;
-            }
-            return point;
+            return GetIntersection(a, b, out crossPosition);
         }
         /// <summary>
         /// Metoda vrací průsečík dvou 2D vektorů.
@@ -956,8 +970,6 @@ Y = (by0 + q * by1);
             Double x = bm.X0 + q * bm.X1;
             Double y = bm.Y0 + q * bm.Y1;
             return new Point2D(x, y);
-
-
         }
         /// <summary>
         /// Metoda vrátí vzájemnou pozici dvou vektorů.
@@ -968,14 +980,15 @@ Y = (by0 + q * by1);
         /// <returns></returns>
         public static CrossPosition DetectCrossPosition(Vector2D a, Vector2D b)
         {
+            if (a.IsNull() || b.IsNull()) return CrossPosition.None;
+
             var avn = a.VectorNorm;
             var bvn = b.VectorNorm;
-            if (!(avn == bvn || avn == bvn.Negative)) return CrossPosition.Cross;        // Vektory nemají shodný úhel = budou se někde konkrétně křižovat
+            if (!(avn == bvn || avn == bvn.Negative)) return CrossPosition.Cross;        // Vektory nemají shodný úhel = budou se někde konkrétně křižovat (tady neřešíme, kde to bude)
 
             // Vektory jsou rovnoběžné nebo identické. Zjistíme, zda pro stejnou souřadnici X nebo Y mají shodnou i druhou souřadnici:
-            bool isMainX = (avn.X == 1d || avn.X == -1d);
-            bool isSame = false;
-            if (isMainX)
+            bool isSame;
+            if (a.MainAxis == 0)
             {   // Vektory jsou spíše vodorovné => budeme hledat souřadnici Y k souřadnici X:
                 Point2D ap = a.GetPoint(0d, null);
                 Point2D bp = b.GetPoint(0d, null);
