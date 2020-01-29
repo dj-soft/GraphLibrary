@@ -194,6 +194,18 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// </summary>
         public Angle2D Clone { get { return new Angle2D(Rad); } }
         /// <summary>
+        /// Obsahuje úhel kolmý na this úhel, proti směru hodinových ručiček (jehož úhel = <see cref="Rad"/> + <see cref="Pi"/> / 2
+        /// </summary>
+        public Angle2D AnglePerpendicular { get { return new Angle2D(Rad + (Pi / 2d)); } }
+        /// <summary>
+        /// Obsahuje úhel opačný na this úhel (jehož úhel = <see cref="Rad"/> + <see cref="Pi"/>
+        /// </summary>
+        public Angle2D AngleOpposite { get { return new Angle2D(Rad + Pi); } }
+        /// <summary>
+        /// Obsahuje úhel kolmý na this úhel, po směru hodinových ručiček (jehož úhel = <see cref="Rad"/> - <see cref="Pi"/> / 2
+        /// </summary>
+        public Angle2D AnglePerpendicularCw { get { return new Angle2D(Rad - (Pi / 2d)); } }
+        /// <summary>
         /// Úhel v radiánech, v rozsahu 0d ÷ (2d * <see cref="Math.PI"/>)
         /// </summary>
         public double Rad { get { return _Rad; } set { this.ResetId(); _Rad = (value % R); } }
@@ -473,6 +485,8 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             OriginPoint = originPoint;
             Angle = angle;
             Length = length;
+            if (length == 0d)
+                _TargetPoint = originPoint;
         }
         /// <summary>
         /// Obsahuje klon sebe sama
@@ -739,9 +753,11 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public Vector2D GetVectorPerpendicular(Point2D originPoint)
         {
             Vector2D perp = new Vector2D(originPoint, this.VectorPerpendicular);
-            CrossPosition crossPosition;
-            Point2D targetPoint = GetIntersection(this, perp, out crossPosition);
-
+            Point2D targetPoint = GetIntersection(this, perp);
+            if (targetPoint == originPoint)
+                // Speciální případ, kdy Target == Origin: vytvoříme vektor, jehož délka = 0; pak konstruktor zajistí, že Target = Origin:
+                return new Vector2D(originPoint, this.Angle.AnglePerpendicular, 0d);
+            return new Vector2D(originPoint, targetPoint);
         }
         /// <summary>
         /// Metoda vrací průsečík dvou 2D vektorů.
@@ -756,7 +772,13 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public static Point2D GetIntersection(Vector2D a, Vector2D b)
         {
             CrossPosition crossPosition;
-            return GetIntersection(a, b, out crossPosition);
+            Point2D point = GetIntersection(a, b, out crossPosition);
+            switch (crossPosition)
+            {
+                case CrossPosition.None: return null;
+                case CrossPosition.Same: return a.OriginPoint;
+            }
+            return point;
         }
         /// <summary>
         /// Metoda vrací průsečík dvou 2D vektorů.
@@ -774,46 +796,42 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             // Souřadnice bodu na vektoru je dána rovnicí { X = x0 + t * x1, Y = y0 + t * y1 }, kde (x0, x1, y0, y1) jsou hodnoty parametrické definice přímky, získané z Matrixu:
             var am = a.Matrix;
             var bm = b.Matrix;
-            // Bod průniku přímek je dán soustavou dvou rovnic pro dvě přímky a, b; kde průnik má hodnou X, Y vyhovující parametrické rovnici pro obě přímky.
-            // Lze tedy psát, že X = (ax0 + t * ax1) = (bx0 + q * bx1), Y = (ay0 + t * ay1) = (by0 + q * by1); přičemž hodnoty (ax0, ax1, ... by0, by1) jsou konstanty.
-            // Máme tedy dvě rovnice (pro X a pro Y) o dvou neznámých (t, q).
-            // Přesuneme tedy neznámé na jednu stranu rovnice:
-            //  Z rovnic pro souřadnici X:      t = ((bx0 + q * bx1) - ax0) / ax1;
-            //  Z rovnic pro souřadnici Y:      t = ((by0 + q * by1) - ay0) / ay1;
-            //  Protože obě rovnice vyjadřjí shodné t, pak platí i rovnost druhé strany rovnice:   ((bx0 + q * bx1) - ax0) / ax1 = ((by0 + q * by1) - ay0) / ay1;
-            //  Po zpracování dostáváme  :      q = 
+            /*    Bod průniku přímek je dán soustavou dvou rovnic pro dvě přímky a, b; kde průnik má hodnou X, Y vyhovující parametrické rovnici pro obě přímky.
+   Lze tedy psát, že 
+X = (ax0 + t * ax1) = (bx0 + q * bx1);
+Y = (ay0 + t * ay1) = (by0 + q * by1);
+      přičemž hodnoty (ax0, ax1, ... by0, by1) jsou konstanty.
+   Máme tedy dvě rovnice (pro X a pro Y) o dvou neznámých (t, q).
 
-            /*
+   Přesuneme tedy neznámé na jednu stranu rovnice:
+     Z rovnic pro souřadnici X:      
+(ax0 + t * ax1) = (bx0 + q * bx1);              | Vlevo ponechám t * ax1, ale ax0 přesunu doprava :
+t * ax1 = (bx0 + q * bx1) - ax0;                | Rovnici vydělím ax1 :
+t = ((bx0 + q * bx1) - ax0) / ax1;
 
-((bx0 + q * bx1) - ax0) / ax1 = ((by0 + q * by1) - ay0) / ay1;                           | vynásobím obě strany :  * ax1 * ay1
-ay1 * ((bx0 + q * bx1) - ax0) = ax1 * ((by0 + q * by1) - ay0);                           | roznásobím závorky :
-ay1 * (bx0 + q * bx1) - ay1 * ax0 = ax1 * (by0 + q * by1) - ax1 * ay0;                   | roznásobím závorky :
-ay1 * bx0 + q * ay1 * bx1 - ay1 * ax0 = ax1 * by0 + q * ax1 * by1 - ax1 * ay0;           | neznámou na jednu stranu :
-q * ay1 * bx1 - q * ax1 * by1 = ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0;           | vytknu q před závorku :
-q * (ay1 * bx1 - ax1 * by1) = ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0;             | vydělím rovnici (ay1 * bx1 - ax1 * by1)
-q = (ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0) / (ay1 * bx1 - ax1 * by1);           | získám hodnotu q, která definuje pozici bodu na vektoru b
+     Z rovnic pro souřadnici Y bude výsledek obdobný:
+(ay0 + t * ay1) = (by0 + q * by1);
+t = ((by0 + q * by1) - ay0) / ay1;
 
+     Protože obě rovnice vyjadřují vlevo shodné t, pak platí i rovnost obou pravých stran rovnic:
 
+((bx0 + q * bx1) - ax0) / ax1  =  ((by0 + q * by1) - ay0) / ay1;                    | vynásobím obě strany rovnice :  * ax1 * ay1
+ay1 * ((bx0 + q * bx1) - ax0)  =  ax1 * ((by0 + q * by1) - ay0);                    | roznásobím první závorky :
+ay1 * (bx0 + q * bx1) - ay1 * ax0  =  ax1 * (by0 + q * by1) - ax1 * ay0;            | roznásobím druhé závorky :
+ay1 * bx0 + q * ay1 * bx1 - ay1 * ax0  =  ax1 * by0 + q * ax1 * by1 - ax1 * ay0;    | neznámou q převedu na levou stranu :
+q * ay1 * bx1 - q * ax1 * by1  =  ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0;    | vytknu q před závorku :
+q * (ay1 * bx1 - ax1 * by1)  =  ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0;      | vydělím rovnici (ay1 * bx1 - ax1 * by1)
+q  =  (ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0) / (ay1 * bx1 - ax1 * by1);    | získám hodnotu q, která definuje pozici bodu na vektoru b
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Nakonec podle získané hodnoty q vypočtu souřadnice X, Y podle matrixu vektoru b:
+X = (bx0 + q * bx1);
+Y = (by0 + q * by1);
 
             */
+
+
+
+
         }
 
         #endregion
