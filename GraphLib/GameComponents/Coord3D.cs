@@ -579,24 +579,53 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmého vektoru a roviny, součiny skalární a vektorový
         /// <summary>
         /// Matice vektoru pro výpočty.
-        /// Řádky obsahují dimenze: [0,] = dX; [1,] = dY;
-        /// Sloupce obsahují koeficienty: [,0] = d?0; [,1] = d?1;
-        /// Souřadnice bodu na vektoru je pak dána výpočtem Pt = { X = dX0 + t * dX1; Y = dY0 + t * dY1; },
-        /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
         /// </summary>
-        public double[,] Matrix
+        public MatrixInfo Matrix
         {
             get
             {
                 Point2D p0 = this.OriginPoint;
                 Point2D p1 = this.Vector;
-                double[,] matrix = new double[2, 2]
-                {
-                    {  p0.X, p1.X },
-                    {  p0.Y, p1.Y }
-                };
-                return matrix;
+                return new MatrixInfo(p0.X, p1.X, p0.Y, p1.Y);
             }
+        }
+        /// <summary>
+        /// Definice parametrické rovnice přímky 2D.
+        /// Souřadnice bodů na přímce pro parametr t = { <see cref="X0"/> + t * <see cref="X1"/>, <see cref="Y0"/> + t * <see cref="Y1"/> }
+        /// Pro hodnotu t = 0 vrací rovnice pozici bodu <see cref="OriginPoint"/>, pro hodnotu t = 1 vrací <see cref="TargetPoint"/>.
+        /// </summary>
+        public class MatrixInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="x0"></param>
+            /// <param name="x1"></param>
+            /// <param name="y0"></param>
+            /// <param name="y1"></param>
+            public MatrixInfo(Double x0, Double x1, Double y0, Double y1)
+            {
+                X0 = x0;
+                X1 = x1;
+                Y0 = y0;
+                Y1 = y1;
+            }
+            /// <summary>
+            /// Souřadnice X bodu 0
+            /// </summary>
+            public readonly Double X0;
+            /// <summary>
+            /// Jednotkový přírůstek na ose X
+            /// </summary>
+            public readonly Double X1;
+            /// <summary>
+            /// Souřadnice Y bodu 0
+            /// </summary>
+            public readonly Double Y0;
+            /// <summary>
+            /// Jednotkový přírůstek na ose Y
+            /// </summary>
+            public readonly Double Y1;
         }
         /// <summary>
         /// Metoda vrátí skalární součin dvou vektorů (dot product), 
@@ -710,12 +739,82 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public Vector2D GetVectorPerpendicular(Point2D originPoint)
         {
             Vector2D perp = new Vector2D(originPoint, this.VectorPerpendicular);
-            Point2D targetPoint = this * perp;
+            CrossPosition crossPosition;
+            Point2D targetPoint = GetIntersection(this, perp, out crossPosition);
+
         }
-        public static Point2D GetIntersection(Point2D a, Vector2D b)
-        { }
-        public static Point2D GetIntersection(Point2D a, Vector2D b, out )
-        { }
+        /// <summary>
+        /// Metoda vrací průsečík dvou 2D vektorů.
+        /// Pozor, může vrátit null pokud dané vektory nemají žádný společný bod.
+        /// Pokud jsou dva vektory identické, pak se vrací bod a.OriginPoint;
+        /// <para/>
+        /// Lze použít metodu s třetím out parametrem, který informuje o vzájemné pozici vektorů.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static Point2D GetIntersection(Vector2D a, Vector2D b)
+        {
+            CrossPosition crossPosition;
+            return GetIntersection(a, b, out crossPosition);
+        }
+        /// <summary>
+        /// Metoda vrací průsečík dvou 2D vektorů.
+        /// Pozor, může vrátit null pokud dané vektory nemají žádný společný bod.
+        /// Pokud jsou dva vektory identické, pak se vrací bod a.OriginPoint
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="crossPosition">Out informace o vzájemné poloze vektorů</param>
+        /// <returns></returns>
+        public static Point2D GetIntersection(Vector2D a, Vector2D b, out CrossPosition crossPosition)
+        {
+            crossPosition = CrossPosition.None;
+            if (a.IsNull() || b.IsNull()) return null;
+            // Souřadnice bodu na vektoru je dána rovnicí { X = x0 + t * x1, Y = y0 + t * y1 }, kde (x0, x1, y0, y1) jsou hodnoty parametrické definice přímky, získané z Matrixu:
+            var am = a.Matrix;
+            var bm = b.Matrix;
+            // Bod průniku přímek je dán soustavou dvou rovnic pro dvě přímky a, b; kde průnik má hodnou X, Y vyhovující parametrické rovnici pro obě přímky.
+            // Lze tedy psát, že X = (ax0 + t * ax1) = (bx0 + q * bx1), Y = (ay0 + t * ay1) = (by0 + q * by1); přičemž hodnoty (ax0, ax1, ... by0, by1) jsou konstanty.
+            // Máme tedy dvě rovnice (pro X a pro Y) o dvou neznámých (t, q).
+            // Přesuneme tedy neznámé na jednu stranu rovnice:
+            //  Z rovnic pro souřadnici X:      t = ((bx0 + q * bx1) - ax0) / ax1;
+            //  Z rovnic pro souřadnici Y:      t = ((by0 + q * by1) - ay0) / ay1;
+            //  Protože obě rovnice vyjadřjí shodné t, pak platí i rovnost druhé strany rovnice:   ((bx0 + q * bx1) - ax0) / ax1 = ((by0 + q * by1) - ay0) / ay1;
+            //  Po zpracování dostáváme  :      q = 
+
+            /*
+
+((bx0 + q * bx1) - ax0) / ax1 = ((by0 + q * by1) - ay0) / ay1;                           | vynásobím obě strany :  * ax1 * ay1
+ay1 * ((bx0 + q * bx1) - ax0) = ax1 * ((by0 + q * by1) - ay0);                           | roznásobím závorky :
+ay1 * (bx0 + q * bx1) - ay1 * ax0 = ax1 * (by0 + q * by1) - ax1 * ay0;                   | roznásobím závorky :
+ay1 * bx0 + q * ay1 * bx1 - ay1 * ax0 = ax1 * by0 + q * ax1 * by1 - ax1 * ay0;           | neznámou na jednu stranu :
+q * ay1 * bx1 - q * ax1 * by1 = ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0;           | vytknu q před závorku :
+q * (ay1 * bx1 - ax1 * by1) = ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0;             | vydělím rovnici (ay1 * bx1 - ax1 * by1)
+q = (ax1 * by0 - ax1 * ay0 - ay1 * bx0 + ay1 * ax0) / (ay1 * bx1 - ax1 * by1);           | získám hodnotu q, která definuje pozici bodu na vektoru b
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            */
+        }
 
         #endregion
         #region Sčítání, odčítání, porovnání
@@ -1927,6 +2026,25 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// Clockwise = po směru hodinových ručiček
         /// </summary>
         CW
+    }
+    /// <summary>
+    /// Vzájemná pozice dvou prvků
+    /// </summary>
+    public enum CrossPosition
+    {
+        /// <summary>
+        /// Nemají vzájemnou pozici (například dvě rovnoběžné přímky nebo roviny s nenulovou vzdáleností, nebo dvě 3D přímky mimoběžné)
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Jsou identické (například dvě přímky procházející týmiž body, nebo dvě roviny ve stejné poloze)
+        /// </summary>
+        Same,
+        /// <summary>
+        /// Kříží se v konkrétní pozici (například dvě 2D přímky, které nejsou rovnoběžné a protínají se v jednom bodě, nebo přímka procházející rovinou v jednom bodě,
+        /// nebo dvě roviny křížící se v jedné přímce)
+        /// </summary>
+        Cross
     }
     #endregion
     #region class Math3D - implementace prostorové matematiky
