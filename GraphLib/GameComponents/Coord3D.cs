@@ -109,7 +109,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// <param name="a">Výchozí bod</param>
         /// <param name="q">Koeficient násobení, výsledek bude mít všechny souřadnice vynásobené</param>
         /// <returns></returns>
-        public static Point2D operator *(Point2D a, double q) { return new Point2D(a.X * q, a.Y * q); }
+        public static Point2D operator *(Point2D a, Double q) { return new Point2D(a.X * q, a.Y * q); }
         /// <summary>
         /// Operátor "je rovno"
         /// </summary>
@@ -560,13 +560,11 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         {
             get
             {
-                double dx = this.TargetPoint.X - this.OriginPoint.X;
-                bool xn = (dx < 0d);
-                if (xn) dx = -dx;
-                double dy = this.TargetPoint.Y - this.OriginPoint.Y;
-                bool yn = (dy < 0d);
-                if (yn) dy = -dy;
-                if (dx > dy)
+                bool nx, ny;
+                double dx = GetAbsDiff(this.OriginPoint.X, this.TargetPoint.X, out nx);
+                double dy = GetAbsDiff(this.OriginPoint.Y, this.TargetPoint.Y, out ny);
+                if (dx == 0d && dy == 0d) return Point2D.Empty;
+                if (dx >= dy)
                 {   // X je větší => Y zmenšíme z jeho hodnoty v poměru 1/X, a poté X zmenšíme na 1:
                     dy = dy / dx;
                     dx = 1d;
@@ -576,14 +574,14 @@ namespace Asol.Tools.WorkScheduler.GameComponents
                     dx = dx / dy;
                     dy = 1d;
                 }
-                return new Point2D(xn ? -dx : dx, yn ? -dy : dy);
+                return new Point2D(nx ? -dx : dx, ny ? -dy : dy);
             }
         }
         /// <summary>
-        /// Index hlavní osy: X = 0, Y = 1, ...;
+        /// Index hlavní osy: X = 1, Y = 2, ...;
         /// Hlavní osa = ta, ve které je největší (absolutní) přírůstek.
-        /// Jinými slovy, pokud vektor je víceméně vodorovný (úhel mezi osou X a vektorem je do 45°), pak <see cref="MainAxis"/> = 0.
-        /// Pokud vektor je Empty (když <see cref="TargetPoint"/> == <see cref="OriginPoint"/>), pak <see cref="MainAxis"/> = -1.
+        /// Jinými slovy, pokud vektor je víceméně vodorovný (úhel mezi osou X a vektorem je do 45°), pak <see cref="MainAxis"/> = 1.
+        /// Pokud vektor je Empty (když <see cref="TargetPoint"/> == <see cref="OriginPoint"/>), pak <see cref="MainAxis"/> = 0.
         /// </summary>
         public int MainAxis
         {
@@ -593,12 +591,12 @@ namespace Asol.Tools.WorkScheduler.GameComponents
                 if (dx < 0d) dx = -dx;
                 double dy = this.TargetPoint.Y - this.OriginPoint.Y;
                 if (dy < 0d) dy = -dy;
-                if (dx == 0d && dy == 0d) return -1;
-                if (dx >= dy) return 0;
-                return 1;
+                if (dx == 0d && dy == 0d) return 0;
+                if (dx >= dy) return 1;
+                if (dy > dx) return 2;
+                return 0;
             }
         }
-            // : (avn.X == 1d || avn.X == -1d);
         /// <summary>
         /// Obsahuje true, pokud this vektor je nulový : jeho počátek == konec, jeho délka == 0
         /// </summary>
@@ -784,19 +782,6 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             return null;
         }
         /// <summary>
-        /// Vrátí souřadnici Y pro daný bod X.
-        /// Pokud vektor je svislý, pak vrací : pokud zadané x je rovno pozici vektoru na ose X, pak vrací souřadnici Y bodu <see cref="OriginPoint"/>, jinak vrací null.
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="defY">Pokud vektor je svislý a je na zadané hodnotě X, pak tato zadaná hodnota default Y má přednost před <see cref="OriginPoint"/>.Y</param>
-        /// <returns></returns>
-        private Double? _GetPointY(double x, double? defY = null)
-        {
-            var m = this.Matrix;
-            if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
-            return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
-        }
-        /// <summary>
         /// Vrátí souřadnici X pro daný bod Y.
         /// Pokud vektor je vodorovný, pak vrací : pokud zadané y je rovno pozici vektoru na ose Y, pak vrací souřadnici X bodu <see cref="OriginPoint"/>, jinak vrací null.
         /// </summary>
@@ -808,6 +793,19 @@ namespace Asol.Tools.WorkScheduler.GameComponents
             var m = this.Matrix;
             if (m.Y1 == 0d) return ((m.Y0 == y) ? (Double?)(defX ?? m.X0) : (Double?)null);
             return m.X0 + ((y - m.Y0) / m.Y1) * m.X1;
+        }
+        /// <summary>
+        /// Vrátí souřadnici Y pro daný bod X.
+        /// Pokud vektor je svislý, pak vrací : pokud zadané x je rovno pozici vektoru na ose X, pak vrací souřadnici Y bodu <see cref="OriginPoint"/>, jinak vrací null.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="defY">Pokud vektor je svislý a je na zadané hodnotě X, pak tato zadaná hodnota default Y má přednost před <see cref="OriginPoint"/>.Y</param>
+        /// <returns></returns>
+        private Double? _GetPointY(double x, double? defY = null)
+        {
+            var m = this.Matrix;
+            if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
+            return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
         }
         /// <summary>
         /// Obsahuje vektor kolmý na this vektor, který jej protíná v bodě <see cref="OriginPoint"/>,
@@ -998,18 +996,22 @@ Y = (by0 + q * by1);
             if (!(avn == bvn || avn == bvn.Negative)) return CrossPosition.Cross;        // Vektory nemají shodný úhel = budou se někde konkrétně křižovat (tady neřešíme, kde to bude)
 
             // Vektory jsou rovnoběžné nebo identické. Zjistíme, zda pro stejnou souřadnici X nebo Y mají shodnou i druhou souřadnici:
-            bool isSame;
-            if (a.MainAxis == 0)
-            {   // Vektory jsou spíše vodorovné => budeme hledat souřadnici Y k souřadnici X:
-                Point2D ap = a.GetPoint(0d, null);
-                Point2D bp = b.GetPoint(0d, null);
-                isSame = (ap.IsNotNull() && bp.IsNotNull() && ap.Y == bp.Y);
-            }
-            else
-            {   // Vektory jsou spíše svislé => budeme hledat souřadnici X k souřadnici Y:
-                Point2D ap = a.GetPoint(null, 0d);
-                Point2D bp = b.GetPoint(null, 0d);
-                isSame = (ap.IsNotNull() && bp.IsNotNull() && ap.Y == bp.Y);
+            Point2D ap, bp;
+            bool isSame = false;
+            switch (a.MainAxis)
+            {
+                case 1:
+                    // Vektory jsou spíše vodorovné => budeme hledat souřadnici Y k souřadnici X:
+                    ap = a.GetPoint(0d, null);
+                    bp = b.GetPoint(0d, null);
+                    isSame = (ap.IsNotNull() && bp.IsNotNull() && ap.Y == bp.Y);
+                    break;
+                case 2:
+                    // Vektory jsou spíše svislé => budeme hledat souřadnici X k souřadnici Y:
+                    ap = a.GetPoint(null, 0d);
+                    bp = b.GetPoint(null, 0d);
+                    isSame = (ap.IsNotNull() && bp.IsNotNull() && ap.Y == bp.Y);
+                    break;
             }
             return (isSame ? CrossPosition.Same : CrossPosition.None);
         }
@@ -1130,6 +1132,15 @@ Y = (by0 + q * by1);
         /// </summary>
         public Point3D Clone { get { return new Point3D(X, Y, Z); } }
         /// <summary>
+        /// Vrátí this bod, jehož souřadnice budou zaokrouhleny na daný počet míst.
+        /// </summary>
+        /// <param name="decimalPoints"></param>
+        /// <returns></returns>
+        public Point3D Round(int decimalPoints)
+        {
+            return new Point3D(Math.Round(this.X, decimalPoints), Math.Round(this.Y, decimalPoints), Math.Round(this.Z, decimalPoints));
+        }
+        /// <summary>
         /// Nulový bod, všechny jeho souřadnice jsou 0
         /// </summary>
         public static Point3D Empty { get { return new Point3D(0d, 0d, 0d); } }
@@ -1218,7 +1229,7 @@ Y = (by0 + q * by1);
         /// <param name="a">Výchozí bod</param>
         /// <param name="q">Koeficient násobení, výsledek bude mít všechny souřadnice vynásobené</param>
         /// <returns></returns>
-        public static Point3D operator *(Point3D a, double q) { return new Point3D(a.X * q, a.Y * q, a.Z * q); }
+        public static Point3D operator *(Point3D a, Double q) { return new Point3D(a.X * q, a.Y * q, a.Z * q); }
         /// <summary>
         /// Operátor "je rovno"
         /// </summary>
@@ -1495,6 +1506,21 @@ Y = (by0 + q * by1);
             TargetPoint = targetPoint;
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="x0"></param>
+        /// <param name="y0"></param>
+        /// <param name="z0"></param>
+        /// <param name="x1"></param>
+        /// <param name="y1"></param>
+        /// <param name="z1"></param>
+        public Vector3D(Double x0, Double y0, Double z0, Double x1, Double y1, Double z1)
+            : base()
+        {
+            OriginPoint = new Point3D(x0, y0, z0);
+            TargetPoint = new Point3D(x1, y1, z1);
+        }
+        /// <summary>
         /// Konstruktor pro vektor, který je dán výchozím bodem a směrem vektoru (tj. čistým vektorem).
         /// Pokud zadáme <paramref name="originPoint"/> = { 40, 10, 20 } a <paramref name="vector"/>.Vector = { 50, -20, 5 },
         /// pak vrácený vektor bude mít <see cref="TargetPoint"/> = { 90, -10, 25 }.
@@ -1559,6 +1585,66 @@ Y = (by0 + q * by1);
         /// Slouží k matematickým výpočtům.
         /// </summary>
         public Point3D Vector { get { return (this.TargetPoint - this.OriginPoint); } }
+        /// <summary>
+        /// Čistý normálový vektor = rozdíl (<see cref="TargetPoint"/> - <see cref="OriginPoint"/>), vyjadřuje pouze směr.
+        /// Jeho větší souřadnice (X nebo Y nebo Z) je rovna +1 nebo -1, jeho ostatní souřadnice jsou menší nebo rovna +/- 1.
+        /// Slouží k matematickým výpočtům. Vyjadřuje úhel vektoru, ale bez počítání goniometrických funkcí = rychle.
+        /// </summary>
+        public Point3D VectorNorm
+        {
+            get
+            {
+                bool nx, ny, nz;
+                double dx = GetAbsDiff(this.OriginPoint.X, this.TargetPoint.X, out nx);
+                double dy = GetAbsDiff(this.OriginPoint.Y, this.TargetPoint.Y, out ny);
+                double dz = GetAbsDiff(this.OriginPoint.Z, this.TargetPoint.Z, out nz);
+                if (dx == 0d && dy == 0d && dz == 0d) return Point3D.Empty;
+                
+                if (dx >= dy && dx >= dz)
+                {   // X je největší => Y a Z zmenšíme z jeho hodnoty v poměru 1/X, a poté X zmenšíme na 1:
+                    dy = dy / dx;
+                    dz = dz / dx;
+                    dx = 1d;
+                }
+                else if (dy > dx && dy >= dz)
+                {   // Y je největší => nápodobně:
+                    dx = dx / dy;
+                    dz = dz / dy;
+                    dy = 1d;
+                }
+                else if (dy > dx && dy >= dz)
+                {   // Z je největší => nápodobně:
+                    dx = dx / dz;
+                    dy = dy / dz;
+                    dz = 1d;
+                }
+                return new Point3D(nx ? -dx : dx, ny ? -dy : dy, nz ? -dz : dz);
+            }
+        }
+        /// <summary>
+        /// Index hlavní osy: X = 1, Y = 2, Z = 3, ...;
+        /// Hlavní osa = ta, ve které je největší (absolutní) přírůstek.
+        /// Jinými slovy, pokud vektor je víceméně vodorovný (úhel mezi osou X a vektorem je do 45°), pak <see cref="MainAxis"/> = 1.
+        /// Pokud vektor je Empty (když <see cref="TargetPoint"/> == <see cref="OriginPoint"/>), pak <see cref="MainAxis"/> = 0.
+        /// </summary>
+        public int MainAxis
+        {
+            get
+            {
+
+                double dx = this.TargetPoint.X - this.OriginPoint.X;
+                if (dx < 0d) dx = -dx;
+                double dy = this.TargetPoint.Y - this.OriginPoint.Y;
+                if (dy < 0d) dy = -dy;
+                double dz = this.TargetPoint.Z - this.OriginPoint.Z;
+                if (dz < 0d) dz = -dz;
+                if (dx == 0d && dy == 0d && dz == 0d) return 0;
+                if (dx >= dy && dx >= dz) return 1;
+                if (dy > dx && dy >= dz) return 2;
+                if (dz > dx && dz > dy) return 3;
+                return 0;
+            }
+        }
         /// <summary>
         /// Obsahuje true, pokud this vektor je nulový : jeho počátek == konec, jeho délka == 0
         /// </summary>
@@ -1634,20 +1720,64 @@ Y = (by0 + q * by1);
         /// <para/>
         /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
         /// </summary>
-        public double[,] Matrix
+        public MatrixInfo Matrix
         {
             get
             {
                 Point3D p0 = this.OriginPoint;
                 Point3D p1 = this.Vector;
-                double[,] matrix = new double[3, 2]
-                {
-                    {  p0.X, p1.X },
-                    {  p0.Y, p1.Y },
-                    {  p0.Z, p1.Z }
-                };
-                return matrix;
+                return new MatrixInfo(p0.X, p1.X, p0.Y, p1.Y, p0.Z, p1.Z);
             }
+        }
+        /// <summary>
+        /// Definice parametrické rovnice přímky 3D.
+        /// Souřadnice bodů na přímce pro parametr t = { <see cref="X0"/> + t * <see cref="X1"/>, <see cref="Y0"/> + t * <see cref="Y1"/>, <see cref="Z0"/> + t * <see cref="Z1"/> }
+        /// Pro hodnotu t = 0 vrací rovnice pozici bodu <see cref="OriginPoint"/>, pro hodnotu t = 1 vrací <see cref="TargetPoint"/>.
+        /// </summary>
+        public class MatrixInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="x0"></param>
+            /// <param name="x1"></param>
+            /// <param name="y0"></param>
+            /// <param name="y1"></param>
+            /// <param name="z0"></param>
+            /// <param name="z1"></param>
+            public MatrixInfo(Double x0, Double x1, Double y0, Double y1, Double z0, Double z1)
+            {
+                X0 = x0;
+                X1 = x1;
+                Y0 = y0;
+                Y1 = y1;
+                Z0 = z0;
+                Z1 = z1;
+            }
+            /// <summary>
+            /// Souřadnice X bodu 0
+            /// </summary>
+            public readonly Double X0;
+            /// <summary>
+            /// Jednotkový přírůstek na ose X
+            /// </summary>
+            public readonly Double X1;
+            /// <summary>
+            /// Souřadnice Y bodu 0
+            /// </summary>
+            public readonly Double Y0;
+            /// <summary>
+            /// Jednotkový přírůstek na ose Y
+            /// </summary>
+            public readonly Double Y1;
+            /// <summary>
+            /// Souřadnice Z bodu 0
+            /// </summary>
+            public readonly Double Z0;
+            /// <summary>
+            /// Jednotkový přírůstek na ose Z
+            /// </summary>
+            public readonly Double Z1;
         }
         /// <summary>
         /// Metoda vrátí skalární součin dvou vektorů (dot product), 
@@ -1660,8 +1790,6 @@ Y = (by0 + q * by1);
         {
             return Point3D.ScalarProduct(a.Vector, b.Vector);
         }
-
-
 
         /// <summary>
         /// Vrátí bod na this vektoru, který je vzdálen (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
@@ -1683,8 +1811,11 @@ Y = (by0 + q * by1);
         public Point3D GetPointMatrix(double t)
         {
             var m = Matrix;
-            return new Point3D(m[0, 0] + t * m[0, 1], m[1, 0] + t * m[1, 1], m[2, 0] + t * m[2, 1]);
+            return new Point3D(m.X0 + t * m.X1, m.Y0 + t * m.Y1, m.Z0 + t * m.Z1);
         }
+
+
+
         /// <summary>
         /// Vrátí rovinu kolmou na this vektor, která jej protíná ve vzdálenosti (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
         /// </summary>
@@ -2107,6 +2238,19 @@ Y = (by0 + q * by1);
         public virtual string Text
         {
             get { return this.GetType().Name; }
+        }
+        /// <summary>
+        /// Vrací absolutní vzdálenost z Origin do Target, nastavuje out isNegative = true, pokud vstupní Target je menší než Origin
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="target"></param>
+        /// <param name="isNegative"></param>
+        /// <returns></returns>
+        protected Double GetAbsDiff(Double origin, Double target, out bool isNegative)
+        {
+            Double diff = target - origin;
+            isNegative = (diff < 0d);
+            return (!isNegative ? diff : -diff);
         }
         /// <summary>
         /// Resetuje svoje ID. Až bude potřeba, přidělí se nové. Má se volat při každé změně hodnoty v prvku.
@@ -2682,7 +2826,7 @@ Y = (by0 + q * by1);
             // Vytvoření vektoru a kontrola matrixu:
             Vector3D v1 = new Vector3D(40d, 30d, 20d);
             var mx = v1.Matrix;
-            if (!((mx[0, 0] == 0d) && (mx[0, 1] == 40d) && (mx[1, 0] == 0d) && (mx[1, 1] == 30d) && (mx[2, 0] == 0d) && (mx[2, 1] == 20d)))
+            if (!((mx.X0 == 0d) && (mx.X1 == 40d) && (mx.Y0 == 0d) && (mx.Y1 == 30d) && (mx.Z0 == 0d) && (mx.Z1 == 20d)))
                 throw new AssertFailedException("Vector3D: chyba hodnoty v1.Matrix");
 
             // Body na přímce:
@@ -2700,8 +2844,8 @@ Y = (by0 + q * by1);
 
 
             // Sčítání a odečítání vektorů:
-            Vector3D v3a = new Vector3D(new Point3D(10d, 20d, 30d), new Point3D(50d, 70d, 40d));     // Z tohoto vektoru akceptujeme Origin a Vector
-            Vector3D v3b = new Vector3D(new Point3D(100d, 200d, 50d), new Point3D(160d, 250d, 20d)); // Z tohoto vektoru akceptujeme pouze Vector
+            Vector3D v3a = new Vector3D(10d, 20d, 30d, 50d, 70d, 40d);         // Z tohoto vektoru akceptujeme Origin a Vector
+            Vector3D v3b = new Vector3D(100d, 200d, 50d, 160d, 250d, 20d);     // Z tohoto vektoru akceptujeme pouze Vector
 
             Vector3D v3x = v3a + v3b;                      // Očekáváme Origin = { 10, 20, 30 } a Vector = { 100, 100, -20 }
             if (v3x.OriginPoint != v3a.OriginPoint)        // Výsledek sčítání má mít shodný OriginPoint
