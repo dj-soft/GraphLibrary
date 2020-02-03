@@ -755,7 +755,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        public Point2D GetPoint(Double? x, Double? y)
+        public Point2D GetPoint(Double? x = null, Double? y = null)
         {
             bool xv = x.HasValue;
             bool yv = y.HasValue;
@@ -791,7 +791,12 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         private Double? _GetPointX(double y, double? defX = null)
         {
             var m = this.Matrix;
+            // Pokud přímka na ose Y nemá přírůstek, 
+            //  pak buď leží přesně na požadované souřadnici Y => pak vrátíme X = dané nebo Origin, anebo leží na jiné Y => pak vrátíme null:
             if (m.Y1 == 0d) return ((m.Y0 == y) ? (Double?)(defX ?? m.X0) : (Double?)null);
+            // Vycházíme z parametrických rovnic: X = X0 + t * X1; Y = Y0 + t * Y1;
+            // Pro danou hodnotu Y z druhé rovnice vypočteme hodnotu t = ((Y - Y0) / Y1), t dosadíme do první rovnice a máme:
+            //   X = X0 + (t: ((Y - Y0) / Y1) ) * X1;
             return m.X0 + ((y - m.Y0) / m.Y1) * m.X1;
         }
         /// <summary>
@@ -804,7 +809,12 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         private Double? _GetPointY(double x, double? defY = null)
         {
             var m = this.Matrix;
+            // Pokud přímka na ose Y nemá přírůstek, 
+            //  pak buď leží přesně na požadované souřadnici X => pak vrátíme Y = dané nebo Origin, anebo leží na jiné X => pak vrátíme null:
             if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
+            // Vycházíme z parametrických rovnic: X = X0 + t * X1; Y = Y0 + t * Y1;
+            // Pro danou hodnotu Y z první rovnice vypočteme hodnotu t = ((X - X0) / X1), t dosadíme do druhé rovnice a máme:
+            //   Y = Y0 + (t: ((X - X0) / X1) ) * Y1;
             return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
         }
         /// <summary>
@@ -1712,11 +1722,8 @@ Y = (by0 + q * by1);
         #region Matematické vyjádření přímky, nalezení bodu na vektoru, určení kolmé roviny
         /// <summary>
         /// Matice vektoru pro výpočty.
-        /// Řádky matice obsahují dimenze: [0,] = dX; [1,] = dY; [2,] = dZ;
-        /// Sloupce obsahují koeficienty: [,0] = d?0; [,1] = d?t;
         /// <para/>
-        /// Souřadnice bodu "t" na vektoru je pak dána výpočtem Pt = { X = dX0 + t * dXt; Y = dY0 + t * dYt; Z = dZ0 + t * dZt; };
-        /// konkrétně pro m = Matrix: Pt = { X = m[0,0] + t * m[0,1]; Y = m[1,0] + t * m[1,1]; Z = m[2,0] + t * m[2,1]; };
+        /// Souřadnice bodu "t" na vektoru je pak dána výpočtem Pt = { X = X0 + t * X1; Y = Y0 + t * Y1; Z = Z0 + t * Z1; };
         /// <para/>
         /// pro t = { -nekonečno až +nekonečno } pro přímku, nebo { 0 až 1 } pro vektor v rozmezí Origin až Target.
         /// </summary>
@@ -1812,6 +1819,110 @@ Y = (by0 + q * by1);
         {
             var m = Matrix;
             return new Point3D(m.X0 + t * m.X1, m.Y0 + t * m.Y1, m.Z0 + t * m.Z1);
+        }
+        /// <summary>
+        /// Vrátí bod na dané souřadnici.
+        /// Typicky je právě jedna ze zadaných souřadnic null, a ta se právě dopočítá.
+        /// Pokud pro zadanou souřadnici neexistuje bod (vektor je např. svislý na souřadnici X = 10, a je zadána souřadnice x = 5), pak se vrací null.
+        /// Pokud jsou null obě vstupní hodnoty, vrací se <see cref="OriginPoint"/>.
+        /// Pokud jsou zadané obě vstupní hodnoty, pak metoda prověří zda daný bod leží na vektoru a vrátí buď zadaný bod (=leží), nebo null (=neleží).
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        /// <returns></returns>
+        public Point3D GetPoint(Double? x = null, Double? y = null, Double? z = null)
+        {
+            bool xv = x.HasValue;
+            bool yv = y.HasValue;
+            bool zv = y.HasValue;
+            if (!xv && !yv && !zv) return this.OriginPoint.Clone;
+            var m = this.Matrix;
+            if (xv && yv && zv)
+            {   // Jsou zadané všechny tři souřadnice => prověřím, zda leží na přímce:
+                Double? xr = _GetPointX(m, y.Value, z.Value, x);
+                Double? yr = _GetPointY(m, x.Value, z.Value, y);
+                Double? zr = _GetPointZ(m, x.Value, y.Value, z);
+                return ((xr.HasValue && xr.Value == x.Value) && (yr.HasValue && yr.Value == y.Value) && (zr.HasValue && zr.Value == z.Value)) 
+                    ? new Point3D(x.Value, y.Value, z.Value) : null;
+            }
+            if (!xv)
+            {
+                x = _GetPointX(m, y, z);
+                xv = x.HasValue;
+            }
+            if (!yv)
+            {
+                y = _GetPointY(m, x, z);
+                yv = y.HasValue;
+            }
+            if (!zv)
+            {
+                z = _GetPointZ(m, x, y);
+                zv = z.HasValue;
+            }
+            return (xv && yv && zv)
+                ? new Point3D(x.Value, y.Value, z.Value) : null;
+        }
+        /// <summary>
+        /// Vrátí souřadnici X pro daný bod Y + Z.
+        /// Pokud vektor je vodorovný, pak vrací : pokud zadané y je rovno pozici vektoru na ose Y, pak vrací souřadnici X bodu <see cref="OriginPoint"/>, jinak vrací null.
+        /// </summary>
+        /// <param name="m">Matrix</param>
+        /// <param name="y"></param>
+        /// <param name="z"></param>
+        /// <param name="defX">Pokud přímka vyhovuje vektor je souběžný s osou Y a je na zadané hodnotě Y, pak tato zadaná hodnota default X má přednost před <see cref="OriginPoint"/>.X</param>
+        /// <returns></returns>
+        private Double? _GetPointX(MatrixInfo m, double? y, double? z, double? defX = null)
+        {
+            double? xy = null;
+            double? xz = null;
+            if (y.HasValue && m.Y1 != 0d)
+            {   // Hodnotu lze určit podle zadané hodnoty Y a parametrické rovnice pro Y a následně X:
+                xy = m.X0 + ((y.Value - m.Y0) / m.Y1) * m.X1;
+            }
+            if (z.HasValue && m.Z1 != 0d)
+            {   // Hodnotu lze určit podle zadané hodnoty Z a parametrické rovnice pro Z a následně X:
+                xz = m.X0 + ((z.Value - m.Z0) / m.Z1) * m.X1;
+            }
+            if (xy.HasValue && xz.HasValue) return ((xy.Value == xz.Value) ? xy : null);
+            if (xy.HasValue) return xy.Value;
+            if (xz.HasValue) return xz.Value;
+
+            if (m.Y1 == 0d && y.HasValue) return ((m.Y0 == y) ? (Double?)(defX ?? m.X0) : (Double?)null);
+
+
+
+            if (m.Y1 == 0d) return ((m.Y0 == y) ? (Double?)(defX ?? m.X0) : (Double?)null);
+            return m.X0 + ((y - m.Y0) / m.Y1) * m.X1;
+        }
+        /// <summary>
+        /// Vrátí souřadnici Y pro daný bod X + Z.
+        /// Pokud vektor je svislý, pak vrací : pokud zadané x je rovno pozici vektoru na ose X, pak vrací souřadnici Y bodu <see cref="OriginPoint"/>, jinak vrací null.
+        /// </summary>
+        /// <param name="m">Matrix</param>
+        /// <param name="x"></param>
+        /// <param name="z"></param>
+        /// <param name="defY">Pokud vektor je svislý a je na zadané hodnotě X, pak tato zadaná hodnota default Y má přednost před <see cref="OriginPoint"/>.Y</param>
+        /// <returns></returns>
+        private Double? _GetPointY(MatrixInfo m, double x, double z, double? defY = null)
+        {
+            if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
+            return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
+        }
+        /// <summary>
+        /// Vrátí souřadnici Z pro daný bod X + Y.
+        /// Pokud vektor je svislý, pak vrací : pokud zadané x je rovno pozici vektoru na ose X, pak vrací souřadnici Y bodu <see cref="OriginPoint"/>, jinak vrací null.
+        /// </summary>
+        /// <param name="m">Matrix</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="defZ">Pokud vektor je svislý a je na zadané hodnotě X, pak tato zadaná hodnota default Y má přednost před <see cref="OriginPoint"/>.Y</param>
+        /// <returns></returns>
+        private Double? _GetPointZ(MatrixInfo m, double x, double y, double? defZ = null)
+        {
+            if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
+            return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
         }
 
 
@@ -2838,9 +2949,8 @@ Y = (by0 + q * by1);
             if (Math.Round(v1d.HypXYZ,8) != 100d)
                 throw new AssertFailedException("Vector3D: chyba hodnoty v1.GetPointAtDistance(100d)");
 
-
-
-
+            // Kolmá rovina:
+            var pl1 = (new Vector3D(10d, 10d, 10d, 50d, 50d, 50d)).GetPlanePerpendicular(0d);
 
 
             // Sčítání a odečítání vektorů:
@@ -2862,6 +2972,22 @@ Y = (by0 + q * by1);
                 throw new AssertFailedException("Vector3D: chyba hodnoty +.OriginPoint");
             if (v3y.TargetPoint != new Point3D(120d, 200d, 10d))     // = Origin + result.Vector
                 throw new AssertFailedException("Vector3D: chyba hodnoty +.Vector");
+
+
+            // Souřadnice bodu na vektoru podle souřadnice X, Y, Z:
+
+
+            // Průnik roviny a přímky = bod:
+
+
+            // Průnik dvou rovin = přímka:
+
+
+            // Testy hledání kolmé přímky v daném bodě:
+
+
+            // Testy změn v instanci:
+
 
         }
         #endregion
