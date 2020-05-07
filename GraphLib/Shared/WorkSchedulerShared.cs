@@ -2572,6 +2572,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string GraphTextRowDelimiter { get; set; }
         /// <summary>
+        /// Jak vykreslit text v prvku grafu, pokud text je delší než prostor v prvku:
+        /// true = vykreslit jen celá slova (WordWrap) / false (default) = vykreslit každé písmenko
+        /// </summary>
+        public bool TextWordWrap { get; set; }
+        /// <summary>
         /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
         /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
         /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.

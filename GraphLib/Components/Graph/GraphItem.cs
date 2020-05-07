@@ -832,10 +832,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="fontInfo"></param>
         internal void DrawText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, string text, FontInfo fontInfo)
         {
+            if (boundsAbsolute.Width < 10 || String.IsNullOrEmpty(text)) return;
+
             Color textColor = this.TextColorCurrent;
-            Rectangle boundsText = boundsAbsolute;
-            boundsText.Y = boundsText.Y;
-            GPainter.DrawString(e.Graphics, text, fontInfo, boundsText, ContentAlignment.MiddleCenter, textColor);
+            StringFormatFlags stringFormat = Graph.CurrentGraphProperties.TextStringFormat;
+            GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, textColor, stringFormat: stringFormat);
         }
         /// <summary>
         /// Barva textu (písma) získaná dle pravidel z prvku

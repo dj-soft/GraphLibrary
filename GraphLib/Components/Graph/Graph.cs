@@ -1236,7 +1236,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             bool isFadeIn = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
             bool isImmediatelly = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
-            bool hasMouseLinks = this.GraphLinkArray.CurrentLinksMode.HasFlag(GTimeGraphLinkMode.MouseOver);        // Linky: odložíme o malý okamžik rozsvícení okna ToolTipu, aby nejdříve byly na chvilku vidět jen Linky
 
             if (!isFadeIn && !isImmediatelly) return;
 
@@ -1277,10 +1276,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
                 else if (isFadeIn)
                 {
+                    bool hasMouseLinks = this.GraphLinkArray.CurrentLinksMode.HasFlag(GTimeGraphLinkMode.MouseOver);   // Linky: odložíme o malý okamžik rozsvícení okna ToolTipu, aby nejdříve byly na chvilku vidět jen Linky
                     infoText = args.InteractiveArgs.ToolTipData.InfoText;
                     toolTipData.AnimationWaitBeforeTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 650 : 150);
                     toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 350 : 250);
-                    toolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);     // 1 sekunda na přečtení 10 znaků
+                    toolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);                  // 1 sekunda na přečtení 10 znaků
                     toolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * infoText.Length);
                 }
             }
@@ -2183,6 +2183,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._LogarithmicRatio = 0.60f;
             this._LogarithmicGraphDrawOuterShadow = 0.20f;
             this._Opacity = null;
+            this._TextStringFormat = StringFormatFlags.NoWrap;
         }
         /// <summary>
         /// Konstruktor s daty dle dodaného GUI objektu
@@ -2201,7 +2202,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this._UpperSpaceLogical = guiGraphProperties.UpperSpaceLogical;
                 this._BottomMarginPixel = guiGraphProperties.BottomMarginPixel;
                 this._TotalHeightRange = new Int32NRange(guiGraphProperties.TableRowHeightMin, guiGraphProperties.TableRowHeightMax);
-                
+                this._TextStringFormat = (guiGraphProperties.TextWordWrap ? StringFormatFlags.NoClip : StringFormatFlags.NoWrap);    // NoWrap: vykreslí každé písmenko, neřeže podle slabik,  NoClip: vykreslí každou slabiku (ale ne po písmenkách),  LineLimit: vykreslí všechno nebo nic (když se text nevejde, nevykreslí se nic)
+
                 if (guiGraphProperties.LogarithmicRatio.HasValue)
                     this._LogarithmicRatio = guiGraphProperties.LogarithmicRatio.Value;
                 if (guiGraphProperties.LogarithmicGraphDrawOuterShadow.HasValue)
@@ -2412,6 +2414,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeAxis.Segment[] TimeAxisSegments { get { return this._TimeAxisSegments; } set { this._TimeAxisSegments = value; } }
         private GTimeAxis.Segment[] _TimeAxisSegments;
+        /// <summary>
+        /// Pravidla pro vykreslování textu v prvcích grafu
+        /// </summary>
+        public StringFormatFlags TextStringFormat { get { return this._TextStringFormat; } set { this._TextStringFormat = value; } }
+        private StringFormatFlags _TextStringFormat;
     }
     #endregion
     #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode

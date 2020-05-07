@@ -417,11 +417,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="brush"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
+        /// <param name="stringFormat"></param>
         /// <returns></returns>
-        internal static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null)
+        internal static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormat = null)
         {
             RectangleF[] positions;
-            return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, false, out positions);
+            return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormat, false, out positions);
         }
         /// <summary>
         /// Vykreslí zadaný text
@@ -435,11 +436,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="brush"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
+        /// <param name="stringFormat"></param>
         /// <returns></returns>
-        internal static RectangleF[] DrawStringMeasureChars(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null)
+        internal static RectangleF[] DrawStringMeasureChars(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormat = null)
         {
             RectangleF[] positions;
-            _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, true, out positions);
+            _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormat, true, out positions);
             return positions;
         }
         /// <summary>
@@ -456,7 +458,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawBackground"></param>
         /// <param name="measureChars"></param>
         /// <param name="positions"></param>
-        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, bool measureChars, out RectangleF[] positions)
+        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, StringFormatFlags? stringFormat, bool measureChars, out RectangleF[] positions)
         {
             positions = null;
 
@@ -467,6 +469,8 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
             int boundsLength = (isVertical ? bounds.Height : bounds.Width);
 
+            StringFormatFlags sff = stringFormat ?? StringFormatFlags.LineLimit;
+
             using (GraphicsUseText(graphics))    // Nedávej tady CLIP na grafiku pro bounds: ona grafika už touhle dobou je korektně clipnutá na správný prostor controlu. Clipnutím na bounds se může část textu vykreslit i mimo control !!!
             {
                 // graphics.SmoothingMode = SmoothingMode.HighQuality;
@@ -476,10 +480,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 //  nic moc   :  AntiAlias, SystemDefault
                 //  hrozný    :  SingleBitPerPixel, SingleBitPerPixelGridFit
 
-
                 Font font = fontInfo.Font;
-                StringFormat sFormat = new StringFormat(StringFormatFlags.LineLimit);   //   .NoClip);
-                // sFormat = new StringFormat(StringFormatFlags.NoClip);
+                StringFormat sFormat = new StringFormat(sff);
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, sFormat);
                 if (isVertical) textSize = textSize.Swap();               // Pro vertikální text převedu prostor textu "na výšku"
                 textArea = textSize.AlignTo(bounds, alignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání

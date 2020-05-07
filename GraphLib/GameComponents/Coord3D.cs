@@ -1891,6 +1891,7 @@ Y = (by0 + q * by1);
 
             if (m.Y1 == 0d && y.HasValue) return ((m.Y0 == y) ? (Double?)(defX ?? m.X0) : (Double?)null);
 
+#warning NEDOKONČENO?
 
 
             if (m.Y1 == 0d) return ((m.Y0 == y) ? (Double?)(defX ?? m.X0) : (Double?)null);
@@ -1905,8 +1906,9 @@ Y = (by0 + q * by1);
         /// <param name="z"></param>
         /// <param name="defY">Pokud vektor je svislý a je na zadané hodnotě X, pak tato zadaná hodnota default Y má přednost před <see cref="OriginPoint"/>.Y</param>
         /// <returns></returns>
-        private Double? _GetPointY(MatrixInfo m, double x, double z, double? defY = null)
+        private Double? _GetPointY(MatrixInfo m, double? x, double? z, double? defY = null)
         {
+#warning NEDOKONČENO:
             if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
             return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
         }
@@ -1919,14 +1921,12 @@ Y = (by0 + q * by1);
         /// <param name="y"></param>
         /// <param name="defZ">Pokud vektor je svislý a je na zadané hodnotě X, pak tato zadaná hodnota default Y má přednost před <see cref="OriginPoint"/>.Y</param>
         /// <returns></returns>
-        private Double? _GetPointZ(MatrixInfo m, double x, double y, double? defZ = null)
+        private Double? _GetPointZ(MatrixInfo m, double? x, double? y, double? defZ = null)
         {
-            if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defY ?? m.Y0) : (Double?)null);
+#warning NEDOKONČENO:
+            if (m.X1 == 0d) return ((m.X0 == x) ? (Double?)(defZ ?? m.Y0) : (Double?)null);
             return m.Y0 + ((x - m.X0) / m.X1) * m.Y1;
         }
-
-
-
         /// <summary>
         /// Vrátí rovinu kolmou na this vektor, která jej protíná ve vzdálenosti (<paramref name="distance"/>) od bodu <see cref="OriginPoint"/>
         /// </summary>
@@ -1936,14 +1936,15 @@ Y = (by0 + q * by1);
         {
             Point3D pointA = GetPointAtDistance(distance);
 
+#warning NEDOKONČENO:
 
             return null;
         }
-
         #endregion
         #region Skalární a Vektorový součin
         public static Double TripleProduct(Vector3D va, Vector3D vb, Vector3D vc)
         {
+#warning NEDOKONČENO:
             return 0d;
         }
         /// <summary>
