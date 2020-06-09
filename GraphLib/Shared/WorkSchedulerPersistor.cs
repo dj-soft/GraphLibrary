@@ -20,6 +20,7 @@ using System.IO;
 namespace Noris.LCS.Base.WorkScheduler
 {
     using Noris.LCS.Base.WorkScheduler.InternalPersistor;
+    using System.Globalization;
 
     // public rozhraní:
     #region class Persist : Třída, která zajišťuje persistenci dat do / z XML formátu
@@ -560,6 +561,371 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
+        public static string SByteToString(object value)
+        {
+            return ((SByte)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToSByte(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (SByte)0;
+            SByte value;
+            if (!SByte.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (SByte)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string Int16ToString(object value)
+        {
+            return ((Int16)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToInt16(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Int16)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            Int16 value;
+            if (!Int16.TryParse(text, style, _Nmfi, out value)) return (Int16)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string Int32ToString(object value)
+        {
+            return ((Int32)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToInt32(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Int32)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            Int32 value;
+            if (!Int32.TryParse(text, style, _Nmfi, out value)) return (Int32)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string Int64ToString(object value)
+        {
+            return ((Int64)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToInt64(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Int64)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            Int64 value;
+            if (!Int64.TryParse(text, style, _Nmfi, out value)) return (Int64)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string IntPtrToString(object value)
+        {
+            return ((IntPtr)value).ToInt64().ToString("G");
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToIntPtr(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (IntPtr)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            Int64 int64;
+            if (!Int64.TryParse(text, style, _Nmfi, out int64)) return (IntPtr)0;
+            return new IntPtr(int64);
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string UInt16ToString(object value)
+        {
+            return ((UInt16)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToUInt16(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (UInt16)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            UInt16 value;
+            if (!UInt16.TryParse(text, style, _Nmfi, out value)) return (UInt16)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string UInt32ToString(object value)
+        {
+            return ((UInt32)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToUInt32(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (UInt32)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            UInt32 value;
+            if (!UInt32.TryParse(text, style, _Nmfi, out value)) return (UInt32)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string UInt64ToString(object value)
+        {
+            return ((UInt64)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToUInt64(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (UInt64)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            UInt64 value;
+            if (!UInt64.TryParse(text, style, _Nmfi, out value)) return (UInt64)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string UIntPtrToString(object value)
+        {
+            return ((UIntPtr)value).ToUInt64().ToString("G");
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToUIntPtr(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (UIntPtr)0;
+            NumberStyles style = _StringToHexStyle(ref text);
+            UInt64 uint64;
+            if (!UInt64.TryParse(text, style, _Nmfi, out uint64)) return (UIntPtr)0;
+            return new UIntPtr(uint64);
+        }
+        /// <summary>
+        /// Vrátí styl pro konverzi textu na číslo, detekuje a řeší HEX prefixy 0x a &amp;h.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static NumberStyles _StringToHexStyle(ref string text)
+        {
+            NumberStyles style = NumberStyles.Any;
+            if (text.Length > 2)
+            {
+                string prefix = text.Substring(0, 2).ToLower();
+                if (prefix == "0x" || prefix == "&h")
+                {
+                    text = text.Substring(2);
+                    style = NumberStyles.HexNumber;
+                }
+            }
+            return style;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string SingleToString(object value)
+        {
+            Single number = (Single)value;
+            string text = number.ToString("N", _Nmfi);
+            if ((number % 1f) == 0f)
+            {
+                int dot = text.IndexOf('.');
+                if (dot > 0)
+                    text = text.Substring(0, dot);
+            }
+            return text;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToSingle(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Single)0;
+            Single value;
+            if (!Single.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Single)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string DoubleToString(object value)
+        {
+            Double number = (Double)value;
+            string text = number.ToString("N", _Nmfi);
+            if ((number % 1d) == 0d)
+            {
+                int dot = text.IndexOf('.');
+                if (dot > 0)
+                    text = text.Substring(0, dot);
+            }
+            return text;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToDouble(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Double)0;
+            Double value;
+            if (!Double.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Double)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string DecimalToString(object value)
+        {
+            Decimal number = (Decimal)value;
+            string text = number.ToString("N", _Nmfi);
+            if ((number % 1m) == 0m)
+            {
+                int dot = text.IndexOf('.');
+                if (dot > 0)
+                    text = text.Substring(0, dot);
+            }
+            return text;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToDecimal(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return (Decimal)0;
+            Decimal value;
+            if (!Decimal.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Decimal)0;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string GuidToString(object value)
+        {
+            return ((Guid)value).ToString("N", _Nmfi);
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToGuid(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return Guid.Empty;
+            Guid value;
+            if (!Guid.TryParse(text, out value)) return Guid.Empty;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string CharToString(object value)
+        {
+            return ((Char)value).ToString();
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToChar(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return Char.MinValue;
+            Char value;
+            if (!Char.TryParse(text, out value)) return Char.MinValue;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string StringToString(object value)
+        {
+            if (value == null) return null;
+            return value as string;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object StringToString(string text)
+        {
+            if (text == null) return null;
+            return text;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string DateTimeToString(object value)
         {
             DateTime dateTime = (DateTime)value;
@@ -693,236 +1059,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static string DecimalToString(object value)
-        {
-            return ((Decimal)value).ToString("N", _Nmfi);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToDecimal(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (Decimal)0;
-            Decimal value;
-            if (!Decimal.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Decimal)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string DoubleToString(object value)
-        {
-            return ((Double)value).ToString("N", _Nmfi);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToDouble(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (Double)0;
-            Double value;
-            if (!Double.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Double)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string GuidToString(object value)
-        {
-            return ((Guid)value).ToString("N", _Nmfi);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToGuid(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return Guid.Empty;
-            Guid value;
-            if (!Guid.TryParse(text, out value)) return Guid.Empty;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string CharToString(object value)
-        {
-            return ((Char)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToChar(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return Char.MinValue;
-            Char value;
-            if (!Char.TryParse(text, out value)) return Char.MinValue;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string Int16ToString(object value)
-        {
-            return ((Int16)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToInt16(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (Int16)0;
-            Int16 value;
-            if (!Int16.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Int16)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string Int32ToString(object value)
-        {
-            return ((Int32)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToInt32(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (Int32)0;
-            Int32 value;
-            if (!Int32.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Int32)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string Int64ToString(object value)
-        {
-            return ((Int64)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToInt64(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (Int64)0;
-            Int64 value;
-            if (!Int64.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Int64)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string IntPtrToString(object value)
-        {
-            return ((IntPtr)value).ToInt64().ToString("G");
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToIntPtr(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (IntPtr)0;
-            Int64 int64;
-            if (!Int64.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out int64)) return (IntPtr)0;
-            return new IntPtr(int64);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string SByteToString(object value)
-        {
-            return ((SByte)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToSByte(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (SByte)0;
-            SByte value;
-            if (!SByte.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (SByte)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string SingleToString(object value)
-        {
-            return ((Single)value).ToString("N", _Nmfi);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToSingle(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (Single)0;
-            Single value;
-            if (!Single.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (Single)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string StringToString(object value)
-        {
-            if (value == null) return null;
-            return value as string;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToString(string text)
-        {
-            if (text == null) return null;
-            return text;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         public static string TimeSpanToString(object value)
         {
             return ((TimeSpan)value).ToString("G", _Dtfi);
@@ -939,95 +1075,161 @@ namespace Noris.LCS.Base.WorkScheduler
             if (!TimeSpan.TryParse(text, _Dtfi, out value)) return TimeSpan.Zero;
             return value;
         }
+        #endregion
+        #region Object to/from, Type
         /// <summary>
-        /// Konkrétní konvertor
+        /// Z objektu detekuje jeho typ a pak podle tohoto typu převede hodnotu na string.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static string UInt16ToString(object value)
+        public static string ObjectToString(object value)
         {
-            return ((UInt16)value).ToString();
+            if (value == null) return "";
+            string typeName = value.GetType().FullName;
+            switch (typeName)
+            {
+                case "System.Boolean": return BooleanToString(value);
+                case "System.Byte": return ByteToString(value);
+                case "System.SByte": return SByteToString(value);
+                case "System.Int16": return Int16ToString(value);
+                case "System.Int32": return Int32ToString(value);
+                case "System.Int64": return Int64ToString(value);
+                case "System.UInt16": return UInt16ToString(value);
+                case "System.UInt32": return UInt32ToString(value);
+                case "System.UInt64": return UInt64ToString(value);
+                case "System.Single": return SingleToString(value);
+                case "System.Double": return DoubleToString(value);
+                case "System.Decimal": return DecimalToString(value);
+                case "System.DateTime": return DateTimeToString(value);
+                case "System.TimeSpan": return TimeSpanToString(value);
+                case "System.Char": return CharToString(value);
+                case "System.DateTimeOffset": return DateTimeOffsetToString(value);
+                case "System.Guid": return GuidToString(value);
+                case "System.Drawing.Color": return ColorToString(value);
+                case "System.Drawing.Point": return PointToString(value);
+                case "System.Drawing.PointF": return PointFToString(value);
+                case "System.Drawing.Rectangle": return RectangleToString(value);
+                case "System.Drawing.RectangleF": return RectangleFToString(value);
+                case "System.Drawing.Size": return SizeToString(value);
+                case "System.Drawing.SizeF": return SizeFToString(value);
+            }
+            return value.ToString();
         }
         /// <summary>
-        /// Konkrétní konvertor
+        /// Daný string převede na hodnotu požadovaného typu. Pokud není zadán typ, vrátí null.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static object StringToObject(string text, Type type)
+        {
+            if (type == null) return null;
+            string typeName = type.FullName;
+            switch (typeName)
+            {
+                case "System.Boolean": return StringToBoolean(text);
+                case "System.Byte": return StringToByte(text);
+                case "System.SByte": return StringToSByte(text);
+                case "System.Int16": return StringToInt16(text);
+                case "System.Int32": return StringToInt32(text);
+                case "System.Int64": return StringToInt64(text);
+                case "System.UInt16": return StringToUInt16(text);
+                case "System.UInt32": return StringToUInt32(text);
+                case "System.UInt64": return StringToUInt64(text);
+                case "System.Single": return StringToSingle(text);
+                case "System.Double": return StringToDouble(text);
+                case "System.Decimal": return StringToDecimal(text);
+                case "System.DateTime": return StringToDateTime(text);
+                case "System.TimeSpan": return StringToTimeSpan(text);
+                case "System.Char": return StringToChar(text);
+                case "System.DateTimeOffset": return StringToDateTimeOffset(text);
+                case "System.Guid": return StringToGuid(text);
+                case "System.Drawing.Color": return StringToColor(text);
+                case "System.Drawing.Point": return StringToPoint(text);
+                case "System.Drawing.PointF": return StringToPointF(text);
+                case "System.Drawing.Rectangle": return StringToRectangle(text);
+                case "System.Drawing.RectangleF": return StringToRectangleF(text);
+                case "System.Drawing.Size": return StringToSize(text);
+                case "System.Drawing.SizeF": return StringToSizeF(text);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí String pro daný Type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static string TypeToString(Type type)
+        {
+            string name = type.FullName;
+            if (name.StartsWith("System."))
+            {
+                string sysName = name.Substring(7);
+                if (sysName.IndexOf(".") < 0) return sysName;        // Z typů "System.DateTime" vrátím jen "DateTime"
+            }
+            if (name.StartsWith("System.Drawing."))
+            {
+                string sysName = name.Substring(15);
+                if (sysName.IndexOf(".") < 0) return sysName;        // Z typů "System.Drawing.RectangleF" vrátím jen "RectangleF"
+            }
+            return name;
+        }
+        /// <summary>
+        /// Převede text na Type. Pokud nelze určit Type, vrátí null, ale ne chybu.
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public static object StringToUInt16(string text)
+        public static Type StringToType(string text)
         {
-            if (String.IsNullOrEmpty(text)) return (UInt16)0;
-            UInt16 value;
-            if (!UInt16.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (UInt16)0;
-            return value;
+            if (String.IsNullOrEmpty(text)) return null;
+            text = _NormalizeTypeName(text);
+            if (text.IndexOf(".") < 0)
+                text = "System." + text;
+            Type type = null;
+            try { type = Type.GetType(text, false, true); }
+            catch { type = null; }
+            return type;
         }
         /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string UInt32ToString(object value)
-        {
-            return ((UInt32)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
+        /// Vrátí plný StringName pro daný zjednodušený název typu
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public static object StringToUInt32(string text)
+        private static string _NormalizeTypeName(string text)
         {
-            if (String.IsNullOrEmpty(text)) return (UInt32)0;
-            UInt32 value;
-            if (!UInt32.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (UInt32)0;
-            return value;
+            text = text.Trim();
+            string key = text.ToLower();
+            switch (key)
+            {   // Tady řeším "zjednodušené názvy typů" a vracím ".NET názvy typů"; nemusím prefixovat "System." :
+                case "bool": return "System.Boolean";
+                case "guid": return "System.Guid";
+                case "short": return "System.Int16";
+                case "int": return "System.Int32";
+                case "long": return "System.Int64";
+                case "ushort": return "System.UInt16";
+                case "uint": return "System.UInt32";
+                case "ulong": return "System.UInt64";
+                case "numeric": return "System.Decimal";
+                case "float": return "System.Single";
+                case "double": return "System.Double";                 // Tenhle a další nejsou nutné, protože to řeší parametr "ignoreCase" v Type.GetType()
+                case "decimal": return "System.Decimal";
+                case "number": return "System.Decimal";
+                case "text": return "System.String";
+                case "varchar": return "System.String";
+                case "char": return "System.String";                   // Toto je změna typu !!!
+                case "date": return "System.DateTime";
+                case "time": return "System.DateTime";
+                case "color": return "System.Drawing.Color";
+                case "point": return "System.Drawing.Point";
+                case "pointf": return "System.Drawing.PointF";
+                case "rectangle": return "System.Drawing.Rectangle";
+                case "rectanglef": return "System.Drawing.RectangleF";
+                case "size": return "System.Drawing.Size";
+                case "sizef": return "System.Drawing.SizeF";
+            }
+            if (key.StartsWith("numeric_")) return "Decimal";   // Jakékoli "numeric_19_6" => Decimal
+            return text;
         }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string UInt64ToString(object value)
-        {
-            return ((UInt64)value).ToString();
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToUInt64(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (UInt64)0;
-            UInt64 value;
-            if (!UInt64.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out value)) return (UInt64)0;
-            return value;
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string UIntPtrToString(object value)
-        {
-            return ((UIntPtr)value).ToUInt64().ToString("G");
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToUIntPtr(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return (UIntPtr)0;
-            UInt64 uint64;
-            if (!UInt64.TryParse(text, System.Globalization.NumberStyles.Any, _Nmfi, out uint64)) return (UIntPtr)0;
-            return new UIntPtr(uint64);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
         #endregion
         #region Nullable types
         /// <summary>

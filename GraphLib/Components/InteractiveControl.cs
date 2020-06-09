@@ -2783,11 +2783,13 @@ namespace Asol.Tools.WorkScheduler.Components
                     // Prvek vložíme do BoundsInfo, aby nám mohl počítat jeho souřadnice:
                     boundsInfo.CurrentItem = item;
 
+                    // Do kterých vrstev budeme kreslit prvek:
+                    GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
+
                     // Pokud prvek nebude ani zčásti viditelný (to nám řekne BoundsInfo), tak ho do Draw nebudeme dávat:
-                    if (!boundsInfo.CurrentItemAbsoluteIsVisible) continue;
+                    if (!NeedDrawCurrentItem(boundsInfo, itemLayers)) continue;
 
                     // Přidat prvek do seznamů pro patřičné vrstvy:
-                    GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
                     this.AddItemToLayers(boundsInfo, item, itemLayers, false);
                     item.RepaintToLayers = GInteractiveDrawLayer.None;
 
@@ -2799,7 +2801,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         IInteractiveItem[] childItems = childs.ToArray();
                         if (childItems.Length > 0)
                         {
-                            BoundsInfo boundsInfoChilds = boundsInfo.CurrentChildsBoundsInfo;          // Souřadný systém, který platí uvnitř aktuálního prvku "item" = ten platí pro všechny jeho Childs prvky
+                            BoundsInfo boundsInfoChilds = boundsInfo.CurrentChildsBoundsInfo;      // Souřadný systém, který platí uvnitř aktuálního prvku "item" = ten platí pro všechny jeho Childs prvky
                             this.FillFromItems(boundsInfoChilds, item, childItems, itemLayers);    // Čistokrevná rekurze
                         }
                     }
@@ -2810,6 +2812,22 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 if (parent is IAutoScrollContainer)
                     this.AddScrollItemsToLayers(boundsInfo, parent as IAutoScrollContainer);
+            }
+            /// <summary>
+            /// Určí, zda prvek <see cref="BoundsInfo.CurrentItem"/> bude třeba vykreslit nebo ne.
+            /// </summary>
+            /// <param name="boundsInfo"></param>
+            /// <param name="itemLayers"></param>
+            /// <returns></returns>
+            private bool NeedDrawCurrentItem(BoundsInfo boundsInfo, GInteractiveDrawLayer itemLayers)
+            {
+                // Kdo je ve viditelné oblasti, měl by být vykreslen:
+                if (boundsInfo.CurrentItemAbsoluteIsVisible) return true;
+
+                // Prvek není ve viditelné oblasti, ale může to být dynamický nebo interaktivní => tyto prvky zařadíme do kreslení vždy:
+                //  není jich mnoho, vykreslování to nezatíží, a mohou být kresleny do libovolných míst:
+                GInteractiveDrawLayer forceLayers = (GInteractiveDrawLayer)(itemLayers & (GInteractiveDrawLayer.Dynamic | GInteractiveDrawLayer.Interactive));
+                return (forceLayers != GInteractiveDrawLayer.None);
             }
             /// <summary>
             /// Vrací vrstvy, do kterých má být vykreslen daný prvek, s přihlédnutím k tomu, do jakých vrstev se kreslí jeho parent,

@@ -48,6 +48,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._LinkDict = new Dictionary<UInt64, LinkInfo>();
         }
         /// <summary>
+        /// Obsahuje true, pokud má nějaké Linky
+        /// </summary>
+        public bool HasLinks { get { return (_LinkDict.Count > 0); } }
+        /// <summary>
+        /// Počet Linků v evidenci
+        /// </summary>
+        public int LinkCount { get { return _LinkDict.Count; } }
+        /// <summary>
         /// Úložiště linků + přidaných dat
         /// </summary>
         private Dictionary<UInt64, LinkInfo> _LinkDict;
@@ -328,6 +336,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         #endregion
         #region Podpora pro kreslení (InteractiveObject)
+        /// <summary>
+        /// Souřadnice linků = úplné souřadnice v rámci Parenta
+        /// </summary>
+        public override Rectangle Bounds
+        {
+            get
+            {
+                // Prvek sám nemá žádnou interaktivitu. Proto nemá souřadnice. 
+                // Co se týká kreslení, pak díky tomu, že se kreslí do vrstvy Dynamic nebo None (viz StandardDrawToLayer), pak se do vykreslení dostává (viz InteractiveControl.NeedDrawCurrentItem())
+                return Rectangle.Empty;
+                // return base.Bounds;
+                // if (this.Parent == null) return base.Bounds;
+                // return new Rectangle(Point.Empty, this.Parent.ClientSize);
+            }
+            set { base.Bounds = value; }
+        }
         /// <summary>
         /// Vrstvy, do nichž se běžně má vykreslovat tento objekt.
         /// Tato hodnota se v metodě <see cref="InteractiveObject.Repaint()"/> použije pro následující vykreslování objektů.
