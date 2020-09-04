@@ -164,6 +164,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
 
+            if (absoluteBounds.Width > 10240) absoluteBounds.Width = 10240;
+            if (absoluteBounds.Height > 10240) absoluteBounds.Height = 10240;
+
             using (Brush brush = Skin.CreateBrushForBackground(absoluteBounds, orientation, state, true, color, opacity, point))
             {
                 if (roundCorner.HasValue && roundCorner.Value > 0)

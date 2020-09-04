@@ -2895,6 +2895,11 @@ namespace Asol.Tools.WorkScheduler.Components
                         decimal pixelSize = axis.PixelSize;
                         if (pixelEnd.Value > 0m && pixelBegin.Value < pixelSize)
                         {   // Pokud reálné pixely jsou ve viditelné části osy:
+                            // Ošetřit hodnoty mimo rozumný rozsah:
+                            decimal axisMin = -1000;
+                            if (pixelBegin.Value < axisMin) pixelBegin = axisMin;
+                            decimal axisMax = pixelSize + 1000m;
+                            if (pixelEnd.Value > axisMax) pixelEnd = axisMax;
                             this._PixelRange = new Int32Range((int)Math.Round(pixelBegin.Value, 0), (int)Math.Round(pixelEnd.Value, 0));
                             result = true;
                         }
