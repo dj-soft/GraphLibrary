@@ -84,6 +84,9 @@
     <Compile Include="Components\BitStorage.cs" />
     <Compile Include="Components\BoundsInfo.cs" />
     <Compile Include="Components\FontInfo.cs" />
+    <Compile Include="Components\InteractiveFocusManager.cs" />
+    <Compile Include="Components\TextEditOverlay.cs" />
+    <Compile Include="Components\TextObject.cs" />
     <Compile Include="GameComponents\Coord3D.cs" />
     <Compile Include="GameComponents\GameCamera.cs" />
     <Compile Include="GameComponents\GameControl.cs">
@@ -235,6 +238,14 @@
     <None Include="pic\select-rectangular.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\arrow-down-2.png" />
+    <None Include="Resources\arrow-down-double-2.png" />
+    <None Include="Resources\arrow-left-2.png" />
+    <None Include="Resources\arrow-left-double-2.png" />
+    <None Include="Resources\arrow-right-2.png" />
+    <None Include="Resources\arrow-right-double-2.png" />
+    <None Include="Resources\arrow-up-2.png" />
+    <None Include="Resources\arrow-up-double-2.png" />
     <Content Include="_UkolyProVyvoj.txt" />
     <None Include="pic\pic64\document-export_64.png" />
     <None Include="pic\pic64\document-save-5_64.png" />

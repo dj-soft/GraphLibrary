@@ -20,7 +20,8 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.BackgroundMode = DrawBackgroundMode.Solid;
             this.Is.Set(InteractiveProperties.Bit.DefaultMouseOverProperties
-                      | InteractiveProperties.Bit.KeyboardInput);
+                      | InteractiveProperties.Bit.KeyboardInput
+                      | InteractiveProperties.Bit.TabStop);
         }
         #endregion
         #region Myš
@@ -32,10 +33,21 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Klávesnice
+        protected override void AfterStateChangedKeyPreview(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedKeyPreview(e);
+        }
+        protected override void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedKeyPress(e);
+            if (e.KeyboardEventArgs.KeyCode == System.Windows.Forms.Keys.Tab)
+            { }
+            // this.Parent
+        }
         #endregion
         #region Vykreslení obsahu - základní
         /// <summary>
-        /// Zajistí krslení TextBoxu
+        /// Zajistí kreslení TextBoxu
         /// </summary>
         /// <param name="e"></param>
         /// <param name="absoluteBounds"></param>
@@ -44,91 +56,89 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             Rectangle innerBounds = this.GetInnerBounds(absoluteBounds);
-            this.DrawBackground(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode);     // Background
-            this.DrawRelation(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode);       // Podtržení od vztahu
-            this.DrawText(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode);           // Text
-            this.DrawBorder(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode);         // Rámeček
+            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode, this.HasFocus, this.InteractiveState, this);
+            this.DrawBackground(drawArgs);                  // Background
+            this.DrawOverlay(drawArgs, OverlayBackground);  // Grafika nad Backgroundem
+            this.DrawText(drawArgs);                        // Text
+            this.DrawOverlay(drawArgs, OverlayText);        // Grafika nad Textem
+            this.DrawBorder(drawArgs);         // Rámeček
+        }
+        /// <summary>
+        /// Vrací souřadnice vnitřního prostoru po odečtení prostoru pro Border (0-1-2 pixely)
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        protected Rectangle GetInnerBounds(Rectangle bounds)
+        {
+            switch (this.BorderStyle.Value)
+            {
+                case BorderStyleType.None: return bounds;
+                case BorderStyleType.Flat:
+                case BorderStyleType.Effect3D: return bounds.Enlarge(-1);
+                case BorderStyleType.Soft: return bounds.Enlarge(-2);
+            }
+            return bounds;
         }
         /// <summary>
         /// Vykreslí pozadí
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="absoluteVisibleBounds"></param>
-        /// <param name="innerBounds"></param>
-        /// <param name="drawMode"></param>
-        protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        /// <param name="drawArgs">Argumenty</param>
+        protected virtual void DrawBackground(GTextEditDrawArgs drawArgs)
         {
-            this.DrawBackground(e, innerBounds, absoluteVisibleBounds, drawMode, this.CurrentBackColor);
+            this.DrawBackground(drawArgs.DrawArgs, drawArgs.InnerBounds, drawArgs.AbsoluteVisibleBounds, drawArgs.DrawMode, this.CurrentBackColor);
         }
         /// <summary>
-        /// Vykreslí linku podtržení vztahu podle <see cref="RelationType"/>
+        /// Vykreslí Overlay
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="absoluteVisibleBounds"></param>
-        /// <param name="innerBounds"></param>
-        /// <param name="drawMode"></param>
-        protected virtual void DrawRelation(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        /// <param name="drawArgs">Argumenty</param>
+        /// <param name="overlay"></param>
+        protected virtual void DrawOverlay(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
         {
-            var relationType = this.RelationType;
-            if (relationType == TextRelationType.ToRecord || relationType == TextRelationType.ToDocument)
-                GPainter.DrawRelationLine(e.Graphics, innerBounds, false, (relationType == TextRelationType.ToDocument));
-        }
-        /// <summary>
-        /// Vykreslí obsah (text)
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="absoluteVisibleBounds"></param>
-        /// <param name="innerBounds"></param>
-        /// <param name="drawMode"></param>
-        protected virtual void DrawText(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
-        {
-            string text = this.Text;
-            if (this.HasFocus)
-                // Máme Focus = budeme řešit Kurzor:
-                this.DrawTextFocus(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode);
-            else if (!String.IsNullOrEmpty(text))
-                // Bez Focusu = jen vypíšu text:
-                GPainter.DrawString(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
+            overlay?.DrawOverlay(drawArgs);
         }
         /// <summary>
         /// Vykreslí border
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="absoluteVisibleBounds"></param>
-        /// <param name="innerBounds"></param>
-        /// <param name="drawMode"></param>
-        protected virtual void DrawBorder(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        /// <param name="drawArgs">Argumenty</param>
+        protected virtual void DrawBorder(GTextEditDrawArgs drawArgs)
         {
             switch (this.BorderStyle.Value)
             {
                 case BorderStyleType.Flat:
-                    GPainter.DrawBorder(e.Graphics, absoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, 0f);
+                    GPainter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, 0f);
                     break;
                 case BorderStyleType.Effect3D:
-                    GPainter.DrawBorder(e.Graphics, absoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, this.CurrentBorder3DEffect);
+                    GPainter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, this.CurrentBorder3DEffect);
                     break;
                 case BorderStyleType.Soft:
-                    GPainter.DrawSoftBorder(e.Graphics, absoluteBounds, RectangleSide.All, this.CurrentSoftBorderColor);
+                    GPainter.DrawSoftBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, RectangleSide.All, this.CurrentBorderColor);
                     break;
             }
         }
         #endregion
         #region Vykreslení textu a kurzoru, na základě stavu editace
-
-        protected void DrawTextFocus(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí obsah (text)
+        /// </summary>
+        /// <param name="drawArgs">Argumenty</param>
+        protected virtual void DrawText(GTextEditDrawArgs drawArgs)
         {
             string text = this.Text ?? "";
+            StringFormatFlags stringFormat = StringFormatFlags.NoWrap | StringFormatFlags.LineLimit;
+            if (!this.HasFocus)
+            {
+                // Bez Focusu = jen vypíšu text:
+                GPainter.DrawString(drawArgs.Graphics, text, this.CurrentFont, drawArgs.InnerBounds, this.Alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
+                return;
+            }
+
             if (text.Length == 0) text = " ";              // Kvůli souřadnicím
-            RectangleF[] charPositions = GPainter.DrawStringMeasureChars(e.Graphics, text, this.Font, innerBounds, this.Alignment, color: this.ForeColor);
+            RectangleF[] charPositions = GPainter.DrawStringMeasureChars(drawArgs.Graphics, text, this.CurrentFont, drawArgs.InnerBounds, this.Alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
             this.CharacterBounds = CharacterPositionInfo.CreateArray(text, charPositions);
             this.CursorBounds = this.FindCursorBounds();
 
             if (this.CursorBounds.HasValue)
-                e.Graphics.FillRectangle(Brushes.Black, this.CursorBounds.Value);
+                drawArgs.Graphics.FillRectangle(Brushes.Black, this.CursorBounds.Value);
 
             /*
 
@@ -295,51 +305,51 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region Support pro kreslení obsahu - aktuální barvy (Inner, Border, Back, Fore) podle stavu interaktivity
+        #region Public vlastnosti definující vzhled (Color, Border, Font)
         /// <summary>
-        /// Vrací souřadnice vnitřního prostoru po odečtení prostoru pro Border (0-1-2 pixely)
+        /// Defaultní barva pozadí.
         /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        protected Rectangle GetInnerBounds(Rectangle bounds)
-        {
-            switch (this.BorderStyle.Value)
-            {
-                case BorderStyleType.None: return bounds;
-                case BorderStyleType.Flat:
-                case BorderStyleType.Effect3D: return bounds.Enlarge(-1);
-                case BorderStyleType.Soft: return bounds.Enlarge(-2);
-            }
-            return bounds;
-        }
+        protected override Color BackColorDefault { get { return Skin.TextBox.BackColorEnabled; } }
         /// <summary>
-        /// Aktuální barva okrajů
+        /// Barva pozadí Disabled (= Protected).
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
         /// </summary>
-        protected Color CurrentBorderColor
-        {
-            get
-            {
-                var state = this.InteractiveState;
-                if (state.HasFlag(GInteractiveState.Disabled)) return Skin.TextBox.PassiveBorderColor;
-                if (this.HasFocus) return Skin.TextBox.ActiveBorderColor;
-                if (state.HasFlag(GInteractiveState.FlagOver)) return Skin.TextBox.ActiveBorderColor;
-                return Skin.TextBox.PassiveBorderColor;
-            }
-        }
+        public Color? BackColorDisabled { get { return __BackColorDisabled ?? BackColorDisabledDefault; } set { __BackColorDisabled = value; Invalidate(); } }
+        private Color? __BackColorDisabled = null;
         /// <summary>
-        /// Aktuální barva okrajů
+        /// Defaultní barva pozadí Disabled (= Protected)
         /// </summary>
-        protected Color CurrentSoftBorderColor
-        {
-            get
-            {
-                var state = this.InteractiveState;
-                if (state.HasFlag(GInteractiveState.Disabled)) return Skin.TextBox.PassiveSoftBorderColor;
-                if (this.HasFocus) return Skin.TextBox.ActiveSoftBorderColor;
-                if (state.HasFlag(GInteractiveState.FlagOver)) return Skin.TextBox.ActiveSoftBorderColor;
-                return Skin.TextBox.PassiveSoftBorderColor;
-            }
-        }
+        protected virtual Color BackColorDisabledDefault { get { return Skin.TextBox.BackColorDisabled; } }
+        /// <summary>
+        /// Barva pozadí MouseOver.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BackColorMouseOver { get { return __BackColorMouseOver ?? BackColorMouseOverDefault; } set { __BackColorMouseOver = value; Invalidate(); } }
+        private Color? __BackColorMouseOver = null;
+        /// <summary>
+        /// Defaultní barva pozadí MouseOver
+        /// </summary>
+        protected virtual Color BackColorMouseOverDefault { get { return Skin.TextBox.BackColorMouseOver; } }
+        /// <summary>
+        /// Barva pozadí Focused.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BackColorFocused { get { return __BackColorFocused ?? BackColorFocusedDefault; } set { __BackColorFocused = value; Invalidate(); } }
+        private Color? __BackColorFocused = null;
+        /// <summary>
+        /// Defaultní barva pozadí Focused
+        /// </summary>
+        protected virtual Color BackColorFocusedDefault { get { return Skin.TextBox.BackColorFocused; } }
+        /// <summary>
+        /// Barva pozadí SelectedText.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BackColorSelectedText { get { return __BackColorSelectedText ?? BackColorSelectedTextDefault; } set { __BackColorSelectedText = value; Invalidate(); } }
+        private Color? __BackColorSelectedText = null;
+        /// <summary>
+        /// Defaultní barva pozadí pozadí SelectedText
+        /// </summary>
+        protected virtual Color BackColorSelectedTextDefault { get { return Skin.TextBox.BackColorSelectedText; } }
         /// <summary>
         /// Aktuální barva pozadí
         /// </summary>
@@ -347,13 +357,60 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
+                Color backColor;
                 var state = this.InteractiveState;
-                if (state.HasFlag(GInteractiveState.Disabled)) return Skin.TextBox.DisabledBackColor;
-                if (this.HasFocus) return Skin.TextBox.ActiveBackColor;
-                if (state.HasFlag(GInteractiveState.FlagOver)) return Skin.TextBox.MouseOverBackColor;
-                return Skin.TextBox.EnabledBackColor;
+                if (state.HasFlag(GInteractiveState.Disabled)) backColor = BackColorDisabled.Value;
+                else if (this.HasFocus) backColor = BackColorFocused.Value;
+                else if (state.HasFlag(GInteractiveState.FlagOver)) backColor = BackColorMouseOver.Value;
+                else backColor = BackColor.Value;
+                return backColor;
             }
         }
+
+        /// <summary>
+        /// Defaultní barva písma.
+        /// </summary>
+        protected override Color TextColorDefault { get { return Skin.TextBox.TextColorEnabled; } }
+        /// <summary>
+        /// Barva písma Disabled (= Protected).
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? TextColorDisabled { get { return __TextColorDisabled ?? TextColorDisabledDefault; } set { __TextColorDisabled = value; Invalidate(); } }
+        private Color? __TextColorDisabled = null;
+        /// <summary>
+        /// Defaultní barva písma pasivní = read only (disabled).
+        /// </summary>
+        protected virtual Color TextColorDisabledDefault { get { return Skin.TextBox.TextColorDisabled; } }
+        /// <summary>
+        /// Barva písma MouseOver.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? TextColorMouseOver { get { return __TextColorMouseOver ?? TextColorMouseOverDefault; } set { __TextColorMouseOver = value; Invalidate(); } }
+        private Color? __TextColorMouseOver = null;
+        /// <summary>
+        /// Defaultní barva písma MouseOver
+        /// </summary>
+        protected virtual Color TextColorMouseOverDefault { get { return Skin.TextBox.TextColorMouseOver; } }
+        /// <summary>
+        /// Barva písma Focused.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? TextColorFocused { get { return __TextColorFocused ?? TextColorFocusedDefault; } set { __TextColorFocused = value; Invalidate(); } }
+        private Color? __TextColorFocused = null;
+        /// <summary>
+        /// Defaultní barva písma Focused
+        /// </summary>
+        protected virtual Color TextColorFocusedDefault { get { return Skin.TextBox.TextColorFocused; } }
+        /// <summary>
+        /// Barva písma SelectedText.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? TextColorSelectedText { get { return __TextColorSelectedText ?? TextColorSelectedTextDefault; } set { __TextColorSelectedText = value; Invalidate(); } }
+        private Color? __TextColorSelectedText = null;
+        /// <summary>
+        /// Defaultní barva písma SelectedText
+        /// </summary>
+        protected virtual Color TextColorSelectedTextDefault { get { return Skin.TextBox.TextColorSelectedText; } }
         /// <summary>
         /// Aktuální barva písma
         /// </summary>
@@ -361,11 +418,128 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
+                Color textColor;
                 var state = this.InteractiveState;
-                if (state.HasFlag(GInteractiveState.Disabled)) return Skin.TextBox.DisabledForeColor;
-                if (this.HasFocus) return Skin.TextBox.ActiveForeColor;
-                if (state.HasFlag(GInteractiveState.FlagOver)) return Skin.TextBox.MouseOverForeColor;
-                return Skin.TextBox.EnabledForeColor;
+                if (state.HasFlag(GInteractiveState.Disabled)) textColor = TextColorDisabled.Value;
+                else if (this.HasFocus) textColor = TextColorFocused.Value;
+                else if (state.HasFlag(GInteractiveState.FlagOver)) textColor = TextColorMouseOver.Value;
+                else textColor = TextColor.Value;
+                return textColor;
+            }
+        }
+
+        /// <summary>
+        /// Typ rámečku textboxu. 
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public BorderStyleType? BorderStyle { get { return __BorderStyle ?? BorderStyleDefault; } set { __BorderStyle = value; Invalidate(); } }
+        private BorderStyleType? __BorderStyle;
+        /// <summary>
+        /// Defaultní typ rámečku textboxu
+        /// </summary>
+        protected virtual BorderStyleType BorderStyleDefault { get { return Skin.TextBox.BorderStyle; } }
+        /// <summary>
+        /// Barva rámečku Enabled.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BorderColor { get { return __BorderColor ?? BorderColorDefault; } set { __BorderColor = value; Invalidate(); } }
+        private Color? __BorderColor = null;
+        /// <summary>
+        /// Defaultní barva rámečku.
+        /// </summary>
+        protected virtual Color BorderColorDefault { get { return Skin.TextBox.BorderColor; } }
+        /// <summary>
+        /// Barva rámečku Disabled (= Protected).
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BorderColorDisabled { get { return __BorderColorDisabled ?? BorderColorDisabledDefault; } set { __BorderColorDisabled = value; Invalidate(); } }
+        private Color? __BorderColorDisabled = null;
+        /// <summary>
+        /// Defaultní barva rámečku pasivní = read only (disabled).
+        /// </summary>
+        protected virtual Color BorderColorDisabledDefault { get { return Skin.TextBox.BorderColor; } }
+        /// <summary>
+        /// Barva rámečku MouseOver.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BorderColorMouseOver { get { return __BorderColorMouseOver ?? BorderColorMouseOverDefault; } set { __BorderColorMouseOver = value; Invalidate(); } }
+        private Color? __BorderColorMouseOver = null;
+        /// <summary>
+        /// Defaultní barva rámečku MouseOver
+        /// </summary>
+        protected virtual Color BorderColorMouseOverDefault { get { return Skin.TextBox.BorderColor; } }
+        /// <summary>
+        /// Barva rámečku Focused.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BorderColorFocused { get { return __BorderColorFocused ?? BorderColorFocusedDefault; } set { __BorderColorFocused = value; Invalidate(); } }
+        private Color? __BorderColorFocused = null;
+        /// <summary>
+        /// Defaultní barva rámečku Focused
+        /// </summary>
+        protected virtual Color BorderColorFocusedDefault { get { return Skin.TextBox.BorderColorFocused; } }
+        /// <summary>
+        /// Barva rámečku Required. Hodnota Alpha kanálu určuje Morphing hodnotu z běžné barvy: 0=pro Required textbox se bude Border kreslit beze změny, 255=bude vždy použita čistá barva <see cref="BorderColorRequired"/>.
+        /// Vhodná hodnota je 128 - 192, kdy Border částečně reaguje na Focus (přebírá například barvu <see cref="BorderColorMouseOver"/>).
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BorderColorRequired { get { return __BorderColorRequired ?? BorderColorRequiredDefault; } set { __BorderColorRequired = value; Invalidate(); } }
+        private Color? __BorderColorRequired = null;
+        /// <summary>
+        /// Defaultní barva rámečku Required
+        /// </summary>
+        protected virtual Color BorderColorRequiredDefault { get { return Skin.TextBox.BorderColorRequired; } }
+        /// <summary>
+        /// Barva rámečku Soft verze = když <see cref="BorderStyle"/> == <see cref="BorderStyleType.Soft"/>. Hodnota Alpha kanálu určuje Morphing hodnotu z běžné barvy: 0=pro Soft textbox se bude Border kreslit beze změny, 255=bude vždy použita čistá barva <see cref="BorderColorSoft"/>.
+        /// Vhodná hodnota je 128 - 192, kdy Border částečně reaguje na Focus (přebírá například barvu <see cref="BorderColorMouseOver"/>).
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public Color? BorderColorSoft { get { return __BorderColorSoft ?? BorderColorSoftDefault; } set { __BorderColorSoft = value; Invalidate(); } }
+        private Color? __BorderColorSoft = null;
+        /// <summary>
+        /// Defaultní barva rámečku Required
+        /// </summary>
+        protected virtual Color BorderColorSoftDefault { get { return Skin.TextBox.BorderColorSoft; } }
+        /// <summary>
+        /// Hodnota průhlednosti rámečku ve verzi Soft.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// </summary>
+        public float? BorderAlphaSoft { get { return __BorderAlphaSoft ?? BorderAlphaSoftDefault; } set { __BorderAlphaSoft = value; Invalidate(); } }
+        private float? __BorderAlphaSoft = null;
+        /// <summary>
+        /// Defaultní barva rámečku Required
+        /// </summary>
+        protected virtual float BorderAlphaSoftDefault { get { return Skin.TextBox.BorderAlphaSoft; } }
+        
+        /// <summary>
+        /// Obsahuje true pokud Border používá barvy Simple, false pokud používá barvy Soft
+        /// </summary>
+        protected bool BorderIsSimple { get { return (BorderStyle.Value != BorderStyleType.Soft); } }
+        /// <summary>
+        /// Aktuální barva okrajů.
+        /// Obsahuje vliv všech faktorů: Disabed, MouseOver, Focus, Soft border, IsRequired.
+        /// </summary>
+        protected Color CurrentBorderColor
+        {
+            get
+            {
+                var state = this.InteractiveState;
+                Color borderColor;
+                if (state.HasFlag(GInteractiveState.Disabled)) borderColor = BorderColorDisabled.Value;
+                else if (this.HasFocus) borderColor = BorderColorFocused.Value;
+                else if (state.HasFlag(GInteractiveState.FlagOver)) borderColor = BorderColorMouseOver.Value;
+                else borderColor = BorderColor.Value;
+
+                if (BorderStyle.Value == BorderStyleType.Soft)
+                    borderColor = borderColor.Morph(BorderColorSoft.Value);
+
+                if (IsRequiredValue)
+                    borderColor = borderColor.Morph(BorderColorRequired.Value);
+
+                if (BorderStyle.Value == BorderStyleType.Soft)
+                    borderColor = borderColor.CreateTransparent(BorderAlphaSoft.Value);
+
+                return borderColor;
             }
         }
         /// <summary>
@@ -385,33 +559,95 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public členové
         /// <summary>
+        /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
+        /// </summary>
+        public bool TabStop { get { return this.Is.TabStop; } set { this.Is.TabStop = value; } }
+        /// <summary>
+        /// Přídavné vykreslení přes Background, pod text
+        /// </summary>
+        public ITextEditOverlay OverlayBackground { get; set; }
+        /// <summary>
+        /// Přídavné vykreslení přes Text
+        /// </summary>
+        public ITextEditOverlay OverlayText { get; set; }
+        /// <summary>
         /// Typ vztahu - pro správné vykreslování (linka podtržení)
         /// </summary>
         public TextRelationType RelationType { get; set; }
         /// <summary>
-        /// Typ borderu
+        /// Obsahuje true pro prvek, jehož hodnota má být zadaná, nikoli Empty.
+        /// Pak se Border vykresluje barvou 
         /// </summary>
-        public BorderStyleType xBorderStyle { get; set; }
-
-
-        /// <summary>
-        /// Aktuální typ rámečku textboxu. Při čtení má vždy hodnotu (nikdy není null).
-        /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="BorderStyleDefault"/>.
-        /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="BorderStyleDefault"/>.
-        /// </summary>
-        public BorderStyleType? BorderStyle
-        {
-            get { return this.__BorderStyle ?? this.BorderStyleDefault; }
-            set { this.__BorderStyle = value; }
-        }
-        private BorderStyleType? __BorderStyle;
-        /// <summary>
-        /// Defaultní písmo
-        /// </summary>
-        public virtual BorderStyleType BorderStyleDefault { get { return Skin.TextBox.BorderStyle; } }
-
+        public bool IsRequiredValue { get; set; }
         #endregion
     }
+    #region class GTextEditDrawArgs : Argumenty pro kreslení
+    /// <summary>
+    /// Argumenty pro kreslení
+    /// </summary>
+    public class GTextEditDrawArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="innerBounds"></param>
+        /// <param name="drawMode"></param>
+        /// <param name="hasFocus"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="textEdit"></param>
+        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode, 
+            bool hasFocus, GInteractiveState interactiveState, GTextEdit textEdit)
+        {
+            this.DrawArgs = drawArgs;
+            this.AbsoluteBounds = absoluteBounds;
+            this.AbsoluteVisibleBounds = absoluteVisibleBounds;
+            this.InnerBounds = innerBounds;
+            this.DrawMode = drawMode;
+            this.HasFocus = hasFocus;
+            this.InteractiveState = interactiveState;
+            this.TextEdit = textEdit;
+        }
+        /// <summary>
+        /// Data pro kreslení
+        /// </summary>
+        public GInteractiveDrawArgs DrawArgs { get; private set; }
+        /// <summary>
+        /// Grafika
+        /// </summary>
+        public Graphics Graphics { get { return this.DrawArgs.Graphics; } }
+        /// <summary>
+        /// Plné absolutní souřadnice
+        /// </summary>
+        public Rectangle AbsoluteBounds { get; private set; }
+        /// <summary>
+        /// Viditelné absolutní souřadnice
+        /// </summary>
+        public Rectangle AbsoluteVisibleBounds { get; private set; }
+        /// <summary>
+        /// Vnitřní souřadnice textum, bez rámečku
+        /// </summary>
+        public Rectangle InnerBounds { get; private set; }
+        /// <summary>
+        /// Režim kreslení
+        /// </summary>
+        public DrawItemMode DrawMode { get; private set; }
+        /// <summary>
+        /// Máme Focus
+        /// </summary>
+        public bool HasFocus { get; private set; }
+        /// <summary>
+        /// Interaktivní stav
+        /// </summary>
+        public GInteractiveState InteractiveState { get; private set; }
+        /// <summary>
+        /// Textový objekt
+        /// </summary>
+        public GTextEdit TextEdit { get; private set; }
+    }
+    #endregion
     #region enum TextRelationType
     /// <summary>
     /// Typ vztahu - pro správné vykreslování (linka podtržení)

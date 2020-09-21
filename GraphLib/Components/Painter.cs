@@ -459,6 +459,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
+        /// <param name="stringFormat"></param>
         /// <param name="measureChars"></param>
         /// <param name="positions"></param>
         private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, StringFormatFlags? stringFormat, bool measureChars, out RectangleF[] positions)
@@ -1842,6 +1843,17 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         */
         #endregion
         #region DrawImage
+/// <summary>
+        /// Vykreslí daný Image, pokud isEnabled je false, pak bude Image modifikovaný do šedé barvy
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="image"></param>
+        /// <param name="alignment"></param>
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, ContentAlignment? alignment = null)
+        {
+            _DrawImage(graphics, bounds, image, null, alignment);
+        }
         /// <summary>
         /// Vykreslí daný Image, pokud isEnabled je false, pak bude Image modifikovaný do šedé barvy
         /// </summary>
@@ -1850,7 +1862,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="image"></param>
         /// <param name="isEnabled"></param>
         /// <param name="alignment"></param>
-        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled = true, ContentAlignment? alignment = null)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled, ContentAlignment? alignment = null)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = (isEnabled ? null : CreateColorMatrixAlpha(0.45f));
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
@@ -1876,7 +1888,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="image"></param>
         /// <param name="state"></param>
         /// <param name="alignment"></param>
-        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state = null, ContentAlignment? alignment = null)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state, ContentAlignment? alignment = null)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = ((state.HasValue && state.Value != GInteractiveState.Enabled) ? CreateColorMatrixForState(state.Value) : null);
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
@@ -1966,12 +1978,12 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="forGrid">Určení šířky: Zadejte false pro Form, true pro Grid</param>
         /// <param name="forDocument">Určení barvy: Zadejte false pro Záznam, true pro Dokument</param>
+        /// <param name="forGrid">Určení šířky: Zadejte false pro Form, true pro Grid</param>
         /// <param name="color">Explicitní barva</param>
         /// <param name="lineWidth">Explicitní šířka linky (1 až 2 pixely, rozmezí je 0 - 6; přičemž 0 se nekreslí)</param>
         /// <param name="colorFading">Explicitní Fading = slábnutí barvy (barevný přechod), default = 0.60f</param>
-        internal static void DrawRelationLine(Graphics graphics, Rectangle bounds, bool forGrid = false, bool forDocument = false, Color? color = null, int? lineWidth = null, float? colorFading = null)
+        internal static void DrawRelationLine(Graphics graphics, Rectangle bounds, bool forDocument = false, bool forGrid = false, Color? color = null, int? lineWidth = null, float? colorFading = null)
         {
             int thick = (lineWidth.HasValue ? lineWidth.Value : (!forGrid ? Skin.Relation.LineHeightInForm : Skin.Relation.LineHeightInGrid));
             thick = (thick < 0 ? 0 : (thick > 6 ? 6 : thick));
@@ -1986,8 +1998,8 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             fading = (fading < 0f ? 0f : (fading > 1f ? 1f : fading));
 
             Rectangle boundsLine = (!forGrid ?
-                new Rectangle(bounds.X, bounds.Bottom - thick, bounds.Width, thick) :
-                new Rectangle(bounds.X + 1, bounds.Bottom - thick - 2, bounds.Width - 3, thick));
+                new Rectangle(bounds.X, bounds.Bottom - thick, bounds.Width, thick) :                   // Pro Dokument = těsně dole v daném prostoru
+                new Rectangle(bounds.X + 1, bounds.Bottom - thick - 1, bounds.Width - 3, thick));       // Pro Grid = necháme kolem 1px
             if (boundsLine.Width <= 0) return;
 
             if (color2.HasValue && thick >= 2)
@@ -5288,15 +5300,15 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// </summary>
         None = 0,
         /// <summary>
-        /// Jednobarevný
+        /// Jednobarevný jednoduchý
         /// </summary>
         Flat,
         /// <summary>
-        /// Se 3D efektem
+        /// Se 3D efektem (reaguje na focus a myš)
         /// </summary>
         Effect3D,
         /// <summary>
-        /// Měkký
+        /// Měkký (širší, poloprůhledný)
         /// </summary>
         Soft
     }

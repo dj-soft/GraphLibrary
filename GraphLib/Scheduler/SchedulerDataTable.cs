@@ -1559,7 +1559,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.PrepareDynamicChilds(this.SynchronizedTime, true);
             if (invalidateTable)
-                this.GTableRow.Invalidate();
+                this.GTableRow.InvalidateData();
         }
         /// <summary>
         /// Metoda připraví Childs řádky pro řádky Root, podle zadaného viditelného času

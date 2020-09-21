@@ -1942,6 +1942,13 @@ Y = (by0 + q * by1);
         }
         #endregion
         #region Skalární a Vektorový součin
+        /// <summary>
+        /// TripleProduct
+        /// </summary>
+        /// <param name="va"></param>
+        /// <param name="vb"></param>
+        /// <param name="vc"></param>
+        /// <returns></returns>
         public static Double TripleProduct(Vector3D va, Vector3D vb, Vector3D vc)
         {
 #warning NEDOKONČENO:

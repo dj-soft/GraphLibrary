@@ -79,7 +79,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Výchozí barva pozadí
         /// </summary>
-        public override Color BackColorDefault { get { return Color.DarkOrchid; } }
+        protected override Color BackColorDefault { get { return Color.DarkOrchid; } }
         /// <summary>
         /// Výchozí barva popředí
         /// </summary>

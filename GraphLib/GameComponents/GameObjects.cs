@@ -8,16 +8,35 @@ using System.Threading.Tasks;
 
 namespace Asol.Tools.WorkScheduler.GameComponents
 {
+    /// <summary>
+    /// Kostka
+    /// </summary>
     public class GameCube : GameItem
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GameCube()
         {
             Vertexes = new Point3D[8];
             SideColors = new Color?[6];
         }
+        /// <summary>
+        /// Vrcholové body, je jich 8
+        /// </summary>
         public Point3D[] Vertexes { get; private set; }
+        /// <summary>
+        /// Boční barvy, je jich 6
+        /// </summary>
         public Color?[] SideColors { get; private set; }
+        /// <summary>
+        /// Výchozí boční barva
+        /// </summary>
         public Color SideColor { get; private set; }
+        /// <summary>
+        /// Vykreslí objekt do kamery
+        /// </summary>
+        /// <param name="camera"></param>
         public override void Draw(GameCamera camera)
         {
             var p = Vertexes;

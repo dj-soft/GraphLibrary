@@ -837,7 +837,7 @@ namespace Asol.Tools.WorkScheduler.Components
             // Pole setříděných a viditelných záhlaví:
             List<GTabPage> sortedList = new List<GTabPage>(this._PageList.Where(i => i.Is.Visible));
             int count = sortedList.Count;
-            if (count > 1) sortedList.Sort(GTabPage.CompareByOrder);
+            if (count > 1) sortedList.Sort(InteractiveObject.CompareByTabOrderAsc);
 
             bool hasGraphics = (graphics != null);
             if (!hasGraphics)
@@ -922,7 +922,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private List<GTabPage> _PageList;
         /// <summary>
-        /// Pole obsahující viditelné prvky TabItem v tom pořadí, v jakém jdou za sebou od začátku do konce (podle jejich <see cref="GTabPage.TabOrder"/>)
+        /// Pole obsahující viditelné prvky TabItem v tom pořadí, v jakém jdou za sebou od začátku do konce (podle jejich <see cref="IInteractiveItem.TabOrder"/>)
         /// </summary>
         private GTabPage[] _SortedItems;
         /// <summary>
@@ -985,7 +985,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Aby fungovalo přemalování parenta v režimu <see cref="RepaintParentMode.OnBackColorAlpha"/>, musíme vracet korektní barvu BackColor.
         /// Výchozí je <see cref="Skin.TabHeader"/>.SpaceColor
         /// </summary>
-        public override Color BackColorDefault { get { return Skin.TabHeader.SpaceColor; } }
+        protected override Color BackColorDefault { get { return Skin.TabHeader.SpaceColor; } }
         /// <summary>
         /// Child prvky
         /// </summary>
@@ -1051,7 +1051,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Key = key;
             this._Text = text;
             this._Image = image;
-            this._TabOrder = tabOrder;
+            this.TabOrder = tabOrder;
             this._DataControl = dataControl;
             this.TabHeaderInvalidate();
             this.Is.SetVisible = this._SetVisible;
@@ -1098,12 +1098,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Image Image { get { return this._Image; } set { this._Image = value; this.TabHeaderInvalidate(); } }
         private Image _Image;
-        /// <summary>
-        /// Pořadí. Implicitní pořadí = 0. 
-        /// Pokud bude mít více prvků shodné pořadí, budou setříděny podle pořadí přidání (<see cref="InteractiveObject.Id"/>)
-        /// </summary>
-        public int TabOrder { get { return this._TabOrder; } set { this._TabOrder = value; this.TabHeaderInvalidate(); } }
-        private int _TabOrder;
         /// <summary>
         /// Viditelnost buttonu Close (pro zavření záložky).
         /// Výchozí = false.
@@ -1311,19 +1305,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Souřadnice jsou relativní k this.Bounds
         /// </summary>
         protected Rectangle CloseButtonBounds { get; set; }
-        /// <summary>
-        /// Vrátí výsledek porovnání TabOrder ASC, Id ASC
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        internal static int CompareByOrder(GTabPage a, GTabPage b)
-        {
-            int cmp = a.TabOrder.CompareTo(b.TabOrder);
-            if (cmp == 0)
-                cmp = a.Id.CompareTo(b.Id);
-            return cmp;
-        }
         #endregion
         #region Draw, Interactivity, ITabHeaderItemPaintData
         /// <summary>

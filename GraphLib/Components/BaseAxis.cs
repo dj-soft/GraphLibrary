@@ -105,12 +105,15 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void PrepareVisual()
         {
             this.BackColor3DEffect = 0.15f;
-            this.BackColor = Skin.Axis.BackColor;
         }
         /// <summary>
         /// 3D effect pro BackColor
         /// </summary>
         public float BackColor3DEffect { get; set; }
+        /// <summary>
+        /// Defaultní barva pozadí.
+        /// </summary>
+        protected override Color BackColorDefault { get { return Skin.Axis.BackColor; } }
         #endregion
         #region Orientace osy, a její podpora (PixelRelativeRange, PixelFirst, PixelSize, PixelLast, ...)
         /// <summary>

@@ -1272,7 +1272,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 InvalidateItem itemsTable = items | InvalidateItem.OnlyForTable;         // Nastavím bit, že navazující invalidace se má provést už jen v tabulkách, ale nemá se volat do Gridu!   Viz začátek zdejší metody.
                 foreach (GTable table in this._Tables.Where(t => t.Is.Visible))
-                    table.Invalidate(itemsTable);
+                    table.InvalidateData(itemsTable);
             }
 
             if (repaint)

@@ -739,7 +739,7 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             this.RowsValid = false;
             if (this.HasGTable)
-                this.GTable.Invalidate(InvalidateItem.RowsCount);
+                this.GTable.InvalidateData(InvalidateItem.RowsCount);
         }
         /// <summary>
         /// Metoda vrátí true, pokud daný řádek má být zobrazen v kolekci <see cref="RowsSorted"/>, na základě řádkových filtrů.
@@ -996,7 +996,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.TableSize.Size = value;
                 int newValue = this.Height;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableHeight);
+                    this.GTable.InvalidateData(InvalidateItem.TableHeight);
             }
         }
         /// <summary>
@@ -1011,7 +1011,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.TableSize.Visible = value;
                 bool newValue = this.IsVisible;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableHeight);
+                    this.GTable.InvalidateData(InvalidateItem.TableHeight);
             }
         }
         /// <summary>
@@ -1028,7 +1028,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.HeaderColumnSize.Size = value;
                 int newValue = this.ColumnHeaderHeight;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.ColumnHeader);
+                    this.GTable.InvalidateData(InvalidateItem.ColumnHeader);
             }
         }
         /// <summary>
@@ -1043,7 +1043,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.HeaderRowSize.Size = value;
                 int newValue = this.RowHeaderWidth;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.ColumnHeader);
+                    this.GTable.InvalidateData(InvalidateItem.ColumnHeader);
             }
         }
         /// <summary>
@@ -1063,7 +1063,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._TableOrder = value;
                 int newValue = this._TableOrder;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.ColumnHeader);
+                    this.GTable.InvalidateData(InvalidateItem.ColumnHeader);
             }
         } private int _TableOrder = -1;
         /// <summary>
@@ -1078,7 +1078,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.TableSize.ResizeEnabled = value;
                 bool newValue = this.AllowTableResize;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.GridItems);
+                    this.GTable.InvalidateData(InvalidateItem.GridItems);
             }
         }
         /// <summary>
@@ -1093,7 +1093,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.HeaderRowSize.ResizeEnabled = value;
                 bool newValue = this.AllowRowHeaderWidthResize;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         }
         /// <summary>
@@ -1108,7 +1108,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.HeaderColumnSize.ReOrderEnabled = value;
                 bool newValue = this.AllowColumnReorder;
                 if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         }
         /// <summary>
@@ -1122,7 +1122,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 bool oldValue = this._AllowColumnHeaderResize;
                 this._AllowColumnHeaderResize = value;
                 if ((this._AllowColumnHeaderResize != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         } private bool _AllowColumnHeaderResize = true;
         /// <summary>
@@ -1136,7 +1136,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 bool oldValue = this._AllowColumnResize;
                 this._AllowColumnResize = value;
                 if ((this._AllowColumnResize != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         } private bool _AllowColumnResize = true;
         /// <summary>
@@ -1150,7 +1150,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 bool oldValue = this._AllowRowReorder;
                 this._AllowRowReorder = value;
                 if ((this._AllowRowReorder != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         } private bool _AllowRowReorder = false;
         /// <summary>
@@ -1180,7 +1180,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 bool oldValue = this._AllowRowResize;
                 this._AllowRowResize = value;
                 if ((this._AllowRowResize != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         } private bool _AllowRowResize = true;
         /// <summary>
@@ -1234,7 +1234,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 bool oldValue = this._CalculateBoundsForAllRows;
                 this._CalculateBoundsForAllRows = value;
                 if ((this._CalculateBoundsForAllRows != oldValue) && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.TableItems);
+                    this.GTable.InvalidateData(InvalidateItem.TableItems);
             }
         }
         private bool _CalculateBoundsForAllRows = false;
@@ -2385,7 +2385,7 @@ namespace Asol.Tools.WorkScheduler.Data
                         // Pokud this sloupec je součástí vizuální tabulky (on nemusí být), 
                         //  pak provedu invalidaci RowOrder:
                         if (this.HasGTable)
-                            this.GTable.Invalidate(InvalidateItem.RowOrder);
+                            this.GTable.InvalidateData(InvalidateItem.RowOrder);
                     }
                     else
                     {   // Zcela samostatně existující sloupec: nastaví si dané třídění a víc neřeší:
@@ -2909,7 +2909,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.RowSize.Size = height;
                 int newValue = this.RowSize.Size.Value;
                 if (newValue != oldValue && this.HasGTable)
-                    this.GTable.Invalidate(InvalidateItem.RowHeight);
+                    this.GTable.InvalidateData(InvalidateItem.RowHeight);
             }
         }
         #endregion

@@ -19,7 +19,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <para/>
     /// a) Parent to Child = zdola nahoru: při kompletním procházení stromu prvků od vizuálního Controlu, přes jednotlivé prvky typu Container k jejich Childs prvkům (z hlediska sumárního výkonu optimálnější):
     /// Je vytvořena instance <see cref="BoundsInfo"/> pro vizuální control <see cref="GInteractiveControl"/>, tato instance nabízí metody pro získání souřadnic konkrétního prvku v jedné úrovni,
-    /// anebo umožňuje získání nové instance <see cref="BoundsInfo"/> pro jeden konkrétní z <see cref="IInteractiveItem.Childs"/>, kde tato instance bude vracet souřadnice pro jeho <see cref="IInteractiveItem.Childs"/>.
+    /// anebo umožňuje získání nové instance <see cref="BoundsInfo"/> pro jeden konkrétní z <see cref="IInteractiveParent.Childs"/>, kde tato instance bude vracet souřadnice pro jeho <see cref="IInteractiveParent.Childs"/>.
     /// <para/>
     /// b) Child to Parent = odshora dolů: pro zjištění potřebných údajů pro jeden Child prvek (pro jeden prvek kdekoli v hierarchii):
     /// kterýkoli prvek <see cref="IInteractiveItem"/> si může vytvořit instanci <see cref="BoundsInfo"/>, která reprezentuje souřadný systém pro tento prvek.
@@ -756,7 +756,7 @@ namespace Asol.Tools.WorkScheduler.Components.Old
     /// <para/>
     /// a) Parent to Child = zdola nahoru: při kompletním procházení stromu prvků od vizuálního Controlu, přes jednotlivé prvky typu Container k jejich Childs prvkům (z hlediska sumárního výkonu optimálnější):
     /// Je vytvořena instance <see cref="BoundsInfo"/> pro vizuální control <see cref="GInteractiveControl"/>, tato instance nabízí metody pro získání souřadnic konkrétního prvku v jedné úrovni,
-    /// anebo umožňuje získání nové instance <see cref="BoundsInfo"/> pro jeden konkrétní z <see cref="IInteractiveItem.Childs"/>, kde tato instance bude vracet souřadnice pro jeho <see cref="IInteractiveItem.Childs"/>.
+    /// anebo umožňuje získání nové instance <see cref="BoundsInfo"/> pro jeden konkrétní z <see cref="IInteractiveParent.Childs"/>, kde tato instance bude vracet souřadnice pro jeho <see cref="IInteractiveParent.Childs"/>.
     /// <para/>
     /// b) Child to Parent = odshora dolů: pro zjištění potřebných údajů pro jeden Child prvek (pro jeden prvek kdekoli v hierarchii):
     /// kterýkoli prvek <see cref="IInteractiveItem"/> si může vytvořit instanci <see cref="BoundsInfo"/>, která reprezentuje souřadný systém pro tento prvek.

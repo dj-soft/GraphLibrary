@@ -53,11 +53,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 return null;
             }
-            // set
-            // {
-            //     this._Host = value;
-            // }
         }
+        /// <summary>
+        /// VIzuální hostitel, typicky <see cref="GInteractiveControl"/> přetypovaný na <see cref="IInteractiveHost"/> pro přístup k itnerním členům
+        /// </summary>
+        protected IInteractiveHost IHost { get { return this.Host as IInteractiveHost; } }
         /// <summary>
         /// Parent tohoto objektu. Parentem je buď jiný prvek IInteractiveItem (jako Container), anebo přímo GInteractiveControl.
         /// Může být null, v době kdy prvek ještě není přidán do parent containeru.
@@ -120,10 +120,10 @@ namespace Asol.Tools.WorkScheduler.Components
             set { this.SetBounds(value, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
-        /// Coordinates of this item in their Parent client area.
-        /// This is relative bounds within my Parent, where this item is visible.
-        /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds().
-        /// Setting a new value into this property caused calling only ProcesActions: RecalcValue and PrepareInnerItems, not call All ProcesActions (see method SetBounds()).
+        /// Souřadnice tohoto prvku v rámci jeho Parenta.
+        /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
+        /// <para/>
+        /// Vložení hodnoty do této property způsobí veškeré pouze akce <see cref="ProcessAction.RecalcValue"/> a <see cref="ProcessAction.PrepareInnerItems"/>, ale nevyvolají se akce.
         /// </summary>
         public virtual Rectangle BoundsSilent
         {
@@ -138,7 +138,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual Padding? InteractivePadding
         {
             get { return this.__ActivePadding; }
-            set { this.__ActivePadding = value; }
+            set { this.__ActivePadding = value; this.Invalidate(); }
         }
         /// <summary>
         /// Vnitřní okraj mezi <see cref="Bounds"/> a prostorem, v němž se kreslí <see cref="Childs"/> prvky.
@@ -148,23 +148,23 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual Padding? ClientBorder 
         {
             get { return this.__ClientBorder; }
-            set { this.__ClientBorder = value; }
+            set { this.__ClientBorder = value; this.Invalidate(); }
         }
         /// <summary>
         /// Aktuálně použitá barva pozadí. Při čtení má vždy hodnotu (nikdy není null).
-        /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="BackColorDefault"/>.
+        /// Dokud není explicitně nastavena hodnota, vrací se defaultní hodnota <see cref="BackColorDefault"/>.
         /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="BackColorDefault"/>.
         /// </summary>
         public virtual Color? BackColor 
         {
-            get { return (this.__BackColor.HasValue ? this.__BackColor.Value : this.BackColorDefault) ; }
-            set { this.__BackColor = value; } 
+            get { return this.__BackColor ?? this.BackColorDefault ; }
+            set { this.__BackColor = value; this.Invalidate(); } 
         }
         private Color? __BackColor = null;
         /// <summary>
         /// Defaultní barva pozadí.
         /// </summary>
-        public virtual Color BackColorDefault { get { return Skin.Control.ControlBackColor; } }
+        protected virtual Color BackColorDefault { get { return Skin.Control.ControlBackColor; } }
         /// <summary>
         /// Režim kreslení pozadí tohoto prvku
         /// </summary>
@@ -187,6 +187,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public ZOrder ZOrder { get { return this.__ZOrder; } set { this.__ZOrder = value; } } private ZOrder __ZOrder = ZOrder.Standard;
         /// <summary>
+        /// Pořadí při procházení pomocí Tab.
+        /// Null = použije se nativní pořadí v poli <see cref="IInteractiveParent.Childs"/>.
+        /// Kombinace prvků s Null a s hodnotou: nejprve se projdou pvky s hodnotou, a po nich prvky s null v nativním pořadí.
+        /// </summary>
+        public int? TabOrder { get { return this.__TabOrder; } set { this.__TabOrder = value; } } private int? __TabOrder = null;
+        /// <summary>
         /// Zajistí vykreslení this prvku <see cref="Repaint()"/>, včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
         /// </summary>
         public virtual void Refresh()
@@ -194,6 +200,14 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Repaint();
             GInteractiveControl host = this.Host;
             if (host != null) host.Refresh();
+        }
+        /// <summary>
+        /// Zajistí, že this objekt bude při nejbližší možnosti překrelsen. Neprovádí překreslení okamžitě, na rozdíl od metody <see cref="Refresh()"/>.
+        /// </summary>
+        public void Invalidate()
+        {
+            if (this.RepaintToLayers == GInteractiveDrawLayer.None)
+                this.Repaint();
         }
         /// <summary>
         /// Režim pro kreslení prvku v době Drag and Drop.
@@ -425,8 +439,6 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (repaintLayers == GInteractiveDrawLayer.None || this.Host == null) return;
 
-            // this.Host.AddItemToDraw(this, repaintLayers);
-
             this.RepaintToLayers = repaintLayers;
             if (repaintLayers.HasFlag(GInteractiveDrawLayer.Standard) && this.HasParent)
             {
@@ -516,16 +528,32 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (e.ChangeState)
             {
                 case GInteractiveChangeState.KeyboardFocusEnter:
+                    this.ResetFocusChanges();
                     this._HasFocus = true;
                     this.AfterStateChangedFocusEnter(e);
                     this.Repaint();
                     break;
+                case GInteractiveChangeState.KeyboardKeyPreview:
+                    this.AfterStateChangedKeyPreview(e);
+                    this.DetectFocusChange(e);
+                    break;
+                case GInteractiveChangeState.KeyboardKeyDown:
+                    if (!IsFocusChange(e))
+                        this.AfterStateChangedKeyDown(e);
+                    break;
                 case GInteractiveChangeState.KeyboardKeyPress:
-                    this.AfterStateChangedKeyPress(e);
+                    if (!IsFocusChange(e))
+                        this.AfterStateChangedKeyPress(e);
+                    break;
+                case GInteractiveChangeState.KeyboardKeyUp:
+                    if (!IsFocusChange(e))
+                        this.AfterStateChangedKeyUp(e);
                     break;
                 case GInteractiveChangeState.KeyboardFocusLeave:
+                    if (this._HasFocus) this.Validate(e);
                     this._HasFocus = false;
                     this.AfterStateChangedFocusLeave(e);
+                    this.ResetFocusChanges();
                     this.Repaint();
                     break;
 
@@ -546,6 +574,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.MouseLeave:
+                    this.Validate(e);
                     this._HasMouse = false;
                     this.AfterStateChangedMouseLeave(e);
                     this.Repaint();
@@ -590,67 +619,85 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = KeyboardFocusEnter
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardFocusEnter"/>
         /// Hodnota v <see cref="HasFocus"/> je nyní true.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = KeyboardKeyPress
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardKeyPreview"/>
+        /// Hodnota v <see cref="HasFocus"/> je nyní true.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedKeyPreview(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardKeyDown"/>
+        /// Hodnota v <see cref="HasFocus"/> je nyní true.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedKeyDown(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardKeyPress"/>
         /// Hodnota v <see cref="HasFocus"/> je nyní true.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = KeyboardFocusLeave
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardKeyUp"/>
+        /// Hodnota v <see cref="HasFocus"/> je nyní true.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedKeyUp(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardFocusLeave"/>
         /// Hodnota v <see cref="HasFocus"/> je nyní false.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseEnter
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.MouseEnter"/>
         /// Přípravu tooltipu je vhodnější provést v metodě <see cref="InteractiveObject.PrepareToolTip(GInteractiveChangeStateArgs)"/>, ta je volaná hned poté.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseOver.
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.MouseOver"/>
         /// Základní třída nedělá vůbec nic.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseLeave
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.MouseLeave"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftClick
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftClick"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftClickSelected
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftClickSelect"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedLeftClickSelected(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDoubleClick
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftDoubleClick"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftLongClick
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftLongClick"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = RightClick
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.RightClick"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedRightClick(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = WheelUp i WhellDown
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.WheelUp"/> i <see cref="GInteractiveChangeState.WheelDown"/>
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedWheel(GInteractiveChangeStateArgs e) { }
@@ -676,6 +723,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedDragFrameDone(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná těsně před opuštěním interaktivního prvku buď s klávesovým focusem nebo pouze myší.
+        /// V době běhu této metody ještě prvek má focus nebo myš.
+        /// Po doběhnutí této metody proběhne událost KeyboardFocusLeave anebo MouseLeave.
+        /// Metoda sama nemůže zabránit odchodu focusu na jiný prvek. Účelem metody je pouze například vyhodnotit zadaná data a uložit je do datového zdroje.
+        /// V parametru jsou k dispozici informace o důvodu odchodu (akce, klávesa, pozice myši, atd).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void Validate(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Obsahuje true, pokud přípravu ToolTip pro tento objekt má řešit jeho Parent.
         /// </summary>
@@ -766,6 +822,58 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected virtual void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         { }
+        /// <summary>
+        /// Zjistí, zda aktuální klávesa může vést ke změně focusu.
+        /// </summary>
+        /// <param name="e"></param>
+        protected void DetectFocusChange(GInteractiveChangeStateArgs e)
+        {
+            var args = e.KeyboardPreviewArgs;
+            if (args.IsInputKey) return;                                            // Pokud se potomek this controlu přihlásil k tomu, že on sám bude řešit Tab nebo Shift+Tab, pak to neřešíme my
+            if (!(args.KeyCode == Keys.Tab && !args.Control && !args.Alt)) return;  // Pokud není stisknut Tab nebo Shift+Tab, pak to neřešíme
+
+            // Určíme následující objekt, do kterého pošleme focus:
+            Direction direction = (args.Shift ? Direction.Negative : Direction.Positive);
+            IInteractiveItem nextFocusItem;
+            if (!InteractiveFocusManager.TryGetNextFocusItem(this, direction, out nextFocusItem)) return;    // Následující prvek neexistuje => končíme, NEnastavíme IsInputKey = true => pak klávesu Tab/Shift+Tab bude řešit WinForm control a pošle fokus na jiný fyzický Control.
+
+            // Na následující proměnné reagují události KeyboardKeyDown v metodě IsFocusChange(), a NEodešlou tyto klávesové události do this prvku:
+            IsKeyboardFocusChange = true;
+            KeyboardNextFocusItem = nextFocusItem;
+            args.IsInputKey = true;
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud právě nyní probíhá změna focusu pomocí kláves Tab nebo Ctrl+Tab
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected bool IsFocusChange(GInteractiveChangeStateArgs e)
+        {
+            if (!IsKeyboardFocusChange) return false;
+
+            // Událost KeyUp je poslední v řadě Keyboard událostí, při této události se fyzicky posune Focus:
+            if (e.ChangeState == GInteractiveChangeState.KeyboardKeyUp)
+                this.IHost?.SetFocusToItem(KeyboardNextFocusItem);
+
+            // Proměnné (IsKeyboardFocusChange a KeyboardNextFocusItem) resetuje metoda ResetFocusChanges(), která je pro this objekt volána při události KeyboardFocusLeave().
+            return true;
+        }
+        /// <summary>
+        /// Resetuje proměnné, které jsou nastaveny v procesu změny focusu z this prvku do prvku jiného
+        /// </summary>
+        protected void ResetFocusChanges()
+        {
+            IsKeyboardFocusChange = false;
+            KeyboardNextFocusItem = null;
+        }
+        /// <summary>
+        /// Obsahuje true v době, kdy this objekt provádí změnu focusu do jiného objektu na základě klávesy Tab nebo Ctrl+Tab nebo Enter
+        /// </summary>
+        protected bool IsKeyboardFocusChange { get; private set; }
+        /// <summary>
+        /// Zde je uložena instance next objektu, kam předáváme Focus poté, kdy z this objektu odcházíme klávesou Tab nebo Ctrl+Tab nebo Enter
+        /// </summary>
+        protected IInteractiveItem KeyboardNextFocusItem { get; private set; }
         #endregion
         #region Obecná podpora potomků 
         #region Práce s hodnotami ProcessAction (protected static) : IsAction(), AddActions(), RemoveActions(), LeaveOnlyActions()
@@ -872,7 +980,29 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return (t0 ? (t1 ? value11 : value10) : (t1 ? value01 : value00));
         }
-
+        /// <summary>
+        /// Komparátor pro setřídění Listu prvků podle <see cref="IInteractiveItem.TabOrder"/> ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByTabOrderAsc(IInteractiveItem a, IInteractiveItem b)
+        {
+            if (a.TabOrder.HasValue && b.TabOrder.HasValue) return a.TabOrder.Value.CompareTo(b.TabOrder.Value);
+            if (a.TabOrder.HasValue) return -1;
+            if (b.TabOrder.HasValue) return 1;
+            return a.Id.CompareTo(b.Id);
+        }
+        /// <summary>
+        /// Komparátor pro setřídění Listu prvků podle <see cref="IInteractiveItem.TabOrder"/> DESC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByTabOrderDesc(IInteractiveItem a, IInteractiveItem b)
+        {
+            return CompareByTabOrderAsc(b, a);
+        }
         #endregion
         #endregion
         #region Podpora pro hledání parentů: SearchForParent(), SearchForItem()
@@ -1193,12 +1323,12 @@ namespace Asol.Tools.WorkScheduler.Components
         Rectangle? IInteractiveItem.BoundsInteractive { get { return this.BoundsInteractive; } }
         Padding? IInteractiveItem.InteractivePadding { get { return this.InteractivePadding; } set { this.InteractivePadding = value; } }
         Padding? IInteractiveItem.ClientBorder { get { return this.ClientBorder; } set { this.ClientBorder = value; } }
-        IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         InteractiveProperties IInteractiveItem.Is { get { return this.Is; } }
         Boolean IInteractiveItem.IsSelected { get { return this.IsSelected; } set { this.IsSelected = value; } }
         Boolean IInteractiveItem.IsFramed { get { return this.IsFramed; } set { this.IsFramed = value; } }
         Boolean IInteractiveItem.IsActivated { get { return this.IsActivated; } set { this.IsActivated = value; } }
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
+        int? IInteractiveItem.TabOrder { get { return this.TabOrder; } }
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
         GInteractiveDrawLayer IInteractiveItem.RepaintToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         bool IInteractiveItem.NeedDrawOverChilds { get { return this.NeedDrawOverChilds; } }
@@ -1224,6 +1354,7 @@ namespace Asol.Tools.WorkScheduler.Components
         UInt32 IInteractiveParent.Id { get { return this._Id; } }
         GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
         IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
+        IEnumerable<IInteractiveItem> IInteractiveParent.Childs { get { return this.Childs; } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }

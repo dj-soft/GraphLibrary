@@ -145,7 +145,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (!isSameWidth)
                 items |= InvalidateItem.TableSize;
 
-            this.Invalidate(items);
+            this.InvalidateData(items);
         }
         /// <summary>
         /// Metoda zajistí, že souřadnice vnitřních objektů budou platné a budou odpovídat aktuální velikosti Tabulky a poloze splitterů a rozsahu dat.
@@ -687,7 +687,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (isChanged)
             {
                 height = heightNew;
-                this.Invalidate(InvalidateItem.RowHeight | InvalidateItem.Paint);
+                this.InvalidateData(InvalidateItem.RowHeight | InvalidateItem.Paint);
             }
             return isChanged;
         }
@@ -794,7 +794,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             int offset = (int)this.RowsScrollBar.Value.Begin.Value;
             if (offset == this.RowsPositions.DataFirstPixel) return;
             this.RowsPositions.DataFirstPixel = offset;
-            this.Invalidate(InvalidateItem.RowScroll);
+            this.InvalidateData(InvalidateItem.RowScroll);
         }
         /// <summary>
         /// RowsScrollBar : svislý posuvník vpravo od řádků
@@ -1198,7 +1198,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected void ScrollRowsReload()
         {
-            this.Invalidate(InvalidateItem.RowScroll);
+            this.InvalidateData(InvalidateItem.RowScroll);
             // Nastaví _RowsScrollBarDataValid = false;
         }
         /// <summary>
@@ -1210,7 +1210,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             ISequenceLayout isl = column as ISequenceLayout;
             bool isChange = this.Grid.ColumnsPositions.ScrollDataToVisible(isl);
             if (isChange)
-                this.Invalidate(InvalidateItem.RowScroll);
+                this.InvalidateData(InvalidateItem.RowScroll);
         }
         /// <summary>
         /// Zajistí vyvolání metody Repaint pro ColumnHeader i pro všechny Cell.Control ve viditelných řádcích v daném sloupci.
@@ -1237,9 +1237,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Zajistí invalidaci všech dat tabulky.
         /// Neřeší invalidaci nadřízeného Gridu.
         /// </summary>
-        public void Invalidate()
+        public void InvalidateData()
         {
-            this.Invalidate(InvalidateItem.Table);
+            this.InvalidateData(InvalidateItem.Table);
         }
         /// <summary>
         /// Zajistí invalidaci položek po určité akci, která právě skončila.
@@ -1247,7 +1247,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Tabulka sama nejlíp ví, kam se daný údaj promítá, a co bude potřebovat přepočítat.
         /// </summary>
         /// <param name="items"></param>
-        public void Invalidate(InvalidateItem items)
+        public void InvalidateData(InvalidateItem items)
         {
             // Pokud bude nastaven tento bit OnlyForGrid, znamená to, že tuto invalidaci Grid do podřízených tabulek rozeslal omylem, nebudeme na ni reagovat.
             if (items.HasFlag(InvalidateItem.OnlyForGrid)) return;
@@ -1440,7 +1440,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             e.CorrectValue = this.ColumnHeaderHeight;      // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
-                this.Invalidate(InvalidateItem.RowScroll);
+                this.InvalidateData(InvalidateItem.RowScroll);
             }
         }
         /// <summary>
@@ -1523,16 +1523,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Reálná viditelnost filtru je pak tedy součinem: <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
         /// Výchozí hodnota <see cref="TagFilterEnabled"/> je true.
         /// </summary>
-        public bool TagFilterEnabled { get { return this._TagFilterEnabled; } set { this._TagFilterEnabled = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
+        public bool TagFilterEnabled { get { return this._TagFilterEnabled; } set { this._TagFilterEnabled = value; this.InvalidateData(InvalidateItem.TableTagFilter); } }
         /// <summary>
         /// Barva pozadí filtru TagFilter
         /// </summary>
-        public Color? TagFilterBackColor { get { return this._TagFilter.BackColor; } set { this._TagFilter.BackColor = value; this.Invalidate(InvalidateItem.Paint); } }
+        public Color? TagFilterBackColor { get { return this._TagFilter.BackColor; } set { this._TagFilter.BackColor = value; this.InvalidateData(InvalidateItem.Paint); } }
         /// <summary>
         /// Filtr řádků TagFilter:
         /// Výška jednoho prvku.
         /// </summary>
-        public int TagFilterItemHeight { get { return this._TagFilter.ItemHeight; } set { this._TagFilter.ItemHeight = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
+        public int TagFilterItemHeight { get { return this._TagFilter.ItemHeight; } set { this._TagFilter.ItemHeight = value; this.InvalidateData(InvalidateItem.TableTagFilter); } }
         /// <summary>
         /// Filtr řádků TagFilter:
         /// Nejvyšší počet zobrazitelných prvků.
@@ -1589,7 +1589,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="args"></param>
         private void _TagItemsChanged(object sender, EventArgs args)
         {
-            this.Invalidate(InvalidateItem.TableTagFilter);
+            this.InvalidateData(InvalidateItem.TableTagFilter);
         }
         /// <summary>
         /// Výška oblasti TagFilter.
@@ -1683,7 +1683,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 {   // Dosud nemáme referenci na GTimeGraphLinkArray, vytvoříme ji a zajistíme, že bude součástí našich Childs prvků:
                     this._GraphLinkArray = new Graph.GTimeGraphLinkArray(this);
                     this.GraphLinkArrayIsOnTable = true;
-                    this.Invalidate(InvalidateItem.TableItems);
+                    this.InvalidateData(InvalidateItem.TableItems);
                 }
                 return this._GraphLinkArray;
             }
@@ -2244,7 +2244,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     InteractivePositionAction action = (e.ChangeState == GInteractiveChangeState.WheelUp ? InteractivePositionAction.WheelUp : InteractivePositionAction.WheelDown);
                     e.ActionIsSolved = this.ProcessRowAction(action);
                     break;
-                case GInteractiveChangeState.KeyboardPreviewKeyDown:           // Sem chodí i klávesy Kurzor, Tab
+                case GInteractiveChangeState.KeyboardKeyPreview:           // Sem chodí i klávesy Kurzor, Tab
                     this.KeyboardPreviewKeyDown(e);        // Pokud se ani Cell, a ani Row nepřihlásí ke zpracování Keyboard událostí, musí to provést Table.
                     break;
                 case GInteractiveChangeState.KeyboardKeyUp:
@@ -2832,7 +2832,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="value"></param>
         private void DrawContentRelation(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
-            GPainter.DrawRelationLine(e.Graphics, boundsAbsolute, true);
+            GPainter.DrawRelationLine(e.Graphics, boundsAbsolute, forGrid: true);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako interaktivní časový graf

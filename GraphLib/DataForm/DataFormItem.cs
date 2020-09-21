@@ -60,11 +60,14 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// Hodnota prvku 2
         /// </summary>
         public string Value2 { get { return this.Text2.Text; } set { this.Text2.Text = value; } }
-
         /// <summary>
-        /// Typ vztahu - pro správné vykreslování (linka podtržení)
+        /// Přídavné vykreslení přes Background, pod text
         /// </summary>
-        public TextRelationType RelationType { get { return this.Text1.RelationType; } set { this.Text1.RelationType = value; this.Text2.RelationType = value; } }
+        public ITextEditOverlay OverlayBackground { get { return this.Text1.OverlayBackground; } set { this.Text1.OverlayBackground = value; this.Text2.OverlayBackground = value; } }
+        /// <summary>
+        /// Přídavné vykreslení přes Text
+        /// </summary>
+        public ITextEditOverlay OverlayText { get { return this.Text1.OverlayText; } set { this.Text1.OverlayText = value; this.Text2.OverlayText = value; } }
         /// <summary>
         /// Typ borderu
         /// </summary>

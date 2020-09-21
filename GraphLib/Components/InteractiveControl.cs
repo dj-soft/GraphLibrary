@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GInteractiveControl : Jediný používaný interaktivní WinForm control, který se používá pro zobrazení interaktivních dat
     /// </summary>
-    public partial class GInteractiveControl : GControlLayered, IInteractiveParent
+    public partial class GInteractiveControl : GControlLayered, IInteractiveParent, IInteractiveHost
     {
         #region Konstruktor
         /// <summary>
@@ -151,7 +151,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Focus (Enter, GotFocus, LostFocus, Leave) a Keyboard (PreviewKeyDown, KeyDown, KeyUp, KeyPress)
         private void _KeyboardEventsInit()
         {
-            this._KeyboardCurrentItem = null;
+            this._FocusedItem = null;
+            this._FocusedItemKeyTarget = null;
+            this._FocusedItemPrevious = null;
+            this._CurrentKeyboardState = GInteractiveChangeState.None;
         }
         #region Obsluha override metod (z WinForm.Control) pro Focus a Keyboard
         /// <summary>
@@ -170,12 +173,12 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _OnEnter(EventArgs e)
         {
             bool runFinal = false;
-            if (this._KeyboardLeavedItem != null)
-            {
+            if (this._FocusedItemPrevious != null)
+            {   // Zajistí návrat Focusu do prvku, který měl Focus při Leave
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
                 {
                     this._InteractiveDrawInit(null);
-                    this._ItemKeyboardExchange(null, this._KeyboardLeavedItem, false);
+                    this._ItemKeyboardExchange(null, this._FocusedItemPrevious, false);
                     runFinal = true;
                 }
             }
@@ -207,7 +210,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLostFocus(e), () => base.OnLostFocus(e));
         }
         /// <summary>
-        /// Provede OnLostFocus
+        /// Akce OnLostFocus
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
@@ -223,14 +226,19 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLeave(e), () => base.OnLeave(e), () => this._InteractiveDrawRun());
         }
+        /// <summary>
+        /// Provede OnLostFocus
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
         private bool _OnLeave(EventArgs e)
         {
             bool runFinal = false;
-            this._KeyboardLeavedItem = this._KeyboardCurrentItem;
+            this._FocusedItemPrevious = this._FocusedItem;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
             {
                 this._InteractiveDrawInit(null);
-                this._ItemKeyboardExchange(this._KeyboardCurrentItem, null, true);
+                this._ItemKeyboardExchange(this._FocusedItem, null, true);
                 runFinal = true;
             }
             return runFinal;
@@ -241,7 +249,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardPreviewKeyDown, () => this._OnPreviewKeyDown(e), () => base.OnPreviewKeyDown(e), () => this._InteractiveDrawRun());
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyPreview, () => this._OnPreviewKeyDown(e), () => base.OnPreviewKeyDown(e), () => this._InteractiveDrawRun());
         }
         /// <summary>
         /// Provede OnPreviewKeyDown
@@ -251,12 +259,13 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
             bool runFinal = false;
-            if (this._KeyboardCurrentItemCanKeyboard)
+            IInteractiveItem item = _FocusedCurrentTarget;
+            if (item != null)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", ""))
                 {
                     this._InteractiveDrawInit(null);
-                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardPreviewKeyDown, e, null, null);
+                    this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardKeyPreview, e, null, null);
                     runFinal = true;
                 }
             }
@@ -279,37 +288,59 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             bool runFinal = false;
             this._MousePaintKeyPress(e);
+            if (_OnKeyDownIsCancelProcess(e))
+            {
+                runFinal = true;
+            }
+            IInteractiveItem item = _FocusedCurrentTarget;
+            if (item != null)
+            {
+                if (this._FocusedItemExists)
+                {
+                    using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
+                    {
+                        this._InteractiveDrawInit(null);
+                        this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardKeyDown, null, e, null);
+                        runFinal = true;
+                    }
+                }
+            }
+            return runFinal;
+        }
+        /// <summary>
+        /// Zjistí, zda aktuální kláves je Escape a aktuální stav je nějaký interaktivní proces (DragMove, DragFrame, Paint).
+        /// Pokud ano, pak stav zruší a vrátí true = klávesa je vyřešena na úrovni Controlu.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyDownIsCancelProcess(KeyEventArgs e)
+        {
+            bool isProcessed = false;
             if (e.KeyCode == Keys.Escape && ((this._MouseDragState == MouseMoveDragState.DragMove && this._MouseDragMoveItem != null) || this._MouseDragState == MouseMoveDragState.DragFrame || this._MouseDragState == MouseMoveDragState.Paint))
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
-                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_Escape_Cancel", ""))
                 {
                     switch (this._MouseDragState)
                     {
                         case MouseMoveDragState.Paint:
                             this._MousePaintCancel();
-                            runFinal = true;
+                            scope.AddItem("MousePaintCancel");
+                            isProcessed = true;
                             break;
                         case MouseMoveDragState.DragMove:
                             this._MouseDragMoveCancel();
-                            runFinal = true;
+                            scope.AddItem("MouseDragMoveCancel");
+                            isProcessed = true;
                             break;
                         case MouseMoveDragState.DragFrame:
                             this._MouseDragFrameCancel();
-                            runFinal = true;
+                            scope.AddItem("MouseDragFrameCancel");
+                            isProcessed = true;
                             break;
                     }
                 }
             }
-            else if (this._KeyboardCurrentItemCanKeyboard)
-            {
-                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
-                {
-                    this._InteractiveDrawInit(null);
-                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyDown, null, e, null);
-                    runFinal = true;
-                }
-            }
-            return runFinal;
+            return isProcessed;
         }
         /// <summary>
         /// Akce KeyUp
@@ -327,15 +358,17 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _OnKeyUp(KeyEventArgs e)
         {
             bool runFinal = false;
-            if (this._KeyboardCurrentItemCanKeyboard)
+            IInteractiveItem item = _FocusedCurrentTarget;
+            if (item != null)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyUp", ""))
                 {
                     this._InteractiveDrawInit(null);
-                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyUp, null, e, null);
+                    this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardKeyUp, null, e, null);
                     runFinal = true;
                 }
             }
+            _FocusedItemKeyTarget = null;
             return runFinal;
         }
         /// <summary>
@@ -354,21 +387,75 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _OnKeyPress(KeyPressEventArgs e)
         {
             bool runFinal = false;
-            if (this._KeyboardCurrentItemCanKeyboard)
+
+            IInteractiveItem item = _FocusedCurrentTarget;
+            if (item != null)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyPress", ""))
                 {
                     this._InteractiveDrawInit(null);
-                    this._ItemKeyboardCallEvent(this._KeyboardCurrentItem, GInteractiveChangeState.KeyboardKeyPress, null, null, e);
+                    this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardKeyPress, null, null, e);
                     runFinal = true;
                 }
             }
             return runFinal;
         }
+        /// <summary>
+        /// Prvek, který má aktuálně focus. Je nastaven po doběhnutí událostí <see cref="GInteractiveChangeState.KeyboardFocusEnter"/> a <see cref="GInteractiveChangeState.MouseEnter"/>.
+        /// Setování hodnoty vyvolá metodu <see cref="SetFocusToItem(IInteractiveItem)"/> = korektně přenese focus do daného prvku.
+        /// </summary>
+        public IInteractiveItem FocusedItem { get { return this._FocusedItem; } set { SetFocusToItem(value); } }
+        /// <summary>
+        /// Prvek, který měl focus nedávno. Je nastaven po doběhnutí událostí <see cref="GInteractiveChangeState.KeyboardFocusLeave"/> a <see cref="GInteractiveChangeState.MouseLeave"/>, 
+        /// v době kdy je do <see cref="IInteractiveHost.FocusedItem"/> vkládáno null.
+        /// Slouží např. k obnově focusu při vrácení, nebo k určení, odkud přešel focus do určitého nového prvku.
+        /// </summary>
+        public IInteractiveItem FocusedItemPrevious { get { return this._FocusedItemPrevious; } }
+        /// <summary>
+        /// Zajistí nasměrování Focusu do daného prvku (anebo do jeho nejbližšího Parenta, který pracuje s klávesnicí).
+        /// Pokud je předán prvek null, pak provede LeaveFocus z aktuálního prvku, a focus se vizuálně ztratí (nebude prvek s klávesovým focusem).
+        /// </summary>
+        /// <param name="focusedItem"></param>
+        public void SetFocusToItem(IInteractiveItem focusedItem)
+        {
+            // Pozor, pokud je nyní aktivní nějaká klávesa (tzn. jsme ve stavu KeyboardPreview, ..Down nebo ..Press), pak celý její proces (Press i Up) by měl doběhnout do PŮVODNÍHO prvku this.FocusedItem:
+            if (_CurrentKeyboardState == GInteractiveChangeState.KeyboardKeyPreview || _CurrentKeyboardState == GInteractiveChangeState.KeyboardKeyDown || _CurrentKeyboardState == GInteractiveChangeState.KeyboardKeyPress)
+                this._FocusedItemKeyTarget = FocusedItem;
+
+            _ItemKeyboardExchange(_FocusedItem, focusedItem, true);            // Tady proběhne KeyboardFocusLeave pro FocusedItem a poté KeyboardFocusEnter pro nový focusedItem.
+        }
         #endregion
         #region Privátní výkonné metody pro podporu Focus a Keyboard
         /// <summary>
-        /// Call events KeyboardFocusLeave and KeyboardFocusEnter when neccessary.
+        /// Prvek s aktuálním focusem. Může být null.
+        /// </summary>
+        private IInteractiveItem _FocusedItem;
+        /// <summary>
+        /// Prvek, do kterého půjdou následující Keyboard eventy.
+        /// Pokud je null (defaultní stav), půjdou události standardně do <see cref="_FocusedItem"/>.
+        /// <para/>
+        /// Používá se v době vynuceného přechodu focusu z prvku <see cref="_FocusedItemKeyTarget"/> do nového <see cref="_FocusedItem"/>, kdy tento přechod focusu je aktivován klávesou v původním prvku.
+        /// Typicky: V TextBoxu 1 je deekován KeyDown = Enter, tím je vyvolána akce SetFocus... do TextBoxu 2 - ale stále je klávesa Enter stisknutá, přitom dojde ke změně focusu (Leave a Enter),
+        /// ale nyní nechceme, aby událost KeyUp (Enter) došla do TextBoxu 2 = protože v něm neproběhl KeyDown, tato událost musí doběhnout do TextBoxu 1!
+        /// <para/>
+        /// Hodnota je nulována po dokončení KeyUp.
+        /// </summary>
+        private IInteractiveItem _FocusedItemKeyTarget;
+        /// <summary>
+        /// Do tohoto prvku půjdou klávesové eventy
+        /// </summary>
+        private IInteractiveItem _FocusedCurrentTarget { get { return (_FocusedItemKeyTarget ?? _FocusedItem); } }
+        /// <summary>
+        /// true pokud <see cref="_FocusedItem"/> existuje (pak může dostávat klávesové eventy)
+        /// </summary>
+        private bool _FocusedItemExists { get { return (this._FocusedItem != null); } }
+        /// <summary>
+        /// Prvek s předchozím focusem. Může být null.
+        /// </summary>
+        private IInteractiveItem _FocusedItemPrevious;
+        /// <summary>
+        /// Vyvolá události prvků: KeyboardFocusLeave (pro itemPrev) a KeyboardFocusEnter (pro itemNext).
+        /// Uloží dodaný prvek itemNext do 
         /// Set _KeyboardCurrentItem = gcItemPrev, when CanKeyboard.
         /// </summary>
         /// <param name="itemPrev"></param>
@@ -376,21 +463,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="forceLeave"></param>
         private void _ItemKeyboardExchange(IInteractiveItem itemPrev, IInteractiveItem itemNext, bool forceLeave)
         {
-            // We solve Keyboard focus change.
-            // This change is other than MouseEnter and MouseLeave action, which is "recursively from parent to child".
-            // Keyboard focus changes are one level, and focus can be changed only from and to item, which accept keyboard actions (CanKeyboard).
+            // Klávesový Focus je jiný než Myší focus: Mys volá MouseLeave rekurzivně od nejnižšího prvku k top Parentovi, a MouseEnter volá od Parenta k cílovému prvku.
+            // Klávesový je jednoduchý: volá KeyboardFocusLeave pouze do odchozího prvku, a KeyboardFocusEnter co cílového; neřeší se parenti.
 
-            // itemPrev is always item with keyboard activity (or is null).
-            // itemNext can be an item with mouse activity, but no keyboard activity. We must search for nearest item with keyboard activity in item and its Parent:
+            // Cílový prvek může být "Non-Keyboard", zkusíme tedy najít jeho nejbližšího parenta, který umožňuje klávesovou aktivitu:
             itemNext = _ItemKeyboardSearchKeyboardInput(itemNext);
 
-            // Keyboard focus change is simpliest:
+            // A dál je to jednoduché:
             bool existsPrev = (itemPrev != null && itemPrev.Is.KeyboardInput);
             bool existsNext = (itemNext != null && itemNext.Is.KeyboardInput);
-            if (!existsPrev && !existsNext) return;                                      // booth is null (=paranoia)
+            if (!existsPrev && !existsNext) return;                                                                    // booth is null (=paranoia)
             if (Object.ReferenceEquals((existsPrev ? itemPrev : null), (existsNext ? itemNext : null))) return;        // no change
 
-            // Exchange focus is only when new item is different from previous item, and new item can accept keyboard input:
+            // Změna focusu se provede pokud je povinná, anebo pokud Next item existuje:
             if (forceLeave || existsNext)
             {
                 if (existsPrev)
@@ -399,7 +484,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (existsNext)
                     this._ItemKeyboardCallEvent(itemNext, GInteractiveChangeState.KeyboardFocusEnter, null, null, null);
 
-                this._KeyboardCurrentItem = itemNext;
+                this._FocusedItem = itemNext;
             }
         }
         /// <summary>
@@ -438,6 +523,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="keyPressArgs"></param>
         private void _ItemKeyboardCallEvent(IInteractiveItem item, GInteractiveChangeState change, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
         {
+            this._CurrentKeyboardState = change;
             if (item.Is.KeyboardInput)
             {
                 GInteractiveChangeState realChange = change;
@@ -453,17 +539,9 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Current item with any keyboard-interaction, can be null
+        /// Aktuální stav klávesové aktivity = poslední, který se detekoval
         /// </summary>
-        private IInteractiveItem _KeyboardCurrentItem;
-        /// <summary>
-        /// true when _KeyboardCurrentItem exists and can get keyboard actions
-        /// </summary>
-        private bool _KeyboardCurrentItemCanKeyboard { get { return (this._KeyboardCurrentItem != null); } }
-        /// <summary>
-        /// An item with any keyboard-interaction, from which is Leaved this control. Is re-activated in Enter control event. Can be null
-        /// </summary>
-        private IInteractiveItem _KeyboardLeavedItem;
+        private GInteractiveChangeState _CurrentKeyboardState;
         #endregion
         #endregion
         #region Myš (události z WinForm Controlu, jejich řešení v GInteractiveControl)
@@ -814,7 +892,7 @@ namespace Asol.Tools.WorkScheduler.Components
             GActivePosition newActiveItem = this._FindActivePositionAtPoint(e.Location, false);
             newActiveItem.CurrentStateFill(e.Location);
             this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
-            this._ItemKeyboardExchange(this._KeyboardCurrentItem, newActiveItem.ActiveItem, false);
+            this._ItemKeyboardExchange(this._FocusedItem, newActiveItem.ActiveItem, false);
 
             this._MouseDownAbsolutePoint = e.Location;
             this._MouseDownTime = DateTime.Now;
@@ -1151,7 +1229,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.RightLongClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightDoubleClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.KeyboardFocusEnter: return GInteractiveState.Enabled;
-                case GInteractiveChangeState.KeyboardPreviewKeyDown: return GInteractiveState.Enabled;
+                case GInteractiveChangeState.KeyboardKeyPreview: return GInteractiveState.Enabled;
                 case GInteractiveChangeState.KeyboardKeyDown: return GInteractiveState.Enabled;
                 case GInteractiveChangeState.KeyboardKeyUp: return GInteractiveState.Enabled;
                 case GInteractiveChangeState.KeyboardFocusLeave: return GInteractiveState.Enabled;
@@ -3818,9 +3896,15 @@ namespace Asol.Tools.WorkScheduler.Components
         UInt32 IInteractiveParent.Id { get { return 0; } }
         GInteractiveControl IInteractiveParent.Host { get { return this; } }
         IInteractiveParent IInteractiveParent.Parent { get { return null; } set { } }
+        IEnumerable<IInteractiveItem> IInteractiveParent.Childs { get { return this.ChildItems; } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }
+        #endregion
+        #region Implementace IInteractiveHost
+        IInteractiveItem IInteractiveHost.FocusedItem { get { return this._FocusedItem; } set { this._FocusedItem = value; } }
+        IInteractiveItem IInteractiveHost.FocusedItemPrevious { get { return this._FocusedItemPrevious; } set { this._FocusedItemPrevious = value; } }
+        void IInteractiveHost.SetFocusToItem(IInteractiveItem focusedItem) { SetFocusToItem(focusedItem); }
         #endregion
     }
     #region class AnimationArgs : Data pro jeden animační krok v jednom objektu

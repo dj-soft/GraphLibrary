@@ -692,7 +692,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private int[] _HeightAnimationSteps;
         /// <summary>
-        /// Index do pole <see cref="_HeightAnimationSteps"/>, odkud bude čtena hodnota pro následující Tick <see cref="_HeightAnimationTick()"/>.
+        /// Index do pole <see cref="_HeightAnimationSteps"/>, odkud bude čtena hodnota pro následující Tick <see cref="_HeightAnimationTick(AnimationArgs)"/>.
         /// </summary>
         private int _HeightAnimationStepIndex;
         /// <summary>

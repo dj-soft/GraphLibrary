@@ -931,6 +931,15 @@ namespace Asol.Tools.WorkScheduler.Components
         public static Image GoEnd { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_last_2_64; } }
 
         /// <summary>
+        /// Standardní ikona : RelationRecord
+        /// </summary>
+        public static Image RelationRecord { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_2; } }
+        /// <summary>
+        /// Standardní ikona : RelationDocument
+        /// </summary>
+        public static Image RelationDocument { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_double_2; } }
+
+        /// <summary>
         /// Standardní ikona : Refresh
         /// </summary>
         public static Image Refresh { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_refresh_3_64; } }

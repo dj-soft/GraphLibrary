@@ -1426,7 +1426,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private IInteractiveItem[] _ChildItems;
         /// <summary>
-        /// Child prvky <see cref="IInteractiveItem.Childs"/>
+        /// Child prvky <see cref="IInteractiveParent.Childs"/>
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildItems; } }
         /// <summary>
@@ -1859,7 +1859,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             switch (e.ChangeState)
             {
-                case GInteractiveChangeState.KeyboardPreviewKeyDown:           // Sem chodí i klávesy Kurzor, Tab
+                case GInteractiveChangeState.KeyboardKeyPreview:           // Sem chodí i klávesy Kurzor, Tab
                     this.KeyboardPreviewKeyDown(e);
                     break;
                 case GInteractiveChangeState.KeyboardKeyPress:                 // Sem nechodí "kurzorové" klávesy, zatím nás event nezajímá. Mohl by aktivovat řádkový filtr...

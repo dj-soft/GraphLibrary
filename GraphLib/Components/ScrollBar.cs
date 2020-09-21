@@ -1226,7 +1226,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Defaultní barva BackColor
         /// </summary>
-        public override Color BackColorDefault { get { return Skin.ScrollBar.BackColorArea; } }
+        protected override Color BackColorDefault { get { return Skin.ScrollBar.BackColorArea; } }
         /// <summary>
         /// Vyvolá událost <see cref="UserDraw"/> pro uživatelské kreslení pozadí ScrollBaru
         /// </summary>

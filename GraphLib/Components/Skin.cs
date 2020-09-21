@@ -1657,6 +1657,49 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public values
+
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu Disabled
+        /// </summary>
+        public Color BackColorDisabled { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDisabled", DefaultBackColorDisabled); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDisabled", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu Enabled
+        /// </summary>
+        public Color BackColorEnabled { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorEnabled", DefaultBackColorEnabled); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorEnabled", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu MouseOver
+        /// </summary>
+        public Color BackColorMouseOver { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorMouseOver", DefaultBackColorMouseOver); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorMouseOver", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu ve stavu Active = máme focus
+        /// </summary>
+        public Color BackColorFocused { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorFocused", DefaultBackColorFocused); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorFocused", value); } }
+        /// <summary>
+        /// Barva pozadí textboxu, část SelectedText
+        /// </summary>
+        public Color BackColorSelectedText { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorSelectedText", DefaultBackColorSelectedText); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorSelectedText", value); } }
+
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu Disabled
+        /// </summary>
+        public Color TextColorDisabled { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDisabled", DefaultTextColorDisabled); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDisabled", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu Enabled
+        /// </summary>
+        public Color TextColorEnabled { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorEnabled", DefaultTextColorEnabled); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorEnabled", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu MouseOver
+        /// </summary>
+        public Color TextColorMouseOver { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorMouseOver", DefaultTextColorMouseOver); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorMouseOver", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu ve stavu Active = máme focus
+        /// </summary>
+        public Color TextColorFocused { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorFocused", DefaultTextColorFocused); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorFocused", value); } }
+        /// <summary>
+        /// Barva popředí (písma) textboxu, část SelectedText
+        /// </summary>
+        public Color TextColorSelectedText { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorSelectedText", DefaultTextColorSelectedText); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorSelectedText", value); } }
+
         /// <summary>
         /// Typ rámečku
         /// </summary>
@@ -1664,61 +1707,77 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
         /// </summary>
-        public Color PassiveBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "PassiveBorderColor", DefaultPassiveBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "PassiveBorderColor", value); } }
+        public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
         /// <summary>
         /// Barva okraje textboxu s focusem (Focus, MouseDown)
         /// </summary>
-        public Color ActiveBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBorderColor", DefaultActiveBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBorderColor", value); } }
+        public Color BorderColorFocused { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColorFocused", DefaultBorderColorFocused); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColorFocused", value); } }
         /// <summary>
-        /// Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver), soft verze
+        /// Barva okraje textboxu Required. Hodnota Alpha kanálu určuje Morphing hodnotu z běžné barvy: 0=pro Required textbox se bude Border kreslit beze změny, 255=bude vždy použita čistá barva <see cref="BorderColorRequired"/>.
+        /// Vhodná hodnota je 128 - 192, kdy Border částečně reaguje na Focus (přebírá například barvu <see cref="BorderColorFocused"/>).
         /// </summary>
-        public Color PassiveSoftBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "PassiveSoftBorderColor", DefaultPassiveSoftBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "PassiveSoftBorderColor", value); } }
+        public Color BorderColorRequired { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColorRequired", DefaultBorderColorRequired); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColorRequired", value); } }
         /// <summary>
-        /// Barva okraje textboxu s focusem (Focus, MouseDown), soft verze
+        /// Barva okraje textboxu v Soft verzi.. Hodnota Alpha kanálu určuje Morphing hodnotu z běžné barvy: 0=pro Required textbox se bude Border kreslit beze změny, 255=bude vždy použita čistá barva <see cref="BorderColorSoft"/>.
+        /// Vhodná hodnota je 128 - 192, kdy Border částečně reaguje na Focus (přebírá například barvu <see cref="BorderColorFocused"/>).
         /// </summary>
-        public Color ActiveSoftBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveSoftBorderColor", DefaultActiveSoftBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveSoftBorderColor", value); } }
+        public Color BorderColorSoft { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColorSoft", DefaultBorderColorSoft); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColorSoft", value); } }
         /// <summary>
-        /// Barva pozadí textboxu ve stavu Disabled
+        /// Hodnota průhlednosti rámečku ve verzi Soft.
         /// </summary>
-        public Color DisabledBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "DisabledBackColor", DefaultDisabledBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "DisabledBackColor", value); } }
+        public float BorderAlphaSoft { get { return this._Owner.GetValue(this._SkinSetKey, "BorderAlphaSoft ", DefaultBorderAlphaSoft); } set { this._Owner.SetValue(this._SkinSetKey, "BorderAlphaSoft ", value); } }
+
         /// <summary>
-        /// Barva pozadí textboxu ve stavu Enabled
+        /// Ikona tlačítka vztahu na záznam
         /// </summary>
-        public Color EnabledBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "EnabledBackColor", DefaultEnabledBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "EnabledBackColor", value); } }
+        public Image IconRelationRecord { get { return this._Owner.GetValue(this._SkinSetKey, "IconRelationRecord", DefaultIconRelationRecord); } set { this._Owner.SetValue(this._SkinSetKey, "IconRelationRecord", value); } }
         /// <summary>
-        /// Barva pozadí textboxu ve stavu MouseOver
+        /// Ikona tlačítka vztahu na dokument
         /// </summary>
-        public Color MouseOverBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverBackColor", DefaultMouseOverBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverBackColor", value); } }
-        /// <summary>
-        /// Barva pozadí textboxu ve stavu Active = máme focus
-        /// </summary>
-        public Color ActiveBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBackColor", DefaultActiveBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBackColor", value); } }
-        /// <summary>
-        /// Barva pozadí textboxu, část SelectedText
-        /// </summary>
-        public Color SelectedTextBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedTextBackColor", DefaultSelectedTextBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedTextBackColor", value); } }
-        /// <summary>
-        /// Barva popředí (písma) textboxu ve stavu Disabled
-        /// </summary>
-        public Color DisabledForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "DisabledForeColor", DefaultDisabledForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "DisabledForeColor", value); } }
-        /// <summary>
-        /// Barva popředí (písma) textboxu ve stavu Enabled
-        /// </summary>
-        public Color EnabledForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "EnabledForeColor", DefaultEnabledForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "EnabledForeColor", value); } }
-        /// <summary>
-        /// Barva popředí (písma) textboxu ve stavu MouseOver
-        /// </summary>
-        public Color MouseOverForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverForeColor", DefaultMouseOverForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverForeColor", value); } }
-        /// <summary>
-        /// Barva popředí (písma) textboxu ve stavu Active = máme focus
-        /// </summary>
-        public Color ActiveForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveForeColor", DefaultActiveForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveForeColor", value); } }
-        /// <summary>
-        /// Barva popředí (písma) textboxu, část SelectedText
-        /// </summary>
-        public Color SelectedTextForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedTextForeColor", DefaultSelectedTextForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedTextForeColor", value); } }
+        public Image IconRelationDocument { get { return this._Owner.GetValue(this._SkinSetKey, "IconRelationDocument", DefaultIconRelationDocument); } set { this._Owner.SetValue(this._SkinSetKey, "IconRelationDocument", value); } }
+
         #endregion
         #region Default values
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu Disabled
+        /// </summary>
+        protected virtual Color DefaultBackColorDisabled { get { return Color.FromArgb(210, 210, 210); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu Enabled
+        /// </summary>
+        protected virtual Color DefaultBackColorEnabled { get { return Color.FromArgb(240, 240, 240); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu MouseOver
+        /// </summary>
+        protected virtual Color DefaultBackColorMouseOver { get { return Color.FromArgb(240, 240, 255); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu ve stavu Active = máme focus
+        /// </summary>
+        protected virtual Color DefaultBackColorFocused { get { return Color.FromArgb(255, 255, 245); } }
+        /// <summary>
+        /// Default pro: Barva pozadí textboxu, část SelectedText
+        /// </summary>
+        protected virtual Color DefaultBackColorSelectedText { get { return Color.FromArgb(140, 140, 250); } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu Disabled
+        /// </summary>
+        protected virtual Color DefaultTextColorDisabled { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu Enabled
+        /// </summary>
+        protected virtual Color DefaultTextColorEnabled { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu MouseOver
+        /// </summary>
+        protected virtual Color DefaultTextColorMouseOver { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu ve stavu Active = máme focus
+        /// </summary>
+        protected virtual Color DefaultTextColorFocused { get { return Color.Black; } }
+        /// <summary>
+        /// Default pro: Barva popředí (písma) textboxu, část SelectedText
+        /// </summary>
+        protected virtual Color DefaultTextColorSelectedText { get { return Color.BlueViolet; } }
         /// <summary>
         /// Default pro: Styl rámečku
         /// </summary>
@@ -1726,59 +1785,33 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
         /// </summary>
-        protected virtual Color DefaultPassiveBorderColor { get { return Color.FromArgb(128, 128, 128); } }
+        protected virtual Color DefaultBorderColor { get { return Color.FromArgb(128, 128, 128); } }
         /// <summary>
         /// Default pro: Barva okraje textboxu s focusem (Focus, MouseDown)
         /// </summary>
-        protected virtual Color DefaultActiveBorderColor { get { return Color.FromArgb(32, 32, 32); } }
+        protected virtual Color DefaultBorderColorFocused { get { return Color.FromArgb(32, 32, 32); } }
         /// <summary>
-        /// Default pro: Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
+        /// Default pro: Barva okraje textboxu Required
         /// </summary>
-        protected virtual Color DefaultPassiveSoftBorderColor { get { return Color.FromArgb(192, 186, 186, 186); } }
+        protected virtual Color DefaultBorderColorRequired { get { return Color.FromArgb(192, 192, 64, 64); } }
         /// <summary>
-        /// Default pro: Barva okraje textboxu s focusem (Focus, MouseDown)
+        /// Default pro: Barva okraje textboxu Soft verze
         /// </summary>
-        protected virtual Color DefaultActiveSoftBorderColor { get { return Color.FromArgb(192, 150, 150, 150); } }
+        protected virtual Color DefaultBorderColorSoft { get { return Color.FromArgb(192, 150, 150, 150); } }
         /// <summary>
-        /// Default pro: Barva pozadí textboxu ve stavu Disabled
+        /// Default pro: Hodnota průhlednosti rámečku ve verzi Soft.
         /// </summary>
-        protected virtual Color DefaultDisabledBackColor { get { return Color.FromArgb(210, 210, 210); } }
+        protected virtual float DefaultBorderAlphaSoft { get { return 0.75f; } }
+
         /// <summary>
-        /// Default pro: Barva pozadí textboxu ve stavu Enabled
+        /// Default pro: Ikona tlačítka vztahu na záznam
         /// </summary>
-        protected virtual Color DefaultEnabledBackColor { get { return Color.FromArgb(240, 240, 240); } }
+        protected virtual Image DefaultIconRelationRecord { get { return IconStandard.RelationRecord;; } }
         /// <summary>
-        /// Default pro: Barva pozadí textboxu ve stavu MouseOver
+        /// Default pro: Ikona tlačítka vztahu na dokument
         /// </summary>
-        protected virtual Color DefaultMouseOverBackColor { get { return Color.FromArgb(240, 240, 255); } }
-        /// <summary>
-        /// Default pro: Barva pozadí textboxu ve stavu Active = máme focus
-        /// </summary>
-        protected virtual Color DefaultActiveBackColor { get { return Color.FromArgb(255, 255, 245); } }
-        /// <summary>
-        /// Default pro: Barva pozadí textboxu, část SelectedText
-        /// </summary>
-        protected virtual Color DefaultSelectedTextBackColor { get { return Color.FromArgb(140, 140, 250); } }
-        /// <summary>
-        /// Default pro: Barva popředí (písma) textboxu ve stavu Disabled
-        /// </summary>
-        protected virtual Color DefaultDisabledForeColor { get { return Color.Black; } }
-        /// <summary>
-        /// Default pro: Barva popředí (písma) textboxu ve stavu Enabled
-        /// </summary>
-        protected virtual Color DefaultEnabledForeColor { get { return Color.Black; } }
-        /// <summary>
-        /// Default pro: Barva popředí (písma) textboxu ve stavu MouseOver
-        /// </summary>
-        protected virtual Color DefaultMouseOverForeColor { get { return Color.Black; } }
-        /// <summary>
-        /// Default pro: Barva popředí (písma) textboxu ve stavu Active = máme focus
-        /// </summary>
-        protected virtual Color DefaultActiveForeColor { get { return Color.Black; } }
-        /// <summary>
-        /// Default pro: Barva popředí (písma) textboxu, část SelectedText
-        /// </summary>
-        protected virtual Color DefaultSelectedTextForeColor { get { return Color.BlueViolet; } }
+        protected virtual Image DefaultIconRelationDocument { get { return IconStandard.RelationDocument; ; } }
+
         #endregion
     }
     /// <summary>

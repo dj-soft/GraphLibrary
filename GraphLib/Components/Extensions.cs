@@ -374,7 +374,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public static Color CreateTransparent(this Color root, float alpha)
         {
             int a = (int)(((float)root.A) * alpha);
-            a = (a < 0 ? 0 : (a > 255 ? 255 : 0));
+            a = (a < 0 ? 0 : (a > 255 ? 255 : a));
             return Color.FromArgb(a, root.R, root.G, root.B);
         }
         #endregion

@@ -145,7 +145,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Barva pozadí tohoto prvku: tento override vrací průhlednou barvu. Základní metoda nemá kreslit pozadí povinně.
         /// Více viz <see cref="ItemBackColor"/>.
         /// </summary>
-        public override Color BackColorDefault { get { return Color.Transparent; } }
+        protected override Color BackColorDefault { get { return Color.Transparent; } }
         /// <summary>
         /// Pozice tohoto prvku (Group / Item)
         /// </summary>

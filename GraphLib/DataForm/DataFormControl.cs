@@ -46,6 +46,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int maxY = 0;
             int currentX = firstX;
             int currentY = firstY;
+            int lastX = countX - 1;
 
             int lo = 216;
             int hi = 240;
@@ -62,8 +63,19 @@ namespace Asol.Tools.WorkScheduler.DataForm
             };
             int colorCnt = colors.Length;
             string[] values = new string[] { "VFA-2019", "VP", "DOC-INT", "PRJ", "VYD", "IUD-2019", "MAT", "ZFO", "ČJ" };
+            string[] suffixes = new string[] { "vyřešit ihned", "porada nutná", "rozhoduje pouze šéf", "neřešit, založit", "utajený dokument" };
             int valuesCnt = values.Length;
             Random rand = new Random();
+
+            ITextEditOverlay[] overlays = new ITextEditOverlay[]
+            {
+                new TextEditOverlayRelationLine(false, false),
+                new TextEditOverlayRelationLine(false, true),
+                new TextEditOverlayRelationLine(true, false),
+                new TextEditOverlayRelationLine(true, true),
+                new TextEditOverlayRelationIcon(false),
+                new TextEditOverlayRelationIcon(true)
+            };
 
             Rectangle bounds = Rectangle.Empty;
             int n = 0;
@@ -87,10 +99,15 @@ Obsah prvku: {item.Value1}
 Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {currentX}/{currentY}
 ";
+                    if (rand.Next(10) <= 3) item.Value1 += ": " + suffixes[rand.Next(suffixes.Length)];
                     item.BorderStyle = BorderStyleType.Soft;
+                    if (nx == 0) item.LabelMain.FontModifier.Bold = true;
+                    if (nx == 1) item.LabelMain.FontModifier.Italic = true;
+                    if (nx == 2) item.LabelMain.FontModifier.RelativeSize = 80;
+                    if (nx == lastX) item.Enabled = false;
 
-                    if (rand.Next(10) > 6)
-                        item.RelationType = (rand.Next(5) > 2) ? TextRelationType.ToRecord : TextRelationType.ToDocument;
+                    if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
+                        item.OverlayText = overlays[rand.Next(overlays.Length)];
                     this.AddItem(item);
                     bounds = item.Bounds;
 

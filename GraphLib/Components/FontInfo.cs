@@ -23,11 +23,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public override int GetHashCode()
         {
-            return ((this.FontType.GetHashCode() << 24)
+            int hashCode = ((this.FontType.GetHashCode() << 24)
                   ^ (this.RelativeSize.GetHashCode() << 8)
                   ^ (this.Bold ? 4 : 0)
                   ^ (this.Italic ? 2 : 0)
                   ^ (this.Underline ? 1 : 0));
+            if (this.FontFamilyName != null) hashCode = hashCode ^ this.FontFamilyName.GetHashCode();
+            if (this.FontEmSize != null) hashCode = hashCode ^ this.FontEmSize.Value.GetHashCode();
+            return hashCode;
         }
         /// <summary>
         /// Override Equals
@@ -38,7 +41,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             FontInfo other = obj as FontInfo;
             if (other == null) return false;
-            return ((this.FontType == other.FontType)
+            return ((String.CompareOrdinal(this.FontFamilyName, other.FontFamilyName) == 0)
+                 && ((this.FontEmSize ?? 0f) == (other.FontEmSize ?? 0f))
+                 && (this.FontType == other.FontType)
                  && (this.RelativeSize == other.RelativeSize)
                  && (this.Bold == other.Bold)
                  && (this.Italic == other.Italic)
@@ -58,7 +63,21 @@ namespace Asol.Tools.WorkScheduler.Components
                 + ((!this.Bold && !this.Italic && !this.Underline) ? "; Normal" : "");
         }
         /// <summary>
-        /// Type of basic font
+        /// Jméno fontu, default = null.
+        /// Pokud je zadáno jméno fontu, je třeba zadat i jeho velikost <see cref="FontEmSize"/> (jinak se použije konstanta 9).
+        /// Pokud se vloží null nebo empty, bude se používat <see cref="FontType"/>.
+        /// </summary>
+        public string FontFamilyName { get { return this._FontFamilyName; } set { this._FontFamilyName = (String.IsNullOrEmpty(value) ? null : value.Trim()); } }
+        private string _FontFamilyName = null;
+        /// <summary>
+        /// Absolutní velikost fontu v EM size, default = null.
+        /// Pokud je zadána, použije se namísto <see cref="RelativeSize"/>.
+        /// Povolené hodnoty jsou 4 až 48.
+        /// </summary>
+        public float? FontEmSize { get { return this._FontEmSize; } set { this._FontEmSize = (value.HasValue ? (value.Value < 4f ? 4f : (value.Value > 48f ? 48f : value)) : value); } }
+        private float? _FontEmSize = null;
+        /// <summary>
+        /// Typ fontu
         /// </summary>
         public FontSetType FontType { get; set; }
         /// <summary>
@@ -191,6 +210,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected const int SizeBig = 115;
         #endregion
+        #region Modifikovaný font = vytvořený z this, ale s úpravami z modifikátoru FontDeltaInfo
+        /// <summary>
+        /// Vygeneruje <see cref="FontInfo"/> na základě this údajů, modifikovaných danými daty.
+        /// Pokud dodaný modifikátor <paramref name="modifier"/> je null nebo Empty, pak výstupem této metody je přímo this instance, ani ne Clone (kvůli rychlosti)!
+        /// </summary>
+        /// <param name="modifier"></param>
+        /// <returns></returns>
+        public FontInfo GetModifiedFont(FontModifierInfo modifier)
+        {
+            if (modifier == null || modifier.IsEmpty) return this;
+
+            FontInfo clone = this.Clone;
+            if (modifier.FontFamilyName != null) clone.FontFamilyName = modifier.FontFamilyName;   // FontModifierInfo.FontFamilyName: null = beze změny, kdežto prázdný string se přenese do FontInfo.FontFamilyName a tím zruší explicitní jméno fontu.
+            if (modifier.FontEmSize.HasValue) clone.FontEmSize = modifier.FontEmSize;
+            if (modifier.FontType.HasValue) clone.FontType = modifier.FontType.Value;
+            if (modifier.RelativeSize.HasValue) clone.RelativeSize = (clone.RelativeSize * modifier.RelativeSize.Value) / 100;
+            if (modifier.Bold.HasValue) clone.Bold = modifier.Bold.Value;
+            if (modifier.Italic.HasValue) clone.Italic = modifier.Italic.Value;
+            if (modifier.Underline.HasValue) clone.Underline = modifier.Underline.Value;
+            return clone;
+        }
+        #endregion
         #region Get font from cache; Create new font
         /// <summary>
         /// Fyzický font odpovídající aktuálním datům.
@@ -206,46 +247,50 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public Font CreateNewFont()
         {
-            Font prototype = null;
-            switch (this.FontType)
-            {
-                case FontSetType.DefaultFont:
-                    prototype = SystemFonts.DefaultFont;
-                    break;
-                case FontSetType.DialogFont:
-                    prototype = SystemFonts.DialogFont;
-                    break;
-                case FontSetType.MenuFont:
-                    prototype = SystemFonts.MenuFont;
-                    break;
-                case FontSetType.CaptionFont:
-                    prototype = SystemFonts.CaptionFont;
-                    break;
-                case FontSetType.IconTitleFont:
-                    prototype = SystemFonts.IconTitleFont;
-                    break;
-                case FontSetType.MessageBoxFont:
-                    prototype = SystemFonts.MessageBoxFont;
-                    break;
-                case FontSetType.SmallCaptionFont:
-                    prototype = SystemFonts.SmallCaptionFont;
-                    break;
-                case FontSetType.StatusFont:
-                    prototype = SystemFonts.StatusFont;
-                    break;
-                default:
-                    prototype = SystemFonts.DefaultFont;
-                    break;
-            }
-
-            float ratio = _ToRange(Application.App.Zoom.Value * ((float)this.RelativeSize / 100f));   // Relative size (in percent) * Zoom (ratio) = Font Ratio to prototype size
-            float emSize = ratio * prototype.Size;
             FontStyle fontStyle =
                 (this.Bold ? FontStyle.Bold : FontStyle.Regular) |
                 (this.Italic ? FontStyle.Italic : FontStyle.Regular) |
                 (this.Underline ? FontStyle.Underline : FontStyle.Regular);
+            float emSize;
 
-            return new Font(prototype.FontFamily, emSize, fontStyle);          // This must be only one row in whole aplication, where new Font() is called !!!
+            if (this.FontFamilyName != null)
+            {
+                emSize = Application.App.Zoom.Value * (this.FontEmSize ?? 9f);
+                return new Font(this.FontFamilyName, emSize, fontStyle);
+            }
+
+            Font prototype = GetFontPrototype(this.FontType);
+            emSize = prototype.Size * _ToRange(Application.App.Zoom.Value * ((float)this.RelativeSize / 100f));
+            return new Font(prototype.FontFamily, emSize, fontStyle);
+        }
+        /// <summary>
+        /// Vrátí prototypový systémový font
+        /// </summary>
+        /// <param name="fontType"></param>
+        /// <returns></returns>
+        public static Font GetFontPrototype(FontSetType fontType)
+        {
+            switch (fontType)
+            {
+                case FontSetType.DefaultFont:
+                    return SystemFonts.DefaultFont;
+                case FontSetType.DialogFont:
+                    return SystemFonts.DialogFont;
+                case FontSetType.MenuFont:
+                    return SystemFonts.MenuFont;
+                case FontSetType.CaptionFont:
+                    return SystemFonts.CaptionFont;
+                case FontSetType.IconTitleFont:
+                    return SystemFonts.IconTitleFont;
+                case FontSetType.MessageBoxFont:
+                    return SystemFonts.MessageBoxFont;
+                case FontSetType.SmallCaptionFont:
+                    return SystemFonts.SmallCaptionFont;
+                case FontSetType.StatusFont:
+                    return SystemFonts.StatusFont;
+                default:
+                    return SystemFonts.DefaultFont;
+            }
         }
         private static float _ToRange(float value)
         {
@@ -326,6 +371,69 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Lock for instance (create, insert new item, reset)
         /// </summary>
         private static object __FontLock = new object();
+        #endregion
+    }
+    /// <summary>
+    /// FontModifierInfo : modifikátor fontu
+    /// </summary>
+    public class FontModifierInfo
+    {
+        #region Konstrukce
+        /// <summary>
+        /// Obsahuje vždy new instanci, prázdnou
+        /// </summary>
+        public static FontModifierInfo Empty { get { return new FontModifierInfo(); } }
+        /// <summary>
+        /// Obsahuje true u instance, která neobsahuje žádnou změnu fontu
+        /// </summary>
+        public bool IsEmpty
+        {
+            get
+            {
+                if (FontFamilyName != null) return false;            // Pouze NULL je Empty! Naproti tomu prázdný string vyjadřuje konkrétní hodnotu, která modifikuje FontInfo!
+                if (FontEmSize.HasValue) return false;
+                if (FontType.HasValue) return false;
+                if (RelativeSize.HasValue) return false;
+                if (Bold.HasValue) return false;
+                if (Italic.HasValue) return false;
+                if (Underline.HasValue) return false;
+                return true;
+            }
+        }
+        #endregion
+        #region Font properties
+        /// <summary>
+        /// Jméno fontu, default = null.
+        /// Pokud je zadáno jméno fontu, je třeba zadat i jeho velikost <see cref="FontEmSize"/> (jinak se použije konstanta 9).
+        /// Zde (v modifikátoru) je možno zadat prázdný string, ten pak zajistí, že reálný <see cref="FontInfo"/> bude mít vynulovaný svůj <see cref="FontInfo.FontFamilyName"/>, 
+        /// tedy pro konkrétní font se použije jeho <see cref="FontInfo.FontType"/>!
+        /// Na rozdíl od toho pokud <see cref="FontModifierInfo.FontFamilyName"/> bude null, pak se <see cref="FontInfo.FontFamilyName"/> nebude měnit.
+        /// </summary>
+        public string FontFamilyName { get; set; }
+        /// <summary>
+        /// Absolutní velikost fontu v EM size, default = null.
+        /// </summary>
+        public float? FontEmSize { get; set; }
+        /// <summary>
+        /// Typ fontu
+        /// </summary>
+        public FontSetType? FontType { get; set; }
+        /// <summary>
+        /// Relative size to standard, in percent.
+        /// </summary>
+        public int? RelativeSize { get; set; }
+        /// <summary>
+        /// Is Bold?
+        /// </summary>
+        public bool? Bold { get; set; }
+        /// <summary>
+        /// Is Italic?
+        /// </summary>
+        public bool? Italic { get; set; }
+        /// <summary>
+        /// Is Underlined?
+        /// </summary>
+        public bool? Underline { get; set; }
         #endregion
     }
     #region enum FontSetType

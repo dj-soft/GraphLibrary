@@ -40,12 +40,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Padding? ClientBorder { get; set; }
         /// <summary>
-        /// Pole mých vlastních potomků. Jejich Parentem je this.
-        /// Jejich souřadnice jsou relativní ke zdejšímu souřadnému systému.
-        /// This is: where this.ActiveBounds.Location is {200, 100} and child.ActiveBounds.Location is {10, 40}, then child is on Point {210, 140}.
-        /// </summary>
-        IEnumerable<IInteractiveItem> Childs { get; }
-        /// <summary>
         /// Souhrn veškerých vlastností a stylu tohoto prvku.
         /// </summary>
         InteractiveProperties Is { get; }
@@ -53,6 +47,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Order for this item
         /// </summary>
         ZOrder ZOrder { get; }
+        /// <summary>
+        /// Pořadí při procházení pomocí Tab.
+        /// Null = použije se nativní pořadí v poli <see cref="IInteractiveParent.Childs"/>.
+        /// Kombinace prvků s Null a s hodnotou: nejprve se projdou pvky s hodnotou, a po nich prvky s null v nativním pořadí.
+        /// </summary>
+        int? TabOrder { get; }
         /// <summary>
         /// Libovolný popisný údaj
         /// </summary>
@@ -97,7 +97,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda je volaná pro vykreslení obsahu tohoto prvku.
         /// Pokud prvek má nějaké potomstvo (Childs), pak se this prvek nestará o jejich vykreslení, to zajistí jádro.
-        /// Jádro detekuje naše <see cref="Childs"/>, a postupně volá jejich vykreslení (od prvního po poslední).
+        /// Jádro detekuje naše <see cref="IInteractiveParent.Childs"/>, a postupně volá jejich vykreslení (od prvního po poslední).
         /// </summary>
         /// <param name="e">Kreslící argument</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
@@ -105,13 +105,13 @@ namespace Asol.Tools.WorkScheduler.Components
         void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
         /// <summary>
         /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs, Rectangle, Rectangle)"/> 
-        /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs, Rectangle, Rectangle)"/> pro this prvek.
+        /// a po standardním vykreslení všech <see cref="IInteractiveParent.Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs, Rectangle, Rectangle)"/> pro this prvek.
         /// </summary>
         bool NeedDrawOverChilds { get; }
         /// <summary>
-        /// Tato metoda je volaná pro prvek, který má nastaveno <see cref="NeedDrawOverChilds"/> == true, poté když tento prvek byl vykreslen, a následně byly vykresleny jeho <see cref="Childs"/>.
-        /// Umožňuje tedy kreslit "nad" svoje <see cref="Childs"/> (tj. počmárat je).
-        /// Tento postup se používá typicky jen pro zobrazení překryvného textu přes <see cref="Childs"/> prvky, které svůj text nenesou.
+        /// Tato metoda je volaná pro prvek, který má nastaveno <see cref="NeedDrawOverChilds"/> == true, poté když tento prvek byl vykreslen, a následně byly vykresleny jeho <see cref="IInteractiveParent.Childs"/>.
+        /// Umožňuje tedy kreslit "nad" svoje <see cref="IInteractiveParent.Childs"/> (tj. počmárat je).
+        /// Tento postup se používá typicky jen pro zobrazení překryvného textu přes <see cref="IInteractiveParent.Childs"/> prvky, které svůj text nenesou.
         /// </summary>
         /// <param name="e">Kreslící argument</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
@@ -135,7 +135,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Boolean IsActivated { get; set; }
     }
     /// <summary>
-    /// Interface předepisující členy pro typ, který je parentem interaktivního prvků.
+    /// Interface definuje členy pro typ, který je parentem interaktivního prvků.
     /// Tím může být jak jiný interaktivní prvek, anebo základní interaktivní Control.
     /// </summary>
     public interface IInteractiveParent
@@ -154,6 +154,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         IInteractiveParent Parent { get; set; }
         /// <summary>
+        /// Pole mých vlastních potomků. Jejich Parentem je this.
+        /// Jejich souřadnice jsou relativní ke zdejšímu souřadnému systému.
+        /// </summary>
+        IEnumerable<IInteractiveItem> Childs { get; }
+        /// <summary>
         /// Velikost prostoru pro Childs prvky
         /// </summary>
         Size ClientSize { get; }
@@ -166,6 +171,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="repaintLayers">Dané vrstvy ke kreslení</param>
         void Repaint(GInteractiveDrawLayer repaintLayers);
+    }
+    /// <summary>
+    /// Interface definuje specifické prvky hostitelského Controlu, k nimž není přímý přístup přes třídu GInteractiveControl
+    /// </summary>
+    public interface IInteractiveHost
+    {
+        /// <summary>
+        /// Prvek, který má aktuálně focus. Je nastaven po doběhnutí událostí <see cref="GInteractiveChangeState.KeyboardFocusEnter"/> a <see cref="GInteractiveChangeState.MouseEnter"/>
+        /// </summary>
+        IInteractiveItem FocusedItem { get; set; }
+        /// <summary>
+        /// Prvek, který měl focus nedávno. Je nastaven po doběhnutí událostí <see cref="GInteractiveChangeState.KeyboardFocusLeave"/> a <see cref="GInteractiveChangeState.MouseLeave"/>, 
+        /// v době kdy je do <see cref="IInteractiveHost.FocusedItem"/> vkládáno null.
+        /// Slouží např. k obnově focusu při vrácení, nebo k určení, odkud přešel focus do určitého nového prvku.
+        /// </summary>
+        IInteractiveItem FocusedItemPrevious { get; set; }
+        /// <summary>
+        /// Zajistí přechod focusu od aktuálního prvku (pokud je) do daného prvku.
+        /// </summary>
+        /// <param name="focusedItem"></param>
+        void SetFocusToItem(IInteractiveItem focusedItem);
     }
     /// <summary>
     /// Interface, který umožní child prvku číst a měnit rozměry některého svého hostitele.
@@ -418,6 +444,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek může dostávat klávesnicové události.
         /// </summary>
         public bool KeyboardInput { get { return this.GetBitValue((uint)Bit.KeyboardInput); } set { this.SetBitValue((uint)Bit.KeyboardInput, value); } }
+        /// <summary>
+        /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
+        /// </summary>
+        public bool TabStop { get { return this.GetBitValue((uint)Bit.TabStop); } set { this.SetBitValue((uint)Bit.TabStop, value); } }
 
         /// <summary>
         /// Tento prvek je aktuálně cílem v procesu Drag and Move.
@@ -474,15 +504,17 @@ namespace Asol.Tools.WorkScheduler.Components
             DrawDragMoveGhostStandard = 0x00020000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="KeyboardInput"/></summary>
             KeyboardInput = 0x00040000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="TabStop"/></summary>
+            TabStop = 0x00080000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="ActiveTarget"/></summary>
             ActiveTarget = 0x00100000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="OnPhysicalBounds"/></summary>
             OnPhysicalBounds = 0x00200000,
 
             /// <summary>
-            /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti.
+            /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti. Má nastaveno TabStop.
             /// </summary>
-            DefaultMouseProperties = Interactive | Visible | Enabled | MouseActive | MouseClick | MouseDoubleClick | MouseLongClick,
+            DefaultMouseProperties = Interactive | Visible | Enabled | MouseActive | MouseClick | MouseDoubleClick | MouseLongClick | TabStop,
             /// <summary>
             /// Defaultní sada pro běžný prvek běžně aktivní na myš, včetně MouseMoveOver. Nemá žádné Drag vlastnosti.
             /// </summary>
@@ -1666,9 +1698,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         KeyboardFocusEnter,
         /// <summary>
-        /// Klávesnicová akce: PreviewKeyDown
+        /// Klávesnicová akce: KeyPreview
+        /// Je volána pro všechny klávesy, před akcí KeyDown
         /// </summary>
-        KeyboardPreviewKeyDown,
+        KeyboardKeyPreview,
         /// <summary>
         /// Klávesnicová akce: KeyDown
         /// </summary>
