@@ -292,6 +292,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <returns></returns>
             internal static CharacterPositionInfo[] CreateArray(string text, RectangleF[] charPositions)
             {
+                if (charPositions == null) return null;
                 char[] items = text.ToCharArray();
                 int length = (items.Length < charPositions.Length ? items.Length : charPositions.Length);
                 CharacterPositionInfo[] result = new CharacterPositionInfo[length];

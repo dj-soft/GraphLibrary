@@ -18,16 +18,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="currentItem">Výchozí prvek pro hledání. Tento prvek nedostane focus, dostane jej některý z jeho sousedů (=sousední prvky Childs od Parenta tohoto daného prvku).</param>
         /// <param name="direction">Směr kroku: <see cref="Direction.Positive"/> = "doprava" = na následující prvek (klávesou Tab); <see cref="Direction.Negative"/> = "doleva" = na předešlý prvek (klávesou Ctrl+Tab) </param>
         /// <param name="nextItem">Out nalezený sousední prvek</param>
-        /// <param name="onlyVisible">true = Akceptovat pouze Visible prvky</param>
-        /// <param name="onlyTabStop">true = Akceptovat pouze TabStop prvky</param>
+        /// <param name="requirements">Požadavky na prohledávané prvky</param>
         /// <returns>true = nalezeno / false = nenalezeno</returns>
-        internal static bool TryGetNextFocusItem(IInteractiveItem currentItem, Direction direction, out IInteractiveItem nextItem, bool onlyVisible = true, bool onlyTabStop = true)
+        internal static bool TryGetNextFocusItem(IInteractiveItem currentItem, Direction direction, out IInteractiveItem nextItem, InteractiveFocusStateFlag requirements = InteractiveFocusStateFlag.Default)
         {
             nextItem = null;
             if (currentItem == null) return false;                                                      // Nezadán prvek
             if (!(direction == Direction.Positive || direction == Direction.Negative)) return false;    // Nezadán platný směr
 
-            List<IInteractiveItem> childList = GetChildsSorted(currentItem.Parent, direction, onlyVisible, onlyTabStop, currentItem);
+            List<IInteractiveItem> childList = GetChildsSorted(currentItem.Parent, direction, requirements, currentItem);
             if (childList == null) return false;                                                        // Jeho Parent neobsahuje žádné prvky
 
             int index = childList.FindIndex(i => Object.ReferenceEquals(currentItem, i));
@@ -38,13 +37,13 @@ namespace Asol.Tools.WorkScheduler.Components
             for (int i = (index + 1); i < count; i++)
             {
                 // Pokud daný sousední prvek je sám vhodný, anebo ve svých Childs obsahuje vhodný prvek, pak jej dáme do out nextItem a vrátíme true:
-                if (TryGetOuterFocusItem(childList[i], direction, out nextItem, onlyVisible, onlyTabStop)) return true;
+                if (TryGetOuterFocusItem(childList[i], direction, out nextItem, requirements)) return true;
             }
 
             // V mé úrovni ani v mých Child prvcích jsme nenašli vhodný prvek. Zpracujeme obdobně vyšší úroveň (=sousedy mého parenta):
             if (!(currentItem.Parent is IInteractiveItem)) return false;                                // Prvek nemá interaktivního Parenta = náš parent je fyzický Control.
 
-            return TryGetNextFocusItem((currentItem.Parent as IInteractiveItem), direction, out nextItem, onlyVisible, onlyTabStop);
+            return TryGetNextFocusItem((currentItem.Parent as IInteractiveItem), direction, out nextItem, requirements);
         }
         /// <summary>
         /// Metoda zkusí najít první konkrétní prvek v rámci daného interaktivního parenta, do kterého lze umístit klávesový Focus.
@@ -56,10 +55,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vstupující prvek může být celý Control (=Host), nebo jakýkoli container nebo konkrétní prvek.</param>
         /// <param name="direction">Směr hledání: <see cref="Direction.Positive"/>: hledá první vhodný prvek (od začátku); <see cref="Direction.Negative"/>: hledá poslední vhodný prvek (od konce)</param>
         /// <param name="foundItem">Out: nalezený prvek (this nebo některý z this.Childs[.Childs[...]])</param>
-        /// <param name="onlyVisible">true = Akceptovat pouze Visible prvky</param>
-        /// <param name="onlyTabStop">true = Akceptovat pouze TabStop prvky</param>
+        /// <param name="requirements">Požadavky na prohledávané prvky</param>
         /// <returns>true = nalezeno / false = nenalezeno</returns>
-        internal static bool TryGetOuterFocusItem(IInteractiveParent parent, Direction direction, out IInteractiveItem foundItem, bool onlyVisible = true, bool onlyTabStop = true)
+        internal static bool TryGetOuterFocusItem(IInteractiveParent parent, Direction direction, out IInteractiveItem foundItem, InteractiveFocusStateFlag requirements = InteractiveFocusStateFlag.Default)
         {
             foundItem = null;
             if (parent == null) return false;                                                             // Null nebrat
@@ -68,7 +66,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (parent is IInteractiveItem)
             {
                 IInteractiveItem item = parent as IInteractiveItem;
-                if (IsItemValid(item, onlyVisible, onlyTabStop) && item.Is.KeyboardInput)
+                if (IsItemValid(item, requirements) && item.Is.KeyboardInput)
                 {
                     foundItem = item;
                     return true;
@@ -76,12 +74,12 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             // Získáme seznam Childs prvky daného prvku, ve správném pořadí, a najdeme první vhodný prvek = cyklem (skrz Childs) a rekurzí (do téže metody):
-            List<IInteractiveItem> childList = GetChildsSorted(parent, direction, onlyVisible, onlyTabStop, null);
+            List<IInteractiveItem> childList = GetChildsSorted(parent, direction, requirements, null);
             if (childList == null) return false;
 
             foreach (IInteractiveItem childItem in childList)
             {
-                if (TryGetOuterFocusItem(childItem, direction, out foundItem, onlyVisible, onlyTabStop)) return true;  // childItem je IInteractiveItem, a protože IInteractiveItem je potomkem IInteractiveParent, vyvoláme přímou rekurzi...
+                if (TryGetOuterFocusItem(childItem, direction, out foundItem, requirements)) return true;  // childItem je IInteractiveItem, a protože IInteractiveItem je potomkem IInteractiveParent, vyvoláme přímou rekurzi...
             }
 
             return false;
@@ -91,8 +89,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Seznam setřídí podle <see cref="IInteractiveItem.TabOrder"/> vzestupně (pro <paramref name="direction"/> == <see cref="Direction.Positive"/>) 
         /// nebo sestupně (pro <paramref name="direction"/> == <see cref="Direction.Negative"/>).
         /// <para/>
-        /// Seznam obsahuje pouze ty prvky, které jsou viditelné (nebo bez ohledu na viditelnost, podle <paramref name="onlyVisible"/>) 
-        /// a které mají TabStop = true (nebo bez ohledu na TabStop, podle <paramref name="onlyTabStop"/>).
+        /// Seznam obsahuje pouze ty prvky, které jsou viditelné, které mají Enabled = true a které mají TabStop = true, vše podle požadavků v parametru <paramref name="requirements"/>.
         /// Seznam může volitelně obsahovat i explicitně zadaný Child prvek <paramref name="includeItem"/> bez ohledu na jeho Visible a TabStop (tedy pokud tento prvek je obsažen v seznamu Childs).
         /// Tato vlastnost slouží k zařazení určitého prvku pro hledání jeho Next prvků.
         /// <para/>
@@ -104,17 +101,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="parentItem">Parent, jehož <see cref="IInteractiveParent.Childs"/> prvky budeme zpracovávat</param>
         /// <param name="direction">Směr třídění: <see cref="Direction.Positive"/> = podle TabOrder vzestupně; <see cref="Direction.Negative"/> = podle TabOrder sestupně</param>
-        /// <param name="onlyVisible">true = Akceptovat pouze Visible prvky</param>
-        /// <param name="onlyTabStop">true = Akceptovat pouze TabStop prvky</param>
+        /// <param name="requirements">Požadavky na prohledávané prvky</param>
         /// <param name="includeItem">Prvek, který chceme do seznamu přidat bezpodmínečně (pokud v <see cref="IInteractiveParent.Childs"/> bude přítomen)</param>
         /// <returns></returns>
-        private static List<IInteractiveItem> GetChildsSorted(IInteractiveParent parentItem, Direction direction, bool onlyVisible = true, bool onlyTabStop = true, IInteractiveItem includeItem = null)
+        private static List<IInteractiveItem> GetChildsSorted(IInteractiveParent parentItem, Direction direction, InteractiveFocusStateFlag requirements = InteractiveFocusStateFlag.Default, IInteractiveItem includeItem = null)
         {
             if (parentItem == null) return null;
             var childs = parentItem.Childs;
             if (childs == null) return null;
 
-            List<IInteractiveItem> childList = childs.Where(i => IsItemValid(i, onlyVisible, onlyTabStop, includeItem)).ToList();
+            List<IInteractiveItem> childList = childs.Where(i => IsItemValid(i, requirements, includeItem)).ToList();
             if (childList.Count > 1)
             {
                 switch (direction)
@@ -138,17 +134,44 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Jinak vrátí true = prvek Item vyhovuje.
         /// </summary>
         /// <param name="item">Testovaný prvek</param>
-        /// <param name="onlyVisible">true = Akceptovat pouze Visible prvky</param>
-        /// <param name="onlyTabStop">true = Akceptovat pouze TabStop prvky</param>
+        /// <param name="requirements">Požadavky na prohledávané prvky</param>
         /// <param name="includeItem">Prvek, který chceme do seznamu přidat bezpodmínečně (pokud v <see cref="IInteractiveParent.Childs"/> bude přítomen)</param>
         /// <returns></returns>
-        private static bool IsItemValid(IInteractiveItem item, bool onlyVisible, bool onlyTabStop, IInteractiveItem includeItem = null)
+        private static bool IsItemValid(IInteractiveItem item, InteractiveFocusStateFlag requirements = InteractiveFocusStateFlag.Default, IInteractiveItem includeItem = null)
         {
             if (item == null) return false;
             if (includeItem != null && Object.ReferenceEquals(item, includeItem)) return true;
-            if (onlyVisible && !item.Is.Visible) return false;
-            if (onlyTabStop && !item.Is.TabStop) return false;
+            if (requirements.HasFlag(InteractiveFocusStateFlag.Visible) && !item.Is.Visible) return false;        // Pokud prvek musí být Visible, a tento není, pak vrátím false
+            if (requirements.HasFlag(InteractiveFocusStateFlag.Enabled) && !item.Is.Enabled) return false;        // Pokud prvek musí být Enabled, a tento není, pak vrátím false
+            if (requirements.HasFlag(InteractiveFocusStateFlag.TabStop) && !item.Is.TabStop) return false;        // Pokud prvek musí být TabStop, a tento není, pak vrátím false
             return true;
         }
+    }
+    /// <summary>
+    /// Požadavky na vyhledání prvku podle jeho vlastností pro předávání focusu
+    /// </summary>
+    [Flags]
+    public enum InteractiveFocusStateFlag
+    {
+        /// <summary>
+        /// Nemáme požadavky, akceptujeme jakýkoli prvek
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Prvek musí být Visible
+        /// </summary>
+        Visible = 0x01,
+        /// <summary>
+        /// Prvek musí být Enabled
+        /// </summary>
+        Enabled = 0x02,
+        /// <summary>
+        /// Prvek musí být TabStop
+        /// </summary>
+        TabStop = 0x04,
+        /// <summary>
+        /// Default = všechny standardní požadavky = <see cref="Visible"/> a <see cref="Enabled"/> a <see cref="TabStop"/>
+        /// </summary>
+        Default = Visible | Enabled | TabStop
     }
 }

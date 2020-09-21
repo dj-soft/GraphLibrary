@@ -104,7 +104,7 @@ Souřadnice prvku: {currentX}/{currentY}
                     if (nx == 0) item.LabelMain.FontModifier.Bold = true;
                     if (nx == 1) item.LabelMain.FontModifier.Italic = true;
                     if (nx == 2) item.LabelMain.FontModifier.RelativeSize = 80;
-                    if (nx == lastX) item.Enabled = false;
+                    if (nx == 5) item.Enabled = false;
 
                     if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
                         item.OverlayText = overlays[rand.Next(overlays.Length)];

@@ -158,7 +158,9 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #region Obsluha override metod (z WinForm.Control) pro Focus a Keyboard
         /// <summary>
-        /// Focus vstupuje do controlu
+        /// Řízení vstupuje do controlu.
+        /// Tato událost nastává pouze při příchodu z jiného Controlu ve stejném Formu. Nenastává při přepínání oken, pokud this okno má aktivní stále stejný (=this) Control.
+        /// Na rozdíl od toho událost GotFocus() nastává i při návratu Focusu do tohoto Controlu po přepnutí z jiné aplikace
         /// </summary>
         /// <param name="e"></param>
         protected override void OnEnter(EventArgs e)
@@ -173,19 +175,37 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _OnEnter(EventArgs e)
         {
             bool runFinal = false;
-            if (this._FocusedItemPrevious != null)
-            {   // Zajistí návrat Focusu do prvku, který měl Focus při Leave
+            IInteractiveItem item = _OnEnterSearchFirstItem();
+            if (item != null)
+            {   // Zajistí umístění Focusu do prvku, který měl Focus při Leave nebo který je první/poslední v pořadí TabIndex:
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
                 {
                     this._InteractiveDrawInit(null);
-                    this._ItemKeyboardExchange(null, this._FocusedItemPrevious, false);
+                    this._ItemKeyboardExchange(null, item, false);
                     runFinal = true;
                 }
             }
             return runFinal;
         }
+        private IInteractiveItem _OnEnterSearchFirstItem()
+        {
+            // Pokud vstupujeme stiskem myši, pak vrátíme Last prvek, ale myš si může najít svůj prvek (na který klikla) a ten si pak aktivuje:
+            bool isMouse = (Control.MouseButtons != MouseButtons.None);
+            if (isMouse && _FocusedItemPrevious != null) return _FocusedItemPrevious;
+
+            // Vstupujeme bez stisknuté myši => najdeme první nebo poslední (podle klávesy Shift) vhodný prvek s TabStop = true, a ten vrátíme:
+            bool isShift = (Control.ModifierKeys == Keys.Shift);
+            Direction direction = (isShift ? Direction.Negative : Direction.Positive);
+            IInteractiveItem nextFocusItem;
+            if (InteractiveFocusManager.TryGetOuterFocusItem(this, direction, out nextFocusItem)) return nextFocusItem;
+
+            // Nouzová cesta = aktivujeme posledně aktivní prvek:
+            return _FocusedItemPrevious;
+        }
         /// <summary>
-        /// Focus vstupuje do controlu
+        /// Focus vstupuje do controlu.
+        /// Tato událost nastává při příchodu z jiného Controlu téhož okna, po doběhnutí OnEnter(); ale i při návratu Focusu do tohoto Controlu po přepnutí z jiné aplikace
+        /// Při návratu řízení z jiného okna tedy proběhne pouze OnGotFocus(), bez předchozího OnEnter().
         /// </summary>
         /// <param name="e"></param>
         protected override void OnGotFocus(EventArgs e)
@@ -295,14 +315,11 @@ namespace Asol.Tools.WorkScheduler.Components
             IInteractiveItem item = _FocusedCurrentTarget;
             if (item != null)
             {
-                if (this._FocusedItemExists)
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
                 {
-                    using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardKeyDown, null, e, null);
-                        runFinal = true;
-                    }
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardKeyDown, null, e, null);
+                    runFinal = true;
                 }
             }
             return runFinal;
@@ -442,7 +459,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private IInteractiveItem _FocusedItemKeyTarget;
         /// <summary>
-        /// Do tohoto prvku půjdou klávesové eventy
+        /// Do tohoto prvku půjdou klávesové eventy. Jde o prvek <see cref="_FocusedItemKeyTarget"/> (pokud je naplněn) anebo <see cref="_FocusedItem"/>. Může být NULL.
         /// </summary>
         private IInteractiveItem _FocusedCurrentTarget { get { return (_FocusedItemKeyTarget ?? _FocusedItem); } }
         /// <summary>
