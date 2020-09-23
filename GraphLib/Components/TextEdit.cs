@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Windows.Forms;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,24 +26,95 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Myš
+        protected override void AfterStateChangedMouseLeftDown(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseLeftDown(e);
+            if (CurrentKeyModifierIsShift)
+                AfterMouseDownShift(e);
+            else if (CurrentKeyModifierIsControl)
+                AfterMouseDownControl(e);
+            else
+                AfterMouseDownNone(e);
+        }
+        protected override void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseOver(e);
+            if (CurrentMouseButtonIsLeft)
+            {
+
+            }
+        }
+        protected override void AfterStateChangedDragFrameBegin(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedDragFrameBegin(e);
+        }
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftClick(e);
-            this.CursorIndex = null;                       // Po MouseClick dojde k překreslení TextBoxu, a v metodě Draw se vyvolá FindCursorBounds();
-            this.MouseClickPoint = e.MouseAbsolutePoint;   //  tam se detekuje že není známá pozice kurzoru (CursorIndex = null), ale je známý bod myši (MouseClickPoint)...
+            // this.CursorIndex = null;                       // Po MouseClick dojde k překreslení TextBoxu, a v metodě Draw se vyvolá FindCursorBounds();
+            // this.MouseClickPoint = e.MouseAbsolutePoint;   //  tam se detekuje že není známá pozice kurzoru (CursorIndex = null), ale je známý bod myši (MouseClickPoint)...
         }
         #endregion
         #region Klávesnice
         protected override void AfterStateChangedKeyPreview(GInteractiveChangeStateArgs e)
         {
+            if (IsCursorMoveKey(e.KeyboardPreviewArgs))
+                e.KeyboardPreviewArgs.IsInputKey = true;
             base.AfterStateChangedKeyPreview(e);
         }
         protected override void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedKeyPress(e);
-            if (e.KeyboardEventArgs.KeyCode == System.Windows.Forms.Keys.Tab)
+            if (e.KeyboardPressEventArgs.KeyChar == 0x0d)
+                this.Host?.SetFocusToNextItem(Data.Direction.Positive);
+        }
+        #endregion
+        #region Interaktivita - pohyb kurzoru (klávesy Home, End, Kurzor) a označování
+        /// <summary>
+        /// Stisknutí myši bez modifikátoru = zrušení Selected a nastavení pozice kurzoru
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterMouseDownNone(GInteractiveChangeStateArgs e)
+        {   // Pozor, stav textboxu je: HasFocus = true, ale dosud nemusí být v tomto stavu vykreslen (=při prvním příchodu Focusu), takže nelze použít pole this.CharacterBounds = pole jednotlivých znaků a jejich pozic!!!
+            this.CursorIndex = null;                       // Po MouseClick dojde k překreslení TextBoxu, a v metodě Draw se vyvolá FindCursorBounds();
+            this.MouseClickPoint = e.MouseAbsolutePoint;   //  tam se detekuje že není známá pozice kurzoru (CursorIndex = null), ale je známý bod myši (MouseClickPoint)...
+        }
+        /// <summary>
+        /// Stisknutí myši s modifikátorem Shift = Rozšíření stavu Selected od Begin nebo od pozice kurzoru do pozice myši
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterMouseDownShift(GInteractiveChangeStateArgs e)
+        {   // Pozor, stav textboxu je: HasFocus = true, ale dosud nemusí být v tomto stavu vykreslen (=při prvním příchodu Focusu), takže nelze použít pole this.CharacterBounds = pole jednotlivých znaků a jejich pozic!!!
+
+        }
+        /// <summary>
+        /// Stisknutí myši s modifikátorem Control = Označení celého slova pod kurzorem
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterMouseDownControl(GInteractiveChangeStateArgs e)
+        {   // Pozor, stav textboxu je: HasFocus = true, ale dosud nemusí být v tomto stavu vykreslen (=při prvním příchodu Focusu), takže nelze použít pole this.CharacterBounds = pole jednotlivých znaků a jejich pozic!!!
+
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daná klávesová kombinace bude interpretována jako nějaký pohyb kurzoru (samotný pohyb / označování se shiftem)
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected virtual bool IsCursorMoveKey(PreviewKeyDownEventArgs args)
+        {
+            switch (args.KeyCode)                // KeyCode obsahuje čistou klávesu = bez modifikátoru (bez Ctrl, Shift, Alt)
+            {
+                case Keys.Home:
+                case Keys.End:
+                case Keys.Left:
+                case Keys.Right:
+                case Keys.Up:
+                case Keys.Down:
+                    return true;
+            }
+            if (args.KeyData.HasFlag(Keys.Shift))
             { }
-            // this.Parent
+            return false;
         }
         #endregion
         #region Vykreslení obsahu - základní
@@ -57,11 +129,12 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle innerBounds = this.GetInnerBounds(absoluteBounds);
             GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode, this.HasFocus, this.InteractiveState, this);
-            this.DrawBackground(drawArgs);                  // Background
-            this.DrawOverlay(drawArgs, OverlayBackground);  // Grafika nad Backgroundem
-            this.DrawText(drawArgs);                        // Text
-            this.DrawOverlay(drawArgs, OverlayText);        // Grafika nad Textem
-            this.DrawBorder(drawArgs);         // Rámeček
+            this.DetectOverlayBounds(drawArgs, OverlayText);    // Nastaví OverlayBounds a modifikuje TextBounds
+            this.DrawBackground(drawArgs);                      // Background
+            this.DrawOverlay(drawArgs, OverlayBackground);      // Grafika nad Backgroundem
+            this.DrawText(drawArgs);                            // Text
+            this.DrawOverlay(drawArgs, OverlayText);            // Grafika nad Textem
+            this.DrawBorder(drawArgs);                          // Rámeček
         }
         /// <summary>
         /// Vrací souřadnice vnitřního prostoru po odečtení prostoru pro Border (0-1-2 pixely)
@@ -80,6 +153,18 @@ namespace Asol.Tools.WorkScheduler.Components
             return bounds;
         }
         /// <summary>
+        /// Metoda určí prostor pro vykreslení Overlay, a případně modifikuje prostor pro vlastní text zmenšený o prostor Overlay.
+        /// Pokud Overlay není přítomen nebo není aktivní, pak vrátí null.
+        /// </summary>
+        /// <param name="drawArgs">Argumenty</param>
+        /// <param name="overlay">Objekt Overlay (prakticky pouze <see cref="OverlayText"/>)</param>
+        /// <returns></returns>
+        protected void DetectOverlayBounds(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
+        {
+            if (overlay == null) return;
+            overlay.DetectOverlayBounds(drawArgs);
+        }
+        /// <summary>
         /// Vykreslí pozadí
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
@@ -91,7 +176,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí Overlay
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
-        /// <param name="overlay"></param>
+        /// <param name="overlay">Objekt Overlay (<see cref="OverlayBackground"/> nebo <see cref="OverlayText"/>)</param>
         protected virtual void DrawOverlay(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
         {
             overlay?.DrawOverlay(drawArgs);
@@ -124,17 +209,24 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawText(GTextEditDrawArgs drawArgs)
         {
             string text = this.Text ?? "";
-            StringFormatFlags stringFormat = StringFormatFlags.NoWrap | StringFormatFlags.LineLimit;
-            if (!this.HasFocus)
+            Rectangle textBounds = drawArgs.TextBounds;
+            if (text.Length > textBounds.Width) text = text.Substring(0, textBounds.Width);
+            using (GPainter.GraphicsClip(drawArgs.Graphics, textBounds))
             {
-                // Bez Focusu = jen vypíšu text:
-                GPainter.DrawString(drawArgs.Graphics, text, this.CurrentFont, drawArgs.InnerBounds, this.Alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
-                return;
-            }
+                textBounds.Width = 2048;
+                StringFormatFlags stringFormat = StringFormatFlags.NoWrap | StringFormatFlags.LineLimit;
+                ContentAlignment alignment = this.Alignment;
+                if (!this.HasFocus)
+                {
+                    // Bez Focusu = jen vypíšu text:
+                    GPainter.DrawString(drawArgs.Graphics, text, this.CurrentFont, textBounds, alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
+                    return;
+                }
 
-            if (text.Length == 0) text = " ";              // Kvůli souřadnicím
-            RectangleF[] charPositions = GPainter.DrawStringMeasureChars(drawArgs.Graphics, text, this.CurrentFont, drawArgs.InnerBounds, this.Alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
-            this.CharacterBounds = CharacterPositionInfo.CreateArray(text, charPositions);
+                if (text.Length == 0) text = " ";              // Kvůli souřadnicím
+                RectangleF[] charPositions = GPainter.DrawStringMeasureChars(drawArgs.Graphics, text, this.CurrentFont, textBounds, alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
+                this.CharacterBounds = CharacterPositionInfo.CreateArray(text, charPositions);
+            }
             this.CursorBounds = this.FindCursorBounds();
 
             if (this.CursorBounds.HasValue)
@@ -166,6 +258,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
         {
+            this.CursorIndex = 0;
             base.AfterStateChangedFocusEnter(e);
         }
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
@@ -360,7 +453,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 Color backColor;
                 var state = this.InteractiveState;
-                if (state.HasFlag(GInteractiveState.Disabled)) backColor = BackColorDisabled.Value;
+                bool isDisabled = (!this.Enabled || this.ReadOnly);
+                if (isDisabled) backColor = BackColorDisabled.Value;
                 else if (this.HasFocus) backColor = BackColorFocused.Value;
                 else if (state.HasFlag(GInteractiveState.FlagOver)) backColor = BackColorMouseOver.Value;
                 else backColor = BackColor.Value;
@@ -421,7 +515,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 Color textColor;
                 var state = this.InteractiveState;
-                if (state.HasFlag(GInteractiveState.Disabled)) textColor = TextColorDisabled.Value;
+                bool isDisabled = (!this.Enabled || this.ReadOnly);
+                if (isDisabled) textColor = TextColorDisabled.Value;
                 else if (this.HasFocus) textColor = TextColorFocused.Value;
                 else if (state.HasFlag(GInteractiveState.FlagOver)) textColor = TextColorMouseOver.Value;
                 else textColor = TextColor.Value;
@@ -526,7 +621,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 var state = this.InteractiveState;
                 Color borderColor;
-                if (state.HasFlag(GInteractiveState.Disabled)) borderColor = BorderColorDisabled.Value;
+                bool isDisabled = (!this.Enabled || this.ReadOnly);
+                if (isDisabled) borderColor = BorderColorDisabled.Value;
                 else if (this.HasFocus) borderColor = BorderColorFocused.Value;
                 else if (state.HasFlag(GInteractiveState.FlagOver)) borderColor = BorderColorMouseOver.Value;
                 else borderColor = BorderColor.Value;
@@ -572,10 +668,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public ITextEditOverlay OverlayText { get; set; }
         /// <summary>
-        /// Typ vztahu - pro správné vykreslování (linka podtržení)
-        /// </summary>
-        public TextRelationType RelationType { get; set; }
-        /// <summary>
         /// Obsahuje true pro prvek, jehož hodnota má být zadaná, nikoli Empty.
         /// Pak se Border vykresluje barvou 
         /// </summary>
@@ -606,6 +698,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AbsoluteBounds = absoluteBounds;
             this.AbsoluteVisibleBounds = absoluteVisibleBounds;
             this.InnerBounds = innerBounds;
+            this.TextBounds = innerBounds;
             this.DrawMode = drawMode;
             this.HasFocus = hasFocus;
             this.InteractiveState = interactiveState;
@@ -628,9 +721,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Rectangle AbsoluteVisibleBounds { get; private set; }
         /// <summary>
-        /// Vnitřní souřadnice textum, bez rámečku
+        /// Vnitřní souřadnice pro kreslení pozadí textboxu = pod text, i pod overlay, ale bez rámečku.
         /// </summary>
         public Rectangle InnerBounds { get; private set; }
+        /// <summary>
+        /// Vnitřní souřadnice pro kreslení textu, bez rámečku.
+        /// Pokud overlay typu <see cref="GTextEdit.OverlayText"/> potřebuje, může tento prostor modifikovat = zmenšit tak, aby text nezasahoval např. do ikony Overlay.
+        /// </summary>
+        public Rectangle TextBounds { get; private set; }
+        /// <summary>
+        /// Prostor pro výhradní kreslení Overlay. Výchozí hodnota je null. Je plně ve správě objektu <see cref="GTextEdit.OverlayText"/>.
+        /// </summary>
+        public Rectangle? OverlayBounds { get; private set; }
         /// <summary>
         /// Režim kreslení
         /// </summary>
@@ -647,26 +749,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Textový objekt
         /// </summary>
         public GTextEdit TextEdit { get; private set; }
-    }
-    #endregion
-    #region enum TextRelationType
-    /// <summary>
-    /// Typ vztahu - pro správné vykreslování (linka podtržení)
-    /// </summary>
-    public enum TextRelationType
-    {
         /// <summary>
-        /// Není vztah
+        /// Vloží dané souřadnice <paramref name="overlayBounds"/> do <see cref="OverlayBounds"/>,
+        /// a pokud bude zadán parametr <paramref name="textBounds"/> (tj. nebude null), bude vložen do <see cref="InnerBounds"/>.
+        /// Používá se typicky z metody <see cref="ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs)"/>.
         /// </summary>
-        None = 0,
-        /// <summary>
-        /// Vztah na záznam (modrý)
-        /// </summary>
-        ToRecord,
-        /// <summary>
-        /// Vztah na dokument (žlutý)
-        /// </summary>
-        ToDocument
+        /// <param name="overlayBounds"></param>
+        /// <param name="textBounds"></param>
+        public void SetOverlayBounds(Rectangle? overlayBounds, Rectangle? textBounds = null)
+        {
+            this.OverlayBounds = overlayBounds;
+            if (textBounds.HasValue) this.TextBounds = textBounds.Value;
+        }
     }
     #endregion
 }

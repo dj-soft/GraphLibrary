@@ -192,6 +192,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="focusedItem"></param>
         void SetFocusToItem(IInteractiveItem focusedItem);
+        /// <summary>
+        /// Zajistí zobrazení daného prvku v AutoScroll containeru
+        /// </summary>
+        /// <param name="item"></param>
+        void SetAutoScrollContainerToItem(IInteractiveItem item);
     }
     /// <summary>
     /// Interface, který umožní child prvku číst a měnit rozměry některého svého hostitele.
@@ -289,7 +294,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public Action<bool> SetVisible;
 
         /// <summary>
-        /// Enabled?
+        /// Je tento prvek Enabled?
+        /// Do prvku, který NENÍ Enabled, nelze vstoupit Focusem (ani provést DoubleClick ani na ikoně / overlay).
         /// </summary>
         public bool Enabled { get { return this.GetBitValue((uint)Bit.Enabled, GetEnabled); } set { this.SetBitValue((uint)Bit.Enabled, value, SetEnabled); } }
         /// <summary>
@@ -300,6 +306,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Akce, která setuje hodnotu <see cref="Enabled"/> nad rámec základní třídy
         /// </summary>
         public Action<bool> SetEnabled;
+
+        /// <summary>
+        /// Je tento prvek ReadOnly?
+        /// Do prvku, který JE ReadOnly, lze vstoupit Focusem, lze provést DoubleClick včetně ikony / overlay.
+        /// Ale nelze prvek editovat, a má vzhled prvku který není Enabled (=typicky má šedou barvu a nereaguje vizuálně na myš).
+        /// </summary>
+        public bool ReadOnly { get { return this.GetBitValue((uint)Bit.ReadOnly, GetReadOnly); } set { this.SetBitValue((uint)Bit.ReadOnly, value, SetReadOnly); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="ReadOnly"/>
+        /// </summary>
+        public Func<bool, bool> GetReadOnly;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="ReadOnly"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetReadOnly;
 
         /// <summary>
         /// OnPhysicalBounds? 
@@ -472,44 +493,46 @@ namespace Asol.Tools.WorkScheduler.Components
             Visible = 0x00000002,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Enabled"/></summary>
             Enabled = 0x00000004,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Checked"/></summary>
-            Checked = 0x00000008,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Selectable"/></summary>
-            Selectable = 0x00000010,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectParent"/></summary>
-            SelectParent = 0x00000020,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HoldMouse"/></summary>
-            HoldMouse = 0x00000040,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SuppressEvents"/></summary>
-            SuppressEvents = 0x00000080,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseActive"/></summary>
-            MouseActive = 0x00000100,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseMoveOver"/></summary>
-            MouseMoveOver = 0x00000200,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseClick"/></summary>
-            MouseClick = 0x00000400,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDoubleClick"/></summary>
-            MouseDoubleClick = 0x00000800,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseLongClick"/></summary>
-            MouseLongClick = 0x00001000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragMove"/></summary>
-            MouseDragMove = 0x00002000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragResizeX"/></summary>
-            MouseDragResizeX = 0x00004000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragResizeY"/></summary>
-            MouseDragResizeY = 0x00008000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="DrawDragMoveGhostInteractive"/></summary>
-            DrawDragMoveGhostInteractive = 0x00010000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="DrawDragMoveGhostStandard"/></summary>
-            DrawDragMoveGhostStandard = 0x00020000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="ReadOnly"/></summary>
+            ReadOnly = 0x00000008,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="KeyboardInput"/></summary>
-            KeyboardInput = 0x00040000,
+            KeyboardInput = 0x00000010,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="TabStop"/></summary>
-            TabStop = 0x00080000,
+            TabStop = 0x00000020,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Selectable"/></summary>
+            Selectable = 0x00000040,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectParent"/></summary>
+            SelectParent = 0x00000080,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="Checked"/></summary>
+            Checked = 0x00000100,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HoldMouse"/></summary>
+            HoldMouse = 0x00000200,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseActive"/></summary>
+            MouseActive = 0x00001000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseMoveOver"/></summary>
+            MouseMoveOver = 0x00002000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseClick"/></summary>
+            MouseClick = 0x00004000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDoubleClick"/></summary>
+            MouseDoubleClick = 0x00008000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseLongClick"/></summary>
+            MouseLongClick = 0x00010000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragMove"/></summary>
+            MouseDragMove = 0x00020000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragResizeX"/></summary>
+            MouseDragResizeX = 0x00040000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseDragResizeY"/></summary>
+            MouseDragResizeY = 0x00080000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="DrawDragMoveGhostInteractive"/></summary>
+            DrawDragMoveGhostInteractive = 0x00100000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="DrawDragMoveGhostStandard"/></summary>
+            DrawDragMoveGhostStandard = 0x00200000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SuppressEvents"/></summary>
+            SuppressEvents = 0x00400000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="ActiveTarget"/></summary>
-            ActiveTarget = 0x00100000,
+            ActiveTarget = 0x00800000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="OnPhysicalBounds"/></summary>
-            OnPhysicalBounds = 0x00200000,
+            OnPhysicalBounds = 0x01000000,
 
             /// <summary>
             /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti. Má nastaveno TabStop.

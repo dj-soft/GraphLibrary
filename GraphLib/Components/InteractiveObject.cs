@@ -531,6 +531,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.ResetFocusChanges();
                     this._HasFocus = true;
                     this.AfterStateChangedFocusEnter(e);
+                    this.SetAutoScrollContainerToThisItem(e);
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.KeyboardKeyPreview:
@@ -568,13 +569,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.AfterStateChangedMouseOver(e);
                     break;
                 case GInteractiveChangeState.LeftDown:
+                    this.AfterStateChangedMouseLeftDown(e);
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftUp:
+                    this.AfterStateChangedMouseLeftUp(e);
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.MouseLeave:
-                    this.Validate(e);
                     this._HasMouse = false;
                     this.AfterStateChangedMouseLeave(e);
                     this.Repaint();
@@ -617,6 +619,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.AfterStateChangedDragFrameDone(e);
                     break;
             }
+        }
+        /// <summary>
+        /// Metoda zajistí, že this prvek bude vidielný v hostieli, pokud ten implementuje AutoScroll
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void SetAutoScrollContainerToThisItem(GInteractiveChangeStateArgs e)
+        {
+            this.IHost?.SetAutoScrollContainerToItem(this);
         }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardFocusEnter"/>
@@ -671,6 +681,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftUp"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedMouseLeftDown(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftDown"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedMouseLeftUp(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.LeftClick"/>
         /// </summary>
@@ -1003,6 +1023,30 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return CompareByTabOrderAsc(b, a);
         }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně není stisknuta žádná modifikační klávesa (Shift, Control, Alt)
+        /// </summary>
+        public static bool CurrentKeyModifierIsNone { get { return (Control.ModifierKeys == Keys.None); } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je stisknuta modifikační klávesa Shift
+        /// </summary>
+        public static bool CurrentKeyModifierIsShift { get { return Control.ModifierKeys.HasFlag(Keys.Shift); } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je stisknuta modifikační klávesa Control
+        /// </summary>
+        public static bool CurrentKeyModifierIsControl { get { return Control.ModifierKeys.HasFlag(Keys.Control); } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je stisknuta modifikační klávesa Alt
+        /// </summary>
+        public static bool CurrentKeyModifierIsAlt { get { return Control.ModifierKeys.HasFlag(Keys.Alt); } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je stisknuto levé (hlavní) tlačítko myši
+        /// </summary>
+        public static bool CurrentMouseButtonIsLeft { get { return Control.MouseButtons.HasFlag(MouseButtons.Left); } }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně je stisknuto pravé (kontextové) tlačítko myši
+        /// </summary>
+        public static bool CurrentMouseButtonIsRight { get { return Control.MouseButtons.HasFlag(MouseButtons.Right); } }
         #endregion
         #endregion
         #region Podpora pro hledání parentů: SearchForParent(), SearchForItem()

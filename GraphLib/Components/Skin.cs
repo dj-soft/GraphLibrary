@@ -1753,7 +1753,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Barva pozadí textboxu ve stavu Active = máme focus
         /// </summary>
-        protected virtual Color DefaultBackColorFocused { get { return Color.FromArgb(255, 255, 245); } }
+        protected virtual Color DefaultBackColorFocused { get { return Color.FromArgb(255, 255, 212); } }
         /// <summary>
         /// Default pro: Barva pozadí textboxu, část SelectedText
         /// </summary>

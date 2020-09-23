@@ -48,7 +48,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int currentY = firstY;
             int lastX = countX - 1;
 
-            int lo = 216;
+            int lo = 224;
             int hi = 240;
             Color[] colors = new Color[]
             {
@@ -104,7 +104,7 @@ Souřadnice prvku: {currentX}/{currentY}
                     if (nx == 0) item.LabelMain.FontModifier.Bold = true;
                     if (nx == 1) item.LabelMain.FontModifier.Italic = true;
                     if (nx == 2) item.LabelMain.FontModifier.RelativeSize = 80;
-                    if (nx == 5) item.Enabled = false;
+                    if (rand.Next(16) <= 2) item.ReadOnly = true;
 
                     if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
                         item.OverlayText = overlays[rand.Next(overlays.Length)];

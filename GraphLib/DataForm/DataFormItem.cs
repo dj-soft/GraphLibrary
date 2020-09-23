@@ -77,9 +77,16 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public bool Visible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
         /// <summary>
-        /// Je tento prvek Enabled
+        /// Je tento prvek Enabled?
+        /// Do prvku, který NENÍ Enabled, nelze vstoupit Focusem (ani provést DoubleClick ani na ikoně / overlay).
         /// </summary>
         public bool Enabled { get { return this.Text1.Enabled; } set { this.LabelMain.Enabled = value; this.Text1.Enabled = value; this.Text2.Enabled = value; } }
+        /// <summary>
+        /// Je tento prvek ReadOnly?
+        /// Do prvku, který JE ReadOnly, lze vstoupit Focusem, lze provést DoubleClick včetně ikony / overlay.
+        /// Ale nelze prvek editovat, a má vzhled prvku který není Enabled (=typicky má šedou barvu a nereaguje vizuálně na myš).
+        /// </summary>
+        public bool ReadOnly { get { return this.Text1.ReadOnly; } set { this.LabelMain.Enabled = value; this.Text1.ReadOnly = value; this.Text2.ReadOnly = value; } }
         /// <summary>
         /// ToolTip text
         /// </summary>

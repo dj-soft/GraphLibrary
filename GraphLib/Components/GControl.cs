@@ -634,6 +634,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool AutoScrollActive { get { return this._AutoScrollActive; } }
         /// <summary>
+        /// Zajistí zobrazení daného prvku v AutoScroll containeru
+        /// </summary>
+        /// <param name="item"></param>
+        public void SetAutoScrollContainerToItem(IInteractiveItem item)
+        {
+            if (item == null || !_AutoScrollActive) return;
+
+            // Zatím věc vyřešíme jen pro jeden AutoScrollSupport v hierarchii, ale není to finální řešení - protože AutoScroll prvků může být více vnořených!!!
+            var bounds = BoundsInfo.CreateForChild(item);
+            this._AutoScrollSupport.ScrollToShow(bounds.CurrentItemAbsoluteBounds);
+        }
+        /// <summary>
         /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary.
         /// Pokud <see cref="AutoScroll"/> = false, pak vrací hodnotu ClientSize.
         /// </summary>
@@ -687,7 +699,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="modifierKeys"></param>
         public void AutoScrollDoScrollBy(Orientation orientation, GInteractiveChangeState change, Keys modifierKeys = Keys.None)
         {
-            if (this._AutoScrollActive) this._AutoScrollSupport.AutoScrollDoScrollBy(orientation, change, modifierKeys);
+            if (this._AutoScrollActive) this._AutoScrollSupport.ScrollBy(orientation, change, modifierKeys);
         }
         #endregion
         #region virtual ChildItems a interface IAutoScrollContainer
@@ -1384,6 +1396,8 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             // Souřadnice prostoru pro virtuální obsah:
+            if (sizeW < 0) sizeW = 0;
+            if (sizeH < 0) sizeH = 0;
             return new Rectangle((visibleV ? rulerThick : 0), (visibleH ? rulerThick : 0), sizeW, sizeH);
         }
         /// <summary>
@@ -1651,7 +1665,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="change"></param>
         /// <param name="modifierKeys"></param>
-        public void AutoScrollDoScrollBy(Orientation orientation, GInteractiveChangeState change, Keys modifierKeys = Keys.None)
+        public void ScrollBy(Orientation orientation, GInteractiveChangeState change, Keys modifierKeys = Keys.None)
         {
             if (!this._AutoScrollActive) return;
             switch (orientation)
@@ -1664,6 +1678,24 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this._ScrollVisibleV)
                         this._ScrollBarV.DoScrollBy(change, modifierKeys);
                     break;
+            }
+        }
+        /// <summary>
+        /// Posune aktuální obsah tak, aby byly fyzicky viditelné dané souřadnice.
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        internal void ScrollToShow(Rectangle absoluteBounds)
+        {
+            if (!this._AutoScrollActive) return;
+            if (this._ScrollVisibleH)
+            {
+                int dx = this.VirtualOrigin.X;
+                this._ScrollBarH.ScrollToShow(new DecimalNRange(absoluteBounds.Left - dx, absoluteBounds.Right - dx), AutoScrollMargin.Width);
+            }
+            if (this._ScrollVisibleV)
+            {
+                int dy = this.VirtualOrigin.Y;
+                this._ScrollBarV.ScrollToShow(new DecimalNRange(absoluteBounds.Top - dy, absoluteBounds.Bottom - dy), AutoScrollMargin.Height);
             }
         }
         #endregion

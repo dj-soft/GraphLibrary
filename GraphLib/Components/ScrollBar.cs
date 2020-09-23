@@ -370,19 +370,59 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isBigStep = (modifierKeys == Keys.Shift);
             decimal relativeChange = (isBigStep ? this.ValueRatioBigChangeCurrent : this.ValueRatioSmallChangeCurrent);
             if (change == GInteractiveChangeState.WheelUp) relativeChange = -relativeChange;
-            this.DoScrollBy(relativeChange);
+            this.DoScrollBy(relativeChange, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Posune aktuální obsah o danou hodnotu.
         /// </summary>
-        /// <param name="relativeChange"></param>
-        public void DoScrollBy(decimal relativeChange)
+        /// <param name="relativeChange">Hodnota změny (kladná / záporná)</param>
+        /// <param name="eventSource">Zdroj změny, předává se do eventhandlerů</param>
+        public void DoScrollBy(decimal relativeChange, EventSourceType? eventSource = null)
         {
             decimal begin = this._Value.Begin.Value + relativeChange;
             DecimalNRange value = DecimalNRange.CreateFromBeginSize(begin, this._Value.Size.Value);
-            this.SetValue(value, ProcessAction.ChangeAll, EventSourceType.InteractiveChanged);
+            if (!eventSource.HasValue) eventSource = EventSourceType.ApplicationCode;
+            this.SetValue(value, ProcessAction.ChangeAll, eventSource.Value);
 
             this.Repaint();
+        }
+        /// <summary>
+        /// Posune aktuální obsah tak, aby byly fyzicky viditelné dané souřadnice.
+        /// Samozřejmě nedokáže změnit velikost viditelného prostoru, takže nepřevezme vstupní velikost z parametru <paramref name="showRange"/> : <see cref="BaseRange{TEdge, TSize}.Size"/> 
+        /// do své vlastní velikosti (ta je dána počtem fyzicky zobrazených pixelů), ale přizpůsobí svoji viditelnou oblast tak, aby byl daný prostor pokud možno celý viditelný.
+        /// </summary>
+        /// <param name="showRange">Oblast, kterou bychom rádi dostali do viditelné oblasti</param>
+        /// <param name="margin">Okraje okolo oblasti, které by měly být pokud možno zobrazeny (nezadáno = 0)</param>
+        /// <param name="eventSource">Zdroj změny, předává se do eventhandlerů</param>
+        public void ScrollToShow(DecimalNRange showRange, Decimal? margin = null, EventSourceType? eventSource = null)
+        {
+            if (((object)showRange) == null) return;
+            if (!showRange.IsFilled) return;
+            decimal size = this._Value.Size.Value;
+            if (size <= 0) return;
+
+            decimal marg = (margin.HasValue ? (margin.Value < 0m ? 0m : (margin.Value > 120m ? 120m : margin.Value)) : 0m);
+            decimal begin = this._Value.Begin.Value;
+            decimal end = this._Value.End.Value;
+            decimal showBegin = showRange.Begin.Value - marg;
+            decimal showEnd = showRange.End.Value + marg;
+
+            if (showEnd > end)
+            {
+                end = showEnd;
+                begin = end - size;
+            }
+            if (showBegin < begin)
+            {
+                begin = showBegin;
+                end = begin + size;
+            }
+            if (begin != this._Value.Begin.Value)
+            {
+                DecimalNRange value = DecimalNRange.CreateFromBeginSize(begin, size);
+                if (!eventSource.HasValue) eventSource = EventSourceType.ApplicationCode;
+                this.SetValue(value, ProcessAction.ChangeAll, eventSource.Value);
+            }
         }
         #endregion
         #region Raise events (ValueChanged, ValueRangeChanged, ScaleChanged, ScaleRangeChanged, AreaChanged, DrawRequest)

@@ -429,6 +429,35 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public IInteractiveItem FocusedItemPrevious { get { return this._FocusedItemPrevious; } }
         /// <summary>
+        /// Zajistí nasměrování Focusu do prvního krajního prvku v daném směru, anebo do jeho nejbližšího Parenta, který pracuje s klávesnicí.
+        /// </summary>
+        /// <param name="direction"></param>
+        public void SetFocusToOuterItem(Direction direction = Direction.Positive)
+        {
+            IInteractiveItem nextItem;
+            if (InteractiveFocusManager.TryGetOuterFocusItem(this, direction, out nextItem))
+                SetFocusToItem(nextItem);
+        }
+        /// <summary>
+        /// Zajistí nasměrování Focusu do následujícího prvku v daném směru, anebo do jeho nejbližšího Parenta, který pracuje s klávesnicí.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="currentItem"></param>
+        public void SetFocusToNextItem(Direction direction = Direction.Positive, IInteractiveItem currentItem = null)
+        {
+            if (currentItem == null) currentItem = FocusedItem;
+            if (currentItem == null)
+            {
+                SetFocusToOuterItem(direction);
+            }
+            else
+            {
+                IInteractiveItem nextItem;
+                if (InteractiveFocusManager.TryGetNextFocusItem(currentItem, direction, out nextItem))
+                    SetFocusToItem(nextItem);
+            }
+        }
+        /// <summary>
         /// Zajistí nasměrování Focusu do daného prvku (anebo do jeho nejbližšího Parenta, který pracuje s klávesnicí).
         /// Pokud je předán prvek null, pak provede LeaveFocus z aktuálního prvku, a focus se vizuálně ztratí (nebude prvek s klávesovým focusem).
         /// </summary>
@@ -480,7 +509,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="forceLeave"></param>
         private void _ItemKeyboardExchange(IInteractiveItem itemPrev, IInteractiveItem itemNext, bool forceLeave)
         {
-            // Klávesový Focus je jiný než Myší focus: Mys volá MouseLeave rekurzivně od nejnižšího prvku k top Parentovi, a MouseEnter volá od Parenta k cílovému prvku.
+            // Klávesový Focus je jiný než Myší focus: Myší Focus volá MouseLeave rekurzivně od nejnižšího prvku k top Parentovi, a MouseEnter volá od Parenta k cílovému prvku.
             // Klávesový je jednoduchý: volá KeyboardFocusLeave pouze do odchozího prvku, a KeyboardFocusEnter co cílového; neřeší se parenti.
 
             // Cílový prvek může být "Non-Keyboard", zkusíme tedy najít jeho nejbližšího parenta, který umožňuje klávesovou aktivitu:
@@ -3922,6 +3951,7 @@ namespace Asol.Tools.WorkScheduler.Components
         IInteractiveItem IInteractiveHost.FocusedItem { get { return this._FocusedItem; } set { this._FocusedItem = value; } }
         IInteractiveItem IInteractiveHost.FocusedItemPrevious { get { return this._FocusedItemPrevious; } set { this._FocusedItemPrevious = value; } }
         void IInteractiveHost.SetFocusToItem(IInteractiveItem focusedItem) { SetFocusToItem(focusedItem); }
+        void IInteractiveHost.SetAutoScrollContainerToItem(IInteractiveItem item) { SetAutoScrollContainerToItem(item); }
         #endregion
     }
     #region class AnimationArgs : Data pro jeden animační krok v jednom objektu

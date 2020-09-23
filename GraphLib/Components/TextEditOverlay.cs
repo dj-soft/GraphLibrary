@@ -13,12 +13,19 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface ITextEditOverlay
     {
         /// <summary>
+        /// Instance overlay zde může modifikovat vnitřní prostor pro text (=zmenšit <see cref="GTextEditDrawArgs.InnerBounds"/>) 
+        /// a deklarovat výhradní prostor pro overlay (do <see cref="GTextEditDrawArgs.OverlayBounds"/>).
+        /// Provede se to voláním metody <see cref="GTextEditDrawArgs.SetOverlayBounds(Rectangle?, Rectangle?)"/>.
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        void DetectOverlayBounds(GTextEditDrawArgs drawArgs);
+        /// <summary>
         /// Vykreslí Overlay
         /// </summary>
         /// <param name="drawArgs"></param>
         void DrawOverlay(GTextEditDrawArgs drawArgs);
         /// <summary>
-        /// Overla zjistí, zda bylo kliknuto na něj (vrátí true).
+        /// Overlay zjistí, zda bylo kliknuto na něj (vrátí true).
         /// </summary>
         /// <param name="textEdit"></param>
         /// <param name="mousePoint"></param>
@@ -58,6 +65,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Barva linky, default = null podle hodnoty <see cref="IsRelationToDocument"/> a definice Skinu
         /// </summary>
         public Color? LineColor { get; set; }
+        /// <summary>
+        /// Detekce prostoru Overlay
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        void ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs drawArgs) { }
         /// <summary>
         /// Vykreslení
         /// </summary>
@@ -108,20 +120,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Image Image { get; set; }
         /// <summary>
+        /// Detekce prostoru Overlay
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        void ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs drawArgs)
+        {
+            int size = drawArgs.InnerBounds.Height - 2;
+            if (size > 24) size = 24;
+            Rectangle overlayBounds = new Rectangle(drawArgs.InnerBounds.Right - size, drawArgs.InnerBounds.Top, size, size);
+            Rectangle textBounds = new Rectangle(drawArgs.InnerBounds.X, drawArgs.InnerBounds.Y, drawArgs.InnerBounds.Width - size, drawArgs.InnerBounds.Height);
+            drawArgs.SetOverlayBounds(overlayBounds, textBounds);
+        }
+        /// <summary>
         /// Vykreslení
         /// </summary>
         /// <param name="drawArgs"></param>
         void ITextEditOverlay.DrawOverlay(GTextEditDrawArgs drawArgs)
         {
-            int size = drawArgs.InnerBounds.Height - 2;
-            if (size > 24) size = 24;
-            Rectangle bounds = new Rectangle(drawArgs.InnerBounds.Right - size, drawArgs.InnerBounds.Top, size, size);
+            if (!drawArgs.OverlayBounds.HasValue) return;
+            Rectangle overlayBounds = drawArgs.OverlayBounds.Value;
             Image image = this.Image;
             if (image == null) image = (!IsRelationToDocument ? Skin.TextBox.IconRelationRecord : Skin.TextBox.IconRelationDocument);
             if (drawArgs.HasFocus || drawArgs.InteractiveState.HasFlag(GInteractiveState.FlagOver))
-                GPainter.DrawImage(drawArgs.Graphics, bounds, image, drawArgs.InteractiveState);
+                GPainter.DrawImage(drawArgs.Graphics, overlayBounds, image, drawArgs.InteractiveState);
             else
-                GPainter.DrawImage(drawArgs.Graphics, bounds, image, 0.45f);
+                GPainter.DrawImage(drawArgs.Graphics, overlayBounds, image, 0.45f);
         }
         /// <summary>
         /// Jsme kliknut?
