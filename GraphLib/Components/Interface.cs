@@ -477,6 +477,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool ActiveTarget { get { return this.GetBitValue((uint)Bit.ActiveTarget); } set { this.SetBitValue((uint)Bit.ActiveTarget, value); } }
 
+        /// <summary>
+        /// SelectAllText: označit celý text po příchodu focusu do prvku
+        /// </summary>
+        public bool SelectAllText { get { return this.GetBitValue((uint)Bit.SelectAllText); } set { this.SetBitValue((uint)Bit.SelectAllText, value); } }
+        /// <summary>
+        /// SelectAllTextExplicit: pokud je true, pak se akceptuje hodnota <see cref="SelectAllText"/>.
+        /// Pokud je false, pak není zadána explicitní hodnota, použije se defaultní.
+        /// </summary>
+        public bool SelectAllTextExplicit { get { return this.GetBitValue((uint)Bit.SelectAllTextExplicit); } set { this.SetBitValue((uint)Bit.SelectAllTextExplicit, value); } }
+
         #endregion
         #region Enum Bit a jeho defaultní hodnoty
         /// <summary>
@@ -533,6 +543,10 @@ namespace Asol.Tools.WorkScheduler.Components
             ActiveTarget = 0x00800000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="OnPhysicalBounds"/></summary>
             OnPhysicalBounds = 0x01000000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllText"/></summary>
+            SelectAllText = 0x02000000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllTextExplicit"/></summary>
+            SelectAllTextExplicit = 0x04000000,
 
             /// <summary>
             /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti. Má nastaveno TabStop.
@@ -714,6 +728,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DragMoveOriginBounds = null;
             this.DragMoveToBounds = null;
             this.ModifierKeys = System.Windows.Forms.Control.ModifierKeys;
+            this.MouseButtons = System.Windows.Forms.Control.MouseButtons;
             this.KeyboardPreviewArgs = null;
             this.KeyboardEventArgs = null;
             this.KeyboardPressEventArgs = null;
@@ -791,6 +806,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Stav kláves v okamžiku události (a to včetně události myši)
         /// </summary>
         public System.Windows.Forms.Keys ModifierKeys { get; protected set; }
+        /// <summary>
+        /// Stav stisknutých tlačítek myši v okamžiku události (a to včetně události klávesnice)
+        /// </summary>
+        public System.Windows.Forms.MouseButtons MouseButtons { get; protected set; }
         /// <summary>
         /// Keyboard Preview data
         /// </summary>
@@ -914,6 +933,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Může být k libovolné akci, typické je to k akci <see cref="GInteractiveChangeState.GetContextMenu"/>.
         /// </summary>
         public ToolStripDropDownMenu ContextMenu { get; set; }
+        /// <summary>
+        /// Zcela libovolná UserData, přenášená v rámci jedné fyzické události mezi všemi metodami
+        /// </summary>
+        public object UserData { get; set; }
         #endregion
     }
     /// <summary>

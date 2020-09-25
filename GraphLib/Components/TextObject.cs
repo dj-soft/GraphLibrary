@@ -67,14 +67,12 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawBorder(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
         }
-
         /// <summary>
-        /// Vykreslovaný text
+        /// Vykreslovaný text.
+        /// Pokud bude vložena hodnota null, bude se číst jako prázdný string.
         /// </summary>
-        public string Text { get { return _Text; } set { _Text = value; Invalidate(); } }
-        private string _Text;
-
-
+        public virtual string Text { get { return _Text ?? ""; } set { _Text = value; Invalidate(); } }
+        private string _Text = "";
         /// <summary>
         /// Barva písma základní.
         /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
