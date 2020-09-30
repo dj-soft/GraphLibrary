@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.Data.Test
     /// <summary>
     /// Třída obsahující testy dat
     /// </summary>
-    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+    [TestClass]
     public class TestData
     {
         /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Data;
+using System.Collections;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -860,7 +861,79 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
 
-
+        /// <summary>
+        /// Vrátí stringový seznam z dodané kolekce. Lze zadat explicitní oddělovač, lze použít explicitní formátovací funkci, lze omezit max počet prvků do výstupu vložených.
+        /// </summary>
+        /// <typeparam name="T">Typ prvku kolekce</typeparam>
+        /// <param name="items">Kolekce</param>
+        /// <param name="delimiter">Oddělovač, default čárka</param>
+        /// <param name="formatter">Formátovač prvku: z prvku kolekce vrátí string, default = null, použije se ToString()</param>
+        /// <param name="maxItems">Max počet prvků, platná hodnota je větší než 0, default = 256. Při zadání záporné hodnoty budou vypsány všechny prvky. Pozor na kapacitu systému!</param>
+        /// <returns></returns>
+        public static string ToOneString<T>(this IEnumerable<T> items, string delimiter = ",", Func<T, string> formatter = null, int maxItems = 256)
+        {
+            if (items == null) return "NULL";
+            StringBuilder sb = new StringBuilder();
+            bool hasFormatter = (formatter != null);
+            bool addDelimiter = false;
+            bool hasMaxItems = (maxItems > 0);
+            int count = 0;
+            foreach (T item in items)
+            {
+                if (addDelimiter) sb.Append(delimiter); else addDelimiter = true;
+                sb.Append(hasFormatter ? formatter(item) : item == null ? "NULL" : item.ToString());
+                if (hasMaxItems)
+                {
+                    count++;
+                    if (count >= maxItems) break;
+                }
+            }
+            return sb.ToString();
+        }
+        /// <summary>
+        /// Vrátí stringový seznam z dodané kolekce. Lze zadat explicitní oddělovač, lze použít explicitní formátovací funkci, lze omezit max počet prvků do výstupu vložených.
+        /// </summary>
+        /// <typeparam name="T">Typ prvku kolekce</typeparam>
+        /// <param name="items">Kolekce</param>
+        /// <param name="delimiter">Oddělovač, default čárka</param>
+        /// <param name="formatter">Formátovač prvku: z prvku kolekce vrátí string, default = null, použije se ToString()</param>
+        /// <param name="maxItems">Max počet prvků, platná hodnota je větší než 0, default = 256. Při zadání záporné hodnoty budou vypsány všechny prvky. Pozor na kapacitu systému!</param>
+        /// <returns></returns>
+        public static string ToOneString(this IEnumerable items, string delimiter = ",", Func<object, string> formatter = null, int maxItems = 256)
+        {
+            if (items == null) return "NULL";
+            StringBuilder sb = new StringBuilder();
+            bool hasFormatter = (formatter != null);
+            bool addDelimiter = false;
+            bool hasMaxItems = (maxItems > 0);
+            int count = 0;
+            foreach (object item in items)
+            {
+                if (addDelimiter) sb.Append(delimiter); else addDelimiter = true;
+                sb.Append(hasFormatter ? formatter(item) : item == null ? "NULL" : item.ToString());
+                if (hasMaxItems)
+                {
+                    count++;
+                    if (count >= maxItems) break;
+                }
+            }
+            return sb.ToString();
+        }
+        /// <summary>
+        /// Metoda vrátí pole prvků, které vyhovují danému filtru. To není žádné velké umění. 
+        /// Filtr ale dostává navíc index (=pořadové číslo počínaje 0) u každého prvku vstupní kolekce, a může tedy filtrovat prvky i na základě jejich pořadí ve vstupní kolekci.
+        /// </summary>
+        /// <typeparam name="T">Typ prvků</typeparam>
+        /// <param name="items">Vstupní kolekce prvků. Pokud bude null, vrátí se null.</param>
+        /// <param name="filter">Filtrační funkce. První parametr je index prvku, druhá parametr je vlastní prvek. Výstup = true = prvek bude zařazen do výstupní kolekce.</param>
+        /// <returns></returns>
+        public static T[] WhereIndex<T>(this IEnumerable<T> items, Func<int, T, bool> filter)
+        {
+            if (items == null) return null;
+            int index = 0;
+            T[] result = items.Where(i => { bool r = filter(index, i); index++; return r; }).ToArray();      // Musíme doufat, že .Where() nebude prováděno paralelně nad více segmenty vstupního pole, pak by index nebyl korektně přiřazován.
+            return result;
+        }
         /// <summary>
         /// Vrací danou kolekci sestavenou do jednoho stringu
         /// </summary>

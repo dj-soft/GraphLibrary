@@ -528,26 +528,39 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private static RectangleF[] _DrawStringMeasurePositions(Graphics graphics, string text, Font font, Rectangle textArea, StringFormat sFormat)
         {
-            List<CharacterRange> characterRanges = new List<CharacterRange>();
-            int length = text.Length;
-            for (int i = 0; i < length; i++)
-                characterRanges.Add(new CharacterRange(i, 1));
+            if (text == null || text.Length == 0) return new RectangleF[0];
 
+            //  Někdo (C#? .NET? WinForms? Bill Gates?) nám nachystal lahůdku při určování souřadnic vykreslovaných znaků!
+            // 1. Nelze snadno získat pole souřadnic pro jednotlivé znaky
+            // 2. Lze získat pole souřadnic pro zadané rozsahy znaků (např. znaky 0-5 a 12-17 a 18-20),
+            // 3. Lze tedy získat pole souřadnic i pro jednotlivé znaky (0-1, 1-2, 2-3, 3-4, ...), ale těch souřadnic NESMÍ BÝT 32 A VÍCE !!! v jednom chodu!
+            // 4. Pokud tedy máme text delší než 32 znaků, musíme pole souřadnic získávat v oddělených dávkách po max 32 znacích!!!
+
+            List<RectangleF> result = new List<RectangleF>();
+
+            int length = text.Length;
+            int begin = 0;
+            int maxSize = 32;
             try
             {
-                sFormat.SetMeasurableCharacterRanges(characterRanges.ToArray());
-                Region[] charRanges = graphics.MeasureCharacterRanges(text, font, textArea, sFormat);
-                List<RectangleF> positions = new List<RectangleF>();
-                foreach (Region charRange in charRanges)
-                    positions.Add(charRange.GetBounds(graphics));
-                return positions.ToArray();
+                while (begin < length)
+                {   // Cyklus přes jednotlivé dávky, kde jedna dávka má nejvýše (maxSize) prvků typu CharacterRange:
+                    List<CharacterRange> characterRanges = new List<CharacterRange>();
+                    for (int i = begin; (i < length && characterRanges.Count < maxSize); i++)
+                        characterRanges.Add(new CharacterRange(i, 1));
+                    sFormat.SetMeasurableCharacterRanges(characterRanges.ToArray());
+                    Region[] charRanges = graphics.MeasureCharacterRanges(text, font, textArea, sFormat);
+                    foreach (Region charRange in charRanges)
+                        result.Add(charRange.GetBounds(graphics));
+                    begin += characterRanges.Count;
+                }
             }
             catch (Exception exc)
             {
                 string msg = exc.Message + "\r\n" + exc.StackTrace;
+                result.Clear();
             }
-
-            return null;
+            return result.ToArray();
         }
         /// <summary>
         /// Metoda vrátí rozměry daného textu v daném fontu, rozměr odhadne jen podle vlastností fontu.

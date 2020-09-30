@@ -63,7 +63,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             };
             int colorCnt = colors.Length;
             string[] values = new string[] { "VFA-2019", "VP", "DOC-INT", "PRJ", "VYD", "IUD-2019", "MAT", "ZFO", "ČJ" };
-            string[] suffixes = new string[] { "vyřešit ihned", "porada nutná", "rozhoduje pouze šéf", "neřešit, založit", "utajený dokument" };
+            string[] suffixes = new string[] { "vyřešit ihned", "porada nutná", "rozhoduje pouze šéf", "neřešit, založit", "utajený dokument", "Extra délka doplňkového textu, přesahující 32 znaků" };
             int valuesCnt = values.Length;
             Random rand = new Random();
 
@@ -92,6 +92,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
                         Label = "Item " + n.ToString(),
                         Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString()
                     };
+
+                    if (rand.Next(10) <= 3) item.Value1 += ": " + suffixes[rand.Next(suffixes.Length)];
                     item.ToolTipText = $@"Další informace k této položce
 byste našli v této bublině.
 Číslo prvku: {n}
@@ -99,7 +101,8 @@ Obsah prvku: {item.Value1}
 Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {currentX}/{currentY}
 ";
-                    if (rand.Next(10) <= 3) item.Value1 += ": " + suffixes[rand.Next(suffixes.Length)];
+
+
                     item.BorderStyle = BorderStyleType.Soft;
                     if (nx == 0) item.LabelMain.FontModifier.Bold = true;
                     if (nx == 1) item.LabelMain.FontModifier.Italic = true;
