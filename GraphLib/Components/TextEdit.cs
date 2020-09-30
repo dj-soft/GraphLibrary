@@ -31,29 +31,34 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusEnter(e);
-            this.AfterFocusEnterCursor(e);
+            OnCreateEditor();
+            EditorState.EventFocusEnter(e);
         }
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusLeave(e);
-            this.AfterFocusLeaveCursor(e);
+            EditorState.EventFocusLeave(e);
+            OnReleaseEditor();
         }
         protected override void AfterStateChangedKeyPreview(GInteractiveChangeStateArgs e)
         {
-            if (IsCursorMoveKey(e.KeyboardPreviewArgs))
-                e.KeyboardPreviewArgs.IsInputKey = true;
             base.AfterStateChangedKeyPreview(e);
+            EditorState.EventKeyPreview(e);
+        }
+        protected override void AfterStateChangedKeyDown(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedKeyDown(e);
+            EditorState.EventKeyDown(e);
         }
         protected override void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedKeyPress(e);
-            if (e.KeyboardPressEventArgs.KeyChar == 0x0d)
-                this.Host?.SetFocusToNextItem(Data.Direction.Positive);
+            EditorState.EventKeyPress(e);
         }
         protected override void AfterStateChangedMouseLeftDown(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeftDown(e);
-            this.AfterMouseDownCursor(e);
+            EditorState.EventMouseLeftDown(e);
         }
         protected override void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e)
         {
@@ -74,77 +79,7 @@ namespace Asol.Tools.WorkScheduler.Components
             // this.MouseClickPoint = e.MouseAbsolutePoint;   //  tam se detekuje že není známá pozice kurzoru (CursorIndex = null), ale je známý bod myši (MouseClickPoint)...
         }
         #endregion
-        #region Klávesnice základní
-        #endregion
-        #region Interaktivita - pohyb kurzoru (klávesy Home, End, Kurzor) a označování (Selection)
-        /// <summary>
-        /// Příchod Focusu do Textboxu může připravit pozici kurzoru i příznaky i Selected
-        /// </summary>
-        /// <param name="e"></param>
-        protected void AfterFocusEnterCursor(GInteractiveChangeStateArgs e)
-        {
-            // Příchod Focusu do Textboxu nastaví příznak, že následující MouseDown (pokud přijde) se má chovat jinak, viz AfterMouseDownNone(GInteractiveChangeStateArgs)
-            e.UserData = ConstantFocusEnter;
-            // Při vstupu do textboxu neměníme pozici kurzoru CursorIndex. To proto, že 0 je default, a na 0 ji nastavujeme v AfterStateChangedFocusLeave.
-            // Takže defaultně se po odchodu z textboxu a následném příchodu focusu zobrazí kurzor na pozici 0 (podle nastavení .
-            // Pokud ale aplikační kód nastaví CursorIndex na konkrétní hodnotu, pak tato hodnota bude platná okamžitě (pokud textbox má focus) anebo po příchodu do prvku.
-            EditorState.FocusEnter(e);
-        }
-        /// <summary>
-        /// Konstanta vkládaná do <see cref="GInteractiveChangeStateArgs.UserData"/> v události FocusEnter, detekovaná v události MouseDown.
-        /// Výsledkem je odlišení situace, kdy MouseDown je provedeno jako prvotní vstup do TextBoxu anebo v již editovaném TextBoxu.
-        /// </summary>
-        protected const string ConstantFocusEnter = "FocusEnter";
-        /// <summary>
-        /// Odchod Focusu může resetovat pozici kurzoru
-        /// </summary>
-        /// <param name="e"></param>
-        protected void AfterFocusLeaveCursor(GInteractiveChangeStateArgs e)
-        {
-            EditorStateData = EditorState.Data;
-            EditorState.Dispose();
-            _EditorState = null;
-
-            // Pozice kurzoru: pokud si pozici NEMÁME pamatovat, tak ji nulujeme při LostFocus:
-            if (!GTextEdit.SaveCursorPositionOnLostFocus)
-                this._CursorIndex = 0;               // Defaultní chování: po opětovném návratu focusu do prvku bude kurzor na začátku.
-        }
-        /// <summary>
-        /// Stisk myši může ovlivnit pozici kurzoru i Selected
-        /// </summary>
-        /// <param name="e"></param>
-        protected void AfterMouseDownCursor(GInteractiveChangeStateArgs e)
-        {   // Pozor, stav textboxu je: HasFocus = true, ale dosud nemusí být v tomto stavu vykreslen (=při prvním příchodu Focusu) (ačkoliv na druhou stranu focus už tu být může!), 
-            //  takže nelze použít pole this.CharacterBounds = pole jednotlivých znaků a jejich pozic!!!
-            // Postup: zde připravíme data, a v procesu kreslení bude vyvolána metoda AfterMouseCursorPrepare().
-            // Odlišení, zda jde o MouseDown při aktivaci focusu (tzn. na TextBox bylo kliknuto, když neměl Focus) anebo o MouseDown v procesu editace textu (měl Focus) 
-            //  se dá poznat podle hodnoty v e.UserData: v metodě this.AfterFocusEnterCursor() do e.UserData vkládáme string "FocusEnter",
-            //  a tato hodnota se pak přenese i do eventu AfterStateChangedMouseLeftDown(), tedy sem.
-            //  Pokud ale TextBox už focus má, pak se při stisku myši už událost AfterFocusEnterCursor() nevyvolá, a v proměnné e.UserData nebude nic.
-            EditorState.MouseDownDataPrepare(e);
-        }
-        /// <summary>
-        /// Metoda vrátí true, pokud daná klávesová kombinace bude interpretována jako nějaký pohyb kurzoru (samotný pohyb / označování se shiftem)
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        protected virtual bool IsCursorMoveKey(PreviewKeyDownEventArgs args)
-        {
-            switch (args.KeyCode)                // KeyCode obsahuje čistou klávesu = bez modifikátoru (bez Ctrl, Shift, Alt)
-            {
-                case Keys.Home:
-                case Keys.End:
-                case Keys.Left:
-                case Keys.Right:
-                case Keys.Up:
-                case Keys.Down:
-                    return true;
-            }
-            if (args.KeyData.HasFlag(Keys.Shift))
-            { }
-            return false;
-        }
-
+        #region EditorState : Instance editoru
         /// <summary>
         /// Třída která slouží pro support editace v TextBoxu.
         /// Instance existuje pouze v době, kdy TextBox má Focus, při ztrátě focusu instance zaniká, a po návratu Focusu se vygeneruje instance nová.
@@ -174,14 +109,46 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Událost, kdy TextBox potřebuje editor, nemá jej a bude si jej vytvářet.
-        /// Pokud uživatelský kód chce dodat vlastní editor, pak v tomto eventu jej vytvoří a vloží do property <see cref="EditorState"/>. V tom případě se nebude vytvářet editor defaultní.
+        /// Pokud uživatelský kód chce dodat vlastní editor, pak v tomto eventu jej vytvoří a vloží do property <see cref="EditorState"/>. 
+        /// V tom případě se nebude vytvářet editor defaultní.
+        /// Uživatelský kód může persistovat svoje data v property <see cref="EditorUserData"/>.
         /// </summary>
         public event EventHandler CreateEditor;
+        /// <summary>
+        /// Metoda, která uvolňuje editor z paměti. Před tím z něj může uložit data.
+        /// </summary>
+        protected virtual void OnReleaseEditor()
+        {
+            EditorStateData = _EditorState?.Data;
+            ReleaseEditor?.Invoke(this, EventArgs.Empty);                      // Event?
+            if (_EditorState != null)
+                _EditorState.Dispose();
+            _EditorState = null;
+        }
+        /// <summary>
+        /// Událost, kdy TextBox zahazuje editor (ten ještě existuje), protože odchází Focus.
+        /// Editor existuje pouze v době přítomnosti Focusu.
+        /// Pokud uživatelský kód chce uložit extra data ze svého editoru, pak v tomto eventu má možnost.
+        /// Pro uložení je vhodné použít property <see cref="EditorUserData"/>.
+        /// </summary>
+        public event EventHandler ReleaseEditor;
         /// <summary>
         /// String, který uchovává klíčová data z <see cref="EditorStateInfo"/> v době, kdy textbox nemá focus a instance v <see cref="EditorState"/> je zahozena (v LostFocus).
         /// Z tohoto stringu je při návratu Focusu do this TextBoxu vytvořen (restorován) nový objekt <see cref="EditorStateInfo"/>.
         /// </summary>
         protected string EditorStateData;
+        /// <summary>
+        /// Prostor pro persistenci dat externího editoru
+        /// </summary>
+        public object EditorUserData { get; set; }
+        #endregion
+        #region Clipboard
+        public void ClipboardAction(ClipboardActionType action)
+        { }
+        public void UndoRedoAction(UndoRedoActionType action)
+        { }
+        public virtual void SpecialKeyAction(KeyEventArgs args)
+        { }
         #endregion
         #region Vykreslení obsahu - základní
         /// <summary>
@@ -775,6 +742,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 _Chars = null;
                 _Lines = null;
             }
+            /// <summary>
+            /// Vlastník = TextBox
+            /// </summary>
             private GTextEdit _Owner;
             private string _Text;
             /// <summary>
@@ -788,6 +758,21 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Pole generuje metoda <see cref="LinePositionInfo.CreateLines"/>
             /// </summary>
             private LinePositionInfo[] _Lines;
+            /// <summary>
+            /// Vlastník = TextBox
+            /// </summary>
+            protected GTextEdit Owner { get { return _Owner; } }
+            /// <summary>
+            /// Obsahuje true pokud daný text lze editovat, false pokud je Disabled nebo ReadOnly.
+            /// </summary>
+            protected bool IsEditable { get { return (!_Owner.ReadOnly && _Owner.Enabled); } }
+            /// <summary>
+            /// Zajistí, že this objekt bude při nejbližší možnosti překrelsen. Neprovádí překreslení okamžitě, na rozdíl od metody <see cref="InteractiveObject.Refresh()"/>.
+            /// </summary>
+            protected void Invalidate()
+            {
+                this._Owner.Invalidate();
+            }
             /// <summary>
             /// Data určená k perzistenci po dobu mimo editace TextBoxu, k restorování nové instance <see cref="EditorStateInfo"/> do předchozího stavu.
             /// Má jít o malý balíček dat.
@@ -804,7 +789,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Hodnota <see cref="GTextObject.Text"/>. Tato hodnota nikdy není null.
             /// </summary>
-            protected string Text { get { return this._Owner.Text; } }
+            protected string Text { get { return this._Owner.Text; } set { this._Owner.Text = value; } }
             /// <summary>
             /// Hodnota <see cref="GTextEdit.SelectAllText"/>.Value
             /// </summary>
@@ -832,32 +817,6 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             protected bool SelectionRangeIsEmpty { get { var r = SelectionRange; return (r == null || r.Size == 0); } }
             /// <summary>
-            /// Je vyvoláno při vstupu Focusu do TextBoxu. Zajistí SelectAll, pokud má být provedeno.
-            /// </summary>
-            public void FocusEnter(GInteractiveChangeStateArgs e)
-            {
-                HasFocus = true;
-                if (this.SelectAllText)
-                {
-                    SelectionRange = new Int32Range(0, Text.Length);
-                }
-            }
-            /// <summary>
-            /// Metoda je volána po myším kliknutí, připraví data pro určení pozice kurzorum, SelectedRange a následné vykreslení.
-            /// Po myším kliknutí následuje nové vykreslení TextBoxu, tedy jeho metoda <see cref="GTextEdit.DrawText(GTextEditDrawArgs)"/>, 
-            /// z které se vyvolá zdejší metoda <see cref="SetCharacterPositions(string, RectangleF[])"/> = kde se uloží pozice jednotlivých znaků i řádků,
-            /// a následně se pak volá zdejší metoda <see cref="MouseDownDataProcess()"/>, která na základě dat MouseDown určí pozici kurzoru a SelectedRange.
-            /// Pokud je ale TextBox vykreslován bez předchozí události MouseDown, pak metoda <see cref="MouseDownDataProcess()"/> nebude nic zpracovávat...
-            /// </summary>
-            /// <param name="e"></param>
-            public void MouseDownDataPrepare(GInteractiveChangeStateArgs e)
-            {
-                MouseDownIsFocusEnter = String.Equals(e.UserData as string, ConstantFocusEnter);
-                MouseDownButtons = e.MouseButtons;
-                MouseDownAbsoluteLocation = e.MouseAbsolutePoint;
-                MouseDownModifierKeys = e.ModifierKeys;
-            }
-            /// <summary>
             /// Vloží do instance dodaný text a dodané souřadnice, a z dodaných souřadnic znaků vytvoří interní pole informací pro hledání znaků i řádků i pro jejich následné vykreslování
             /// </summary>
             /// <param name="text"></param>
@@ -869,7 +828,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 _Lines = LinePositionInfo.CreateLines(_Chars);
             }
             /// <summary>
-            /// Zpracuje požadavky z kliknutí myši, uložené v metodě <see cref="MouseDownDataPrepare(GInteractiveChangeStateArgs)"/>, po proběhnutí vykreslení a po uložení pozic znaků.
+            /// Zpracuje požadavky z kliknutí myši, uložené v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>, po proběhnutí vykreslení a po uložení pozic znaků.
             /// Určí pozici kurzoru CursorPosition a rozsah výběru SelectedRange.
             /// Metoda je volána v procesu Draw. Po této metodě následuje vykreslení kurzoru.
             /// </summary>
@@ -953,8 +912,8 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public bool HasFocus { get; private set; }
             /// <summary>
-            /// Eviduje stav MouseDown a FocusEnter, zachycený v metodě <see cref="MouseDownDataPrepare(GInteractiveChangeStateArgs)"/>:
-            /// 1. null = výchozí hodnota = není MouseDown (platí i po zpracování hodnoty <see cref="MouseDownIsFocusEnter"/> v metodě <see cref="MouseDownDataPrepare(GInteractiveChangeStateArgs)"/>)
+            /// Eviduje stav MouseDown a FocusEnter, zachycený v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>:
+            /// 1. null = výchozí hodnota = není MouseDown (platí i po zpracování hodnoty <see cref="MouseDownIsFocusEnter"/> v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>)
             /// 2. false = je evidován MouseDown, ale v situaci, kdy už TextBox má focus (tzn. myš je stisknuta v již aktivním TextBoxu)
             /// 3. true = je evidován MouseDown, který přivedl Focus do TextBoxu odjinud = kliknuto zvenku do TextBoxu (pak je jiné chování)
             /// </summary>
@@ -1099,7 +1058,395 @@ namespace Asol.Tools.WorkScheduler.Components
                 return null;
 
             }
+            #region Navázání editoru na události TextBoxu
+            /// <summary>
+            /// Je voláno při vstupu Focusu do TextBoxu. Zajistí SelectAll, pokud má být provedeno.
+            /// </summary>
+            public virtual void EventFocusEnter(GInteractiveChangeStateArgs e)
+            {
+                // Příchod Focusu do Textboxu nastaví příznak v argumentu (e.UserData), že následující MouseDown (pokud přijde) se má chovat jinak, viz EventMouseLeftDown(GInteractiveChangeStateArgs)
+                e.UserData = ConstantFocusEnter;                     // Příznak využívaný v události EventMouseDown, informuje o tom, že MouseDown je společný s FocusEnter
+                HasFocus = true;
+                if (this.SelectAllText)
+                {
+                    SelectionRange = new Int32Range(0, Text.Length);
+                }
 
+                // Při vstupu do textboxu neměníme pozici kurzoru CursorIndex. To proto, že 0 je default, a na 0 ji nastavujeme v EventFocusLeave.
+                // Takže defaultně se po odchodu z textboxu a následném příchodu focusu zobrazí kurzor na pozici 0 (podle nastavení).
+                // Pokud ale aplikační kód nastaví CursorIndex na konkrétní hodnotu, pak tato hodnota bude platná okamžitě (pokud textbox má focus) anebo po příchodu do prvku.
+            }
+            /// <summary>
+            /// Je voláno při odchodu Focusu z TextBoxu
+            /// </summary>
+            /// <param name="e"></param>
+            public virtual void EventFocusLeave(GInteractiveChangeStateArgs e)
+            {
+                HasFocus = false;
+
+                // Pozice kurzoru: pokud si pozici NEMÁME pamatovat, tak ji nulujeme při LostFocus:
+                if (!GTextEdit.SaveCursorPositionOnLostFocus)
+                    this.CursorIndex = 0;                            // Defaultní chování: po opětovném návratu focusu do prvku bude kurzor na začátku.
+            }
+            /// <summary>
+            /// Je voláno pro zjištění, zda stisknutá klávesa bude zpracovávána v controlu
+            /// </summary>
+            /// <param name="e"></param>
+            public virtual void EventKeyPreview(GInteractiveChangeStateArgs e)
+            {
+                IsKeyHandled = false;
+                var args = e.KeyboardPreviewArgs;
+                if (IsCursorKey(args))
+                    args.IsInputKey = true;
+            }
+            /// <summary>
+            /// Je voláno po KeyDown klávesy
+            /// </summary>
+            /// <param name="e"></param>
+            public virtual void EventKeyDown(GInteractiveChangeStateArgs e)
+            {
+                var args = e.KeyboardEventArgs;
+                if (IsKeyHandled ||
+                    ProcessKeyCursor(args) ||
+                    ProcessKeyBackspaceDel(args) ||
+                    ProcessKeyClipboard(args) ||
+                    ProcessKeyUndoRedo(args) ||
+                    ProcessKeySpecial(args))
+                    args.Handled = true;
+
+                IsKeyHandled |= args.Handled;
+            }
+            /// <summary>
+            /// Je voláno po stisku a uvolnění klávesy
+            /// </summary>
+            /// <param name="e"></param>
+            public virtual void EventKeyPress(GInteractiveChangeStateArgs e)
+            {
+                var args = e.KeyboardPressEventArgs;
+                if (IsKeyHandled ||
+                    ProcessKeyFocus(args) ||
+                    ProcessKeyText(args))
+                    args.Handled = true;
+
+                IsKeyHandled |= args.Handled;
+            }
+
+
+
+
+
+            /// <summary>
+            /// Metoda je volána po myším kliknutí, připraví data pro určení pozice kurzorum, SelectedRange a následné vykreslení.
+            /// Po myším kliknutí následuje nové vykreslení TextBoxu, tedy jeho metoda <see cref="GTextEdit.DrawText(GTextEditDrawArgs)"/>, 
+            /// z které se vyvolá zdejší metoda <see cref="SetCharacterPositions(string, RectangleF[])"/> = kde se uloží pozice jednotlivých znaků i řádků,
+            /// a následně se pak volá zdejší metoda <see cref="MouseDownDataProcess()"/>, která na základě dat MouseDown určí pozici kurzoru a SelectedRange.
+            /// Pokud je ale TextBox vykreslován bez předchozí události MouseDown, pak metoda <see cref="MouseDownDataProcess()"/> nebude nic zpracovávat...
+            /// </summary>
+            /// <param name="e"></param>
+            public virtual void EventMouseLeftDown(GInteractiveChangeStateArgs e)
+            {   // Pozor, stav textboxu je: HasFocus = true, ale dosud nemusí být v tomto stavu vykreslen (=při prvním příchodu Focusu) (ačkoliv na druhou stranu focus už tu být může!), 
+                //  takže nelze použít pole this.CharacterBounds = pole jednotlivých znaků a jejich pozic!!!
+                // Postup: zde připravíme data, a v procesu kreslení bude vyvolána metoda AfterMouseCursorPrepare().
+                // Odlišení, zda jde o MouseDown při aktivaci focusu (tzn. na TextBox bylo kliknuto, když neměl Focus) anebo o MouseDown v procesu editace textu (měl Focus) 
+                //  se dá poznat podle hodnoty v e.UserData: v metodě this.AfterFocusEnterCursor() do e.UserData vkládáme string "FocusEnter",
+                //  a tato hodnota se pak přenese i do eventu AfterStateChangedMouseLeftDown(), tedy sem.
+                //  Pokud ale TextBox už focus má, pak se při stisku myši už událost AfterFocusEnterCursor() nevyvolá, a v proměnné e.UserData nebude nic.
+                MouseDownIsFocusEnter = String.Equals(e.UserData as string, ConstantFocusEnter);
+                MouseDownButtons = e.MouseButtons;
+                MouseDownAbsoluteLocation = e.MouseAbsolutePoint;
+                MouseDownModifierKeys = e.ModifierKeys;
+            }
+            /// <summary>
+            /// Konstanta vkládaná do <see cref="GInteractiveChangeStateArgs.UserData"/> v události FocusEnter, detekovaná v události MouseDown.
+            /// Výsledkem je odlišení situace, kdy MouseDown je provedeno jako prvotní vstup do TextBoxu anebo v již editovaném TextBoxu.
+            /// </summary>
+            protected const string ConstantFocusEnter = "FocusEnter";
+            #endregion
+            #region Klávesnice
+            /// <summary>
+            /// Metoda vrátí true, pokud daná klávesová kombinace bude interpretována jako nějaký pohyb kurzoru (samotný pohyb / označování se shiftem)
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected bool IsCursorKey(PreviewKeyDownEventArgs args)
+            {
+                switch (args.KeyCode)                // KeyCode obsahuje čistou klávesu = bez modifikátoru (bez Ctrl, Shift, Alt)
+                {
+                    case Keys.Home:
+                    case Keys.End:
+                    case Keys.Left:
+                    case Keys.Right:
+                    case Keys.Up:
+                    case Keys.Down:
+                        return true;
+                }
+                return false;
+            }
+            /// <summary>
+            /// Detekuje a zpracuje kurzorové klávesy i kombinace
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected virtual bool ProcessKeyCursor(KeyEventArgs args)
+            {
+                int cursorIndex = CursorIndex;
+                Int32Range selectionRange = SelectionRange;
+                int selectionBegin = (selectionRange != null ? selectionRange.Begin : cursorIndex);
+                int textLength = (this._Chars != null ? this._Chars.Length : 0);
+                CharacterPositionInfo charInfo = null;
+                if (this._Chars != null && cursorIndex >= 0 && cursorIndex < textLength)
+                    charInfo = this._Chars[cursorIndex];
+
+                switch (args.KeyData)                      // KeyData obsahuje kompletní klávesu = včetně modifikátoru (Ctrl, Shift, Alt)
+                {
+                    case Keys.Home:                        // Na začátek aktuálního řádku
+                        cursorIndex = (charInfo != null ? charInfo.Line.Chars[0].Index : 0);
+                        selectionRange = null;
+                        break;
+                    case Keys.Control | Keys.Home:         // Na úplný začátek textu
+                        cursorIndex = 0;
+                        selectionRange = null;
+                        break;
+                    case Keys.Shift | Keys.Home:           // Na začátek aktuálního řádku, označit od dosavadní pozice
+                        cursorIndex = (charInfo != null ? charInfo.Line.Chars[0].Index : 0);
+                        selectionRange = new Int32Range(selectionBegin, cursorIndex);
+                        break;
+
+                    case Keys.End:
+                        cursorIndex = textLength;
+                        selectionRange = null;
+                        break;
+
+                    case Keys.Left:
+                        if (cursorIndex > 0)
+                            cursorIndex--;
+                        selectionRange = null;
+                        break;
+
+                    case Keys.Shift | Keys.Left:
+                        if (cursorIndex > 0)
+                            cursorIndex--;
+                        selectionRange = new Int32Range(selectionBegin, cursorIndex);
+                        break;
+
+                    case Keys.Right:
+                        if (cursorIndex < textLength)
+                            cursorIndex++;
+                        selectionRange = null;
+                        break;
+
+                    case Keys.Shift | Keys.Right:
+                        if (cursorIndex < textLength)
+                            cursorIndex++;
+                        selectionRange = new Int32Range(selectionBegin, cursorIndex);
+                        break;
+
+                    case Keys.Up:
+                    case Keys.Down:
+                        return true;
+
+                    case Keys.Control | Keys.A:
+                        cursorIndex = 0;
+                        selectionRange = new Int32Range(cursorIndex, textLength);
+                        break;
+
+                    default:
+                        return false;
+                }
+                CursorIndex = cursorIndex;
+                SelectionRange = selectionRange;
+                this.Invalidate();
+                return true;
+            }
+            protected virtual bool ProcessKeyBackspaceDel(KeyEventArgs args)
+            {
+                if (!IsEditable) return false;
+
+                int cursorIndex = CursorIndex;
+                Int32Range selectionRange = SelectionRange;
+                if (selectionRange != null && selectionRange.Size == 0) selectionRange = null;
+                Int32Range deletionRange = null;
+                int textLength = (this._Chars != null ? this._Chars.Length : 0);
+
+                switch (args.KeyData)
+                {
+                    case Keys.Back:                                  // Jeden Backspace = Smaže označený blok nebo jeden znak vlevo
+                    case Keys.Shift | Keys.Back:                     // Shift + BackSpace = stejné jako Backspace
+                        if (selectionRange != null)
+                            deletionRange = selectionRange;
+                        else if (cursorIndex > 0)
+                        {
+                            cursorIndex--;
+                            deletionRange = new Int32Range(cursorIndex, cursorIndex + 1);
+                        }
+                        break;
+                    case Keys.Control | Keys.Back:                   // Control + Backspace = Smaže doleva slovo od kurzoru k začátku slova, včetně výběru
+
+                        // b 123 456 78 789 
+
+                        break;
+                    case Keys.Delete:                                // Delete = Smaže označený blok nebo znak vpravo od kurzoru
+                        if (selectionRange != null)
+                            deletionRange = selectionRange;
+                        else if (cursorIndex < textLength)
+                        {
+                            deletionRange = new Int32Range(cursorIndex, cursorIndex + 1);
+                        }
+                        break;
+                    case Keys.Shift | Keys.Delete:                   // Shift + Delete = Smaže označený blok nebo celý řádek kde je kurzor
+                    case Keys.Control | Keys.Delete:                 // Control + Delete = Smaže označený blok nebo slovo od kurzoru doprava
+                        break;
+                    default:
+                        return false;
+                }
+                DeleteInsertText(deletionRange);
+                CursorIndex = cursorIndex;
+                SelectionRange = null;
+                this.Invalidate();
+                return true;
+            }
+            /// <summary>
+            /// Detekuje a zpracuje klávesy Ctrl+C, Ctrl+X, Ctrl+V = Clipboard
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected virtual bool ProcessKeyClipboard(KeyEventArgs args)
+            {
+                switch (args.KeyData)
+                {
+                    case Keys.Control | Keys.C:
+                        Owner.ClipboardAction(ClipboardActionType.Copy);
+                        break;
+                    case Keys.Control | Keys.X:
+                        if (IsEditable)
+                            Owner.ClipboardAction(ClipboardActionType.Cut);
+                        else
+                            Owner.ClipboardAction(ClipboardActionType.Copy);
+                        break;
+                    case Keys.Control | Keys.V:
+                        if (IsEditable)
+                            Owner.ClipboardAction(ClipboardActionType.Paste);
+                        break;
+                    default:
+                        return false;
+                }
+                this.Invalidate();
+                return true;
+            }
+            /// <summary>
+            /// Detekuje a zpracuje klávesy Undo / Redo
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected virtual bool ProcessKeyUndoRedo(KeyEventArgs args)
+            {
+                if (!IsEditable) return false;
+                switch (args.KeyData)
+                {
+                    case Keys.Control | Keys.Z:
+                        Owner.UndoRedoAction(UndoRedoActionType.Undo);
+                        break;
+                    case Keys.Control | Keys.Y:
+                        Owner.UndoRedoAction(UndoRedoActionType.Redo);
+                        break;
+                    default:
+                        return false;
+                }
+                this.Owner.Invalidate();
+                return true;
+            }
+            /// <summary>
+            /// Detekuje a zpracuje speciální klávesy pomocí TextBoxu
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected virtual bool ProcessKeySpecial(KeyEventArgs args)
+            {
+                Owner.SpecialKeyAction(args);
+                return args.Handled;
+            }
+            /// <summary>
+            /// Detekuje a zpracuje focusové klávesy
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected virtual bool ProcessKeyFocus(KeyPressEventArgs args)
+            {
+                if (args.KeyChar == 0x0d)
+                {
+                    this._Owner.Host?.SetFocusToNextItem(Direction.Positive);
+                    return true;
+                }
+
+                return false;
+            }
+            /// <summary>
+            /// Detekuje a zpracuje standardní textové klávesy
+            /// </summary>
+            /// <param name="args"></param>
+            /// <returns></returns>
+            protected virtual bool ProcessKeyText(KeyPressEventArgs args)
+            {
+                if (!IsEditable) return false;
+
+                char c = args.KeyChar;
+                if (Char.IsLetterOrDigit(c) ||
+                    Char.IsSeparator(c) ||
+                    Char.IsPunctuation(c) ||
+                    Char.IsSymbol(c) ||
+                    Char.IsWhiteSpace(c))
+                {
+                    string value = args.KeyChar.ToString();
+
+                    int cursorIndex = CursorIndex;
+                    Int32Range selectionRange = SelectionRange;
+                    if (selectionRange != null && selectionRange.Size == 0) selectionRange = null;
+
+                    if (selectionRange != null)
+                        cursorIndex = DeleteInsertText(selectionRange, value);
+                    else
+                        cursorIndex = DeleteInsertText(cursorIndex, 0, value);
+
+                    CursorIndex = cursorIndex;
+                    SelectionRange = null;
+                    Invalidate();
+                    return true;
+                }
+                return false;
+            }
+            protected int DeleteInsertText(Int32Range deletionRange, string insertText = null)
+            {
+                if (deletionRange == null) return 0;
+                int begin = (deletionRange.Begin < deletionRange.End ? deletionRange.Begin : deletionRange.End);
+                int end = (deletionRange.Begin > deletionRange.End ? deletionRange.Begin : deletionRange.End);
+                string text = this.Text;
+                int length = text.Length;
+                string textL = (begin > 0 ? text.Substring(0, (begin < length ? begin : length)) : "");
+                string textR = (end < length ? text.Substring(end) : "");
+                bool isInsert = (insertText != null && insertText.Length > 0);
+                text = textL + (isInsert ? insertText : "") + textR;
+                this.Text = text;
+                return textL.Length + (isInsert ? insertText.Length : 0);
+            }
+            protected int DeleteInsertText(int begin, int removeLength, string insertText = null)
+            {
+                string text = this.Text;
+                int length = text.Length;
+                string textL = (begin > 0 ? text.Substring(0, (begin < length ? begin : length)) : "");
+                int end = begin + (removeLength < 0 ? 0 : removeLength);
+                string textR = (end < length ? text.Substring(end) : "");
+                bool isInsert = (insertText != null && insertText.Length > 0);
+                text = textL + (isInsert ? insertText : "") + textR;
+                this.Text = text;
+                return textL.Length + (isInsert ? insertText.Length : 0);
+            }
+            /// <summary>
+            /// Klávesa je vyřešena?
+            /// Na false je nastaveno v KeyPreview, na true je nastaveno po zpracování klávesy v konkrétním algoritmu.
+            /// Pokud je true, nebude klávesa předávána do žádné další metody.
+            /// </summary>
+            protected bool IsKeyHandled;
+            #endregion
             #region Vyhledání slova (začátek, konec, celé slovo)
             /// <summary>
             /// Zkusí najít začátek dalšího slova
@@ -1719,6 +2066,48 @@ namespace Asol.Tools.WorkScheduler.Components
             this.OverlayBounds = overlayBounds;
             if (textBounds.HasValue) this.TextBounds = textBounds.Value;
         }
+    }
+    #endregion
+    #region enum ClipboardActionType, UndoRedoActionType
+    /// <summary>
+    /// Druh akce s Clipboardem
+    /// </summary>
+    public enum ClipboardActionType
+    {
+        /// <summary>
+        /// Žádná akce
+        /// </summary>
+        None,
+        /// <summary>
+        /// Copy
+        /// </summary>
+        Copy,
+        /// <summary>
+        /// Cut
+        /// </summary>
+        Cut,
+        /// <summary>
+        /// Paste
+        /// </summary>
+        Paste
+    }
+    /// <summary>
+    /// Druh akce se zásobníkem Undo/Redo
+    /// </summary>
+    public enum UndoRedoActionType
+    {
+        /// <summary>
+        /// Žádná akce
+        /// </summary>
+        None,
+        /// <summary>
+        /// Odvolat poslední akci a vrátit se o krok zpět
+        /// </summary>
+        Undo,
+        /// <summary>
+        /// Znovu provést poslední akci
+        /// </summary>
+        Redo
     }
     #endregion
 }
