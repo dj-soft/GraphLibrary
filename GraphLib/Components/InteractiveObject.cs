@@ -1134,6 +1134,79 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return null;                                                       // Neúspěch
         }
+        /// <summary>
+        /// Vrátí pole všech parentů počínaje Host (na indexu 0) až k dodanému prvku (na posledním indexu).
+        /// Pokud dodaný prvek je null, výstupem je prázdné pole.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public static IInteractiveParent[] GetAllParents(IInteractiveItem item)
+        {
+            List<IInteractiveParent> parents = new List<IInteractiveParent>();
+            IInteractiveParent p = item;
+            for (int t = 0; (t < 120 && p != null); t++)
+            {
+                parents.Add(p);
+                p = p.Parent;
+            }
+            if (parents.Count > 1) parents.Reverse();
+            return parents.ToArray();
+        }
+        /// <summary>
+        /// Metoda najde cestu z výchozího prvku <paramref name="sourceItem"/> nahoru ke společnému parentu do cílového prvku <paramref name="targetItem"/> 
+        /// a veškeré prvky na cestě vloží do výstupního listu.
+        /// V Listu bude na první pozici výchozí prvek <paramref name="sourceItem"/>, 
+        /// pak bude jeho Parent a postupně jeho Parenti až k parentu, který je společným parentem i pro cílový prvek <paramref name="targetItem"/> (což může být i Host),
+        /// a pak budou prvky sestupně až k prvku cílovému.
+        /// Prvky na cestě nahoru mají v Tuple v Item1 hodnotu <see cref="Direction.Negative"/>, 
+        /// společný parent má v Item1 hodnotu <see cref="Direction.None"/> 
+        /// a prvky na cestě dolů k cílovému prvku mají v Item1 hodnotu <see cref="Direction.Positive"/>.
+        /// <para/>
+        /// Pokud není zadán zdrojový prvek, pak cesta jde od Host k cíli.
+        /// Pokud není zadán cílový prvek, pak cesta jde od zdroje k Hostu.
+        /// </summary>
+        /// <param name="sourceItem"></param>
+        /// <param name="targetItem"></param>
+        /// <returns></returns>
+        public static Tuple<Direction, IInteractiveParent>[] SearchInteractiveItemsTree(IInteractiveItem sourceItem, IInteractiveItem targetItem)
+        {
+            // Zkratka pro případ, kdy jako source i target je zadán tentýž objekt:
+            if (sourceItem != null && targetItem != null && Object.ReferenceEquals(sourceItem, targetItem)) return new Tuple<Direction, IInteractiveParent>[0];
+
+            // Získáme linie pro source i target: od Hosta k danému prvku:
+            var sourcePath = InteractiveObject.GetAllParents(sourceItem);
+            int sourceCount = sourcePath.Length;
+            var targetPath = InteractiveObject.GetAllParents(targetItem);
+            int targetCount = targetPath.Length;
+
+            // Najdeme nejvyšší pozici v obou seznamech (sourcePath i targetPath), na které je tentýž objekt = společný Parent obou objektů, od kterého se jejich cesty rozcházejí
+            int parentIndex = -1;
+            int commonCount = (sourceCount < targetCount ? sourceCount : targetCount);
+            for (int i = 0; i < commonCount; i++)
+            {
+                if (Object.ReferenceEquals(sourcePath[i], targetPath[i]))
+                    parentIndex = i;
+                else
+                    break;
+            }
+
+            // Sestavíme strom od source přes společného parenta až k target:
+            List<Tuple<Direction, IInteractiveParent>> tree = new List<Tuple<Direction, IInteractiveParent>>();
+
+            // Nyní projdeme cestu Source (včetně) od konce ke společnému parentu (mimo) a vložíme do výstupu:
+            for (int i = sourceCount - 1; i > parentIndex; i--)
+                tree.Add(new Tuple<Direction, IInteractiveParent>(Direction.Negative, sourcePath[i]));
+
+            // Přidáme společného Parenta (pokud je), z pole sourcePath (identická instance je i v poli targetPath):
+            if (parentIndex >= 0)
+                tree.Add(new Tuple<Direction, IInteractiveParent>(Direction.None, sourcePath[parentIndex]));
+
+            // A doplníme cestu k cíli:
+            for (int i = parentIndex + 1; i < targetCount; i++)
+                tree.Add(new Tuple<Direction, IInteractiveParent>(Direction.Positive, targetPath[i]));
+
+            return tree.ToArray();
+        }
         #endregion
         #region Suppress events
         /// <summary>

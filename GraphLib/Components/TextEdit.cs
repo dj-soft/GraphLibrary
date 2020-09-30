@@ -619,7 +619,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region Public členové
+        #region Public vlastnosti definující chování
         /// <summary>
         /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
         /// </summary>
@@ -651,6 +651,103 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pak se Border vykresluje barvou 
         /// </summary>
         public bool IsRequiredValue { get; set; }
+        #endregion
+        #region Text, Value a napojení na data
+        /// <summary>
+        /// Vykreslovaný text.
+        /// Pokud bude vložena hodnota null, bude se číst jako prázdný string.
+        /// </summary>
+        public override string Text
+        {
+            get
+            {
+                return base.Text;
+            }
+
+            set
+            {
+                base.Text = value;
+            }
+        }
+        /// <summary>
+        /// Hodnota uložená v TextBoxu
+        /// </summary>
+        public object Value
+        {
+            get
+            {
+                return (DataSourceValid ? _DataSourceTable.Rows[_DataSourceRowIndex][_DataSourceColumnName] : _Value);
+            }
+            set
+            {
+                if (DataSourceValid)
+                    _DataSourceTable.Rows[_DataSourceRowIndex][_DataSourceColumnName] = value;
+                _Value = value;
+                Invalidate();
+            }
+        }
+        private object _Value;
+        /// <summary>
+        /// Datový zdroj = tabulka
+        /// </summary>
+        public System.Data.DataTable DataSourceTable
+        {
+            get { return _DataSourceTable; }
+            set { _DataSourceTable = value; Invalidate(); }
+        }
+        private System.Data.DataTable _DataSourceTable;
+        /// <summary>
+        /// Datový zdroj = index řádku
+        /// </summary>
+        public int DataSourceRowIndex
+        {
+            get { return _DataSourceRowIndex; }
+            set { _DataSourceRowIndex = value; Invalidate(); }
+        }
+        private int _DataSourceRowIndex;
+        /// <summary>
+        /// /// <summary>
+        /// Datový zdroj = název sloupce v tabulce
+        /// </summary>
+        /// </summary>
+        public string DataSourceColumnName
+        {
+            get { return _DataSourceColumnName; }
+            set { _DataSourceColumnName = value; Invalidate(); }
+        }
+        private string _DataSourceColumnName;
+        /// <summary>
+        /// Aktuální hodnota v odpovídající buňce tabulky v datovém zdroji.
+        /// Pokud zdroj není platný, čtení i zápis vyhodí chybu.
+        /// </summary>
+        public object DataSourceValue
+        {
+            get
+            {
+                if (!DataSourceValid)
+                    throw new InvalidOperationException("GTextEdit.DataSourceValue get error: DataSource is not Valid.");
+                return _DataSourceTable.Rows[_DataSourceRowIndex][_DataSourceColumnName];
+            }
+            set
+            {
+                if (!DataSourceValid)
+                    throw new InvalidOperationException("GTextEdit.DataSourceValue set error: DataSource is not Valid.");
+                _DataSourceTable.Rows[_DataSourceRowIndex][_DataSourceColumnName] = value;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud datový zdroj je platný (tzn. lze načíst hodnotu z tabulky: object value = <see cref="DataSourceTable"/>.Rows[<see cref="DataSourceRowIndex"/>][<see cref="DataSourceColumnName"/>].
+        /// </summary>
+        protected bool DataSourceValid
+        {
+            get
+            {
+                if (_DataSourceTable == null || _DataSourceRowIndex < 0 || String.IsNullOrEmpty(_DataSourceColumnName)) return false;
+                if (_DataSourceRowIndex >= _DataSourceTable.Rows.Count) return false;
+                if (!_DataSourceTable.Columns.Contains(_DataSourceColumnName)) return false;
+                return true;
+            }
+        }
         #endregion
         #region class EditorState : proměnné a funkce pro editaci platné pouze při přítomnosti Focusu
         /// <summary>
@@ -760,7 +857,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 MouseDownAbsoluteLocation = e.MouseAbsolutePoint;
                 MouseDownModifierKeys = e.ModifierKeys;
             }
-            // 012345789 abcdef  ghij   klm no
             /// <summary>
             /// Vloží do instance dodaný text a dodané souřadnice, a z dodaných souřadnic znaků vytvoří interní pole informací pro hledání znaků i řádků i pro jejich následné vykreslování
             /// </summary>
@@ -863,11 +959,20 @@ namespace Asol.Tools.WorkScheduler.Components
             /// 3. true = je evidován MouseDown, který přivedl Focus do TextBoxu odjinud = kliknuto zvenku do TextBoxu (pak je jiné chování)
             /// </summary>
             public bool? MouseDownIsFocusEnter { get; private set; }
+            /// <summary>
+            /// Buttony myši stisknuté při MouseDown
+            /// </summary>
             public MouseButtons? MouseDownButtons { get; private set; }
+            /// <summary>
+            /// Absolutní souřadnice myši při MouseDown (absolutní - vzhledem k Host controlu) 
+            /// </summary>
             public Point? MouseDownAbsoluteLocation { get; private set; }
+            /// <summary>
+            /// Modifikační klávesy aktivní při MouseDown
+            /// </summary>
             public Keys? MouseDownModifierKeys { get; private set; }
             /// <summary>
-            /// Pozice kurzoru = před kterým znakem stojí.
+            /// Pozice kurzoru = před kterým znakem kurzor stojí.
             /// Hodnota 0 = kurzor je na začátku textu = před prvním znakem.
             /// Hodnota <see cref="Text"/>.Length = kurzor je na konci textu = za posledním znakem
             /// </summary>

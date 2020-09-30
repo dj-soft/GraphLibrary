@@ -102,7 +102,6 @@ Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {currentX}/{currentY}
 ";
 
-
                     item.BorderStyle = BorderStyleType.Soft;
                     if (nx == 0) item.LabelMain.FontModifier.Bold = true;
                     if (nx == 1) item.LabelMain.FontModifier.Italic = true;

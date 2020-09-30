@@ -522,8 +522,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="userData"></param>
         private void _ItemKeyboardExchange(IInteractiveItem itemPrev, IInteractiveItem itemNext, bool forceLeave, ref object userData)
         {
-            // Klávesový Focus je jiný než Myší focus: Myší Focus volá MouseLeave rekurzivně od nejnižšího prvku k top Parentovi, a MouseEnter volá od Parenta k cílovému prvku.
-            // Klávesový je jednoduchý: volá KeyboardFocusLeave pouze do odchozího prvku, a KeyboardFocusEnter co cílového; neřeší se parenti.
+            // Změna klávesového focusu pošle událost KeyboardFocusLeave do prvku itemPrev a do jeho Parentů 
+            //  až k parentovi, který je společný pro itemPrev i itemNext - ale do něj neposílá žádný event,
+            //  a pak pošle event KeyboardFocusEnter do sestupujících Parentů k prvku itemNext a i do něj.
 
             // Cílový prvek může být "Non-Keyboard", zkusíme tedy najít jeho nejbližšího parenta, který umožňuje klávesovou aktivitu:
             itemNext = _ItemKeyboardSearchKeyboardInput(itemNext);
@@ -534,21 +535,38 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!existsPrev && !existsNext) return;                                                                    // booth is null (=paranoia)
             if (Object.ReferenceEquals((existsPrev ? itemPrev : null), (existsNext ? itemNext : null))) return;        // no change
 
-            // Změna focusu se provede pokud je povinná, anebo pokud Next item existuje:
+            // Změna focusu se provede pokud je povinná (tedy včetně přechodu do itemNext = null), anebo pokud Next item existuje:
             if (forceLeave || existsNext)
             {
-                if (existsPrev)
-                    this._ItemKeyboardCallEvent(itemPrev, GInteractiveChangeState.KeyboardFocusLeave, null, null, null, ref userData);
-
-                if (existsNext)
-                    this._ItemKeyboardCallEvent(itemNext, GInteractiveChangeState.KeyboardFocusEnter, null, null, null, ref userData);
+                var tree = InteractiveObject.SearchInteractiveItemsTree(itemPrev, itemNext);                           // Získáme přechodovu cestu z itemPrev nahoru přes společného parenta a pak dolů k itemNext
+                foreach (var node in tree)
+                {
+                    if (node.Item2 is IInteractiveItem)
+                    {
+                        IInteractiveItem item = node.Item2 as IInteractiveItem;
+                        switch (node.Item1)
+                        {
+                            case Direction.Negative:
+                                // Prvky itemPrev a postupně jeho Parenti ke společnému Parentu (mimo něj):
+                                this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardFocusLeave, null, null, null, ref userData);
+                                break;
+                            case Direction.None:
+                                // Toto je společný Parent, ten nedostane žádný event, protože pro něj se nic nemění!
+                                break;
+                            case Direction.Positive:
+                                // Prvky Parenti k itemNext postupně až k itemNext:
+                                this._ItemKeyboardCallEvent(item, GInteractiveChangeState.KeyboardFocusEnter, null, null, null, ref userData);
+                                break;
+                        }
+                    }
+                }
 
                 this._FocusedItem = itemNext;
             }
         }
         /// <summary>
         /// Vrátí prvek (daný, nebo jeho parenta), jehož <see cref="InteractiveProperties.KeyboardInput"/> je true.
-        /// Can return null.
+        /// Může vrátit null.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
@@ -584,7 +602,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ItemKeyboardCallEvent(IInteractiveItem item, GInteractiveChangeState change, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs, ref object userData)
         {
             this._CurrentKeyboardState = change;
-            if (item.Is.KeyboardInput)
+            if (item.Is.KeyboardInput || (change == GInteractiveChangeState.KeyboardFocusEnter || change == GInteractiveChangeState.KeyboardFocusLeave))
             {
                 GInteractiveChangeState realChange = change;
                 GInteractiveState targetState = _GetStateAfterChange(realChange, item.Is.Enabled);

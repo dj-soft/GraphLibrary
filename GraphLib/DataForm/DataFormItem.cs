@@ -118,5 +118,17 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public GTextEdit Text2 { get; private set; }
 
+        #region Interaktivita
+        protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusEnter(e);
+
+        }
+        protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusLeave(e);
+        }
+        #endregion
+
     }
 }
