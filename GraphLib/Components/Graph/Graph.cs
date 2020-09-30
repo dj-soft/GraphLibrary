@@ -380,7 +380,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (action != null)
             {
-                foreach (ITimeGraphItem iItem in this._ItemDict.Values)
+                var graphItems = this._ItemDict.Values.ToArray();
+                foreach (ITimeGraphItem iItem in graphItems)
                     action(iItem);
             }
             this.Invalidate(InvalidateItems.AllGroups);
