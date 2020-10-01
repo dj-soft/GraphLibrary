@@ -11,23 +11,17 @@ namespace Asol.Tools.WorkScheduler.DataForm
     /// <summary>
     /// Jeden prvek v DataFormu
     /// </summary>
-    public class GDataFormItem : InteractiveContainer
+    public class GDataFormItem : InteractiveLabeledContainer
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public GDataFormItem()
         {
-            this.BackColor = Skin.Control.ControlBackColor;
-
-            this.LabelMain = new GLabel()
-            {
-                Text = "Popisek:",
-                Bounds = new Rectangle(4, 4, 60, 20),
-                Alignment = ContentAlignment.MiddleRight,
-                PrepareToolTipInParent = true
-            };
-            this.AddItem(this.LabelMain);
+            this.TitleLabel.Text = "Popisek:";
+            this.TitleLabel.Bounds = new Rectangle(4, 4, 60, 20);
+            this.TitleLabel.Alignment = ContentAlignment.MiddleRight;
+            this.TitleLabel.PrepareToolTipInParent = true;
 
             this.Text1 = new GTextEdit()
             {
@@ -47,11 +41,12 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.AddItem(this.Text2);
 
             this.Size = new Size(218, 28);
+            this.TitleLine.Bounds = new Rectangle(4, 1, 210, 3);
         }
         /// <summary>
         /// Popisek
         /// </summary>
-        public string Label { get { return this.LabelMain.Text; } set { this.LabelMain.Text = value; } }
+        public string Label { get { return this.TitleLabel.Text; } set { this.TitleLabel.Text = value; } }
         /// <summary>
         /// Hodnota prvku 1
         /// </summary>
@@ -80,13 +75,13 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// Je tento prvek Enabled?
         /// Do prvku, který NENÍ Enabled, nelze vstoupit Focusem (ani provést DoubleClick ani na ikoně / overlay).
         /// </summary>
-        public bool Enabled { get { return this.Text1.Enabled; } set { this.LabelMain.Enabled = value; this.Text1.Enabled = value; this.Text2.Enabled = value; } }
+        public bool Enabled { get { return this.Text1.Enabled; } set { this.TitleLabel.Enabled = value; this.Text1.Enabled = value; this.Text2.Enabled = value; } }
         /// <summary>
         /// Je tento prvek ReadOnly?
         /// Do prvku, který JE ReadOnly, lze vstoupit Focusem, lze provést DoubleClick včetně ikony / overlay.
         /// Ale nelze prvek editovat, a má vzhled prvku který není Enabled (=typicky má šedou barvu a nereaguje vizuálně na myš).
         /// </summary>
-        public bool ReadOnly { get { return this.Text1.ReadOnly; } set { this.LabelMain.Enabled = value; this.Text1.ReadOnly = value; this.Text2.ReadOnly = value; } }
+        public bool ReadOnly { get { return this.Text1.ReadOnly; } set { this.TitleLabel.Enabled = value; this.Text1.ReadOnly = value; this.Text2.ReadOnly = value; } }
         /// <summary>
         /// ToolTip text
         /// </summary>
@@ -105,10 +100,6 @@ namespace Asol.Tools.WorkScheduler.DataForm
                 e.ToolTipData.InfoText = toolTipText;
             }
         }
-        /// <summary>
-        /// Hlavní label
-        /// </summary>
-        public GLabel LabelMain { get; private set; }
         /// <summary>
         /// První Textbox / Reference / Číslo
         /// </summary>

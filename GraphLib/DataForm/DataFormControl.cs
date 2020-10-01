@@ -77,6 +77,9 @@ namespace Asol.Tools.WorkScheduler.DataForm
                 new TextEditOverlayRelationIcon(true)
             };
 
+            FontModifierInfo labelFontOnFocus = new FontModifierInfo() { Bold = true, SizeRatio = 1.15f };
+            Color? labelColorOnFocus = Skin.Control.ControlTextFocusColor;
+
             Rectangle bounds = Rectangle.Empty;
             int n = 0;
             for (int ny = 0; ny < countY; ny++)
@@ -90,7 +93,9 @@ namespace Asol.Tools.WorkScheduler.DataForm
                         BackColor = colors[rand.Next(colorCnt)],
                         Location = new Point(currentX, currentY),
                         Label = "Item " + n.ToString(),
-                        Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString()
+                        Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString(),
+                        TitleFontModifierOnFocus = labelFontOnFocus,
+                        TitleTextColorOnFocus = labelColorOnFocus
                     };
 
                     if (rand.Next(10) <= 3) item.Value1 += ": " + suffixes[rand.Next(suffixes.Length)];
@@ -103,18 +108,19 @@ Souřadnice prvku: {currentX}/{currentY}
 ";
 
                     item.BorderStyle = BorderStyleType.Soft;
-                    if (nx == 0) item.LabelMain.FontModifier.Bold = true;
-                    if (nx == 1) item.LabelMain.FontModifier.Italic = true;
-                    if (nx == 2) item.LabelMain.FontModifier.RelativeSize = 80;
+                    if (nx == 1) item.TitleLabel.FontModifier.Bold = true;
+                    if (nx == 2) item.TitleLabel.FontModifier.Italic = true;
+                    if (nx == 2) item.TitleLabel.FontModifier.SizeRatio = 0.85f;
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
 
                     if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
                         item.OverlayText = overlays[rand.Next(overlays.Length)];
-                    this.AddItem(item);
-                    bounds = item.Bounds;
 
+                    bounds = item.Bounds;
                     if (maxX < bounds.Right) maxX = bounds.Right;
                     currentX = bounds.Right + spaceX;
+
+                    this.AddItem(item);
                 }
 
                 if (maxY < bounds.Bottom) maxY = bounds.Bottom;

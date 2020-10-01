@@ -1221,9 +1221,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color ControlTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
         /// <summary>
+        /// Barva textu Control při Focusu
+        /// </summary>
+        public Color ControlTextFocusColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextFocusColor", DefaultTextFocusColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextFocusColor", value); } }
+        /// <summary>
         /// Barva okraje
         /// </summary>
         public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
+        /// <summary>
+        /// Barva linky
+        /// </summary>
+        public Color LineColor { get { return this._Owner.GetValue(this._SkinSetKey, "LineColor", DefaultLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "LineColor", value); } }
         /// <summary>
         /// Barva pozadí rámečku FrameSelect
         /// </summary>
@@ -1255,9 +1263,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         /// <summary>
+        /// Default Barva textu Control pro Focusu
+        /// </summary>
+        protected virtual Color DefaultTextFocusColor { get { return Color.FromArgb(0, 0, 64); } }
+        /// <summary>
         /// Default Barva okraje
         /// </summary>
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
+        /// <summary>
+        /// Default Barva linky
+        /// </summary>
+        protected virtual Color DefaultLineColor { get { return Color.DimGray; } }
         /// <summary>
         /// Default Barva pozadí rámečku FrameSelect
         /// </summary>

@@ -2456,7 +2456,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.ArrangementCurrent == null) return;
 
-            FontInfo fontInfo = new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = 75, Italic = true };
+            FontInfo fontInfo = new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = 0.75f, Italic = true };
             using (StringFormat sf = new StringFormat(StringFormatFlags.NoClip))
             {
                 string text = this.ArrangementCurrent.TextId;
@@ -3060,8 +3060,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Orientation = orientation;
             this.VerticalText = verticalText;
 
-            this.TickFontT = new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = 90, Bold = true };
-            this.TickFontS = new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = 80 };
+            this.TickFontT = new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = 0.90f, Bold = true };
+            this.TickFontS = new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = 0.80f };
             this.StringFormat = new StringFormat(StringFormatFlags.NoClip);
 
             this.CalculateInternal();

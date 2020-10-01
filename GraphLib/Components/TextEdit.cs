@@ -441,7 +441,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktuální barva písma
         /// </summary>
-        protected Color CurrentTextColor
+        protected override Color CurrentTextColor
         {
             get
             {

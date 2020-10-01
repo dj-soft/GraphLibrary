@@ -154,7 +154,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle infoBounds = new Rectangle(x + 15, y + 12, w - 32, h - 59);
                 FontInfo fontInfo = FontInfo.Caption;
                 fontInfo.Bold = true;
-                fontInfo.RelativeSize = 120;
+                fontInfo.SizeRatio = 1.20f;
                 Rectangle realBounds;
                 realBounds = GPainter.DrawString(graphics, infoCurrent, fontInfo, infoBounds, ContentAlignment.TopLeft, color: this.DataForeColor);
             }

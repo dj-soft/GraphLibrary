@@ -3558,7 +3558,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 return new FontInfo()
                 {
                     FontType = (FontSetType)((int)this.FontType),
-                    RelativeSize = this.FontRelativeSize,
+                    SizeRatio = (float)this.FontRelativeSize / 100f,
                     Bold = this.FontBold,
                     Italic = this.FontItalic,
                     Underline = this.FontUnderline

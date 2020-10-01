@@ -2053,6 +2053,58 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             }
         }
         #endregion
+        #region DrawGLine
+        /// <summary>
+        /// Vykreslí čáru GLine
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="line"></param>
+        /// <param name="bounds"></param>
+        internal static void DrawGLine(Graphics graphics, ILine3D line, Rectangle bounds)
+        {
+            if (line == null || !line.IsVisible) return;
+            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+
+            // 3D efekt na okraji:
+            int border = 0;
+            if (line.Effect3D != 0f && line.Border3D > 0)
+            {
+                border = line.Border3D;
+                border = (border < 0 ? 0 : (border > 32 ? 32 : border));
+                int size = (bounds.Width < bounds.Height ? bounds.Width : bounds.Height);    // Menší rozměr
+                int size2 = size / 2;
+                if (border > size2) border = size2;
+            }
+
+            // Okraje:
+            if (border > 0)
+            {
+                Rectangle borderBounds;
+                Color color1, color2;
+                CreateEffect3DColors(line.LineColor, line.Effect3D, out color1, out color2);
+
+                // Horní a Levá hrana, barva 1:
+                borderBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, border);
+                graphics.FillRectangle(Skin.Brush(color1), borderBounds);
+                borderBounds = new Rectangle(bounds.X, bounds.Y + border, border, bounds.Height - border);
+                graphics.FillRectangle(Skin.Brush(color1), borderBounds);
+
+                // Pravá a Dolní hrana, barva 2:
+                borderBounds = new Rectangle(bounds.Right - border, bounds.Y + border, border, bounds.Height - border);
+                graphics.FillRectangle(Skin.Brush(color2), borderBounds);
+                borderBounds = new Rectangle(bounds.X + border, bounds.Bottom - border, bounds.Width - border, border);
+                graphics.FillRectangle(Skin.Brush(color2), borderBounds);
+
+                bounds = bounds.Enlarge(-border);
+            }
+
+            // Vnitřní plocha:
+            if (bounds.Width > 0 && bounds.Height > 0)
+            {
+                graphics.FillRectangle(Skin.Brush(line.LineColor), bounds);
+            }
+        }
+        #endregion
         #region DrawScrollBar
         /// <summary>
         /// Vykreslí ScrollBar

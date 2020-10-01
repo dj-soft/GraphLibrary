@@ -990,6 +990,96 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
     }
+    #region GLine3D + ILine3D : neinteraktivní objekt, pouze definice dat pro vykreslení čáry
+    /// <summary>
+    /// <see cref="GLine3D"/> : neinteraktivní objekt, pouze definice dat pro vykreslení čáry.
+    /// Čára je kreslena metodou <see cref="GPainter.DrawGLine(Graphics, ILine3D, Rectangle)"/>
+    /// </summary>
+    public class GLine3D : InteractiveObject, ILine3D
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GLine3D()
+        {
+            IsVisible = true;
+            Effect3D = 0.35f;
+            Border3D = 1;
+        }
+        /// <summary>
+        /// true pokud je objekt viditelný (default)
+        /// </summary>
+        public bool IsVisible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
+        /// <summary>
+        /// Barva základní
+        /// </summary>
+        public Color LineColor { get { return _LineColor ?? LineColorDefault; } set { _LineColor = value; } }
+        private Color? _LineColor = null;
+        /// <summary>
+        /// Defaultní barva písma.
+        /// </summary>
+        protected virtual Color LineColorDefault { get { return Skin.Control.LineColor; } }
+        /// <summary>
+        /// Intenzita 3D efektu: kladná hodnota = linka "vystupuje nahoru", záporné = linka "je vtlačena dolů".
+        /// Default = 0.35f;
+        /// 0 = není kreslen 3D efekt.
+        /// </summary>
+        public float Effect3D { get; set; }
+        /// <summary>
+        /// Počet pixelů okrajů linky, kde je vykreslena barva 3D.
+        /// Default = 1px;
+        /// 0 = není kreslen 3D efekt.
+        /// </summary>
+        public int Border3D { get; set; }
+        #region Vykreslení
+        /// <summary>
+        /// Vykreslení objektu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            base.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);
+            if (!this.IsVisible) return;
+            GPainter.DrawGLine(e.Graphics, this, absoluteBounds);
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Obecné rozhraní pro vykreslení 3D čáry
+    /// </summary>
+    public interface ILine3D
+    {
+        /// <summary>
+        /// true pokud je objekt viditelný (default)
+        /// </summary>
+        bool IsVisible { get; }
+        /// <summary>
+        /// Souřadnice v prostoru majitele. 
+        /// Od souřadnic bude odvozena i orientace.
+        /// </summary>
+        Rectangle Bounds { get; }
+        /// <summary>
+        /// Barva základní
+        /// </summary>
+        Color LineColor { get; }
+        /// <summary>
+        /// Intenzita 3D efektu: kladná hodnota = linka "vystupuje nahoru", záporné = linka "je vtlačena dolů".
+        /// Default = 0.35f;
+        /// 0 = není kreslen 3D efekt.
+        /// </summary>
+        float Effect3D { get; }
+        /// <summary>
+        /// Počet pixelů okrajů linky, kde je vykreslena barva 3D.
+        /// Default = 1px;
+        /// 0 = není kreslen 3D efekt.
+        /// </summary>
+        int Border3D { get; }
+    }
+    #endregion
+    #region enum SplitterResizeMode
     /// <summary>
     /// Mode for Autoresize of Splitter by adjacent items in non-active direction
     /// </summary>
@@ -1008,4 +1098,5 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Intersection
     }
+    #endregion
 }

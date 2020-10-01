@@ -84,6 +84,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Color TextColorDefault { get { return Skin.Control.ControlTextColor; } }
         /// <summary>
+        /// Aktuální barva písma.
+        /// Ve třídě <see cref="GTextObject"/> vrací hodnotu barvy <see cref="GTextObject.TextColor"/>. Potomek může přepsat.
+        /// </summary>
+        protected virtual Color CurrentTextColor
+        {
+            get
+            {
+                return TextColor.Value;
+            }
+        }
+        /// <summary>
         /// Aktuálně platný typ písma. Při čtení má vždy hodnotu (nikdy není null).
         /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="FontDefault"/>.
         /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="FontDefault"/>.
@@ -97,7 +108,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje aktuální font = daný základem <see cref="Font"/> plus modifikátor <see cref="FontModifier"/>.
         /// </summary>
-        protected FontInfo CurrentFont
+        protected virtual FontInfo CurrentFont
         {
             get
             {

@@ -479,7 +479,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ResumeLayout(false);
             this.PerformLayout();
 
-            this.FontInfo.RelativeSize = 116 * this.FontInfo.RelativeSize / 100;
+            this.FontInfo.SizeRatio = 1.16f * this.FontInfo.SizeRatio;
         }
         /// <summary>
         /// Úprava layoutu po změně velikosti
@@ -1363,7 +1363,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ResumeLayout(false);
             this.PerformLayout();
 
-            this.FontInfo.RelativeSize = 116 * this.FontInfo.RelativeSize / 100;
+            this.FontInfo.SizeRatio = 1.16f * this.FontInfo.SizeRatio;
         }
         /// <summary>
         /// Úprava layoutu po změně velikosti

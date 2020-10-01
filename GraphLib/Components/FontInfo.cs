@@ -12,7 +12,9 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// FontInfo : Popisovač fontu. 
     /// Obsahuje všechna data pro fyzické vytvoření fontu, ale na rozdíl od <see cref="System.Drawing.Font"/> jsou tato data editovatelná.
-    /// Dále obsahuje property <see cref="FontInfo.Font"/>, která vždy rycle vrátí reálný font, odpovídající aktuálním datům, který navíc pochází z cache (nesmí se Disposovat).
+    /// Dále obsahuje property <see cref="FontInfo.Font"/>, která vždy rychle vrátí reálný font, odpovídající aktuálním datům, který navíc pochází z cache (nesmí se Disposovat).
+    /// <para/>
+    /// Třída implementuje <see cref="GetHashCode"/> i <see cref="Equals(object)"/>, instanci lze tedy použít jako Key v Dictionary.
     /// </summary>
     public class FontInfo
     {
@@ -24,7 +26,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public override int GetHashCode()
         {
             int hashCode = ((this.FontType.GetHashCode() << 24)
-                  ^ (this.RelativeSize.GetHashCode() << 8)
+                  ^ (this.SizeRatio.GetHashCode() << 8)
                   ^ (this.Bold ? 4 : 0)
                   ^ (this.Italic ? 2 : 0)
                   ^ (this.Underline ? 1 : 0));
@@ -44,7 +46,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return ((String.CompareOrdinal(this.FontFamilyName, other.FontFamilyName) == 0)
                  && ((this.FontEmSize ?? 0f) == (other.FontEmSize ?? 0f))
                  && (this.FontType == other.FontType)
-                 && (this.RelativeSize == other.RelativeSize)
+                 && (this.SizeRatio == other.SizeRatio)
                  && (this.Bold == other.Bold)
                  && (this.Italic == other.Italic)
                  && (this.Underline == other.Underline));
@@ -56,7 +58,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public override string ToString()
         {
             return this.FontType.ToString()
-                + "; Size: " + this.RelativeSize.ToString()
+                + "; SizeRatio: " + this.SizeRatio.ToString()
                 + (this.Bold ? "; Bold" : "")
                 + (this.Italic ? "; Italic" : "")
                 + (this.Underline ? "; Underline" : "")
@@ -71,7 +73,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private string _FontFamilyName = null;
         /// <summary>
         /// Absolutní velikost fontu v EM size, default = null.
-        /// Pokud je zadána, použije se namísto <see cref="RelativeSize"/>.
+        /// Pokud je zadána, použije se namísto <see cref="SizeRatio"/>.
         /// Povolené hodnoty jsou 4 až 48.
         /// </summary>
         public float? FontEmSize { get { return this._FontEmSize; } set { this._FontEmSize = (value.HasValue ? (value.Value < 4f ? 4f : (value.Value > 48f ? 48f : value)) : value); } }
@@ -81,29 +83,32 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public FontSetType FontType { get; set; }
         /// <summary>
-        /// Relative size to standard, in percent.
-        /// Default = 100 = 100%.
-        /// Accept values 20 to 500 (this is: 1/5 ÷ 5x size).
+        /// Relativní velikost fontu vzhledem ke standardu = Ratio.
+        /// Default = 1.0f = beze změny velikosti;
+        /// Hodnoty větší než 1 zvětší font, hodnoty menší než 1 zmenší font.
+        /// Akkceptuje se hodnota 0.2f až 5.0f. Vždy se zaokrouhlí na 2 desetinná místa.
         /// </summary>
-        public int RelativeSize { get { return this._RelativeSize; } set { this._RelativeSize = (value < 20 ? 20 : (value > 500 ? 500 : value)); } } private int _RelativeSize = SizeStandard;
+        public float SizeRatio { get { return this._SizeRatio; } set { this._SizeRatio = (float)Math.Round(_ToRange(value), 2); } } private float _SizeRatio = SizeRatioStandard;
+        private const float SizeRatioMin = 0.20f;
+        private const float SizeRatioMax = 5.00f;
         /// <summary>
-        /// Is Bold?
+        /// Je písmo Bold?
         /// </summary>
         public bool Bold { get; set; }
         /// <summary>
-        /// Is Italic?
+        /// Je písmo Italic?
         /// </summary>
         public bool Italic { get; set; }
         /// <summary>
-        /// Is Underlined?
+        /// Je písmo Underlined?
         /// </summary>
         public bool Underline { get; set; }
         /// <summary>
-        /// Clone of this FontInfo
+        /// Obsahuje new instanci vytvořenou z this instance
         /// </summary>
         public FontInfo Clone { get { return (FontInfo)this.MemberwiseClone(); } }
         /// <summary>
-        /// Returns new instance of this font, with applied zoom.
+        /// Vrátí new instanci vytvořenou z this instance + daný zoom
         /// </summary>
         /// <param name="zoom"></param>
         /// <returns></returns>
@@ -114,101 +119,100 @@ namespace Asol.Tools.WorkScheduler.Components
             return clone;
         }
         /// <summary>
-        /// Zoom this RelativeSize with zoom value.
-        /// Values of zero and negative are ignored.
+        /// Aplikuje Zoom na this instanci
         /// </summary>
         /// <param name="zoom"></param>
         public void ApplyZoom(float zoom)
         {
             if (zoom > 0f)
-                this.RelativeSize = (int)Math.Round((decimal)this.RelativeSize * (decimal)zoom, 0);
+                this.SizeRatio = (float)Math.Round((decimal)this.SizeRatio * (decimal)zoom, 2);
         }
         #endregion
-        #region Predefined fonts
+        #region Předdefinované fonty
         /// <summary>
         /// DefaultFont with small size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo DefaultSmall { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeSmall, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo DefaultSmall { get { return new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = SizeRatioSmall, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// DefaultFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo Default { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo Default { get { return new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// DefaultFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo DefaultBold { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo DefaultBold { get { return new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = SizeRatioStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// DefaultFont with big size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo DefaultBoldBig { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeBig, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo DefaultBoldBig { get { return new FontInfo() { FontType = FontSetType.DefaultFont, SizeRatio = SizeRatioBig, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// DialogFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo Dialog { get { return new FontInfo() { FontType = FontSetType.DialogFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo Dialog { get { return new FontInfo() { FontType = FontSetType.DialogFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// MenuFont with small size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo MenuSmall { get { return new FontInfo() { FontType = FontSetType.MenuFont, RelativeSize = SizeSmall, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo MenuSmall { get { return new FontInfo() { FontType = FontSetType.MenuFont, SizeRatio = SizeRatioSmall, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// MenuFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo Menu { get { return new FontInfo() { FontType = FontSetType.MenuFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo Menu { get { return new FontInfo() { FontType = FontSetType.MenuFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// MenuFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo MenuBold { get { return new FontInfo() { FontType = FontSetType.MenuFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo MenuBold { get { return new FontInfo() { FontType = FontSetType.MenuFont, SizeRatio = SizeRatioStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// CaptionFont with small size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo CaptionSmall { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeSmall, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo CaptionSmall { get { return new FontInfo() { FontType = FontSetType.CaptionFont, SizeRatio = SizeRatioSmall, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// CaptionFont with small size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo CaptionSmallBold { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeSmall, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo CaptionSmallBold { get { return new FontInfo() { FontType = FontSetType.CaptionFont, SizeRatio = SizeRatioSmall, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// CaptionFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo Caption { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo Caption { get { return new FontInfo() { FontType = FontSetType.CaptionFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// CaptionFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo CaptionBold { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo CaptionBold { get { return new FontInfo() { FontType = FontSetType.CaptionFont, SizeRatio = SizeRatioStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// CaptionFont with big size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo CaptionBoldBig { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeBig, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo CaptionBoldBig { get { return new FontInfo() { FontType = FontSetType.CaptionFont, SizeRatio = SizeRatioBig, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// IconTitleFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo IconTitle { get { return new FontInfo() { FontType = FontSetType.IconTitleFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo IconTitle { get { return new FontInfo() { FontType = FontSetType.IconTitleFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// IconTitleFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo IconTitleBold { get { return new FontInfo() { FontType = FontSetType.IconTitleFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
+        public static FontInfo IconTitleBold { get { return new FontInfo() { FontType = FontSetType.IconTitleFont, SizeRatio = SizeRatioStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
         /// MessageBoxFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo MessageBox { get { return new FontInfo() { FontType = FontSetType.MessageBoxFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo MessageBox { get { return new FontInfo() { FontType = FontSetType.MessageBoxFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// SmallCaptionFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo SmallCaption { get { return new FontInfo() { FontType = FontSetType.SmallCaptionFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo SmallCaption { get { return new FontInfo() { FontType = FontSetType.SmallCaptionFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
         /// StatusFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
-        public static FontInfo Status { get { return new FontInfo() { FontType = FontSetType.StatusFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        public static FontInfo Status { get { return new FontInfo() { FontType = FontSetType.StatusFont, SizeRatio = SizeRatioStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// Konstanta pro Zoom pro menší písma
+        /// Konstanta pro <see cref="SizeRatio"/> pro menší písma
         /// </summary>
-        protected const int SizeSmall = 85;
+        public const float SizeRatioSmall = 0.85f;
         /// <summary>
-        /// Konstanta pro Zoom pro standardní písma
+        /// Konstanta pro <see cref="SizeRatio"/> pro standardní písma
         /// </summary>
-        protected const int SizeStandard = 100;
+        public const float SizeRatioStandard = 1.00f;
         /// <summary>
-        /// Konstanta pro Zoom pro větší písma
+        /// Konstanta pro <see cref="SizeRatio"/> pro větší písma
         /// </summary>
-        protected const int SizeBig = 115;
+        public const float SizeRatioBig = 1.15f;
         #endregion
         #region Modifikovaný font = vytvořený z this, ale s úpravami z modifikátoru FontDeltaInfo
         /// <summary>
@@ -225,7 +229,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (modifier.FontFamilyName != null) clone.FontFamilyName = modifier.FontFamilyName;   // FontModifierInfo.FontFamilyName: null = beze změny, kdežto prázdný string se přenese do FontInfo.FontFamilyName a tím zruší explicitní jméno fontu.
             if (modifier.FontEmSize.HasValue) clone.FontEmSize = modifier.FontEmSize;
             if (modifier.FontType.HasValue) clone.FontType = modifier.FontType.Value;
-            if (modifier.RelativeSize.HasValue) clone.RelativeSize = (clone.RelativeSize * modifier.RelativeSize.Value) / 100;
+            if (modifier.SizeRatio.HasValue) clone.SizeRatio = (clone.SizeRatio * modifier.SizeRatio.Value);
             if (modifier.Bold.HasValue) clone.Bold = modifier.Bold.Value;
             if (modifier.Italic.HasValue) clone.Italic = modifier.Italic.Value;
             if (modifier.Underline.HasValue) clone.Underline = modifier.Underline.Value;
@@ -260,7 +264,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             Font prototype = GetFontPrototype(this.FontType);
-            emSize = prototype.Size * _ToRange(Application.App.Zoom.Value * ((float)this.RelativeSize / 100f));
+            emSize = prototype.Size * _ToRange(Application.App.Zoom.Value * this.SizeRatio);
             return new Font(prototype.FontFamily, emSize, fontStyle);
         }
         /// <summary>
@@ -294,7 +298,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private static float _ToRange(float value)
         {
-            return _ToRange(value, 0.2f, 5.0f);
+            return _ToRange(value, SizeRatioMin, SizeRatioMax);
         }
         private static float _ToRange(float value, float minimum, float maximum)
         {
@@ -393,13 +397,31 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (FontFamilyName != null) return false;            // Pouze NULL je Empty! Naproti tomu prázdný string vyjadřuje konkrétní hodnotu, která modifikuje FontInfo!
                 if (FontEmSize.HasValue) return false;
                 if (FontType.HasValue) return false;
-                if (RelativeSize.HasValue) return false;
+                if (SizeRatio.HasValue) return false;
                 if (Bold.HasValue) return false;
                 if (Italic.HasValue) return false;
                 if (Underline.HasValue) return false;
                 return true;
             }
         }
+        #endregion
+        #region Sada jednoduchých modifikátorů
+        /// <summary>
+        /// Modifikátor, který předepisuje písmo Bold
+        /// </summary>
+        public static FontModifierInfo ModifierBold { get { return new FontModifierInfo() { Bold = true }; } }
+        /// <summary>
+        /// Modifikátor, který předepisuje písmo Italic
+        /// </summary>
+        public static FontModifierInfo ModifierItalic { get { return new FontModifierInfo() { Italic = true }; } }
+        /// <summary>
+        /// Modifikátor, který předepisuje písmo Big = s velikostí 1.15f
+        /// </summary>
+        public static FontModifierInfo ModifierBig { get { return new FontModifierInfo() { SizeRatio = FontInfo.SizeRatioBig }; } }
+        /// <summary>
+        /// Modifikátor, který předepisuje písmo Small = s velikostí 0.85f
+        /// </summary>
+        public static FontModifierInfo ModifierSmall { get { return new FontModifierInfo() { SizeRatio = FontInfo.SizeRatioSmall }; } }
         #endregion
         #region Font properties
         /// <summary>
@@ -419,9 +441,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public FontSetType? FontType { get; set; }
         /// <summary>
+        /// Změna velikosti proti výchozímu fontu, null = default = 1.0f; hodnoty větší než 1 zvětšují font, menší než 1 zmenšují.
         /// Relative size to standard, in percent.
         /// </summary>
-        public int? RelativeSize { get; set; }
+        public float? SizeRatio { get; set; }
         /// <summary>
         /// Is Bold?
         /// </summary>

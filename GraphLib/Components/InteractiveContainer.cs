@@ -227,4 +227,71 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
     }
+    #region InteractiveLabeledContainer : Interaktivní container, nabízející Label a titulkovou oddělovací čáru
+    /// <summary>
+    /// <see cref="InteractiveLabeledContainer"/> : Interaktivní container, nabízející Label a titulkovou oddělovací čáru
+    /// </summary>
+    public class InteractiveLabeledContainer : InteractiveContainer
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public InteractiveLabeledContainer()
+        {
+            this.TitleLabel = new GLabel()
+            {
+                Text = "TitleLabel",
+                Bounds = new Rectangle(4, 4, 180, 20),
+                Alignment = ContentAlignment.TopLeft,
+                PrepareToolTipInParent = true
+            };
+            this.AddItem(this.TitleLabel);
+
+            this.TitleLine = new GLine3D();
+            this.AddItem(this.TitleLine);
+        }
+        /// <summary>
+        /// Titulkový label
+        /// </summary>
+        public GLabel TitleLabel { get; private set; }
+        /// <summary>
+        /// Modifikátor fontu pro titulkový label <see cref="TitleLabel"/> platný v době, kdy this Container má Focus
+        /// </summary>
+        public FontModifierInfo TitleFontModifierOnFocus { get; set; }
+        /// <summary>
+        /// Barva textu pro titulkový label <see cref="TitleLabel"/> platná v době, kdy this Container má Focus
+        /// </summary>
+        public Color? TitleTextColorOnFocus { get; set; }
+        /// <summary>
+        /// Titulková čára
+        /// </summary>
+        public GLine3D TitleLine { get; set; }
+        #region Interaktivita
+        /// <summary>
+        /// Po vstupu Focusu do Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
+        /// (vložením <see cref="TitleFontModifierOnFocus"/> a <see cref="TitleTextColorOnFocus"/> do objektu <see cref="TitleLabel"/>).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusEnter(e);
+            TitleLabel.FontDynamicModifier = TitleFontModifierOnFocus;
+            TitleLabel.TextColorDynamic = TitleTextColorOnFocus;
+            TitleLabel.Invalidate();
+        }
+        /// <summary>
+        /// Po odchodu Focusu z Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
+        /// (odebráním <see cref="TitleFontModifierOnFocus"/> a <see cref="TitleTextColorOnFocus"/> z objektu <see cref="TitleLabel"/>).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusLeave(e);
+            TitleLabel.FontDynamicModifier = null;
+            TitleLabel.TextColorDynamic = null;
+            TitleLabel.Invalidate();
+        }
+        #endregion
+    }
+    #endregion
 }

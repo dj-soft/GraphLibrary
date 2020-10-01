@@ -3722,7 +3722,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 string text = texts[i];
                 FontInfo font = (i == 0 ? FontInfo.CaptionBoldBig : FontInfo.DefaultBoldBig);
-                font.RelativeSize = (i == 0 ? 175 : 145);
+                font.SizeRatio = (i == 0 ? 1.75f : 1.45f);
                 BlockedGuiTextInfo textInfo = new BlockedGuiTextInfo(text, font);
                 textInfo.TextSize = GPainter.MeasureString(graphics, text, font);
                 lines.Add(textInfo);
