@@ -251,6 +251,22 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AddItem(this.TitleLine);
         }
         /// <summary>
+        /// Barva pozadí this containeru v době, kdy má Focus.
+        /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
+        /// Při čtení má vždy hodnotu (nikdy není null).
+        /// </summary>
+        public virtual Color? BackColorFocus { get { return this.__BackColorFocus ?? this.BackColorFocusDefault; } set { this.__BackColorFocus = value; this.Invalidate(); } }
+        private Color? __BackColorFocus = null;
+        /// <summary>
+        /// Defaultní barva pozadí.
+        /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
+        /// </summary>
+        protected virtual Color BackColorFocusDefault { get { return Skin.Control.ControlFocusBackColor; } }
+        /// <summary>
+        /// Aktuální barva pozadí, používá se při kreslení. Potomek může přepsat...
+        /// </summary>
+        protected override Color CurrentBackColor { get { return (this.HasFocus ? base.CurrentBackColor.Morph(this.BackColorFocus.Value) : base.CurrentBackColor); } }
+        /// <summary>
         /// Titulkový label
         /// </summary>
         public GLabel TitleLabel { get; private set; }

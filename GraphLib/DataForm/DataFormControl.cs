@@ -39,8 +39,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.ItemsList.Clear();
             int firstX = 8;
             int firstY = 8;
-            int spaceX = 3;
-            int spaceY = 3;
+            int spaceX = 0;
+            int spaceY = 0;
             // int topX = 1100;
             int maxX = 0;
             int maxY = 0;
@@ -49,7 +49,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int lastX = countX - 1;
 
             int lo = 224;
-            int hi = 240;
+            int hi = 228;
             Color[] colors = new Color[]
             {
                 Color.FromArgb(hi, lo, lo),

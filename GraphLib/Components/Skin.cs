@@ -1213,7 +1213,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color ControlBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ControlBackColor", DefaultControlBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ControlBackColor", value); } }
         /// <summary>
-        /// Barva pozadí Active
+        /// Barva pozadí Focus = v době, kdy control má focus.
+        /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
+        /// </summary>
+        public Color ControlFocusBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ControlFocusBackColor", DefaultControlFocusBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ControlFocusBackColor", value); } }
+        /// <summary>
+        /// Barva pozadí Active = v době, kdy control je aktivní (typicky aktivní záložka TabHeader).
         /// </summary>
         public Color ActiveBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBackColor", DefaultActiveBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBackColor", value); } }
         /// <summary>
@@ -1255,6 +1260,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Color DefaultControlBackColor { get { return Color.LightGray; } }
         /// <summary>
+        /// Default Barva pozadí Focus = v době, kdy control má focus
+        /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
+        /// </summary>
+        protected virtual Color DefaultControlFocusBackColor { get { return Color.FromArgb(64, 240, 240, 192); } }
+        /// <summary>
         /// Default Barva pozadí Active
         /// </summary>
         protected virtual Color DefaultActiveBackColor { get { return Color.FromArgb(255, 216, 216, 216); } }
@@ -1273,7 +1283,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default Barva linky
         /// </summary>
-        protected virtual Color DefaultLineColor { get { return Color.DimGray; } }
+        protected virtual Color DefaultLineColor { get { return Color.FromArgb(204, 204, 224); } }
         /// <summary>
         /// Default Barva pozadí rámečku FrameSelect
         /// </summary>

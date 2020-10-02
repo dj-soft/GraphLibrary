@@ -155,12 +155,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Dokud není explicitně nastavena hodnota, vrací se defaultní hodnota <see cref="BackColorDefault"/>.
         /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="BackColorDefault"/>.
         /// </summary>
-        public virtual Color? BackColor 
-        {
-            get { return this.__BackColor ?? this.BackColorDefault ; }
-            set { this.__BackColor = value; this.Invalidate(); } 
-        }
+        public virtual Color? BackColor { get { return this.__BackColor ?? this.BackColorDefault ; } set { this.__BackColor = value; this.Invalidate(); }  }
         private Color? __BackColor = null;
+        /// <summary>
+        /// Aktuální barva pozadí, používá se při kreslení. Potomek může přepsat...
+        /// </summary>
+        protected virtual Color CurrentBackColor { get { return BackColor.Value; } }
         /// <summary>
         /// Defaultní barva pozadí.
         /// </summary>
@@ -451,7 +451,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if ((parentStdDraw & repaintLayers) != 0)
                 {
                     RepaintParentMode repaintParent = this.RepaintParent;
-                    if (repaintParent == RepaintParentMode.Always || (repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.Value.A < 255))
+                    if (repaintParent == RepaintParentMode.Always || (repaintParent == RepaintParentMode.OnBackColorAlpha && this.CurrentBackColor.A < 255))
                         this.Parent.Repaint();       // původně Repaint(repaintLayers) : chyby v kreslení Ghost, výrazně pomalé.
                 }
             }
@@ -465,7 +465,7 @@ namespace Asol.Tools.WorkScheduler.Components
             get
             {
                 if (this.BackgroundMode == DrawBackgroundMode.Transparent) return RepaintParentMode.Always;
-                if (this.BackColor.Value.A < 255) return RepaintParentMode.OnBackColorAlpha;
+                if (this.CurrentBackColor.A < 255) return RepaintParentMode.OnBackColorAlpha;
                 return RepaintParentMode.None;
             }
         }
@@ -812,7 +812,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected virtual void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            this.DrawBackground(e, absoluteBounds, absoluteVisibleBounds, drawMode, this.BackColor.Value);
+            this.DrawBackground(e, absoluteBounds, absoluteVisibleBounds, drawMode, this.CurrentBackColor);
         }
         /// <summary>
         /// Metoda vykreslí pozadí this prvku danou barvou

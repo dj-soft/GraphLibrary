@@ -940,7 +940,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            Color spaceColor = this.BackColor.Value;                  // tam je default: Skin.TabHeader.SpaceColor;
+            Color spaceColor = this.CurrentBackColor;                  // tam je default: Skin.TabHeader.SpaceColor;
             if (spaceColor.A > 0)
                 e.Graphics.FillRectangle(Skin.Brush(spaceColor), absoluteBounds);
 

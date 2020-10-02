@@ -19,13 +19,13 @@ namespace Asol.Tools.WorkScheduler.DataForm
         public GDataFormItem()
         {
             this.TitleLabel.Text = "Popisek:";
-            this.TitleLabel.Bounds = new Rectangle(4, 4, 60, 20);
+            this.TitleLabel.Bounds = new Rectangle(4, 4, 95, 20);
             this.TitleLabel.Alignment = ContentAlignment.MiddleRight;
             this.TitleLabel.PrepareToolTipInParent = true;
 
             this.Text1 = new GTextEdit()
             {
-                Bounds = new Rectangle(66, 4, 120, 20),
+                Bounds = new Rectangle(104, 4, 120, 20),
                 Alignment = ContentAlignment.MiddleLeft,
                 PrepareToolTipInParent = true
             };
@@ -33,15 +33,15 @@ namespace Asol.Tools.WorkScheduler.DataForm
 
             this.Text2 = new GTextEdit()
             {
-                Bounds = new Rectangle(66, 4, 0, 20),
+                Bounds = new Rectangle(228, 4, 250, 20),
                 Alignment = ContentAlignment.MiddleLeft,
                 PrepareToolTipInParent = true,
                 Visible = false
             };
             this.AddItem(this.Text2);
 
-            this.Size = new Size(218, 28);
-            this.TitleLine.Bounds = new Rectangle(4, 1, 210, 3);
+            this.Size = new Size(240, 28);
+            this.TitleLine.Bounds = new Rectangle(4, 1, 232, 3);
         }
         /// <summary>
         /// Popisek
