@@ -432,12 +432,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek, který má aktuálně focus. Je nastaven po doběhnutí událostí <see cref="GInteractiveChangeState.KeyboardFocusEnter"/> a <see cref="GInteractiveChangeState.MouseEnter"/>.
         /// Setování hodnoty vyvolá metodu <see cref="SetFocusToItem(IInteractiveItem)"/> = korektně přenese focus do daného prvku.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IInteractiveItem FocusedItem { get { return this._FocusedItem; } set { SetFocusToItem(value); } }
         /// <summary>
         /// Prvek, který měl focus nedávno. Je nastaven po doběhnutí událostí <see cref="GInteractiveChangeState.KeyboardFocusLeave"/> a <see cref="GInteractiveChangeState.MouseLeave"/>, 
         /// v době kdy je do <see cref="IInteractiveHost.FocusedItem"/> vkládáno null.
         /// Slouží např. k obnově focusu při vrácení, nebo k určení, odkud přešel focus do určitého nového prvku.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IInteractiveItem FocusedItemPrevious { get { return this._FocusedItemPrevious; } }
         /// <summary>
         /// Zajistí nasměrování Focusu do prvního krajního prvku v daném směru, anebo do jeho nejbližšího Parenta, který pracuje s klávesnicí.
@@ -1723,6 +1725,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Any Interactive method or any items need repaint all items, after current (interactive) event.
         /// This value can be only set to true. Set to false does not change value of this property.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool RepaintAllItems { get { return this._RepaintAllItems; } set { if (value) this._RepaintAllItems = true; } }
         /// <summary>
         /// Any Interactive method or any items need repaint all items, after current (interactive) event.
@@ -1736,6 +1739,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud aplikace nastaví true, pak by musí obsloužit události <see cref="MousePaintProcessStart"/>, <see cref="MousePaintProcessTarget"/>, 
         /// a aby vše mělo smysl, měla by zaregistrovat i událost <see cref="MousePaintProcessCommit"/>.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool MousePaintEnabled { get; set; }
         /// <summary>
         /// Událost, kdy interaktivní control potřebuje informaci, zda na dané souřadnici a na daném prvku je možno zahájit akci MousePaint.

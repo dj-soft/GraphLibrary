@@ -588,6 +588,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hodnota true zapíná funkci AutoScroll = v případě potřeby se zobrazí posuvníky (pokud souřadnice položek přesahují aktuální velikost klientské velikosti controlu).
         /// Default : false = nic není zapnuté, ani není vytvářen objekt pro support AutoScroll
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool AutoScroll
         {
             get
@@ -624,6 +625,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default je hodnota: { 8, 8 }; setovat lze hodnoty v rozmezí 0 - 30 včetně.
         /// Pozor: pokud <see cref="AutoScroll"/> = false, pak nemá význam setovat hodnotu (neuloží se), a čtení hodnoty vrací <see cref="Size.Empty"/>.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Size AutoScrollMargin
         {
             get { return (this._HasAutoScroll ? this._AutoScrollSupport.AutoScrollMargin : Size.Empty); }
@@ -632,6 +634,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Režim AutoScroll je aktivní (=je povolen, a aktuálně je z důvodu potřeby zobrazen alespoň jeden ScrollBar)
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool AutoScrollActive { get { return this._AutoScrollActive; } }
         /// <summary>
         /// Zajistí zobrazení daného prvku v AutoScroll containeru

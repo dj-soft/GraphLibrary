@@ -23,8 +23,6 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public GDataFormControl()
         {
-            this.AddDataFormItems(10, 450);
-
 
 #warning    JEN PRO TESTY:   this.AutoScroll = true;
             this.AutoScroll = true;
@@ -34,7 +32,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// <summary>
         /// Naplní controly
         /// </summary>
-        protected void AddDataFormItems(int countX, int countY)
+        public void AddDataFormItems(int countX, int countY)
         {
             #region Barvy, texty, fonty
             int lo = 224;
@@ -78,7 +76,6 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int tabX = tabX0;
             int tabY = 0;
             int tabYSpace = 0;
-            Point tabsEnd = Point.Empty;
 
             int itemX0 = 8;
             int itemXSpace = 0;
@@ -109,10 +106,10 @@ namespace Asol.Tools.WorkScheduler.DataForm
                     tabIdx++;
                     tab.TitleLabel.Text = $"Titulek skupiny {tabIdx}...";
                     tab.TitleLabel.Bounds = new Rectangle(itemX0, 2, 350, 20);
-                    tab.TitleLine.Bounds = new Rectangle(itemX0, 25, 700, 3);
+                    tab.TitleLine.Bounds = new Rectangle(itemX0, 23, 700, 2);
                     tab.TitleLine.LineColor = Color.FromArgb(192, 64, 80, 128);
-                    tab.TitleLine.LineColorEnd = Color.FromArgb(32, 64, 64, 64);
-                    tab.TitleLine.Border3D = 1;
+                    tab.TitleLine.LineColorEnd = Color.FromArgb(16, 64, 64, 64);
+                    tab.TitleLine.Border3D = 0;
                     tab.TitleLabel.FontModifier = labelFont;
                     tab.TitleFontModifierOnFocus = titleFontOnFocus;
                     tab.TitleTextColorOnFocus = titleColorOnFocus;
