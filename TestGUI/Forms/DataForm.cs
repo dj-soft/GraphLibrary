@@ -40,6 +40,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
         protected void InitializeDataForm()
         {
+            Stopwatch = new System.Diagnostics.Stopwatch();
+            StopwatchFrequency = (decimal)System.Diagnostics.Stopwatch.Frequency;
+            CurrentLibrary = DataFormtestLibraryType.Asol;
         }
 
         protected string GetFormXml()
@@ -49,10 +52,251 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return xml;
         }
-
-        private void ExitButton_Click(object sender, EventArgs e)
+        #region Nastavení = typ knihovny + počet objektů
+        /// <summary>
+        /// Zvolená knihovna
+        /// </summary>
+        public DataFormtestLibraryType CurrentLibrary
         {
-            this.Close();
+            get { return _CurrentLibrary; }
+            set
+            {
+                bool isChange = false;
+                if (!_CurrentLibraryChanging)
+                {
+                    _CurrentLibraryChanging = true;
+                    this.radioButtonWinForm.Checked = (value == DataFormtestLibraryType.WinForms);
+                    this.radioButtonDevExpr.Checked = (value == DataFormtestLibraryType.DevExpress);
+                    this.radioButtonInfrag.Checked = (value == DataFormtestLibraryType.Infragistic);
+                    this.radioButtonAsol.Checked = (value == DataFormtestLibraryType.Asol);
+                    isChange = (_CurrentLibrary != value);
+                    _CurrentLibrary = value;
+                    _CurrentLibraryChanging = false;
+                }
+                if (isChange)
+                {
+                    _TestObjectRemove();
+                    int number = (_CurrentLibrary == DataFormtestLibraryType.WinForms ? 400 :
+                                 (_CurrentLibrary == DataFormtestLibraryType.DevExpress ? 800 :
+                                 (_CurrentLibrary == DataFormtestLibraryType.Infragistic ? 1200 :
+                                 (_CurrentLibrary == DataFormtestLibraryType.Asol ? 8000 : 100))));
+                    if (TestControlsNumber <= 0 || TestControlsNumber > number)
+                        TestControlsNumber = number;
+                }
+            }
         }
+        private DataFormtestLibraryType _CurrentLibrary = DataFormtestLibraryType.None;
+        private bool _CurrentLibraryChanging = false;
+        private void _RadioButtonCheckedChanged(object sender, EventArgs e)
+        {
+            if (Object.ReferenceEquals(sender, this.radioButtonWinForm)) CurrentLibrary = DataFormtestLibraryType.WinForms;
+            else if (Object.ReferenceEquals(sender, this.radioButtonDevExpr)) CurrentLibrary = DataFormtestLibraryType.DevExpress;
+            else if (Object.ReferenceEquals(sender, this.radioButtonInfrag)) CurrentLibrary = DataFormtestLibraryType.Infragistic;
+            else if (Object.ReferenceEquals(sender, this.radioButtonAsol)) CurrentLibrary = DataFormtestLibraryType.Asol;
+        }
+        /// <summary>
+        /// Počet vygenerovaných prvků, platná hodnota = 1 až <see cref="TestControlsNumberMax"/> (=20000)
+        /// </summary>
+        public int TestControlsNumber
+        {
+            get { return _TestControlsNumber; }
+            set
+            {
+                bool isChange = false;
+                if (!_TestControlsNumberChanging)
+                {
+                    _TestControlsNumberChanging = true;
+                    int number = (value < 1 ? 1 : (value > TestControlsNumberMax ? TestControlsNumberMax : value));
+                    isChange = (_TestControlsNumber != number);
+                    this.trackBarNumber.Value = _GetTrackBarNumber_ValueFromNumber(number);
+                    _TestControlsNumber = number;
+                    this.labelValue.Text = number.ToString();
+                    _TestControlsNumberChanging = false;
+                }
+                if (isChange) _TestObjectRemove();
+            }
+        }
+        private int _TestControlsNumber;
+        private bool _TestControlsNumberChanging = false;
+        /// <summary>
+        /// Maximální počet prvků
+        /// </summary>
+        public const int TestControlsNumberMax = 20000;
+        private void trackBarNumber_Scroll(object sender, EventArgs e)
+        {
+            TestControlsNumber = _GetTrackBarNumber_NumberFromValue(this.trackBarNumber.Value);
+        }
+        /// <summary>
+        /// Vrátí hodnotu do Trackbaru pro daný počet prvků
+        /// </summary>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        private int _GetTrackBarNumber_ValueFromNumber(int number)
+        {
+            decimal value = 0m;
+            decimal numb = (decimal)(number < 1 ? 1 : (number > TestControlsNumberMax ? TestControlsNumberMax : number));
+            if (numb < 10m) value = numb;
+            else if (numb < 100m) value = 10m + (numb / 10m);
+            else if (numb < 1000m) value = 20m + (numb / 100m);
+            else if (numb < 10000m) value = 30m + (numb / 1000m);
+            else if (numb < 100000m) value = 40m + (numb / 10000m);
+            else value = 42m;
+            decimal ratio = (value - 1m) / 41m;
+            int min = this.trackBarNumber.Minimum;
+            int max = this.trackBarNumber.Maximum;
+            int trackValue = (int)Math.Round((min + ratio * (max - min)), 0);
+            return trackValue;
+        }
+        /// <summary>
+        /// Vrátí cílový počet objektů (<see cref="TestControlsNumber"/>) z hodnoty na trackbaru
+        /// </summary>
+        /// <param name="trackValue"></param>
+        /// <returns></returns>
+        private int _GetTrackBarNumber_NumberFromValue(int trackValue)
+        {
+            // Převedeme hodnotu value na lineární rozsah int 1-42 (42 je odpověď na zásadní otázku života, vesmíru a vůbec):
+            // 1-10  10-100  100-1000  1000-10000  10000-20000
+            int min = this.trackBarNumber.Minimum;
+            int max = this.trackBarNumber.Maximum;
+            decimal ratio = (decimal)(trackValue - min) / (decimal)(max - min);     // Do rozsahu 0 až 1, včetně
+            ratio = (ratio < 0m ? 0m : (ratio > 1m ? 1m : ratio));
+            decimal value = 1m + Math.Round((41m * ratio), 1);
+            decimal number = 0;
+            if (value < 10m) number = value;                                    // value = 4    =>   number                =     4
+            else if (value < 20m) number = 10m * (value - 9m);                   // value = 16   =>   number = (10 * 6)     =    60
+            else if (value < 30m) number = 100m * (value - 19m);                  // value = 23   =>   number = (100 * 3)    =   300
+            else if (value < 40m) number = 1000m * (value - 29m);                 // value = 38   =>   number = (1000 * 8)   =  8000
+            else if (value < 50m) number = 10000m * (value - 39m);                // value = 42   =>   number = (10000 * 2)  = 20000
+            else number = TestControlsNumberMax;
+            return (int)Math.Round(number, 0);
+        }
+        #endregion
+        #region Generátor objektů
+        private void RunButton_Click(object sender, EventArgs e)
+        {
+            CreateTestObject(CurrentLibrary, TestControlsNumber);
+        }
+        private void CreateTestObject(DataFormtestLibraryType library, int number)
+        {
+            string message = "";
+            StopwatchStart();
+            _TestObjectRemove();
+            message += $"Odstranění stávajícího: {StopwatchGetLastMiliseconds()} ms; ";
+            switch (library)
+            {
+                case DataFormtestLibraryType.WinForms:
+                    CreateTestObjectWinForm(number, ref message);
+                    break;
+                case DataFormtestLibraryType.Asol:
+                    CreateTestObjectAsol(number, ref message);
+                    break;
+            }
+            StatusStripLabel1.Text = message;
+        }
+        private void CreateTestObjectWinForm(int number, ref string message)
+        {
+            var dataFormCtrl = new Asol.Tools.WorkScheduler.TestGUI.TestComponents.WinFormDataFormControl();
+            dataFormCtrl.Dock = DockStyle.Fill;
+            message += $"Vytvoření WINFORM controlu: {StopwatchGetLastMiliseconds()} ms; ";
+
+            this.TestContentPanel.Controls.Add(dataFormCtrl);
+            _TestObject = dataFormCtrl;
+            message += $"Přidání do Panelu: {StopwatchGetLastMiliseconds()} ms; ";
+
+            dataFormCtrl.AddDataFormItems(10, number / 10);
+            message += $"Vygenerování prvků: {StopwatchGetLastMiliseconds()} ms; ";
+
+            dataFormCtrl.Refresh();
+            message += $"Vykreslení: {StopwatchGetLastMiliseconds()} ms; ";
+
+        }
+
+        private void CreateTestObjectAsol(int number, ref string message)
+        {
+            var dataFormCtrl = new Asol.Tools.WorkScheduler.DataForm.GDataFormControl();
+            dataFormCtrl.Dock = DockStyle.Fill;
+            message += $"Vytvoření ASOL controlu: {StopwatchGetLastMiliseconds()} ms; ";
+
+            this.TestContentPanel.Controls.Add(dataFormCtrl);
+            _TestObject = dataFormCtrl;
+            message += $"Přidání do Panelu: {StopwatchGetLastMiliseconds()} ms; ";
+
+            dataFormCtrl.AddDataFormItems(10, number / 10);
+            message += $"Vygenerování prvků: {StopwatchGetLastMiliseconds()} ms; ";
+
+            dataFormCtrl.Refresh();
+            message += $"Vykreslení: {StopwatchGetLastMiliseconds()} ms; ";
+        }
+
+        /// <summary>
+        /// Zruší a zahodí testovací objekt 
+        /// </summary>
+        private void _TestObjectRemove()
+        {
+            StatusStripLabel1.Text = "";
+            this.TestContentPanel.Controls.Clear();
+            if (_TestObject != null)
+            {
+                _TestObject.Dispose();
+                _TestObject = null;
+            }
+        }
+        private Control _TestObject;
+        #endregion
+        /// <summary>
+        /// Nastartuje časomíru = čas 0
+        /// </summary>
+        private void StopwatchStart()
+        {
+            Stopwatch.Restart();
+            StopwatchRunTime = Stopwatch.ElapsedTicks;
+            StopwatchLastTime = StopwatchRunTime;
+        }
+        /// <summary>
+        /// Vrátí mezičas = počet milisekund (jako string bez jednotek) od posledního volání této metody.
+        /// Uloží si čas aktuálního volání pro příští volání.
+        /// </summary>
+        /// <returns></returns>
+        private string StopwatchGetLastMiliseconds()
+        {
+            long currTicks = Stopwatch.ElapsedTicks;
+            string result = GetMiliseconds(StopwatchLastTime, currTicks);
+            StopwatchLastTime = currTicks;
+            return result;
+        }
+        /// <summary>
+        /// Vrátí celkový čas = počet milisekund (jako string bez jednotek) od startu časomíry do volání této metody.
+        /// </summary>
+        /// <returns></returns>
+        private string StopwatchGetTotalMiliseconds()
+        {
+            long currTicks = Stopwatch.ElapsedTicks;
+            string result = GetMiliseconds(StopwatchRunTime, currTicks);
+            return result;
+        }
+        /// <summary>
+        /// Vrátí počet milisekund do start do stop tick, jako string, bez jednotek
+        /// </summary>
+        /// <param name="startTick"></param>
+        /// <param name="stopTick"></param>
+        /// <returns></returns>
+        private string GetMiliseconds(long startTick, long stopTick)
+        {
+            decimal ticks = (decimal)(stopTick - startTick);
+            decimal milisecs = Math.Round((1000m * ticks / StopwatchFrequency), 3);
+            return milisecs.ToString("### ### ##0.000").Trim();
+        }
+        private System.Diagnostics.Stopwatch Stopwatch;
+        private long StopwatchRunTime;
+        private long StopwatchLastTime;
+        private decimal StopwatchFrequency;
+    }
+    public enum DataFormtestLibraryType
+    {
+        None = 0,
+        WinForms,
+        DevExpress,
+        Infragistic,
+        Asol
     }
 }
