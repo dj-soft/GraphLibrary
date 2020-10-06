@@ -22,6 +22,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.TitleLabel.Bounds = new Rectangle(4, 4, 95, 20);
             this.TitleLabel.Alignment = ContentAlignment.MiddleRight;
             this.TitleLabel.PrepareToolTipInParent = true;
+            this.TitleLabel.Visible = true;
 
             this.Text1 = new GTextEdit()
             {
@@ -41,7 +42,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.AddItem(this.Text2);
 
             this.Size = new Size(240, 28);
-            this.TitleLine.Bounds = new Rectangle(4, 1, 232, 3);
+            // this.TitleLine.Bounds = new Rectangle(4, 1, 232, 3);
         }
         /// <summary>
         /// Popisek

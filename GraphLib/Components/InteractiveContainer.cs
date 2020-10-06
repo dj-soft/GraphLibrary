@@ -153,6 +153,14 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ChildList.Add(item);
         }
         /// <summary>
+        /// Odebere daný Child prvek
+        /// </summary>
+        /// <param name="item"></param>
+        public virtual void RemoveItem(IInteractiveItem item)
+        {
+            this.ChildList.Remove(item);
+        }
+        /// <summary>
         /// Add more interactive items.
         /// Does not trigger Draw().
         /// </summary>
@@ -238,18 +246,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public InteractiveLabeledContainer()
         {
-            this.TitleLabel = new GLabel()
-            {
-                Text = "TitleLabel",
-                Bounds = new Rectangle(4, 4, 180, 20),
-                Alignment = ContentAlignment.TopLeft,
-                PrepareToolTipInParent = true
-            };
-            this.AddItem(this.TitleLabel);
-
-            this.TitleLine = new GLine3D();
-            this.AddItem(this.TitleLine);
         }
+        #region Vizuální vlastnosti containeru
         /// <summary>
         /// Barva pozadí this containeru v době, kdy má Focus.
         /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
@@ -266,10 +264,59 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Aktuální barva pozadí, používá se při kreslení. Potomek může přepsat...
         /// </summary>
         protected override Color CurrentBackColor { get { return (this.HasFocus ? base.CurrentBackColor.Morph(this.BackColorFocus.Value) : base.CurrentBackColor); } }
+        #endregion
+        #region TitleLabel a TitleLine
         /// <summary>
-        /// Titulkový label
+        /// Obsahuje true, pokud je viditelný label <see cref="TitleLabel"/>.
+        /// Pokud objekt není viditelný (<see cref="TitleLabelVisible"/> je false), pak objekt <see cref="TitleLabel"/> je null.
+        /// Výchozí hodnota <see cref="TitleLabelVisible"/> je false = instance labelu neexistuje a šetří se tak paměť.
+        /// Pokud je label nějakou dobu používán a pak je nastaveno <see cref="TitleLabelVisible"/> = false, pak se label zahodí i se všemi nastavenými vlastnostmi,
+        /// a následné nastavení <see cref="TitleLabelVisible"/> = true vygeneruje new instanci s výchozími hodnotami.
+        /// Pokud chceme zapínat a vypínat viditelnost, ale ponechat vlastnosti, pak je správné řídit přímo viditelnost Labelu <see cref="TitleLabel"/>.Visible.
         /// </summary>
-        public GLabel TitleLabel { get; private set; }
+        public bool TitleLabelVisible
+        {
+            get { return (_TitleLabel != null ? _TitleLabel.Visible : false); }
+            set
+            {
+                if (value)
+                {   // Zobrazit: použijeme property TitleLabel, tam se v případě potřeby vytvoří new instance, a do ní vložíme Visible = true:
+                    TitleLabel.Visible = true;
+                }
+                else
+                {   // Zneviditelnit = zlikvidovat:
+                    if (_TitleLabel != null)
+                    {
+                        this.RemoveItem(_TitleLabel);
+                        _TitleLabel = null;
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Titulkový label. Pokud je čtena hodnota, která by dosud byla null (tzn. <see cref="TitleLabelVisible"/> je false), pak bude nejprve vytvořena new instance a ta vrácena,
+        /// ale její vlastní Visible bude false.
+        /// </summary>
+        public GLabel TitleLabel
+        {
+            get
+            {
+                if (_TitleLabel == null)
+                {
+                    _TitleLabel = new GLabel()
+                    {
+                        Text = "TitleLabel",
+                        Bounds = new Rectangle(4, 4, 180, 20),
+                        Alignment = ContentAlignment.TopLeft,
+                        PrepareToolTipInParent = true
+                    };
+                    _TitleLabel.Visible = false;
+                    this.AddItem(this._TitleLabel);
+                }
+                return _TitleLabel;
+            }
+        }
+        private GLabel _TitleLabel;
         /// <summary>
         /// Modifikátor fontu pro titulkový label <see cref="TitleLabel"/> platný v době, kdy this Container má Focus
         /// </summary>
@@ -279,9 +326,55 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color? TitleTextColorOnFocus { get; set; }
         /// <summary>
-        /// Titulková čára
+        /// Obsahuje true, pokud je viditelný label <see cref="TitleLine"/>.
+        /// Pokud objekt není viditelný (<see cref="TitleLineVisible"/> je false), pak objekt <see cref="TitleLine"/> je null.
+        /// Výchozí hodnota <see cref="TitleLineVisible"/> je false = instance labelu neexistuje a šetří se tak paměť.
+        /// Pokud je label nějakou dobu používán a pak je nastaveno <see cref="TitleLineVisible"/> = false, pak se label zahodí i se všemi nastavenými vlastnostmi,
+        /// a následné nastavení <see cref="TitleLineVisible"/> = true vygeneruje new instanci s výchozími hodnotami.
+        /// Pokud chceme zapínat a vypínat viditelnost, ale ponechat vlastnosti, pak je správné řídit přímo viditelnost Labelu <see cref="TitleLine"/>.Visible.
         /// </summary>
-        public GLine3D TitleLine { get; set; }
+        public bool TitleLineVisible
+        {
+            get { return (_TitleLine != null ? _TitleLine.Visible : false); }
+            set
+            {
+                if (value)
+                {   // Zobrazit: použijeme property TitleLine, tam se v případě potřeby vytvoří new instance, a do ní vložíme Visible = true:
+                    TitleLine.Visible = true;
+                }
+                else
+                {   // Zneviditelnit = zlikvidovat:
+                    if (_TitleLine != null)
+                    {
+                        this.RemoveItem(_TitleLine);
+                        _TitleLine = null;
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Titulkový label. Pokud je čtena hodnota, která by dosud byla null (tzn. <see cref="TitleLineVisible"/> je false), pak bude nejprve vytvořena new instance a ta vrácena,
+        /// ale její vlastní Visible bude false.
+        /// </summary>
+        public GLine3D TitleLine
+        {
+            get
+            {
+                if (_TitleLine == null)
+                {
+                    _TitleLine = new GLine3D()
+                    {
+                        Bounds = new Rectangle(4, 4, 180, 20),
+                        PrepareToolTipInParent = true
+                    };
+                    _TitleLine.Visible = false;
+                    this.AddItem(this._TitleLine);
+                }
+                return _TitleLine;
+            }
+        }
+        private GLine3D _TitleLine;
+        #endregion
         #region Interaktivita
         /// <summary>
         /// Po vstupu Focusu do Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku

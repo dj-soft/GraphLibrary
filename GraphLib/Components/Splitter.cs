@@ -1002,14 +1002,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GLine3D()
         {
-            IsVisible = true;
-            Effect3D = 0.35f;
+            Bounds = new Rectangle(0, 0, 200, 2);
+            Visible = true;
             Border3D = 1;
         }
         /// <summary>
         /// true pokud je objekt viditelný (default)
         /// </summary>
-        public bool IsVisible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
+        public bool Visible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
         /// <summary>
         /// Barva základní
         /// </summary>
@@ -1020,11 +1020,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Color LineColorDefault { get { return Skin.Control.LineColor; } }
         /// <summary>
+        /// Barva koncová, při kreslení linky s barevným přechodem. Může definovat Alpha kanál (=fading).
+        /// Koncová = vpravo pro horizontální / dole pro vertikální linku.
+        /// Default = null = bez barevného přechodu.
+        /// </summary>
+        public Color? LineColorEnd { get; set; }
+        /// <summary>
         /// Intenzita 3D efektu: kladná hodnota = linka "vystupuje nahoru", záporné = linka "je vtlačena dolů".
         /// Default = 0.35f;
         /// 0 = není kreslen 3D efekt.
         /// </summary>
-        public float Effect3D { get; set; }
+        public float Effect3D { get { return _Effect3D ?? Effect3DDefault; } set { _Effect3D = value; } }
+        private float? _Effect3D = null;
+        /// <summary>
+        /// Defaultní Intenzita 3D efektu.
+        /// </summary>
+        protected virtual float Effect3DDefault { get { return Skin.Control.LineEffect3D; } }
         /// <summary>
         /// Počet pixelů okrajů linky, kde je vykreslena barva 3D.
         /// Default = 1px;
@@ -1042,7 +1053,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             base.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);
-            if (!this.IsVisible) return;
+            if (!this.Visible) return;
             GPainter.DrawGLine(e.Graphics, this, absoluteBounds);
         }
         #endregion
@@ -1055,20 +1066,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true pokud je objekt viditelný (default)
         /// </summary>
-        bool IsVisible { get; }
+        bool Visible { get; }
         /// <summary>
         /// Souřadnice v prostoru majitele. 
         /// Od souřadnic bude odvozena i orientace.
         /// </summary>
         Rectangle Bounds { get; }
         /// <summary>
-        /// Barva základní
+        /// Barva základní (základ pro 3D efekt), při zadání <see cref="LineColorEnd"/> jde o barvu počáteční (vlevo pro horizontální / nahoře pro vertikální linku)
         /// </summary>
         Color LineColor { get; }
         /// <summary>
+        /// Barva koncová, při kreslení linky s barevným přechodem. Může definovat Alpha kanál (=fading).
+        /// Koncová = vpravo pro horizontální / dole pro vertikální linku.
+        /// </summary>
+        Color? LineColorEnd { get; }
+        /// <summary>
         /// Intenzita 3D efektu: kladná hodnota = linka "vystupuje nahoru", záporné = linka "je vtlačena dolů".
-        /// Default = 0.35f;
-        /// 0 = není kreslen 3D efekt.
+        /// Default = výchozí hodnota dle skinu, 0.25f
+        /// 0.0f = není kreslen 3D efekt.
         /// </summary>
         float Effect3D { get; }
         /// <summary>

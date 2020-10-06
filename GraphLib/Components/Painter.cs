@@ -183,6 +183,54 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region FillWithGradient
+        /// <summary>
+        /// Vyplní daný prostor barevným gradientem
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color1"></param>
+        /// <param name="color2"></param>
+        /// <param name="targetSide"></param>
+        internal static void FillWithGradient(Graphics graphics, Rectangle bounds, Color color1, Color color2, RectangleSide targetSide)
+        {
+            using (var brush = CreateBrushForGradient(bounds, color1, color2, targetSide))
+            {
+                graphics.FillRectangle(brush, bounds);
+            }
+        }
+        /// <summary>
+        /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="color1"></param>
+        /// <param name="color2"></param>
+        /// <param name="targetSide"></param>
+        /// <returns></returns>
+        internal static LinearGradientBrush CreateBrushForGradient(Rectangle bounds, Color color1, Color color2, RectangleSide targetSide)
+        {
+            switch (targetSide)
+            {
+                case RectangleSide.Bottom:
+                case RectangleSide.BottomCenter:
+                    bounds = bounds.Enlarge(0, 1, 0, 1);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color1, color2, LinearGradientMode.Vertical);
+                case RectangleSide.Left:
+                case RectangleSide.MiddleLeft:
+                    bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color2, color1, LinearGradientMode.Horizontal);
+                case RectangleSide.Top:
+                case RectangleSide.TopCenter:
+                    bounds = bounds.Enlarge(0, 1, 0, 1);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color2, color1, LinearGradientMode.Vertical);
+                case RectangleSide.Right:
+                case RectangleSide.MiddleRight:
+                default:
+                    bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color1, color2, LinearGradientMode.Horizontal);
+            }
+        }
+        #endregion
         #region DrawFrameSelect
         /// <summary>
         /// Vykreslí FrameSelect obdélník
@@ -2062,12 +2110,13 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="bounds"></param>
         internal static void DrawGLine(Graphics graphics, ILine3D line, Rectangle bounds)
         {
-            if (line == null || !line.IsVisible) return;
+            if (line == null || !line.Visible) return;
             if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
             // 3D efekt na okraji:
             int border = 0;
-            if (line.Effect3D != 0f && line.Border3D > 0)
+            float effect3D = line.Effect3D;
+            if (effect3D != 0f && line.Border3D > 0)
             {
                 border = line.Border3D;
                 border = (border < 0 ? 0 : (border > 32 ? 32 : border));
@@ -2076,32 +2125,87 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 if (border > size2) border = size2;
             }
 
-            // Okraje:
+            // Orientace:
+            bool isHorizontal = (bounds.Width >= bounds.Height);
+
+            // Oblasti pro kreslení = okraje + střed:
+            Dictionary<RectangleSide, Rectangle> areas = new Dictionary<RectangleSide, Rectangle>();
             if (border > 0)
             {
-                Rectangle borderBounds;
-                Color color1, color2;
-                CreateEffect3DColors(line.LineColor, line.Effect3D, out color1, out color2);
-
-                // Horní a Levá hrana, barva 1:
-                borderBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, border);
-                graphics.FillRectangle(Skin.Brush(color1), borderBounds);
-                borderBounds = new Rectangle(bounds.X, bounds.Y + border, border, bounds.Height - border);
-                graphics.FillRectangle(Skin.Brush(color1), borderBounds);
-
-                // Pravá a Dolní hrana, barva 2:
-                borderBounds = new Rectangle(bounds.Right - border, bounds.Y + border, border, bounds.Height - border);
-                graphics.FillRectangle(Skin.Brush(color2), borderBounds);
-                borderBounds = new Rectangle(bounds.X + border, bounds.Bottom - border, bounds.Width - border, border);
-                graphics.FillRectangle(Skin.Brush(color2), borderBounds);
-
+                areas.Add(RectangleSide.Top, new Rectangle(bounds.X, bounds.Y, bounds.Width, border));
+                areas.Add(RectangleSide.Left, new Rectangle(bounds.X, bounds.Y + border, border, bounds.Height - border));
+                areas.Add(RectangleSide.Right, new Rectangle(bounds.Right - border, bounds.Y + border, border, bounds.Height - border - border));
+                areas.Add(RectangleSide.Bottom, new Rectangle(bounds.X + border, bounds.Bottom - border, bounds.Width - border, border));
                 bounds = bounds.Enlarge(-border);
             }
-
-            // Vnitřní plocha:
             if (bounds.Width > 0 && bounds.Height > 0)
             {
-                graphics.FillRectangle(Skin.Brush(line.LineColor), bounds);
+                areas.Add(RectangleSide.Center, bounds);
+            }
+
+            // Barvy: 3D efekt, Gradient:
+            Color colorBegin = line.LineColor;
+            Color? colorEnd = line.LineColorEnd;
+
+            if (!colorEnd.HasValue)
+            {   // Bez gradientu:
+                if (border <= 0)
+                {   // Bez gradientu a bez okrajů = jen střed v barvě colorBegin:
+                    if (areas.TryGetValue(RectangleSide.Center, out bounds)) graphics.FillRectangle(Skin.Brush(colorBegin), bounds);
+                }
+                else
+                {   // Bez gradientu s okraji 3D efekt:
+                    Color colorBeginB, colorBeginA;
+                    CreateEffect3DColors(colorBegin, effect3D, out colorBeginB, out colorBeginA);
+
+                    if (areas.TryGetValue(RectangleSide.Left, out bounds)) graphics.FillRectangle(Skin.Brush(colorBeginB), bounds);
+                    if (areas.TryGetValue(RectangleSide.Top, out bounds)) graphics.FillRectangle(Skin.Brush(colorBeginB), bounds);
+                    if (areas.TryGetValue(RectangleSide.Right, out bounds)) graphics.FillRectangle(Skin.Brush(colorBeginA), bounds);
+                    if (areas.TryGetValue(RectangleSide.Bottom, out bounds)) graphics.FillRectangle(Skin.Brush(colorBeginA), bounds);
+                    if (areas.TryGetValue(RectangleSide.Center, out bounds)) graphics.FillRectangle(Skin.Brush(colorBegin), bounds);
+                }
+            }
+            else if (isHorizontal)
+            {   // S gradientem - Horizontálním:
+                RectangleSide side = RectangleSide.Right;
+                if (border <= 0)
+                {   // Horizontální gradient, bez okrajů:
+                    if (areas.TryGetValue(RectangleSide.Center, out bounds)) FillWithGradient(graphics, bounds, colorBegin, colorEnd.Value, side);
+                }
+                else
+                {   // Horizontální gradient, s okraji 3D efekt:
+                    Color colorBeginB, colorBeginA;
+                    CreateEffect3DColors(colorBegin, effect3D, out colorBeginB, out colorBeginA);
+                    Color colorEndB, colorEndA;
+                    CreateEffect3DColors(colorEnd.Value, effect3D, out colorEndB, out colorEndA);
+
+                    if (areas.TryGetValue(RectangleSide.Left, out bounds)) graphics.FillRectangle(Skin.Brush(colorBeginB), bounds);
+                    if (areas.TryGetValue(RectangleSide.Top, out bounds)) FillWithGradient(graphics, bounds, colorBeginB, colorEndB, side);
+                    if (areas.TryGetValue(RectangleSide.Right, out bounds)) graphics.FillRectangle(Skin.Brush(colorEndA), bounds);
+                    if (areas.TryGetValue(RectangleSide.Bottom, out bounds)) FillWithGradient(graphics, bounds, colorBeginA, colorEndA, side);
+                    if (areas.TryGetValue(RectangleSide.Center, out bounds)) FillWithGradient(graphics, bounds, colorBegin, colorEnd.Value, side);
+                }
+            }
+            else
+            {   // S gradientem - Vertikálním:
+                RectangleSide side = RectangleSide.Bottom;
+                if (border <= 0)
+                {   // Vertikální gradient, bez okrajů:
+                    if (areas.TryGetValue(RectangleSide.Center, out bounds)) FillWithGradient(graphics, bounds, colorBegin, colorEnd.Value, side);
+                }
+                else
+                {   // Vertikální gradient, s okraji 3D efekt:
+                    Color colorBeginB, colorBeginA;
+                    CreateEffect3DColors(colorBegin, effect3D, out colorBeginB, out colorBeginA);
+                    Color colorEndB, colorEndA;
+                    CreateEffect3DColors(colorEnd.Value, effect3D, out colorEndB, out colorEndA);
+
+                    if (areas.TryGetValue(RectangleSide.Left, out bounds)) FillWithGradient(graphics, bounds, colorBeginB, colorEndB, side); 
+                    if (areas.TryGetValue(RectangleSide.Top, out bounds)) graphics.FillRectangle(Skin.Brush(colorBeginB), bounds);
+                    if (areas.TryGetValue(RectangleSide.Right, out bounds)) FillWithGradient(graphics, bounds, colorBeginA, colorEndA, side);
+                    if (areas.TryGetValue(RectangleSide.Bottom, out bounds)) graphics.FillRectangle(Skin.Brush(colorEndA), bounds);
+                    if (areas.TryGetValue(RectangleSide.Center, out bounds)) FillWithGradient(graphics, bounds, colorBegin, colorEnd.Value, side);
+                }
             }
         }
         #endregion

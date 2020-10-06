@@ -36,18 +36,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         protected void AddDataFormItems(int countX, int countY)
         {
-            this.ItemsList.Clear();
-            int firstX = 8;
-            int firstY = 8;
-            int spaceX = 0;
-            int spaceY = 0;
-            // int topX = 1100;
-            int maxX = 0;
-            int maxY = 0;
-            int currentX = firstX;
-            int currentY = firstY;
-            int lastX = countX - 1;
-
+            #region Barvy, texty, fonty
             int lo = 224;
             int hi = 228;
             Color[] colors = new Color[]
@@ -77,26 +66,77 @@ namespace Asol.Tools.WorkScheduler.DataForm
                 new TextEditOverlayRelationIcon(true)
             };
 
-            FontModifierInfo labelFontOnFocus = new FontModifierInfo() { Bold = true, SizeRatio = 1.15f };
+            FontModifierInfo titleFontOnFocus = new FontModifierInfo() { Bold = true, SizeRatio = 1.15f };
+            Color? titleColorOnFocus = Color.DarkBlue;
+            FontModifierInfo labelFont = new FontModifierInfo() { SizeRatio = 1.10f };
+            FontModifierInfo labelFontOnFocus = new FontModifierInfo() { Bold = true, SizeRatio = 1.08f };
             Color? labelColorOnFocus = Skin.Control.ControlTextFocusColor;
+            #endregion
+            #region Pozice, mezery, okraje tabů a itemů
+            int tabX0 = 6;
+            int tabY0 = 6;
+            int tabX = tabX0;
+            int tabY = 0;
+            int tabYSpace = 0;
+            Point tabsEnd = Point.Empty;
 
+            int itemX0 = 8;
+            int itemXSpace = 0;
+            int itemY0 = 4;
+            int itemYSpace = 0;
+            int itemX = 0;
+            int itemY = 0;
+            #endregion
+
+            this.ItemsList.Clear();
+            InteractiveLabeledContainer tab = null;
+            int tabIdx = 0;
             Rectangle bounds = Rectangle.Empty;
             int n = 0;
+            int lastX = countX - 1;
             for (int ny = 0; ny < countY; ny++)
             {
-                currentX = firstX;
+                if (tab == null || (ny % 3) == 0)
+                {
+                    tabX = tabX0;
+                    tabY = (tab != null ? tab.Bounds.Bottom + tabYSpace : tabY0);
+                    tab = new InteractiveLabeledContainer()
+                    {
+                        Location = new Point(tabX, tabY),
+                        TitleLabelVisible = true,
+                        TitleLineVisible = true
+                    };
+                    tabIdx++;
+                    tab.TitleLabel.Text = $"Titulek skupiny {tabIdx}...";
+                    tab.TitleLabel.Bounds = new Rectangle(itemX0, 2, 350, 20);
+                    tab.TitleLine.Bounds = new Rectangle(itemX0, 25, 700, 3);
+                    tab.TitleLine.LineColor = Color.FromArgb(192, 64, 80, 128);
+                    tab.TitleLine.LineColorEnd = Color.FromArgb(32, 64, 64, 64);
+                    tab.TitleLine.Border3D = 1;
+                    tab.TitleLabel.FontModifier = labelFont;
+                    tab.TitleFontModifierOnFocus = titleFontOnFocus;
+                    tab.TitleTextColorOnFocus = titleColorOnFocus;
+
+                    this.AddItem(tab);
+                    itemY = 28 + itemY0;
+                }
+
+                itemX = itemX0;
                 for (int nx = 0; nx < countX; nx++)
                 {
                     n++;
+
+                    // Nadefinování prvku Item - texty, font, overlay:
                     GDataFormItem item = new GDataFormItem()
                     {
                         BackColor = colors[rand.Next(colorCnt)],
-                        Location = new Point(currentX, currentY),
+                        Location = new Point(itemX, itemY),
                         Label = "Item " + n.ToString(),
                         Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString(),
                         TitleFontModifierOnFocus = labelFontOnFocus,
                         TitleTextColorOnFocus = labelColorOnFocus
                     };
+                    tab.AddItem(item);
 
                     if (rand.Next(10) <= 3) item.Value1 += ": " + suffixes[rand.Next(suffixes.Length)];
                     item.ToolTipText = $@"Další informace k této položce
@@ -104,30 +144,33 @@ byste našli v této bublině.
 Číslo prvku: {n}
 Obsah prvku: {item.Value1}
 Pozice prvku: {nx}/{ny}
-Souřadnice prvku: {currentX}/{currentY}
-";
+Souřadnice prvku: {itemX}/{itemY}";
 
                     item.BorderStyle = BorderStyleType.Soft;
                     if (nx == 1) item.TitleLabel.FontModifier.Bold = true;
                     if (nx == 2) item.TitleLabel.FontModifier.Italic = true;
                     if (nx == 2) item.TitleLabel.FontModifier.SizeRatio = 0.85f;
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
-
                     if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
                         item.OverlayText = overlays[rand.Next(overlays.Length)];
 
+                    // Zvětšení velikosti Tabu tak, aby zobrazil i nově přidaný item:
                     bounds = item.Bounds;
-                    if (maxX < bounds.Right) maxX = bounds.Right;
-                    currentX = bounds.Right + spaceX;
+                    int tabR = bounds.Right + itemX0;
+                    int tabB = bounds.Bottom + itemY0;
+                    var tabSize = tab.Size;
+                    int tabW = (tabR > tabSize.Width ? tabR : tabSize.Width);
+                    int tabH = (tabB > tabSize.Height ? tabB : tabSize.Height);
+                    if (tabW > tabSize.Width || tabH > tabSize.Height)
+                        tab.Size = new Size(tabW, tabH);
 
-                    this.AddItem(item);
+                    // Posun X pro další Item:
+                    itemX = bounds.Right + itemXSpace;
                 }
 
-                if (maxY < bounds.Bottom) maxY = bounds.Bottom;
-                currentY = bounds.Bottom + spaceY;
+                // Posun Y pro další Item:
+                itemY = bounds.Bottom + itemYSpace;
             }
-
-            // this.Size = new Size(maxX + firstX, maxY + firstY);
         }
     }
 }

@@ -1238,6 +1238,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color LineColor { get { return this._Owner.GetValue(this._SkinSetKey, "LineColor", DefaultLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "LineColor", value); } }
         /// <summary>
+        /// Intenzita 3D efektu pro Line
+        /// </summary>
+        public float LineEffect3D { get { return this._Owner.GetValue(this._SkinSetKey, "LineEffect3D", DefaultLineEffect3D); } set { this._Owner.SetValue(this._SkinSetKey, "LineEffect3D", value); } }
+        /// <summary>
         /// Barva pozadí rámečku FrameSelect
         /// </summary>
         public Color FrameSelectBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "FrameSelectBackColor", DefaultFrameSelectBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "FrameSelectBackColor", value); } }
@@ -1284,6 +1288,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default Barva linky
         /// </summary>
         protected virtual Color DefaultLineColor { get { return Color.FromArgb(204, 204, 224); } }
+        /// <summary>
+        /// Default Intenzita 3D efektu pro Line
+        /// </summary>
+        protected virtual float DefaultLineEffect3D { get { return 0.25f; } }
         /// <summary>
         /// Default Barva pozadí rámečku FrameSelect
         /// </summary>
