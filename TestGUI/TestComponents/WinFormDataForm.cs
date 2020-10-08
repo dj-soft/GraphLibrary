@@ -8,7 +8,7 @@ using WF = System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.TestGUI.TestComponents
 {
-    public class WinFormDataFormControl : WF.Panel
+    internal class WinFormDataFormControl : WF.Panel
     {
         public WinFormDataFormControl()
         {
@@ -19,8 +19,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI.TestComponents
             };
 
             this.AutoScroll = true;
+            _TitleFontActive = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            _TitleFontInactive = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            _ItemFontActive = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            _ItemFontInactive = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
         }
         WF.ToolTip ToolTip { get; set; }
+        DW.Font _TitleFontActive;
+        DW.Font _TitleFontInactive;
+        DW.Font _ItemFontActive;
+        DW.Font _ItemFontInactive;
+
         /// <summary>
         /// Naplní controly
         /// </summary>
@@ -82,9 +91,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI.TestComponents
                     };
                     tabIdx++;
                     tab.TitleLabel.Text = $"Titulek skupiny {tabIdx}...";
+                    tab.TitleLabel.TextAlign = DW.ContentAlignment.MiddleLeft;
                     tab.TitleLabel.Bounds = new DW.Rectangle(itemX0, 2, 350, 20);
+                    tab.LabelFontActive = _TitleFontActive;
+                    tab.LabelFontInactive = _TitleFontInactive;
                     tab.LineBounds = new DW.Rectangle(itemX0, 23, 700, 2);
                     tab.LineColor = DW.Color.FromArgb(192, 64, 80, 128);
+                    tab.SuspendLayout();
 
                     this.Controls.Add(tab);
                     itemY = 28 + itemY0;
@@ -102,6 +115,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI.TestComponents
                         Location = new DW.Point(itemX, itemY)
                     };
                     item.TitleText = "Item " + n.ToString();
+                    item.TitleLabel.TextAlign = DW.ContentAlignment.MiddleRight;
+                    item.LabelFontActive = _ItemFontActive;
+                    item.LabelFontInactive = _ItemFontInactive;
                     item.ValueText = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString();
                     tab.Controls.Add(item);
 
@@ -140,6 +156,12 @@ Souřadnice prvku: {itemX}/{itemY}";
                 itemY = bounds.Bottom + itemYSpace;
             }
 
+            foreach (WF.Control childTab in this.Controls)
+            {
+                childTab.ResumeLayout(false);
+                childTab.PerformLayout();
+            }
+
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -160,6 +182,8 @@ Souřadnice prvku: {itemX}/{itemY}";
             this.ValueTextBox.TabIndex = 0;
             this.ValueTextBox.Text = "TextBox";
             this.ValueTextBox.TextAlign = WF.HorizontalAlignment.Left;
+            this.ValueTextBox.Enter += ValueTextBox_Enter;
+            this.ValueTextBox.Leave += ValueTextBox_Leave;
 
             this.Controls.Add(this.ValueTextBox);
 
@@ -168,6 +192,17 @@ Souřadnice prvku: {itemX}/{itemY}";
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+
+        private void ValueTextBox_Leave(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void ValueTextBox_Enter(object sender, EventArgs e)
+        {
+            
+        }
+
         public string ValueText { get { return this.ValueTextBox.Text; } set { this.ValueTextBox.Text = value; } }
         private WF.TextBox ValueTextBox { get; set; }
     }
@@ -195,6 +230,16 @@ Souřadnice prvku: {itemX}/{itemY}";
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+            if (HasLabelFonts) TitleLabel.Font = LabelFontActive;
+        }
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+            if (HasLabelFonts) TitleLabel.Font = LabelFontInactive;
+        }
         protected override void OnPaint(WF.PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -207,7 +252,10 @@ Souřadnice prvku: {itemX}/{itemY}";
                 }
             }
         }
+        protected bool HasLabelFonts { get { return (LabelFontActive != null && LabelFontInactive != null); } }
         public string TitleText { get { return this.TitleLabel.Text; } set { this.TitleLabel.Text = value; } }
+        public DW.Font LabelFontActive { get; set; }
+        public DW.Font LabelFontInactive { get; set; }
         public WF.Label TitleLabel { get; set; }
         public DW.Rectangle LineBounds { get; set; }
         public DW.Color LineColor { get; set; }

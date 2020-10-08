@@ -229,6 +229,10 @@
     <None Include="Pics\dialog-close.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DevExpressTests\DevExpressTests.csproj">
+      <Project>{beb2b5a4-5cba-400b-8699-70bb1e0010ba}</Project>
+      <Name>DevExpressTests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\GraphLib\GraphLib.csproj">
       <Project>{eeed39bd-6eae-4167-b694-cb812598395d}</Project>
       <Name>GraphLib</Name>

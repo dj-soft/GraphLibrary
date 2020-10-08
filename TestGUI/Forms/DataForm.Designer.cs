@@ -44,7 +44,6 @@
             this.StatusStripPanel.SuspendLayout();
             this.ToolStripPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarNumber)).BeginInit();
-            this.TestContentPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // StatusStripPanel
@@ -130,14 +129,15 @@
             // 
             // trackBarNumber
             // 
-            this.trackBarNumber.LargeChange = 10;
+            this.trackBarNumber.LargeChange = 20;
             this.trackBarNumber.Location = new System.Drawing.Point(238, 31);
             this.trackBarNumber.Maximum = 400;
             this.trackBarNumber.Minimum = 1;
             this.trackBarNumber.Name = "trackBarNumber";
             this.trackBarNumber.Size = new System.Drawing.Size(321, 45);
+            this.trackBarNumber.SmallChange = 2;
             this.trackBarNumber.TabIndex = 4;
-            this.trackBarNumber.TickFrequency = 8;
+            this.trackBarNumber.TickFrequency = 10;
             this.trackBarNumber.TickStyle = System.Windows.Forms.TickStyle.Both;
             this.trackBarNumber.Value = 50;
             this.trackBarNumber.Scroll += new System.EventHandler(this.trackBarNumber_Scroll);
@@ -215,7 +215,6 @@
             this.ToolStripPanel.ResumeLayout(false);
             this.ToolStripPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarNumber)).EndInit();
-            this.TestContentPanel.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 

@@ -11,7 +11,7 @@ using Asol.Tools.WorkScheduler.GameComponents;
 
 namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 {
-    [IsMainForm("Testování GameControlu", 999)]
+    [IsMainForm("Testování GameControlu", MainFormMode.Default, 999)]
     public partial class GameForm : Form
     {
         public GameForm()
