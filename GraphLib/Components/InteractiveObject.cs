@@ -621,12 +621,13 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Metoda zajistí, že this prvek bude vidielný v hostieli, pokud ten implementuje AutoScroll
+        /// Metoda zajistí, že this prvek bude viditelný v hostiteli, pokud this prvek deklaruje Is.AutoScrollToShow, a hostitel ten implementuje AutoScroll
         /// </summary>
         /// <param name="e"></param>
         protected virtual void SetAutoScrollContainerToThisItem(GInteractiveChangeStateArgs e)
         {
-            this.IHost?.SetAutoScrollContainerToItem(this);
+            if (this.Is.AutoScrollToShow)
+                this.IHost?.SetAutoScrollContainerToItem(this);
         }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = <see cref="GInteractiveChangeState.KeyboardFocusEnter"/>

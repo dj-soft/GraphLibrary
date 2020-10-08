@@ -471,6 +471,13 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool TabStop { get { return this.GetBitValue((uint)Bit.TabStop); } set { this.SetBitValue((uint)Bit.TabStop, value); } }
 
         /// <summary>
+        /// Prvek si má při příchodu Focusu v události <see cref="GInteractiveChangeState.KeyboardFocusEnter"/> = metodě <see cref="InteractiveObject.SetAutoScrollContainerToThisItem(GInteractiveChangeStateArgs)"/> sám zajistit AutoScroll tak, aby byl viditelný?
+        /// Defaultně = true, lze vypnout.
+        /// </summary>
+        public bool AutoScrollToShow { get { return this.GetBitValue((uint)Bit.AutoScrollToShow); } set { this.SetBitValue((uint)Bit.AutoScrollToShow, value); } }
+        
+
+        /// <summary>
         /// Tento prvek je aktuálně cílem v procesu Drag and Move.
         /// Hodnotu do této property do konkrétního prvku <see cref="IInteractiveItem"/> vkládá control <see cref="GInteractiveControl"/> v průběhu akce Drag and Move.
         /// Prvek na tuto hodnotu může reagovat zvýrazněním vykreslení.
@@ -517,6 +524,10 @@ namespace Asol.Tools.WorkScheduler.Components
             Checked = 0x00000100,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HoldMouse"/></summary>
             HoldMouse = 0x00000200,
+            /// <summary>nevyužito</summary>
+            Void1 = 0x00000400,
+            /// <summary>nevyužito</summary>
+            Void2 = 0x00000800,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseActive"/></summary>
             MouseActive = 0x00001000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseMoveOver"/></summary>
@@ -547,13 +558,24 @@ namespace Asol.Tools.WorkScheduler.Components
             SelectAllText = 0x02000000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllTextExplicit"/></summary>
             SelectAllTextExplicit = 0x04000000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="AutoScrollToShow"/></summary>
+            AutoScrollToShow = 0x08000000,
+            /// <summary>nevyužito</summary>
+            Void3 = 0x10000000,
+            /// <summary>nevyužito</summary>
+            Void4 = 0x20000000,
+            /// <summary>nevyužito</summary>
+            Void5 = 0x40000000,
 
             /// <summary>
-            /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti. Má nastaveno TabStop.
+            /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma <see cref="MouseMoveOver"/>. 
+            /// Má nastaveno <see cref="TabStop"/> a <see cref="AutoScrollToShow"/>.
+            /// Nemá žádné Drag vlastnosti. 
             /// </summary>
-            DefaultMouseProperties = Interactive | Visible | Enabled | MouseActive | MouseClick | MouseDoubleClick | MouseLongClick | TabStop,
+            DefaultMouseProperties = Interactive | Visible | Enabled | MouseActive | MouseClick | MouseDoubleClick | MouseLongClick | TabStop | AutoScrollToShow,
             /// <summary>
-            /// Defaultní sada pro běžný prvek běžně aktivní na myš, včetně MouseMoveOver. Nemá žádné Drag vlastnosti.
+            /// Defaultní sada pro běžný prvek běžně aktivní na myš, včetně <see cref="MouseMoveOver"/>. 
+            /// Nemá žádné Drag vlastnosti.
             /// </summary>
             DefaultMouseOverProperties = DefaultMouseProperties | MouseMoveOver
         }

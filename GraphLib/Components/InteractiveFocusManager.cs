@@ -7,44 +7,12 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    #region class InteractiveFocusManager : Správce pro řešení předávání focusu mezi interaktivními prvky pomocí klávesnice
     /// <summary>
     /// Správce pro řešení předávání focusu mezi interaktivními prvky pomocí klávesnice
     /// </summary>
     internal class InteractiveFocusManager
     {
-        /// <summary>
-        /// Metoda zkusí najít prvek následující za daným prvkem, do kterého má z něj přejít focus v daném směru
-        /// </summary>
-        /// <param name="currentItem">Výchozí prvek pro hledání. Tento prvek nedostane focus, dostane jej některý z jeho sousedů (=sousední prvky Childs od Parenta tohoto daného prvku).</param>
-        /// <param name="direction">Směr kroku: <see cref="Direction.Positive"/> = "doprava" = na následující prvek (klávesou Tab); <see cref="Direction.Negative"/> = "doleva" = na předešlý prvek (klávesou Ctrl+Tab) </param>
-        /// <param name="nextItem">Out nalezený sousední prvek</param>
-        /// <param name="requirements">Požadavky na prohledávané prvky</param>
-        /// <returns>true = nalezeno / false = nenalezeno</returns>
-        internal static bool TryGetNextFocusItem(IInteractiveItem currentItem, Direction direction, out IInteractiveItem nextItem, InteractiveFocusStateFlag requirements = InteractiveFocusStateFlag.Default)
-        {
-            nextItem = null;
-            if (currentItem == null) return false;                                                      // Nezadán prvek
-            if (!(direction == Direction.Positive || direction == Direction.Negative)) return false;    // Nezadán platný směr
-
-            List<IInteractiveItem> childList = GetChildsSorted(currentItem.Parent, direction, requirements, currentItem);
-            if (childList == null) return false;                                                        // Jeho Parent neobsahuje žádné prvky
-
-            int index = childList.FindIndex(i => Object.ReferenceEquals(currentItem, i));
-            if (index < 0) return false;                                                                // Jeho Parent neobsahuje zadaný prvek (???)
-
-            // Nyní projdu sousední prvky vstupního prvku, za ním/před ním ve správném pořadí (seznam je setříděn Positive = ASC / Negative = DESC):
-            int count = childList.Count;
-            for (int i = (index + 1); i < count; i++)
-            {
-                // Pokud daný sousední prvek je sám vhodný, anebo ve svých Childs obsahuje vhodný prvek, pak jej dáme do out nextItem a vrátíme true:
-                if (TryGetOuterFocusItem(childList[i], direction, out nextItem, requirements)) return true;
-            }
-
-            // V mé úrovni ani v mých Child prvcích jsme nenašli vhodný prvek. Zpracujeme obdobně vyšší úroveň (=sousedy mého parenta):
-            if (!(currentItem.Parent is IInteractiveItem)) return false;                                // Prvek nemá interaktivního Parenta = náš parent je fyzický Control.
-
-            return TryGetNextFocusItem((currentItem.Parent as IInteractiveItem), direction, out nextItem, requirements);
-        }
         /// <summary>
         /// Metoda zkusí najít první konkrétní prvek v rámci daného interaktivního parenta, do kterého lze umístit klávesový Focus.
         /// Pokud dodaný parent sám je interaktivní prvek <see cref="IInteractiveItem"/>, a pokud vyhovuje podmínkám Visible a TabStop, a podporuje KeyboardInput, pak je vrácen přímo tento prvek.
@@ -83,6 +51,39 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             return false;
+        }
+        /// <summary>
+        /// Metoda zkusí najít prvek následující za daným prvkem, do kterého má z něj přejít focus v daném směru
+        /// </summary>
+        /// <param name="currentItem">Výchozí prvek pro hledání. Tento prvek nedostane focus, dostane jej některý z jeho sousedů (=sousední prvky Childs od Parenta tohoto daného prvku).</param>
+        /// <param name="direction">Směr kroku: <see cref="Direction.Positive"/> = "doprava" = na následující prvek (klávesou Tab); <see cref="Direction.Negative"/> = "doleva" = na předešlý prvek (klávesou Ctrl+Tab) </param>
+        /// <param name="nextItem">Out nalezený sousední prvek</param>
+        /// <param name="requirements">Požadavky na prohledávané prvky</param>
+        /// <returns>true = nalezeno / false = nenalezeno</returns>
+        internal static bool TryGetNextFocusItem(IInteractiveItem currentItem, Direction direction, out IInteractiveItem nextItem, InteractiveFocusStateFlag requirements = InteractiveFocusStateFlag.Default)
+        {
+            nextItem = null;
+            if (currentItem == null) return false;                                                      // Nezadán prvek
+            if (!(direction == Direction.Positive || direction == Direction.Negative)) return false;    // Nezadán platný směr
+
+            List<IInteractiveItem> childList = GetChildsSorted(currentItem.Parent, direction, requirements, currentItem);
+            if (childList == null) return false;                                                        // Jeho Parent neobsahuje žádné prvky
+
+            int index = childList.FindIndex(i => Object.ReferenceEquals(currentItem, i));
+            if (index < 0) return false;                                                                // Jeho Parent neobsahuje zadaný prvek (???)
+
+            // Nyní projdu sousední prvky vstupního prvku, za ním/před ním ve správném pořadí (seznam je setříděn Positive = ASC / Negative = DESC):
+            int count = childList.Count;
+            for (int i = (index + 1); i < count; i++)
+            {
+                // Pokud daný sousední prvek je sám vhodný, anebo ve svých Childs obsahuje vhodný prvek, pak jej dáme do out nextItem a vrátíme true:
+                if (TryGetOuterFocusItem(childList[i], direction, out nextItem, requirements)) return true;
+            }
+
+            // V mé úrovni ani v mých Child prvcích jsme nenašli vhodný prvek. Zpracujeme obdobně vyšší úroveň (=sousedy mého parenta):
+            if (!(currentItem.Parent is IInteractiveItem)) return false;                                // Prvek nemá interaktivního Parenta = náš parent je fyzický Control.
+
+            return TryGetNextFocusItem((currentItem.Parent as IInteractiveItem), direction, out nextItem, requirements);
         }
         /// <summary>
         /// Metoda získá a vrátí seznam Child prvků daného prvku <paramref name="parentItem"/>.
@@ -147,6 +148,8 @@ namespace Asol.Tools.WorkScheduler.Components
             return true;
         }
     }
+    #endregion
+    #region enum InteractiveFocusStateFlag : Požadavky na vyhledání prvku podle jeho vlastností pro předávání focusu
     /// <summary>
     /// Požadavky na vyhledání prvku podle jeho vlastností pro předávání focusu
     /// </summary>
@@ -174,4 +177,5 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Default = Visible | Enabled | TabStop
     }
+    #endregion
 }

@@ -390,36 +390,55 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Posune aktuální obsah tak, aby byly fyzicky viditelné dané souřadnice.
         /// Samozřejmě nedokáže změnit velikost viditelného prostoru, takže nepřevezme vstupní velikost z parametru <paramref name="showRange"/> : <see cref="BaseRange{TEdge, TSize}.Size"/> 
         /// do své vlastní velikosti (ta je dána počtem fyzicky zobrazených pixelů), ale přizpůsobí svoji viditelnou oblast tak, aby byl daný prostor pokud možno celý viditelný.
+        /// <para/>
+        /// Pokud je požadováno zobrazení většího prostoru, než je možno nyní zobrazit, a ve viditelném prosotru je již nyní zobrazen požadovaný prostor, nebude se provádět posun.
+        /// Jinými slovy: pokud mám nyní zobrazený prostor 100-200, a vyžaduji zobrazení prostoru 50-250, pak nebudu nic posouvat.
+        /// Pokud bych ale měl zobrazený prostor 100-200, a vyžaduji zobrazení prostoru 150-450, pak posun proběhne na hodnotu 150-250, protože uvidím víc z požadovaného prostoru než vidím dosud.
         /// </summary>
         /// <param name="showRange">Oblast, kterou bychom rádi dostali do viditelné oblasti</param>
         /// <param name="margin">Okraje okolo oblasti, které by měly být pokud možno zobrazeny (nezadáno = 0)</param>
-        /// <param name="eventSource">Zdroj změny, předává se do eventhandlerů</param>
+        /// <param name="eventSource">Zdroj změny, předává se do eventhandlerů. Nezadáno = <see cref="EventSourceType.ApplicationCode"/>.</param>
         public void ScrollToShow(DecimalNRange showRange, Decimal? margin = null, EventSourceType? eventSource = null)
         {
+            // Nesprávné zadání => nelze zpracovat:
             if (((object)showRange) == null) return;
             if (!showRange.IsFilled) return;
-            decimal size = this._Value.Size.Value;
+            // Pokud dosud nemám viditelnou oblast, nic nemohu posouvat:
+            DecimalNRange value = this._Value;
+            decimal size = value.Size.Value;
             if (size <= 0) return;
 
             decimal marg = (margin.HasValue ? (margin.Value < 0m ? 0m : (margin.Value > 120m ? 120m : margin.Value)) : 0m);
-            decimal begin = this._Value.Begin.Value;
-            decimal end = this._Value.End.Value;
+            decimal begin = value.Begin.Value;
+            decimal end = value.End.Value;
             decimal showBegin = showRange.Begin.Value - marg;
             decimal showEnd = showRange.End.Value + marg;
+            if (showEnd < showBegin) showEnd = showBegin;
 
+            // a) Pokud požaduji zobrazení úseku např.  50 - 250, a nyní vidím 100 - 200 => nic nebudu posouvat, protože požadovaný úsek vidím a víc ho už nezobrazím:
+            if (showBegin <= begin && showEnd >= end) return;
+
+            // b) Pokud požaduji zobrazení úseku např. 120 - 180, a nyní vidím 100 - 200 => nic nebudu posouvat, protože požadovaný úsek vidím a posun by byl zmatečný:
+            if (showBegin >= begin && showBegin < end && showEnd <= end) return;         // poznámka: showEnd je shodné nebo větší než showBegin, proto nemusím testovat : ( ... && showEnd > begin)
+
+            // c) Pokud požaduji zobrazení úseku např.  80 - 240, a nyní vidím 100 - 200 => posunu end = 240 a begin = 140:
             if (showEnd > end)
             {
                 end = showEnd;
                 begin = end - size;
             }
+
+            // d) Pokud požaduji zobrazení úseku např.  80 - 240, a nyní vidím 140 - 240 => posunu begin = 80 a end = 180:
             if (showBegin < begin)
             {
                 begin = showBegin;
                 end = begin + size;
             }
-            if (begin != this._Value.Begin.Value)
+
+            // Pokud ve výsledku je změna pozice, provedu posun:
+            if (begin != value.Begin.Value)
             {
-                DecimalNRange value = DecimalNRange.CreateFromBeginSize(begin, size);
+                value = DecimalNRange.CreateFromBeginSize(begin, size);
                 if (!eventSource.HasValue) eventSource = EventSourceType.ApplicationCode;
                 this.SetValue(value, ProcessAction.ChangeAll, eventSource.Value);
             }

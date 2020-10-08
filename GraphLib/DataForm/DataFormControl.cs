@@ -107,8 +107,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
                     tab.TitleLabel.Text = $"Titulek skupiny {tabIdx}...";
                     tab.TitleLabel.Bounds = new Rectangle(itemX0, 2, 350, 20);
                     tab.TitleLine.Bounds = new Rectangle(itemX0, 23, 700, 2);
-                    tab.TitleLine.LineColor = Color.FromArgb(192, 64, 80, 128);
-                    tab.TitleLine.LineColorEnd = Color.FromArgb(16, 64, 64, 64);
+                    tab.TitleLine.LineColor = Color.FromArgb(192, 48, 80, 48);
+                    tab.TitleLine.LineColorEnd = Color.FromArgb(8, 48, 80, 48);
                     tab.TitleLine.Border3D = 0;
                     tab.TitleLabel.FontModifier = labelFont;
                     tab.TitleFontModifierOnFocus = titleFontOnFocus;
@@ -160,6 +160,9 @@ Souřadnice prvku: {itemX}/{itemY}";
                     int tabH = (tabB > tabSize.Height ? tabB : tabSize.Height);
                     if (tabW > tabSize.Width || tabH > tabSize.Height)
                         tab.Size = new Size(tabW, tabH);
+                    var lineBounds = tab.TitleLine.Bounds;
+                    if (bounds.Right > lineBounds.Right)
+                        tab.TitleLine.Size = new Size(bounds.Right - lineBounds.Left, lineBounds.Height);
 
                     // Posun X pro další Item:
                     itemX = bounds.Right + itemXSpace;

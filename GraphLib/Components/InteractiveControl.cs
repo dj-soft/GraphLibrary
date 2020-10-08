@@ -4073,6 +4073,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
     }
     #endregion
+    #region enum MouseMoveDragState
     /// <summary>
     /// Stavy procesu Drag na základě pohybu myši a stavu controlu
     /// </summary>
@@ -4108,6 +4109,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         DragFrame
     }
+    #endregion
     #endregion
     #region class GActivePosition : Pracovní třída pro vyhledání prvku <see cref="IInteractiveItem"/> a seznamu jeho parentů
     /// <summary>
