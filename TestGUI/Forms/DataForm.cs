@@ -69,6 +69,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     if (TestControlsNumber <= 0 || TestControlsNumber > CurrentMaximumNumber)
                         TestControlsNumber = CurrentOptimumNumber;
                 }
+                ShowColor();
             }
         }
         private int CurrentMaximumNumber
@@ -129,6 +130,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     _TestControlsNumberChanging = false;
                 }
                 if (isChange) _TestObjectRemove();
+                ShowColor();
             }
         }
         private int _TestControlsNumber;
@@ -184,6 +186,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             else if (value < 50m) number = 10000m * (value - 39m);                // value = 42   =>   number = (10000 * 2)  = 20000
             else number = TestControlsNumberMax;
             return (int)Math.Round(number, 0);
+        }
+        /// <summary>
+        /// Zobrazí barvu toolbaru podle počtu a knihovny
+        /// </summary>
+        private void ShowColor()
+        {
+            Color backColor = System.Drawing.SystemColors.ControlDark;
+            int number = _TestControlsNumber;
+            if (number > CurrentMaximumNumber) backColor = Color.FromArgb(192, 32, 32);
+            else if (number > CurrentOptimumNumber) backColor = Color.FromArgb(160, 160, 32);
+            ToolStripPanel.BackColor = backColor;
         }
         #endregion
         #region Generátor objektů
