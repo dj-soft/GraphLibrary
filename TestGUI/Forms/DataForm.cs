@@ -107,6 +107,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             else if (Object.ReferenceEquals(sender, this.radioButtonDevExpr)) CurrentLibrary = DataFormtestLibraryType.DevExpress;
             else if (Object.ReferenceEquals(sender, this.radioButtonInfrag)) CurrentLibrary = DataFormtestLibraryType.Infragistic;
             else if (Object.ReferenceEquals(sender, this.radioButtonAsol)) CurrentLibrary = DataFormtestLibraryType.Asol;
+            _XlsContainTitle = false;
         }
         /// <summary>
         /// Počet vygenerovaných prvků, platná hodnota = 1 až <see cref="TestControlsNumberMax"/> (=20000)
@@ -192,101 +193,131 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         private void CreateTestObject(DataFormtestLibraryType library, int number)
         {
-            string message = "";
+            List<Tuple<string, string>> times = new List<Tuple<string, string>>();
             StopwatchStart();
             _TestObjectRemove();
-            message += $"Odstranění stávajícího: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Odstranění stávajícího");
+            times.Add(new Tuple<string, string>("Knihovna", library.ToString()));
+            times.Add(new Tuple<string, string>("Počet prvků", number.ToString()));
 
             long memoryBefore = GC.GetTotalMemory(true);
-            StopwatchGetLastMiliseconds();                  // Čas spotřebovaný na GC.GetTotalMemory(true) mě nezajímá, nulujeme mezičas a zahodíme jej
+            StopwatchGetLastMiliseconds();                           // Čas spotřebovaný na GC.GetTotalMemory(true) mě nezajímá: nulujeme mezičas a zahodíme jej
 
             switch (library)
             {
                 case DataFormtestLibraryType.WinForms:
-                    CreateTestObjectWinForm(number, ref message);
+                    CreateTestObjectWinForm(number, times);
                     break;
                 case DataFormtestLibraryType.DevExpress:
-                    CreateTestObjectDevExpress(number, ref message);
+                    CreateTestObjectDevExpress(number, times);
                     break;
                 case DataFormtestLibraryType.Infragistic:
-                    CreateTestObjectInfragistic(number, ref message);
+                    CreateTestObjectInfragistic(number, times);
                     break;
                 case DataFormtestLibraryType.Asol:
-                    CreateTestObjectAsol(number, ref message);
+                    CreateTestObjectAsol(number, times);
                     break;
             }
 
             long memoryAfter = GC.GetTotalMemory(false);
             decimal memoryUsed = memoryAfter - memoryBefore;
-            string megabytes = (memoryUsed / 1048576m).ToString("### ##0.00");
-            message += $"Nárůst paměti: {megabytes} MB";
+            string megabytes = (memoryUsed / 1048576m).ToString("### ##0.00").Trim().Replace(".", ",");
+            times.Add(new Tuple<string, string>("Nárůst paměti [MB]", megabytes));
 
-            StatusStripLabel1.Text = message;
+            ShowTime(times);
         }
-        private void CreateTestObjectWinForm(int number, ref string message)
+        private void CreateTestObjectWinForm(int number, List<Tuple<string, string>> times)
         {
             var dataFormCtrl = new Asol.Tools.WorkScheduler.TestGUI.TestComponents.WinFormDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
-            message += $"Vytvoření WINFORM controlu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vytvoření WINFORM controlu");
 
             this.TestContentPanel.Controls.Add(dataFormCtrl);
             _TestObject = dataFormCtrl;
-            message += $"Přidání do Panelu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Přidání do Panelu");
 
             dataFormCtrl.AddDataFormItems(10, number / 10);
-            message += $"Vygenerování prvků: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vygenerování prvků");
 
             dataFormCtrl.Refresh();
-            message += $"Vykreslení: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vykreslení");
         }
-        private void CreateTestObjectDevExpress(int number, ref string message)
+        private void CreateTestObjectDevExpress(int number, List<Tuple<string, string>> times)
         {
             Control dataFormCtrl = Asol.Tools.WorkScheduler.DevExpressTest.DxManager.CreateWinFormDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
-            message += $"Vytvoření DEV EXPRESS controlu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vytvoření DEVEXPRESS controlu");
 
             this.TestContentPanel.Controls.Add(dataFormCtrl);
             _TestObject = dataFormCtrl;
-            message += $"Přidání do Panelu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Přidání do Panelu");
 
             Asol.Tools.WorkScheduler.DevExpressTest.DxManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
-            message += $"Vygenerování prvků: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vygenerování prvků");
 
             dataFormCtrl.Refresh();
-            message += $"Vykreslení: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vykreslení");
         }
-        private void CreateTestObjectInfragistic(int number, ref string message)
+        private void CreateTestObjectInfragistic(int number, List<Tuple<string, string>> times)
         {
             Control dataFormCtrl = Asol.Tools.WorkScheduler.DevExpressTest.IfManager.CreateWinFormDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
-            message += $"Vytvoření INFRAGISTIC controlu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
-
+            AddTime(times, "Vytvoření INFRAGISTIC controlu");
+          
             this.TestContentPanel.Controls.Add(dataFormCtrl);
             _TestObject = dataFormCtrl;
-            message += $"Přidání do Panelu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Přidání do Panelu");
 
             Asol.Tools.WorkScheduler.DevExpressTest.IfManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
-            message += $"Vygenerování prvků: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vygenerování prvků");
 
             dataFormCtrl.Refresh();
-            message += $"Vykreslení: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vykreslení");
         }
-        private void CreateTestObjectAsol(int number, ref string message)
+        private void CreateTestObjectAsol(int number, List<Tuple<string, string>> times)
         {
             var dataFormCtrl = new Asol.Tools.WorkScheduler.DataForm.GDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
-            message += $"Vytvoření ASOL controlu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
-
+            AddTime(times, "Vytvoření ASOL controlu");
+           
             this.TestContentPanel.Controls.Add(dataFormCtrl);
             _TestObject = dataFormCtrl;
-            message += $"Přidání do Panelu: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Přidání do Panelu");
 
             dataFormCtrl.AddDataFormItems(10, number / 10);
-            message += $"Vygenerování prvků: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vygenerování prvků");
 
             dataFormCtrl.Refresh();
-            message += $"Vykreslení: {StopwatchGetLastMiliseconds()}{_MSSPACE}";
+            AddTime(times, "Vykreslení");
         }
+        private void AddTime(List<Tuple<string, string>> times, string text)
+        {
+            times.Add(new Tuple<string, string>(text + " [ms]", StopwatchGetLastMiliseconds()));
+        }
+
+        private void ShowTime(List<Tuple<string, string>> times)
+        {
+            string statusText = "";
+            string space = "     ";
+            string xlsTitle = "";
+            string xlsData = "";
+            string tab = "\t";
+            string eol = Environment.NewLine;
+            foreach (var time in times)
+            {
+                statusText += time.Item1 + ": " + time.Item2 + space;
+                xlsTitle += time.Item1 + tab;
+                xlsData += time.Item2 + tab;
+            }
+
+            StatusStripLabel1.Text = statusText;
+
+            string xlsText = (_XlsContainTitle ? "" : xlsTitle + eol) + xlsData;
+            Clipboard.SetText(xlsText);
+            _XlsContainTitle = true;
+        }
+        private bool _XlsContainTitle = false;
+
         private const string _MSSPACE = " ms;" + _SPACE;
         private const string _SPACE = "       ";
         /// <summary>
@@ -349,7 +380,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             decimal ticks = (decimal)(stopTick - startTick);
             decimal milisecs = Math.Round((1000m * ticks / StopwatchFrequency), 3);
-            return milisecs.ToString("### ### ##0.000").Trim();
+            string text = milisecs.ToString("### ### ##0.000").Trim().Replace(".", ",");
+            return text;
         }
         private System.Diagnostics.Stopwatch Stopwatch;
         private long StopwatchRunTime;
