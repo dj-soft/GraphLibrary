@@ -415,6 +415,13 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal showEnd = showRange.End.Value + marg;
             if (showEnd < showBegin) showEnd = showBegin;
 
+            DecimalNRange valueTotal = this._ValueTotal;
+            if (valueTotal != null && valueTotal.IsFilled && valueTotal.Size.Value > 0m)
+            {
+                if (showBegin < valueTotal.Begin.Value) showBegin = valueTotal.Begin.Value;
+                if (showEnd > valueTotal.End.Value) showEnd = valueTotal.End.Value;
+            }
+
             // a) Pokud požaduji zobrazení úseku např.  50 - 250, a nyní vidím 100 - 200 => nic nebudu posouvat, protože požadovaný úsek vidím a víc ho už nezobrazím:
             if (showBegin <= begin && showEnd >= end) return;
 

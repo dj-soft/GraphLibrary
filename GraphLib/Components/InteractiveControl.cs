@@ -165,14 +165,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnEnter(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnEnter(e), () => base.OnEnter(e), () => this._InteractiveDrawRun());
+            object userData = null;
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnEnter(e, ref userData), () => base.OnEnter(e), () => this._InteractiveDrawRun());
         }
         /// <summary>
         /// Provede OnEnter
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="userData"></param>
         /// <returns></returns>
-        private bool _OnEnter(EventArgs e)
+        private bool _OnEnter(EventArgs e, ref object userData)
         {
             bool runFinal = false;
             IInteractiveItem item = _OnEnterSearchFirstItem();
@@ -181,13 +183,17 @@ namespace Asol.Tools.WorkScheduler.Components
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
                 {
                     this._InteractiveDrawInit(null);
-                    object userData = null;
                     this._ItemKeyboardExchange(null, item, false, ref userData);
                     runFinal = true;
                 }
             }
             return runFinal;
         }
+        /// <summary>
+        /// Vrátí prvek (<see cref="IInteractiveItem"/>), do něhož má jít Focus při vstupu focusu do this Controlu.
+        /// Akceptuje stisknutou myš i předešlý prvek, který byl aktivní před odchodem focusu z Controlu.
+        /// </summary>
+        /// <returns></returns>
         private IInteractiveItem _OnEnterSearchFirstItem()
         {
             // Pokud vstupujeme stiskem myši, pak vrátíme Last prvek, ale myš si může najít svůj prvek (na který klikla) a ten si pak aktivuje:
@@ -195,12 +201,15 @@ namespace Asol.Tools.WorkScheduler.Components
             if (isMouse && _FocusedItemPrevious != null) return _FocusedItemPrevious;
 
             // Vstupujeme bez stisknuté myši => najdeme první nebo poslední (podle klávesy Shift) vhodný prvek s TabStop = true, a ten vrátíme:
-            bool isShift = (Control.ModifierKeys == Keys.Shift);
-            Direction direction = (isShift ? Direction.Negative : Direction.Positive);
-            IInteractiveItem nextFocusItem;
-            if (InteractiveFocusManager.TryGetOuterFocusItem(this, direction, out nextFocusItem)) return nextFocusItem;
+            if (!isMouse)
+            {
+                bool isShift = (Control.ModifierKeys == Keys.Shift);
+                Direction direction = (isShift ? Direction.Negative : Direction.Positive);
+                IInteractiveItem nextFocusItem;
+                if (InteractiveFocusManager.TryGetOuterFocusItem(this, direction, out nextFocusItem)) return nextFocusItem;
+            }
 
-            // Nouzová cesta = aktivujeme posledně aktivní prvek:
+            // Nouzová cesta (pro stisknutou myš anebo pro nenalezený interaktivní prvek) = aktivujeme posledně aktivní prvek:
             return _FocusedItemPrevious;
         }
         /// <summary>
@@ -211,14 +220,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnGotFocus(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnGotFocus(e), () => base.OnGotFocus(e));
+            object userData = null;
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnGotFocus(e, ref userData), () => base.OnGotFocus(e));
         }
         /// <summary>
         /// Provede OnGetFocus
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="userData"></param>
         /// <returns></returns>
-        private bool _OnGotFocus(EventArgs e)
+        private bool _OnGotFocus(EventArgs e, ref object userData)
         {
             return true;
         }
@@ -228,14 +239,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnLostFocus(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLostFocus(e), () => base.OnLostFocus(e));
+            object userData = null;
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLostFocus(e, ref userData), () => base.OnLostFocus(e));
         }
         /// <summary>
         /// Akce OnLostFocus
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="userData"></param>
         /// <returns></returns>
-        private bool _OnLostFocus(EventArgs e)
+        private bool _OnLostFocus(EventArgs e, ref object userData)
         {
             return true;
         }
@@ -245,21 +258,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnLeave(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLeave(e), () => base.OnLeave(e), () => this._InteractiveDrawRun());
+            object userData = null;
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLeave(e, ref userData), () => base.OnLeave(e), () => this._InteractiveDrawRun());
         }
         /// <summary>
         /// Provede OnLostFocus
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="userData"></param>
         /// <returns></returns>
-        private bool _OnLeave(EventArgs e)
+        private bool _OnLeave(EventArgs e, ref object userData)
         {
             bool runFinal = false;
             this._FocusedItemPrevious = this._FocusedItem;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
             {
                 this._InteractiveDrawInit(null);
-                object userData = null;
                 this._ItemKeyboardExchange(this._FocusedItem, null, true, ref userData);
                 runFinal = true;
             }
