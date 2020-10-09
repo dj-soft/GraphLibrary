@@ -108,6 +108,12 @@
     <Compile Include="Forms\TestFinalForm.Designer.cs">
       <DependentUpon>TestFinalForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\TestFontForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TestFontForm.Designer.cs">
+      <DependentUpon>TestFontForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\TestForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -143,6 +149,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\SelectMainForm.resx">
       <DependentUpon>SelectMainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TestFontForm.resx">
+      <DependentUpon>TestFontForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\TestMaxControlsForm.resx">
       <DependentUpon>TestMaxControlsForm.cs</DependentUpon>

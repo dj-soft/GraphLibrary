@@ -203,7 +203,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(734, 347);
+            this.ClientSize = new System.Drawing.Size(1400, 650);
             this.Controls.Add(this.TestContentPanel);
             this.Controls.Add(this.ToolStripPanel);
             this.Controls.Add(this.StatusStripPanel);
