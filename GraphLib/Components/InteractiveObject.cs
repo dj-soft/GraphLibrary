@@ -55,7 +55,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// VIzuální hostitel, typicky <see cref="GInteractiveControl"/> přetypovaný na <see cref="IInteractiveHost"/> pro přístup k itnerním členům
+        /// Vizuální hostitel, typicky <see cref="GInteractiveControl"/> přetypovaný na <see cref="IInteractiveHost"/> pro přístup k interním členům
         /// </summary>
         protected IInteractiveHost IHost { get { return this.Host as IInteractiveHost; } }
         /// <summary>

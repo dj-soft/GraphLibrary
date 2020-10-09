@@ -18,7 +18,7 @@ namespace Asol.Tools.WorkScheduler.Components.Test
     [TestClass]
     public class TestComponent
     {
-        #region TextBox
+        #region TextEditorController
         /// <summary>
         /// Testy k TextBoxu - jednoduché dělení na slova
         /// </summary>
@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.Components.Test
         {
             string text = "První slovo, třetí slovo (páté slovo v závorce).";
             SizeF charSize = new SizeF(5, 8);
-            var chars = GTextEdit.CharacterPositionInfo.CreateChars(text, charSize, 160f);
+            var chars = TextEditorController.CharacterPositionInfo.CreateChars(text, charSize, 160f);
 
             List<Tuple<Int32Range, string>> words = new List<Tuple<Int32Range, string>>();
             int index = 0;
@@ -62,54 +62,54 @@ namespace Asol.Tools.WorkScheduler.Components.Test
             //             0         1         2         3         4         5
 
             // Text je dlouhý 48 znaků, 1 znak má šířku 5px, jeden řádek má max 160px, budou dva řádky: "První slovo, třetí slovo (páté s", "lovo v závorce).":
-            var chars = GTextEdit.CharacterPositionInfo.CreateChars(text, new SizeF(5, 8), 160f);
+            var chars = TextEditorController.CharacterPositionInfo.CreateChars(text, new SizeF(5, 8), 160f);
 
 
             bool found;
             int idx = 28;        // "t" ve slově "páté"
-            found = GTextEdit.EditorStateInfo.TrySearchWordEnd(chars, Direction.Positive, ref idx);               // Má být 30
+            found = TextEditorController.TrySearchWordEnd(chars, Direction.Positive, ref idx);               // Má být 30
             if (idx != 30) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordEnd(a): Nalezený index je chybný: {idx}, má být: 30.");
 
-            found = GTextEdit.EditorStateInfo.TrySearchWordEnd(chars, Direction.Positive, ref idx);               // Má zůstat 30
+            found = TextEditorController.TrySearchWordEnd(chars, Direction.Positive, ref idx);               // Má zůstat 30
             if (idx != 30) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordEnd(b): Nalezený index je chybný: {idx}, má být: 30.");
 
             idx++;
-            found = GTextEdit.EditorStateInfo.TrySearchWordEnd(chars, Direction.Positive, ref idx);               // Má se najít konec dalšího slova = 36
+            found = TextEditorController.TrySearchWordEnd(chars, Direction.Positive, ref idx);               // Má se najít konec dalšího slova = 36
             if (idx != 36) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordEnd(c): Nalezený index je chybný: {idx}, má být: 30.");
             idx = 30;
 
-            found = GTextEdit.EditorStateInfo.TrySearchWordBegin(chars, Direction.Negative, ref idx);             // Má se najít 26
+            found = TextEditorController.TrySearchWordBegin(chars, Direction.Negative, ref idx);             // Má se najít 26
             if (idx != 26) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordBegin(d): Nalezený index je chybný: {idx}, má být: 26.");
 
-            found = GTextEdit.EditorStateInfo.TrySearchWordBegin(chars, Direction.Negative, ref idx);             // Má zůstat 26
+            found = TextEditorController.TrySearchWordBegin(chars, Direction.Negative, ref idx);             // Má zůstat 26
             if (idx != 26) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordBegin(e): Nalezený index je chybný: {idx}, má být: 26.");
 
-            found = GTextEdit.EditorStateInfo.TrySearchWordEnd(chars, Direction.Negative, ref idx);               // Má se najít 24
+            found = TextEditorController.TrySearchWordEnd(chars, Direction.Negative, ref idx);               // Má se najít 24
             if (idx != 24) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordEnd(f): Nalezený index je chybný: {idx}, má být: 24.");
 
-            found = GTextEdit.EditorStateInfo.TrySearchWordBegin(chars, Direction.Negative, ref idx);             // Má se najít 19
+            found = TextEditorController.TrySearchWordBegin(chars, Direction.Negative, ref idx);             // Má se najít 19
             if (idx != 19) throw new AssertFailedException($"Chyba GTextEdit.EditorStateInfo.TrySearchWordBegin(g): Nalezený index je chybný: {idx}, má být: 19.");
 
 
             Int32Range word;
-            found = GTextEdit.EditorStateInfo.TrySearchNearWord(chars, 14, out word);                             // Má se najít slovo "třetí" = 13-18
+            found = TextEditorController.TrySearchNearWord(chars, 14, out word);                             // Má se najít slovo "třetí" = 13-18
             _CheckWord(found, word, "A", 13, 18);
 
-            found = GTextEdit.EditorStateInfo.TrySearchNearWord(chars, 25, out word);                             // Má se najít závorka před "(páté", najde se "páté" = 26-30
+            found = TextEditorController.TrySearchNearWord(chars, 25, out word);                             // Má se najít závorka před "(páté", najde se "páté" = 26-30
             _CheckWord(found, word, "B", 26, 30);
 
-            found = GTextEdit.EditorStateInfo.TrySearchNearWord(chars, 30, out word, false);                      // Má se najít mezera mezi "páté slovo", false = najde "páté" = 26-30
+            found = TextEditorController.TrySearchNearWord(chars, 30, out word, false);                      // Má se najít mezera mezi "páté slovo", false = najde "páté" = 26-30
             _CheckWord(found, word, "C", 26, 30);
 
-            found = GTextEdit.EditorStateInfo.TrySearchNearWord(chars, 30, out word, true);                       // Má se najít mezera mezi "páté slovo", true = najde "slovo" = 31-36
+            found = TextEditorController.TrySearchNearWord(chars, 30, out word, true);                       // Má se najít mezera mezi "páté slovo", true = najde "slovo" = 31-36
             _CheckWord(found, word, "D", 31, 36);
 
         }
-        private bool TrySearchWord(GTextEdit.CharacterPositionInfo[] chars, Direction direction, List<Tuple<Int32Range, string>> words, ref int index)
+        private bool TrySearchWord(TextEditorController.CharacterPositionInfo[] chars, Direction direction, List<Tuple<Int32Range, string>> words, ref int index)
         {
-            bool foundBegin = GTextEdit.EditorStateInfo.TrySearchWordBegin(chars, direction, ref index);
+            bool foundBegin = TextEditorController.TrySearchWordBegin(chars, direction, ref index);
             int indexBegin = index;
-            bool foundEnd = GTextEdit.EditorStateInfo.TrySearchWordEnd(chars, direction, ref index);
+            bool foundEnd = TextEditorController.TrySearchWordEnd(chars, direction, ref index);
             int indexEnd = index;
 
             if (!(foundBegin && foundEnd)) return false;
