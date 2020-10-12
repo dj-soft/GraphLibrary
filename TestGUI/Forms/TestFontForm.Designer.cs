@@ -30,8 +30,8 @@
         {
             this._SplitMain = new System.Windows.Forms.SplitContainer();
             this._SplitDraw = new System.Windows.Forms.SplitContainer();
-            this._Panel1 = new System.Windows.Forms.Panel();
-            this._Panel2 = new System.Windows.Forms.Panel();
+            this._Panel1 = new PanelDBF();
+            this._Panel2 = new PanelDBF();
             this._InputText = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this._SplitMain)).BeginInit();
             this._SplitMain.Panel1.SuspendLayout();
@@ -134,8 +134,8 @@
 
         private System.Windows.Forms.SplitContainer _SplitMain;
         private System.Windows.Forms.SplitContainer _SplitDraw;
-        private System.Windows.Forms.Panel _Panel1;
-        private System.Windows.Forms.Panel _Panel2;
+        private PanelDBF _Panel1;
+        private PanelDBF _Panel2;
         private System.Windows.Forms.TextBox _InputText;
     }
 }
