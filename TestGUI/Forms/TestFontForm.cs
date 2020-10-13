@@ -20,8 +20,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         protected void InitEvents()
         {
-            // _InputText.Text = "Cokoliv do tohoto políčka vepíšeme, to se vypíše v dolních polích";
-            _InputText.Text = "A";
+            _InputText.Text = "Cokoliv do tohoto políčka vepíšeme, to se vypíše v dolních polích";
+            // _InputText.Text = "A";
             _InputText.TextChanged += _InputText_TextChanged;
             _Panel1.Resize += _Panel1_Resize;
             _Panel1.Paint += _Panel1_Paint;
@@ -75,7 +75,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 int x = bounds.X + 3;
                 int y = bounds.Y + 3;
-                FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(x,y), LineHeightRatio = 1.25f, WrapWord = true, Width = bounds.Width - 6 };
+                FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(x,y), LineHeightRatio = 1.25f, WrapWord = true, Width = bounds.Width - 6, Multiline = true };
                 var characters = FontManagerInfo.GetCharInfo(text, e.Graphics, font, parameters);
 
                 using (StringFormat stringFormat = FontManagerInfo.CreateNewStandardStringFormat())
@@ -155,6 +155,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             LF = "\n";
             CRLF = CR + LF;
             CrLf = CRLF.ToCharArray();
+            SPACE = " ";
         }
         private static FontManagerInfo __Current = null;
         private static object __Locker = new object();
@@ -208,6 +209,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// K tomu slouží new instance generovaná v metodě <see cref="CreateNewStandardStringFormat()"/>. Ta se má používat v using patternu.
         /// </summary>
         public static StringFormat StandardStringFormat { get { return Current._StandardStringFormat; } }
+        /// <summary>
+        /// Zajistí, že v <see cref="__StandardStringFormat"/> bude přítomna instance (nikoli NULL), vytvořená jako <see cref="CreateNewStandardStringFormat()"/>.
+        /// </summary>
         private StringFormat _StandardStringFormat
         {
             get
@@ -244,6 +248,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected static string LF;
         protected static string CRLF;
         protected static char[] CrLf;
+        protected static string SPACE;
         #endregion
         #region class FontMeasureOneInfo : Třída obsahující informace o jednom fontu
         /// <summary>
@@ -298,41 +303,79 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 LoadBasicFontData(graphics, font);
 
-                text = NormalizeCrLf(text);
-
                 int length = text.Length;
-                FontPositionInfo[] result = new FontPositionInfo[length];
+                FontPositionInfo[] characters = new FontPositionInfo[length];
+                bool multiline = parameters?.Multiline ?? false;
                 Point origin = parameters?.Origin ?? Point.Empty;
-                int? width = parameters?.Width;
+                float paramWidth = (float)(parameters?.Width ?? 0);
+                float paramLineHeightRatio = (parameters?.LineHeightRatio ?? 0f);
+                float paramLineHeightAdd = (parameters?.LineHeightAdd ?? 0f);
+
                 int originX = origin.X;
+                float right = (paramWidth > 0f ? (originX + paramWidth) : 0);
+                bool wrapWord = (parameters?.WrapWord ?? false);
+                float lineHeight = _FontHeight;
+                if (paramLineHeightRatio > 0f) lineHeight = lineHeight * paramLineHeightRatio;
+                lineHeight = lineHeight + paramLineHeightAdd;
+                int rowHeight = (int)Math.Ceiling(lineHeight);
+
                 int currentX = origin.X;
                 int currentY = origin.Y;
                 float locationX = currentX;
                 RectangleF layoutBounds = _LayoutBounds;
                 string prevChar = "";
-                char cr = CR[0];
+                char cr = CrLf[0];
+                char lf = CrLf[1];
+                int targetIndex = 0;
+                int rowIndex = 0;
+                int charIndex = 0;
+                string currChar;
+                bool skipNextLf;
                 for (int i = 0; i < length; i++)
                 {
                     char c = text[i];
-                    if (c == cr)
-                    {   // Znak CR, za ním vždy následuje LF, oba zpracuji jako jednu pozici:
-                        string currChar = CRLF;
+                    skipNextLf = false;
+                    if ((c == cr || c == lf) && multiline)
+                    {   // Znak CR (za ním typicky následuje LF), anebo samotné LF (zpracováváme NE-normalizovaný string), a je povolen Multiline => skočíme na nový řádek (zpracuji Cr + Lf je jako jednu pozici):
+                        currChar = CRLF;
                         Rectangle textBounds = new Rectangle(currentX, currentY, 1, _FontHeight);
-                        result[i] = new FontPositionInfo(currChar, null, textBounds);
-                        i++;
-                        result[i] = new FontPositionInfo(currChar, null, textBounds);
                         currentX = origin.X;
-                        currentY = currentY + _FontHeight;
+                        currentY = currentY + rowHeight;
                         locationX = currentX;
+
+                        // Uložíme CRLF jako poslední znak v řádku, a jdeme dál, na novém řádku, od pozice 0:
+                        characters[targetIndex] = new FontPositionInfo(currChar, rowIndex, charIndex, null, textBounds);
+                        rowIndex++;
+                        charIndex = 0;
+
+                        targetIndex++;
                         prevChar = "";
+
+                        // Pokud nyní máme CR, pak zajistíme přeskočení následujícího LF:
+                        skipNextLf = (c == cr);
                     }
                     else
-                    {   // Jiný znak než CrLf
-                        string currChar = c.ToString();
+                    {   // Jiný znak než CrLf, anebo (CrLf v režimu Ne-Multiline):
+                        if (c == cr || c == lf)
+                        {   // Máme tu CR nebo LF, ale NE-máme to řešit jako NewLine => vyřešíme to jako Mezeru:
+                            currChar = SPACE;
+                            // Pokud nyní máme CR, pak zajistíme přeskočení následujícího LF:
+                            skipNextLf = (c == cr);
+                        }
+                        else
+                        {
+                            currChar = c.ToString();
+                        }
                         string charKey = prevChar + currChar;
 
                         // Prostor obsazený znakem, relativně k předchozímu znaku:
                         RectangleF currBounds = _GetLastCharBounds(graphics, font, charKey, layoutBounds);       // Vrátí souřadnici posledního znaku v "charKey", tedy první nebo druhý znak (více znaků tam nikdy není). Souřadnice jsou relativně k layoutBounds, tedy k bodu (0,0). Offset _FirstOffsetX je již aplikován.
+
+                        // Zde bychom měli řešit Auto-Wrap line, pokud je to povoleno, požadováno, pokud je to možné a potřebné (Right znaku je za Width prostoru):
+                        if (multiline && right > 0f && charIndex > 0 && ((locationX + currBounds.Right + 1f) >= right) && currChar != SPACE)
+                            WrapToNewLine(characters, targetIndex, currChar, wrapWord, originX, rowHeight, ref rowIndex, ref charIndex, ref currentX, ref currentY, ref locationX, ref currBounds);
+
+                        // Souřadnice znaku - tak, aby byl vypsán do požadovaného prostoru:
                         float charX = locationX + currBounds.X;
                         PointF textLocation = new PointF(charX - _FirstOffsetX, currentY);                       // Offset (_FirstOffsetX) se poprvé odečetl v metodě _GetLastCharBounds(), abychom měli souřadnice bodu odpovídající požadovanému bodu. Podruhé odečtu offset (_GetLastCharBounds) tady, tedy předsadím X doleva, a pak při finálním vykreslení znaku se ten znak dostane na požadovanou pozici...
                         locationX = charX;
@@ -342,12 +385,95 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         Rectangle textBounds = new Rectangle(currentX, currentY, textR - currentX, _FontHeight);
                         currentX = textR;
 
-                        result[i] = new FontPositionInfo(currChar, textLocation, textBounds);
+                        characters[targetIndex] = new FontPositionInfo(currChar, rowIndex, charIndex, textLocation, textBounds);
+                        charIndex++;
+                        targetIndex++;
                         prevChar = currChar;
                     }
+
+                    // Pokud máme přeskočit následující LF, a za znakem CR následuje další znak, a je to znak LF, pak jde o standardní oddělovač řádků CrLf; ten jsme již zpracovali (jako jeden dvojznak) => následující LF přeskočíme:
+                    if (skipNextLf && i < (length - 1) && text[i + 1] == lf)
+                        i++;
                 }
 
-                return result;
+                // Nyní máme v poli result počet znaků (length), ale protože jsme mohli vynechat znaky LF, pak poslední prvky pole result mohou být null
+                //  (vstupní znaky jsme načítali z indexu [i] = 0..length; ale ukládali jsme je do indexu targetIndex)
+                if (targetIndex < length)
+                {
+                    FontPositionInfo[] target = new FontPositionInfo[targetIndex];
+                    Array.Copy(characters, 0, target, 0, targetIndex);
+                    characters = target;
+                }
+
+                return characters;
+            }
+            /// <summary>
+            /// Metoda je volána v situaci, kdy je třeba zalomit řádek, protože aktuální znak přesahuje za pravý okraj prostoru.
+            /// Řeší dva úkoly: 
+            /// 1. Pokud je požadováno <paramref name="wrapWord"/>: Najít začátek slova na aktuálním řádku a pokud to má smysl, pak jej celé přesunout na nový řádek
+            /// 2. Pokud se neprovádí <paramref name="wrapWord"/>, anebo nebylo nalezeno vhodné slovo k přesunu na další řádek, pak pouze přesune pointery tak, aby aktuální znak začal na novém řádku
+            /// </summary>
+            /// <param name="characters"></param>
+            /// <param name="targetIndex"></param>
+            /// <param name="currChar"></param>
+            /// <param name="wrapWord"></param>
+            /// <param name="originX"></param>
+            /// <param name="rowHeight"></param>
+            /// <param name="charIndex"></param>
+            /// <param name="currentX"></param>
+            /// <param name="currentY"></param>
+            /// <param name="locationX"></param>
+            /// <param name="currBounds"></param>
+            private void WrapToNewLine(FontPositionInfo[] characters, int targetIndex, string currChar, bool wrapWord, int originX, int rowHeight, ref int rowIndex, ref int charIndex, ref int currentX, ref int currentY, ref float locationX, ref RectangleF currBounds)
+            {
+                // Najít začátek slova, které by mělo být celé přesunuté na nový řádek:
+                int wordBegin = -1;
+                if (currChar != SPACE && charIndex > 0 && characters[targetIndex-1].Text != SPACE && wrapWord)
+                {   // Pokud aktuální znak NENÍ mezera, a jsme na pozici v řádku větší než 0 a předešlý znak NENÍ mezera, a mají se zalamovat slova, 
+                    // pak zkusíme najít začátek slova (wordBegin), které bude přesunuto na další řádek:
+                    for (int i = targetIndex - 1; i >= 0; i--)
+                    {   // Projdu znaky před aktuální pozici, a hledám pozici znaku, který je první nemezera za mezerou na pozici v řádku větší než 0:
+                        var character = characters[i];
+                        if (character.CharIndex <= 0) break;                             // Pokud by slovo začínalo na pozici 0, pak jej nebudeme wrapovat na nový řádek, protože to nemá smysl.
+                        if (character.Text != SPACE && characters[i-1].Text == SPACE)    // Pokud znak [i] NENÍ mezera, a předchozí znak JE mezera, pak znak [i] zalomíme na nový řádek:
+                        {
+                            wordBegin = i;
+                            break;
+                        }
+                    }
+                }
+                
+                if (wordBegin > 0)
+                {   // Přesunout nalezené slovo na další řádek, na pozici X = originX ... :
+                    var wordFirst = characters[wordBegin];
+                    Point logicalOffset = new Point(-wordFirst.CharIndex, 1);
+                    PointF fontOffset = new PointF((float)originX - (wordFirst.TextLocation.HasValue ? wordFirst.TextLocation.Value.X + _FirstOffsetX : (float)wordFirst.TextBounds.X), rowHeight);
+                    Point boundsOffset = new Point(originX - wordFirst.TextBounds.X, rowHeight);
+                    
+                    //int charOffset = -wordFirst.CharIndex;
+                    //int xOffset = originX - wordFirst.TextBounds.X;
+                    //PointF textLocationOffset = new PointF(xOffset /*originX - wordFirst.TextLocation.Value.X*/, rowHeight);
+                    //Point textBoundsOffset = new Point(xOffset, rowHeight);
+                    
+                    for (int i = wordBegin; i < targetIndex; i++)
+                        characters[i].Move(logicalOffset, fontOffset, boundsOffset);
+
+                    FontPositionInfo lastChar = characters[targetIndex - 1];
+                    rowIndex = lastChar.RowIndex;
+                    charIndex = lastChar.CharIndex + 1;
+                    currentX = lastChar.TextBounds.Right;
+                    currentY = lastChar.TextBounds.Y;
+                    locationX = (lastChar.TextLocation.HasValue ? lastChar.TextLocation.Value.X + _FirstOffsetX: (float)lastChar.TextBounds.X);
+                }
+                else
+                {   // Nepřesouváme slovo, pouze aktuální znak (currChar, který teprve budeme ukládat do pole characters) budeme pozicovat na nový řádek:
+                    rowIndex++;
+                    charIndex = 0;
+                    currentX = originX;
+                    currentY += rowHeight;
+                    locationX = originX;// - _FirstOffsetX;
+                    currBounds.X = 0f;
+                }
             }
             /// <summary>
             /// Vrátí souřadnici posledního znaku v daném textu.
@@ -461,11 +587,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Konstruktor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="rowIndex"></param>
+        /// <param name="charIndex"></param>
         /// <param name="textBounds"></param>
         /// <param name="bounds"></param>
-        public FontPositionInfo(string text, PointF? textLocation, Rectangle textBounds)
+        public FontPositionInfo(string text, int rowIndex, int charIndex, PointF? textLocation, Rectangle textBounds)
         {
             this.Text = text;
+            this.RowIndex = rowIndex;
+            this.CharIndex = charIndex;
             this.TextLocation = textLocation;
             this.TextBounds = textBounds;
         }
@@ -475,12 +605,46 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Text: {Text}; Location: {TextLocation}; Bounds: {TextBounds}";
+            return $"Text: {Text}; Row: {RowIndex}; Char: {CharIndex}; Location: {TextLocation}; Bounds: {TextBounds}";
+        }
+        /// <summary>
+        /// Přesune znak na jinou pozici
+        /// </summary>
+        /// <param name="rowOffset"></param>
+        /// <param name="charOffset"></param>
+        /// <param name="fontOffset"></param>
+        /// <param name="boundsOffset"></param>
+        public void Move(int rowOffset, int charOffset, PointF fontOffset, Point boundsOffset)
+        {
+            RowIndex += rowOffset;
+            CharIndex += charOffset;
+            if (TextLocation.HasValue) TextLocation = new PointF(TextLocation.Value.X + fontOffset.X, TextLocation.Value.Y + fontOffset.Y);
+            TextBounds = new Rectangle(TextBounds.X + boundsOffset.X, TextBounds.Y + boundsOffset.Y, TextBounds.Width, TextBounds.Height);
+        }
+        /// <summary>
+        /// Přesune znak na jinou pozici
+        /// </summary>
+        /// <param name="logicalOffset"></param>
+        /// <param name="visualOffset"></param>
+        public void Move(Point logicalOffset, PointF fontOffset, Point boundsOffset)
+        {
+            RowIndex += logicalOffset.Y;
+            CharIndex += logicalOffset.X;
+            if (TextLocation.HasValue) TextLocation = new PointF(TextLocation.Value.X + (float)fontOffset.X, TextLocation.Value.Y + (float)fontOffset.Y);
+            TextBounds = new Rectangle(TextBounds.X + boundsOffset.X, TextBounds.Y + boundsOffset.Y, TextBounds.Width, TextBounds.Height);
         }
         /// <summary>
         /// Text znaku
         /// </summary>
         public string Text { get; private set; }
+        /// <summary>
+        /// Index řádku, počínaje 0.
+        /// </summary>
+        public int RowIndex { get; private set; }
+        /// <summary>
+        /// Index znaku v rámci řádku, počínaje 0, kontinuální řada. Znak CrLf je poslední na řádku, následující znak na novém řádku má <see cref="CharIndex"/> = 0.
+        /// </summary>
+        public int CharIndex { get; private set; }
         /// <summary>
         /// Souřadnice bodu, na který se má vypsat znak <see cref="Text"/> v metodě <see cref="Graphics.DrawString(string, Font, Brush, PointF, StringFormat)"/>.
         /// Znak potom bude zobrazen víceméně přesně v prostoru <see cref="TextBounds"/>.
@@ -506,6 +670,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         public Point? Origin { get; set; }
         /// <summary>
+        /// Povoluje se dělení vstupního textu na řádky.
+        /// Default = false : celý vstupní text je povinně umístěn do jedné řádky, i kdyby obsahoval CrLf, i kdyby byla zadána šířka <see cref="Width"/> a požadováno <see cref="WrapWord"/>. 
+        /// Namísto znaku CrLf bude zobrazena mezera.
+        /// Hodnota true : dělit text na řádky = znak CrLf způsobí odskočení na nový řádek, při zadání šířky <see cref="Width"/> bude text zalamován, při požadavku <see cref="WrapWord"/> budou zalamována celá slova.
+        /// </summary>
+        public bool Multiline { get; set; }
+        /// <summary>
         /// Maximální šířka řádku v pixelech pro automatické řádkování. Pokud by znak byť jen zčásti přesahoval nad tuto šířku, bude umístěn na nový řádek.
         /// Podle parametru <see cref="WrapWord"/> může být na nový řádek umístěno celé poslední slovo.
         /// Pokud bude <see cref="Width"/> = null, nebude se automaticky zalamovat.
@@ -519,6 +690,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Výška řádku relativně k fontu. Null = 1 = dle předpisu fontu.
         /// </summary>
         public float? LineHeightRatio { get; set; }
+        /// <summary>
+        /// Přídavek k výšce řádku v pixelech, default = 0
+        /// </summary>
+        public float? LineHeightAdd { get; set; }
     }
     #endregion
 }
