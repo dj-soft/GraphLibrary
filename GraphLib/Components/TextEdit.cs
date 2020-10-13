@@ -298,30 +298,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     GPainter.DrawString(drawArgs.Graphics, text, this.CurrentFont, textBounds, alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
                 }
             }
-
-            /*
-
-            Color[] overColors = new Color[] { Color.FromArgb(64, 220, 255, 220), Color.FromArgb(64, 255, 220, 220), Color.FromArgb(64, 220, 220, 255) };
-            int alpha = 128;
-            int loval = 160;
-            int hival = 220;
-            overColors = new Color[] { Color.FromArgb(alpha, loval, hival, loval), Color.FromArgb(alpha, hival, loval, loval), Color.FromArgb(alpha, loval, loval, hival) };
-            int idx = 0;
-            foreach (var charPos in charPositions)
-            {
-                Color color = overColors[idx % 3];
-                e.Graphics.FillRectangle(Skin.Brush(color), charPos);
-                idx++;
-            }
-
-            if (this.MouseClickPoint.HasValue)
-            {
-                RectangleF? cursor = FindCursorByPoint(this.MouseClickPoint.Value, charPositions);
-                if (cursor.HasValue)
-                    e.Graphics.FillRectangle(Brushes.Black, cursor.Value);
-                Host.AnimationStart(this.ShowCursorTick);
-            }
-            */
         }
         /// <summary>
         /// Vykreslí Selection a Kurzor
