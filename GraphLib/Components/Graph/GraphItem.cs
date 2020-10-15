@@ -836,7 +836,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             Color textColor = this.TextColorCurrent;
             StringFormatFlags stringFormat = Graph.CurrentGraphProperties.TextStringFormat;
-            GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, textColor, stringFormat: stringFormat);
+            GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, textColor, stringFormatFlags: stringFormat);
         }
         /// <summary>
         /// Barva textu (písma) získaná dle pravidel z prvku

@@ -52,6 +52,42 @@ namespace Asol.Tools.WorkScheduler.Components
                  && (this.Underline == other.Underline));
         }
         /// <summary>
+        /// Obsahuje stringový kód tohoto fontu; kód lze porovnávat mezi dvěma instancemi pomocí == nebo !=.
+        /// Kód je kratší než <see cref="ToString()"/>.
+        /// Kód by bylo možno parsovat zpět do hodnot do <see cref="FontInfo"/>, ale dosud není třeba.
+        /// </summary>
+        public string Key
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                if (FontFamilyName != null) sb.Append($"N:{FontFamilyName};S:{ToKey(FontEmSize)};");
+                else sb.Append($"T:{FontType};R:{ToKey(SizeRatio)};");
+                sb.Append(ToKey(Bold, "B") + ToKey(Italic, "I") + ToKey(Underline, "U") + ToKey(!(Bold | Italic | Underline), "R") + ";");
+                return sb.ToString();
+            }
+        }
+        /// <summary>
+        /// Vrátí text z dané hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string ToKey(float value) { return Math.Round(value, 2).ToString("### ##0.00").Trim(); }
+        /// <summary>
+        /// Vrátí text z dané hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static string ToKey(float? value) { return (value.HasValue ? Math.Round(value.Value, 2).ToString("### ##0.00").Trim() : "NN"); }
+        /// <summary>
+        /// Vrátí text z dané hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="textTrue"></param>
+        /// <param name="textFalse"></param>
+        /// <returns></returns>
+        private static string ToKey(bool value, string textTrue, string textFalse = "") { return (value ? textTrue : textFalse); }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -86,7 +122,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Relativní velikost fontu vzhledem ke standardu = Ratio.
         /// Default = 1.0f = beze změny velikosti;
         /// Hodnoty větší než 1 zvětší font, hodnoty menší než 1 zmenší font.
-        /// Akkceptuje se hodnota 0.2f až 5.0f. Vždy se zaokrouhlí na 2 desetinná místa.
+        /// <para/>
+        /// Akceptuje se hodnota 0.2f až 5.0f. Vždy se zaokrouhlí na 2 desetinná místa.
         /// </summary>
         public float SizeRatio { get { return this._SizeRatio; } set { this._SizeRatio = (float)Math.Round(_ToRange(value), 2); } } private float _SizeRatio = SizeRatioStandard;
         private const float SizeRatioMin = 0.20f;

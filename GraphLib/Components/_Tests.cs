@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.Components.Test
         {
             string text = "První slovo, třetí slovo (páté slovo v závorce).";
             SizeF charSize = new SizeF(5, 8);
-            var chars = TextEditorController.CharacterPositionInfo.CreateChars(text, charSize, 160f);
+            var chars = CharPositionInfo.CreateTestChars(text, charSize, 160f);
 
             List<Tuple<Int32Range, string>> words = new List<Tuple<Int32Range, string>>();
             int index = 0;
@@ -48,7 +48,7 @@ namespace Asol.Tools.WorkScheduler.Components.Test
             _CheckWord(words, 7, 39, 46, "závorce");
 
             var char30 = chars[words[2].Item1.Begin];      // Slovo [2] = "třetí", znak na pozici [0] = 't' (na pozici 13 v textu)
-            var bounds = char30.Bounds;
+            var bounds = char30.TextBounds;
             if (bounds.X != 65f) throw new AssertFailedException("Chyba GTextEdit.EditorStateInfo.TrySearchWord(): slovo na pozici 3 nezačíná na pixelu 65.");
         }
         /// <summary>
@@ -62,7 +62,7 @@ namespace Asol.Tools.WorkScheduler.Components.Test
             //             0         1         2         3         4         5
 
             // Text je dlouhý 48 znaků, 1 znak má šířku 5px, jeden řádek má max 160px, budou dva řádky: "První slovo, třetí slovo (páté s", "lovo v závorce).":
-            var chars = TextEditorController.CharacterPositionInfo.CreateChars(text, new SizeF(5, 8), 160f);
+            var chars = CharPositionInfo.CreateTestChars(text, new SizeF(5, 8), 160f);
 
 
             bool found;
@@ -105,7 +105,7 @@ namespace Asol.Tools.WorkScheduler.Components.Test
             _CheckWord(found, word, "D", 31, 36);
 
         }
-        private bool TrySearchWord(TextEditorController.CharacterPositionInfo[] chars, Direction direction, List<Tuple<Int32Range, string>> words, ref int index)
+        private bool TrySearchWord(CharPositionInfo[] chars, Direction direction, List<Tuple<Int32Range, string>> words, ref int index)
         {
             bool foundBegin = TextEditorController.TrySearchWordBegin(chars, direction, ref index);
             int indexBegin = index;

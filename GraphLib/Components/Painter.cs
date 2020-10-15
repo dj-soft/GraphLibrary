@@ -468,12 +468,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="brush"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
+        /// <param name="stringFormatFlags"></param>
         /// <param name="stringFormat"></param>
         /// <returns></returns>
-        internal static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormat = null)
+        internal static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
         {
             RectangleF[] positions;
-            return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormat, false, out positions);
+            return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormatFlags, stringFormat, false, out positions);
         }
         /// <summary>
         /// Vykreslí zadaný text
@@ -487,14 +488,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="brush"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
+        /// <param name="stringFormatFlags"></param>
         /// <param name="stringFormat"></param>
         /// <returns></returns>
-        internal static RectangleF[] DrawStringMeasureChars(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormat = null)
+        internal static RectangleF[] DrawStringMeasureChars(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
         {
             RectangleF[] positions;
-            _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormat, true, out positions);
+            _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormatFlags, stringFormat, true, out positions);
             return positions;
         }
+        /// <summary>
+        /// Obsahuje formátovací příznaky pro psaní textu
+        /// </summary>
+        internal static StringFormatFlags DrawStringStandardFormatFlags { get { return FontManagerInfo.StandardStringFormatFlags; } }
         /// <summary>
         /// Draw a text to specified area
         /// </summary>
@@ -507,10 +513,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
+        /// <param name="stringFormatFlags"></param>
         /// <param name="stringFormat"></param>
         /// <param name="measureChars"></param>
         /// <param name="positions"></param>
-        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, StringFormatFlags? stringFormat, bool measureChars, out RectangleF[] positions)
+        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, StringFormatFlags? stringFormatFlags, StringFormat stringFormat, bool measureChars, out RectangleF[] positions)
         {
             positions = null;
 
@@ -521,7 +528,12 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
             int boundsLength = (isVertical ? bounds.Height : bounds.Width);
 
-            StringFormatFlags sff = stringFormat ?? StringFormatFlags.LineLimit;
+            if (stringFormat == null)
+            {
+                StringFormatFlags sff = stringFormatFlags ?? DrawStringStandardFormatFlags;
+                stringFormat = FontManagerInfo.CreateNewStandardStringFormat(sff);
+            }
+
 
             using (GraphicsUseText(graphics))    // Nedávej tady CLIP na grafiku pro bounds: ona grafika už touhle dobou je korektně clipnutá na správný prostor controlu. Clipnutím na bounds se může část textu vykreslit i mimo control !!!
             {
@@ -533,8 +545,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 //  hrozný    :  SingleBitPerPixel, SingleBitPerPixelGridFit
 
                 Font font = fontInfo.Font;
-                StringFormat sFormat = new StringFormat(sff);
-                SizeF textSize = graphics.MeasureString(text, font, boundsLength, sFormat);
+                SizeF textSize = graphics.MeasureString(text, font, boundsLength, stringFormat);
                 if (isVertical) textSize = textSize.Swap();               // Pro vertikální text převedu prostor textu "na výšku"
                 textArea = textSize.AlignTo(bounds, alignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
 
@@ -550,14 +561,14 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
 
                 if (brush != null)
-                    graphics.DrawString(text, font, brush, textArea, sFormat);
+                    graphics.DrawString(text, font, brush, textArea, stringFormat);
                 else if (color.HasValue)
-                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, sFormat);
+                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, stringFormat);
                 else
-                    graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sFormat);
+                    graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, stringFormat);
 
                 if (measureChars)
-                    positions = _DrawStringMeasurePositions(graphics, text, font, textArea, sFormat);
+                    positions = _DrawStringMeasurePositions(graphics, text, font, textArea, stringFormat);
 
                 if (isVertical)
                     graphics.Transform = matrixOld;
@@ -572,9 +583,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="text"></param>
         /// <param name="font"></param>
         /// <param name="textArea"></param>
-        /// <param name="sFormat"></param>
+        /// <param name="stringFormat"></param>
         /// <returns></returns>
-        private static RectangleF[] _DrawStringMeasurePositions(Graphics graphics, string text, Font font, Rectangle textArea, StringFormat sFormat)
+        private static RectangleF[] _DrawStringMeasurePositions(Graphics graphics, string text, Font font, Rectangle textArea, StringFormat stringFormat)
         {
             if (text == null || text.Length == 0) return new RectangleF[0];
 
@@ -596,10 +607,13 @@ namespace Asol.Tools.WorkScheduler.Components
                     List<CharacterRange> characterRanges = new List<CharacterRange>();
                     for (int i = begin; (i < length && characterRanges.Count < maxSize); i++)
                         characterRanges.Add(new CharacterRange(i, 1));
-                    sFormat.SetMeasurableCharacterRanges(characterRanges.ToArray());
-                    Region[] charRanges = graphics.MeasureCharacterRanges(text, font, textArea, sFormat);
-                    foreach (Region charRange in charRanges)
-                        result.Add(charRange.GetBounds(graphics));
+                    using (StringFormat sFormat = stringFormat.Clone() as StringFormat)
+                    {
+                        sFormat.SetMeasurableCharacterRanges(characterRanges.ToArray());
+                        Region[] charRanges = graphics.MeasureCharacterRanges(text, font, textArea, sFormat);
+                        foreach (Region charRange in charRanges)
+                            result.Add(charRange.GetBounds(graphics));
+                    }
                     begin += characterRanges.Count;
                 }
             }

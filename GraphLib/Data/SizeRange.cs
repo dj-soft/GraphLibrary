@@ -1361,7 +1361,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return true;
         }
         #endregion
-        #region Implementace abstraktní třídy
+        #region Implementace abstraktní třídy, overrides pro rychlost
         /// <summary>
         /// Je Edge prázdné?
         /// </summary>
@@ -1435,8 +1435,23 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="size"></param>
         /// <returns></returns>
         protected override string TSizeToText(int size) { return size.ToString(); }
+        /// <summary>
+        /// Vrací true, když dodaná hodnota (bod) leží uvnitř this intervalu.
+        /// Vrací true, když hodnota leží i přímo na hodnotě Begin nebo End.
+        /// Vrací false, když this interval není reálný (jeho Begin je větší než End).
+        /// Vrací false, když this není naplněn (když <see cref="BaseRange{TEdge, TSize}.IsFilled"/> je false = když Begin a/nebo End nemají hodnotu).
+        /// <para/>
+        /// Na třídě <see cref="Int32Range"/> je metoda implementována nativně = kvůli optimalizaci výkonu.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="acceptOnEnd"></param>
+        /// <returns></returns>
+        public override bool Contains(int value, bool acceptOnEnd = true)
+        {   // Fixní implementace kvůli rychlosti:
+            return (Begin <= End && value >= Begin && (value < End || (acceptOnEnd && value == End)));
+        }
         #endregion
-        #region Implicitní konverze z/na GuiTimeRange
+        #region Implicitní konverze z/na GuiInt32Range
         /// <summary>
         /// Implicitní konverze z <see cref="GuiInt32Range"/> na <see cref="Int32Range"/>.
         /// Pokud je na vstupu <see cref="GuiInt32Range"/> = null, pak na výstupu je <see cref="Int32Range"/> == null.

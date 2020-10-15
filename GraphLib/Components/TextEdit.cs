@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GTextEdit (=TextBox)
     /// </summary>
-    public class GTextEdit : GTextObject
+    public class GTextEdit : GTextObject, ITextEditInternal
     {
         #region Konstruktor, privátní život
         /// <summary>
@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.Components
                       | InteractiveProperties.Bit.TabStop);
         }
         #endregion
-        #region Vstupní události (Focus, Klávesnice, Myš)
+        #region Vstupní události (Focus, Klávesnice, Myš) a jejich předání do Editoru
         /// <summary>
         /// Při vstupu focusu do prvku
         /// </summary>
@@ -114,6 +114,10 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             set { _EditorState = value; }
         }
+        /// <summary>
+        /// Obsahuje true pokud existuje <see cref="EditorState"/>
+        /// </summary>
+        protected bool HasEditorState { get { return (_EditorState != null); } }
         private TextEditorController _EditorState;
         /// <summary>
         /// Metoda, která má vytvořit editor do property <see cref="EditorState"/>.
@@ -181,7 +185,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             Rectangle innerBounds = this.GetInnerBounds(absoluteBounds);
-            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, drawMode, this.HasFocus, this.InteractiveState, this);
+            Rectangle textBounds = innerBounds.Enlarge(-TextMargin.Value);
+            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, drawMode, this.HasFocus, this.InteractiveState, this);
             this.DetectOverlayBounds(drawArgs, OverlayText);    // Nastaví OverlayBounds a modifikuje TextBounds
             this.DrawBackground(drawArgs);                      // Background
             this.DrawOverlay(drawArgs, OverlayBackground);      // Grafika nad Backgroundem
@@ -277,44 +282,59 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawArgs">Argumenty</param>
         protected virtual void DrawText(GTextEditDrawArgs drawArgs)
         {
-            string text = this.Text;
             Rectangle textBounds = drawArgs.TextBounds;
-            if (text.Length > textBounds.Width) text = text.Substring(0, textBounds.Width);
-            using (GPainter.GraphicsClip(drawArgs.Graphics, textBounds))
-            {
-                textBounds.Width = 2048;
-                StringFormatFlags stringFormat = StringFormatFlags.NoWrap | StringFormatFlags.LineLimit;
-                ContentAlignment alignment = this.Alignment;
-                if (HasFocus && EditorState != null)
-                {   // Mám Focus a mám i editor = získám souřadnice znaků, vykreslím je, zpracuji údaje z myši a vykreslím výběr a kurzor:
-                    if (text.Length == 0) text = " ";              // Kvůli souřadnicím
-                    RectangleF[] charPositions = GPainter.DrawStringMeasureChars(drawArgs.Graphics, text, this.CurrentFont, textBounds, alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
-                    EditorState.SetCharacterPositions(this.Text, charPositions);
-                    EditorState.MouseDownDataProcess();
-                    DrawSelectionAndCursor(drawArgs);
+            if (!textBounds.HasPixels()) return;
+
+            string text = this.Text;
+            Graphics graphics = drawArgs.Graphics;
+            FontInfo fontInfo = this.CurrentFont;
+            Color? backColorStd = null;
+            Color? backColorSel = BackColorSelectedText;
+            Color? fontColorStd = CurrentTextColor;
+            Color? fontColorSel = TextColorSelectedText;
+            ContentAlignment alignment = this.Alignment;
+            if (HasFocus && HasEditorState)
+            {   // S Focusem a editorem: 
+                CheckCharPositions(drawArgs);                        // Provedu před GraphicsClip(), aby měření fontu nebylo omezeno
+                EditorState.MouseDownDataProcess();                  // Provedu před kreslením, může se zde určit oblast SelectionRange
+                Int32Range selectionRange = this.SelectionRange;
+                bool hasSelectionRange = (selectionRange != null && selectionRange.Size != 0);
+                Point shift = Point.Empty;
+                using (GPainter.GraphicsUseText(drawArgs.Graphics, textBounds))
+                {
+                    foreach (var charPosition in CharPositions)
+                    {
+                        bool isSelected = (hasSelectionRange && selectionRange.Contains(charPosition.Index, false));
+                        charPosition.DrawText(graphics, fontInfo, textBounds, shift, backColor: (!isSelected ? backColorStd : backColorSel), fontColor: (!isSelected ? fontColorStd : fontColorSel));
+                    }
+                    DrawCursor(drawArgs, shift);                     // Vykreslím kurzor
                 }
-                else
-                {   // Bez Focusu nebo bez editoru = jen vypíšu text:
-                    GPainter.DrawString(drawArgs.Graphics, text, this.CurrentFont, textBounds, alignment, color: this.CurrentTextColor, stringFormat: stringFormat);
+            }
+            else
+            {   // Bez Focusu nebo bez editoru = jen vypíšu text:
+                using (GPainter.GraphicsUseText(drawArgs.Graphics, textBounds))
+                {
+                    GPainter.DrawString(graphics, text, fontInfo, textBounds, alignment, color: fontColorStd.Value, stringFormat: FontManagerInfo.EditorStringFormat);
                 }
             }
         }
         /// <summary>
-        /// Vykreslí Selection a Kurzor
+        /// Vykreslí Kurzor. Volá se výhradně v době, kdy máme Focus a Editor.
         /// </summary>
         /// <param name="drawArgs"></param>
-        protected virtual void DrawSelectionAndCursor(GTextEditDrawArgs drawArgs)
+        /// <param name="shift"></param>
+        protected virtual void DrawCursor(GTextEditDrawArgs drawArgs, Point shift)
         {
-            using (var selectionArea = this.EditorState.GetSelectionArea())
-            {   // selectionArea je GraphicsPath, IDisposable:
-                if (selectionArea != null)
-                    drawArgs.Graphics.FillPath(Skin.Brush(Color.LightBlue, 128), selectionArea);
-            }
+            CursorBounds = EditorState.GetCursorBounds(drawArgs.TextBounds, shift);
+            if (!CursorBounds.HasValue) return;
 
-            var cursorBounds = EditorState.GetCursorBounds();
-            if (cursorBounds.HasValue)
-                drawArgs.Graphics.FillRectangle(Brushes.Black, cursorBounds.Value);
+            GPainter.GraphicsSetSharp(drawArgs.Graphics);            // Ostré okraje, aby byl kurzor správný
+            drawArgs.Graphics.FillRectangle(Skin.Brush(Color.Black), CursorBounds.Value);
         }
+        /// <summary>
+        /// Souřadnice kurzoru
+        /// </summary>
+        protected Rectangle? CursorBounds { get; set; }
         /// <summary>
         /// Vykreslí blikání kurzoru
         /// </summary>
@@ -326,6 +346,20 @@ namespace Asol.Tools.WorkScheduler.Components
 
             return AnimationResult.Stop;
         }
+        /// <summary>
+        /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
+        /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        protected void CheckCharPositions(GTextEditDrawArgs drawArgs)
+        {
+            CharPositions = EditorState.CheckCharPositions(drawArgs, this.CurrentFont);
+        }
+        /// <summary>
+        /// Pole znaků, jejich pozic a souřadnic pro kreslení znaků i vykreslení pozadí.
+        /// Souřadnice jsou relativní = začínají na bodu 0/0, při vykreslování je možné je jako celek posouvat a tím scrollovat textem.
+        /// </summary>
+        protected CharPositionInfo[] CharPositions { get; private set; }
         #endregion
         #region Public vlastnosti definující vzhled (Color, Border, Font)
         /// <summary>
@@ -462,6 +496,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual BorderStyleType BorderStyleDefault { get { return Skin.TextBox.BorderStyle; } }
         /// <summary>
+        /// Vnitřní okraj mezi Border a Textem, počet pixelů.
+        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// Platné hodnoty jsou 0 - 16.
+        /// </summary>
+        public int? TextMargin { get { return __TextMargin ?? TextMarginDefault; } set { __TextMargin = (value.HasValue ? (int?)(value.Value < 0 ? 0 : (value.Value > 16 ? 16 : value.Value)) : value); Invalidate(); } }
+        private int? __TextMargin;
+        /// <summary>
+        /// Defaultní hodnota Vnitřní okraj mezi Border a Textem, počet pixelů.
+        /// </summary>
+        protected virtual int TextMarginDefault { get { return Skin.TextBox.TextMargin; } }
+        /// <summary>
         /// Barva rámečku Enabled.
         /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
         /// </summary>
@@ -581,7 +626,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region Public vlastnosti definující chování
+        #region Public vlastnosti definující chování (TabStop. 
         /// <summary>
         /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
         /// </summary>
@@ -601,18 +646,63 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
+        /// Rozsah vybraného (označeného) textu. Může být NULL.
+        /// Pokud zobrazený text má 4 znaky "0123", a <see cref="SelectionRange"/> = { Begin: 1; End: 3; }, pak jsou označeny znaky "12".
+        /// Pokud zobrazený text má 4 znaky "0123", a <see cref="SelectionRange"/> = { Begin: 0; End: 4; }, pak jsou označeny znaky "0123".
+        /// <para/>
+        /// Pozor, pořadí Begin a End může být i opačné = záporné: { Begin = 4; End = 0 }!
+        /// Z hlediska vykreslení je to shodné jako { 0, 4 }, ale rozdál je v modifikaci hodnoty pomocí kurzoru nebo myši:
+        /// Begin je místo, kde uživatel začal označovat, od něj může jít doprava i doleva, mění se End, proto může být End menší než Begin.
+        /// Můžeme například myší kliknout na pozici <see cref="CursorIndex"/> = 10, stisknout myš, a pak kliknout myší na pozici 4 a <see cref="SelectionRange"/> bude { Begin = 10, End = 4 }.
+        /// <para/>
+        /// Pozor, hodnota smí být NULL!
+        /// </summary>
+        public Int32Range SelectionRange
+        {
+            get { return _SelectionRange; }
+            set
+            {
+                if (value == null)
+                    _SelectionRange = null;
+                else
+                {
+                    int length = this.Text.Length;
+                    int begin = value.Begin;
+                    begin = (begin < 0 ? 0 : (begin > length ? length : begin));         // Begin i End smí být v rozsahu { 0 až Length }
+                    int end = value.End;
+                    end = (end < 0 ? 0 : (end > length ? length : end));                 // End může být menší než Begin!
+                    _SelectionRange = new Int32Range(begin, end);
+                }
+                Invalidate();
+            }
+        }
+        /// <summary>
+        /// Oblast výběru, která při vložení hodnoty neprovádí kontroly (rychlost), přebírí přímo instanci, a neprovádí invalidaci
+        /// </summary>
+        Int32Range ITextEditInternal.SelectionRangeInternal { get { return _SelectionRange; } set { _SelectionRange = value; } }
+        private Int32Range _SelectionRange;
+        /// <summary>
+        /// Je povolen víceřádkový text? Tedy například Poznámka...
+        /// </summary>
+        public bool Multiline { get { return _Multiline; } set { _Multiline = value; Invalidate(); } } private bool _Multiline;
+        /// <summary>
+        /// Pokud je povolen víceřádkový text, má se text automaticky zalamovat podle šířky Textboxu na pozicích slova?
+        /// </summary>
+        public bool WordWrap { get { return _WordWrap; } set { _WordWrap = value; Invalidate(); } } private bool _WordWrap;
+
+        /// <summary>
         /// Přídavné vykreslení přes Background, pod text
         /// </summary>
-        public ITextEditOverlay OverlayBackground { get; set; }
+        public ITextEditOverlay OverlayBackground { get { return _OverlayBackground; } set { _OverlayBackground = value; Invalidate(); } } private ITextEditOverlay _OverlayBackground;
         /// <summary>
         /// Přídavné vykreslení přes Text
         /// </summary>
-        public ITextEditOverlay OverlayText { get; set; }
+        public ITextEditOverlay OverlayText { get { return _OverlayText; } set { _OverlayText = value; Invalidate(); } } private ITextEditOverlay _OverlayText;
         /// <summary>
         /// Obsahuje true pro prvek, jehož hodnota má být zadaná, nikoli Empty.
         /// Pak se Border vykresluje barvou 
         /// </summary>
-        public bool IsRequiredValue { get; set; }
+        public bool IsRequiredValue { get { return _IsRequiredValue; } set { _IsRequiredValue = value; Invalidate(); } } private bool _IsRequiredValue;
         #endregion
         #region Text, Value a napojení na data
         /// <summary>
@@ -740,6 +830,16 @@ namespace Asol.Tools.WorkScheduler.Components
         public static string CharactersAssumedAsWords { get; set; } = "_";
         #endregion
     }
+    /// <summary>
+    /// Rozhraní pro interní přístup do TextBoxu v procesu editace
+    /// </summary>
+    public interface ITextEditInternal
+    {
+        /// <summary>
+        /// Oblast výběru, která při vložení hodnoty neprovádí kontroly (rychlost), přebírí přímo instanci, a neprovádí invalidaci
+        /// </summary>
+        Int32Range SelectionRangeInternal { get; set; }
+    }
     #region class GTextEditDrawArgs : Argumenty pro kreslení
     /// <summary>
     /// Argumenty pro kreslení
@@ -753,18 +853,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
+        /// <param name="textBounds"></param>
         /// <param name="drawMode"></param>
         /// <param name="hasFocus"></param>
         /// <param name="interactiveState"></param>
         /// <param name="textEdit"></param>
-        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, DrawItemMode drawMode, 
+        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds, DrawItemMode drawMode, 
             bool hasFocus, GInteractiveState interactiveState, GTextEdit textEdit)
         {
             this.DrawArgs = drawArgs;
             this.AbsoluteBounds = absoluteBounds;
             this.AbsoluteVisibleBounds = absoluteVisibleBounds;
             this.InnerBounds = innerBounds;
-            this.TextBounds = innerBounds;
+            this.TextBounds = textBounds;
             this.DrawMode = drawMode;
             this.HasFocus = hasFocus;
             this.InteractiveState = interactiveState;
@@ -817,7 +918,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTextEdit TextEdit { get; private set; }
         /// <summary>
         /// Vloží dané souřadnice <paramref name="overlayBounds"/> do <see cref="OverlayBounds"/>,
-        /// a pokud bude zadán parametr <paramref name="textBounds"/> (tj. nebude null), bude vložen do <see cref="InnerBounds"/>.
+        /// a pokud bude zadán parametr <paramref name="textBounds"/> (tj. nebude null), bude vložen do <see cref="TextBounds"/>.
         /// Používá se typicky z metody <see cref="ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs)"/>.
         /// </summary>
         /// <param name="overlayBounds"></param>
@@ -856,36 +957,31 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Dispose()
         {
             _Owner = null;
-            _Text = null;
-            _Chars = null;
-            _Lines = null;
+            _CharPositions = null;
         }
         /// <summary>
         /// Vlastník = TextBox
         /// </summary>
         private GTextEdit _Owner;
         /// <summary>
-        /// Text, který je aktuálně uložen v polích znaků a řádků <see cref="_Chars"/> a <see cref="_Lines"/>.
-        /// Nejde tedy o text uložený v TextBoxu
+        /// Znaky textu včetně pozic
         /// </summary>
-        private string _Text;
+        private CharPositionInfo[] _CharPositions;
         /// <summary>
-        /// Pole znaků
+        /// Obsahuje true pokud máme kladný počet znaků v poli <see cref="_CharPositions"/>
         /// </summary>
-        private CharacterPositionInfo[] _Chars;
-        /// <summary>
-        /// Pole řádků, v pořadí shora dolů.
-        /// Jeden prvek pole = jeden řádek.
-        /// Jeden řádek = Tuple, kde Item1 = pozice řádku na souřadnici Y (Int32Range.Begin = Y, Int32Range.End = Bottom); a kde Item2 = pole znaků na tomto řádku, v pořadí zleva doprava.
-        /// Pole generuje metoda <see cref="LinePositionInfo.CreateLines"/>
-        /// </summary>
-        private LinePositionInfo[] _Lines;
+        private bool _HasCharPositions { get { return (_CharPositions != null && _CharPositions.Length > 0); } }
         #endregion
         #region Editační property, reference na TextBox, výběr, pozice kurzoru, text z TextBoxu
         /// <summary>
         /// Vlastník = TextBox
         /// </summary>
         protected GTextEdit Owner { get { return _Owner; } }
+        /// <summary>
+        /// Vlastník = TextBox, přetypovaný na <see cref="ITextEditInternal"/> pro přístup do interních dat
+        /// </summary>
+        protected ITextEditInternal IOwner { get { return _Owner as ITextEditInternal; } }
+
         /// <summary>
         /// Obsahuje true pokud daný text lze editovat, false pokud je Disabled nebo ReadOnly.
         /// </summary>
@@ -919,6 +1015,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool SelectAllText { get { return this._Owner.SelectAllText.Value; } }
         /// <summary>
+        /// Majitel povoluje víceřádkový text?
+        /// </summary>
+        protected bool Multiline { get { return this._Owner.Multiline; } }
+        /// <summary>
+        /// Majitel povoluje WordWrap?
+        /// </summary>
+        protected bool WordWrap { get { return this._Owner.WordWrap; } }
+        /// <summary>
         /// Pozice kurzoru = před kterým znakem kurzor stojí.
         /// Hodnota 0 = kurzor je na začátku textu = před prvním znakem.
         /// Hodnota <see cref="Text"/>.Length = kurzor je na konci textu = za posledním znakem
@@ -936,12 +1040,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <para/>
         /// Pozor, hodnota smí být NULL!
         /// </summary>
-        protected Int32Range SelectionRange
-        {
-            get { return _SelectionRange; }
-            private set { _SelectionRange = value; }
-        }
-        private Int32Range _SelectionRange;
+        protected Int32Range SelectionRange  { get { return IOwner.SelectionRangeInternal; } set { IOwner.SelectionRangeInternal = value; } }
         /// <summary>
         /// Obsahuje true, pokud výběr <see cref="SelectionRange"/> něco obsahuje a je třeba s ním pracovat (není null a jeho velikost není 0)
         /// </summary>
@@ -964,21 +1063,90 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region Vstupní body z TextBoxu v procesu kreslení obsahu: převzetí pozice znaků, zpracování dat o MouseDown podle pozice znaků
+        #region Analýza textu a fontu na pozice znaků
         /// <summary>
-        /// Vloží do instance dodaný text a dodané souřadnice, a z dodaných souřadnic znaků vytvoří interní pole informací pro hledání znaků i řádků i pro jejich následné vykreslování.
-        /// Pozor, délka vstupního textu (parametr <paramref name="text"/>) a počet znaků v poli <paramref name="charPositions"/> se nemusí shodovat.
-        /// a) Zadaný text může být prázdný (délka = 0), ale v poli <paramref name="charPositions"/> bude jedna pozice = mezera namísto textu, kvůli kurzoru
-        /// b) Zadaný text může být delší, než je délka pole <paramref name="charPositions"/> = protože vykresleno bylo méně znaků než celý text (rychlost).
+        /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
+        /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="charPositions"></param>
-        public void SetCharacterPositions(string text, RectangleF[] charPositions)
+        /// <param name="drawArgs">Data pro kreslení</param>
+        /// <param name="currentFont">Font</param>
+        public CharPositionInfo[] CheckCharPositions(GTextEditDrawArgs drawArgs, FontInfo currentFont)
         {
-            _Text = text;
-            _Chars = CharacterPositionInfo.CreateChars(text, charPositions);
-            _Lines = LinePositionInfo.CreateLines(_Chars);
+            if (!IsCharPositionsValid(drawArgs, currentFont))
+                // Něco se liší od poslední analýzy => provedeme analýzu novou:
+                AnalyseCharPositions(drawArgs, currentFont);
+
+            return CharPositions;
         }
+        /// <summary>
+        /// Vrátí true, pokud aktuální pozice znaků v poli <see cref="CharPositions"/> jsou platné pro aktuální stav.
+        /// </summary>
+        protected bool IsCharPositionsValid(GTextEditDrawArgs drawArgs, FontInfo currentFont)
+        {
+            return (CharPositions != null &&
+                   String.Equals(Text, _AnalysedText, StringComparison.InvariantCulture) &&
+                   String.Equals(currentFont.Key, _AnalysedFontKey, StringComparison.InvariantCulture) &&
+                   Multiline == _AnalysedMultiline &&
+                   WordWrap == _AnalysedWordWrap &&
+                   (WordWrap ? drawArgs.TextBounds.Width == _AnalysedTextWidth : true));
+        }
+        /// <summary>
+        /// Na základě aktuálních dat vypočítá a uloží souřadnice znaků.
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        /// <param name="currentFont"></param>
+        protected void AnalyseCharPositions(GTextEditDrawArgs drawArgs, FontInfo currentFont)
+        {
+            string text = Text;
+            bool multiline = Multiline;
+            bool wordWrap = WordWrap;
+            int? width = (wordWrap ? (int?)drawArgs.TextBounds.Width : (int?)null);
+            FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(0, 0), Multiline = multiline, Width = width, WrapWord = true, CreateLineInfo = true };
+            _CharPositions = FontManagerInfo.GetCharInfo(text, drawArgs.Graphics, currentFont.Font, parameters);
+            _AnalysedText = text;
+            _AnalysedFontKey = currentFont.Key;
+            _AnalysedMultiline = multiline;
+            _AnalysedWordWrap = wordWrap;
+            _AnalysedTextWidth = width ?? 0;
+        }
+        /// <summary>
+        /// Uvolní z paměti data o analýze textu
+        /// </summary>
+        protected void DisposeFontPositions()
+        {
+            _CharPositions = null;
+            _AnalysedText = null;
+        }
+        /// <summary>
+        /// Pole znaků, jejich pozic a souřadnic pro kreslení znaků i vykreslení pozadí.
+        /// Souřadnice jsou relativní = začínají na bodu 0/0, při vykreslování je možné je jako celek posouvat a tím scrollovat textem.
+        /// </summary>
+        protected CharPositionInfo[] CharPositions { get { return _CharPositions; } }
+        /// <summary>
+        /// Stávající analyzovaný text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private string _AnalysedText;
+        /// <summary>
+        /// Font, pro který byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private string _AnalysedFontKey;
+        /// <summary>
+        /// Hodnota <see cref="Multiline"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private bool _AnalysedMultiline;
+        /// <summary>
+        /// Hodnota <see cref="WordWrap"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private bool _AnalysedWordWrap;
+        /// <summary>
+        /// Hodnota <see cref="GTextEditDrawArgs.TextBounds"/>.Width, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private int _AnalysedTextWidth;
+        #endregion
+
+
+        #region Vstupní body z TextBoxu v procesu kreslení obsahu: převzetí pozice znaků, zpracování dat o MouseDown podle pozice znaků
+        
         /// <summary>
         /// Zpracuje požadavky z kliknutí myši, uložené v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>, po proběhnutí vykreslení a po uložení pozic znaků.
         /// Určí pozici kurzoru CursorPosition a rozsah výběru SelectedRange.
@@ -1086,7 +1254,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Protected vyhledání pozice a souřadnic znaku, kurzoru, výběru
         /// <summary>
         /// Vrátí pozici kurzoru (index) odpovídající danému absolutnímu bodu. 
-        /// Opírá se přitom o pozice znaků, které si objekt uložil v metodě <see cref="SetCharacterPositions(string, RectangleF[])"/>.
+        /// Opírá se přitom o pozice znaků, které si objekt uložil v metodě <see cref="CheckCharPositions(GTextEditDrawArgs, FontInfo)"/>.
         /// <para/>
         /// Tato varianta metody vrátí index následujícího znaku v případě, kdy daný bod bude na pravém okraji určitého znaku.
         /// Naproti tomu přetížení s out parametrem bool isRightSide neposune nalezený index doprava, ale vrátí informaci o umístění bodu v pravé polovině znaku.
@@ -1095,7 +1263,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public int SearchCharIndex(Point point)
         {
-            if (this._Chars == null || this._Chars.Length == 0) return 0;
+            if (!this._HasCharPositions) return 0;
 
             bool isRightSide;
             int cursorPosition = SearchCharIndex(point, out isRightSide);
@@ -1105,7 +1273,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vrátí pozici kurzoru (index) odpovídající danému absolutnímu bodu. 
-        /// Opírá se přitom o pozice znaků, které si objekt uložil v metodě <see cref="SetCharacterPositions(string, RectangleF[])"/>.
+        /// Opírá se přitom o pozice znaků, které si objekt uložil v metodě <see cref="CheckCharPositions(GTextEditDrawArgs, FontInfo)"/>.
         /// <para/>
         /// Tato varianta metody vrátí přesnou pozici kurzoru na nalezeném znaku i když daný bod bude na jeho pravém okraji, 
         /// nastaví však informaci o pravé polovině do out parametru <paramref name="isRightSide"/>.
@@ -1116,9 +1284,9 @@ namespace Asol.Tools.WorkScheduler.Components
         public int SearchCharIndex(Point point, out bool isRightSide)
         {
             isRightSide = false;
-            if (this._Chars == null || this._Chars.Length == 0) return 0;
+            if (!this._HasCharPositions) return 0;
 
-            CharacterPositionInfo charInfo = LinePositionInfo.SearchCharacterByPosition(_Lines, point, out isRightSide);
+            CharPositionInfo charInfo = LinePositionInfo.SearchCharacterByPosition(_CharPositions, point, out isRightSide);
             if (charInfo == null) return 0;
 
             int cursorPosition = charInfo.Index;
@@ -1136,37 +1304,61 @@ namespace Asol.Tools.WorkScheduler.Components
         public Int32Range SearchNearWord(int charIndex, bool? isRightSide = null)
         {
             Int32Range wordRange;
-            if (TrySearchNearWord(_Chars, charIndex, out wordRange, isRightSide)) return wordRange;
+            if (TrySearchNearWord(_CharPositions, charIndex, out wordRange, isRightSide)) return wordRange;
             return null;
         }
         /// <summary>
         /// Metoda vrátí souřadnice, na které bude vykreslován kurzor na své aktuální pozici (indexu).
         /// Pokud neexistují znaky, pak vrátí null.
+        /// <para/>
+        /// Souřadnice jsou vráceny v absolutních koordinátech = v rámci daného prostoru <paramref name="textBounds"/>, případně s posunutím <paramref name="shift"/>.
+        /// Pokud jsou výsledné souřadnice mimo prostor <paramref name="textBounds"/>, pak výstupem je null = kurzor se nekreslí.
         /// </summary>
+        /// <param name="textBounds"></param>
+        /// <param name="shift"></param>
         /// <returns></returns>
-        public Rectangle? GetCursorBounds()
+        public Rectangle? GetCursorBounds(Rectangle textBounds, Point? shift)
         {
-            return GetCursorBounds(this.CursorIndex);
+            return GetCursorBounds(textBounds, shift, this.CursorIndex);
         }
         /// <summary>
         /// Metoda vrátí souřadnice, na které bude vykreslován kurzor, který je na dané pozici (indexu).
         /// Pokud neexistují znaky, pak vrátí null.
         /// Pokud je zadána pozice kurzoru mimo rozsah znaků, vrátí pozici na nejbližším okraji krajního znaku.
+        /// <para/>
+        /// Souřadnice jsou vráceny v absolutních koordinátech = v rámci daného prostoru <paramref name="textBounds"/>, případně s posunutím <paramref name="shift"/>.
+        /// Pokud jsou výsledné souřadnice mimo prostor <paramref name="textBounds"/>, pak výstupem je null = kurzor se nekreslí.
         /// </summary>
+        /// <param name="textBounds"></param>
+        /// <param name="shift"></param>
         /// <param name="cursorIndex"></param>
         /// <returns></returns>
-        public Rectangle? GetCursorBounds(int cursorIndex)
+        public Rectangle? GetCursorBounds(Rectangle textBounds, Point? shift, int cursorIndex)
         {
-            int charLength = (this._Chars != null ? this._Chars.Length : 0);
+            int charLength = (this._CharPositions != null ? this._CharPositions.Length : 0);
             if (charLength <= 0) return null;
-            CharacterPositionInfo charInfo;
+
+            // Najdeme znak, před kterým se nachází kurzor:
+            CharPositionInfo charInfo;
+            Rectangle cursorBounds;
             if (cursorIndex < charLength)
             {
-                charInfo = this._Chars[(cursorIndex >= 0 ? cursorIndex : 0)];
-                return new Rectangle(charInfo.Bounds.X, charInfo.Bounds.Y, 1, charInfo.Bounds.Height);
+                charInfo = this._CharPositions[(cursorIndex >= 0 ? cursorIndex : 0)];
+                cursorBounds = new Rectangle(charInfo.TextBounds.X, charInfo.TextBounds.Y, 1, charInfo.TextBounds.Height);
             }
-            charInfo = this._Chars[charLength - 1];
-            return new Rectangle(charInfo.Bounds.Right, charInfo.Bounds.Y, 1, charInfo.Bounds.Height);
+            else
+            {   // Kurzor se nachází za posledním znakem:
+                charInfo = this._CharPositions[charLength - 1];
+                cursorBounds = new Rectangle(charInfo.TextBounds.Right, charInfo.TextBounds.Y, 1, charInfo.TextBounds.Height);
+            }
+
+            // Posun souřadnic znaku (ty jsou uloženy v koordinátech 0/0) do souřadnic absolutních - včetně akceptování hodnoty Shiftu:
+            Point offset = textBounds.Location;
+            if (shift.HasValue && !shift.Value.IsEmpty) offset = offset.Add(shift.Value);
+            cursorBounds = cursorBounds.Add(offset);
+
+            if (!textBounds.IntersectsWith(cursorBounds)) return null;
+            return cursorBounds;
         }
         /// <summary>
         /// Metoda vrátí souřadnice, které odpovídají aktuálně vybraným znakům. Metoda může vrátit null.
@@ -1181,7 +1373,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public D2D.GraphicsPath GetSelectionArea(Int32Range selectionRange)
         {
             if (selectionRange == null || selectionRange.Size == 0) return null;
-            int charLength = (this._Chars != null ? this._Chars.Length : 0);
+            int charLength = (this._CharPositions != null ? this._CharPositions.Length : 0);
             if (charLength <= 0) return null;
 
             int begin = (selectionRange.Begin < selectionRange.End ? selectionRange.Begin : selectionRange.End);        // Index znaku, kde výběr začíná
@@ -1190,17 +1382,18 @@ namespace Asol.Tools.WorkScheduler.Components
             end = (end < 0 ? 0 : (end > charLength ? charLength : end)) - 1;                                            // end = index posledního znaku zahrnutého v Area (end = End - 1)
             if (end < begin) return null;                                                                               // end může být == begin, pak je v Selection ten jediný znak
 
-            var charBegin = _Chars[begin];
-            var charEnd = _Chars[end];
+            var charBegin = _CharPositions[begin];
+            var charEnd = _CharPositions[end];
 
             if (charBegin.Line.Index == charEnd.Line.Index)
             {   // Zkratka pro jednořádkové texty:
-                RectangleF bounds = RectangleF.FromLTRB(charBegin.Bounds.Left, charBegin.Line.Bounds.Top, charEnd.Bounds.Right, charBegin.Line.Bounds.Bottom);
+                RectangleF bounds = RectangleF.FromLTRB(charBegin.TextBounds.Left, charBegin.Line.TextBounds.Top, charEnd.TextBounds.Right, charBegin.Line.TextBounds.Bottom);
                 D2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
                 path.AddRectangle(bounds);
                 return path;
             }
 
+            #warning TODO GetSelectionArea pro Multirows není naprogramován !!!
 
             return null;
 
@@ -1280,7 +1473,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda je volána po myším kliknutí, připraví data pro určení pozice kurzorum, SelectedRange a následné vykreslení.
         /// Po myším kliknutí následuje nové vykreslení TextBoxu, tedy jeho metoda <see cref="GTextEdit.DrawText(GTextEditDrawArgs)"/>, 
-        /// z které se vyvolá zdejší metoda <see cref="SetCharacterPositions(string, RectangleF[])"/> = kde se uloží pozice jednotlivých znaků i řádků,
+        /// z které se vyvolá zdejší metoda <see cref="CheckCharPositions(GTextEditDrawArgs, FontInfo)"/> = kde se uloží pozice jednotlivých znaků i řádků,
         /// a následně se pak volá zdejší metoda <see cref="MouseDownDataProcess()"/>, která na základě dat MouseDown určí pozici kurzoru a SelectedRange.
         /// Pokud je ale TextBox vykreslován bez předchozí události MouseDown, pak metoda <see cref="MouseDownDataProcess()"/> nebude nic zpracovávat...
         /// </summary>
@@ -1335,10 +1528,10 @@ namespace Asol.Tools.WorkScheduler.Components
             int cursorIndex = CursorIndex;
             Int32Range selectionRange = SelectionRange;
             int selectionBegin = (selectionRange != null ? selectionRange.Begin : cursorIndex);
-            int textLength = (this._Chars != null ? this._Chars.Length : 0);
-            CharacterPositionInfo charInfo = null;
-            if (this._Chars != null && cursorIndex >= 0 && cursorIndex < textLength)
-                charInfo = this._Chars[cursorIndex];
+            int textLength = (this._CharPositions != null ? this._CharPositions.Length : 0);
+            CharPositionInfo charInfo = null;
+            if (this._CharPositions != null && cursorIndex >= 0 && cursorIndex < textLength)
+                charInfo = this._CharPositions[cursorIndex];
 
             switch (args.KeyData)                               // KeyData obsahuje kompletní klávesu = včetně modifikátoru (Ctrl, Shift, Alt)
             {
@@ -1390,11 +1583,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     selectionRange = new Int32Range(selectionBegin, cursorIndex);
                     break;
                 case Keys.Control | Keys.Left:                  // Doleva na začátek aktuálního slova; pokud jsem na začátku slova - tak k dalšímu doleva; vždy zrušit Selection
-                    TrySearchWordBegin(this._Chars, Direction.Negative, ref cursorIndex, false);
+                    TrySearchWordBegin(this._CharPositions, Direction.Negative, ref cursorIndex, false);
                     selectionRange = null;
                     break;
                 case Keys.Shift | Keys.Control | Keys.Left:     // Doleva na začátek aktuálního slova; pokud jsem na začátku slova - tak k dalšímu doleva; rozšířit Selection
-                    TrySearchWordBegin(this._Chars, Direction.Negative, ref cursorIndex, false);
+                    TrySearchWordBegin(this._CharPositions, Direction.Negative, ref cursorIndex, false);
                     selectionRange = new Int32Range(selectionBegin, cursorIndex);
                     break;
 
@@ -1410,11 +1603,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     selectionRange = new Int32Range(selectionBegin, cursorIndex);
                     break;
                 case Keys.Control | Keys.Right:                 // Doprava na začátek (Begin!) dalšího slova; pokud jsem na začátku slova - tak k dalšímu doprava; vždy zrušit Selection
-                    TrySearchWordBegin(this._Chars, Direction.Positive, ref cursorIndex, false);
+                    TrySearchWordBegin(this._CharPositions, Direction.Positive, ref cursorIndex, false);
                     selectionRange = null;
                     break;
                 case Keys.Shift | Keys.Control | Keys.Right:    // Doprava na začátek (Begin!) dalšího slova; pokud jsem na začátku slova - tak k dalšímu doprava; rozšířit Selection
-                    TrySearchWordBegin(this._Chars, Direction.Positive, ref cursorIndex, false);
+                    TrySearchWordBegin(this._CharPositions, Direction.Positive, ref cursorIndex, false);
                     selectionRange = new Int32Range(selectionBegin, cursorIndex);
                     break;
 
@@ -1451,7 +1644,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Int32Range selectionRange = SelectionRange;
             if (selectionRange != null && selectionRange.Size == 0) selectionRange = null;
             Int32Range deletionRange = null;
-            int textLength = (this._Chars != null ? this._Chars.Length : 0);
+            int textLength = (this._CharPositions != null ? this._CharPositions.Length : 0);
             string undoRedoName = null;
             switch (args.KeyData)
             {
@@ -1936,7 +2129,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default = true = ano: pokud hledáme začátek slova, a na daném indexu je začátek slova, pak se vrátí true a dodaný index se nezmění;
         /// false = ne: pokud na výchozí dané pozici je začátek slova, nebude akceptován a budeme hledat následující</param>
         /// <returns></returns>
-        internal static bool TrySearchWordBegin(CharacterPositionInfo[] chars, Direction direction, ref int index, bool acceptCurrentIndex = true)
+        internal static bool TrySearchWordBegin(CharPositionInfo[] chars, Direction direction, ref int index, bool acceptCurrentIndex = true)
         {
             if (chars == null) { index = -1; return false; }               // Není vstup - není slovo
             return _TrySearchWordEdge(chars, direction, true, ref index, acceptCurrentIndex);
@@ -1960,7 +2153,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default = true = ano: pokud hledáme začátek slova, a na daném indexu je začátek slova, pak se vrátí true a dodaný index se nezmění;
         /// false = ne: pokud na výchozí dané pozici je začátek slova, nebude akceptován a budeme hledat následující</param>
         /// <returns></returns>
-        internal static bool TrySearchWordEnd(CharacterPositionInfo[] chars, Direction direction, ref int index, bool acceptCurrentIndex = true)
+        internal static bool TrySearchWordEnd(CharPositionInfo[] chars, Direction direction, ref int index, bool acceptCurrentIndex = true)
         {
             if (chars == null) { index = -1; return false; }               // Není vstup - není slovo
             return _TrySearchWordEdge(chars, direction, false, ref index, acceptCurrentIndex);
@@ -1971,7 +2164,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="chars">Pole znaků</param>
         /// <param name="index">Pozice</param>
         /// <returns></returns>
-        internal static bool IsBeginWord(CharacterPositionInfo[] chars, int index)
+        internal static bool IsBeginWord(CharPositionInfo[] chars, int index)
         {
             if (chars == null) return false;                              // Není vstup - není slovo
             int idx = index;
@@ -1983,7 +2176,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="chars">Pole znaků</param>
         /// <param name="index">Pozice</param>
         /// <returns></returns>
-        internal static bool IsEndWord(CharacterPositionInfo[] chars, int index)
+        internal static bool IsEndWord(CharPositionInfo[] chars, int index)
         {
             if (chars == null) return false;                              // Není vstup - není slovo
             int idx = index;
@@ -2000,7 +2193,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="wordRange"></param>
         /// <param name="isRightSide"></param>
         /// <returns></returns>
-        internal static bool TrySearchNearWord(CharacterPositionInfo[] chars, int index, out Int32Range wordRange, bool? isRightSide = null)
+        internal static bool TrySearchNearWord(CharPositionInfo[] chars, int index, out Int32Range wordRange, bool? isRightSide = null)
         {
             wordRange = null;
 
@@ -2091,7 +2284,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default = true = ano: pokud hledáme začátek slova, a na daném indexu je začátek slova, pak se vrátí true a dodaný index se nezmění;
         /// false = ne: pokud na výchozí dané pozici je začátek slova, nebude akceptován a budeme hledat následující</param>
         /// <returns>true = nalezeno / false = nenalezeno</returns>
-        private static bool _TrySearchWordEdge(CharacterPositionInfo[] chars, Direction direction, bool searchBeginText, ref int index, bool acceptCurrentIndex = true)
+        private static bool _TrySearchWordEdge(CharPositionInfo[] chars, Direction direction, bool searchBeginText, ref int index, bool acceptCurrentIndex = true)
         {
             int length = chars.Length;
             if (length == 0) return false;
@@ -2165,292 +2358,6 @@ namespace Asol.Tools.WorkScheduler.Components
             if (Char.IsLetterOrDigit(charText)) return true;
             if (GTextEdit.CharactersAssumedAsWords != null && GTextEdit.CharactersAssumedAsWords.IndexOf(charText) >= 0) return true;
             return false;
-        }
-        #endregion
-        #region class CharacterPositionInfo a LinePositionInfo : Třída, která udržuje informace o každém jednom znaku v rámci textboxu (index, znak, souřadnice)
-        /// <summary>
-        /// CharacterPositionInfo: Třída, která udržuje informace o každém jednom znaku v rámci textboxu (index, znak, souřadnice)
-        /// </summary>
-        public class CharacterPositionInfo
-        {
-            /// <summary>
-            /// Vizualizace
-            /// </summary>
-            /// <returns></returns>
-            public override string ToString()
-            {
-                return $"[{Index}] : '{Content}'; Line: {Line?.Index}; Bounds: ({Bounds.X},{Bounds.Y},{Bounds.Width},{Bounds.Height})";
-            }
-            /// <summary>
-            /// Index znaku v textu (počínaje 0)
-            /// </summary>
-            public int Index { get; private set; }
-            /// <summary>
-            /// Obsah = znak
-            /// </summary>
-            public char Content { get; private set; }
-            /// <summary>
-            /// Souřadnice tohoto znaku, v absolutní hodnotě
-            /// </summary>
-            public Rectangle Bounds { get; private set; }
-            /// <summary>
-            /// Řádek, na kterém se znak nachází
-            /// </summary>
-            public LinePositionInfo Line { get; set; }
-            /// <summary>
-            /// Vytvoří a vrátí pole <see cref="CharacterPositionInfo"/> pro zadaný text a virtuální souřadnice znaků, pouze pro testovací účely.
-            /// Souřadnice znaků jsou v jednom nebo více řádcích, velikost jednoho znaku je fixní, daná parametrem <paramref name="charSize"/>.
-            /// Pokud je zadán parametr <paramref name="maxX"/>, pak je text rozdělen do více řádků v šířce nejvýše zadané.
-            /// </summary>
-            /// <param name="text"></param>
-            /// <param name="charSize"></param>
-            /// <param name="maxX"></param>
-            /// <returns></returns>
-            internal static CharacterPositionInfo[] CreateChars(string text, SizeF charSize, float? maxX = null)
-            {
-                if (text == null) return null;
-                int length = text.Length;
-                CharacterPositionInfo[] result = new CharacterPositionInfo[length];
-                if (length == 0) return result;                      // Zkratka ven
-
-                float x = 0f;
-                float y = 0f;
-                float w = charSize.Width;
-                if (w < 1f) w = 1f;
-                float h = charSize.Height;
-                if (h < 1f) h = 1f;
-                bool hasMaxX = (maxX.HasValue && maxX.Value > 0f);
-                for (int i = 0; i < length; i++)
-                {
-                    char item = text[i];
-                    float r = x + w;
-                    if (hasMaxX && x > 0f && r > maxX.Value)
-                    {   // Přejdeme na nový řádek:
-                        x = 0f;
-                        y = y + h;
-                    }
-                    RectangleF charPosition = new RectangleF(x, y, w, h);
-                    x += w;
-                    result[i] = new CharacterPositionInfo(i, item, Rectangle.Ceiling(charPosition));
-                }
-                return result;
-            }
-            /// <summary>
-            /// Vytvoří a vrátí pole <see cref="CharacterPositionInfo"/> pro zadaný text a souřadnice znaků
-            /// </summary>
-            /// <param name="text"></param>
-            /// <param name="charPositions"></param>
-            /// <returns></returns>
-            internal static CharacterPositionInfo[] CreateChars(string text, RectangleF[] charPositions)
-            {
-                if (text == null) return null;
-                if (charPositions == null) return null;
-                int length = (text.Length < charPositions.Length ? text.Length : charPositions.Length);
-                CharacterPositionInfo[] result = new CharacterPositionInfo[length];
-                for (int i = 0; i < length; i++)
-                {
-                    char item = text[i];
-                    RectangleF charPosition = charPositions[i];
-                    result[i] = new CharacterPositionInfo(i, item, Rectangle.Ceiling(charPosition));
-                }
-                return result;
-            }
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="index"></param>
-            /// <param name="content"></param>
-            /// <param name="bounds"></param>
-            private CharacterPositionInfo(int index, char content, Rectangle bounds)
-            {
-                this.Index = index;
-                this.Content = content;
-                this.Bounds = bounds;
-            }
-        }
-        /// <summary>
-        /// LinePositionInfo: Třída, která udržuje informace o každém jednom řádku v rámci textboxu (index, rozsah na ose Y, pole znaků)
-        /// </summary>
-        public class LinePositionInfo
-        {
-            /// <summary>
-            /// Vizualizace
-            /// </summary>
-            /// <returns></returns>
-            public override string ToString()
-            {
-                string content = Chars.ToOneString("", c => c.Content.ToString());
-                return $"[{Index}] : '{content}'; Bounds: ({Bounds.X},{Bounds.Y},{Bounds.Width},{Bounds.Height})";
-            }
-            /// <summary>
-            /// Index řádku v textu (počínaje 0)
-            /// </summary>
-            public int Index { get { return _Index; } }
-            /// <summary>
-            /// Souřadnice tohoto řádku = souhrn souřadnic jednotlivých znaků
-            /// </summary>
-            public Rectangle Bounds { get { return _Bounds; } }
-            /// <summary>
-            /// První znak řádky. Protože neexistuje řádek bez jediného znaku, proto <see cref="FirstChar"/> nikdy není null.
-            /// </summary>
-            public CharacterPositionInfo FirstChar { get { return _Chars[0]; } }
-            /// <summary>
-            /// Poslední znak řádky. Protože neexistuje řádek bez jediného znaku, proto <see cref="LastChar"/> nikdy není null.
-            /// </summary>
-            public CharacterPositionInfo LastChar { get { return _Chars[CharCount - 1]; } }
-            /// <summary>
-            /// Počat znaků v řádce = počet prvků pole <see cref="Chars"/>
-            /// </summary>
-            public int CharCount { get { return _Chars.Length; } }
-            /// <summary>
-            /// Pole znaků v tomto řádku
-            /// </summary>
-            public CharacterPositionInfo[] Chars { get { return _Chars; } }
-            #region Tvorba pole řádků, včetně privátních metod a proměnných
-            /// <summary>
-            /// Vytvoří a vrátí pole jednotlivých řádků
-            /// </summary>
-            /// <param name="chars"></param>
-            /// <returns></returns>
-            internal static LinePositionInfo[] CreateLines(CharacterPositionInfo[] chars)
-            {
-                if (chars == null) return null;
-                List<LinePositionInfo> lines = new List<LinePositionInfo>();
-                foreach (var c in chars)
-                {
-                    LinePositionInfo line = lines.FirstOrDefault(l => l._IsCharOnLine(c));
-                    if (line == null)
-                    {
-                        line = new LinePositionInfo();
-                        lines.Add(line);
-                    }
-                    line._AddChar(c);
-                }
-                if (lines.Count > 1) lines.Sort((a, b) => a._Top.CompareTo(b._Top));
-                int index = 0;
-                lines.ForEach(l => l._Finalize(ref index));
-                return lines.ToArray();
-            }
-            /// <summary>
-            /// Privátní konstruktor
-            /// </summary>
-            private LinePositionInfo()
-            {
-                _Left = _Right = _Top = _Bottom = 0;
-                _CharList = new List<CharacterPositionInfo>();
-            }
-            /// <summary>
-            /// Vrátí true, pokud se daný znak nachází v prostoru tohoto řádku (na ose Y). Akceptuje i částečné překrytí.
-            /// </summary>
-            /// <param name="c"></param>
-            /// <returns></returns>
-            private bool _IsCharOnLine(CharacterPositionInfo c)
-            {
-                return (c.Bounds.Height > 0 && c.Bounds.Bottom > _Top && c.Bounds.Top < _Bottom);
-            }
-            /// <summary>
-            /// Přidá daný znak do this řádku, přičte jeho souřadnice do souřadnic řádku (pro první znak v řádku: souřadnice převezme z dodaného znaku).
-            /// </summary>
-            /// <param name="c"></param>
-            private void _AddChar(CharacterPositionInfo c)
-            {
-                Rectangle bounds = c.Bounds;
-                bool isFirst = (_CharList.Count == 0);
-                if (isFirst || _Left > bounds.Left) _Left = bounds.Left;
-                if (isFirst || _Right < bounds.Right) _Right = bounds.Right;
-                if (isFirst || _Top > bounds.Top) _Top = bounds.Top;
-                if (isFirst || _Bottom < bounds.Bottom) _Bottom = bounds.Bottom;
-                _CharList.Add(c);
-            }
-            /// <summary>
-            /// Finalizuje řádek: nastaví <see cref="Index"/> řádku; určí souřadnice <see cref="Bounds"/>; zkompletuje pole <see cref="Chars"/>; 
-            /// a do znaků obsažených v tomto řádku <see cref="Chars"/> vepíše referenci na řádek.
-            /// </summary>
-            /// <param name="index"></param>
-            private void _Finalize(ref int index)
-            {
-                _Index = index++;
-                _Bounds = Rectangle.FromLTRB(_Left, _Top, _Right, _Bottom);
-                _Chars = _CharList.ToArray();
-                _CharList = null;
-                _Chars.ForEachItem(c => { c.Line = this; });
-            }
-            private int _Index;
-            private int _Left;
-            private int _Right;
-            private int _Top;
-            private int _Bottom;
-            private Rectangle _Bounds;
-            private List<CharacterPositionInfo> _CharList;
-            private CharacterPositionInfo[] _Chars;
-            #endregion
-            #region Vyhledání řádku a znaku podle pozice
-            /// <summary>
-            /// Najde a vrátí znak, který nejblíže odpovídá danému bodu
-            /// </summary>
-            /// <param name="lines">Pole řádků textu</param>
-            /// <param name="point">Zadaný bod, k němuž hledáme znak na nejbližší pozici</param>
-            /// <param name="isRightSide">Out: zadaný bod leží v pravé polovině nalezeného znaku</param>
-            /// <returns></returns>
-            public static CharacterPositionInfo SearchCharacterByPosition(LinePositionInfo[] lines, Point point, out bool isRightSide)
-            {
-                isRightSide = false;
-
-                if (lines == null) return null;
-                int lineCount = lines.Length;
-                if (lineCount == 0) return null;
-
-                // 1. Najdeme řádek:
-                LinePositionInfo lineInfo = null;
-                if (lineCount == 1 || point.Y < lines[0].Bounds.Bottom)
-                {   // Zkratka:
-                    lineInfo = lines[0];
-                }
-                else
-                {   // Plné hledání:
-                    for (int i = 0; i < lineCount; i++)
-                    {   // Projdu všechny řádky:
-                        lineInfo = lines[i];
-                        if (i == (lineCount - 1)) break;             // Pokud jsem dosud nenašel, a mám poslední řádek, pak on je tím hledaným prvkem!
-                        int y = lineInfo.Bounds.Bottom;              // Dolní Y našeho řádku (line)
-                        int yn = lines[i + 1].Bounds.Top;            // Horní Y následujícího řádku [+1]
-                        if (yn > y) y += ((yn - y) / 2);             // Pokud následující řádek je pod koncem našeho řádku (tj. je mezi nimi mezera), pak zpracuji i horní polovinu mezery!
-                        if (point.Y < y) break;                      // Pokud hledaný bod leží nad dolním okrajem řádku (případně včetně půlmezery pod naším řádkem), pak hledaný řádek je on
-                    }
-                }
-
-                // Znaky v řádku:
-                CharacterPositionInfo[] chars = lineInfo.Chars;
-                if (chars == null) return null;
-                int charCount = chars.Length;
-                if (charCount == 0) return null;
-
-                // 2. V řádku najdeme znak:
-                CharacterPositionInfo charInfo = null;
-                if (charCount == 1 || point.X < chars[0].Bounds.Right)
-                {   // Zkratka:
-                    charInfo = chars[0];
-                }
-                else
-                {   // Plné hledání:
-                    for (int i = 0; i < charCount; i++)
-                    {   // Projdu všechny znaky:
-                        charInfo = chars[i];
-                        if (i == (charCount - 1)) break;             // Pokud jsem dosud nenašel, a mám poslední znak, pak on je tím hledaným prvkem!
-                        int x = charInfo.Bounds.Right;               // Pravé X našeho znaku
-                        int xn = chars[i + 1].Bounds.Left;           // Levé X následujícího znaku [+1]
-                        if (xn > x) x += ((xn - x) / 2);             // Pokud následující znak je pod koncem našeho znaku (tj. je mezi nimi mezera), pak zpracuji i levou polovinu mezery!
-                        if (point.X < x) break;                      // Pokud hledaný bod leží před pravým okrajem znaku (případně včetně půlmezery za naším znakem), pak hledaný znak je on
-                    }
-                }
-
-                // 3. Pravá polovina znaku:
-                int half = charInfo.Bounds.X + (charInfo.Bounds.Width / 2);
-                isRightSide = (point.X >= half);
-
-                return charInfo;
-            }
-            #endregion
         }
         #endregion
     }

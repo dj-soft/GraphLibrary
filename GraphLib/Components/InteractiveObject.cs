@@ -204,7 +204,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zajistí, že this objekt bude při nejbližší možnosti překrelsen. Neprovádí překreslení okamžitě, na rozdíl od metody <see cref="Refresh()"/>.
         /// </summary>
-        public void Invalidate()
+        public virtual void Invalidate()
         {
             if (this.RepaintToLayers == GInteractiveDrawLayer.None)
                 this.Repaint();

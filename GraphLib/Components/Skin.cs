@@ -1739,6 +1739,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public BorderStyleType BorderStyle { get { return this._Owner.GetValue(this._SkinSetKey, "BorderStyle", DefaultBorderStyle); } set { this._Owner.SetValue(this._SkinSetKey, "BorderStyle", value); } }
         /// <summary>
+        /// Vnitřní okraj mezi Border a Textem, počet pixelů.
+        /// </summary>
+        public int TextMargin { get { return this._Owner.GetValue(this._SkinSetKey, "TextMargin", DefaultTextMargin); } set { this._Owner.SetValue(this._SkinSetKey, "TextMargin", value); } }
+        /// <summary>
         /// Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
         /// </summary>
         public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
@@ -1760,7 +1764,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hodnota průhlednosti rámečku ve verzi Soft.
         /// </summary>
         public float BorderAlphaSoft { get { return this._Owner.GetValue(this._SkinSetKey, "BorderAlphaSoft ", DefaultBorderAlphaSoft); } set { this._Owner.SetValue(this._SkinSetKey, "BorderAlphaSoft ", value); } }
-
+        /// <summary>
+        /// Barva kurzoru
+        /// </summary>
+        public Color CursorColor { get { return this._Owner.GetValue(this._SkinSetKey, "CursorColor", DefaultCursorColor); } set { this._Owner.SetValue(this._SkinSetKey, "CursorColor", value); } }
         /// <summary>
         /// Ikona tlačítka vztahu na záznam
         /// </summary>
@@ -1769,7 +1776,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Ikona tlačítka vztahu na dokument
         /// </summary>
         public Image IconRelationDocument { get { return this._Owner.GetValue(this._SkinSetKey, "IconRelationDocument", DefaultIconRelationDocument); } set { this._Owner.SetValue(this._SkinSetKey, "IconRelationDocument", value); } }
-
         #endregion
         #region Default values
         /// <summary>
@@ -1791,7 +1797,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Barva pozadí textboxu, část SelectedText
         /// </summary>
-        protected virtual Color DefaultBackColorSelectedText { get { return Color.FromArgb(140, 140, 250); } }
+        protected virtual Color DefaultBackColorSelectedText { get { return Color.FromArgb(0, 120, 215); } }
         /// <summary>
         /// Default pro: Barva popředí (písma) textboxu ve stavu Disabled
         /// </summary>
@@ -1811,11 +1817,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Barva popředí (písma) textboxu, část SelectedText
         /// </summary>
-        protected virtual Color DefaultTextColorSelectedText { get { return Color.BlueViolet; } }
+        protected virtual Color DefaultTextColorSelectedText { get { return Color.White; } }
         /// <summary>
         /// Default pro: Styl rámečku
         /// </summary>
         protected virtual BorderStyleType DefaultBorderStyle { get { return BorderStyleType.Effect3D; } }
+        /// <summary>
+        /// Default pro: Vnitřní okraj mezi Border a Textem, počet pixelů.
+        /// </summary>
+        protected virtual int DefaultTextMargin { get { return 2; } }
         /// <summary>
         /// Default pro: Barva okraje textboxu bez focusu (Enabled i Disabled, i MouseOver)
         /// </summary>
@@ -1836,7 +1846,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default pro: Hodnota průhlednosti rámečku ve verzi Soft.
         /// </summary>
         protected virtual float DefaultBorderAlphaSoft { get { return 0.75f; } }
-
+        /// <summary>
+        /// Default pro: Barva kurzoru
+        /// </summary>
+        protected virtual Color DefaultCursorColor { get { return Color.FromArgb(192, 32, 16, 0); } }
         /// <summary>
         /// Default pro: Ikona tlačítka vztahu na záznam
         /// </summary>
@@ -1845,7 +1858,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default pro: Ikona tlačítka vztahu na dokument
         /// </summary>
         protected virtual Image DefaultIconRelationDocument { get { return IconStandard.RelationDocument; ; } }
-
         #endregion
     }
     /// <summary>

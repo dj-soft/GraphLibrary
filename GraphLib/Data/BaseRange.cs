@@ -116,7 +116,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="value"></param>
         /// <param name="acceptOnEnd"></param>
         /// <returns></returns>
-        public bool Contains(TEdge value, bool acceptOnEnd = true)
+        public virtual bool Contains(TEdge value, bool acceptOnEnd = true)
         {
             if (!this.IsFilled) return false;
 
@@ -136,7 +136,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        public bool Contains(BaseRange<TEdge, TSize> range)
+        public virtual bool Contains(BaseRange<TEdge, TSize> range)
         {
             if (!this.IsFilled) return false;
             if (range == null || !range.IsFilled) return false;
@@ -155,7 +155,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        public bool HasIntersect(BaseRange<TEdge, TSize> range)
+        public virtual bool HasIntersect(BaseRange<TEdge, TSize> range)
         {
             if (!this.IsFilled) return false;
             if (range == null || !range.IsFilled) return false;
