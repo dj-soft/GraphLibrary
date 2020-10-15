@@ -51,15 +51,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             Brush brush = SystemBrushes.ControlText;
             string text = _InputText.Text;
-            using (var font = CreateFont())
-            {
-                bounds = new Rectangle(bounds.X + 3, bounds.Y + 3, bounds.Width - 6, bounds.Height - 6);
-                PrepareGraphics(e.Graphics, bounds);
-                using (StringFormat stringFormat = StringFormat.GenericTypographic.Clone() as StringFormat)   // new StringFormat(StringFormatFlags.NoWrap))
-                {
-                    e.Graphics.DrawString(text, font, brush, bounds.Location, stringFormat);
-                }
-            }
+            FontInfo fontInfo = CreateFontInfo();
+            StringFormat stringFormat = FontManagerInfo.EditorStringFormat;
+            bounds = new Rectangle(bounds.X + 3, bounds.Y + 3, bounds.Width - 6, bounds.Height - 6);
+            PrepareGraphics(e.Graphics, bounds);
+            e.Graphics.DrawString(text, fontInfo.Font, brush, bounds.Location, stringFormat);
         }
         private void _Panel2_Paint(object sender, PaintEventArgs e)
         {
@@ -67,42 +63,53 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Rectangle bounds = new Rectangle(panelBounds.X + 12, panelBounds.Y + 6, panelBounds.Width - 24, panelBounds.Height - 12);
             e.Graphics.FillRectangle(SystemBrushes.ControlLight, bounds);
 
-            Brush brush = SystemBrushes.ControlText;
             string text = _InputText.Text;
-            // Brush[] backBrushes = new Brush[] { new SolidBrush(Color.FromArgb(224, 255, 255)), new SolidBrush(Color.FromArgb(240, 225, 255)), new SolidBrush(Color.FromArgb(200, 255, 200)) };
-            Brush[] backBrushes = new Brush[] { new SolidBrush(Color.FromArgb(240, 240, 240)), new SolidBrush(Color.FromArgb(240, 240, 240)), new SolidBrush(Color.FromArgb(240, 240, 240)) };
+            FontInfo fontInfo = CreateFontInfo();
 
-            using (var font = CreateFont())
+            PrepareGraphics(e.Graphics, bounds);
+
+            Point? shift = new Point(3, 3);
+            FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(0, 0), LineHeightRatio = 1.00f, WrapWord = true, Width = bounds.Width - 6, Multiline = true };
+            var characters = FontManagerInfo.GetCharInfo(text, e.Graphics, fontInfo, parameters);
+            foreach (var character in characters)
+                character.DrawText(e.Graphics, fontInfo, bounds, shift, backColor: GetBackColor(character), fontColor: GetFontColor(character));
+
+
+
+            /*
+            using (StringFormat stringFormat = FontManagerInfo.CreateNewEditorStringFormat())
             {
-                PrepareGraphics(e.Graphics, bounds);
-
-                int x = bounds.X + 3;
-                int y = bounds.Y + 3;
-                FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(x,y), LineHeightRatio = 1.00f, WrapWord = true, Width = bounds.Width - 6, Multiline = true };
-                var characters = FontManagerInfo.GetCharInfo(text, e.Graphics, font, parameters);
-
-                using (StringFormat stringFormat = FontManagerInfo.CreateNewStandardStringFormat())
+                foreach (var character in characters)
                 {
-                    foreach (var character in characters)
-                    {
-                        if ("AEIOUYaeiouy".IndexOf(character.Text) >= 0)
-                            e.Graphics.FillRectangle(backBrushes[0], character.TextBounds);
-                        else if (" ".IndexOf(character.Text) >= 0)
-                            e.Graphics.FillRectangle(backBrushes[2], character.TextBounds);
-                        else
-                            e.Graphics.FillRectangle(backBrushes[1], character.TextBounds);
-                    }
-                    foreach (var character in characters)
-                    {
-                        if (character.TextLocation.HasValue)
-                            e.Graphics.DrawString(character.Text.ToString(), font, brush, character.TextLocation.Value, stringFormat);
-                    }
+                    if ("AEIOUYaeiouy".IndexOf(character.Text) >= 0)
+                        e.Graphics.FillRectangle(backBrushes[0], character.TextBounds);
+                    else if (" ".IndexOf(character.Text) >= 0)
+                        e.Graphics.FillRectangle(backBrushes[2], character.TextBounds);
+                    else
+                        e.Graphics.FillRectangle(backBrushes[1], character.TextBounds);
+                }
+                foreach (var character in characters)
+                {
+                    if (character.TextLocation.HasValue)
+                        e.Graphics.DrawString(character.Text.ToString(), font, brush, character.TextLocation.Value, stringFormat);
                 }
             }
+            */
+
         }
-        private static Font CreateFont()
+        private Color? GetBackColor(CharPositionInfo character)
         {
-            return new Font(FontFamily.GenericSerif, 12f, FontStyle.Regular);
+            if (character.Index > 3 && character.Index < 10) return Color.DarkBlue;
+            return null;
+        }
+        private Color? GetFontColor(CharPositionInfo character)
+        {
+            if (character.Index > 3 && character.Index < 10) return Color.LightYellow;
+            return Color.Black;
+        }
+        private static FontInfo CreateFontInfo()
+        {
+            return new FontInfo() { FontFamilyName = "Times New Roman", FontEmSize = 22f };
         }
         private static void PrepareGraphics(Graphics graphics, Rectangle? bounds)
         {
