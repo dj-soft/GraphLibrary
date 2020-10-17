@@ -77,7 +77,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 base.OnClosed(e);
             ((IDisposable)this.DataSource).Dispose();
             if (!String.IsNullOrEmpty(traceFile))
-                App.TryRun(() => Clipboard.SetText(traceFile));
+                App.TryRun(() => WinClipboard.SetText(traceFile));
         }
         protected SchedulerDataSource DataSource;
         protected GUI.GuiData GuiData;

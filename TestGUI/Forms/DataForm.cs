@@ -326,7 +326,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             StatusStripLabel1.Text = statusText;
 
             string xlsText = (_XlsContainTitle ? "" : xlsTitle + eol) + xlsData;
-            Clipboard.SetText(xlsText);
+            WinClipboard.SetText(xlsText);
             _XlsContainTitle = true;
         }
         private bool _XlsContainTitle = false;
