@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\App.cs" />
+    <Compile Include="Application\Clipboard.cs" />
     <Compile Include="Application\Icons.cs" />
     <Compile Include="Application\Plugin.cs" />
     <Compile Include="Application\Resources.cs" />

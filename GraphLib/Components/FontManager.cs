@@ -852,6 +852,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 graphics.DrawString(this.Text, fontInfo.Font, brush, fontLocation, FontManagerInfo.EditorStringFormat);
             }
         }
+        /// <summary>
+        /// Vrátí true, pokud this znak má být viditelný v daném prostoru.
+        /// </summary>
+        /// <param name="visibleBounds"></param>
+        /// <returns></returns>
+        public bool IsVisibleInBounds(Rectangle visibleBounds)
+        {
+            return (this.IsDrawText && visibleBounds.IntersectsWith(this.TextBounds));
+        }
         #endregion
     }
     /// <summary>
