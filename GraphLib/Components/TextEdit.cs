@@ -185,6 +185,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode"></param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
+            //    this.TextShift = new Point(12, 3);
+
             Rectangle innerBounds = this.GetInnerBounds(absoluteBounds);
             Rectangle textBounds = innerBounds.Enlarge(-TextMargin.Value);
             GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, drawMode, this.HasFocus, this.InteractiveState, this);
@@ -222,6 +224,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (overlay == null) return;
             overlay.DetectOverlayBounds(drawArgs);
+            this.OverlayBounds = drawArgs.OverlayBounds;
         }
         /// <summary>
         /// Vykreslí pozadí
@@ -276,7 +279,6 @@ namespace Asol.Tools.WorkScheduler.Components
             set { int length = Text.Length; int index = value; _CursorIndex = (index < 0 ? 0 : (index > length ? length : index)); if (this.HasFocus) Invalidate(); }
         }
         private int _CursorIndex = 0;
-
         /// <summary>
         /// Vykreslí obsah (text)
         /// </summary>
@@ -284,11 +286,13 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawText(GTextEditDrawArgs drawArgs)
         {
             Rectangle textBounds = drawArgs.TextBounds;
+            this.TextBounds = textBounds;
             if (!textBounds.HasPixels()) return;
 
             string text = this.Text;
             Graphics graphics = drawArgs.Graphics;
             FontInfo fontInfo = this.CurrentFont;
+            Point textShift = this.TextShift;
             Color? backColorStd = null;
             Color? backColorSel = BackColorSelectedText;
             Color? fontColorStd = CurrentTextColor;
@@ -298,28 +302,26 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // S Focusem a editorem: 
                 CheckCharPositions(drawArgs, true);                            // Provedu před GraphicsClip(), aby měření fontu nebylo omezeno
                 EditorState.MouseDownDataProcess();                            // Provedu před kreslením, může se zde určit oblast SelectionRange
-                Int32Range selectionRange = this.SelectionRange;
+                Int32Range selectionRange = this.SelectionRangeNormalised;
                 bool hasSelectionRange = (selectionRange != null && selectionRange.Size != 0);
-                Point shift = Point.Empty;
                 using (GPainter.GraphicsUseText(drawArgs.Graphics, textBounds))
                 {
                     foreach (var charPosition in CharPositions)
                     {
                         bool isSelected = (hasSelectionRange && selectionRange.Contains(charPosition.Index, false));
-                        charPosition.DrawText(graphics, fontInfo, textBounds, shift, backColor: (!isSelected ? backColorStd : backColorSel), fontColor: (!isSelected ? fontColorStd : fontColorSel));
+                        charPosition.DrawText(graphics, fontInfo, textBounds, textShift, backColor: (!isSelected ? backColorStd : backColorSel), fontColor: (!isSelected ? fontColorStd : fontColorSel));
                     }
-                    DrawCursor(drawArgs, shift);                               // Vykreslím kurzor
+                    DrawCursor(drawArgs);                                      // Vykreslím kurzor
                 }
             }
             else
             {   // Bez Focusu nebo bez editoru = jen vypíšu text:
                 CheckCharPositions(drawArgs, false);                           // Provedu před GraphicsClip(), aby měření fontu nebylo omezeno
-                Point shift = Point.Empty;
                 using (GPainter.GraphicsUseText(drawArgs.Graphics, textBounds))
                 {
                     foreach (var charPosition in CharPositions)
                     {
-                        charPosition.DrawText(graphics, fontInfo, textBounds, shift, backColor: backColorStd, fontColor: fontColorStd);
+                        charPosition.DrawText(graphics, fontInfo, textBounds, textShift, backColor: backColorStd, fontColor: fontColorStd);
                     }
                 }
             }
@@ -328,15 +330,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí Kurzor. Volá se výhradně v době, kdy máme Focus a Editor.
         /// </summary>
         /// <param name="drawArgs"></param>
-        /// <param name="shift"></param>
-        protected virtual void DrawCursor(GTextEditDrawArgs drawArgs, Point shift)
+        protected virtual void DrawCursor(GTextEditDrawArgs drawArgs)
         {
-            CursorBounds = EditorState.GetCursorBounds(drawArgs.TextBounds, shift);
+            CursorBounds = EditorState.GetCursorBounds();
             if (!CursorBounds.HasValue) return;
 
             GPainter.GraphicsSetSharp(drawArgs.Graphics);                      // Ostré okraje, aby byl kurzor správný
             drawArgs.Graphics.FillRectangle(Skin.Brush(Color.Black), CursorBounds.Value);
         }
+        /// <summary>
+        /// Souřadnice okénka pro vypisování textu, absolutní koordináty
+        /// </summary>
+        protected Rectangle TextBounds { get; set; }
+        /// <summary>
+        /// Souřadnice ikony v overlay (pouze "horní" overlay = <see cref="OverlayText"/>), kde bude overlay aktivní, absolutní koordináty
+        /// </summary>
+        protected Rectangle? OverlayBounds { get; set; }
+        /// <summary>
+        /// Posunutí obsahu textu proti souřadnici.
+        /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
+        /// Tedy: pokud je <see cref="TextShift"/> = (25, 0), pak v TextBoxu bude zobrazen první řádek (Y=0), ale až např. čtvrtý znak, jehož X = 25.
+        /// Poznámka: souřadnice v <see cref="TextShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
+        /// </summary>
+        protected Point TextShift { get; set; }
         /// <summary>
         /// Souřadnice kurzoru. Jsou určeny při jeho vykreslení v procesu kreslení celého textu. Lze je použít pro animaci blikání kurzoru.
         /// </summary>
@@ -353,33 +369,6 @@ namespace Asol.Tools.WorkScheduler.Components
             return AnimationResult.Stop;
         }
         #endregion
-
-        ///// <summary>
-        ///// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení a následnou editaci aktuálního textu v aktuálním fontu.
-        ///// Metoda je volána při vykreslení textu v situaci, kdy TextBox má focus a může tedy probíhat editace. Máme k dispozici editor <see cref="EditorState"/>.
-        ///// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
-        ///// </summary>
-        ///// <param name="drawArgs"></param>
-        //protected void CheckCharPositionsEdit(GTextEditDrawArgs drawArgs)
-        //{
-        //    CharPositions = EditorState.CheckCharPositions(drawArgs, this.CurrentFont);
-        //}
-        ///// <summary>
-        ///// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro pouhé vykreslení aktuálního textu v aktuálním fontu, bez následné editace.
-        ///// Metoda je volána při vykreslení textu v situaci, kdy TextBox NEMÁ focus a je třeba vykreslit jen viditelné znaky. Nemáme k dispozici editor <see cref="EditorState"/>.
-        ///// </summary>
-        ///// <param name="drawArgs"></param>
-        //protected void CheckCharPositionsDraw(GTextEditDrawArgs drawArgs)
-        //{ }
-        //protected void OnReleaseCharacters()
-        //{ }
-        ///// <summary>
-        ///// Pole znaků, jejich pozic a souřadnic pro kreslení znaků i vykreslení pozadí.
-        ///// Souřadnice jsou relativní = začínají na bodu 0/0, při vykreslování je možné je jako celek posouvat a tím scrollovat textem.
-        ///// </summary>
-        //protected CharPositionInfo[] CharPositions { get; private set; }
-
-
         #region Analýza textu a fontu na pozice znaků
         /// <summary>
         /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
@@ -481,8 +470,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _AnalysedForEditing;
         #endregion
-
-
         #region Public vlastnosti definující vzhled (Color, Border, Font)
         /// <summary>
         /// Defaultní barva pozadí.
@@ -798,6 +785,24 @@ namespace Asol.Tools.WorkScheduler.Components
                 Invalidate();
             }
         }
+        private Int32Range _SelectionRange;
+        /// <summary>
+        /// Rozsah vybraného (označeného) textu. Může být NULL. Normalised značí, že Begin je menší nebo rovno End, 
+        /// na rozdíl od <see cref="SelectionRange"/> kde Begin může být větší než End - protože Begin je pozice, kde výběr začal, kdežto End je aktuální pozice konce výběru = to může být i vlevo.
+        /// Pokud velikost (Size) je 0, pak <see cref="SelectionRangeNormalised"/> je null.
+        /// <para/>
+        /// Pozor, hodnota smí být NULL!
+        /// </summary>
+        protected Int32Range SelectionRangeNormalised
+        {
+            get
+            {
+                Int32Range selectionRange = _SelectionRange;
+                if (selectionRange == null || selectionRange.Size == 0) return null;
+                if (selectionRange.Size > 0) return selectionRange;
+                return new Int32Range(selectionRange.End, selectionRange.Begin);
+            }
+        }
         /// <summary>
         /// Znaky textu včetně pozic
         /// </summary>
@@ -806,7 +811,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Oblast výběru, která při vložení hodnoty neprovádí kontroly (rychlost), přebírí přímo instanci, a neprovádí invalidaci
         /// </summary>
         Int32Range ITextEditInternal.SelectionRangeInternal { get { return _SelectionRange; } set { _SelectionRange = value; } }
-        private Int32Range _SelectionRange;
+        /// <summary>
+        /// Souřadnice okénka pro vypisování textu, absolutní koordináty
+        /// </summary>
+        Rectangle ITextEditInternal.TextBounds { get { return TextBounds; } }
+        /// <summary>
+        /// Posunutí obsahu textu proti souřadnici.
+        /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
+        /// Tedy: pokud je <see cref="TextShift"/> = (25, 0), pak v TextBoxu bude zobrazen první řádek (Y=0), ale až např. čtvrtý znak, jehož X = 25.
+        /// Poznámka: souřadnice v <see cref="TextShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
+        /// </summary>
+        Point ITextEditInternal.TextShift { get { return TextShift; } set { TextShift = value; } }
         /// <summary>
         /// Je povolen víceřádkový text? Tedy například Poznámka...
         /// </summary>
@@ -815,7 +830,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je povolen víceřádkový text, má se text automaticky zalamovat podle šířky Textboxu na pozicích slova?
         /// </summary>
         public bool WordWrap { get { return _WordWrap; } set { _WordWrap = value; Invalidate(); } } private bool _WordWrap;
-
         /// <summary>
         /// Přídavné vykreslení přes Background, pod text
         /// </summary>
@@ -830,7 +844,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool IsRequiredValue { get { return _IsRequiredValue; } set { _IsRequiredValue = value; Invalidate(); } } private bool _IsRequiredValue;
         #endregion
-        #region Text, Value a napojení na data
+        #region Text, Value a DataBinding (napojení na data)
         /// <summary>
         /// Vykreslovaný text.
         /// Pokud bude vložena hodnota null, bude se číst jako prázdný string.
@@ -956,8 +970,9 @@ namespace Asol.Tools.WorkScheduler.Components
         public static string CharactersAssumedAsWords { get; set; } = "_";
         #endregion
     }
+    #region interface ITextEditInternal : Rozhraní pro interní přístup do TextBoxu v procesu editace
     /// <summary>
-    /// Rozhraní pro interní přístup do TextBoxu v procesu editace
+    /// <see cref="ITextEditInternal"/> : Rozhraní pro interní přístup do TextBoxu v procesu editace
     /// </summary>
     public interface ITextEditInternal
     {
@@ -969,7 +984,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Oblast výběru, která při vložení hodnoty neprovádí kontroly (rychlost), přebírí přímo instanci, a neprovádí invalidaci
         /// </summary>
         Int32Range SelectionRangeInternal { get; set; }
+        /// <summary>
+        /// Souřadnice okénka pro vypisování textu, absolutní koordináty
+        /// </summary>
+        Rectangle TextBounds { get; }
+        /// <summary>
+        /// Posunutí obsahu textu proti souřadnici.
+        /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
+        /// Tedy: pokud je <see cref="TextShift"/> = (25, 0), pak v TextBoxu bude zobrazen první řádek (Y=0), ale až např. čtvrtý znak, jehož X = 25.
+        /// Poznámka: souřadnice v <see cref="TextShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
+        /// </summary>
+        Point TextShift { get; set; }
     }
+    #endregion
     #region class GTextEditDrawArgs : Argumenty pro kreslení
     /// <summary>
     /// Argumenty pro kreslení
@@ -1191,9 +1218,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Owner.Invalidate();
         }
         #endregion
-
         #region Vstupní body z TextBoxu v procesu kreslení obsahu: převzetí pozice znaků, zpracování dat o MouseDown podle pozice znaků
-
         /// <summary>
         /// Zpracuje požadavky z kliknutí myši, uložené v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>, po proběhnutí vykreslení a po uložení pozic znaků.
         /// Určí pozici kurzoru CursorPosition a rozsah výběru SelectedRange.
@@ -1203,6 +1228,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (MouseDownAbsoluteLocation.HasValue)
             {   // Máme data o stisku myši:
+                Point relativePoint = GetRelativePoint(MouseDownAbsoluteLocation).Value;
                 bool isFocusEnter = (MouseDownIsFocusEnter.HasValue && MouseDownIsFocusEnter.Value);
                 MouseButtons mouseButtons = MouseDownButtons ?? MouseButtons.None;
                 Keys modifiers = MouseDownModifierKeys ?? Keys.None;
@@ -1217,7 +1243,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     {   // Byla stisknuta levá myš myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
                         // Je stisknut Control (bez Shiftu) a ten Control se má interpretovat jako "Označ slovo pod myší" => jdeme na to:
                         bool isRightSide;
-                        int cursorIndex = SearchCharIndex(MouseDownAbsoluteLocation.Value, out isRightSide);
+                        int cursorIndex = SearchCharIndex(relativePoint, out isRightSide);
                         Int32Range wordRange = SearchNearWord(cursorIndex, isRightSide);
                         if (wordRange != null)
                         {
@@ -1233,7 +1259,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     else if (modifiers == Keys.Shift)
                     {   // Byla stisknuta myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
                         // Je stisknut Shift => měli bychom označit část textu od počátku výběru / nebo od pozice stávajícího kurzoru do pozice myši:
-                        int cursorIndex = SearchCharIndex(MouseDownAbsoluteLocation.Value);
+                        int cursorIndex = SearchCharIndex(relativePoint);
                         Int32Range selectionRange = SelectionRange;
                         if (selectionRange != null)
                             // Máme již z dřívějška uložen nějaký výběr: ponecháme jeho Begin a změníme End:
@@ -1248,7 +1274,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     {   // Byla stisknuta myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
                         // Není stisknuto nic => zrušíme případný výběr Selection, a najdeme pozici kurzoru podle pozice myši:
                         this.SelectionRange = null;
-                        this.CursorIndex = SearchCharIndex(this.MouseDownAbsoluteLocation.Value);
+                        this.CursorIndex = SearchCharIndex(relativePoint);
                     }
                 }
                 else if (MouseDownButtons.HasValue && MouseDownButtons.Value == MouseButtons.Right)
@@ -1257,7 +1283,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     //  Pokud je nějaký text označen, nechává se beze změny jak SelectionRange, tak CursorIndex = aby se k tomu mohlo vztahovat kontextové menu:
                     if (GTextEdit.ChangeCursorPositionOnRightMouse && !this.SelectionRangeExists)
                     {
-                        this.CursorIndex = SearchCharIndex(this.MouseDownAbsoluteLocation.Value);
+                        this.CursorIndex = SearchCharIndex(relativePoint);
                     }
                 }
             }
@@ -1300,40 +1326,40 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Protected vyhledání pozice a souřadnic znaku, kurzoru, výběru
         /// <summary>
-        /// Vrátí pozici kurzoru (index) odpovídající danému absolutnímu bodu. 
+        /// Vrátí pozici kurzoru (index) odpovídající danému relativnímu bodu. 
         /// Opírá se přitom o pozice znaků <see cref="ITextEditInternal.CharPositions"/>.
         /// <para/>
         /// Tato varianta metody vrátí index následujícího znaku v případě, kdy daný bod bude na pravém okraji určitého znaku.
         /// Naproti tomu přetížení s out parametrem bool isRightSide neposune nalezený index doprava, ale vrátí informaci o umístění bodu v pravé polovině znaku.
         /// </summary>
-        /// <param name="point">Zadaný bod, k němuž hledáme znak na nejbližší pozici</param>
+        /// <param name="relativePoint">Zadaný relativní bod, k němuž hledáme znak na nejbližší pozici</param>
         /// <returns></returns>
-        public int SearchCharIndex(Point point)
+        public int SearchCharIndex(Point relativePoint)
         {
             if (!this.HasCharPositions) return 0;
 
             bool isRightSide;
-            int cursorPosition = SearchCharIndex(point, out isRightSide);
+            int cursorPosition = SearchCharIndex(relativePoint, out isRightSide);
             if (isRightSide) cursorPosition++;
 
             return cursorPosition;
         }
         /// <summary>
-        /// Vrátí pozici kurzoru (index) odpovídající danému absolutnímu bodu. 
+        /// Vrátí pozici kurzoru (index) odpovídající danému relativnímu bodu. 
         /// Opírá se přitom o pozice znaků <see cref="ITextEditInternal.CharPositions"/>.
         /// <para/>
         /// Tato varianta metody vrátí přesnou pozici kurzoru na nalezeném znaku i když daný bod bude na jeho pravém okraji, 
         /// nastaví však informaci o pravé polovině do out parametru <paramref name="isRightSide"/>.
         /// </summary>
-        /// <param name="point">Zadaný bod, k němuž hledáme znak na nejbližší pozici</param>
+        /// <param name="relativePoint">Zadaný relativní bod, k němuž hledáme znak na nejbližší pozici</param>
         /// <param name="isRightSide">Out: zadaný bod leží v pravé polovině nalezeného znaku</param>
         /// <returns></returns>
-        public int SearchCharIndex(Point point, out bool isRightSide)
+        public int SearchCharIndex(Point relativePoint, out bool isRightSide)
         {
             isRightSide = false;
             if (!this.HasCharPositions) return 0;
 
-            CharPositionInfo charInfo = LinePositionInfo.SearchCharacterByPosition(CharPositions, point, out isRightSide);
+            CharPositionInfo charInfo = LinePositionInfo.SearchCharacterByPosition(CharPositions, relativePoint, out isRightSide);
             if (charInfo == null) return 0;
 
             int cursorPosition = charInfo.Index;
@@ -1355,32 +1381,66 @@ namespace Asol.Tools.WorkScheduler.Components
             return null;
         }
         /// <summary>
-        /// Metoda vrátí souřadnice, na které bude vykreslován kurzor na své aktuální pozici (indexu).
+        /// Metoda vrátí absolutní souřadnice, na které bude vykreslován kurzor na své aktuální pozici (indexu).
         /// Pokud neexistují znaky, pak vrátí null.
         /// <para/>
-        /// Souřadnice jsou vráceny v absolutních koordinátech = v rámci daného prostoru <paramref name="textBounds"/>, případně s posunutím <paramref name="shift"/>.
-        /// Pokud jsou výsledné souřadnice mimo prostor <paramref name="textBounds"/>, pak výstupem je null = kurzor se nekreslí.
+        /// Souřadnice jsou vráceny v absolutních koordinátech = v rámci daného prostoru <see cref="ITextEditInternal.TextBounds"/>, případně s posunutím <see cref="ITextEditInternal.TextShift"/>.
+        /// Pokud jsou výsledné souřadnice mimo prostor <see cref="ITextEditInternal.TextBounds"/>, pak výstupem je null = kurzor se nekreslí.
         /// </summary>
-        /// <param name="textBounds"></param>
-        /// <param name="shift"></param>
         /// <returns></returns>
-        public Rectangle? GetCursorBounds(Rectangle textBounds, Point? shift)
+        public Rectangle? GetCursorBounds()
         {
-            return GetCursorBounds(textBounds, shift, this.CursorIndex);
+            return GetCursorBounds(CursorIndex);
         }
         /// <summary>
         /// Metoda vrátí souřadnice, na které bude vykreslován kurzor, který je na dané pozici (indexu).
         /// Pokud neexistují znaky, pak vrátí null.
         /// Pokud je zadána pozice kurzoru mimo rozsah znaků, vrátí pozici na nejbližším okraji krajního znaku.
         /// <para/>
-        /// Souřadnice jsou vráceny v absolutních koordinátech = v rámci daného prostoru <paramref name="textBounds"/>, případně s posunutím <paramref name="shift"/>.
-        /// Pokud jsou výsledné souřadnice mimo prostor <paramref name="textBounds"/>, pak výstupem je null = kurzor se nekreslí.
+        /// Souřadnice jsou vráceny v absolutních koordinátech = v rámci daného prostoru <see cref="ITextEditInternal.TextBounds"/>, případně s posunutím <see cref="ITextEditInternal.TextShift"/>.
+        /// Pokud jsou výsledné souřadnice mimo prostor <see cref="ITextEditInternal.TextBounds"/>, pak výstupem je null = kurzor se nekreslí.
         /// </summary>
-        /// <param name="textBounds"></param>
-        /// <param name="shift"></param>
         /// <param name="cursorIndex"></param>
         /// <returns></returns>
-        public Rectangle? GetCursorBounds(Rectangle textBounds, Point? shift, int cursorIndex)
+        public Rectangle? GetCursorBounds(int cursorIndex)
+        {
+            Rectangle? cursorBounds = GetRelativeCursorBounds(cursorIndex);
+            if (!cursorBounds.HasValue) return null;
+            cursorBounds = GetAbsoluteBounds(cursorBounds);
+
+            Rectangle textBounds = IOwner.TextBounds;
+            if (!textBounds.IntersectsWith(cursorBounds.Value)) return null;
+            return cursorBounds;
+        }
+        /// <summary>
+        /// Metoda nastaví <see cref="ITextEditInternal.TextShift"/> tak, aby byl zobrazen kurzor.
+        /// </summary>
+        public void SetTextShiftForCursorIndex()
+        {
+            SetTextShiftForCursorIndex(CursorIndex);
+        }
+        /// <summary>
+        /// Metoda nastaví <see cref="ITextEditInternal.TextShift"/> tak, aby byl zobrazen kurzor.
+        /// </summary>
+        public void SetTextShiftForCursorIndex(int cursorIndex)
+        {
+            Rectangle? cursorBounds = GetRelativeCursorBounds(cursorIndex);
+            if (!cursorBounds.HasValue) return;
+
+            Rectangle textBounds = IOwner.TextBounds;
+            Point textShift = IOwner.TextShift;
+
+
+
+
+        }
+        /// <summary>
+        /// Metoda vrátí relativní souřadnice kurzoru v koordinátech textu, bez posunu <see cref="ITextEditInternal.TextBounds"/> a <see cref="ITextEditInternal.TextShift"/>.
+        /// Může vrátit null, pokud neexistují žádné znaky.
+        /// </summary>
+        /// <param name="cursorIndex"></param>
+        /// <returns></returns>
+        protected Rectangle? GetRelativeCursorBounds(int cursorIndex)
         {
             int charLength = (this.CharPositions != null ? this.CharPositions.Length : 0);
             if (charLength <= 0) return null;
@@ -1399,12 +1459,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 cursorBounds = new Rectangle(charInfo.TextBounds.Right, charInfo.TextBounds.Y, 1, charInfo.TextBounds.Height);
             }
 
-            // Posun souřadnic znaku (ty jsou uloženy v koordinátech 0/0) do souřadnic absolutních - včetně akceptování hodnoty Shiftu:
-            Point offset = textBounds.Location;
-            if (shift.HasValue && !shift.Value.IsEmpty) offset = offset.Add(shift.Value);
-            cursorBounds = cursorBounds.Add(offset);
-
-            if (!textBounds.IntersectsWith(cursorBounds)) return null;
             return cursorBounds;
         }
         /// <summary>
@@ -1432,7 +1486,7 @@ namespace Asol.Tools.WorkScheduler.Components
             var charBegin = CharPositions[begin];
             var charEnd = CharPositions[end];
 
-            if (charBegin.Line.Index == charEnd.Line.Index)
+            if (charBegin.Line.RowIndex == charEnd.Line.RowIndex)
             {   // Zkratka pro jednořádkové texty:
                 RectangleF bounds = RectangleF.FromLTRB(charBegin.TextBounds.Left, charBegin.Line.TextBounds.Top, charEnd.TextBounds.Right, charBegin.Line.TextBounds.Bottom);
                 D2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
@@ -1446,6 +1500,54 @@ namespace Asol.Tools.WorkScheduler.Components
 
         }
         #endregion
+        #region Převody souřadnic Absolutní / Relativní
+        /// <summary>
+        /// Metoda vrátí relativní souřadnici daného absolutního bodu (relativní = souřadnice znaků textu)
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        protected Point? GetRelativePoint(Point? absolutePoint)
+        {
+            if (!absolutePoint.HasValue) return null;
+            Point textPoint = IOwner.TextBounds.Location;
+            Point textShift = IOwner.TextShift;
+            return absolutePoint.Value.Sub(textPoint).Add(textShift);
+        }
+        /// <summary>
+        /// Metoda vrátí relativní souřadnici daného absolutního prostoru (relativní = souřadnice znaků textu)
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <returns></returns>
+        protected Rectangle? GetRelativeBounds(Rectangle? absoluteBounds)
+        {
+            if (!absoluteBounds.HasValue) return null;
+            Point? relativeLocation = GetRelativePoint(absoluteBounds.Value.Location);
+            return new Rectangle(relativeLocation.Value, absoluteBounds.Value.Size);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnici daného relativního bodu (relativní = souřadnice znaků textu)
+        /// </summary>
+        /// <param name="relativePoint"></param>
+        /// <returns></returns>
+        protected Point? GetAbsolutePoint(Point? relativePoint)
+        {
+            if (!relativePoint.HasValue) return null;
+            Point textPoint = IOwner.TextBounds.Location;
+            Point textShift = IOwner.TextShift;
+            return relativePoint.Value.Add(textPoint).Sub(textShift);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnici daného relativního prostoru (relativní = souřadnice znaků textu)
+        /// </summary>
+        /// <param name="relativeBounds"></param>
+        /// <returns></returns>
+        protected Rectangle? GetAbsoluteBounds(Rectangle? relativeBounds)
+        {
+            if (!relativeBounds.HasValue) return null;
+            Point? absoluteLocation = GetAbsolutePoint(relativeBounds.Value.Location);
+            return new Rectangle(absoluteLocation.Value, relativeBounds.Value.Size);
+        }
+        #endregion
         #region Navázání editoru na interaktivní události TextBoxu
         /// <summary>
         /// Je voláno při vstupu Focusu do TextBoxu. Zajistí SelectAll, pokud má být provedeno.
@@ -1457,7 +1559,9 @@ namespace Asol.Tools.WorkScheduler.Components
             HasFocus = true;
             if (this.SelectAllText)
             {
-                SelectionRange = new Int32Range(0, Text.Length);
+                int length = Text.Length;
+                CursorIndex = length;
+                SelectionRange = new Int32Range(0, length);
             }
 
             // Při vstupu do textboxu neměníme pozici kurzoru CursorIndex. To proto, že 0 je default, a na 0 ji nastavujeme v EventFocusLeave.
@@ -1498,6 +1602,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 ProcessKeyCursor(args) ||
                 ProcessKeyBackspaceDel(args) ||
                 ProcessKeyClipboard(args) ||
+                ProcessKeyFunction(args) ||
                 ProcessKeyUndoRedo(args) ||
                 ProcessKeySpecial(args))
                 args.Handled = true;
@@ -1572,13 +1677,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected virtual bool ProcessKeyCursor(KeyEventArgs args)
         {
+            if (this.CharPositions == null) return false;
+            int textLength = this.CharPositions.Length;
             int cursorIndex = CursorIndex;
+            cursorIndex = (cursorIndex < 0 ? 0 : (cursorIndex > textLength ? textLength : cursorIndex));     // Maximální hodnota cursorIndex je textLength (=> za posledním znakem)
+            bool cursorOnEnd = (cursorIndex >= textLength);                                                  // true = kurzor je na konci textu = za posledním znakem
+            CharPositionInfo charInfo = (textLength > 0 ? this.CharPositions[!cursorOnEnd ? cursorIndex : (cursorIndex - 1)] : null);
+
             Int32Range selectionRange = SelectionRange;
             int selectionBegin = (selectionRange != null ? selectionRange.Begin : cursorIndex);
-            int textLength = (this.CharPositions != null ? this.CharPositions.Length : 0);
-            CharPositionInfo charInfo = null;
-            if (this.CharPositions != null && cursorIndex >= 0 && cursorIndex < textLength)
-                charInfo = this.CharPositions[cursorIndex];
 
             switch (args.KeyData)                               // KeyData obsahuje kompletní klávesu = včetně modifikátoru (Ctrl, Shift, Alt)
             {
@@ -1602,11 +1709,11 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 // END:
                 case Keys.End:                                  // Na konec aktuálního řádku
-                    cursorIndex = (charInfo != null ? (charInfo.Line.LastChar.Index + 1) : 0);
+                    cursorIndex = (charInfo != null && charInfo.Line.HasNextLine ? charInfo.Line.LastChar.Index : textLength);
                     selectionRange = null;
                     break;
                 case Keys.Shift | Keys.End:                     // Na konec aktuálního řádku, označit od dosavadní pozice
-                    cursorIndex = (charInfo != null ? (charInfo.Line.LastChar.Index + 1) : 0);
+                    cursorIndex = (charInfo != null && charInfo.Line.HasNextLine ? charInfo.Line.LastChar.Index : textLength);
                     selectionRange = new Int32Range(selectionBegin, cursorIndex);
                     break;
                 case Keys.Control | Keys.End:                   // Na úplný konec textu
@@ -1665,7 +1772,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 // SELECT ALL:
                 case Keys.Control | Keys.A:
-                    cursorIndex = 0;
+                    cursorIndex = textLength;
                     selectionRange = new Int32Range(cursorIndex, textLength);
                     break;
 
@@ -1674,6 +1781,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             CursorIndex = cursorIndex;
             SelectionRange = selectionRange;
+            SetTextShiftForCursorIndex(cursorIndex);
             this.Invalidate();
             return true;
         }
@@ -1734,6 +1842,25 @@ namespace Asol.Tools.WorkScheduler.Components
             CursorIndex = cursorIndex;
             SelectionRange = null;
             this.Invalidate();
+            return true;
+        }
+        /// <summary>
+        /// Zpracuje funkční klávesy Ctrl+F, Ctrl+H, ...
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected virtual bool ProcessKeyFunction(KeyEventArgs args)
+        {
+            switch (args.KeyData)                               // KeyData obsahuje kompletní klávesu = včetně modifikátoru (Ctrl, Shift, Alt)
+            {
+                // Find:
+                case Keys.Control | Keys.F:
+                    break;
+
+                default:
+                    return false;
+            }
+
             return true;
         }
         /// <summary>

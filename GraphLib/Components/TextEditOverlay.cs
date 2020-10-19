@@ -128,7 +128,8 @@ namespace Asol.Tools.WorkScheduler.Components
             int size = drawArgs.InnerBounds.Height - 2;
             if (size > 24) size = 24;
             Rectangle overlayBounds = new Rectangle(drawArgs.InnerBounds.Right - size, drawArgs.InnerBounds.Top, size, size);
-            Rectangle textBounds = new Rectangle(drawArgs.InnerBounds.X, drawArgs.InnerBounds.Y, drawArgs.InnerBounds.Width - size, drawArgs.InnerBounds.Height);
+            Rectangle textBounds = drawArgs.TextBounds;
+            textBounds.Width = overlayBounds.X - textBounds.X;
             drawArgs.SetOverlayBounds(overlayBounds, textBounds);
         }
         /// <summary>
@@ -147,12 +148,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawImage(drawArgs.Graphics, overlayBounds, image, 0.45f);
         }
         /// <summary>
-        /// Jsme kliknut?
+        /// Jsem kliknut?
         /// </summary>
         /// <param name="textEdit"></param>
         /// <param name="mousePoint"></param>
         /// <returns></returns>
-        bool ITextEditOverlay.IsClicked(GTextEdit textEdit, Point mousePoint) { return false; }
+        bool ITextEditOverlay.IsClicked(GTextEdit textEdit, Point mousePoint)
+        {
+
+            return false;
+        }
 
     }
 }

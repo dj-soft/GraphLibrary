@@ -728,7 +728,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Text: {Text}; Row: {RowIndex}; Char: {CharIndex}; Location: {TextLocation}; Bounds: {TextBounds}";
+            return $"Text: '{Text}'; Row: [{RowIndex}]; Char: [{CharIndex}]; Location: {TextLocation}; Bounds: {TextBounds}";
         }
         /// <summary>
         /// Text znaku
@@ -820,17 +820,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="fontInfo"></param>
-        /// <param name="textBounds"></param>
-        /// <param name="shift"></param>
+        /// <param name="textBounds">Absolutní souřadnice okénka pro vypsání textu</param>
+        /// <param name="textShift">Posun textu vůči počátku prostoru <paramref name="textBounds"/> = scrollování.
+        /// Posunutí obsahu textu proti souřadnici.
+        /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
+        /// Tedy: pokud je <paramref name="textShift"/> = (25, 0), pak v TextBoxu bude zobrazen první řádek (Y=0), ale až např. čtvrtý znak, jehož X = 25.
+        /// Poznámka: souřadnice v <paramref name="textShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
+        /// </param>
         /// <param name="backColor"></param>
         /// <param name="backBrush"></param>
         /// <param name="fontColor"></param>
         /// <param name="fontBrush"></param>
-        public void DrawText(Graphics graphics, FontInfo fontInfo, Rectangle textBounds, Point? shift, Color? backColor = null, Brush backBrush = null, Color? fontColor = null, Brush fontBrush = null)
+        public void DrawText(Graphics graphics, FontInfo fontInfo, Rectangle textBounds, Point? textShift, Color? backColor = null, Brush backBrush = null, Color? fontColor = null, Brush fontBrush = null)
         {
             // Posun souřadnic znaku (ty jsou uloženy v koordinátech 0/0) do souřadnic absolutních - včetně akceptování hodnoty Shiftu:
             Point offset = textBounds.Location;
-            if (shift.HasValue && !shift.Value.IsEmpty) offset = offset.Add(shift.Value);
+            if (textShift.HasValue && !textShift.Value.IsEmpty) offset = offset.Sub(textShift.Value);
 
             // Prostor znaku - jednak pro kreslení pozadí, jednak pro test viditelnosti = který znak není ani trochu vidět, nebude se ani trochu kreslit:
             Rectangle backBounds = this.TextBounds.Add(offset);
@@ -882,7 +887,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Tvorba z pole znaků a základní property
         /// <summary>
         /// Vytvoří řádek pro dané znaky v řádku.
-        /// Číslo řádku <see cref="LinePositionInfo.Index"/> přebírá z prvního znaku.
+        /// Číslo řádku <see cref="LinePositionInfo.RowIndex"/> přebírá z prvního znaku.
         /// Vypočítá souhrnný prostor <see cref="LinePositionInfo.TextBounds"/> z prostoru jednotlivých znaků.
         /// Do jednotlivých znaků vloží referenci na právě vytvořený řádek do <see cref="CharPositionInfo.Line"/>.
         /// </summary>
@@ -895,7 +900,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vytvoří řádek pro dané znaky v řádku.
-        /// Číslo řádku <see cref="LinePositionInfo.Index"/> přebírá z prvního znaku.
+        /// Číslo řádku <see cref="LinePositionInfo.RowIndex"/> přebírá z prvního znaku.
         /// Vypočítá souhrnný prostor <see cref="LinePositionInfo.TextBounds"/> z prostoru jednotlivých znaků.
         /// Do jednotlivých znaků vloží referenci na právě vytvořený řádek do <see cref="CharPositionInfo.Line"/>.
         /// </summary>
@@ -920,7 +925,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="prevLine">Předešlý řádek</param>
         private LinePositionInfo(int index, CharPositionInfo[] characters, Rectangle textBounds, ref LinePositionInfo prevLine)
         {
-            this.Index = index;
+            this.RowIndex = index;
             this.Characters = characters;
             this.TextBounds = textBounds;
 
@@ -940,12 +945,12 @@ namespace Asol.Tools.WorkScheduler.Components
         public override string ToString()
         {
             string text = CharPositionInfo.GetText(Characters);
-            return $"Row[{Index}]: \"{text}\"; Bounds: {TextBounds}";
+            return $"Text: \"{text}\"; Row: [{RowIndex}]; Bounds: {TextBounds}";
         }
         /// <summary>
         /// Index řádku, počínaje 0 = odpovídá hodnotě <see cref="CharPositionInfo.RowIndex"/>
         /// </summary>
-        public int Index { get; private set; }
+        public int RowIndex { get; private set; }
         /// <summary>
         /// Pole znaků v řádku. Nikdy není null, vždy obsahuje alespoň jeden prvek.
         /// </summary>
@@ -974,7 +979,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje true, pokud za tímto řádkem existuje další řádek v <see cref="PrevLine"/>
         /// </summary>
-        protected bool HasPrevLine { get { return (this.PrevLine != null); } }
+        public bool HasPrevLine { get { return (this.PrevLine != null); } }
         /// <summary>
         /// Následující řádek, u posledního řádku je null
         /// </summary>
@@ -982,7 +987,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje true, pokud za tímto řádkem existuje další řádek v <see cref="NextLine"/>
         /// </summary>
-        protected bool HasNextLine { get { return (this.NextLine != null); } }
+        public bool HasNextLine { get { return (this.NextLine != null); } }
         #endregion
         #region Vyhledání řádku a znaku podle pozice
         /// <summary>
