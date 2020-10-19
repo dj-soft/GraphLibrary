@@ -68,34 +68,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             PrepareGraphics(e.Graphics, bounds);
 
-            Point? shift = new Point(3, 3);
+            Point? textShift = new Point(3, 3);
             FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(0, 0), LineHeightRatio = 1.00f, WrapWord = true, Width = bounds.Width - 6, Multiline = true };
             var characters = FontManagerInfo.GetCharInfo(text, e.Graphics, fontInfo, parameters);
             foreach (var character in characters)
-                character.DrawText(e.Graphics, fontInfo, bounds, shift, backColor: GetBackColor(character), fontColor: GetFontColor(character));
-
-
-
-            /*
-            using (StringFormat stringFormat = FontManagerInfo.CreateNewEditorStringFormat())
-            {
-                foreach (var character in characters)
-                {
-                    if ("AEIOUYaeiouy".IndexOf(character.Text) >= 0)
-                        e.Graphics.FillRectangle(backBrushes[0], character.TextBounds);
-                    else if (" ".IndexOf(character.Text) >= 0)
-                        e.Graphics.FillRectangle(backBrushes[2], character.TextBounds);
-                    else
-                        e.Graphics.FillRectangle(backBrushes[1], character.TextBounds);
-                }
-                foreach (var character in characters)
-                {
-                    if (character.TextLocation.HasValue)
-                        e.Graphics.DrawString(character.Text.ToString(), font, brush, character.TextLocation.Value, stringFormat);
-                }
-            }
-            */
-
+                character.DrawText(e.Graphics, fontInfo, bounds, textShift, backColor: GetBackColor(character), fontColor: GetFontColor(character));
         }
         private Color? GetBackColor(CharPositionInfo character)
         {
