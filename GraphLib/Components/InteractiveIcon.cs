@@ -43,6 +43,24 @@ namespace Asol.Tools.WorkScheduler.Components
             return image;
         }
         #endregion
+        #region Vykreslení ikony
+        /// <summary>
+        /// Vykreslí zdejší ikonu pro daný interaktivní stav
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="drawAsShadow"></param>
+        public void DrawIcon(Graphics graphics, Rectangle absoluteBounds, GInteractiveState interactiveState = GInteractiveState.Enabled, bool drawAsShadow = false)
+        {
+            Image image = GetImage(interactiveState);
+            if (image == null) return;
+            if (drawAsShadow)
+                GPainter.DrawImage(graphics, absoluteBounds, image, 0.45f);
+            else
+                GPainter.DrawImage(graphics, absoluteBounds, image, interactiveState);
+        }
+        #endregion
         #region Statické property pro konkrétní situace
         /// <summary>
         /// Ikona pro zobrazení vztahu na záznam

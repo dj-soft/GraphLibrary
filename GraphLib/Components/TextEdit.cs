@@ -83,7 +83,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedMouseLeftDown(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeftDown(e);
-            if (!IsOverlayTextClicked(e))
+            if (!IsRightIconClicked(e) && !IsOverlayTextClicked(e))
                 EditorState.EventMouseLeftDown(e);
         }
         /// <summary>
@@ -359,9 +359,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Funkční prostor vpravo (ikona, dropdown)
         /// <summary>
-        /// Ikona vykreslovaná v pravém (horním) rohu, ve velikosti výšky řádku. 
+        /// Ikona vykreslovaná v pravém (horním) rohu, ve velikosti výšky řádku. Ikona nedostává focus, ten vždy zůstává v this TextBoxu.
         /// Ikona je interaktivní, kliknutí na ikonu je předáno do eventu <see cref="RightIconClick"/>.
-        /// Hodnota null = žádná ikona.
+        /// Ikona může být: vztah, kalkulačka, dropdown, výběr souboru...
+        /// Hodnota null = žádná ikona, žádná událost.
         /// </summary>
         public InteractiveIcon RightActiveIcon { get { return _RightActiveIcon; } set { _RightActiveIcon = value; Invalidate(); } } private InteractiveIcon _RightActiveIcon;
         /// <summary>
@@ -381,9 +382,10 @@ namespace Asol.Tools.WorkScheduler.Components
             if (iconSize > innerBounds.Height) iconSize = innerBounds.Height;
             Rectangle rightIconBounds = new Rectangle(innerBounds.Right - iconSize, innerBounds.Y, iconSize, iconSize);
             drawArgs.RightIconBounds = rightIconBounds;
+            RightIconBounds = rightIconBounds;
 
             Rectangle textBounds = drawArgs.TextBounds;
-            drawArgs.TextBounds = new Rectangle(textBounds.X, textBounds.Y, rightIconBounds.Right - textBounds.X, textBounds.Height);
+            drawArgs.TextBounds = new Rectangle(textBounds.X, textBounds.Y, rightIconBounds.X - textBounds.X, textBounds.Height);
         }
         /// <summary>
         /// Vykreslí ikonu
@@ -391,8 +393,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawArgs"></param>
         protected void DrawRightIcon(GTextEditDrawArgs drawArgs)
         {
-            if (RightActiveIcon == null) return;
-            var image = RightActiveIcon.GetImage(this.InteractiveState);
+            if (RightActiveIcon == null || !drawArgs.RightIconBounds.HasValue) return;
+            bool asShadow = !(drawArgs.HasFocus || drawArgs.InteractiveState.HasFlag(GInteractiveState.FlagOver));
+            RightActiveIcon.DrawIcon(drawArgs.Graphics, drawArgs.RightIconBounds.Value, this.InteractiveState, asShadow);
         }
         /// <summary>
         /// Detekuje, zda bylo kliknuto na ikonu vpravo <see cref="RightActiveIcon"/> = do prostoru <see cref="RightIconBounds"/>
@@ -403,8 +406,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (RightActiveIcon == null || !RightIconBounds.HasValue) return false;
             bool isClickedInBounds = RightIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
-            OnRightIconClick();
-            return true;
+            if (isClickedInBounds)
+                OnRightIconClick();
+            return isClickedInBounds;
         }
         /// <summary>
         /// Prostor klikací ikony vpravo
@@ -444,8 +448,9 @@ namespace Asol.Tools.WorkScheduler.Components
             var overlayText = OverlayText;
             if (overlayText == null || !OverlayTextBounds.HasValue) return false;
             bool isClickedInBounds = OverlayTextBounds.Value.Contains(e.MouseAbsolutePoint.Value);
-            OnOverlayTextClick();
-            return true;
+            if (isClickedInBounds)
+                OnOverlayTextClick();
+            return isClickedInBounds;
         }
         #endregion
         #region Analýza textu a fontu na pozice znaků
