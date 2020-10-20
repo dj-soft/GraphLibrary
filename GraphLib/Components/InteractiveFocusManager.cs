@@ -145,6 +145,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (requirements.HasFlag(InteractiveFocusStateFlag.Visible) && !item.Is.Visible) return false;        // Pokud prvek musí být Visible, a tento není, pak vrátím false
             if (requirements.HasFlag(InteractiveFocusStateFlag.Enabled) && !item.Is.Enabled) return false;        // Pokud prvek musí být Enabled, a tento není, pak vrátím false
             if (requirements.HasFlag(InteractiveFocusStateFlag.TabStop) && !item.Is.TabStop) return false;        // Pokud prvek musí být TabStop, a tento není, pak vrátím false
+            if (!Settings.TabStopOnReadOnlyItems && item.Is.ReadOnly) return false;                               // Pokud Setting říká "TabStopOnReadOnlyItems = false", a tento prvek je ReadOnly, pak vrátím false
             return true;
         }
     }

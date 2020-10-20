@@ -735,7 +735,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region Public vlastnosti definující chování (TabStop. 
+        #region Public vlastnosti definující chování (TabStop, ...)
         /// <summary>
         /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
         /// </summary>
@@ -743,11 +743,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Označit (selectovat) celý obsah textu po příchodu focusu do prvku? Platí i pro příchod myším kliknutím.
         /// Při čtení má vždy hodnotu. 
-        /// Setovat lze null, pak bude čtena hodnota defaultní (to je výchozí stav) = <see cref="DefaultSelectAll"/>.
+        /// Setovat lze null, pak bude čtena hodnota defaultní (to je výchozí stav) = <see cref="Settings.TextBoxSelectAll"/>.
         /// </summary>
         public bool? SelectAllText
         {
-            get { return (this.Is.SelectAllTextExplicit ? this.Is.SelectAllText : DefaultSelectAll); }
+            get { return (this.Is.SelectAllTextExplicit ? this.Is.SelectAllText : Settings.TextBoxSelectAll); }
             set
             {
                 this.Is.SelectAllTextExplicit = value.HasValue;      // Pokud je dodaná hodnota, pak je explicitní (Is.SelectAllTextExplicit je true)
@@ -940,34 +940,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 return true;
             }
         }
-        #endregion
-        #region Static deklarace chování třídy - lze změnit v rámci celé aplikace
-        /// <summary>
-        /// Defaultní hodnota SelectAll = vybrat celý text po příchodu focusu do prvku
-        /// </summary>
-        public static bool DefaultSelectAll { get; set; } = true;
-        /// <summary>
-        /// Definice chování: při odchodu focusu z prvku a opětovném návratu docusu se má pamatovat pozice kurzoru?
-        /// Default = false = chování jako v Green (Infragistic), Notepadu, Firefox, TotalCommander (Po změně focusu se kurzor nastaví na index 0),
-        /// hodnota true = chování jako v Office, Visual studio, OpenOffice (Textbox si pamatuje pozici kurzoru)
-        /// </summary>
-        public static bool SaveCursorPositionOnLostFocus { get; set; } = false;
-        /// <summary>
-        /// Definice chování: při kliknutí pravou myší (=kontextové menu) se má přemístit kurzor stejně, jako při kliknutí levou myší?
-        /// Default = false = chování jako v Green (Infragistic), Notepadu, Firefox, TotalCommander (RightClick nemění pozici kurzoru),
-        /// hodnota true = chování jako v Office, Visual studio, OpenOffice (RightClick změní pozici kurzoru)
-        /// </summary>
-        public static bool ChangeCursorPositionOnRightMouse { get; set; } = false;
-        /// <summary>
-        /// Definice chování: při kliknutí levou myší se stisknutým Control se má označit celé slovo pod myší?
-        /// Default = false = chování jako v Green (Infragistic), Notepadu, Firefox, TotalCommander (Control+Click neoznačí slovo),
-        /// hodnota true = chování jako v Office, Visual studio, OpenOffice (Control+Click označí celé slovo)
-        /// </summary>
-        public static bool SelectWordOnControlMouse { get; set; } = true;
-        /// <summary>
-        /// Znaky, které akceptujeme jako vnitřní součást slova, rovnocenné písmenům a číslicím
-        /// </summary>
-        public static string CharactersAssumedAsWords { get; set; } = "_";
         #endregion
     }
     #region interface ITextEditInternal : Rozhraní pro interní přístup do TextBoxu v procesu editace
@@ -1239,7 +1211,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         // Vybereme celý text: naplnění SelectionRange bylo provedeno v metodě this.FocusEnter(), tady jen určíme pozici kurzoru = na konci textu:
                         CursorIndex = Text.Length;
                     }
-                    else if (modifiers == Keys.Control && GTextEdit.SelectWordOnControlMouse)
+                    else if (modifiers == Keys.Control && Settings.TextBoxSelectWordOnControlMouse)
                     {   // Byla stisknuta levá myš myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
                         // Je stisknut Control (bez Shiftu) a ten Control se má interpretovat jako "Označ slovo pod myší" => jdeme na to:
                         bool isRightSide;
@@ -1281,7 +1253,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {   // Pravá myš => Kontextové menu: pokud je povoleno v proměnné ChangeCursorPositionOnRightMouse, a není označen žádný text,
                     //  pak se nastaví kurzor podle pozice myši, ale neprovádí se žádná jiná funkcionalita.
                     //  Pokud je nějaký text označen, nechává se beze změny jak SelectionRange, tak CursorIndex = aby se k tomu mohlo vztahovat kontextové menu:
-                    if (GTextEdit.ChangeCursorPositionOnRightMouse && !this.SelectionRangeExists)
+                    if (Settings.TextBoxChangeCursorPositionOnRightMouse && !this.SelectionRangeExists)
                     {
                         this.CursorIndex = SearchCharIndex(relativePoint);
                     }
@@ -1577,7 +1549,7 @@ namespace Asol.Tools.WorkScheduler.Components
             HasFocus = false;
 
             // Pozice kurzoru: pokud si pozici NEMÁME pamatovat, tak ji nulujeme při LostFocus:
-            if (!GTextEdit.SaveCursorPositionOnLostFocus)
+            if (!Settings.TextBoxSaveCursorPositionOnLostFocus)
                 this.CursorIndex = 0;                            // Defaultní chování: po opětovném návratu focusu do prvku bude kurzor na začátku.
         }
         /// <summary>
@@ -2522,7 +2494,7 @@ namespace Asol.Tools.WorkScheduler.Components
                  prevIsLetter && !nextIsLetter);
         }
         /// <summary>
-        /// Vrátí true, pokud dodaný znak je písmeno uvnitř slova (písmeno nebo číslice) nebo akceptované znaky <see cref="GTextEdit.CharactersAssumedAsWords"/>;
+        /// Vrátí true, pokud dodaný znak je písmeno uvnitř slova (písmeno nebo číslice) nebo akceptované znaky <see cref="Settings.CharactersAssumedAsWords"/>;
         /// vrátí false pokud jde o mezeru nebo nevýznamný oddělovač (operátory, 
         /// </summary>
         /// <param name="charText"></param>
@@ -2530,7 +2502,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private static bool _IsCharText(char charText)
         {
             if (Char.IsLetterOrDigit(charText)) return true;
-            if (GTextEdit.CharactersAssumedAsWords != null && GTextEdit.CharactersAssumedAsWords.IndexOf(charText) >= 0) return true;
+            if (Settings.CharactersAssumedAsWords != null && Settings.CharactersAssumedAsWords.IndexOf(charText) >= 0) return true;
             return false;
         }
         #endregion

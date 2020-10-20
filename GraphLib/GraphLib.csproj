@@ -76,6 +76,7 @@
     <Compile Include="Application\Icons.cs" />
     <Compile Include="Application\Plugin.cs" />
     <Compile Include="Application\Resources.cs" />
+    <Compile Include="Application\Settings.cs" />
     <Compile Include="Application\Test.cs" />
     <Compile Include="Application\Trace.cs" />
     <Compile Include="Application\Worker.cs" />
