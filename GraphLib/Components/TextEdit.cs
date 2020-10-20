@@ -77,13 +77,22 @@ namespace Asol.Tools.WorkScheduler.Components
             EditorState.EventKeyPress(e);
         }
         /// <summary>
-        /// Po uvolnění klávesy
+        /// Po levém kliknutí
         /// </summary>
         /// <param name="e"></param>
         protected override void AfterStateChangedMouseLeftDown(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeftDown(e);
-            EditorState.EventMouseLeftDown(e);
+            if (!IsOverlayTextClicked(e))
+                EditorState.EventMouseLeftDown(e);
+        }
+        /// <summary>
+        /// Po levém double-kliknutí
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedLeftDoubleClick(e);
         }
         /// <summary>
         /// Při pohybu myši
@@ -185,15 +194,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode"></param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            //    this.TextShift = new Point(12, 3);
-
             Rectangle innerBounds = this.GetInnerBounds(absoluteBounds);
             Rectangle textBounds = innerBounds.Enlarge(-TextMargin.Value);
-            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, drawMode, this.HasFocus, this.InteractiveState, this);
+            int textLineHeight = TextLineHeight;
+            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, textLineHeight, drawMode, this.HasFocus, this.InteractiveState, this);
+            this.DetectRightIconBounds(drawArgs);               // Nastaví RightIconBounds a modifikuje TextBounds
             this.DetectOverlayBounds(drawArgs, OverlayText);    // Nastaví OverlayBounds a modifikuje TextBounds
             this.DrawBackground(drawArgs);                      // Background
             this.DrawOverlay(drawArgs, OverlayBackground);      // Grafika nad Backgroundem
             this.DrawText(drawArgs);                            // Text
+            this.DrawRightIcon(drawArgs);                       // Ikona vpravo
             this.DrawOverlay(drawArgs, OverlayText);            // Grafika nad Textem
             this.DrawBorder(drawArgs);                          // Rámeček
         }
@@ -214,34 +224,12 @@ namespace Asol.Tools.WorkScheduler.Components
             return bounds;
         }
         /// <summary>
-        /// Metoda určí prostor pro vykreslení Overlay, a případně modifikuje prostor pro vlastní text zmenšený o prostor Overlay.
-        /// Pokud Overlay není přítomen nebo není aktivní, pak vrátí null.
-        /// </summary>
-        /// <param name="drawArgs">Argumenty</param>
-        /// <param name="overlay">Objekt Overlay (prakticky pouze <see cref="OverlayText"/>)</param>
-        /// <returns></returns>
-        protected void DetectOverlayBounds(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
-        {
-            if (overlay == null) return;
-            overlay.DetectOverlayBounds(drawArgs);
-            this.OverlayBounds = drawArgs.OverlayBounds;
-        }
-        /// <summary>
         /// Vykreslí pozadí
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
         protected virtual void DrawBackground(GTextEditDrawArgs drawArgs)
         {
             this.DrawBackground(drawArgs.DrawArgs, drawArgs.InnerBounds, drawArgs.AbsoluteVisibleBounds, drawArgs.DrawMode, this.CurrentBackColor);
-        }
-        /// <summary>
-        /// Vykreslí Overlay
-        /// </summary>
-        /// <param name="drawArgs">Argumenty</param>
-        /// <param name="overlay">Objekt Overlay (<see cref="OverlayBackground"/> nebo <see cref="OverlayText"/>)</param>
-        protected virtual void DrawOverlay(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
-        {
-            overlay?.DrawOverlay(drawArgs);
         }
         /// <summary>
         /// Vykreslí border
@@ -345,7 +333,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Souřadnice ikony v overlay (pouze "horní" overlay = <see cref="OverlayText"/>), kde bude overlay aktivní, absolutní koordináty
         /// </summary>
-        protected Rectangle? OverlayBounds { get; set; }
+        protected Rectangle? OverlayTextBounds { get; set; }
         /// <summary>
         /// Posunutí obsahu textu proti souřadnici.
         /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
@@ -369,7 +357,102 @@ namespace Asol.Tools.WorkScheduler.Components
             return AnimationResult.Stop;
         }
         #endregion
+        #region Funkční prostor vpravo (ikona, dropdown)
+        /// <summary>
+        /// Ikona vykreslovaná v pravém (horním) rohu, ve velikosti výšky řádku. 
+        /// Ikona je interaktivní, kliknutí na ikonu je předáno do eventu <see cref="RightIconClick"/>.
+        /// Hodnota null = žádná ikona.
+        /// </summary>
+        public InteractiveIcon RightActiveIcon { get { return _RightActiveIcon; } set { _RightActiveIcon = value; Invalidate(); } } private InteractiveIcon _RightActiveIcon;
+        /// <summary>
+        /// Nastaví <see cref="RightIconBounds"/> a modifikuje <see cref="GTextEditDrawArgs.TextBounds"/>
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        protected void DetectRightIconBounds(GTextEditDrawArgs drawArgs)
+        {
+            if (RightActiveIcon == null)
+            {
+                RightIconBounds = null;
+                return;
+            }
+
+            int iconSize = drawArgs.TextLineHeight + 2 * TextMargin.Value;
+            Rectangle innerBounds = drawArgs.InnerBounds;
+            if (iconSize > innerBounds.Height) iconSize = innerBounds.Height;
+            Rectangle rightIconBounds = new Rectangle(innerBounds.Right - iconSize, innerBounds.Y, iconSize, iconSize);
+            drawArgs.RightIconBounds = rightIconBounds;
+
+            Rectangle textBounds = drawArgs.TextBounds;
+            drawArgs.TextBounds = new Rectangle(textBounds.X, textBounds.Y, rightIconBounds.Right - textBounds.X, textBounds.Height);
+        }
+        /// <summary>
+        /// Vykreslí ikonu
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        protected void DrawRightIcon(GTextEditDrawArgs drawArgs)
+        {
+            if (RightActiveIcon == null) return;
+            var image = RightActiveIcon.GetImage(this.InteractiveState);
+        }
+        /// <summary>
+        /// Detekuje, zda bylo kliknuto na ikonu vpravo <see cref="RightActiveIcon"/> = do prostoru <see cref="RightIconBounds"/>
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected virtual bool IsRightIconClicked(GInteractiveChangeStateArgs e)
+        {
+            if (RightActiveIcon == null || !RightIconBounds.HasValue) return false;
+            bool isClickedInBounds = RightIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
+            OnRightIconClick();
+            return true;
+        }
+        /// <summary>
+        /// Prostor klikací ikony vpravo
+        /// </summary>
+        protected Rectangle? RightIconBounds { get; set; }
+        #endregion
+        #region Overlay - kreslení, detekce prostoru a detekce kliknutí
+        /// <summary>
+        /// Metoda určí prostor pro vykreslení Overlay, a případně modifikuje prostor pro vlastní text zmenšený o prostor Overlay.
+        /// Pokud Overlay není přítomen nebo není aktivní, pak vrátí null.
+        /// </summary>
+        /// <param name="drawArgs">Argumenty</param>
+        /// <param name="overlay">Objekt Overlay (prakticky pouze <see cref="OverlayText"/>)</param>
+        /// <returns></returns>
+        protected void DetectOverlayBounds(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
+        {
+            if (overlay == null) return;
+            overlay.DetectOverlayBounds(drawArgs);
+            this.OverlayTextBounds = drawArgs.OverlayBounds;
+        }
+        /// <summary>
+        /// Vykreslí Overlay
+        /// </summary>
+        /// <param name="drawArgs">Argumenty</param>
+        /// <param name="overlay">Objekt Overlay (<see cref="OverlayBackground"/> nebo <see cref="OverlayText"/>)</param>
+        protected virtual void DrawOverlay(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
+        {
+            overlay?.DrawOverlay(drawArgs);
+        }
+        /// <summary>
+        /// Detekuje, zda bylo kliknuto na overlay <see cref="OverlayText"/> = do prostoru <see cref="OverlayTextBounds"/>
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected virtual bool IsOverlayTextClicked(GInteractiveChangeStateArgs e)
+        {
+            var overlayText = OverlayText;
+            if (overlayText == null || !OverlayTextBounds.HasValue) return false;
+            bool isClickedInBounds = OverlayTextBounds.Value.Contains(e.MouseAbsolutePoint.Value);
+            OnOverlayTextClick();
+            return true;
+        }
+        #endregion
         #region Analýza textu a fontu na pozice znaků
+        /// <summary>
+        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextMargin"/> a bez borderu <see cref="borde"/>
+        /// </summary>
+        public int TextLineHeight { get { return FontManagerInfo.GetFontHeight(this.CurrentFont); } }
         /// <summary>
         /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
         /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
@@ -844,6 +927,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool IsRequiredValue { get { return _IsRequiredValue; } set { _IsRequiredValue = value; Invalidate(); } } private bool _IsRequiredValue;
         #endregion
+        #region Public eventy
+        protected virtual void OnRightIconClick()
+        {
+            RightIconClick?.Invoke(this, EventArgs.Empty);
+        }
+        public event EventHandler RightIconClick;
+        protected virtual void OnOverlayTextClick()
+        {
+            OverlayTextClick?.Invoke(this, EventArgs.Empty);
+        }
+        public event EventHandler OverlayTextClick;
+        #endregion
         #region Text, Value a DataBinding (napojení na data)
         /// <summary>
         /// Vykreslovaný text.
@@ -983,11 +1078,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
         /// <param name="textBounds"></param>
+        /// <param name="textLineHeight"></param>
         /// <param name="drawMode"></param>
         /// <param name="hasFocus"></param>
         /// <param name="interactiveState"></param>
         /// <param name="textEdit"></param>
-        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds, DrawItemMode drawMode, 
+        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds, int textLineHeight, DrawItemMode drawMode, 
             bool hasFocus, GInteractiveState interactiveState, GTextEdit textEdit)
         {
             this.DrawArgs = drawArgs;
@@ -995,6 +1091,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AbsoluteVisibleBounds = absoluteVisibleBounds;
             this.InnerBounds = innerBounds;
             this.TextBounds = textBounds;
+            this.TextLineHeight = textLineHeight;
             this.DrawMode = drawMode;
             this.HasFocus = hasFocus;
             this.InteractiveState = interactiveState;
@@ -1024,11 +1121,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vnitřní souřadnice pro kreslení textu, bez rámečku.
         /// Pokud overlay typu <see cref="GTextEdit.OverlayText"/> potřebuje, může tento prostor modifikovat = zmenšit tak, aby text nezasahoval např. do ikony Overlay.
         /// </summary>
-        public Rectangle TextBounds { get; private set; }
+        public Rectangle TextBounds { get; set; }
+        /// <summary>
+        /// Výška jednoho textového řádku
+        /// </summary>
+        public int TextLineHeight { get; private set; }
+        /// <summary>
+        /// Prostor pro výhradní kreslení RightIcon. Výchozí hodnota je null. Nastavuje <see cref="GTextEdit"/> v části pro ikonu, zmenšuje přitom prostor <see cref="TextBounds"/>.
+        /// </summary>
+        public Rectangle? RightIconBounds { get; set; }
         /// <summary>
         /// Prostor pro výhradní kreslení Overlay. Výchozí hodnota je null. Je plně ve správě objektu <see cref="GTextEdit.OverlayText"/>.
         /// </summary>
-        public Rectangle? OverlayBounds { get; private set; }
+        public Rectangle? OverlayBounds { get; set; }
         /// <summary>
         /// Režim kreslení
         /// </summary>
@@ -1045,18 +1150,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Textový objekt
         /// </summary>
         public GTextEdit TextEdit { get; private set; }
-        /// <summary>
-        /// Vloží dané souřadnice <paramref name="overlayBounds"/> do <see cref="OverlayBounds"/>,
-        /// a pokud bude zadán parametr <paramref name="textBounds"/> (tj. nebude null), bude vložen do <see cref="TextBounds"/>.
-        /// Používá se typicky z metody <see cref="ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs)"/>.
-        /// </summary>
-        /// <param name="overlayBounds"></param>
-        /// <param name="textBounds"></param>
-        public void SetOverlayBounds(Rectangle? overlayBounds, Rectangle? textBounds = null)
-        {
-            this.OverlayBounds = overlayBounds;
-            if (textBounds.HasValue) this.TextBounds = textBounds.Value;
-        }
     }
     #endregion
     #region class TextEditorController : proměnné a funkce pro editaci platné pouze při přítomnosti Focusu

@@ -48,6 +48,27 @@ namespace Asol.Tools.WorkScheduler.Components
             SPACE = " ";
         }
         /// <summary>
+        /// Najde / založí objekt pro data pro jeden typ fontu. Řeší multithread zámek.
+        /// </summary>
+        /// <param name="fontKey"></param>
+        /// <returns></returns>
+        private FontManagerItem _GetFontInfo(string fontKey)
+        {
+            FontManagerItem fontInfo;
+            if (!__FontInfos.TryGetValue(fontKey, out fontInfo))
+            {
+                lock (__FontInfos)
+                {
+                    if (!__FontInfos.TryGetValue(fontKey, out fontInfo))
+                    {
+                        fontInfo = new FontManagerItem(fontKey);
+                        __FontInfos.Add(fontKey, fontInfo);
+                    }
+                }
+            }
+            return fontInfo;
+        }
+        /// <summary>
         /// Obsahuje referenci na stabilní objekt Graphics použitelný pro nouzové měření znaků.
         /// </summary>
         private static Graphics _DefaultGraphics
@@ -138,27 +159,61 @@ namespace Asol.Tools.WorkScheduler.Components
             FontManagerItem fontInfo = Current._GetFontInfo(fontKey);
             return fontInfo.GetCharInfo(text, graphics, font, parameters);
         }
+        #endregion
+        #region Změření řádku
         /// <summary>
-        /// Najde / založí objekt pro data pro jeden typ fontu. Řeší multithread zámek.
+        /// Vrátí výšku jednoho řádku textu v daném fontu
         /// </summary>
-        /// <param name="fontKey"></param>
+        /// <param name="fontInfo"></param>
         /// <returns></returns>
-        private FontManagerItem _GetFontInfo(string fontKey)
+        public static int GetFontHeight(FontInfo fontInfo)
         {
-            FontManagerItem fontInfo;
-            if (!__FontInfos.TryGetValue(fontKey, out fontInfo))
-            {
-                lock (__FontInfos)
-                {
-                    if (!__FontInfos.TryGetValue(fontKey, out fontInfo))
-                    {
-                        fontInfo = new FontManagerItem(fontKey);
-                        __FontInfos.Add(fontKey, fontInfo);
-                    }
-                }
-            }
-            return fontInfo;
+            return _GetFontHeight(fontInfo.Font, _DefaultGraphics);
         }
+        /// <summary>
+        /// Vrátí výšku jednoho řádku textu v daném fontu
+        /// </summary>
+        /// <param name="font"></param>
+        /// <returns></returns>
+        public static int GetFontHeight(Font font)
+        {
+            return _GetFontHeight(font, _DefaultGraphics);
+        }
+        /// <summary>
+        /// Vrátí výšku jednoho řádku textu v daném fontu
+        /// </summary>
+        /// <param name="fontInfo"></param>
+        /// <param name="graphics"></param>
+        /// <returns></returns>
+        public static int GetFontHeight(FontInfo fontInfo, Graphics graphics)
+        {
+            return _GetFontHeight(fontInfo.Font, graphics);
+        }
+        /// <summary>
+        /// Vrátí výšku jednoho řádku textu v daném fontu
+        /// </summary>
+        /// <param name="font"></param>
+        /// <param name="graphics"></param>
+        /// <returns></returns>
+        public static int GetFontHeight(Font font, Graphics graphics)
+        {
+            return _GetFontHeight(font, graphics);
+        }
+        /// <summary>
+        /// Vrátí výšku jednoho řádku textu v daném fontu
+        /// </summary>
+        /// <param name="font"></param>
+        /// <param name="graphics"></param>
+        /// <returns></returns>
+        private static int _GetFontHeight(Font font, Graphics graphics)
+        {
+            if (graphics == null || font == null) return 0;
+            string fontKey = FontManagerItem.GetFontKey(font);
+            FontManagerItem fontInfo = Current._GetFontInfo(fontKey);
+            return fontInfo.GetFontHeight(graphics, font);
+        }
+        #endregion
+        #region StringFormats, NormalizeCrLf
         /// <summary>
         /// Obsahuje formátovací příznaky pro psaní textu = StringFormat.GenericTypographic.FormatFlags | MeasureTrailingSpaces
         /// </summary>
@@ -464,6 +519,18 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
 
                 return characters;
+            }
+            /// <summary>
+            /// Vrátí výšku jednoho řádku textu v daném fontu
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="font"></param>
+            /// <returns></returns>
+            public int GetFontHeight(Graphics graphics, Font font)
+            {
+                LoadBasicFontData(graphics, font);
+
+                return _FontHeight;
             }
             /// <summary>
             /// Metoda je volána v situaci, kdy je třeba zalomit řádek, protože aktuální znak přesahuje za pravý okraj prostoru.

@@ -13,9 +13,8 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface ITextEditOverlay
     {
         /// <summary>
-        /// Instance overlay zde může modifikovat vnitřní prostor pro text (=zmenšit <see cref="GTextEditDrawArgs.InnerBounds"/>) 
+        /// Instance overlay zde může modifikovat vnitřní prostor pro text (=zmenšit <see cref="GTextEditDrawArgs.TextBounds"/>) 
         /// a deklarovat výhradní prostor pro overlay (do <see cref="GTextEditDrawArgs.OverlayBounds"/>).
-        /// Provede se to voláním metody <see cref="GTextEditDrawArgs.SetOverlayBounds(Rectangle?, Rectangle?)"/>.
         /// </summary>
         /// <param name="drawArgs"></param>
         void DetectOverlayBounds(GTextEditDrawArgs drawArgs);
@@ -24,30 +23,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="drawArgs"></param>
         void DrawOverlay(GTextEditDrawArgs drawArgs);
-        /// <summary>
-        /// Overlay zjistí, zda bylo kliknuto na něj (vrátí true).
-        /// </summary>
-        /// <param name="textEdit"></param>
-        /// <param name="mousePoint"></param>
-        /// <returns></returns>
-        bool IsClicked(GTextEdit textEdit, Point mousePoint);
     }
     /// <summary>
-    /// Přídavné vykreslení k <see cref="GTextEdit"/>, vykresluje linku podtržení u vztahu
+    /// Přídavné vykreslení k <see cref="GTextEdit"/>, vykresluje linku podtržení
     /// </summary>
-    public class TextEditOverlayRelationLine : ITextEditOverlay
+    public class TextEditOverlayUnderline : ITextEditOverlay
     {
         /// <summary>
         /// Defaultní konstruktor
         /// </summary>
-        public TextEditOverlayRelationLine() { }
+        public TextEditOverlayUnderline() { }
         /// <summary>
         /// Konstruktor s daty
         /// </summary>
         /// <param name="isRelationToDocument"></param>
         /// <param name="isRelationInGrid"></param>
         /// <param name="lineColor"></param>
-        public TextEditOverlayRelationLine(bool isRelationToDocument, bool isRelationInGrid, Color? lineColor = null)
+        public TextEditOverlayUnderline(bool isRelationToDocument, bool isRelationInGrid, Color? lineColor = null)
         {
             this.IsRelationToDocument = isRelationToDocument;
             this.IsRelationInGrid = isRelationInGrid;
@@ -78,28 +70,21 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPainter.DrawRelationLine(drawArgs.Graphics, drawArgs.InnerBounds, this.IsRelationToDocument, this.IsRelationInGrid, color: LineColor);
         }
-        /// <summary>
-        /// Jsme kliknut?
-        /// </summary>
-        /// <param name="textEdit"></param>
-        /// <param name="mousePoint"></param>
-        /// <returns></returns>
-        bool ITextEditOverlay.IsClicked(GTextEdit textEdit, Point mousePoint) { return false; }
     }
     /// <summary>
-    /// Přídavné vykreslení k <see cref="GTextEdit"/>, vykresluje ikonku u vztahu, vpravo
+    /// Přídavné vykreslení k <see cref="GTextEdit"/>, vykresluje ikonku v pravé části textboxu
     /// </summary>
-    public class TextEditOverlayRelationIcon : ITextEditOverlay
+    public class TextEditOverlayRightSideIcon : ITextEditOverlay
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public TextEditOverlayRelationIcon() { }
+        public TextEditOverlayRightSideIcon() { }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="isRelationToDocument"></param>
-        public TextEditOverlayRelationIcon(bool isRelationToDocument)
+        public TextEditOverlayRightSideIcon(bool isRelationToDocument)
         {
             this.IsRelationToDocument = isRelationToDocument;
         }
@@ -107,7 +92,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="image"></param>
-        public TextEditOverlayRelationIcon(Image image)
+        public TextEditOverlayRightSideIcon(Image image)
         {
             this.Image = image;
         }
@@ -130,7 +115,8 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle overlayBounds = new Rectangle(drawArgs.InnerBounds.Right - size, drawArgs.InnerBounds.Top, size, size);
             Rectangle textBounds = drawArgs.TextBounds;
             textBounds.Width = overlayBounds.X - textBounds.X;
-            drawArgs.SetOverlayBounds(overlayBounds, textBounds);
+            drawArgs.TextBounds = textBounds;
+            drawArgs.OverlayBounds = overlayBounds;
         }
         /// <summary>
         /// Vykreslení
@@ -147,17 +133,5 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 GPainter.DrawImage(drawArgs.Graphics, overlayBounds, image, 0.45f);
         }
-        /// <summary>
-        /// Jsem kliknut?
-        /// </summary>
-        /// <param name="textEdit"></param>
-        /// <param name="mousePoint"></param>
-        /// <returns></returns>
-        bool ITextEditOverlay.IsClicked(GTextEdit textEdit, Point mousePoint)
-        {
-
-            return false;
-        }
-
     }
 }

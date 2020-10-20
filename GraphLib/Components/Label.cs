@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 namespace Asol.Tools.WorkScheduler.Components
 {
     #region class GLabel : běžný label u textů
-
-    #endregion
     /// <summary>
     /// Vykreslovaný Label
     /// </summary>
@@ -77,4 +75,5 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
     }
+    #endregion
 }

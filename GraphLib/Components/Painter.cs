@@ -1918,7 +1918,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         */
         #endregion
         #region DrawImage
-/// <summary>
+        /// <summary>
         /// Vykreslí daný Image, pokud isEnabled je false, pak bude Image modifikovaný do šedé barvy
         /// </summary>
         /// <param name="graphics"></param>

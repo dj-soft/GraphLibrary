@@ -65,6 +65,10 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public ITextEditOverlay OverlayText { get { return this.Text1.OverlayText; } set { this.Text1.OverlayText = value; this.Text2.OverlayText = value; } }
         /// <summary>
+        /// Ikona vpravo
+        /// </summary>
+        public InteractiveIcon RightActiveIcon { get { return this.Text1.RightActiveIcon; } set { this.Text1.RightActiveIcon = value; this.Text2.RightActiveIcon = value; } }
+        /// <summary>
         /// Typ borderu
         /// </summary>
         public BorderStyleType BorderStyle { get { return this.Text1.BorderStyle.Value; } set { this.Text1.BorderStyle = value; this.Text2.BorderStyle = value; } }

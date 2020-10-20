@@ -56,12 +56,12 @@ namespace Asol.Tools.WorkScheduler.DataForm
 
             ITextEditOverlay[] overlays = new ITextEditOverlay[]
             {
-                new TextEditOverlayRelationLine(false, false),
-                new TextEditOverlayRelationLine(false, true),
-                new TextEditOverlayRelationLine(true, false),
-                new TextEditOverlayRelationLine(true, true),
-                new TextEditOverlayRelationIcon(false),
-                new TextEditOverlayRelationIcon(true)
+                new TextEditOverlayUnderline(false, false),
+                new TextEditOverlayUnderline(false, true),
+                new TextEditOverlayUnderline(true, false),
+                new TextEditOverlayUnderline(true, true),
+                new TextEditOverlayRightSideIcon(false),
+                new TextEditOverlayRightSideIcon(true)
             };
 
             FontModifierInfo titleFontOnFocus = new FontModifierInfo() { Bold = true, SizeRatio = 1.15f };
@@ -149,7 +149,8 @@ Souřadnice prvku: {itemX}/{itemY}";
                     if (nx == 2) item.TitleLabel.FontModifier.SizeRatio = 0.85f;
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
                     if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
-                        item.OverlayText = overlays[rand.Next(overlays.Length)];
+                        item.RightActiveIcon = (rand.Next(3) < 2 ? InteractiveIcon.RelationRecord : InteractiveIcon.RelationDocument);
+                        // item.OverlayText = overlays[rand.Next(overlays.Length)];
 
                     // Zvětšení velikosti Tabu tak, aby zobrazil i nově přidaný item:
                     bounds = item.Bounds;

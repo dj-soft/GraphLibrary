@@ -88,6 +88,7 @@
     <Compile Include="Components\FontInfo.cs" />
     <Compile Include="Components\FontManager.cs" />
     <Compile Include="Components\InteractiveFocusManager.cs" />
+    <Compile Include="Components\InteractiveIcon.cs" />
     <Compile Include="Components\TextEditOverlay.cs" />
     <Compile Include="Components\TextObject.cs" />
     <Compile Include="Components\_Tests.cs" />
