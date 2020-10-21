@@ -96,6 +96,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Ikona pro otevření složky
         /// </summary>
         public static InteractiveIcon Calendar { get { if (_Calendar == null) _Calendar = new InteractiveIcon(StandardIconType.Calendar); return _Calendar; } } private static InteractiveIcon _Calendar;
+        /// <summary>
+        /// Ikona pro DropDown
+        /// </summary>
+        public static InteractiveIcon DropDown { get { if (_DropDown == null) _DropDown = new InteractiveIcon(StandardIconType.DropDown); return _DropDown; } } private static InteractiveIcon _DropDown;
         #endregion
         #region Standardní ikony navázané na Skin
         /// <summary>
@@ -119,6 +123,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     case StandardIconType.OpenFolder: return Skin.TextBox.IconOpenFolder;
                     case StandardIconType.Calculator: return Skin.TextBox.IconCalculator;
                     case StandardIconType.Calendar: return Skin.TextBox.IconCalendar;
+                    case StandardIconType.DropDown: return Skin.TextBox.IconDropDown;
                 }
             }
             return null;
@@ -137,7 +142,8 @@ namespace Asol.Tools.WorkScheduler.Components
             RelationDocument,
             OpenFolder,
             Calculator,
-            Calendar
+            Calendar,
+            DropDown
         }
         #endregion
     }

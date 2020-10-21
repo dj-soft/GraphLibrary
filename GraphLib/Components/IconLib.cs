@@ -950,6 +950,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Standardní ikona : Kalendář
         /// </summary>
         public static Image Calendar { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_pim_calendar_24; } }
+        /// <summary>
+        /// Standardní ikona : DropDown
+        /// </summary>
+        public static Image DropDown { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_down_gray_2_24; } }
 
         /// <summary>
         /// Standardní ikona : Refresh

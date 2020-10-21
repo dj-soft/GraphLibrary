@@ -1789,6 +1789,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Ikona tlačítka Kalendář
         /// </summary>
         public Image IconCalendar { get { return this._Owner.GetValue(this._SkinSetKey, "IconCalendar", DefaultIconCalendar); } set { this._Owner.SetValue(this._SkinSetKey, "IconCalendar", value); } }
+        /// <summary>
+        /// Ikona tlačítka DropDown
+        /// </summary>
+        public Image IconDropDown { get { return this._Owner.GetValue(this._SkinSetKey, "IconDropDown", DefaultIconDropDown); } set { this._Owner.SetValue(this._SkinSetKey, "IconDropDown", value); } }
+
+        
 
 
 
@@ -1886,6 +1892,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default pro: Ikona tlačítka Kalendář
         /// </summary>
         protected virtual Image DefaultIconCalendar { get { return IconStandard.Calendar; ; } }
+        /// <summary>
+        /// Default pro: Ikona tlačítka DropDown
+        /// </summary>
+        protected virtual Image DefaultIconDropDown { get { return IconStandard.DropDown; ; } }
         #endregion
     }
     /// <summary>

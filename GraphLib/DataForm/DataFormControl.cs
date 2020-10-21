@@ -156,6 +156,7 @@ Souřadnice prvku: {itemX}/{itemY}";
                     if (nx == 4) item.RightActiveIcon = InteractiveIcon.RelationDocument;
                     if (nx == 6 && r2) item.RightActiveIcon = InteractiveIcon.Calculator;
                     if (nx == 7 && r2) item.RightActiveIcon = InteractiveIcon.OpenFolder;
+                    if (nx == 8 && r2) item.RightActiveIcon = InteractiveIcon.DropDown;
                     if (nx == 9 && r2) item.RightActiveIcon = InteractiveIcon.Calendar;
 
                     item.Text1.Tag = $"Řádek [{ny}]; Sloupec [{nx}];{ Environment.NewLine}Výchozí hodnota: \"{item.Value1}\";{Environment.NewLine}";
