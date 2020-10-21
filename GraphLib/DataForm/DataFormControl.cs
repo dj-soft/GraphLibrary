@@ -148,9 +148,14 @@ Souřadnice prvku: {itemX}/{itemY}";
                     if (nx == 2) item.TitleLabel.FontModifier.Italic = true;
                     if (nx == 2) item.TitleLabel.FontModifier.SizeRatio = 0.85f;
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
-                    if (nx == 3 || nx == 4 || nx == lastX)       // (rand.Next(10) > 6)
-                        item.RightActiveIcon = (rand.Next(3) < 2 ? InteractiveIcon.RelationRecord : InteractiveIcon.RelationDocument);
-                        // item.OverlayText = overlays[rand.Next(overlays.Length)];
+                    if (nx == 3) item.RightActiveIcon = InteractiveIcon.RelationRecord;
+                    if (nx == 4) item.RightActiveIcon = InteractiveIcon.RelationDocument;
+                    if (nx == 6) item.RightActiveIcon = InteractiveIcon.Calculator;
+                    if (nx == 7) item.RightActiveIcon = InteractiveIcon.OpenFolder;
+                    if (nx == 9) item.RightActiveIcon = InteractiveIcon.Calendar;
+
+                    item.Text1.Tag = $"Řádek [{ny}]; Sloupec [{nx}];{ Environment.NewLine}Výchozí hodnota: \"{item.Value1}\";{Environment.NewLine}";
+                    item.Text1.RightIconClick += _TextRightIconClick;
 
                     // Zvětšení velikosti Tabu tak, aby zobrazil i nově přidaný item:
                     bounds = item.Bounds;
@@ -172,6 +177,14 @@ Souřadnice prvku: {itemX}/{itemY}";
                 // Posun Y pro další Item:
                 itemY = bounds.Bottom + itemYSpace;
             }
+        }
+
+        private void _TextRightIconClick(object sender, EventArgs e)
+        {
+            GTextEdit textEdit = sender as GTextEdit;
+            string text = textEdit?.Tag as string;
+            text = $"RightIcon.Click na prvku:{Environment.NewLine}{text}Aktuální hodnota: \"{textEdit.Text}\"; ";
+            System.Windows.Forms.MessageBox.Show(text);
         }
     }
 }

@@ -263,6 +263,7 @@
     <None Include="Resources\arrow-right-red-24.png" />
     <None Include="Resources\arrow-right-violet-24.png" />
     <None Include="Resources\arrow-right-yellow-24.png" />
+    <None Include="Resources\arrow-right-darkyellow-24.png" />
     <Content Include="_UkolyProVyvoj.txt" />
     <None Include="pic\pic64\document-export_64.png" />
     <None Include="pic\pic64\document-save-5_64.png" />

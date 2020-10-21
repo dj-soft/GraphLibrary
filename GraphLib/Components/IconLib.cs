@@ -937,7 +937,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Standardní ikona : RelationDocument
         /// </summary>
-        public static Image RelationDocument { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_yellow_24; } }
+        public static Image RelationDocument { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_darkyellow_24; } }
         /// <summary>
         /// Standardní ikona : OpenFolder
         /// </summary>
