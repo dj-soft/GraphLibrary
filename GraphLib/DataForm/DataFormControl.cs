@@ -83,6 +83,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int itemYSpace = 0;
             int itemX = 0;
             int itemY = 0;
+
+            int[] textWidths = new int[] { 120, 120, 180, 140, 220, 120, 160, 100, 80, 200 };
             #endregion
 
             this.ItemsList.Clear();
@@ -91,9 +93,10 @@ namespace Asol.Tools.WorkScheduler.DataForm
             Rectangle bounds = Rectangle.Empty;
             int n = 0;
             int lastX = countX - 1;
+            int countTabY = 3;
             for (int ny = 0; ny < countY; ny++)
             {
-                if (tab == null || (ny % 3) == 0)
+                if (tab == null || (ny % countTabY) == 0)
                 {
                     tabX = tabX0;
                     tabY = (tab != null ? tab.Bounds.Bottom + tabYSpace : tabY0);
@@ -143,6 +146,7 @@ Obsah prvku: {item.Value1}
 Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {itemX}/{itemY}";
 
+                    bool r2 = ((ny % countTabY) == (countTabY - 1));
                     item.BorderStyle = BorderStyleType.Soft;
                     if (nx == 1) item.TitleLabel.FontModifier.Bold = true;
                     if (nx == 2) item.TitleLabel.FontModifier.Italic = true;
@@ -150,13 +154,21 @@ Souřadnice prvku: {itemX}/{itemY}";
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
                     if (nx == 3) item.RightActiveIcon = InteractiveIcon.RelationRecord;
                     if (nx == 4) item.RightActiveIcon = InteractiveIcon.RelationDocument;
-                    if (nx == 6) item.RightActiveIcon = InteractiveIcon.Calculator;
-                    if (nx == 7) item.RightActiveIcon = InteractiveIcon.OpenFolder;
-                    if (nx == 9) item.RightActiveIcon = InteractiveIcon.Calendar;
+                    if (nx == 6 && r2) item.RightActiveIcon = InteractiveIcon.Calculator;
+                    if (nx == 7 && r2) item.RightActiveIcon = InteractiveIcon.OpenFolder;
+                    if (nx == 9 && r2) item.RightActiveIcon = InteractiveIcon.Calendar;
 
                     item.Text1.Tag = $"Řádek [{ny}]; Sloupec [{nx}];{ Environment.NewLine}Výchozí hodnota: \"{item.Value1}\";{Environment.NewLine}";
                     item.Text1.RightIconClick += _TextRightIconClick;
                     item.Text1.TextDoubleClick += _TextDoubleClick;
+
+                    // Rozměry textu a prvku:
+                    var textBounds = item.Text1.Bounds;
+                    textBounds.Width = textWidths[nx % textWidths.Length];
+                    item.Text1.Bounds = textBounds;
+                    var itemSize = item.Size;
+                    itemSize.Width = textBounds.Right + 4;
+                    item.Size = itemSize;
 
                     // Zvětšení velikosti Tabu tak, aby zobrazil i nově přidaný item:
                     bounds = item.Bounds;
