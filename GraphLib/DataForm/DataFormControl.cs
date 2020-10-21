@@ -156,6 +156,7 @@ Souřadnice prvku: {itemX}/{itemY}";
 
                     item.Text1.Tag = $"Řádek [{ny}]; Sloupec [{nx}];{ Environment.NewLine}Výchozí hodnota: \"{item.Value1}\";{Environment.NewLine}";
                     item.Text1.RightIconClick += _TextRightIconClick;
+                    item.Text1.TextDoubleClick += _TextDoubleClick;
 
                     // Zvětšení velikosti Tabu tak, aby zobrazil i nově přidaný item:
                     bounds = item.Bounds;
@@ -178,13 +179,20 @@ Souřadnice prvku: {itemX}/{itemY}";
                 itemY = bounds.Bottom + itemYSpace;
             }
         }
-
-        private void _TextRightIconClick(object sender, EventArgs e)
+        private void _TextRightIconClick(object sender, GInteractiveChangeStateArgs e)
         {
             GTextEdit textEdit = sender as GTextEdit;
             string text = textEdit?.Tag as string;
             text = $"RightIcon.Click na prvku:{Environment.NewLine}{text}Aktuální hodnota: \"{textEdit.Text}\"; ";
-            System.Windows.Forms.MessageBox.Show(text);
+            System.Windows.Forms.MessageBox.Show(text, "RightIconClick", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void _TextDoubleClick(object sender, GInteractiveChangeStateArgs e)
+        {
+            GTextEdit textEdit = sender as GTextEdit;
+            string text = textEdit?.Tag as string;
+            text = $"Text.DoubleClick na prvku:{Environment.NewLine}{text}Aktuální hodnota: \"{textEdit.Text}\"; ";
+            System.Windows.Forms.MessageBox.Show(text, "TextDoubleClick", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

@@ -83,8 +83,9 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedMouseLeftDown(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeftDown(e);
-            if (!IsRightIconClicked(e) && !IsOverlayTextClicked(e))
-                EditorState.EventMouseLeftDown(e);
+            if (IsRightIconClicked(e)) OnRightIconClick(e);          // Kliknutí na Right ikonu
+            else if (IsOverlayTextClicked(e)) OnOverlayTextClick(e); // nebo kliknutí na OverlayText
+            else EditorState.EventMouseLeftDown(e);                  // jinak jde o kliknutí do textového políčka
         }
         /// <summary>
         /// Po levém double-kliknutí
@@ -93,6 +94,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftDoubleClick(e);
+            // DoubleClick se nevolá, když se klikne na aktivní prvky (Right ikonu nebo OverlayText), tam se volá prostý klik (a ten už proběhl při MouseLeftDown):
+            bool isOnActiveItems = (IsRightIconClicked(e) || IsOverlayTextClicked(e));
+            if (!isOnActiveItems)
+                OnTextDoubleClick(e);
         }
         /// <summary>
         /// Při pohybu myši
@@ -398,17 +403,15 @@ namespace Asol.Tools.WorkScheduler.Components
             RightActiveIcon.DrawIcon(drawArgs.Graphics, drawArgs.RightIconBounds.Value, this.InteractiveState, asShadow);
         }
         /// <summary>
-        /// Detekuje, zda bylo kliknuto na ikonu vpravo <see cref="RightActiveIcon"/> = do prostoru <see cref="RightIconBounds"/>
+        /// Detekuje, zda bylo kliknuto na ikonu vpravo <see cref="RightActiveIcon"/> = do prostoru <see cref="RightIconBounds"/>, vrací true / false. 
+        /// Nevyvolává <see cref="OnRightIconClick"/>!
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
         protected virtual bool IsRightIconClicked(GInteractiveChangeStateArgs e)
         {
             if (RightActiveIcon == null || !RightIconBounds.HasValue) return false;
-            bool isClickedInBounds = RightIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
-            if (isClickedInBounds)
-                OnRightIconClick();
-            return isClickedInBounds;
+            return RightIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
         }
         /// <summary>
         /// Prostor klikací ikony vpravo
@@ -439,7 +442,8 @@ namespace Asol.Tools.WorkScheduler.Components
             overlay?.DrawOverlay(drawArgs);
         }
         /// <summary>
-        /// Detekuje, zda bylo kliknuto na overlay <see cref="OverlayText"/> = do prostoru <see cref="OverlayTextBounds"/>
+        /// Detekuje, zda bylo kliknuto na overlay <see cref="OverlayText"/> = do prostoru <see cref="OverlayTextBounds"/>, vrací true / false. 
+        /// Nevyvolává <see cref="OnOverlayTextClick"/>!
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
@@ -447,10 +451,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             var overlayText = OverlayText;
             if (overlayText == null || !OverlayTextBounds.HasValue) return false;
-            bool isClickedInBounds = OverlayTextBounds.Value.Contains(e.MouseAbsolutePoint.Value);
-            if (isClickedInBounds)
-                OnOverlayTextClick();
-            return isClickedInBounds;
+            return OverlayTextBounds.Value.Contains(e.MouseAbsolutePoint.Value);
         }
         #endregion
         #region Analýza textu a fontu na pozice znaků
@@ -933,16 +934,22 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool IsRequiredValue { get { return _IsRequiredValue; } set { _IsRequiredValue = value; Invalidate(); } } private bool _IsRequiredValue;
         #endregion
         #region Public eventy
-        protected virtual void OnRightIconClick()
+        protected virtual void OnRightIconClick(GInteractiveChangeStateArgs args)
         {
-            RightIconClick?.Invoke(this, EventArgs.Empty);
+            RightIconClick?.Invoke(this, args);
         }
-        public event EventHandler RightIconClick;
-        protected virtual void OnOverlayTextClick()
+        public event GInteractiveChangeStateHandler RightIconClick;
+        protected virtual void OnOverlayTextClick(GInteractiveChangeStateArgs args)
         {
-            OverlayTextClick?.Invoke(this, EventArgs.Empty);
+            OverlayTextClick?.Invoke(this, args);
         }
-        public event EventHandler OverlayTextClick;
+        public event GInteractiveChangeStateHandler OverlayTextClick;
+
+        protected virtual void OnTextDoubleClick(GInteractiveChangeStateArgs args)
+        {
+            TextDoubleClick?.Invoke(this, args);
+        }
+        public event GInteractiveChangeStateHandler TextDoubleClick;
         #endregion
         #region Text, Value a DataBinding (napojení na data)
         /// <summary>

@@ -945,7 +945,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Standardní ikona : Kalkulačka
         /// </summary>
-        public static Image Calculator { get { return Asol.Tools.WorkScheduler.Properties.Resources.accessories_calculator_2_24; } }
+        public static Image Calculator { get { return Asol.Tools.WorkScheduler.Properties.Resources.accessories_calculator_3_24; } }
         /// <summary>
         /// Standardní ikona : Kalendář
         /// </summary>
