@@ -88,6 +88,21 @@ namespace Asol.Tools.WorkScheduler.Components
             return icon;
         }
         private static InteractiveIcon _RelationDocument;
+
+        /// <summary>
+        /// Ikona pro otevření složky
+        /// </summary>
+        public static InteractiveIcon OpenFolder { get { if (_OpenFolder == null) _OpenFolder = _CreateOpenFolder(); return _OpenFolder; } }
+        private static InteractiveIcon _CreateOpenFolder()
+        {
+            InteractiveIcon icon = new InteractiveIcon()
+            {
+                ImageStandard = Skin.TextBox.IconRelationDocument
+            };
+            return icon;
+        }
+        private static InteractiveIcon _OpenFolder;
+
         #endregion
     }
 }

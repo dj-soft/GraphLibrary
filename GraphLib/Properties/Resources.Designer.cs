@@ -63,6 +63,26 @@ namespace Asol.Tools.WorkScheduler.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap accessories_calculator_2_24 {
+            get {
+                object obj = ResourceManager.GetObject("accessories_calculator_2_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap accessories_date_24 {
+            get {
+                object obj = ResourceManager.GetObject("accessories_date_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap arrow_down_2 {
             get {
                 object obj = ResourceManager.GetObject("arrow_down_2", resourceCulture);
@@ -113,9 +133,89 @@ namespace Asol.Tools.WorkScheduler.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_blue_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_blue_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_cyan_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_cyan_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap arrow_right_double_2 {
             get {
                 object obj = ResourceManager.GetObject("arrow_right_double_2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_gray_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_gray_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_green_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_green_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_lightgray_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_lightgray_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_red_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_red_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_violet_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_violet_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap arrow_right_yellow_24 {
+            get {
+                object obj = ResourceManager.GetObject("arrow_right_yellow_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -336,6 +436,16 @@ namespace Asol.Tools.WorkScheduler.Properties {
         internal static System.Drawing.Bitmap document_export_64 {
             get {
                 object obj = ResourceManager.GetObject("document_export_64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap document_open_2_24 {
+            get {
+                object obj = ResourceManager.GetObject("document_open_2_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -1836,6 +1946,16 @@ namespace Asol.Tools.WorkScheduler.Properties {
         internal static System.Drawing.Bitmap view_media_visualization_64 {
             get {
                 object obj = ResourceManager.GetObject("view_media_visualization_64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap view_pim_calendar_24 {
+            get {
+                object obj = ResourceManager.GetObject("view_pim_calendar_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

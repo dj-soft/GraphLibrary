@@ -933,11 +933,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Standardní ikona : RelationRecord
         /// </summary>
-        public static Image RelationRecord { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_2; } }
+        public static Image RelationRecord { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_blue_24; } }
         /// <summary>
         /// Standardní ikona : RelationDocument
         /// </summary>
-        public static Image RelationDocument { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_double_2; } }
+        public static Image RelationDocument { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_right_yellow_24; } }
+        /// <summary>
+        /// Standardní ikona : OpenFolder
+        /// </summary>
+        public static Image OpenFolder { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_open_2_24; } }
+        /// <summary>
+        /// Standardní ikona : Kalkulačka
+        /// </summary>
+        public static Image Calculator { get { return Asol.Tools.WorkScheduler.Properties.Resources.accessories_calculator_2_24; } }
+        /// <summary>
+        /// Standardní ikona : Kalendář
+        /// </summary>
+        public static Image Calendar { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_pim_calendar_24; } }
 
         /// <summary>
         /// Standardní ikona : Refresh

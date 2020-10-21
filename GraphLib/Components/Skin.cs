@@ -1776,6 +1776,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Ikona tlačítka vztahu na dokument
         /// </summary>
         public Image IconRelationDocument { get { return this._Owner.GetValue(this._SkinSetKey, "IconRelationDocument", DefaultIconRelationDocument); } set { this._Owner.SetValue(this._SkinSetKey, "IconRelationDocument", value); } }
+
+        /// <summary>
+        /// Ikona tlačítka Otevření složky
+        /// </summary>
+        public Image IconOpenFolder { get { return this._Owner.GetValue(this._SkinSetKey, "IconOpenFolder", DefaultIconOpenFolder); } set { this._Owner.SetValue(this._SkinSetKey, "IconOpenFolder", value); } }
+        /// <summary>
+        /// Ikona tlačítka Kalkulačka
+        /// </summary>
+        public Image IconCalculator { get { return this._Owner.GetValue(this._SkinSetKey, "IconCalculator", DefaultIconCalculator); } set { this._Owner.SetValue(this._SkinSetKey, "IconCalculator", value); } }
+        /// <summary>
+        /// Ikona tlačítka Kalendář
+        /// </summary>
+        public Image IconCalendar { get { return this._Owner.GetValue(this._SkinSetKey, "IconCalendar", DefaultIconCalendar); } set { this._Owner.SetValue(this._SkinSetKey, "IconCalendar", value); } }
+
+
+
         #endregion
         #region Default values
         /// <summary>
@@ -1858,6 +1874,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Default pro: Ikona tlačítka vztahu na dokument
         /// </summary>
         protected virtual Image DefaultIconRelationDocument { get { return IconStandard.RelationDocument; ; } }
+        /// <summary>
+        /// Default pro: Ikona tlačítka Otevření složky
+        /// </summary>
+        protected virtual Image DefaultIconOpenFolder { get { return IconStandard.OpenFolder; ; } }
+        /// <summary>
+        /// Default pro: Ikona tlačítka Kalkulačka
+        /// </summary>
+        protected virtual Image DefaultIconCalculator { get { return IconStandard.Calculator; ; } }
+        /// <summary>
+        /// Default pro: Ikona tlačítka Kalendář
+        /// </summary>
+        protected virtual Image DefaultIconCalendar { get { return IconStandard.Calendar; ; } }
         #endregion
     }
     /// <summary>
