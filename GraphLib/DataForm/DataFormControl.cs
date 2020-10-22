@@ -159,6 +159,7 @@ Souřadnice prvku: {itemX}/{itemY}";
                     if (nx == 7 && r2) item.RightActiveIcon = InteractiveIcon.OpenFolder;
                     if (nx == 8 && r2) item.RightActiveIcon = InteractiveIcon.DropDown;
                     if (nx == 9 && r2) item.RightActiveIcon = InteractiveIcon.Calendar;
+                    if (nx == 2 && r2) item.Text1.PasswordChar = '×';
 
                     item.Text1.Tag = $"Řádek [{ny}]; Sloupec [{nx}];{ Environment.NewLine}Výchozí hodnota: \"{item.Value1}\";{Environment.NewLine}";
                     item.Text1.RightIconClick += _TextRightIconClick;

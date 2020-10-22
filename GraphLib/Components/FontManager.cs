@@ -400,6 +400,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 float paramLineHeightRatio = (parameters?.LineHeightRatio ?? 0f);
                 float paramLineHeightAdd = (parameters?.LineHeightAdd ?? 0f);
                 bool wrapWord = (parameters?.WrapWord ?? false);
+                bool hasPasswordChar = (parameters?.PasswordChar.HasValue ?? false);
+                string passwordChar = (parameters?.PasswordChar.Value ?? ' ').ToString();
 
                 int originX = origin.X;
                 float right = (paramWidth > 0f ? (originX + paramWidth) : 0);
@@ -414,7 +416,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int length = text?.Length ?? 0;
                 if (length == 0)
                 {
-                    characters = new CharPositionInfo[] { new CharPositionInfo("", 0, 0, 0, null, new Rectangle(origin.X, origin.Y, 1, fontHeight)) };
+                    characters = new CharPositionInfo[] { new CharPositionInfo("", "", 0, 0, 0, null, new Rectangle(origin.X, origin.Y, 1, fontHeight)) };
                     // Vytvořit řádky? Vytvoříme => jeden řádek pro pole obsahující jeden znak:
                     if (parameters.CreateLineInfo)
                         LinePositionInfo.CreateLine(characters);
@@ -448,7 +450,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         locationX = currentX;
 
                         // Uložíme CRLF jako poslední znak v řádku, a jdeme dál, na novém řádku, od pozice 0:
-                        characters[targetIndex] = new CharPositionInfo(currChar, targetIndex, rowIndex, charIndex, null, textBounds);
+                        characters[targetIndex] = new CharPositionInfo(currChar, currChar, targetIndex, rowIndex, charIndex, null, textBounds);
                         rowIndex++;
                         charIndex = 0;
 
@@ -710,14 +712,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="textVisible"></param>
         /// <param name="index"></param>
         /// <param name="rowIndex"></param>
         /// <param name="charIndex"></param>
         /// <param name="textLocation"></param>
         /// <param name="textBounds"></param>
-        public CharPositionInfo(string text, int index, int rowIndex, int charIndex, PointF? textLocation, Rectangle textBounds)
+        public CharPositionInfo(string text, string textVisible, int index, int rowIndex, int charIndex, PointF? textLocation, Rectangle textBounds)
         {
             this.Text = text;
+            this.TextVisible = textVisible;
             this.Index = index;
             this.RowIndex = rowIndex;
             this.CharIndex = charIndex;
@@ -777,6 +781,15 @@ namespace Asol.Tools.WorkScheduler.Components
             return result;
         }
         /// <summary>
+        /// Z this znaku odebere referenci na <see cref="Line"/>, a tento objekt zruší.
+        /// </summary>
+        public void RemoveLine()
+        {
+            var line = this._Line;
+            if (line != null) line.RemoveLine();
+            this._Line = null;
+        }
+        /// <summary>
         /// Z kolekce znaků vrátí čistý text
         /// </summary>
         /// <param name="positions"></param>
@@ -798,9 +811,14 @@ namespace Asol.Tools.WorkScheduler.Components
             return $"Text: '{Text}'; Row: [{RowIndex}]; Char: [{CharIndex}]; Location: {TextLocation}; Bounds: {TextBounds}";
         }
         /// <summary>
-        /// Text znaku
+        /// Text znaku - datový (reálně ukládaný)
         /// </summary>
         public string Text { get; private set; }
+        /// <summary>
+        /// Text znaku zobrazovaný. 
+        /// Od <see cref="Text"/> se liší tehdy, když se zobrazuje <see cref="GTextEdit.PasswordChar"/>.
+        /// </summary>
+        public string TextVisible { get; private set; } xxx;
         /// <summary>
         /// Znak. Pokud <see cref="Text"/> je null nebo délky 0, pak je zde char(0). Jinak je zde první znak textu. V případě oddělovače řádků (CrLf) tedy CR.
         /// </summary>
@@ -941,7 +959,7 @@ namespace Asol.Tools.WorkScheduler.Components
     internal interface IFontPositionInfo
     {
         /// <summary>
-        /// Reference na instanci řádku
+        /// Reference na instanci řádku, lze ji i setovat
         /// </summary>
         LinePositionInfo Line { get; set; }
     }
@@ -1006,6 +1024,15 @@ namespace Asol.Tools.WorkScheduler.Components
             prevLine = this;
         }
         /// <summary>
+        /// Z this instance odebere všechny reference na okolní instance.
+        /// </summary>
+        public void RemoveLine()
+        {
+            this.PrevLine = null;
+            this.Characters = null;
+            this.NextLine = null;
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -1020,6 +1047,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public int RowIndex { get; private set; }
         /// <summary>
         /// Pole znaků v řádku. Nikdy není null, vždy obsahuje alespoň jeden prvek.
+        /// Pozor: po rozpuštění řádku metodou <see cref="RemoveLine"/> je null, ale po této metodě se instance celá zahazuje a není odkud ji používat.
         /// </summary>
         public CharPositionInfo[] Characters { get; private set; }
         /// <summary>
@@ -1143,6 +1171,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Point? Origin { get; set; }
         /// <summary>
+        /// Zástupný znak pro zobrazování hesla, null = default = běžné zobrazení
+        /// </summary>
+        public char? PasswordChar { get; set; }
+        /// <summary>
         /// Povoluje se dělení vstupního textu na řádky.
         /// Default = false : celý vstupní text je povinně umístěn do jedné řádky, i kdyby obsahoval CrLf, i kdyby byla zadána šířka <see cref="Width"/> a požadováno <see cref="WrapWord"/>. 
         /// Namísto znaku CrLf bude zobrazena mezera.
@@ -1169,7 +1201,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public float? LineHeightAdd { get; set; }
         /// <summary>
         /// Vygenerovat i objekty <see cref="LinePositionInfo"/> pro celé řádky textu.
-        /// Pokud bude true, bude vytvořena instance <see cref="LinePositionInfo"/> pro každý jeden řádek, a reference na tento objekt bude uložena do <see cref="CharPositionInfo.Line"/>
+        /// Pokud bude true, bude vytvořena instance <see cref="LinePositionInfo"/> pro každý jeden řádek, a reference na tento objekt bude uložena do <see cref="CharPositionInfo.Line"/>.
+        /// Pokud bude false, objekty <see cref="LinePositionInfo"/> se nebudou vytvářet (úspora paměti).
         /// </summary>
         public bool CreateLineInfo { get; set; }
     }

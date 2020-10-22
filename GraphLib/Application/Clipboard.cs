@@ -23,7 +23,7 @@ namespace Asol.Tools.WorkScheduler
         }
         public static void SetText(string text)
         {
-            App.TryRun(() => System.Windows.Forms.Clipboard.SetText(text), true);
+            App.TryRun(() => { System.Windows.Forms.Clipboard.Clear(); System.Windows.Forms.Clipboard.SetText(text); }, true);
         }
         public static bool ContainsFileDropList()
         {

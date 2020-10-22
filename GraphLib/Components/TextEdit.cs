@@ -57,6 +57,7 @@ namespace Asol.Tools.WorkScheduler.Components
             EditorState.EventFocusLeave(e);
             OnReleaseEditor();
             OnEditorEnds();
+
         }
         /// <summary>
         /// Test klávesy
@@ -512,11 +513,13 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             string text = Text;
             FontInfo currentFont = CurrentFont;
+            bool isPasswordActive = IsPasswordActive;
             bool multiline = Multiline;
             bool wordWrap = WordWrap;
             int? width = (wordWrap ? (int?)drawArgs.TextBounds.Width : (int?)null);
             Rectangle visibleBounds = new Rectangle(Point.Empty, drawArgs.TextBounds.Size);
-            FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(0, 0), Multiline = multiline, Width = width, WrapWord = true, CreateLineInfo = forEditing };
+            char? passwordChar = (isPasswordActive ? PasswordChar : (char?)null);
+            FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(0, 0), Multiline = multiline, Width = width, WrapWord = true, PasswordChar = passwordChar, CreateLineInfo = forEditing };
             var characters = FontManagerInfo.GetCharInfo(text, drawArgs.Graphics, currentFont.Font, parameters);
             if (!forEditing)
             {   // Pokud připravujeme data jen pro kreslení a ne pro editaci, pak si uschováme pouze souřadnice VIDITELNÝCH znaků:
@@ -526,9 +529,10 @@ namespace Asol.Tools.WorkScheduler.Components
             _AnalysedText = text;
             _AnalysedFontKey = currentFont.Key;
             _AnalysedVisibleBounds = visibleBounds;
+            _AnalysedTextWidth = width ?? 0;
+            _AnalysedIsPasswordActive = isPasswordActive;
             _AnalysedMultiline = multiline;
             _AnalysedWordWrap = wordWrap;
-            _AnalysedTextWidth = width ?? 0;
             _AnalysedForEditing = forEditing;
         }
         /// <summary>
@@ -540,6 +544,7 @@ namespace Asol.Tools.WorkScheduler.Components
                    String.Equals(Text, _AnalysedText, StringComparison.InvariantCulture) &&
                    String.Equals(CurrentFont.Key, _AnalysedFontKey, StringComparison.InvariantCulture) &&
                    forEditing == _AnalysedForEditing &&
+                   IsPasswordActive == _AnalysedIsPasswordActive &&
                    Multiline == _AnalysedMultiline &&
                    WordWrap == _AnalysedWordWrap &&
                    (WordWrap ? drawArgs.TextBounds.Width == _AnalysedTextWidth : true));
@@ -549,8 +554,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void OnEditorEnds()
         {
+            if (IsPasswordProtect && IsPasswordVisible) IsPasswordVisible = false;                      // Provede mj. invalidaci => znovuvykreslení
             Rectangle visibleBounds = _AnalysedVisibleBounds;
-            _CharPositions = _CharPositions.Where(c => c.IsVisibleInBounds(visibleBounds)).ToArray();
+            _CharPositions.ForEachItem(c => c.RemoveLine());                                            // Zrušit instance řádků včetně všech referencí
+            _CharPositions = _CharPositions.Where(c => c.IsVisibleInBounds(visibleBounds)).ToArray();   // Ponecháme si jen viditelné znaky
             _AnalysedForEditing = false;
         }
         /// <summary>
@@ -575,21 +582,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private Rectangle _AnalysedVisibleBounds;
         /// <summary>
-        /// Hodnota <see cref="Multiline"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
-        /// </summary>
-        private bool _AnalysedMultiline;
-        /// <summary>
-        /// Hodnota <see cref="WordWrap"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
-        /// </summary>
-        private bool _AnalysedWordWrap;
-        /// <summary>
         /// Hodnota <see cref="GTextEditDrawArgs.TextBounds"/>.Width, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
         /// </summary>
         private int _AnalysedTextWidth;
         /// <summary>
+        /// Hodnota <see cref="IsPasswordActive"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private bool _AnalysedIsPasswordActive { get { return Properties.GetBitValue(BitAnalysedIsPasswordActive); } set { Properties.SetBitValue(BitAnalysedIsPasswordActive, value); } }
+        /// <summary>
+        /// Hodnota <see cref="Multiline"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private bool _AnalysedMultiline { get { return Properties.GetBitValue(BitAnalysedMultiline); } set { Properties.SetBitValue(BitAnalysedMultiline, value); } }
+        /// <summary>
+        /// Hodnota <see cref="WordWrap"/>, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// </summary>
+        private bool _AnalysedWordWrap { get { return Properties.GetBitValue(BitAnalysedWordWrap); } set { Properties.SetBitValue(BitAnalysedWordWrap, value); } }
+        /// <summary>
         /// Analyzovaný text je pro editaci?
         /// </summary>
-        private bool _AnalysedForEditing;
+        private bool _AnalysedForEditing { get { return Properties.GetBitValue(BitAnalysedForEditing); } set { Properties.SetBitValue(BitAnalysedForEditing, value); } }
         #endregion
         #region Public vlastnosti definující vzhled (Color, Border, Font)
         /// <summary>
@@ -861,7 +872,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
         /// </summary>
         public bool TabStop { get { return this.Is.TabStop; } set { this.Is.TabStop = value; } }
-          /// <summary>
+        /// <summary>
+        /// Zástupný znak pro zobrazování hesla, null = default = běžné zobrazení.
+        /// Hodnota může být zadaná trvale, a poté lze pomocí vlastnosti <see cref="IsPasswordVisible"/> na true nastavit, že heslo bude viditelné (typicky pomocí RightIcon)
+        /// </summary>
+        public char? PasswordChar { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud this TextBox je v režimu Password (pak je omezeno kopírování do schránky)
+        /// </summary>
+        protected bool IsPasswordProtect { get { return (PasswordChar.HasValue); } }
+        /// <summary>
+        /// Obsahuje true, pokud this TextBox aktuálně zobrazuje znaky PasswordChar (tj. jsou zadané, a nejsou potlačené)
+        /// </summary>
+        protected bool IsPasswordActive { get { return (IsPasswordProtect && !IsPasswordVisible); } }
+        /// <summary>
         /// Rozsah vybraného (označeného) textu. Může být NULL.
         /// Pokud zobrazený text má 4 znaky "0123", a <see cref="SelectionRange"/> = { Begin: 1; End: 3; }, pak jsou označeny znaky "12".
         /// Pokud zobrazený text má 4 znaky "0123", a <see cref="SelectionRange"/> = { Begin: 0; End: 4; }, pak jsou označeny znaky "0123".
@@ -970,6 +994,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool IsRequiredValue { get { return Properties.GetBitValue(BitIsRequiredValue); } set { Properties.SetBitValue(BitIsRequiredValue, value); Invalidate(); } }
         /// <summary>
+        /// Nastavením na true lze provést zobrazení čitelného hesla, pokud je zadán znak <see cref="PasswordChar"/>.
+        /// Výchozí hodnota je false = pokud je zadán znak <see cref="PasswordChar"/>, pak je heslo nečitelné.
+        /// Při odchodu focusu z tohoto textboxu je <see cref="IsPasswordVisible"/> nastaveno na false.
+        /// </summary>
+        public bool IsPasswordVisible { get { return Properties.GetBitValue(BitIsPasswordVisible); } set { Properties.SetBitValue(BitIsPasswordVisible, value); Invalidate(); } }
+        /// <summary>
         /// Označit (selectovat) celý obsah textu po příchodu focusu do prvku? Platí i pro příchod myším kliknutím.
         /// Při čtení má vždy hodnotu. 
         /// Setovat lze null, pak bude čtena hodnota defaultní (to je výchozí stav) = <see cref="Settings.TextBoxSelectAll"/>.
@@ -984,6 +1014,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
 
+
         #endregion
         #region BitStorage Properties a hodnoty bitů
         /// <summary>Bit pro hodnotu Multiline</summary>
@@ -996,6 +1027,18 @@ namespace Asol.Tools.WorkScheduler.Components
         protected const UInt32 BitAlignmentCenter = 0x00000010;
         /// <summary>Bit pro hodnotu Alignment = Right</summary>
         protected const UInt32 BitAlignmentRight = 0x00000020;
+        /// <summary>Bit pro hodnotu IsPasswordVisible</summary>
+        protected const UInt32 BitIsPasswordVisible = 0x00000100;
+
+        /// <summary>Bit pro hodnotu _AnalysedIsPasswordActive</summary>
+        protected const UInt32 BitAnalysedIsPasswordActive = 0x00010000;
+        /// <summary>Bit pro hodnotu _AnalysedMultiline</summary>
+        protected const UInt32 BitAnalysedMultiline = 0x00020000;
+        /// <summary>Bit pro hodnotu _AnalysedWordWrap</summary>
+        protected const UInt32 BitAnalysedWordWrap = 0x00040000;
+        /// <summary>Bit pro hodnotu _AnalysedForEditing</summary>
+        protected const UInt32 BitAnalysedForEditing = 0x00080000;
+
         /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllText"/></summary>
         protected const UInt32 BitSelectAllText = 0x02000000;
         /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllTextExplicit"/></summary>
@@ -1304,6 +1347,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true pokud daný text lze editovat, false pokud je Disabled nebo ReadOnly.
         /// </summary>
         protected bool IsEditable { get { return (!_Owner.ReadOnly && _Owner.Enabled); } }
+        /// <summary>
+        /// Obsahuje true, pokud this TextBox je v režimu Password (pak je omezeno kopírování do schránky)
+        /// </summary>
+        protected bool IsPasswordProtect { get { return (_Owner.PasswordChar.HasValue); } }
+        /// <summary>
+        /// Obsahuje true, pokud this TextBox aktuálně zobrazuje znaky PasswordChar (tj. jsou zadané, a nejsou potlačené)
+        /// </summary>
+        protected bool IsPasswordActive { get { return (IsPasswordProtect && !_Owner.IsPasswordVisible); } }
         /// <summary>
         /// Data určená k perzistenci po dobu mimo editace TextBoxu, k restorování nové instance <see cref="TextEditorController"/> do předchozího stavu.
         /// Má jít o malý balíček dat.
@@ -2231,6 +2282,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void ClipboardCopy()
         {
+            if (IsPasswordProtect) return;                 // Pokud reprezentuji heslo, pak jej nelze kopírovat
             string text = SelectedText;
             if (text.Length > 0) WinClipboard.SetText(text);
         }
@@ -2239,6 +2291,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void ClipboardCut()
         {
+            if (IsPasswordProtect) return;                 // Pokud reprezentuji heslo, pak jej nelze kopírovat
             string text = SelectedText;
             if (text.Length > 0)
             {
