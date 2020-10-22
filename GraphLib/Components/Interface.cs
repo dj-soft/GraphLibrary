@@ -475,7 +475,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Defaultně = true, lze vypnout.
         /// </summary>
         public bool AutoScrollToShow { get { return this.GetBitValue((uint)Bit.AutoScrollToShow); } set { this.SetBitValue((uint)Bit.AutoScrollToShow, value); } }
-        
 
         /// <summary>
         /// Tento prvek je aktuálně cílem v procesu Drag and Move.
@@ -483,16 +482,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek na tuto hodnotu může reagovat zvýrazněním vykreslení.
         /// </summary>
         public bool ActiveTarget { get { return this.GetBitValue((uint)Bit.ActiveTarget); } set { this.SetBitValue((uint)Bit.ActiveTarget, value); } }
-
-        /// <summary>
-        /// SelectAllText: označit celý text po příchodu focusu do prvku
-        /// </summary>
-        public bool SelectAllText { get { return this.GetBitValue((uint)Bit.SelectAllText); } set { this.SetBitValue((uint)Bit.SelectAllText, value); } }
-        /// <summary>
-        /// SelectAllTextExplicit: pokud je true, pak se akceptuje hodnota <see cref="SelectAllText"/>.
-        /// Pokud je false, pak není zadána explicitní hodnota, použije se defaultní.
-        /// </summary>
-        public bool SelectAllTextExplicit { get { return this.GetBitValue((uint)Bit.SelectAllTextExplicit); } set { this.SetBitValue((uint)Bit.SelectAllTextExplicit, value); } }
 
         #endregion
         #region Enum Bit a jeho defaultní hodnoty
@@ -554,10 +543,10 @@ namespace Asol.Tools.WorkScheduler.Components
             ActiveTarget = 0x00800000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="OnPhysicalBounds"/></summary>
             OnPhysicalBounds = 0x01000000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllText"/></summary>
-            SelectAllText = 0x02000000,
-            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllTextExplicit"/></summary>
-            SelectAllTextExplicit = 0x04000000,
+            /// <summary>nevyužito</summary>
+            Void6 = 0x02000000,
+            /// <summary>nevyužito</summary>
+            Void7 = 0x04000000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="AutoScrollToShow"/></summary>
             AutoScrollToShow = 0x08000000,
             /// <summary>nevyužito</summary>

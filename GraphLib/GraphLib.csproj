@@ -266,6 +266,7 @@
     <None Include="Resources\arrow-right-darkyellow-24.png" />
     <None Include="Resources\accessories-calculator-3-24.png" />
     <None Include="Resources\arrow-down-gray-2-24.png" />
+    <None Include="Resources\arrow-dropdown-gray-2-24.png" />
     <Content Include="_UkolyProVyvoj.txt" />
     <None Include="pic\pic64\document-export_64.png" />
     <None Include="pic\pic64\document-save-5_64.png" />

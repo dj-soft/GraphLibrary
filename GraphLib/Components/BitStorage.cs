@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí true / false pro daný bit
         /// </summary>
         /// <param name="mask">Bit mask (for example: 0x02000 = bit 13)</param>
-        /// <param name="getMethod">Metoda, která vrací reálnou hodnotu ovlivněnou konkrétním stavem aplikace. Jako vstup dostává bse hodnotu.</param>
+        /// <param name="getMethod">Metoda, která vrací reálnou hodnotu ovlivněnou konkrétním stavem aplikace. Jako vstup dostává base hodnotu.</param>
         /// <returns></returns>
         public bool GetBitValue(UInt32 mask, Func<bool, bool> getMethod)
         {

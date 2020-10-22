@@ -10,6 +10,15 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    //    Co dalšího dodělat?
+    //  1. Pohyb kurzoru => detekce kurzoru mimo viditelnou oblast => nastavení Shiftu pro automatický posun obsahu
+    //  2. Alignment
+    //  3. PasswordChar
+    //  4. Napojení Text <=> Value <=> DataTable / Array
+    //  5. Umožnit jednotlivé znaky textu podtrhávat / barevně odlišit
+    //  6. Otestovat MultiLine, doplnit MultiLine SelectBounds
+
+
     /// <summary>
     /// GTextEdit (=TextBox)
     /// </summary>
@@ -88,6 +97,25 @@ namespace Asol.Tools.WorkScheduler.Components
             else EditorState.EventMouseLeftDown(e);                  // jinak jde o kliknutí do textového políčka
         }
         /// <summary>
+        /// Při pohybu myši: může řídit označování výběru pomocí myši
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseOver(e);
+            if (this.HasEditorState && e.MouseButtons == MouseButtons.Left)
+                EditorState.EventMouseLeftOver(e);
+        }
+        /// <summary>
+        /// Při zvednutí myši: ukončí označování výběru pomocí myši
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseLeftUp(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseLeftUp(e);
+            EditorState.EventMouseLeftUp(e);
+        }
+        /// <summary>
         /// Po levém double-kliknutí
         /// </summary>
         /// <param name="e"></param>
@@ -98,18 +126,6 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isOnActiveItems = (IsRightIconClicked(e) || IsOverlayTextClicked(e));
             if (!isOnActiveItems)
                 OnTextDoubleClick(e);
-        }
-        /// <summary>
-        /// Při pohybu myši
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChangedMouseOver(e);
-            if (CurrentMouseButtonIsLeft)
-            {
-
-            }
         }
         #endregion
         #region EditorState : Instance editoru
@@ -219,14 +235,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Rectangle GetInnerBounds(Rectangle bounds)
         {
-            switch (this.BorderStyle.Value)
+            int width = BorderWidth;
+            return (width <= 0 ? bounds : bounds.Enlarge(-width));
+        }
+        /// <summary>
+        /// Šířka jednoho okraje Border podle stylu <see cref="BorderStyle"/>
+        /// </summary>
+        protected int BorderWidth
+        {
+            get
             {
-                case BorderStyleType.None: return bounds;
-                case BorderStyleType.Flat:
-                case BorderStyleType.Effect3D: return bounds.Enlarge(-1);
-                case BorderStyleType.Soft: return bounds.Enlarge(-2);
+                switch (this.BorderStyle.Value)
+                {
+                    case BorderStyleType.None: return 0;
+                    case BorderStyleType.Flat:
+                    case BorderStyleType.Effect3D: return 1;
+                    case BorderStyleType.Soft: return 2;
+                }
+                return 0;
             }
-            return bounds;
         }
         /// <summary>
         /// Vykreslí pozadí
@@ -290,7 +317,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Color? backColorSel = BackColorSelectedText;
             Color? fontColorStd = CurrentTextColor;
             Color? fontColorSel = TextColorSelectedText;
-            ContentAlignment alignment = this.Alignment;
+            HorizontalAlignment alignment = this.Alignment;
             if (HasFocus && HasEditorState)
             {   // S Focusem a editorem: 
                 CheckCharPositions(drawArgs, true);                            // Provedu před GraphicsClip(), aby měření fontu nebylo omezeno
@@ -456,9 +483,14 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Analýza textu a fontu na pozice znaků
         /// <summary>
-        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextMargin"/> a bez borderu <see cref="borde"/>
+        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextMargin"/> a bez borderu <see cref="BorderStyle"/>
         /// </summary>
         public int TextLineHeight { get { return FontManagerInfo.GetFontHeight(this.CurrentFont); } }
+        /// <summary>
+        /// Optimální výška textboxu pro správné zobrazení jednořádkového textu.
+        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextMargin"/> plus výšku řádku text <see cref="TextLineHeight"/>.
+        /// </summary>
+        public int OptimalHeightSingleLine { get { return (TextLineHeight + 2 * TextMargin.Value + 2 * BorderWidth); } }
         /// <summary>
         /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
         /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
@@ -829,21 +861,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek může dostat focus při pohybu Tab / Ctrl+Tab
         /// </summary>
         public bool TabStop { get { return this.Is.TabStop; } set { this.Is.TabStop = value; } }
-        /// <summary>
-        /// Označit (selectovat) celý obsah textu po příchodu focusu do prvku? Platí i pro příchod myším kliknutím.
-        /// Při čtení má vždy hodnotu. 
-        /// Setovat lze null, pak bude čtena hodnota defaultní (to je výchozí stav) = <see cref="Settings.TextBoxSelectAll"/>.
-        /// </summary>
-        public bool? SelectAllText
-        {
-            get { return (this.Is.SelectAllTextExplicit ? this.Is.SelectAllText : Settings.TextBoxSelectAll); }
-            set
-            {
-                this.Is.SelectAllTextExplicit = value.HasValue;      // Pokud je dodaná hodnota, pak je explicitní (Is.SelectAllTextExplicit je true)
-                this.Is.SelectAllText = value ?? false;              // Pokud není daná hodnota, nastavíme Explicit = false, a hodnota (Is.SelectAllText) taky false
-            }
-        }
-        /// <summary>
+          /// <summary>
         /// Rozsah vybraného (označeného) textu. Může být NULL.
         /// Pokud zobrazený text má 4 znaky "0123", a <see cref="SelectionRange"/> = { Begin: 1; End: 3; }, pak jsou označeny znaky "12".
         /// Pokud zobrazený text má 4 znaky "0123", a <see cref="SelectionRange"/> = { Begin: 0; End: 4; }, pak jsou označeny znaky "0123".
@@ -911,14 +929,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Poznámka: souřadnice v <see cref="TextShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
         /// </summary>
         Point ITextEditInternal.TextShift { get { return TextShift; } set { TextShift = value; } }
-        /// <summary>
-        /// Je povolen víceřádkový text? Tedy například Poznámka...
-        /// </summary>
-        public bool Multiline { get { return _Multiline; } set { _Multiline = value; Invalidate(); } } private bool _Multiline;
-        /// <summary>
-        /// Pokud je povolen víceřádkový text, má se text automaticky zalamovat podle šířky Textboxu na pozicích slova?
-        /// </summary>
-        public bool WordWrap { get { return _WordWrap; } set { _WordWrap = value; Invalidate(); } } private bool _WordWrap;
+
         /// <summary>
         /// Přídavné vykreslení přes Background, pod text
         /// </summary>
@@ -928,27 +939,102 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public ITextEditOverlay OverlayText { get { return _OverlayText; } set { _OverlayText = value; Invalidate(); } } private ITextEditOverlay _OverlayText;
         /// <summary>
+        /// Zarovnání textu, výchozí = vlevo
+        /// </summary>
+        public HorizontalAlignment Alignment
+        {
+            get
+            {   // Použiju bitové úložiště, šetřím paměť
+                if (Properties.GetBitValue(BitAlignmentCenter)) return HorizontalAlignment.Center;
+                if (Properties.GetBitValue(BitAlignmentRight)) return HorizontalAlignment.Right;
+                return HorizontalAlignment.Left;
+            }
+            set
+            {
+                Properties.SetBitValue(BitAlignmentCenter, (value == HorizontalAlignment.Center));
+                Properties.SetBitValue(BitAlignmentRight, (value == HorizontalAlignment.Right));
+                Invalidate();
+            }
+        }
+        /// <summary>
+        /// Je povolen víceřádkový text? Tedy například Poznámka...
+        /// </summary>
+        public bool Multiline { get { return Properties.GetBitValue(BitMultiline); } set { Properties.SetBitValue(BitMultiline, value); Invalidate(); } }
+        /// <summary>
+        /// Pokud je povolen víceřádkový text, má se text automaticky zalamovat podle šířky Textboxu na pozicích slova?
+        /// </summary>
+        public bool WordWrap { get { return Properties.GetBitValue(BitWordWrap); } set { Properties.SetBitValue(BitWordWrap, value); Invalidate(); } }
+        /// <summary>
         /// Obsahuje true pro prvek, jehož hodnota má být zadaná, nikoli Empty.
         /// Pak se Border vykresluje barvou 
         /// </summary>
-        public bool IsRequiredValue { get { return _IsRequiredValue; } set { _IsRequiredValue = value; Invalidate(); } } private bool _IsRequiredValue;
+        public bool IsRequiredValue { get { return Properties.GetBitValue(BitIsRequiredValue); } set { Properties.SetBitValue(BitIsRequiredValue, value); Invalidate(); } }
+        /// <summary>
+        /// Označit (selectovat) celý obsah textu po příchodu focusu do prvku? Platí i pro příchod myším kliknutím.
+        /// Při čtení má vždy hodnotu. 
+        /// Setovat lze null, pak bude čtena hodnota defaultní (to je výchozí stav) = <see cref="Settings.TextBoxSelectAll"/>.
+        /// </summary>
+        public bool? SelectAllText
+        {
+            get { return (Properties.GetBitValue(SelectAllTextExplicit) ? Properties.GetBitValue(BitSelectAllText) : Settings.TextBoxSelectAll); }
+            set
+            {
+                Properties.SetBitValue(SelectAllTextExplicit, value.HasValue); // Pokud je dodaná hodnota, pak je explicitní (SelectAllTextExplicit je true)
+                Properties.SetBitValue(BitSelectAllText, (value ?? false));    //   .. pokud není dodaná hodnota, nastavíme Explicit = false, a hodnota (SelectAllText) taky false
+            }
+        }
+
+        #endregion
+        #region BitStorage Properties a hodnoty bitů
+        /// <summary>Bit pro hodnotu Multiline</summary>
+        protected const UInt32 BitMultiline = 0x00000001;
+        /// <summary>Bit pro hodnotu WordWrap</summary>
+        protected const UInt32 BitWordWrap = 0x00000002;
+        /// <summary>Bit pro hodnotu IsRequiredValue</summary>
+        protected const UInt32 BitIsRequiredValue = 0x00000004;
+        /// <summary>Bit pro hodnotu Alignment = Center</summary>
+        protected const UInt32 BitAlignmentCenter = 0x00000010;
+        /// <summary>Bit pro hodnotu Alignment = Right</summary>
+        protected const UInt32 BitAlignmentRight = 0x00000020;
+        /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllText"/></summary>
+        protected const UInt32 BitSelectAllText = 0x02000000;
+        /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllTextExplicit"/></summary>
+        protected const UInt32 SelectAllTextExplicit = 0x04000000;
+
+
+        /// <summary>
+        /// Úložiště bitových hodnot
+        /// </summary>
+        protected TextProperties Properties { get { if (_Properties == null) _Properties = new TextProperties(); return _Properties; } }
+        private TextProperties _Properties;
         #endregion
         #region Public eventy
-        protected virtual void OnRightIconClick(GInteractiveChangeStateArgs args)
-        {
-            RightIconClick?.Invoke(this, args);
-        }
+        /// <summary>
+        /// Vyvolá event <see cref="RightIconClick"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnRightIconClick(GInteractiveChangeStateArgs args) { RightIconClick?.Invoke(this, args); }
+        /// <summary>
+        /// Událost vyvolaná po kliknutí na funkční ikonu vpravo
+        /// </summary>
         public event GInteractiveChangeStateHandler RightIconClick;
-        protected virtual void OnOverlayTextClick(GInteractiveChangeStateArgs args)
-        {
-            OverlayTextClick?.Invoke(this, args);
-        }
+        /// <summary>
+        /// Vyvolá event <see cref="OverlayTextClick"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnOverlayTextClick(GInteractiveChangeStateArgs args) { OverlayTextClick?.Invoke(this, args); }
+        /// <summary>
+        /// Událost vyvolaná po kliknutí na <see cref="OverlayText"/>
+        /// </summary>
         public event GInteractiveChangeStateHandler OverlayTextClick;
-
-        protected virtual void OnTextDoubleClick(GInteractiveChangeStateArgs args)
-        {
-            TextDoubleClick?.Invoke(this, args);
-        }
+        /// <summary>
+        /// Vyvolá event <see cref="TextDoubleClick"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTextDoubleClick(GInteractiveChangeStateArgs args) { TextDoubleClick?.Invoke(this, args); }
+        /// <summary>
+        /// Událost vyvolaná po double-kliknutí do textu
+        /// </summary>
         public event GInteractiveChangeStateHandler TextDoubleClick;
         #endregion
         #region Text, Value a DataBinding (napojení na data)
@@ -1303,84 +1389,107 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void MouseDownDataProcess()
         {
-            if (MouseDownAbsoluteLocation.HasValue)
-            {   // Máme data o stisku myši:
-                Point relativePoint = GetRelativePoint(MouseDownAbsoluteLocation).Value;
-                bool isFocusEnter = (MouseDownIsFocusEnter.HasValue && MouseDownIsFocusEnter.Value);
-                MouseButtons mouseButtons = MouseDownButtons ?? MouseButtons.None;
-                Keys modifiers = MouseDownModifierKeys ?? Keys.None;
-                if (mouseButtons == MouseButtons.Left)
-                {   // Levá = běžná myš:
-                    if (isFocusEnter && SelectAllText)
-                    {   // Byla stisknuta levá myš, a tímto stiskem myši vstupuje Focus do TextBoxu => jde o první klik v objektu, pak v případě SelectAllText = true je akce jednoznačná:
-                        // Vybereme celý text: naplnění SelectionRange bylo provedeno v metodě this.FocusEnter(), tady jen určíme pozici kurzoru = na konci textu:
-                        CursorIndex = Text.Length;
-                    }
-                    else if (modifiers == Keys.Control && Settings.TextBoxSelectWordOnControlMouse)
-                    {   // Byla stisknuta levá myš myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
-                        // Je stisknut Control (bez Shiftu) a ten Control se má interpretovat jako "Označ slovo pod myší" => jdeme na to:
-                        bool isRightSide;
-                        int cursorIndex = SearchCharIndex(relativePoint, out isRightSide);
-                        Int32Range wordRange = SearchNearWord(cursorIndex, isRightSide);
-                        if (wordRange != null)
-                        {
-                            this.SelectionRange = wordRange;
-                            this.CursorIndex = wordRange.End;
-                        }
-                        else
-                        {
-                            this.SelectionRange = null;
-                            this.CursorIndex = cursorIndex;
-                        }
-                    }
-                    else if (modifiers == Keys.Shift)
-                    {   // Byla stisknuta myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
-                        // Je stisknut Shift => měli bychom označit část textu od počátku výběru / nebo od pozice stávajícího kurzoru do pozice myši:
-                        int cursorIndex = SearchCharIndex(relativePoint);
-                        Int32Range selectionRange = SelectionRange;
-                        if (selectionRange != null)
-                            // Máme již z dřívějška uložen nějaký výběr: ponecháme jeho Begin a změníme End:
-                            selectionRange = new Int32Range(selectionRange.Begin, cursorIndex);
-                        else
-                            // Dosud nebyl výběr: vezmeme jako počátek nového výběru dosavadní kurzor:
-                            selectionRange = new Int32Range(this.CursorIndex, cursorIndex);
-                        this.SelectionRange = selectionRange;
-                        this.CursorIndex = cursorIndex;
+            if (!MouseDownNeedProcess) return;
+            MouseDownNeedProcess = false;
+
+            // Máme data o stisku myši:
+            Point relativePoint = GetRelativePoint(MouseDownPoint).Value;
+            bool isFocusEnter = (MouseDownIsFocusEnter.HasValue && MouseDownIsFocusEnter.Value);
+            MouseButtons mouseButtons = MouseDownButtons ?? MouseButtons.None;
+            Keys modifiers = MouseDownModifierKeys ?? Keys.None;
+            if (mouseButtons == MouseButtons.Left)
+            {   // Levá = běžná myš:
+                if (isFocusEnter && SelectAllText)
+                {   // Byla stisknuta levá myš, a tímto stiskem myši vstupuje Focus do TextBoxu => jde o první klik v objektu, pak v případě SelectAllText = true je akce jednoznačná:
+                    // Vybereme celý text: naplnění SelectionRange bylo provedeno v metodě this.FocusEnter(), tady jen určíme pozici kurzoru = na konci textu:
+                    CursorIndex = Text.Length;
+                }
+                else if (modifiers == Keys.Control && Settings.TextBoxSelectWordOnControlMouse)
+                {   // Byla stisknuta levá myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
+                    // Je stisknut Control (bez Shiftu) a ten Control se má interpretovat jako "Označ slovo pod myší" => jdeme na to:
+                    bool isRightSide;
+                    int cursorIndex = SearchCharIndex(relativePoint, out isRightSide);
+                    Int32Range wordRange = SearchNearWord(cursorIndex, isRightSide);
+                    if (wordRange != null)
+                    {
+                        this.SelectionRange = wordRange;
+                        this.CursorIndex = wordRange.End;
                     }
                     else
-                    {   // Byla stisknuta myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
-                        // Není stisknuto nic => zrušíme případný výběr Selection, a najdeme pozici kurzoru podle pozice myši:
+                    {
                         this.SelectionRange = null;
-                        this.CursorIndex = SearchCharIndex(relativePoint);
+                        this.CursorIndex = cursorIndex;
                     }
                 }
-                else if (MouseDownButtons.HasValue && MouseDownButtons.Value == MouseButtons.Right)
-                {   // Pravá myš => Kontextové menu: pokud je povoleno v proměnné ChangeCursorPositionOnRightMouse, a není označen žádný text,
-                    //  pak se nastaví kurzor podle pozice myši, ale neprovádí se žádná jiná funkcionalita.
-                    //  Pokud je nějaký text označen, nechává se beze změny jak SelectionRange, tak CursorIndex = aby se k tomu mohlo vztahovat kontextové menu:
-                    if (Settings.TextBoxChangeCursorPositionOnRightMouse && !this.SelectionRangeExists)
-                    {
-                        this.CursorIndex = SearchCharIndex(relativePoint);
-                    }
+                else if (modifiers == Keys.Shift)
+                {   // Byla stisknuta myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
+                    // Je stisknut Shift => měli bychom označit část textu od počátku výběru / nebo od pozice stávajícího kurzoru do pozice myši:
+                    int cursorIndex = SearchCharIndex(relativePoint);
+                    Int32Range selectionRange = SelectionRange;
+                    if (selectionRange != null)
+                        // Máme již z dřívějška uložen nějaký výběr: ponecháme jeho Begin a změníme End:
+                        selectionRange = new Int32Range(selectionRange.Begin, cursorIndex);
+                    else
+                        // Dosud nebyl výběr: vezmeme jako počátek nového výběru dosavadní kurzor:
+                        selectionRange = new Int32Range(this.CursorIndex, cursorIndex);
+                    this.SelectionRange = selectionRange;
+                    this.CursorIndex = cursorIndex;
+                }
+                else
+                {   // Byla stisknuta myš; buď jako příchod do prvku (FocusEnter) ale bez SelectAllText; anebo bez příchodu focusu. 
+                    // Není stisknuto nic => zrušíme případný výběr Selection, a najdeme pozici kurzoru podle pozice myši:
+                    this.SelectionRange = null;
+                    this.CursorIndex = SearchCharIndex(relativePoint);
                 }
             }
-
-            MouseDownDataReset();
+            else if (MouseDownButtons.HasValue && MouseDownButtons.Value == MouseButtons.Right)
+            {   // Pravá myš => Kontextové menu: pokud je povoleno v proměnné ChangeCursorPositionOnRightMouse, a není označen žádný text,
+                //  pak se nastaví kurzor podle pozice myši, ale neprovádí se žádná jiná funkcionalita.
+                //  Pokud je nějaký text označen, nechává se beze změny jak SelectionRange, tak CursorIndex = aby se k tomu mohlo vztahovat kontextové menu:
+                if (Settings.TextBoxChangeCursorPositionOnRightMouse && !this.SelectionRangeExists)
+                {
+                    this.CursorIndex = SearchCharIndex(relativePoint);
+                }
+            }
         }
         /// <summary>
-        /// Metoda resetuje data o myším kliknutí - volá se po jejich zpracování v metodě <see cref="MouseDownDataProcess()"/>
+        /// Zpracuje událost, kdy je myš přetahována přes text = označování textu myší
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        protected void MouseDragDataProcess(Point absolutePoint)
+        {
+            Point relativePoint = GetRelativePoint(absolutePoint).Value;
+            int cursorIndex = SearchCharIndex(relativePoint);
+            Int32Range selectionRange = SelectionRange;
+            if (selectionRange != null)
+                // Máme již z dřívějška uložen nějaký výběr: ponecháme jeho Begin a změníme End:
+                selectionRange = new Int32Range(selectionRange.Begin, cursorIndex);
+            else
+                // Dosud nebyl výběr: vezmeme jako počátek nového výběru dosavadní kurzor:
+                selectionRange = new Int32Range(this.CursorIndex, cursorIndex);
+            this.SelectionRange = selectionRange;
+            this.CursorIndex = cursorIndex;
+            this.Invalidate();
+        }
+        /// <summary>
+        /// Metoda resetuje data o myším kliknutí - volá se po uvolnění myši (MouseUp).
         /// </summary>
         protected void MouseDownDataReset()
         {
             MouseDownIsFocusEnter = null;
             MouseDownButtons = null;
-            MouseDownAbsoluteLocation = null;
+            MouseDownPoint = null;
             MouseDownModifierKeys = null;
         }
         /// <summary>
         /// Obsahuje true po většinu života (editor by neměl existovat, když textbox nemá focus)
         /// </summary>
         protected bool HasFocus { get; private set; }
+        /// <summary>
+        /// Obsahuje true po stisku myši, kdy je třeba zpracovat data o pozici myši vzhledem k pozicím znaků.
+        /// Po tomto zpracování je nastaveno na false.
+        /// </summary>
+        protected bool MouseDownNeedProcess { get; private set; }
         /// <summary>
         /// Eviduje stav MouseDown a FocusEnter, zachycený v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>:
         /// 1. null = výchozí hodnota = není MouseDown (platí i po zpracování hodnoty <see cref="MouseDownIsFocusEnter"/> v metodě <see cref="EventMouseLeftDown(GInteractiveChangeStateArgs)"/>)
@@ -1393,9 +1502,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected MouseButtons? MouseDownButtons { get; private set; }
         /// <summary>
-        /// Absolutní souřadnice myši při MouseDown (absolutní - vzhledem k Host controlu) 
+        /// Absolutní souřadnice myši při MouseDown (absolutní - vzhledem k Host controlu).
         /// </summary>
-        protected Point? MouseDownAbsoluteLocation { get; private set; }
+        protected Point? MouseDownPoint { get; private set; }
         /// <summary>
         /// Modifikační klávesy aktivní při MouseDown
         /// </summary>
@@ -1717,8 +1826,34 @@ namespace Asol.Tools.WorkScheduler.Components
             //  Pokud ale TextBox už focus má, pak se při stisku myši už událost AfterFocusEnterCursor() nevyvolá, a v proměnné e.UserData nebude nic.
             MouseDownIsFocusEnter = String.Equals(e.UserData as string, ConstantFocusEnter);
             MouseDownButtons = e.MouseButtons;
-            MouseDownAbsoluteLocation = e.MouseAbsolutePoint;
+            MouseDownPoint = e.MouseAbsolutePoint;
             MouseDownModifierKeys = e.ModifierKeys;
+            MouseDownNeedProcess = true;
+        }
+        /// <summary>
+        /// Metodu volá TextBox při pohybu myši, optimálně tehdy když je stisknuta levá myš.
+        /// Editor dokáže provést označení části textu pomocí "přetažení myší".
+        /// </summary>
+        /// <param name="e"></param>
+        public void EventMouseLeftOver(GInteractiveChangeStateArgs e)
+        {
+            var mouseDownPoint = MouseDownPoint;
+            var mouseDownButtons = MouseDownButtons;
+            if (!(mouseDownPoint.HasValue && mouseDownButtons.HasValue && e.MouseAbsolutePoint.HasValue)) return;      // Nemáme dostatečná data
+            if (mouseDownButtons.Value != MouseButtons.Left) return;                                                   // Není stisknuta levá myš
+            var distance = e.MouseAbsolutePoint.Value.Sub(mouseDownPoint.Value);
+            if (distance.X >= -3 && distance.X <= 3 && distance.Y >= -3 && distance.Y <= 3) return;                    // Je evidován pohyb menší než malý
+
+            // Máme rozpoznáno: Levé tlačítko myši + Nenulový pohyb myši => najdeme cílovou pozici kurzoru
+            MouseDragDataProcess(e.MouseAbsolutePoint.Value);
+        }
+        /// <summary>
+        /// Metodu volá TextBox při zvednutí levé myši, ukončí tak režim označování textu pomocí "přetažení myší".
+        /// </summary>
+        /// <param name="e"></param>
+        public void EventMouseLeftUp(GInteractiveChangeStateArgs e)
+        {
+            MouseDownDataReset();
         }
         /// <summary>
         /// Konstanta vkládaná do <see cref="GInteractiveChangeStateArgs.UserData"/> v události FocusEnter, detekovaná v události MouseDown.
@@ -1850,7 +1985,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 // SELECT ALL:
                 case Keys.Control | Keys.A:
                     cursorIndex = textLength;
-                    selectionRange = new Int32Range(cursorIndex, textLength);
+                    selectionRange = new Int32Range(0, textLength);
                     break;
 
                 default:
@@ -1875,6 +2010,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int cursorIndex = CursorIndex;
             Int32Range selectionRange = SelectionRange;
             if (selectionRange != null && selectionRange.Size == 0) selectionRange = null;
+            int selectionStart = (selectionRange != null ? (selectionRange.Begin < selectionRange.End ? selectionRange.Begin : selectionRange.End) : 0);
             Int32Range deletionRange = null;
             int textLength = (this.CharPositions != null ? this.CharPositions.Length : 0);
             string undoRedoName = null;
@@ -1883,7 +2019,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 case Keys.Back:                                  // Jeden Backspace = Smaže označený blok nebo jeden znak vlevo
                 case Keys.Shift | Keys.Back:                     // Shift + BackSpace = stejné jako Backspace
                     if (selectionRange != null)
+                    {
+                        cursorIndex = selectionStart;
                         deletionRange = selectionRange;
+                    }
                     else if (cursorIndex > 0)
                     {
                         cursorIndex--;
@@ -1898,7 +2037,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
                 case Keys.Delete:                                // Delete = Smaže označený blok nebo znak vpravo od kurzoru
                     if (selectionRange != null)
+                    {
+                        cursorIndex = selectionStart;
                         deletionRange = selectionRange;
+                    }
                     else if (cursorIndex < textLength)
                     {
                         deletionRange = new Int32Range(cursorIndex, cursorIndex + 1);
@@ -2611,6 +2753,25 @@ namespace Asol.Tools.WorkScheduler.Components
             return false;
         }
         #endregion
+    }
+    #endregion
+    #region class TextProperties : BitStorage pro textové vlastnosti typu Boolean
+    /// <summary>
+    /// TextProperties : BitStorage pro textové vlastnosti typu Boolean
+    /// Hodnoty bitů lze setovat i číst.
+    /// Čtení i ukládání hodnoty lze převést na dynamické = lze zadat přiměřenou metodu, 
+    /// která konkrétní hodnotu pro konkrétní prvek vrátí/uloží odjinud, než ze statického úložiště.
+    /// </summary>
+    public class TextProperties : BitStorage
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TextProperties() : base() { }
+        /// <summary>
+        /// Implicitní výchozí hodnota
+        /// </summary>
+        protected override uint DefaultValue { get { return (uint)0; } }
     }
     #endregion
 }

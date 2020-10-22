@@ -953,7 +953,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Standardní ikona : DropDown
         /// </summary>
-        public static Image DropDown { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_down_gray_2_24; } }
+        public static Image DropDown { get { return Asol.Tools.WorkScheduler.Properties.Resources.arrow_dropdown_gray_2_24; } }
 
         /// <summary>
         /// Standardní ikona : Refresh

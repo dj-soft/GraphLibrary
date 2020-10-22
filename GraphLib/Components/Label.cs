@@ -19,6 +19,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public GLabel()
         {
             this.BackgroundMode = DrawBackgroundMode.Transparent;
+            this.Alignment = ContentAlignment.MiddleLeft;
         }
         /// <summary>
         /// Barva písma dynamicky zadaná. Default je null: barva se bere ze standardní <see cref="GTextObject.TextColor"/>.
@@ -37,7 +38,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true, pokud v this instanci máme použitý modifikátor fontu
         /// </summary>
         protected bool HasFontDynamicModifier { get { return (__FontDynamicModifier != null && !__FontDynamicModifier.IsEmpty); } }
-
+        /// <summary>
+        /// Obsahuje výšku řádku textu, optimální pro výšku jednořádkového labelu
+        /// </summary>
+        public int TextLineHeight { get { return FontManagerInfo.GetFontHeight(this.CurrentFont); } }
+        /// <summary>
+        /// Umístění obsahu (textu) v rámci prostoru prvku
+        /// </summary>
+        public ContentAlignment Alignment { get { return _Alignment; } set { _Alignment = value; Invalidate(); } } private ContentAlignment _Alignment;
         /// <summary>
         /// Vykreslí text
         /// </summary>

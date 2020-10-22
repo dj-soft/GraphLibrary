@@ -19,7 +19,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTextObject()
         {
             this.BackgroundMode = DrawBackgroundMode.Transparent;
-            this.Alignment = ContentAlignment.MiddleLeft;
         }
         /// <summary>
         /// Vykreslí text
@@ -128,12 +127,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true, pokud v this instanci máme použitý modifikátor fontu
         /// </summary>
         protected bool HasFontModifier { get { return (__FontModifier != null && !__FontModifier.IsEmpty); } }
-
-        /// <summary>
-        /// Umístění obsahu (textu) v rámci prostoru prvku
-        /// </summary>
-        public ContentAlignment Alignment { get { return _Alignment; } set { _Alignment = value; Invalidate(); } }
-        private ContentAlignment _Alignment;
         /// <summary>
         /// Je tento prvek Visible?
         /// </summary>
@@ -151,4 +144,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool ReadOnly { get { return this.Is.ReadOnly; } set { this.Is.ReadOnly = value; } }
     }
     #endregion
+
+    
 }

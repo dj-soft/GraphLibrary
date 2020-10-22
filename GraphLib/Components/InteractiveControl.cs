@@ -805,6 +805,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._MouseDragFrameStep(e, ref userData);
                     scope.Result = "MouseDragFrameStep";
                     break;
+                case MouseMoveDragState.CallItem:
+                    this._MouseOver(e, ref userData);
+                    break;
             }
         }
         /// <summary>
@@ -822,7 +825,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case MouseMoveDragState.Paint:
                     // Na tomto prvku začíná proces Paint; ale do této metody bychom se v tomto stavu dostávat asi neměli...
-                    scope.Result = "MouseDragMoveBegin";
+                    scope.Result = "MouseDragPaintBegin";
                     break;
 
                 case MouseMoveDragState.DragMove:
@@ -840,6 +843,12 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._MouseDragFrameBegin(e, ref userData);
                     this._MouseDragFrameStep(e, ref userData);
                     scope.Result = "MouseDragFrameBegin";
+                    break;
+
+                case MouseMoveDragState.CallItem:
+                    this._MouseDragState = MouseMoveDragState.CallItem;
+                    this._MouseOver(e, ref userData);
+                    scope.Result = "MouseDragCallItem";
                     break;
 
                 default:
@@ -864,7 +873,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             // Pokud se control již dříve rozhodl o stavu, pak jej vrátíme bez dalšího zkoumání:
             MouseMoveDragState state = this._MouseDragState;
-            if (state == MouseMoveDragState.Paint || state == MouseMoveDragState.DragMove || state == MouseMoveDragState.DragFrame) return state;
+            if (state == MouseMoveDragState.Paint || state == MouseMoveDragState.DragMove || state == MouseMoveDragState.DragFrame || state == MouseMoveDragState.CallItem) return state;
 
             // Dosud nebylo o stavu rozhodnuto, detekujeme pozici myši vzhledem k výchozímu bodu:
             Rectangle? startBounds = this._MouseDragStartBounds;
@@ -913,6 +922,9 @@ namespace Asol.Tools.WorkScheduler.Components
                             break;
                         case MouseMoveDragState.DragFrame:
                             this._MouseDragFrameDone(e, ref userData);
+                            break;
+                        case MouseMoveDragState.CallItem:
+                            this._MouseRaise(e, ref userData);
                             break;
                         default:
                             this._MouseRaise(e, ref userData);
@@ -4121,7 +4133,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
         /// a aplikace se rozhodla pro rámování části prostoru pomocí myši a následné selectování vhodných objektů.
         /// </summary>
-        DragFrame
+        DragFrame,
+        /// <summary>
+        /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
+        /// prvek nepodporuje Mouse: Paint ani Drag ani Frame, bude dostávat události MouseMove a MouseUp
+        /// </summary>
+        CallItem
     }
     #endregion
     #endregion
@@ -4248,7 +4265,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
                 }
             }
-            if (foundIndex < 0) return result;
+            if (foundIndex < 0) return MouseMoveDragState.CallItem;            // Nenašli jsme ani prvek pro Drag, ani pro Frame => budeme posílat prvku události MouseMove a MouseUp.
 
             // Našli jsme prvek na indexu (foundIndex), který je ochoten provádět akci (result):
 

@@ -153,6 +153,7 @@ Souřadnice prvku: {itemX}/{itemY}";
                     if (nx == 2) item.TitleLabel.FontModifier.SizeRatio = 0.85f;
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
                     if (nx == 3) item.RightActiveIcon = InteractiveIcon.RelationRecord;
+                    if (nx == 3) item.Text1.IsRequiredValue = true;
                     if (nx == 4) item.RightActiveIcon = InteractiveIcon.RelationDocument;
                     if (nx == 6 && r2) item.RightActiveIcon = InteractiveIcon.Calculator;
                     if (nx == 7 && r2) item.RightActiveIcon = InteractiveIcon.OpenFolder;

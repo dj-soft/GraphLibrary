@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.Text1 = new GTextEdit()
             {
                 Bounds = new Rectangle(104, 4, 120, 20),
-                Alignment = ContentAlignment.MiddleLeft,
+                Alignment = System.Windows.Forms.HorizontalAlignment.Left,
                 PrepareToolTipInParent = true
             };
             this.AddItem(this.Text1);
@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.Text2 = new GTextEdit()
             {
                 Bounds = new Rectangle(228, 4, 250, 20),
-                Alignment = ContentAlignment.MiddleLeft,
+                Alignment = System.Windows.Forms.HorizontalAlignment.Left,
                 PrepareToolTipInParent = true,
                 Visible = false
             };
@@ -115,11 +115,18 @@ namespace Asol.Tools.WorkScheduler.DataForm
         public GTextEdit Text2 { get; private set; }
 
         #region Interaktivita
+        /// <summary>
+        /// Po vstupu Focusu do containeru
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusEnter(e);
-
         }
+        /// <summary>
+        /// Po odchodu Focusu z containeru
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusLeave(e);
