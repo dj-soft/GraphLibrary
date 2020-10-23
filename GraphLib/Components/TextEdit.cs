@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     //    Co dalšího dodělat?
     //  1. Pohyb kurzoru => detekce kurzoru mimo viditelnou oblast => nastavení Shiftu pro automatický posun obsahu
     //  2. Alignment
-    //  3. PasswordChar
+    //   OK : 3. PasswordChar
     //  4. Napojení Text <=> Value <=> DataTable / Array
     //  5. Umožnit jednotlivé znaky textu podtrhávat / barevně odlišit
     //  6. Otestovat MultiLine, doplnit MultiLine SelectBounds
@@ -57,7 +57,6 @@ namespace Asol.Tools.WorkScheduler.Components
             EditorState.EventFocusLeave(e);
             OnReleaseEditor();
             OnEditorEnds();
-
         }
         /// <summary>
         /// Test klávesy

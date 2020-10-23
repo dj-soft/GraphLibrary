@@ -401,7 +401,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 float paramLineHeightAdd = (parameters?.LineHeightAdd ?? 0f);
                 bool wrapWord = (parameters?.WrapWord ?? false);
                 bool hasPasswordChar = (parameters?.PasswordChar.HasValue ?? false);
-                string passwordChar = (parameters?.PasswordChar.Value ?? ' ').ToString();
+                string passwordChar = (hasPasswordChar ? parameters.PasswordChar.Value : ' ').ToString();
 
                 int originX = origin.X;
                 float right = (paramWidth > 0f ? (originX + paramWidth) : 0);
@@ -472,14 +472,15 @@ namespace Asol.Tools.WorkScheduler.Components
                         {
                             currChar = c.ToString();
                         }
-                        string charKey = prevChar + currChar;
+                        string visibleChar = (hasPasswordChar ? passwordChar : currChar);
+                        string charKey = prevChar + visibleChar;
 
                         // Prostor obsazený znakem, relativně k předchozímu znaku:
                         RectangleF currBounds = _GetLastCharBounds(graphics, font, charKey, layoutBounds);       // Vrátí souřadnici posledního znaku v "charKey", tedy první nebo druhý znak (více znaků tam nikdy není). Souřadnice jsou relativně k layoutBounds, tedy k bodu (0,0). Offset _FirstOffsetX je již aplikován.
 
-                        // Zde bychom měli řešit Auto-Wrap line, pokud je to povoleno, požadováno, pokud je to možné a potřebné (Right znaku je za Width prostoru):
-                        if (multiline && right > 0f && charIndex > 0 && ((locationX + currBounds.Right + 1f) >= right) && currChar != SPACE)
-                            WrapToNewLine(characters, targetIndex, currChar, wrapWord, originX, rowHeight, ref rowIndex, ref charIndex, ref currentX, ref currentY, ref locationX, ref currBounds);
+                        // Zde bychom měli řešit Auto-Wrap line, pokud je to povoleno, požadováno, pokud je to možné a potřebné (Right znaku je za Width prostoru), přičemž Mezery nebudeme dávat na začátek nového řádku:
+                        if (multiline && right > 0f && charIndex > 0 && ((locationX + currBounds.Right + 1f) >= right) && visibleChar != SPACE)
+                            WrapToNewLine(characters, targetIndex, visibleChar, wrapWord, originX, rowHeight, ref rowIndex, ref charIndex, ref currentX, ref currentY, ref locationX, ref currBounds);
 
                         // Souřadnice znaku - tak, aby byl vypsán do požadovaného prostoru:
                         float charX = locationX + currBounds.X;
@@ -491,10 +492,10 @@ namespace Asol.Tools.WorkScheduler.Components
                         Rectangle textBounds = new Rectangle(currentX, currentY, textR - currentX, fontHeight);
                         currentX = textR;
 
-                        characters[targetIndex] = new CharPositionInfo(currChar, targetIndex, rowIndex, charIndex, textLocation, textBounds);
+                        characters[targetIndex] = new CharPositionInfo(currChar, visibleChar, targetIndex, rowIndex, charIndex, textLocation, textBounds);
                         charIndex++;
                         targetIndex++;
-                        prevChar = currChar;
+                        prevChar = visibleChar;
                     }
 
                     // Pokud máme přeskočit následující LF, a za znakem CR následuje další znak, a je to znak LF, pak jde o standardní oddělovač řádků CrLf; ten jsme již zpracovali (jako jeden dvojznak) => následující LF přeskočíme:
@@ -556,14 +557,14 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 // Najít začátek slova, které by mělo být celé přesunuté na nový řádek:
                 int wordBegin = -1;
-                if (currChar != SPACE && charIndex > 0 && characters[targetIndex - 1].Text != SPACE && wrapWord)
+                if (currChar != SPACE && charIndex > 0 && characters[targetIndex - 1].TextVisible != SPACE && wrapWord)
                 {   // Pokud aktuální znak NENÍ mezera, a jsme na pozici v řádku větší než 0 a předešlý znak NENÍ mezera, a mají se zalamovat slova, 
                     // pak zkusíme najít začátek slova (wordBegin), které bude přesunuto na další řádek:
                     for (int i = targetIndex - 1; i >= 0; i--)
                     {   // Projdu znaky před aktuální pozici, a hledám pozici znaku, který je první nemezera za mezerou na pozici v řádku větší než 0:
                         var character = characters[i];
-                        if (character.CharIndex <= 0) break;                             // Pokud by slovo začínalo na pozici 0, pak jej nebudeme wrapovat na nový řádek, protože to nemá smysl.
-                        if (character.Text != SPACE && characters[i - 1].Text == SPACE)    // Pokud znak [i] NENÍ mezera, a předchozí znak JE mezera, pak znak [i] zalomíme na nový řádek:
+                        if (character.CharIndex <= 0) break;                                            // Pokud by slovo začínalo na pozici 0, pak jej nebudeme wrapovat na nový řádek, protože to nemá smysl.
+                        if (character.TextVisible != SPACE && characters[i - 1].TextVisible == SPACE)   // Pokud znak [i] NENÍ mezera, a předchozí znak JE mezera, pak znak [i] zalomíme na nový řádek:
                         {
                             wordBegin = i;
                             break;
@@ -773,10 +774,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 int boundsR = (int)Math.Round(locationR, 0);
                 PointF? textLocation = new PointF(locationX, locationY);
                 Rectangle textBounds = new Rectangle(boundsX, boundsY, boundsR - boundsX, boundsB - boundsY);
+                string currChar = item.ToString();
+                result[i] = new CharPositionInfo(currChar, currChar, i, rowIndex, charIndex, textLocation, textBounds);
 
                 locationX = locationR;
                 boundsX = boundsR;
-                result[i] = new CharPositionInfo(item.ToString(), i, rowIndex, charIndex, textLocation, textBounds);
             }
             return result;
         }
@@ -818,7 +820,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Text znaku zobrazovaný. 
         /// Od <see cref="Text"/> se liší tehdy, když se zobrazuje <see cref="GTextEdit.PasswordChar"/>.
         /// </summary>
-        public string TextVisible { get; private set; } xxx;
+        public string TextVisible { get; private set; }
         /// <summary>
         /// Znak. Pokud <see cref="Text"/> je null nebo délky 0, pak je zde char(0). Jinak je zde první znak textu. V případě oddělovače řádků (CrLf) tedy CR.
         /// </summary>
@@ -939,7 +941,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 var brush = (fontBrush != null ? fontBrush : Skin.Brush(fontColor.Value));
                 PointF fontLocation = this.TextLocation.Value.Add(offset);
-                graphics.DrawString(this.Text, fontInfo.Font, brush, fontLocation, FontManagerInfo.EditorStringFormat);
+                graphics.DrawString(this.TextVisible, fontInfo.Font, brush, fontLocation, FontManagerInfo.EditorStringFormat);
             }
         }
         /// <summary>
