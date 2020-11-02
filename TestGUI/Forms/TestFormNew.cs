@@ -7,8 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
+using RES = Noris.LCS.Base.WorkScheduler.Resources;
+
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
@@ -61,22 +64,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._TabContainer = new GTabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };
             GScrollBar dataControl;
             dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(160, 260), BackColor = Color.LightCyan, Tag = "Přepínací ScrollBar na straně 1" };
-            this._TabContainer.AddTabItem(dataControl, "První scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletBlue16);
+            this._TabContainer.AddTabItem(dataControl, "První scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletBluePng));
             dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(840, 860), Tag = "Přepínací ScrollBar na straně 2" };
-            this._TabContainer.AddTabItem(dataControl, "Druhý scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletGreen16);
+            this._TabContainer.AddTabItem(dataControl, "Druhý scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletGreenPng));
             dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(450, 850), Tag = "Přepínací ScrollBar na straně 3" };
-            this._TabContainer.AddTabItem(dataControl, "Třetí scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletOrange16);
+            this._TabContainer.AddTabItem(dataControl, "Třetí scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletOrangePng));
             this.GControl.AddItem(this._TabContainer);
             
             this.ControlsPosition();
         }
         private void _TabHeaderH_TabItemPaintBackGround(object sender, PaintEventArgs e)
         {
-            e.Graphics.DrawImage(Asol.Tools.WorkScheduler.Components.IconLibrary.BackSand, e.ClipRectangle);
+            e.Graphics.DrawImage(App.ResourcesApp.GetImage(RES.Images.Actions.CodeVariablePng), e.ClipRectangle);
         }
         private void HeaderH2_TabHeaderPaintBackGround(object sender, PaintEventArgs e)
         {
-            e.Graphics.DrawImage(Asol.Tools.WorkScheduler.Components.IconLibrary.BackSand, e.ClipRectangle);
+            e.Graphics.DrawImage(App.ResourcesApp.GetImage(RES.Images.Actions.CodeClassPng), e.ClipRectangle);
         }
         private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
@@ -115,7 +118,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             Rectangle target = e.UserAbsoluteBounds;
             target = target.Enlarge(1, 1, 0, 0);
-            e.Graphics.DrawImage(IconLibrary.BackSand, target);
+            e.Graphics.DrawImage(App.ResourcesApp.GetImage(RES.Images.Actions.CodeContextPng), target);
         }
         void _ScrollBar_UserDraw(object sender, GUserDrawArgs e)
         {

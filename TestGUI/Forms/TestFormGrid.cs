@@ -333,21 +333,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private Image[] _LoadImages()
         {
             List<Image> images = new List<Image>();
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.DocumentSave);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditCopy);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditCut);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditPaste);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditUndo);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditRedo);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoTop);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoUp);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoBottom);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoHome);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoLeft);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoRight);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoEnd);
-            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.Refresh);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.DocumentSave);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.EditCopy);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.EditCut);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.EditPaste);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.EditUndo);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.EditRedo);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoTop);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoUp);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoDown);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoBottom);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoHome);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoLeft);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoRight);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.GoEnd);
+            images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.Refresh);
             return images.ToArray();
         }
         private GTimeGraph _PrepareGraphW(DateTime now)
