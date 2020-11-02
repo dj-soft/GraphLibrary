@@ -306,6 +306,9 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!documentP.HasValue) return;
             graphics.FillRectangle(Brushes.White, documentP.Value);
 
+
+#warning DOPLNIT OBRÁZKY :
+            /*
             Image img = IconLib.Image("zoom-out-5", 32);
             if (img != null)
                 graphics.DrawImage(img, new Point(260, 300));
@@ -327,7 +330,7 @@ namespace Asol.Tools.WorkScheduler.Components
             img = IconLib.Image("zoom-fit-best-2", 30);
             if (img != null)
                 graphics.DrawImage(img, new Rectangle(new Point(500, 300), new Size(30,30)));
-
+            */
         }
         #endregion
     }

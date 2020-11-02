@@ -300,16 +300,16 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (this.AxisState)
             {
                 case AxisInteractiveState.MouseOver:
-                    e.ToolTipData.Icon = IconStandard.ViewPimCalendar32;
+                    e.ToolTipData.Icon = StandardIcons.ViewPimCalendar32;
                     break;
                 case AxisInteractiveState.DragMove:
-                    e.ToolTipData.Icon = IconStandard.ObjectFlipHorizontal32;
+                    e.ToolTipData.Icon = StandardIcons.ObjectFlipHorizontal32;
                     break;
                 case AxisInteractiveState.DragZoom:
-                    e.ToolTipData.Icon = IconStandard.ZoomFitBest32;
+                    e.ToolTipData.Icon = StandardIcons.ZoomFitBest32;
                     break;
                 default:
-                    e.ToolTipData.Icon = IconStandard.ViewPimCalendar32;
+                    e.ToolTipData.Icon = StandardIcons.ViewPimCalendar32;
                     break;
             }
         }

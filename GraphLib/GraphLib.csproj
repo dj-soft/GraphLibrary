@@ -87,6 +87,7 @@
     <Compile Include="Components\BoundsInfo.cs" />
     <Compile Include="Components\FontInfo.cs" />
     <Compile Include="Components\FontManager.cs" />
+    <Compile Include="Components\IconResources.cs" />
     <Compile Include="Components\InteractiveFocusManager.cs" />
     <Compile Include="Components\InteractiveIcon.cs" />
     <Compile Include="Components\TextEditOverlay.cs" />
@@ -175,7 +176,7 @@
     <Compile Include="Components\GControl.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Components\IconLib.cs" />
+    <Compile Include="Components\StandardIcons.cs" />
     <Compile Include="Components\InteractiveContainer.cs" />
     <Compile Include="Components\InteractiveControl.cs">
       <SubType>Component</SubType>

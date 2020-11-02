@@ -475,11 +475,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             FunctionGlobalItem functionItem = new FunctionGlobalItem(this);
             functionItem.Name = name;
-            functionItem.Image = Application.App.Resources.GetImage(image);
+            functionItem.Image = Application.App.ResourcesApp.GetImage(image);
             functionItem.Text = text;
             functionItem.ToolTip = toolTip;
             functionItem.Size = size;
-            functionItem.ImageHot = Application.App.Resources.GetImage(imageHot);
+            functionItem.ImageHot = Application.App.ResourcesApp.GetImage(imageHot);
             functionItem.ItemType = itemType;
             functionItem.LayoutHint = layoutHint;
             functionItem.ModuleWidth = moduleWidth;
@@ -907,11 +907,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Obrázek
             /// </summary>
-            public override Image Image { get { return (this._HasItem ? App.Resources.GetImage(this._GuiToolBarItem.Image) : null); } }
+            public override Image Image { get { return (this._HasItem ? App.ResourcesApp.GetImage(this._GuiToolBarItem.Image) : null); } }
             /// <summary>
             /// Obrázek pro stav MouseActive
             /// </summary>
-            public override Image ImageHot { get { return (this._HasItem ? App.Resources.GetImage(this._GuiToolBarItem.ImageHot) : null); } }
+            public override Image ImageHot { get { return (this._HasItem ? App.ResourcesApp.GetImage(this._GuiToolBarItem.ImageHot) : null); } }
             /// <summary>
             /// Položka je viditelná?
             /// </summary>
@@ -2565,7 +2565,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Obrázek pro položku menu
             /// </summary>
-            public override Image Image { get { return Application.App.Resources.GetImage(this._GuiContextMenuItem.Image); } }
+            public override Image Image { get { return Application.App.ResourcesApp.GetImage(this._GuiContextMenuItem.Image); } }
             #endregion
             #region Určení dostupnosti položky pro konkrétní situaci
             /// <summary>

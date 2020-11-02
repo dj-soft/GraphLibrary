@@ -746,17 +746,23 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             string appPath = AppCodePath;
             this._Icons = new Application.Icons(appPath);
-            string resourceFile = System.IO.Path.Combine(appPath, "ASOL.GraphLib.res");
-            this._Resources = new Resources(resourceFile, true);
+            this._ResourcesApp = new Resources(System.IO.Path.Combine(appPath, "ASOL.GraphLib.res"), true);
+            this._ResourcesExe = new Resources(System.IO.Path.Combine(appPath, "ASOL.GraphLib.ics"), true);
         }
         /// <summary>
         /// Zde je poskytována veškerá podpora pro přístup k ikonkám
         /// </summary>
         public static Icons Icons { get { return Instance._Icons; } } private Icons _Icons;
         /// <summary>
-        /// Zde je poskytována veškerá podpora pro přístup k resources
+        /// Zde je poskytována veškerá podpora pro přístup k resources aplikačním (tyto ikony používá typicky aplikační kód = jsou předávány jejich názvy v datových strukturách).
+        /// V tomto objektu jsou načteny obrázky z namespace <see cref="Noris.LCS.Base.WorkScheduler.Resources.Images"/>.
         /// </summary>
-        public static Resources Resources { get { return Instance._Resources; } } private Resources _Resources;
+        public static Resources ResourcesApp { get { return Instance._ResourcesApp; } } private Resources _ResourcesApp;
+        /// <summary>
+        /// Zde je poskytována veškerá podpora pro přístup k resources projektu (tyto ikony používá typicky Skin jako defaultní).
+        /// V tomto objektu jsou načteny obrázky z namespace <see cref="Asol.Tools.WorkScheduler.Resources.Images"/>.
+        /// </summary>
+        public static Resources ResourcesExe { get { return Instance._ResourcesExe; } } private Resources _ResourcesExe;
         #endregion
         #region Register / Config
         /// <summary>

@@ -104,26 +104,40 @@ namespace Asol.Tools.WorkScheduler.Application
             string targetPath;
             string content = null;
 
-            targetPath = System.IO.Path.Combine(ResourceItem.UpPath(appPath, 1), "GraphLib", "Shared");
-            _SaveResourceClassToPath(targetPath, resourceDate, resources, ref content);
+            string fileName = fileInfo.Name.ToLower();
+            switch (fileName)
+            {
+                case "asol.graphlib.res":
+                    targetPath = System.IO.Path.Combine(ResourceItem.UpPath(appPath, 1), "GraphLib", "Shared");
+                    _SaveResourceClassToPath(targetPath, "WorkSchedulerResources.cs", resourceDate, resources, ref content);
 
-            targetPath = System.IO.Path.Combine(ResourceItem.UpPath(appPath, 1), "App", "LCS", "Base");
-            _SaveResourceClassToPath(targetPath, resourceDate, resources, ref content);
+                    targetPath = System.IO.Path.Combine(ResourceItem.UpPath(appPath, 1), "App", "LCS", "Base");
+                    _SaveResourceClassToPath(targetPath, "WorkSchedulerResources.cs", resourceDate, resources, ref content);
+
+                    break;
+                case "asol.graphlib.ics":
+                    targetPath = System.IO.Path.Combine(ResourceItem.UpPath(appPath, 1), "GraphLib", "Components");
+                    _SaveResourceClassToPath(targetPath, "IconResources.cs", resourceDate, resources, ref content);
+
+                    break;
+            }
+
         }
         /// <summary>
         /// Zajistí uložení dat do souboru "WorkSchedulerResources.cs" do daného adresáře, pokud je to zapotřebí.
         /// Metoda si vytvoří obsah souboru (ref content), pokud je potřeba do souboru uložit aktuální stav, a obsah dosud nebyl vygenerován (je null).
         /// </summary>
         /// <param name="targetPath"></param>
+        /// <param name="targetName"></param>
         /// <param name="resourceDate"></param>
         /// <param name="resources"></param>
         /// <param name="content"></param>
-        private void _SaveResourceClassToPath(string targetPath, DateTime resourceDate, IEnumerable<ResourceItem> resources, ref string content)
+        private void _SaveResourceClassToPath(string targetPath, string targetName, DateTime resourceDate, IEnumerable<ResourceItem> resources, ref string content)
         {
             if (!System.IO.Directory.Exists(targetPath)) return;
 
             resourceDate = resourceDate.TrimPart(DateTimePart.Seconds);
-            string targetFile = System.IO.Path.Combine(targetPath, "WorkSchedulerResources.cs");
+            string targetFile = System.IO.Path.Combine(targetPath, targetName);
             DateTime? lastCodeDate = _ReadLastCodeDate(targetFile);
             if (lastCodeDate.HasValue)
             {
@@ -133,7 +147,7 @@ namespace Asol.Tools.WorkScheduler.Application
 
             if (content == null)
             {
-                content = _SaveResourceCreateContent(resourceDate, resources);
+                content = _SaveResourceCreateContent(resourceDate, resources, targetName);
                 if (content == null) return;
             }
 
@@ -152,17 +166,19 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <param name="resourceDate"></param>
         /// <param name="resources"></param>
+        /// <param name="targetName"></param>
         /// <returns></returns>
-        private static string _SaveResourceCreateContent(DateTime resourceDate, IEnumerable<ResourceItem> resources)
+        private static string _SaveResourceCreateContent(DateTime resourceDate, IEnumerable<ResourceItem> resources, string targetName)
         {
             StringBuilder sb = new StringBuilder();
 
-            _SaveResourceAddFileHeader(sb, resourceDate);
+            _SaveResourceAddFileHeader(sb, resourceDate, targetName);
+            string namespaceText = (targetName == "WorkSchedulerResources.cs" ? "namespace Noris.LCS.Base.WorkScheduler.Resources." : "namespace Asol.Tools.WorkScheduler.Resources.");
 
             var nameSpaces = resources.GroupBy(r => r.Namespace);
             foreach (var nameSpace in nameSpaces)
             {   // Grupa nameSpace obsahuje všechny položky _ResFileInfo, které mají stejný Namespace:
-                sb.AppendLine("namespace Noris.LCS.Base.WorkScheduler.Resources." + nameSpace.Key);
+                sb.AppendLine(namespaceText + nameSpace.Key);
                 sb.AppendLine("{");
                 var classNames = nameSpace.GroupBy(r => r.ClassName);
                 foreach (var className in classNames)
@@ -190,29 +206,54 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <param name="sb"></param>
         /// <param name="resourceDate"></param>
-        private static void _SaveResourceAddFileHeader(StringBuilder sb, DateTime resourceDate)
+        /// <param name="targetName"></param>
+        private static void _SaveResourceAddFileHeader(StringBuilder sb, DateTime resourceDate, string targetName)
         {
             resourceDate = resourceDate.TrimPart(DateTimePart.Seconds);
 
             sb.AppendLine("// Supervisor: DAJ");
-            sb.AppendLine("// Part of Helios Green, proprietary software, (c) LCS International, a. s.");
-            sb.AppendLine("// Redistribution and use in source and binary forms, with or without modification, ");
-            sb.AppendLine("// is not permitted without valid contract with LCS International, a. s. ");
-            sb.AppendLine("using System;");
-            sb.AppendLine("using System.Collections.Generic;");
-            sb.AppendLine("using System.Linq;");
-            sb.AppendLine("using System.Text;");
-            sb.AppendLine("using System.Threading.Tasks;");
-            sb.AppendLine("");
-            sb.AppendLine("// Tento soubor obsahuje třídy a konstanty, které popisují názvy resources na straně pluginu. Resources jsou Images a další zdroje ve formě bytového pole.");
-            sb.AppendLine("// Tento soubor se nachází jednak v Greenu: Noris\\App\\Lcs\\Base\\WorkSchedulerResources.cs, a zcela identický i v GraphLibrary: \\GraphLib\\Shared\\WorkSchedulerResources.cs");
-            sb.AppendLine("// UPOZORNĚNÍ: tento soubor nemá být editován uživatelem, protože jeho obsah si udržuje plugin sám.");
-            sb.AppendLine("//   Plugin si načte resources, což je obsah ZIP souboru umístěného v tomtéž adresáři, kde je DLL soubor pluginu. Soubor má název \"ASOL.GraphLib.res\".");
-            sb.AppendLine("//   A poté, když plugin běží v rámci VisualStudia (má připojen debugger), a přitom existuje ve vhodném umístění soubor \"WorkSchedulerResources.cs\",");
-            sb.AppendLine("//      pak plugin prověří, že soubor \"WorkSchedulerResources.cs\" obsahuje uložené datum \"LastWriteTime\" souboru \"ASOL.GraphLib.res\".");
-            sb.AppendLine("//   Pokud fyzické zdroje (\"ASOL.GraphLib.res\") jsou novější, pak znovu vygeneruje kompletní obsah souboru \"WorkSchedulerResources.cs\".");
-            sb.AppendLine("// Generátor tohoto souboru je v aplikaci GraphLib, v kódu \"GraphLib\\Application\\Resources.cs\".");
-            sb.AppendLine("// Místo, kde je uloženo datum \"LastWriteTime\" souboru \"ASOL.GraphLib.res\" je na následujícím řádku:");
+            switch (targetName)
+            {
+                case "WorkSchedulerResources.cs":
+                    sb.AppendLine("// Part of Helios Green, proprietary software, (c) Asseco solutions, a. s.");
+                    sb.AppendLine("// Redistribution and use in source and binary forms, with or without modification, ");
+                    sb.AppendLine("// is not permitted without valid contract with Asseco solutions, a. s. ");
+                    sb.AppendLine("using System;");
+                    sb.AppendLine("using System.Collections.Generic;");
+                    sb.AppendLine("using System.Linq;");
+                    sb.AppendLine("using System.Text;");
+                    sb.AppendLine("using System.Threading.Tasks;");
+                    sb.AppendLine("");
+                    sb.AppendLine("// Tento soubor obsahuje třídy a konstanty, které popisují názvy resources na straně pluginu. Resources jsou Images a další zdroje ve formě bytového pole.");
+                    sb.AppendLine("// Tento soubor se nachází jednak v Greenu: Noris\\App\\Lcs\\Base\\WorkSchedulerResources.cs, a zcela identický i v GraphLibrary: \\GraphLib\\Shared\\WorkSchedulerResources.cs");
+                    sb.AppendLine("// UPOZORNĚNÍ: tento soubor nemá být editován uživatelem, protože jeho obsah si udržuje plugin sám.");
+                    sb.AppendLine("//   Plugin si načte resources, což je obsah ZIP souboru umístěného v tomtéž adresáři, kde je DLL soubor pluginu. Soubor má název \"ASOL.GraphLib.res\".");
+                    sb.AppendLine("//   A poté, když plugin běží v rámci VisualStudia (má připojen debugger), a přitom existuje ve vhodném umístění soubor \"WorkSchedulerResources.cs\",");
+                    sb.AppendLine("//      pak plugin prověří, že soubor \"WorkSchedulerResources.cs\" obsahuje uložené datum \"LastWriteTime\" souboru \"ASOL.GraphLib.res\".");
+                    sb.AppendLine("//   Pokud fyzické zdroje (\"ASOL.GraphLib.res\") jsou novější, pak znovu vygeneruje kompletní obsah souboru \"WorkSchedulerResources.cs\".");
+                    sb.AppendLine("// Generátor tohoto souboru je v aplikaci GraphLib, v kódu \"GraphLib\\Application\\Resources.cs\".");
+                    sb.AppendLine("// Místo, kde je uloženo datum \"LastWriteTime\" souboru \"ASOL.GraphLib.res\" je na následujícím řádku:");
+                    break;
+                case "IconResources.cs":
+                    sb.AppendLine("// Part of GraphLib, proprietary software, (c) Asseco solutions, a. s. + DJ-Soft");
+                    sb.AppendLine("// Redistribution and use in source and binary forms, with or without modification, ");
+                    sb.AppendLine("// is not permitted without valid contract with Asseco solutions, a. s. ");
+                    sb.AppendLine("using System;");
+                    sb.AppendLine("using System.Collections.Generic;");
+                    sb.AppendLine("using System.Linq;");
+                    sb.AppendLine("using System.Text;");
+                    sb.AppendLine("using System.Threading.Tasks;");
+                    sb.AppendLine("");
+                    sb.AppendLine("// Tento soubor obsahuje třídy a konstanty, které popisují názvy resources na straně pluginu. Resources jsou Images a další zdroje ve formě bytového pole.");
+                    sb.AppendLine("// UPOZORNĚNÍ: tento soubor nemá být editován uživatelem, protože jeho obsah si udržuje knihovna GraphLib sama.");
+                    sb.AppendLine("//   Plugin si načte resources, což je obsah ZIP souboru umístěného v tomtéž adresáři, kde je DLL soubor pluginu. Soubor má název \"ASOL.GraphLib.ics\".");
+                    sb.AppendLine("//   A poté, když plugin běží v rámci VisualStudia (má připojen debugger), a přitom existuje ve vhodném umístění soubor \"WorkSchedulerResources.cs\",");
+                    sb.AppendLine("//      pak plugin prověří, že soubor \"IconResources.cs\" obsahuje uložené datum \"LastWriteTime\" souboru \"ASOL.GraphLib.ics\".");
+                    sb.AppendLine("//   Pokud fyzické zdroje (\"ASOL.GraphLib.ics\") jsou novější, pak znovu vygeneruje kompletní obsah souboru \"IconResources.cs\".");
+                    sb.AppendLine("// Generátor tohoto souboru je v aplikaci GraphLib, v kódu \"GraphLib\\Application\\Resources.cs\".");
+                    sb.AppendLine("// Místo, kde je uloženo datum \"LastWriteTime\" souboru \"ASOL.GraphLib.ics\" je na následujícím řádku:");
+                    break;
+            }
             sb.AppendLine("//     ResourceFile.LastWriteTime = " + Noris.LCS.Base.WorkScheduler.Convertor.DateTimeToString(resourceDate));
             sb.AppendLine("#pragma warning disable 1591");
         }
@@ -358,7 +399,8 @@ namespace Asol.Tools.WorkScheduler.Application
             return null;
         }
         /// <summary>
-        /// Metoda vrátí image daného jména
+        /// Metoda vrátí image daného jména. Jméno by mělo pocházet z namespace <see cref="Noris.LCS.Base.WorkScheduler.Resources.Images"/>, 
+        /// nebo z namespace <see cref="Asol.Tools.WorkScheduler.Resources.Images"/>, kde jsou k dispozici jména existujícíh obrázků.
         /// </summary>
         /// <param name="resourceKey"></param>
         /// <returns></returns>

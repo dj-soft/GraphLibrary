@@ -1700,7 +1700,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="side"></param>
         protected void DrawBackgroundImage(GInteractiveDrawArgs e, Rectangle absoluteBounds, bool forceShadow, GuiImage guiImage, RectangleSide side)
         {
-            Image image = Application.App.Resources.GetImage(guiImage);
+            Image image = Application.App.ResourcesApp.GetImage(guiImage);
             if (image == null) return;
             Rectangle imageBounds = GetBackgroundImageBounds(absoluteBounds, image, side);
             if (imageBounds.Width > 0)

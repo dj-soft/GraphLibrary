@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Asol.Tools.WorkScheduler.Application;
-using Asol.Tools.WorkScheduler.Components;
+using RES = Noris.LCS.Base.WorkScheduler.Resources;
 using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Services
@@ -43,11 +43,11 @@ namespace Asol.Tools.WorkScheduler.Services
             group.Order = "A1";
             group.ToolTipTitle = "PRÁCE S DATY (c)2018";
 
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Image, Size = FunctionGlobalItemSize.Whole, Image = Components.IconStandard.Dragon, Text = "DJ soft", UserData = "Rtf" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Image, Size = FunctionGlobalItemSize.Whole, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.DashboardShowPng), Text = "DJ soft", UserData = "Rtf" });
 
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží dokument jako by se nechumelilo", LayoutHint = LayoutHint.NextItemOnSameRow });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.DocumentSaveAs, Text = "Založit jako...", ToolTip = "Založí někam dokument tak, že nebude k nalezení", LayoutHint = LayoutHint.NextItemSkipToNextRow });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentExport, Text = "Exportovat dokument", ToolTip = "Exportuje dokument tak, aby jej všichni viděli", LayoutHint = LayoutHint.NextItemSkipToNextRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.DocumentSave2Png), Text = "Uložit", ToolTip = "Uloží dokument jako by se nechumelilo", LayoutHint = LayoutHint.NextItemOnSameRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.DocumentSaveAs2Png), Text = "Založit jako...", ToolTip = "Založí někam dokument tak, že nebude k nalezení", LayoutHint = LayoutHint.NextItemSkipToNextRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.DocumentExport2Png), Text = "Exportovat dokument", ToolTip = "Exportuje dokument tak, aby jej všichni viděli", LayoutHint = LayoutHint.NextItemSkipToNextRow });
 
             group.ItemClicked += new FunctionItemEventHandler(_ItemInGroupClick);
             
@@ -63,24 +63,24 @@ namespace Asol.Tools.WorkScheduler.Services
             group.LayoutWidth = 16;
 
             List<FunctionGlobalItem> items = new List<FunctionGlobalItem>();
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditCopy, Text = "Copy", ToolTip = "", LayoutHint = LayoutHint.NextItemSkipToNextRow });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditCut, Text = "Cut", ToolTip = "", LayoutHint = LayoutHint.NextItemSkipToNextRow });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditPaste, Text = "Paste", ToolTip = "", LayoutHint = LayoutHint.NextItemSkipToNextRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.EditCopy2Png), Text = "Copy", ToolTip = "", LayoutHint = LayoutHint.NextItemSkipToNextRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.EditCut2Png), Text = "Cut", ToolTip = "", LayoutHint = LayoutHint.NextItemSkipToNextRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.EditPaste2Png), Text = "Paste", ToolTip = "", LayoutHint = LayoutHint.NextItemSkipToNextRow });
 
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = Components.IconStandard.EditPaste, ToolTip = "Napastuje dokument" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = Components.IconStandard.EditUndo, ToolTip = "Undoluje obsah" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = Components.IconStandard.EditRedo, ToolTip = "Redohodí to co jste nečekali" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = Components.IconStandard.Refresh, ToolTip = "Přenačte něco málo z databáze" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.EditPaste2Png), ToolTip = "Napastuje dokument" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.EditUndo2Png), ToolTip = "Undoluje obsah" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.EditRedo2Png), ToolTip = "Redohodí to co jste nečekali" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.ViewRefresh2Png), ToolTip = "Přenačte něco málo z databáze" });
 
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Large, Image = Components.IconStandard.GoLeft, Text = "", ToolTip = "Jděte vlevo" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Large, Image = Components.IconStandard.GoRight, Text = "", ToolTip = "Jděte vpravo", LayoutHint = LayoutHint.ThisItemOnSameRow });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Large, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.ArrowLeft2Png), Text = "", ToolTip = "Jděte vlevo" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Large, Image = App.ResourcesApp.GetImage(RES.Images.Actions24.ArrowRight2Png), Text = "", ToolTip = "Jděte vpravo", LayoutHint = LayoutHint.ThisItemOnSameRow });
 
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = Components.IconStandard.EditRedo, ToolTip = "Zase to redo" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Micro, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.EditRedo4Png), ToolTip = "Zase to redo" });
 
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
 
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.EditUndo, Text = "UNDO", LayoutHint = LayoutHint.ThisItemSkipToNextTable });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.EditRedo, Text = "REDO", LayoutHint = LayoutHint.ThisItemSkipToNextTable, IsEnabled = false });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.EditUndo6Png), Text = "UNDO", LayoutHint = LayoutHint.ThisItemSkipToNextTable });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = App.ResourcesApp.GetImage(RES.Images.Actions16.EditRedo6Png), Text = "REDO", LayoutHint = LayoutHint.ThisItemSkipToNextTable, IsEnabled = false });
 
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Label, Size = FunctionGlobalItemSize.Small, Text = "Databáze:" });
@@ -102,11 +102,11 @@ namespace Asol.Tools.WorkScheduler.Services
         void _DbCombo_SubItemsEnumerateBefore(object sender, FunctionItemEventArgs e)
         {
             e.Item.SubItems.Clear();
-            e.Item.SubItems.Add(new FunctionItem(this) { Text = "První řádek", Image = Components.IconStandard.BulletBlue16, ToolTip = "Výběr databáze z prvního řádku" });
-            e.Item.SubItems.Add(new FunctionItem(this) { Text = "Druhý řádek", Image = Components.IconStandard.BulletGreen16, ToolTip = "Výběr databáze z druhého řádku" });
-            e.Item.SubItems.Add(new FunctionItem(this) { Text = "Třetí řádek", Image = Components.IconStandard.BulletRed16, ToolTip = "Výběr databáze z třetího řádku" });
+            e.Item.SubItems.Add(new FunctionItem(this) { Text = "První řádek", Image = App.ResourcesApp.GetImage(RES.Images.Small16.BulletBluePng), ToolTip = "Výběr databáze z prvního řádku" });
+            e.Item.SubItems.Add(new FunctionItem(this) { Text = "Druhý řádek", Image = App.ResourcesApp.GetImage(RES.Images.Small16.BulletGreenPng), ToolTip = "Výběr databáze z druhého řádku" });
+            e.Item.SubItems.Add(new FunctionItem(this) { Text = "Třetí řádek", Image = App.ResourcesApp.GetImage(RES.Images.Small16.BulletRedPng), ToolTip = "Výběr databáze z třetího řádku" });
             e.Item.SubItems.Add(new FunctionItem(this) { Text = null });
-            e.Item.SubItems.Add(new FunctionItem(this) { Text = "Další řádek", Image = Components.IconStandard.BulletPurple16, ToolTip = "Výběr databáze z dalšího řádku" });
+            e.Item.SubItems.Add(new FunctionItem(this) { Text = "Další řádek", Image = App.ResourcesApp.GetImage(RES.Images.Small16.BulletPurplePng), ToolTip = "Výběr databáze z dalšího řádku" });
 
             if (e.Item.Value == null)
                 e.Item.Value = e.Item.SubItems[0];

@@ -1708,7 +1708,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected void DrawIcon(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
         {
-            Image icon = Application.App.Resources.GetImage(this.OwnerRow.Icon);
+            Image icon = Application.App.ResourcesApp.GetImage(this.OwnerRow.Icon);
             if (icon == null) return;
 
             Rectangle bounds = boundsAbsolute.Enlarge(-1, -1, -1, -1);
@@ -1742,13 +1742,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 if (row.IsChecked)
                 {
                     guiImage = row.RowCheckedImage;
-                    if (guiImage != null) return Application.App.Resources.GetImage(guiImage);
+                    if (guiImage != null) return Application.App.ResourcesApp.GetImage(guiImage);
                     return Skin.Grid.RowCheckedImage;
                 }
                 if (row.Table.AllowRowCheckedByClick)
                 {
                     guiImage = row.RowNonCheckedImage;
-                    if (guiImage != null) return Application.App.Resources.GetImage(guiImage);
+                    if (guiImage != null) return Application.App.ResourcesApp.GetImage(guiImage);
                     return Skin.Grid.RowNotCheckedImage;
                 }
                 return null;

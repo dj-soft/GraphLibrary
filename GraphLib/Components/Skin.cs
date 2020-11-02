@@ -1677,7 +1677,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Obrázek u označeného prvku ("fajfka")
         /// </summary>
-        protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogOkApply2Png); } }
+        protected virtual Image DefaultItemSelectedImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.DialogOkApply2Png); } }
         #endregion
     }
     /// <summary>
@@ -1875,27 +1875,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Ikona tlačítka vztahu na záznam
         /// </summary>
-        protected virtual Image DefaultIconRelationRecord { get { return IconStandard.RelationRecord;; } }
+        protected virtual Image DefaultIconRelationRecord { get { return StandardIcons.RelationRecord;; } }
         /// <summary>
         /// Default pro: Ikona tlačítka vztahu na dokument
         /// </summary>
-        protected virtual Image DefaultIconRelationDocument { get { return IconStandard.RelationDocument; ; } }
+        protected virtual Image DefaultIconRelationDocument { get { return StandardIcons.RelationDocument; ; } }
         /// <summary>
         /// Default pro: Ikona tlačítka Otevření složky
         /// </summary>
-        protected virtual Image DefaultIconOpenFolder { get { return IconStandard.OpenFolder; ; } }
+        protected virtual Image DefaultIconOpenFolder { get { return StandardIcons.OpenFolder; ; } }
         /// <summary>
         /// Default pro: Ikona tlačítka Kalkulačka
         /// </summary>
-        protected virtual Image DefaultIconCalculator { get { return IconStandard.Calculator; ; } }
+        protected virtual Image DefaultIconCalculator { get { return StandardIcons.Calculator; ; } }
         /// <summary>
         /// Default pro: Ikona tlačítka Kalendář
         /// </summary>
-        protected virtual Image DefaultIconCalendar { get { return IconStandard.Calendar; ; } }
+        protected virtual Image DefaultIconCalendar { get { return StandardIcons.Calendar; ; } }
         /// <summary>
         /// Default pro: Ikona tlačítka DropDown
         /// </summary>
-        protected virtual Image DefaultIconDropDown { get { return IconStandard.DropDown; ; } }
+        protected virtual Image DefaultIconDropDown { get { return StandardIcons.DropDown; ; } }
         #endregion
     }
     /// <summary>
@@ -2467,31 +2467,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Grid: ikona třídění ASC
         /// </summary>
-        protected virtual Image DefaultSortAscendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoUp2Png); } }          // { get { return IconStandard.SortAsc; } }
+        protected virtual Image DefaultSortAscendingImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.GoUp2Png); } }          // { get { return IconStandard.SortAsc; } }
         /// <summary>
         /// Default pro: Grid: ikona třídění DESC
         /// </summary>
-        protected virtual Image DefaultSortDescendingImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.GoDown2Png); } }       // { get { return IconStandard.SortDesc; } }
+        protected virtual Image DefaultSortDescendingImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.GoDown2Png); } }       // { get { return IconStandard.SortDesc; } }
         /// <summary>
         /// Default pro: Grid: ikona Checked v řádku
         /// </summary>
-        protected virtual Image DefaultRowCheckedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogAccept2Png); } }    // { get { return IconStandard.RowSelected; } }
+        protected virtual Image DefaultRowCheckedImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.DialogAccept2Png); } }    // { get { return IconStandard.RowSelected; } }
         /// <summary>
         /// Default pro: Grid: ikona NonChecked v řádku v tabulce, která podporue Checked
         /// </summary>
-        protected virtual Image DefaultRowNotCheckedImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogNotAccept2Png); } }
+        protected virtual Image DefaultRowNotCheckedImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.DialogNotAccept2Png); } }
         /// <summary>
         /// Default pro: Grid: ikona DeselectAll v záhlaví tabulky
         /// </summary>
-        protected virtual Image DefaultRowHeaderDeselectedAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.DialogClose2Png); } }
+        protected virtual Image DefaultRowHeaderDeselectedAllImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.DialogClose2Png); } }
         /// <summary>
         /// Default pro: Grid: ikona ExpandAll v záhlaví tabulky
         /// </summary>
-        protected virtual Image DefaultRowHeaderExpandAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowRightDouble2Png); } }
+        protected virtual Image DefaultRowHeaderExpandAllImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.ArrowRightDouble2Png); } }
         /// <summary>
         /// Default pro: Grid: ikona CollapseAll v záhlaví tabulky
         /// </summary>
-        protected virtual Image DefaultRowHeaderCollapseAllImage { get { return Application.App.Resources.GetImage(R.Images.Actions16.ArrowLeftDouble2Png); } }
+        protected virtual Image DefaultRowHeaderCollapseAllImage { get { return Application.App.ResourcesApp.GetImage(R.Images.Actions16.ArrowLeftDouble2Png); } }
         /// <summary>
         /// Default pro: Grid: barva linke TreeView
         /// </summary>
@@ -2872,7 +2872,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             string name = this.GetName(imageType, bigSize);
             if (String.IsNullOrEmpty(name)) return null;
-            return Application.App.Resources.GetImage(name);
+            return Application.App.ResourcesApp.GetImage(name);
         }
         #endregion
         #region Default jména = vazba na konkrétní obrázky

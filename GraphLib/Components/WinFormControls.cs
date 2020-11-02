@@ -218,7 +218,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 form.DialogTitle = (!String.IsNullOrEmpty(title) ? title : GetDefaultTitleForButtons(buttons));
                 if (icon == null || icon.IsEmpty)
                     icon = GetDefaultIconForButtons(buttons);
-                form.DialogIcon = Application.App.Resources.GetImage(icon);
+                form.DialogIcon = Application.App.ResourcesApp.GetImage(icon);
                 form.Buttons = buttons;
                 form.ShowDialog(owner);
                 result = form.GuiResult;
@@ -338,7 +338,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 Size = new Size(110, 32),
                 Text = text,
-                Image = Application.App.Resources.GetImage(image),
+                Image = Application.App.ResourcesApp.GetImage(image),
                 Visible = false,
                 Tag = value
             };

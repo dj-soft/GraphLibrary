@@ -727,7 +727,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTabPage AddCollapseHeader()
         {
             // TabItemKeyCollapse, "", Components.IconStandard.GoTop, tabOrder: 99999
-            return this._AddHeader(true, null, "", Components.IconStandard.GoTop, 99999, null);
+            return this._AddHeader(true, null, "", Components.StandardIcons.GoTop, 99999, null);
         }
         /// <summary>
         /// Přidá další záložku

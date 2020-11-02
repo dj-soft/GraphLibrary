@@ -2118,7 +2118,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDownPng;
             }
 
-            return Application.App.Resources.GetImage(iconName);
+            return Application.App.ResourcesApp.GetImage(iconName);
         }
         /// <summary>
         /// Vrátí sytost barvy pro ikonu a daný stav

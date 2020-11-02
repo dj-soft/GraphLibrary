@@ -5548,8 +5548,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         Color? ITimeGraphItem.RatioEndBackColor { get { return this._GuiGraphItem.RatioEndBackColor; } }
         Color? ITimeGraphItem.RatioLineColor { get { return this._GuiGraphItem.RatioLineColor; } }
         int? ITimeGraphItem.RatioLineWidth { get { return this._GuiGraphItem.RatioLineWidth; } }
-        Image ITimeGraphItem.ImageBegin { get { return App.Resources.GetImage(this._GuiGraphItem.ImageBegin); } }
-        Image ITimeGraphItem.ImageEnd { get { return App.Resources.GetImage(this._GuiGraphItem.ImageEnd); } }
+        Image ITimeGraphItem.ImageBegin { get { return App.ResourcesApp.GetImage(this._GuiGraphItem.ImageBegin); } }
+        Image ITimeGraphItem.ImageEnd { get { return App.ResourcesApp.GetImage(this._GuiGraphItem.ImageEnd); } }
         // Kreslení:
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
