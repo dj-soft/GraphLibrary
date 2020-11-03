@@ -31,6 +31,7 @@
             this.StatusStripPanel = new System.Windows.Forms.StatusStrip();
             this.StatusStripLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.ToolStripPanel = new System.Windows.Forms.Panel();
+            this._FillInvisibleCheck = new System.Windows.Forms.CheckBox();
             this.labelType = new System.Windows.Forms.Label();
             this.RunButton = new System.Windows.Forms.Button();
             this.labelValue = new System.Windows.Forms.Label();
@@ -41,7 +42,6 @@
             this.radioButtonDevExpr = new System.Windows.Forms.RadioButton();
             this.radioButtonWinForm = new System.Windows.Forms.RadioButton();
             this.TestContentPanel = new System.Windows.Forms.Panel();
-            this._FillInvisibleCheck = new System.Windows.Forms.CheckBox();
             this.StatusStripPanel.SuspendLayout();
             this.ToolStripPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarNumber)).BeginInit();
@@ -55,7 +55,7 @@
             this.StatusStripPanel.Location = new System.Drawing.Point(0, 626);
             this.StatusStripPanel.Name = "StatusStripPanel";
             this.StatusStripPanel.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
-            this.StatusStripPanel.Size = new System.Drawing.Size(1400, 24);
+            this.StatusStripPanel.Size = new System.Drawing.Size(734, 24);
             this.StatusStripPanel.TabIndex = 1;
             // 
             // StatusStripLabel1
@@ -63,7 +63,7 @@
             this.StatusStripLabel1.AutoSize = false;
             this.StatusStripLabel1.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.StatusStripLabel1.Name = "StatusStripLabel1";
-            this.StatusStripLabel1.Size = new System.Drawing.Size(1385, 19);
+            this.StatusStripLabel1.Size = new System.Drawing.Size(719, 19);
             this.StatusStripLabel1.Spring = true;
             this.StatusStripLabel1.Text = "DataForm sample";
             this.StatusStripLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -85,8 +85,18 @@
             this.ToolStripPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.ToolStripPanel.Location = new System.Drawing.Point(0, 0);
             this.ToolStripPanel.Name = "ToolStripPanel";
-            this.ToolStripPanel.Size = new System.Drawing.Size(1400, 104);
+            this.ToolStripPanel.Size = new System.Drawing.Size(734, 104);
             this.ToolStripPanel.TabIndex = 3;
+            // 
+            // _FillInvisibleCheck
+            // 
+            this._FillInvisibleCheck.AutoSize = true;
+            this._FillInvisibleCheck.Location = new System.Drawing.Point(248, 79);
+            this._FillInvisibleCheck.Name = "_FillInvisibleCheck";
+            this._FillInvisibleCheck.Size = new System.Drawing.Size(299, 17);
+            this._FillInvisibleCheck.TabIndex = 9;
+            this._FillInvisibleCheck.Text = "Generovat prvky dříve, než je okno zobrazeno (optimální)";
+            this._FillInvisibleCheck.UseVisualStyleBackColor = true;
             // 
             // labelType
             // 
@@ -100,10 +110,11 @@
             // 
             // RunButton
             // 
+            this.RunButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.RunButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.RunButton.Location = new System.Drawing.Point(565, 11);
             this.RunButton.Name = "RunButton";
-            this.RunButton.Size = new System.Drawing.Size(132, 63);
+            this.RunButton.Size = new System.Drawing.Size(155, 63);
             this.RunButton.TabIndex = 7;
             this.RunButton.Text = "Vygeneruj!";
             this.RunButton.UseVisualStyleBackColor = true;
@@ -131,6 +142,8 @@
             // 
             // trackBarNumber
             // 
+            this.trackBarNumber.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.trackBarNumber.LargeChange = 20;
             this.trackBarNumber.Location = new System.Drawing.Point(238, 31);
             this.trackBarNumber.Maximum = 400;
@@ -198,24 +211,14 @@
             this.TestContentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TestContentPanel.Location = new System.Drawing.Point(0, 104);
             this.TestContentPanel.Name = "TestContentPanel";
-            this.TestContentPanel.Size = new System.Drawing.Size(1400, 522);
+            this.TestContentPanel.Size = new System.Drawing.Size(734, 522);
             this.TestContentPanel.TabIndex = 4;
-            // 
-            // _FillInvisibleCheck
-            // 
-            this._FillInvisibleCheck.AutoSize = true;
-            this._FillInvisibleCheck.Location = new System.Drawing.Point(248, 79);
-            this._FillInvisibleCheck.Name = "_FillInvisibleCheck";
-            this._FillInvisibleCheck.Size = new System.Drawing.Size(299, 17);
-            this._FillInvisibleCheck.TabIndex = 9;
-            this._FillInvisibleCheck.Text = "Generovat prvky dříve, než je okno zobrazeno (optimální)";
-            this._FillInvisibleCheck.UseVisualStyleBackColor = true;
             // 
             // DataForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1400, 650);
+            this.ClientSize = new System.Drawing.Size(734, 650);
             this.Controls.Add(this.TestContentPanel);
             this.Controls.Add(this.ToolStripPanel);
             this.Controls.Add(this.StatusStripPanel);
