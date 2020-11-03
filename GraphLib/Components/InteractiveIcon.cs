@@ -36,17 +36,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Dynamicky získaná ikona - používá se pro standardní ikony, které čtou obrázek ze Skinu
         /// </summary>
-        public Func<GInteractiveState, Image> ImageDynamic { get; set; }
+        public Func<GInteractiveState, int, Image> ImageDynamic { get; set; }
         /// <summary>
-        /// Vrací Image pro daný interaktivní stav objektu
+        /// Vrací Image pro daný interaktivní stav objektu a velikost
         /// </summary>
         /// <param name="interactiveState"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
-        public Image GetImage(GInteractiveState interactiveState)
+        public Image GetImage(GInteractiveState interactiveState, int size)
         {
-            Image image = _GetStandardImage(interactiveState);
+            Image image = _GetStandardImage(interactiveState, size);
             if (image == null)
-                ImageDynamic?.Invoke(interactiveState);
+                ImageDynamic?.Invoke(interactiveState, size);
             if (image == null)
                 image = (interactiveState.HasFlag(GInteractiveState.Disabled) ? ImageDisabled :
                         (interactiveState.HasFlag(GInteractiveState.FlagOver) ? ImageMouseOver :
@@ -67,7 +68,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawAsShadow"></param>
         public void DrawIcon(Graphics graphics, Rectangle absoluteBounds, GInteractiveState interactiveState = GInteractiveState.Enabled, bool drawAsShadow = false)
         {
-            Image image = GetImage(interactiveState);
+            Image image = GetImage(interactiveState, absoluteBounds.Height);
             if (image == null) return;
             if (drawAsShadow)
                 GPainter.DrawImage(graphics, absoluteBounds, image, 0.45f);
@@ -111,19 +112,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí standardní ikonu = podle typu vrátí aktuálně platnou ikonu ze skinu, kde může být kdykoliv změněna a přitom se nemusí měnit obsah instance <see cref="InteractiveIcon"/>
         /// </summary>
         /// <param name="interactiveState"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
-        private Image _GetStandardImage(GInteractiveState interactiveState)
+        private Image _GetStandardImage(GInteractiveState interactiveState, int size)
         {
             if (_IconType.HasValue)
             {
                 switch (_IconType.Value)
                 {
-                    case StandardIconType.RelationRecord: return Skin.TextBox.IconRelationRecord;
-                    case StandardIconType.RelationDocument: return Skin.TextBox.IconRelationDocument;
-                    case StandardIconType.OpenFolder: return Skin.TextBox.IconOpenFolder;
-                    case StandardIconType.Calculator: return Skin.TextBox.IconCalculator;
-                    case StandardIconType.Calendar: return Skin.TextBox.IconCalendar;
-                    case StandardIconType.DropDown: return Skin.TextBox.IconDropDown;
+                    case StandardIconType.RelationRecord: return StandardIcons.RelationRecordForSize(size);            // Skin.TextBox.IconRelationRecord;
+                    case StandardIconType.RelationDocument: return StandardIcons.RelationDocumentForSize(size);        // Skin.TextBox.IconRelationDocument;
+                    case StandardIconType.OpenFolder: return StandardIcons.OpenFolderForSize(size);                    // Skin.TextBox.IconOpenFolder;
+                    case StandardIconType.Calculator: return StandardIcons.CalculatorForSize(size);                    // Skin.TextBox.IconCalculator;
+                    case StandardIconType.Calendar: return StandardIcons.CalendarForSize(size);                        // Skin.TextBox.IconCalendar;
+                    case StandardIconType.DropDown: return StandardIcons.DropDownForSize(size);                        // Skin.TextBox.IconDropDown;
                 }
             }
             return null;

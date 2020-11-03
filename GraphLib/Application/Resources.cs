@@ -188,7 +188,7 @@ namespace Asol.Tools.WorkScheduler.Application
                     var first = classFiles[0];
 
                     sb.AppendLine("    #region " + first.ClassName);
-                    _SaveResourceAddClassHeader(sb, first);
+                    _SaveResourceAddClassHeader(sb, first, targetName);
                     foreach (var info in classFiles)
                         sb.AppendLine("        public const string " + info.FileName + " = \"" + info.Key + "\";");
                     
@@ -262,18 +262,33 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <param name="sb"></param>
         /// <param name="first"></param>
-        private static void _SaveResourceAddClassHeader(StringBuilder sb, ResourceItem first)
+        /// <param name="targetName"></param>
+        private static void _SaveResourceAddClassHeader(StringBuilder sb, ResourceItem first, string targetName)
         {
             sb.AppendLine("    /// <summary>");
             sb.AppendLine("    /// Obsah adresáře " + first.ClassText);
             sb.AppendLine("    /// <para/>");
-            sb.AppendLine("    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor \"ASOL.GraphLib.res\" v adresáři pluginu WorkScheduler,");
-            sb.AppendLine("    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.");
-            sb.AppendLine("    /// <para/>");
-            sb.AppendLine("    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,");
-            sb.AppendLine("    /// poté celý adresář zazipuje, přejmenuje celý zip na \"ASOL.GraphLib.res\" a vloží soubor do balíčku WorkScheduleru.");
-            sb.AppendLine("    /// <para/>");
-            sb.AppendLine("    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.");
+            switch (targetName)
+            {
+                case "WorkSchedulerResources.cs":
+                    sb.AppendLine("    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor \"ASOL.GraphLib.res\" v adresáři pluginu WorkScheduler,");
+                    sb.AppendLine("    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.");
+                    sb.AppendLine("    /// <para/>");
+                    sb.AppendLine("    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,");
+                    sb.AppendLine("    /// poté celý adresář zazipuje, přejmenuje celý zip na \"ASOL.GraphLib.res\" a vloží soubor do balíčku WorkScheduleru.");
+                    sb.AppendLine("    /// <para/>");
+                    sb.AppendLine("    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.");
+                    break;
+                case "IconResources.cs":
+                    sb.AppendLine("    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor \"ASOL.GraphLib.ics\" v adresáři GraphLib,");
+                    sb.AppendLine("    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.");
+                    sb.AppendLine("    /// <para/>");
+                    sb.AppendLine("    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,");
+                    sb.AppendLine("    /// poté celý adresář zazipuje, přejmenuje celý zip na \"ASOL.GraphLib.ics\" a vloží soubor zpátky do adresáře GraphLib.");
+                    sb.AppendLine("    /// <para/>");
+                    sb.AppendLine("    /// Poté programátor spustí GraphLib z Visual studia v režimu Debug, a aplikace při startu nově vygeneruje soubor Components/IconResources.cs, obsahující nově dodané položky jako konstanty.");
+                    break;
+            }
             sb.AppendLine("    /// </summary>");
             sb.AppendLine("    public class " + first.ClassName);
             sb.AppendLine("    {");

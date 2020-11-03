@@ -85,27 +85,51 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Standardní ikona : RelationRecord
         /// </summary>
-        public static Image RelationRecord { get { return App.ResourcesExe.GetImage(ICS.Images.AsolGraphlibIcs_Pic24.ArrowRightBluePng); } }
+        public static Image RelationRecord { get { return App.ResourcesExe.GetImage(ICS.Images.Pic24.ArrowRightBluePng); } }
+        /// <summary>
+        /// Standardní ikona : RelationRecord pro danou velikost
+        /// </summary>
+        public static Image RelationRecordForSize(int size) { return GetImageForSize(App.ResourcesExe, size, ICS.Images.Pic16.ArrowRightBluePng, ICS.Images.Pic24.ArrowRightBluePng, ICS.Images.Pic32.ArrowRightBluePng); }
         /// <summary>
         /// Standardní ikona : RelationDocument
         /// </summary>
-        public static Image RelationDocument { get { return App.ResourcesExe.GetImage(ICS.Images.AsolGraphlibIcs_Pic24.ArrowRightYellowPng); } }
+        public static Image RelationDocument { get { return App.ResourcesExe.GetImage(ICS.Images.Pic24.ArrowRightYellowdarkPng); } }
+        /// <summary>
+        /// Standardní ikona : RelationDocument pro danou velikost
+        /// </summary>
+        public static Image RelationDocumentForSize(int size) { return GetImageForSize(App.ResourcesExe, size, ICS.Images.Pic16.ArrowRightYellowdarkPng, ICS.Images.Pic24.ArrowRightYellowdarkPng, ICS.Images.Pic32.ArrowRightYellowdarkPng); }
         /// <summary>
         /// Standardní ikona : OpenFolder
         /// </summary>
-        public static Image OpenFolder { get { return App.ResourcesExe.GetImage(ICS.Images.AsolGraphlibIcs_Pic24.FolderOrangePng); } }
+        public static Image OpenFolder { get { return App.ResourcesExe.GetImage(ICS.Images.Pic24.FolderYellowOpenPng); } }
+        /// <summary>
+        /// Standardní ikona : OpenFolder pro danou velikost
+        /// </summary>
+        public static Image OpenFolderForSize(int size) { return GetImageForSize(App.ResourcesExe, size, ICS.Images.Pic16.FolderYellowOpenPng, ICS.Images.Pic24.FolderYellowOpenPng, ICS.Images.Pic32.FolderYellowOpenPng); }
         /// <summary>
         /// Standardní ikona : Kalkulačka
         /// </summary>
-        public static Image Calculator { get { return App.ResourcesExe.GetImage(ICS.Images.AsolGraphlibIcs_Pic24.AccessoriesCalculator3Png); } }
+        public static Image Calculator { get { return App.ResourcesExe.GetImage(ICS.Images.Pic24.AccessoriesCalculator3Png); } }
+        /// <summary>
+        /// Standardní ikona : Kalkulačka pro danou velikost
+        /// </summary>
+        public static Image CalculatorForSize(int size) { return GetImageForSize(App.ResourcesExe, size, ICS.Images.Pic16.AccessoriesCalculator3Png, ICS.Images.Pic24.AccessoriesCalculator3Png, ICS.Images.Pic32.AccessoriesCalculator3Png); }
         /// <summary>
         /// Standardní ikona : Kalendář
         /// </summary>
-        public static Image Calendar { get { return App.ResourcesExe.GetImage(ICS.Images.AsolGraphlibIcs_Pic24.AccessoriesDatePng); } }
+        public static Image Calendar { get { return App.ResourcesExe.GetImage(ICS.Images.Pic24.AccessoriesDatePng); } }
+        /// <summary>
+        /// Standardní ikona : Kalendář pro danou velikost
+        /// </summary>
+        public static Image CalendarForSize(int size) { return GetImageForSize(App.ResourcesExe, size, ICS.Images.Pic16.AccessoriesDatePng, ICS.Images.Pic24.AccessoriesDatePng, ICS.Images.Pic32.AccessoriesDatePng); }
         /// <summary>
         /// Standardní ikona : DropDown
         /// </summary>
-        public static Image DropDown { get { return App.ResourcesExe.GetImage(ICS.Images.AsolGraphlibIcs_Pic24.ComboDownPng); } }
+        public static Image DropDown { get { return App.ResourcesExe.GetImage(ICS.Images.Pic24.ComboDownPng); } }
+        /// <summary>
+        /// Standardní ikona : DropDown pro danou velikost
+        /// </summary>
+        public static Image DropDownForSize(int size) { return GetImageForSize(App.ResourcesExe, size, ICS.Images.Pic16.ComboDownPng, ICS.Images.Pic24.ComboDownPng, ICS.Images.Pic32.ComboDownPng); }
 
         /// <summary>
         /// Standardní ikona : Refresh
@@ -150,5 +174,35 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Standardní ikona : Help
         /// </summary>
         public static Image IconHelp { get { return App.ResourcesApp.GetImage(RES.Images.Actions24.HelpPng); } }
+
+        /// <summary>
+        /// Vrátí Image z daného resource pro danou velikost a dané názvy ikon pro velikost 16,24,32 pixel
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="size"></param>
+        /// <param name="image16"></param>
+        /// <param name="image24"></param>
+        /// <param name="image32"></param>
+        /// <returns></returns>
+        private static Image GetImageForSize(Application.Resources resources, int size, string image16, string image24, string image32)
+        {
+            bool size16 = (size <= 16);
+            bool size24 = (size <= 24);
+            bool size32 = (size <= 32);
+            bool has16 = !String.IsNullOrEmpty(image16);
+            bool has24 = !String.IsNullOrEmpty(image24);
+            bool has32 = !String.IsNullOrEmpty(image32);
+
+            if (size16 && has16) return resources.GetImage(image16);
+            if ((size24 && has24) || size16) return resources.GetImage(image24);
+            if ((size32 && has32) || size24) return resources.GetImage(image32);
+
+            if (has32) return resources.GetImage(image32);
+            if (has24) return resources.GetImage(image24);
+            if (has16) return resources.GetImage(image16);
+
+            return null;
+        }
+
     }
 }
