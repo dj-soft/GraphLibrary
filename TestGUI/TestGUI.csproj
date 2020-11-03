@@ -235,9 +235,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Pics\dialog-close.png" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\GraphLib\GraphLib.csproj">
       <Project>{eeed39bd-6eae-4167-b694-cb812598395d}</Project>
       <Name>GraphLib</Name>
