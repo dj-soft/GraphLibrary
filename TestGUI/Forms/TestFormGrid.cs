@@ -26,6 +26,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 {
                     InitializeComponent();
                 }
+                this.CloseButton.Image = Application.App.ResourcesApp.GetImage(RES.Images.Actions24.DialogClosePng);
                 this.StartPosition = FormStartPosition.CenterScreen;
                 this.InitGControl();
                 this.SizeChanged += new EventHandler(TestFormGrid_SizeChanged);

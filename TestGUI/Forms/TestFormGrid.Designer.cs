@@ -38,7 +38,6 @@
             // CloseButton
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.CloseButton.Image = global::Asol.Tools.WorkScheduler.TestGUI.Properties.Resources.dialog_close;
             this.CloseButton.Location = new System.Drawing.Point(934, 521);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(170, 56);
