@@ -216,21 +216,27 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             long memoryBefore = GC.GetTotalMemory(true);
             StopwatchGetLastMiliseconds();                           // Čas spotřebovaný na GC.GetTotalMemory(true) mě nezajímá: nulujeme mezičas a zahodíme jej
 
+            this.TestContentPanel.SuspendLayout();
+
+            bool fillInvisible = _FillInvisibleCheck.Checked;
             switch (library)
             {
                 case DataFormtestLibraryType.WinForms:
-                    CreateTestObjectWinForm(number, times);
+                    CreateTestObjectWinForm(number, fillInvisible, times);
                     break;
                 case DataFormtestLibraryType.DevExpress:
-                    CreateTestObjectDevExpress(number, times);
+                    CreateTestObjectDevExpress(number, fillInvisible, times);
                     break;
                 case DataFormtestLibraryType.Infragistic:
-                    CreateTestObjectInfragistic(number, times);
+                    CreateTestObjectInfragistic(number, fillInvisible, times);
                     break;
                 case DataFormtestLibraryType.Asol:
-                    CreateTestObjectAsol(number, times);
+                    CreateTestObjectAsol(number, fillInvisible, times);
                     break;
             }
+
+            this.TestContentPanel.ResumeLayout(true);
+            AddTime(times, "ResumeLayout");
 
             long memoryAfter = GC.GetTotalMemory(false);
             decimal memoryUsed = memoryAfter - memoryBefore;
@@ -239,66 +245,114 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             ShowTime(times);
         }
-        private void CreateTestObjectWinForm(int number, List<Tuple<string, string>> times)
+        private void CreateTestObjectWinForm(int number, bool fillInvisible, List<Tuple<string, string>> times)
         {
             var dataFormCtrl = new Asol.Tools.WorkScheduler.TestGUI.TestComponents.WinFormDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
             AddTime(times, "Vytvoření WINFORM controlu");
 
-            this.TestContentPanel.Controls.Add(dataFormCtrl);
-            _TestObject = dataFormCtrl;
-            AddTime(times, "Přidání do Panelu");
+            if (fillInvisible)
+            {
+                dataFormCtrl.AddDataFormItems(10, number / 10);
+                AddTime(times, "Vygenerování prvků");
 
-            dataFormCtrl.AddDataFormItems(10, number / 10);
-            AddTime(times, "Vygenerování prvků");
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+            }
+            else
+            {
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+
+                dataFormCtrl.AddDataFormItems(10, number / 10);
+                AddTime(times, "Vygenerování prvků");
+            }
 
             dataFormCtrl.Refresh();
             AddTime(times, "Vykreslení");
         }
-        private void CreateTestObjectDevExpress(int number, List<Tuple<string, string>> times)
+        private void CreateTestObjectDevExpress(int number, bool fillInvisible, List<Tuple<string, string>> times)
         {
             Control dataFormCtrl = Asol.Tools.WorkScheduler.DevExpressTest.DxManager.CreateWinFormDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
             AddTime(times, "Vytvoření DEVEXPRESS controlu");
 
-            this.TestContentPanel.Controls.Add(dataFormCtrl);
-            _TestObject = dataFormCtrl;
-            AddTime(times, "Přidání do Panelu");
+            if (fillInvisible)
+            {
+                Asol.Tools.WorkScheduler.DevExpressTest.DxManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
+                AddTime(times, "Vygenerování prvků");
 
-            Asol.Tools.WorkScheduler.DevExpressTest.DxManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
-            AddTime(times, "Vygenerování prvků");
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+            }
+            else
+            {
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+
+                Asol.Tools.WorkScheduler.DevExpressTest.DxManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
+                AddTime(times, "Vygenerování prvků");
+            }
 
             dataFormCtrl.Refresh();
             AddTime(times, "Vykreslení");
         }
-        private void CreateTestObjectInfragistic(int number, List<Tuple<string, string>> times)
+        private void CreateTestObjectInfragistic(int number, bool fillInvisible, List<Tuple<string, string>> times)
         {
             Control dataFormCtrl = Asol.Tools.WorkScheduler.DevExpressTest.IfManager.CreateWinFormDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
             AddTime(times, "Vytvoření INFRAGISTIC controlu");
-          
-            this.TestContentPanel.Controls.Add(dataFormCtrl);
-            _TestObject = dataFormCtrl;
-            AddTime(times, "Přidání do Panelu");
 
-            Asol.Tools.WorkScheduler.DevExpressTest.IfManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
-            AddTime(times, "Vygenerování prvků");
+            if (fillInvisible)
+            {
+                Asol.Tools.WorkScheduler.DevExpressTest.IfManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
+                AddTime(times, "Vygenerování prvků");
+
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+            }
+            else
+            {
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+
+                Asol.Tools.WorkScheduler.DevExpressTest.IfManager.AddDataFormItems(dataFormCtrl, 10, number / 10);
+                AddTime(times, "Vygenerování prvků");
+            }
 
             dataFormCtrl.Refresh();
             AddTime(times, "Vykreslení");
         }
-        private void CreateTestObjectAsol(int number, List<Tuple<string, string>> times)
+        private void CreateTestObjectAsol(int number, bool fillInvisible, List<Tuple<string, string>> times)
         {
             var dataFormCtrl = new Asol.Tools.WorkScheduler.DataForm.GDataFormControl();
             dataFormCtrl.Dock = DockStyle.Fill;
             AddTime(times, "Vytvoření ASOL controlu");
-           
-            this.TestContentPanel.Controls.Add(dataFormCtrl);
-            _TestObject = dataFormCtrl;
-            AddTime(times, "Přidání do Panelu");
 
-            dataFormCtrl.AddDataFormItems(10, number / 10);
-            AddTime(times, "Vygenerování prvků");
+            if (fillInvisible)
+            {
+                dataFormCtrl.AddDataFormItems(10, number / 10);
+                AddTime(times, "Vygenerování prvků");
+
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+            }
+            else
+            {
+                this.TestContentPanel.Controls.Add(dataFormCtrl);
+                _TestObject = dataFormCtrl;
+                AddTime(times, "Přidání do Panelu");
+
+                dataFormCtrl.AddDataFormItems(10, number / 10);
+                AddTime(times, "Vygenerování prvků");
+            }
 
             dataFormCtrl.Refresh();
             AddTime(times, "Vykreslení");

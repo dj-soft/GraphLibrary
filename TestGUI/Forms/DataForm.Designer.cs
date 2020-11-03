@@ -41,6 +41,7 @@
             this.radioButtonDevExpr = new System.Windows.Forms.RadioButton();
             this.radioButtonWinForm = new System.Windows.Forms.RadioButton();
             this.TestContentPanel = new System.Windows.Forms.Panel();
+            this._FillInvisibleCheck = new System.Windows.Forms.CheckBox();
             this.StatusStripPanel.SuspendLayout();
             this.ToolStripPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBarNumber)).BeginInit();
@@ -51,10 +52,10 @@
             this.StatusStripPanel.BackColor = System.Drawing.SystemColors.ControlDark;
             this.StatusStripPanel.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusStripLabel1});
-            this.StatusStripPanel.Location = new System.Drawing.Point(0, 323);
+            this.StatusStripPanel.Location = new System.Drawing.Point(0, 626);
             this.StatusStripPanel.Name = "StatusStripPanel";
             this.StatusStripPanel.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
-            this.StatusStripPanel.Size = new System.Drawing.Size(734, 24);
+            this.StatusStripPanel.Size = new System.Drawing.Size(1400, 24);
             this.StatusStripPanel.TabIndex = 1;
             // 
             // StatusStripLabel1
@@ -62,7 +63,7 @@
             this.StatusStripLabel1.AutoSize = false;
             this.StatusStripLabel1.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.StatusStripLabel1.Name = "StatusStripLabel1";
-            this.StatusStripLabel1.Size = new System.Drawing.Size(719, 19);
+            this.StatusStripLabel1.Size = new System.Drawing.Size(1385, 19);
             this.StatusStripLabel1.Spring = true;
             this.StatusStripLabel1.Text = "DataForm sample";
             this.StatusStripLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -71,6 +72,7 @@
             // 
             this.ToolStripPanel.BackColor = System.Drawing.SystemColors.ControlDark;
             this.ToolStripPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.ToolStripPanel.Controls.Add(this._FillInvisibleCheck);
             this.ToolStripPanel.Controls.Add(this.labelType);
             this.ToolStripPanel.Controls.Add(this.RunButton);
             this.ToolStripPanel.Controls.Add(this.labelValue);
@@ -83,7 +85,7 @@
             this.ToolStripPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.ToolStripPanel.Location = new System.Drawing.Point(0, 0);
             this.ToolStripPanel.Name = "ToolStripPanel";
-            this.ToolStripPanel.Size = new System.Drawing.Size(734, 86);
+            this.ToolStripPanel.Size = new System.Drawing.Size(1400, 104);
             this.ToolStripPanel.TabIndex = 3;
             // 
             // labelType
@@ -99,7 +101,7 @@
             // RunButton
             // 
             this.RunButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.RunButton.Location = new System.Drawing.Point(580, 11);
+            this.RunButton.Location = new System.Drawing.Point(565, 11);
             this.RunButton.Name = "RunButton";
             this.RunButton.Size = new System.Drawing.Size(132, 63);
             this.RunButton.TabIndex = 7;
@@ -194,10 +196,20 @@
             // 
             this.TestContentPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.TestContentPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.TestContentPanel.Location = new System.Drawing.Point(0, 86);
+            this.TestContentPanel.Location = new System.Drawing.Point(0, 104);
             this.TestContentPanel.Name = "TestContentPanel";
-            this.TestContentPanel.Size = new System.Drawing.Size(734, 237);
+            this.TestContentPanel.Size = new System.Drawing.Size(1400, 522);
             this.TestContentPanel.TabIndex = 4;
+            // 
+            // _FillInvisibleCheck
+            // 
+            this._FillInvisibleCheck.AutoSize = true;
+            this._FillInvisibleCheck.Location = new System.Drawing.Point(248, 79);
+            this._FillInvisibleCheck.Name = "_FillInvisibleCheck";
+            this._FillInvisibleCheck.Size = new System.Drawing.Size(299, 17);
+            this._FillInvisibleCheck.TabIndex = 9;
+            this._FillInvisibleCheck.Text = "Generovat prvky dříve, než je okno zobrazeno (optimální)";
+            this._FillInvisibleCheck.UseVisualStyleBackColor = true;
             // 
             // DataForm
             // 
@@ -235,5 +247,6 @@
         private System.Windows.Forms.TrackBar trackBarNumber;
         private System.Windows.Forms.Label labelType;
         private System.Windows.Forms.Button RunButton;
+        private System.Windows.Forms.CheckBox _FillInvisibleCheck;
     }
 }
