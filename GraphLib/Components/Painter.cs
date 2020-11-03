@@ -22,7 +22,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="backColor"></param>
-        internal static void DrawRectangle(Graphics graphics, Rectangle bounds, Color backColor)
+        public static void DrawRectangle(Graphics graphics, Rectangle bounds, Color backColor)
         {
             graphics.FillRectangle(Skin.Brush(backColor), bounds);
         }
@@ -415,7 +415,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawButton
-        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, DrawButtonArgs args)
+        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, DrawButtonArgs args)
         {
             _DrawButtonBase(graphics, bounds, args);
         }
@@ -471,7 +471,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="stringFormatFlags"></param>
         /// <param name="stringFormat"></param>
         /// <returns></returns>
-        internal static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
+        public static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
         {
             RectangleF[] positions;
             return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormatFlags, stringFormat, false, out positions);
