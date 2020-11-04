@@ -41,7 +41,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Stopwatch = new System.Diagnostics.Stopwatch();
             StopwatchFrequency = (decimal)System.Diagnostics.Stopwatch.Frequency;
             CurrentLibrary = DataFormtestLibraryType.Asol;
+
+            Asol.Tools.WorkScheduler.DevExpressTest.DevExpressSkinSupport.Initialise();
+            _SkinCombo = Asol.Tools.WorkScheduler.DevExpressTest.DevExpressSkinSupport.CreateSkinsCombo();
+            if (_SkinCombo != null)
+            {
+                int x = this.radioButtonDevExpr.Bounds.X;
+                int y = this.radioButtonDevExpr.Bounds.Bottom + 4;
+                int r = this._FillInvisibleCheck.Bounds.X - 8;
+                _SkinCombo.Location = new System.Drawing.Point(x, y);
+                _SkinCombo.Size = new System.Drawing.Size((r - x), 25);
+                this.ToolStripPanel.Controls.Add(_SkinCombo);
+                Asol.Tools.WorkScheduler.DevExpressTest.DevExpressSkinSupport.ApplyCurrentSkin();
+            }
+
+            Asol.Tools.WorkScheduler.DevExpressTest.DevExpressSkinSupport.SkinChanged += DevExpressSkinSupport_SkinChanged;
         }
+
+        private void DevExpressSkinSupport_SkinChanged(object sender, EventArgs e)
+        {
+            this.TestContentPanel.Refresh();
+        }
+
+        Control _SkinCombo;
         #region Nastavení = typ knihovny + počet objektů
         /// <summary>
         /// Zvolená knihovna
