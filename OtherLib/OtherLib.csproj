@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DevExpress.BonusSkins.v20.1">
+      <HintPath>DevExpressDll\DevExpress.BonusSkins.v20.1.dll</HintPath>
+    </Reference>
     <Reference Include="DevExpress.Utils.v20.1">
       <HintPath>DevExpressDll\DevExpress.Utils.v20.1.dll</HintPath>
     </Reference>
@@ -65,8 +68,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DevExpressDataForm.cs" />
+    <Compile Include="DevExpressSkin.cs" />
     <Compile Include="InfragisticDataForm.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GraphLib\GraphLib.csproj">
+      <Project>{eeed39bd-6eae-4167-b694-cb812598395d}</Project>
+      <Name>GraphLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
