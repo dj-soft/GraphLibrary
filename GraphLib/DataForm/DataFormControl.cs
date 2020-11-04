@@ -129,7 +129,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
                     // Nadefinování prvku Item - texty, font, overlay:
                     GDataFormItem item = new GDataFormItem()
                     {
-                        BackColor = colors[rand.Next(colorCnt)],
+                        // BackColor = colors[rand.Next(colorCnt)],
                         Location = new Point(itemX, itemY),
                         Label = "Item " + n.ToString(),
                         Value1 = values[rand.Next(valuesCnt)] + "_" + rand.Next(10000, 99999).ToString(),

@@ -102,6 +102,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinIcons Icons { get { return Instance._Icons; } }
         /// <summary>
+        /// Resetuje všechny hodnoty
+        /// </summary>
+        public static void Reset() { Instance.ResetValues(); }
+        /// <summary>
         /// All items, for configuration
         /// </summary>
         public static IEnumerable<KeyValuePair<string, object>> AllSkinItems { get { return Instance._ValueDict.ToArray(); } }
@@ -159,7 +163,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Use pattern for "external" SkinSet:
         /// </summary>
         /// <param name="skinSet"></param>
-        public static void Add(SkinSet skinSet)
+        public static void Add(ISkinSet skinSet)
         {
             skinSet.SetOwner(Instance);
         }
@@ -217,6 +221,24 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._ValueDict.Add(key, value);
             else
                 this._ValueDict[key] = value;
+        }
+        /// <summary>
+        /// Zahodí z úschovny všechny objekty
+        /// </summary>
+        internal void ResetValues()
+        {
+            this._ValueDict.Clear();
+        }
+        /// <summary>
+        /// Zahodí z úschovny všechny objekty daného setu
+        /// </summary>
+        /// <param name="skinSetKey"></param>
+        internal void ResetValues(string skinSetKey)
+        {
+            string keyPrefix = skinSetKey + ".";
+            int length = keyPrefix.Length;
+            var keys = this._ValueDict.Keys.Where(k => k.Substring(0, length) == keyPrefix).ToArray();
+            this._ValueDict.RemoveKeys(keys);
         }
         #endregion
         #region Get modified color by InteraciveState
@@ -2983,7 +3005,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Skin set abstract base.
     /// </summary>
-    public abstract class SkinSet
+    public abstract class SkinSet : ISkinSet
     {
         #region Internal and protected
         /// <summary>
@@ -3006,10 +3028,17 @@ namespace Asol.Tools.WorkScheduler.Components
             this._FillPalette();
         }
         /// <summary>
-        /// Konstruktor
+        /// Vynuluje všechny proměnné = nastaví defaultní vzhled skinu
+        /// </summary>
+        public virtual void Reset()
+        {
+            this._Owner.ResetValues(this._SkinSetKey);
+        }
+        /// <summary>
+        /// Vloží dodaného vlastníka
         /// </summary>
         /// <param name="owner"></param>
-        public void SetOwner(Skin owner)
+        void ISkinSet.SetOwner(Skin owner)
         {
             this._Owner = owner;
             this._FillPalette();
@@ -3019,6 +3048,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void _FillPalette()
         {
+            List<System.Reflection.PropertyInfo> validProperties = new List<System.Reflection.PropertyInfo>();
+
             var properties = this.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
             foreach (var property in properties)
             {   // Provedu načtení hodnoty ze všech public instančních property; tím se tyto property a jejich hodnoty dostanou do centrální cache:
@@ -3032,11 +3063,14 @@ namespace Asol.Tools.WorkScheduler.Components
                 //   if (getMethod != null && setMethod == null) { }
                 if (getMethod != null && setMethod != null)
                 {
-                    try { var value = property.GetValue(this, null); }
+                    try { var value = property.GetValue(this, null); validProperties.Add(property); }
                     catch (Exception) { }
                 }
             }
+
+            _Properties = validProperties.ToArray();
         }
+        private System.Reflection.PropertyInfo[] _Properties;
         /// <summary>
         /// Vlastník
         /// </summary>
@@ -3056,11 +3090,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="value10">Výstup pro 0 = true; 1 = false</param>
         /// <param name="value11">Výstup pro 0 = true; 1 = true</param>
         /// <returns></returns>
-        public static T GetMatrix<T>(bool t0, bool t1, T value00, T value01, T value10, T value11)
+        protected static T GetMatrix<T>(bool t0, bool t1, T value00, T value01, T value10, T value11)
         {
             return (t0 ? (t1 ? value11 : value10) : (t1 ? value01 : value00));
         }
         #endregion
+    }
+    /// <summary>
+    /// Interface pro internal přístup
+    /// </summary>
+    public interface ISkinSet
+    {
+        /// <summary>
+        /// Vloží dodaného vlastníka
+        /// </summary>
+        /// <param name="owner"></param>
+        void SetOwner(Skin owner);
     }
     #region class InitialiserAttribute
     /// <summary>
