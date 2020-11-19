@@ -30,6 +30,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this._StatusStrip = new System.Windows.Forms.StatusStrip();
+            this._StatusInfoLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this._ToolStrip = new System.Windows.Forms.ToolStrip();
             this._ToolOpenDrop = new System.Windows.Forms.ToolStripDropDownButton();
             this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
@@ -52,6 +53,7 @@
             this._SamplePanel = new Djs.Tools.WebDownloader.Download.WebSamplePanel();
             this._AdressPanel = new Djs.Tools.WebDownloader.Download.WebAdressPanel();
             this._DownloadPanel = new Djs.Tools.WebDownloader.Download.WebDownloadPanel();
+            this._StatusStrip.SuspendLayout();
             this._ToolStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._MainSpl)).BeginInit();
             this._MainSpl.Panel1.SuspendLayout();
@@ -65,11 +67,21 @@
             // 
             // _StatusStrip
             // 
-            this._StatusStrip.Location = new System.Drawing.Point(0, 603);
+            this._StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this._StatusInfoLabel});
+            this._StatusStrip.Location = new System.Drawing.Point(0, 661);
             this._StatusStrip.Name = "_StatusStrip";
-            this._StatusStrip.Size = new System.Drawing.Size(1137, 22);
+            this._StatusStrip.Size = new System.Drawing.Size(1151, 22);
             this._StatusStrip.TabIndex = 6;
             this._StatusStrip.Text = "_StatusStrip";
+            // 
+            // _StatusInfoLabel
+            // 
+            this._StatusInfoLabel.Name = "_StatusInfoLabel";
+            this._StatusInfoLabel.Size = new System.Drawing.Size(1129, 17);
+            this._StatusInfoLabel.Spring = true;
+            this._StatusInfoLabel.Text = "Informace...";
+            this._StatusInfoLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // _ToolStrip
             // 
@@ -82,7 +94,7 @@
             this._ToolStrip.Location = new System.Drawing.Point(0, 0);
             this._ToolStrip.Name = "_ToolStrip";
             this._ToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
-            this._ToolStrip.Size = new System.Drawing.Size(1137, 31);
+            this._ToolStrip.Size = new System.Drawing.Size(1151, 31);
             this._ToolStrip.TabIndex = 7;
             this._ToolStrip.Text = "_ToolStrip";
             // 
@@ -101,7 +113,7 @@
             this._ToolOpenDrop.Image = ((System.Drawing.Image)(resources.GetObject("_ToolOpenDrop.Image")));
             this._ToolOpenDrop.ImageTransparentColor = System.Drawing.Color.Magenta;
             this._ToolOpenDrop.Name = "_ToolOpenDrop";
-            this._ToolOpenDrop.Size = new System.Drawing.Size(180, 22);
+            this._ToolOpenDrop.Size = new System.Drawing.Size(480, 22);
             this._ToolOpenDrop.Text = "Načíst definici...";
             this._ToolOpenDrop.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this._ToolOpenDrop.ToolTipText = "Načíst definici z definic dříve uložených";
@@ -231,7 +243,7 @@
             // _MainSpl.Panel2
             // 
             this._MainSpl.Panel2.Controls.Add(this._DownloadPanel);
-            this._MainSpl.Size = new System.Drawing.Size(1137, 572);
+            this._MainSpl.Size = new System.Drawing.Size(1151, 630);
             this._MainSpl.SplitterDistance = 320;
             this._MainSpl.TabIndex = 5;
             // 
@@ -253,7 +265,7 @@
             // 
             this._InputSpl.Panel2.Controls.Add(this._AdressPanel);
             this._InputSpl.Panel2MinSize = 150;
-            this._InputSpl.Size = new System.Drawing.Size(1137, 320);
+            this._InputSpl.Size = new System.Drawing.Size(1151, 320);
             this._InputSpl.SplitterDistance = 71;
             this._InputSpl.SplitterWidth = 1;
             this._InputSpl.TabIndex = 6;
@@ -266,7 +278,7 @@
             this._SamplePanel.Location = new System.Drawing.Point(0, 0);
             this._SamplePanel.Name = "_SamplePanel";
             this._SamplePanel.SampleText = "";
-            this._SamplePanel.Size = new System.Drawing.Size(1137, 71);
+            this._SamplePanel.Size = new System.Drawing.Size(1151, 71);
             this._SamplePanel.TabIndex = 0;
             // 
             // _AdressPanel
@@ -276,7 +288,7 @@
             this._AdressPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._AdressPanel.Location = new System.Drawing.Point(0, 0);
             this._AdressPanel.Name = "_AdressPanel";
-            this._AdressPanel.Size = new System.Drawing.Size(1137, 248);
+            this._AdressPanel.Size = new System.Drawing.Size(1151, 248);
             this._AdressPanel.TabIndex = 3;
             // 
             // _DownloadPanel
@@ -285,21 +297,25 @@
             this._DownloadPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this._DownloadPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._DownloadPanel.Location = new System.Drawing.Point(0, 0);
+            this._DownloadPanel.MinimumSize = new System.Drawing.Size(500, 203);
             this._DownloadPanel.Name = "_DownloadPanel";
-            this._DownloadPanel.Size = new System.Drawing.Size(1137, 248);
+            this._DownloadPanel.Size = new System.Drawing.Size(1151, 306);
             this._DownloadPanel.TabIndex = 4;
+            this._DownloadPanel.TargetPath = "";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1137, 625);
+            this.ClientSize = new System.Drawing.Size(1151, 683);
             this.Controls.Add(this._MainSpl);
             this.Controls.Add(this._ToolStrip);
             this.Controls.Add(this._StatusStrip);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "Web Downloader v3.0";
+            this._StatusStrip.ResumeLayout(false);
+            this._StatusStrip.PerformLayout();
             this._ToolStrip.ResumeLayout(false);
             this._ToolStrip.PerformLayout();
             this._MainSpl.Panel1.ResumeLayout(false);
@@ -340,6 +356,7 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem11;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem8;
         private System.Windows.Forms.ToolStripButton _ToolDeleteBtn;
+        private System.Windows.Forms.ToolStripStatusLabel _StatusInfoLabel;
     }
 }
 

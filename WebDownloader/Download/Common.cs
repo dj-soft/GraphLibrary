@@ -124,11 +124,25 @@ namespace Djs.Tools.WebDownloader.Download
     /// <summary>
     /// WebItemPanel : základní vizuální třída pro zobrazení jedné položky vzorce
     /// </summary>
-    public class WebItemPanel : Panel
+    public class WebItemPanel : WebBasePanel
     {
         #region Konstrukce
-        public WebItemPanel()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public WebItemPanel() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="tabIndex"></param>
+        public WebItemPanel(Rectangle bounds, ref int tabIndex) : base(bounds, ref tabIndex) { }
+        /// <summary>
+        /// Třída zde nastavuje svoje vzhledové vlastnosti
+        /// </summary>
+        protected override void InitProperties()
         {
+            base.InitProperties();
             this.AutoScroll = true;
         }
         /// <summary>
@@ -266,14 +280,26 @@ namespace Djs.Tools.WebDownloader.Download
         #endregion
     }
     #endregion
-    #region class WebPanel, a další WinForm základní třídy
-    public class WebPanel : Panel
+    #region class WebActionPanel, a další WinForm základní třídy
+    /// <summary>
+    /// Panel s tlačítkem Akce
+    /// </summary>
+    public class WebActionPanel : WebBasePanel
     {
-        public WebPanel()
-        {
-            this.InitPanel();
-        }
-        private void InitPanel()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public WebActionPanel() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="tabIndex"></param>
+        public WebActionPanel(Rectangle bounds, ref int tabIndex) : base(bounds, ref tabIndex) { }
+        /// <summary>
+        /// Třída zde nastavuje svoje vzhledové vlastnosti
+        /// </summary>
+        protected override void InitProperties()
         {
             this.BackColor = System.Drawing.SystemColors.Info;
             this.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -292,13 +318,151 @@ namespace Djs.Tools.WebDownloader.Download
         /// <param name="text"></param>
         protected void CreateActionButton(string text, Image webImage, ref int tabIndex)
         {
-            this.ActionButton = new WebButton(text, new Rectangle(831, 9, 145, 44), ref tabIndex) { Anchor = AnchTR };
+            this.ActionButton = new WebButton(text, new Rectangle(DesignButtonLeft, DesignContentTop, DesignButtonWidth, DesignButtonHeight), ref tabIndex); // { Anchor = AnchTR };
             this.Controls.Add(this.ActionButton);
             this.ActionButton.WebImage = webImage;
             this.ActionButton.Click += new EventHandler(this.ActionButtonClick);
         }
+        /// <summary>
+        /// Určí pozice prvků tohoto panelu.
+        /// Třída <see cref="WebActionPanel"/> určuje pouze pozici buttonu <see cref="ActionButton"/>
+        /// </summary>
+        protected override void RecalcLayout()
+        {
+            base.RecalcLayout();
+            if (this.ActionButton != null)
+                this.ActionButton.Location = new Point(CurrentButtonLeft, DesignContentTop);
+        }
+        /// <summary>
+        /// Aktuální šířka prostoru pro komponenty (ClientSize.Width)
+        /// </summary>
+        protected int CurrentPanelWidth { get { return this.ClientSize.Width; } }
+        /// <summary>
+        /// Aktuální výška prostoru pro komponenty (ClientSize.Height)
+        /// </summary>
+        protected int CurrentPanelHeight { get { return this.ClientSize.Height; } }
+        /// <summary>
+        /// Aktuální pozice Top pro ActionButton
+        /// </summary>
+        protected int CurrentButtonTop { get { return DesignContentTop; } }
+        /// <summary>
+        /// Aktuální pozice Left pro ActionButton
+        /// </summary>
+        protected int CurrentButtonLeft { get { return CurrentPanelWidth - DesignContentLeft - CurrentButtonWidth; } }
+        /// <summary>
+        /// Aktuální hodnota ActionButton.Width
+        /// </summary>
+        protected int CurrentButtonWidth { get { return (this.ActionButton?.Width ?? DesignButtonWidth); } }
+        /// <summary>
+        /// Aktuální souřadnice Right pro obsah = vlevo od ActionButton, včetně mezery
+        /// </summary>
+        protected int CurrentContentRight { get { return CurrentButtonLeft - DesignSpaceX; } }
+        /// <summary>
+        /// Aktuální souřadnice Bottom pro obsah = o mezeru nad dolním okrajem ClientSize.Height
+        /// </summary>
+        protected int CurrentContentBottom { get { return CurrentPanelHeight - DesignContentTop; } }
+        /// <summary>
+        /// Button pro hlavní akci
+        /// </summary>
+        protected WebButton ActionButton;
+        /// <summary>
+        /// Eventhandler akce <see cref="ActionButton"/>.Click
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActionButtonClick(object sender, EventArgs e)
+        {
+            this.OnActionButton();
+        }
+        /// <summary>
+        /// Metoda volaná po kliknutí na <see cref="ActionButton"/>
+        /// </summary>
+        protected virtual void OnActionButton() { }
+    }
+    /// <summary>
+    /// Základ pro všechny panely
+    /// </summary>
+    public class WebBasePanel : Panel
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public WebBasePanel()
+        {
+            InitProperties();
+            InitComponents();
+            ComponentsCreated = true;
+            RecalcLayout();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="tabIndex"></param>
+        public WebBasePanel(Rectangle bounds, ref int tabIndex)
+        {
+            InitProperties();
+            this.Bounds = bounds;
+            this.TabIndex = tabIndex++;
+            InitComponents();
+            ComponentsCreated = true;
+            RecalcLayout();
+        }
+        /// <summary>
+        /// Třída zde nastavuje svoje vzhledové vlastnosti
+        /// </summary>
+        protected virtual void InitProperties()
+        {
+            this.BackColor = System.Drawing.SystemColors.Info;
+            this.BorderStyle = System.Windows.Forms.BorderStyle.None;
+        }
+        /// <summary>
+        /// Potomek zde vytváří svoje komponenty.
+        /// Třída <see cref="WebBasePanel"/> nedělá nic.
+        /// </summary>
+        protected virtual void InitComponents() { }
+        protected bool ComponentsCreated { get; set; }
+        /// <summary>
+        /// Změna ClientSize vyvolá <see cref="RecalcLayout()"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            if (ComponentsCreated)
+                RecalcLayout();
+        }
+        /// <summary>
+        /// Zde potomek může přepočítat souřadnice svých komponent. Volá se po dokončení InitComponents() a po změně ClientSize.
+        /// Třída <see cref="WebBasePanel"/> neurčuje nic.
+        /// </summary>
+        protected virtual void RecalcLayout() { }
+        protected static int DesignContentTop { get { return 6; } }
+        protected static int DesignPanelWidth { get { return 900; } }
+        protected static int DesignPanelWidthMin { get { return 500; } }
+        protected static int DesignContentLeft { get { return 14; } }
+        protected static int DesignLabelOffsetX { get { return -3; } }
+        protected static int DesignContentRight { get { return DesignButtonLeft - DesignSpaceX; } }
+        protected static int DesignSpaceX { get { return 6; } }
+        protected static int DesignSpaceY { get { return 2; } }
+        protected static int DesignLabelHeight { get { return 16; } }
+        protected static int DesignLabelSpaceY { get { return DesignLabelHeight + DesignSpaceY; } }
+        protected static int DesignTextHeight { get { return 24; } }
+        protected static int DesignTextSpaceY { get { return DesignTextHeight + DesignSpaceY; } }
+        protected static int DesignTextToLabelOffsetY { get { return 6; } }
+        protected static int DesignButtonLeft { get { return DesignPanelWidth - DesignContentLeft - DesignButtonWidth; } }
+        protected static int DesignButtonWidth { get { return 165; } }
+        protected static int DesignButtonHeight { get { return 45; } }
+        /// <summary>AnchorStyles: Top</summary>
+        protected static AnchorStyles AnchT { get { return AnchorStyles.Top; } }
+        /// <summary>AnchorStyles: Top + Left</summary>
+        protected static AnchorStyles AnchTL { get { return AnchorStyles.Top | AnchorStyles.Left; } }
         /// <summary>AnchorStyles: Top + Right</summary>
         protected static AnchorStyles AnchTR { get { return AnchorStyles.Top | AnchorStyles.Right; } }
+        /// <summary>AnchorStyles: Bottom</summary>
+        protected static AnchorStyles AnchB { get { return AnchorStyles.Bottom; } }
+        /// <summary>AnchorStyles: Top + Bottom</summary>
+        protected static AnchorStyles AnchTB { get { return AnchorStyles.Top | AnchorStyles.Bottom; } }
         /// <summary>AnchorStyles: Bottom + Right</summary>
         protected static AnchorStyles AnchBR { get { return AnchorStyles.Bottom | AnchorStyles.Right; } }
         /// <summary>AnchorStyles: Top + Bottom + Right</summary>
@@ -313,15 +477,10 @@ namespace Djs.Tools.WebDownloader.Download
         protected AnchorStyles AnchBLR { get { return AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right; } }
         /// <summary>AnchorStyles: Top + Left + Right</summary>
         protected AnchorStyles AnchTLR { get { return AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right; } }
-        protected WebButton ActionButton;
-        void ActionButtonClick(object sender, EventArgs e)
-        {
-            this.OnActionButton();
-        }
-        protected virtual void OnActionButton()
-        {
-        }
     }
+    /// <summary>
+    /// Label
+    /// </summary>
     public class WebLabel : Label
     {
         public WebLabel() : base() { this.Init(); }
@@ -339,6 +498,9 @@ namespace Djs.Tools.WebDownloader.Download
             this.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
         }
     }
+    /// <summary>
+    /// TextBox
+    /// </summary>
     public class WebText : TextBox
     {
         public WebText() : base() { this.Init(); }
@@ -354,6 +516,9 @@ namespace Djs.Tools.WebDownloader.Download
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
         }
     }
+    /// <summary>
+    /// NumericUpDown
+    /// </summary>
     public class WebNumeric : NumericUpDown
     {
         public WebNumeric() : base() { this.Init(); }
@@ -372,6 +537,9 @@ namespace Djs.Tools.WebDownloader.Download
             this.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
         }
     }
+    /// <summary>
+    /// ComboBox
+    /// </summary>
     public class WebCombo : ComboBox
     {
         public WebCombo() : base() { this.Init(); }
@@ -394,6 +562,9 @@ namespace Djs.Tools.WebDownloader.Download
             this.DropDownStyle = ComboBoxStyle.DropDownList;
         }
     }
+    /// <summary>
+    /// ListView
+    /// </summary>
     public class WebList : ListView
     {
         public WebList() : base() { this.Init(); }
@@ -423,6 +594,9 @@ namespace Djs.Tools.WebDownloader.Download
             this.UseCompatibleStateImageBehavior = false;
         }
     }
+    /// <summary>
+    /// CheckBox
+    /// </summary>
     public class WebCheck : CheckBox
     {
         public WebCheck() : base() { this.Init(); }
@@ -441,6 +615,9 @@ namespace Djs.Tools.WebDownloader.Download
             this.UseVisualStyleBackColor = true;
         }
     }
+    /// <summary>
+    /// Button
+    /// </summary>
     public class WebButton : Button
     {
         public WebButton() : base() { this.Init(); }
@@ -497,6 +674,9 @@ namespace Djs.Tools.WebDownloader.Download
             }
         }
     }
+    /// <summary>
+    /// TrackBar
+    /// </summary>
     public class WebTrack : TrackBar
     {
         public WebTrack() : base() { this.Init(); }

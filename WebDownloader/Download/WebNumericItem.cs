@@ -126,6 +126,13 @@ namespace Djs.Tools.WebDownloader.Download
         {
             this.Init();
         }
+        public WebNumericPanel(Rectangle bounds, ref int tabIndex)
+        {
+            this.Init();
+            this.Location = bounds.Location;
+            this.Size = bounds.Size;
+            this.TabIndex = tabIndex++;
+        }
         protected void Init()
         {
             this.SuspendLayout();

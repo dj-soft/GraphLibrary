@@ -17,16 +17,18 @@ namespace Djs.Tools.WebDownloader.Download
     /// </summary>
     public class WebDownload
     {
+        #region Konstrukce, proměnné
         public WebDownload()
         {
-            this._DownloadState = DownloadState.Initiated;
+            this._State = DownloadState.Initiated;
             this._ItemList = new List<DownloadItem>();
         }
         /// <summary>
         /// Zahájí provádění downloadu souborů daných generátorem adres
         /// </summary>
         /// <param name="webAdress"></param>
-        public void Start(WebAdress webAdress)
+        /// <param name="targetPath"></param>
+        public void Start(WebAdress webAdress, string targetPath)
         {
             if (!WebAdressValid(webAdress))
             {
@@ -58,7 +60,8 @@ namespace Djs.Tools.WebDownloader.Download
 
             this._ItemList.Clear();
             this.WebAdress = webAdress;
-            
+            this.TargetPath = targetPath;
+
             this.State = DownloadState.Working;
 
             if (this._WorkThread != null && this._WorkThread.ThreadState == ThreadState.Running)
@@ -66,11 +69,7 @@ namespace Djs.Tools.WebDownloader.Download
                 this._WorkThread.Abort();
                 this._WorkThread = null;
             }
-            this._WorkThread = new Thread(this._StartDwnl);
-            this._WorkThread.Name = "WorkThread";
-            this._WorkThread.IsBackground = true;
-            this._WorkThread.Priority = ThreadPriority.BelowNormal;
-
+            this._WorkThread = new Thread(this._StartDwnl) { Name = "WorkThread", IsBackground = true, Priority = ThreadPriority.BelowNormal };
             this._WorkThread.Start();
         }
         /// <summary>
@@ -88,6 +87,10 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         private WebAdress WebAdress;
         /// <summary>
+        /// Cílový root adresář
+        /// </summary>
+        internal string TargetPath { get; private set; }
+        /// <summary>
         /// Thread který řídí download
         /// </summary>
         private Thread _WorkThread;
@@ -103,6 +106,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// Maximální počet simultánních vláken downloadu
         /// </summary>
         public int ThreadMaxCount { get; set; }
+        #endregion
         #region Stavy, změny stavu, požadavky na změnu, eventy
         /// <summary>
         /// true pokud objekt pracuje (stav je: Working, Paused, Cancelling).
@@ -111,7 +115,7 @@ namespace Djs.Tools.WebDownloader.Download
         {
             get
             {
-                DownloadState s = this._DownloadState; 
+                DownloadState s = this._State; 
                 return (
                     s == DownloadState.Working ||
                     s == DownloadState.Paused ||
@@ -147,7 +151,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// <summary>
         /// Obsahuje true pokud stav == Cancelled.
         /// </summary>
-        public bool AbortNow { get { return (this._DownloadState == DownloadState.Cancelled); } }
+        public bool AbortNow { get { return (this._State == DownloadState.Cancelled); } }
         /// <summary>
         /// Příznak dokončení číselné řady
         /// </summary>
@@ -158,13 +162,13 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         public DownloadState State
         {
-            get { return this._DownloadState; }
+            get { return this._State; }
             protected set
             {
-                if (value != this._DownloadState)
+                if (value != this._State)
                 {
-                    DownloadState stateBefore = this._DownloadState;
-                    this._DownloadState = value;
+                    DownloadState stateBefore = this._State;
+                    this._State = value;
 
                     if (stateBefore != DownloadState.Initiated && value == DownloadState.Initiated)
                     {   // Jedenkrát při zahájení downloadu
@@ -182,7 +186,7 @@ namespace Djs.Tools.WebDownloader.Download
                 }
             }
         }
-        private DownloadState _DownloadState;
+        private DownloadState _State;
         protected virtual void OnStateChanged(DownloadState stateBefore, DownloadState stateCurrent)
         {
             if (this.StateChanged != null)
@@ -192,6 +196,9 @@ namespace Djs.Tools.WebDownloader.Download
         /// Událost volaná po změně stavu celkového procesu downloadu
         /// </summary>
         public event DownloadStateChangedHandler StateChanged;
+        protected virtual void OnDownloadProgress()
+        {
+        }
         /// <summary>
         /// Událost volaná po jakékoli změně downloadu (nový soubor, progres, dokončení).
         /// </summary>
@@ -253,7 +260,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// <returns></returns>
         private DownloadItem _CreateNewDownloadItem()
         {
-            DownloadItem item = new DownloadItem(true);
+            DownloadItem item = new DownloadItem(this, true);
             item.DownloadChanged += new DownloadItemStateChangedHandler(_ItemDownloadChanged);
             return item;
         }
@@ -421,6 +428,12 @@ namespace Djs.Tools.WebDownloader.Download
         private int _MaxThread { get { int max = this.WebAdress.ThreadMaxCount; return (max > 12 ? 12 : (max < 1 ? 1 : max)); } }
         private List<DownloadItem> _ItemList;
         #endregion
+        protected virtual void OnDownloadChanged(DownloadItemStateChangedArgs args)
+        {
+            if (DownloadChanged != null)
+                DownloadChanged(this, args);
+        }
+        public event DownloadItemStateChangedHandler DownloadChanged;
     }
     /// <summary>
     /// Stavy procesu celého downloadu (nikoli jednotlivé soubory)
@@ -473,7 +486,10 @@ namespace Djs.Tools.WebDownloader.Download
     }
     public delegate void DownloadStateChangedHandler(object sender, DownloadStateChangedArgs args);
     public class DownloadProgressChangedArgs : EventArgs
-    { }
+    {
+
+
+    }
     public delegate void DownloadProgressChangedHandler(object sender, DownloadProgressChangedArgs args);
     #endregion
     #endregion
@@ -483,14 +499,12 @@ namespace Djs.Tools.WebDownloader.Download
         /// <summary>
         /// Vytvoří nvou instanci, volitelně ve stavu Blocked.
         /// </summary>
+        /// <param name="owner"></param>
         /// <param name="locked"></param>
-        public DownloadItem(bool locked) : this()
+        public DownloadItem(WebDownload owner, bool locked = false)
         {
-            if (locked)
-                this.State = DownloadItemState.Blocked;
-        }
-        public DownloadItem()
-        {
+            _Owner = owner;
+
             this.WebClient = new System.Net.WebClient();
             this.WebClient.DownloadFileCompleted += new AsyncCompletedEventHandler(WebClient_DownloadFileCompleted);
             this.WebClient.DownloadDataCompleted += new System.Net.DownloadDataCompletedEventHandler(WebClient_DownloadFileCompleted);
@@ -498,7 +512,7 @@ namespace Djs.Tools.WebDownloader.Download
             this.WebClient.UseDefaultCredentials = true;
             this.WebClient.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.BypassCache);
 
-            this.State = DownloadItemState.Initiated;
+            this.State = (locked ? DownloadItemState.Blocked : DownloadItemState.Initiated);
         }
         void IDisposable.Dispose()
         {
@@ -511,6 +525,7 @@ namespace Djs.Tools.WebDownloader.Download
             }
         }
         private System.Net.WebClient WebClient;
+        private WebDownload _Owner;
         /// <summary>
         /// ID zadané ve startu
         /// </summary>
@@ -539,13 +554,19 @@ namespace Djs.Tools.WebDownloader.Download
         /// true pokud tato má skončený download.
         /// Tj. stav je: Done, Cancelled, Error.
         /// </summary>
-        public bool IsDone { get { return (this.State == DownloadItemState.Done || this.State == DownloadItemState.Cancelled || this.State == DownloadItemState.Error); } }
+        public bool IsDone { get { return (this.State == DownloadItemState.Done || this.State == DownloadItemState.Cancelled || this.State == DownloadItemState.Error || this.State == DownloadItemState.Empty); } }
         /// <summary>
         /// true pokud tuto položku lze obsadit pro další práci.
         /// Tj. stav je: Initiated, Done, Cancelled, Error.
         /// Pokud je stav Blocked nebo Working, pak není Available.
         /// </summary>
-        public bool IsAvailable { get { return (this.State == DownloadItemState.Initiated || this.State == DownloadItemState.Done || this.State == DownloadItemState.Cancelled || this.State == DownloadItemState.Error); } }
+        public bool IsAvailable { get { return (this.State == DownloadItemState.Initiated || this.State == DownloadItemState.Done || this.State == DownloadItemState.Cancelled || this.State == DownloadItemState.Error || this.State == DownloadItemState.Empty); } }
+        /// <summary>
+        /// true pokud tato položka byla stahována, a výsledek je neplatný (Error nebo Empty). 
+        /// Položku lze obsadit pro další práci.
+        /// Stahovaná řada by měla být ukončena.
+        /// </summary>
+        public bool IsInvalid { get { return (this.State == DownloadItemState.Error || this.State == DownloadItemState.Empty); } }
         /// <summary>
         /// Obsadí tuto položku = nastaví stav Blocked, pokud je to možné.
         /// Pokud bude položka zablokována, vrátí true.
@@ -686,7 +707,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// <param name="url"></param>
         public void Start(string url)
         {
-            this.Start(0, url, CreateLocalPath(url));
+            this.Start(0, url, CreateLocalPath(url, this._Owner.TargetPath));
         }
         /// <summary>
         /// Zahájí stahování daného URL do explicitního umístění
@@ -705,7 +726,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// <param name="url"></param>
         public void Start(int id, string url)
         {
-            this.Start(id, url, CreateLocalPath(url));
+            this.Start(id, url, CreateLocalPath(url, this._Owner.TargetPath));
         }
         /// <summary>
         /// Zahájí stahování daného URL do explicitního umístění
@@ -725,7 +746,7 @@ namespace Djs.Tools.WebDownloader.Download
             if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
                 throw new InvalidOperationException("Nelze provést download, URL adresa [" + url + "] není platná.");
             
-            if (!ExistDirectory(localFile))
+            if (!PrepareDirectory(localFile))
                 throw new InvalidOperationException("Nelze provést download, adresář pro soubor [" + localFile + "] není možno vytvořit.");
 
             this.Id = id;
@@ -741,29 +762,35 @@ namespace Djs.Tools.WebDownloader.Download
         private void WebClient_DownloadProgressChanged(object sender, System.Net.DownloadProgressChangedEventArgs e)
         {
             DateTime now = DateTime.Now;
-            this.CurrentEventTime = now;
-            long bytes = e.BytesReceived;
-            this.BytesReceived = bytes;
-            this.TotalBytesToReceive = e.TotalBytesToReceive;
-            this.ProgressPercentage = e.ProgressPercentage;
-            this.ProcessWebResponse();
-            this.OnDownloadChanged();                     // event události
-            this.CurrentBlockStartTime = now;             // Počáteční hodnoty pro příští událost (čas a počet Byte)
-            this.CurrentBlockStartPosition = bytes;
-            if ((this.SecondBlockStartPosition == 0L || this.SecondBlockStartTime == DateTime.MinValue) && bytes > 0L)
-            {   // Hodnoty určující počátek druhého bloku dat (počínaje druhým blokem by nemělo docházet k čekání na data, jako v prvním bloku):
-                this.SecondBlockStartPosition = bytes;
-                this.SecondBlockStartTime = now;
+            lock (this)
+            {
+                this.CurrentEventTime = now;
+                long bytes = e.BytesReceived;
+                this.BytesReceived = bytes;
+                this.TotalBytesToReceive = e.TotalBytesToReceive;
+                this.ProgressPercentage = e.ProgressPercentage;
+                this.ProcessWebResponse();
+                this.CurrentBlockStartTime = now;             // Počáteční hodnoty pro příští událost (čas a počet Byte)
+                this.CurrentBlockStartPosition = bytes;
+                if ((this.SecondBlockStartPosition == 0L || this.SecondBlockStartTime == DateTime.MinValue) && bytes > 0L)
+                {   // Hodnoty určující počátek druhého bloku dat (počínaje druhým blokem by nemělo docházet k čekání na data, jako v prvním bloku):
+                    this.SecondBlockStartPosition = bytes;
+                    this.SecondBlockStartTime = now;
+                }
             }
+            this.OnDownloadChanged();                     // event události
         }
         private void WebClient_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
-            this.CurrentEventTime = DateTime.Now;
-            this.Cancelled = e.Cancelled;
-            this.Error = e.Error;
-            this.State = (e.Cancelled ? DownloadItemState.Cancelled : (e.Error != null ? DownloadItemState.Error : DownloadItemState.Done));
-            if (this.State == DownloadItemState.Done)
-                this.SetFileDateByResponse();
+            DateTime now = DateTime.Now;
+            lock (this)
+            {
+                this.CurrentEventTime = now;
+                this.Cancelled = e.Cancelled;
+                this.Error = e.Error;
+                this.State = (e.Cancelled ? DownloadItemState.Cancelled : (e.Error != null ? DownloadItemState.Error : DownloadItemState.Done));
+                this.ModifyFileByResponse();
+            }
             this.OnDownloadChanged();
         }
         protected virtual void OnDownloadChanged()
@@ -804,14 +831,21 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         private void ProcessWebResponse()
         {
-            foreach (var header in this.WebClient.ResponseHeaders)
+            var responseHeaders = this.WebClient?.ResponseHeaders;
+            if (responseHeaders == null) return;
+            int count = responseHeaders.Count;
+            if (count == 0) return;
+            string[] keys = this.WebClient?.ResponseHeaders.AllKeys.ToArray();
+            string[] values = new string[count];
+            this.WebClient?.ResponseHeaders.CopyTo(values, 0);
+            for (int i = 0; i < count; i++)
             {
-                string name = header as string;
-                if (!String.IsNullOrEmpty(name) && !this._ResponseDict.ContainsKey(name))
+                string key = keys[i];
+                if (!String.IsNullOrEmpty(key) && !this._ResponseDict.ContainsKey(key))
                 {
-                    string value = this.WebClient.ResponseHeaders[name];
-                    this._ResponseDict.Add(name, value);
-                    switch (name)
+                    string value = values[i];
+                    this._ResponseDict.Add(key, value);
+                    switch (key)
                     {
                         case "Content-Length":
                             if (!this.WebResponseContentLength.HasValue)
@@ -953,14 +987,24 @@ namespace Djs.Tools.WebDownloader.Download
         /// <summary>
         /// Nastaví datum souboru podle informací z Response, pokud je máme
         /// </summary>
-        private void SetFileDateByResponse()
+        private void ModifyFileByResponse()
         {
-            if (!this.WebResponseLastModified.HasValue) return;
             try
             {
                 FileInfo fi = new FileInfo(this.LocalFile);
                 if (fi.Exists)
-                    fi.LastWriteTime = this.WebResponseLastModified.Value;
+                {
+                    if (fi.Length == 0L && this.State == DownloadItemState.Error)
+                    {
+                        if (this.State == DownloadItemState.Done)
+                            this.State = DownloadItemState.Empty;
+                        fi.Delete();
+                    }
+                    else if (this.WebResponseLastModified.HasValue)
+                    {
+                        fi.LastWriteTime = this.WebResponseLastModified.Value;
+                    }
+                }
             }
             catch { }
         }
@@ -973,10 +1017,9 @@ namespace Djs.Tools.WebDownloader.Download
         /// <returns></returns>
         public static string CreateLocalPath(string url)
         {
-            string rootPath;
-            // rootPath = Path.GetDirectoryName(System.Windows.Forms.Application.CommonAppDataPath);
-            // rootPath = Path.Combine(System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Djs", "WebDownloader", "Data");
-            rootPath = Path.Combine(Path.GetDirectoryName(typeof(DownloadItem).Assembly.Location), "Data");
+            string rootPath = App.Config.SaveToPath;
+            if (String.IsNullOrEmpty(rootPath))
+                rootPath = Path.Combine(Path.GetDirectoryName(typeof(DownloadItem).Assembly.Location), "Data");
             return CreateLocalPath(url, rootPath);
         }
         /// <summary>
@@ -992,9 +1035,16 @@ namespace Djs.Tools.WebDownloader.Download
             if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return null;
             string file = uri.GetComponents(UriComponents.Host | UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
             file = file.Replace("/", "\\");
+            while (file.Length >= 2 && file.Contains(@"\\"))
+                file = file.Replace(@"\\", @"\");
             return Path.Combine(rootPath, file);
         }
-        protected static bool ExistDirectory(string localFile)
+        /// <summary>
+        /// Ověří a zajistí existenci adresáře pro daný soubor
+        /// </summary>
+        /// <param name="localFile"></param>
+        /// <returns></returns>
+        protected static bool PrepareDirectory(string localFile)
         {
             string path = Path.GetDirectoryName(localFile);
             if (Directory.Exists(path)) return true;
@@ -1033,7 +1083,11 @@ namespace Djs.Tools.WebDownloader.Download
         /// <summary>
         /// Dokončeno s chybou, chyba je v this.Error. Je možno zadat další stahování.
         /// </summary>
-        Error
+        Error,
+        /// <summary>
+        /// Dokončeno bez chyb, ale prázdný soubor. Je možno zadat další stahování, anebo ukončit tuto hladinu jako po chybě.
+        /// </summary>
+        Empty
     }
     #region Delegáty a EventArgs
     public class DownloadItemStateChangedArgs : EventArgs
@@ -1048,41 +1102,82 @@ namespace Djs.Tools.WebDownloader.Download
     #endregion
     #endregion
     #region UI
-    public class WebDownloadPanel : WebPanel
+    public class WebDownloadPanel : WebActionPanel
     {
         #region Konstrukce
-        public WebDownloadPanel()
+        public WebDownloadPanel() : base() { }
+        protected override void InitComponents()
         {
+            base.InitComponents();
+
             this.DataInit();
-            this.Init();
-        }
-        protected void Init()
-        {
-            AnchorStyles ab = AnchorStyles.Left | AnchorStyles.Bottom;
+
             this.SuspendLayout();
 
             int tabIndex = 0;
-            int x = 14;
-            this._WebGrid = new WebGrid(new Rectangle(x, 9, 819 - x, 144), ref tabIndex) { Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom };
-            this._FileCntLbl = new WebLabel("Přeneseno souborů:", new Rectangle(x - 3, 160, 129, 16), ref tabIndex) { Anchor = ab };
-            this._FileCntTxt = new WebText(new Rectangle(x, 179, 119, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._FileSizeTxt = new WebText(new Rectangle(x, 204, 87, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._FileSizeLbl = new WebLabel("MB", new Rectangle(x + 93, 209, 28, 16), ref tabIndex) { Anchor = ab };
-            this._BandKbsTxt = new WebText(new Rectangle(x, 229, 67, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._BandKbsLbl = new WebLabel("KB/sec", new Rectangle(x + 73, 234, 51, 16), ref tabIndex) { Anchor = ab };
-            this._FileCntOkLbl = new WebLabel("Celkem dobrých:", new Rectangle(x + 153, 160, 109, 16), ref tabIndex) { Anchor = ab };
-            this._FileCntOkTxt = new WebText(new Rectangle(x + 156, 179, 119, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._FileCurrOkLbl = new WebLabel("Počet dobrých v řadě:", new Rectangle(x + 153, 210, 139, 16), ref tabIndex) { Anchor = ab };
-            this._FileCurrOkTxt = new WebText(new Rectangle(x + 156, 229, 119, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._FileCntErLbl = new WebLabel("Celkem chyb:", new Rectangle(x + 312, 160, 89, 16), ref tabIndex) { Anchor = ab };
-            this._FileCntErTxt = new WebText(new Rectangle(x + 315, 179, 119, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._FileCurrErLbl = new WebLabel("Počet chyb v řadě:", new Rectangle(x + 312, 210, 119, 16), ref tabIndex) { Anchor = ab };
-            this._FileCurrErTxt = new WebText(new Rectangle(x + 315, 229, 119, 24), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right, Anchor = ab };
-            this._AutoEndLbl = new WebLabel("Automaticky skončit po počtu chyb v řadě:", new Rectangle(x + 464, 160, 257, 16), ref tabIndex) { Anchor = ab };
-            this._AutoEndTxt = new WebNumeric(1, 99999999L, new Rectangle(x + 467, 179, 95, 24), ref tabIndex) { Anchor = ab };
+            int x = DesignContentLeft;
+            int y = DesignContentTop;
+            int r = DesignContentRight;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+            int textDistanceY = DesignTextSpaceY;
+            int textLabelOffset = DesignTextToLabelOffsetY;
+
+            this._TargetDirLbl = new WebLabel("Cílový adresář:", new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight), ref tabIndex) { TextAlign = ContentAlignment.MiddleLeft };
+            y += labelDistanceY;
+            this._TargetDirTxt = new WebText(new Rectangle(x, y, r - x - DesignSmallButtonWidth - 0, textHeight), ref tabIndex) { Enabled = true, TextAlign = HorizontalAlignment.Left }; ;
+            this._TargetDirTxt.TextChanged += _TargetDirTxt_TextChanged;
+            this._TargetDirBtn = new WebButton("...", new Rectangle(r - DesignSmallButtonWidth, y, DesignSmallButtonWidth, textHeight), ref tabIndex);
+            this._TargetDirBtn.Click += _TargetDirBtn_Click;
+            y += textDistanceY;
+
+            this.CreateActionButton("START", ref tabIndex);
+
+            this._RunBtn = new WebButton(Properties.Resources.media_playback_start_4, new Rectangle(831, 9 /*63*/, 45, 32), ref tabIndex) { Visible = false };
+            this._RunBtn.Click += new EventHandler(_RunBtn_Click);
+            this.Controls.Add(this._RunBtn);
+
+            this._PauseBtn = new WebButton(Properties.Resources.media_playback_pause_4, new Rectangle(881, 9, 45, 32), ref tabIndex) { Visible = false };
+            this._PauseBtn.Click += new EventHandler(_PauseBtn_Click);
+            this.Controls.Add(this._PauseBtn);
+
+            this._StopBtn = new WebButton(Properties.Resources.media_playback_stop_4, new Rectangle(931, 9, 45, 32), ref tabIndex) { Visible = false };
+            this._StopBtn.Click += new EventHandler(_StopBtn_Click);
+            this.Controls.Add(this._StopBtn);
+
+            this._WebGrid = new WebGrid(new Rectangle(x, y, r - x, DesignWebGridHeight), ref tabIndex) { MinimumSize = new Size(300, DesignWebGridHeightMin) };
+            y += DesignWebGridHeight + DesignSpaceY;
+
+            this._FileCntLbl = new WebLabel("Přeneseno souborů:", new Rectangle(x + DesignLabelOffsetX, y, 129, labelHeight), ref tabIndex);
+            this._FileCntOkLbl = new WebLabel("Celkem dobrých:", new Rectangle(x + 153, y, 109, labelHeight), ref tabIndex);
+            this._FileCntErLbl = new WebLabel("Celkem chyb:", new Rectangle(x + 312, y, 89, labelHeight), ref tabIndex);
+            this._AutoEndLbl = new WebLabel("Automaticky skončit po počtu chyb v řadě:", new Rectangle(x + 464, y, 257, labelHeight), ref tabIndex);
+            y += labelDistanceY;
+
+            this._FileCntTxt = new WebText(new Rectangle(x, y, 119, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            this._FileCntOkTxt = new WebText(new Rectangle(x + 156, y, 119, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            this._FileCntErTxt = new WebText(new Rectangle(x + 315, y, 119, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            this._AutoEndTxt = new WebNumeric(1, 99999999L, new Rectangle(x + 467, y, 95, textHeight), ref tabIndex);
+            y += textDistanceY;
+
+            this._FileSizeTxt = new WebText(new Rectangle(x, y, 87, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            this._FileSizeLbl = new WebLabel("MB", new Rectangle(x + 93, y + textLabelOffset, 28, labelHeight), ref tabIndex);
+            this._FileCurrOkLbl = new WebLabel("Počet dobrých v řadě:", new Rectangle(x + 153, y + textLabelOffset, 139, labelHeight), ref tabIndex);
+            this._FileCurrErLbl = new WebLabel("Počet chyb v řadě:", new Rectangle(x + 312, y + textLabelOffset, 119, labelHeight), ref tabIndex);
+            y += textDistanceY;
+
+            this._BandKbsTxt = new WebText(new Rectangle(x, y, 67, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            this._BandKbsLbl = new WebLabel("KB/sec", new Rectangle(x + 73, y + textLabelOffset, 51, labelHeight), ref tabIndex);
+            this._FileCurrOkTxt = new WebText(new Rectangle(x + 156, y, 119, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            this._FileCurrErTxt = new WebText(new Rectangle(x + 315, y, 119, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Right };
+            y += textHeight + DesignContentTop;
 
             ((System.ComponentModel.ISupportInitialize)(this._AutoEndTxt)).BeginInit();
 
+            this.Controls.Add(this._TargetDirLbl);
+            this.Controls.Add(this._TargetDirTxt);
+            this.Controls.Add(this._TargetDirBtn);
             this.Controls.Add(this._WebGrid);
             this.Controls.Add(this._FileCntLbl);
             this.Controls.Add(this._FileCntTxt);
@@ -1101,21 +1196,11 @@ namespace Djs.Tools.WebDownloader.Download
             this.Controls.Add(this._AutoEndLbl);
             this.Controls.Add(this._AutoEndTxt);
 
-            this.CreateActionButton("START", ref tabIndex);
+            this.ClientSize = new System.Drawing.Size(DesignPanelWidth, y);
 
-            this._RunBtn = new WebButton(Properties.Resources.media_playback_start_4,new Rectangle(831, 9 /*63*/, 45, 32), ref tabIndex) { Anchor = AnchTR, Visible = false };
-            this._RunBtn.Click += new EventHandler(_RunBtn_Click);
-            this.Controls.Add(this._RunBtn);
-
-            this._PauseBtn = new WebButton(Properties.Resources.media_playback_pause_4, new Rectangle(881, 9, 45, 32), ref tabIndex) { Anchor = AnchTR, Visible = false };
-            this._PauseBtn.Click += new EventHandler(_PauseBtn_Click);
-            this.Controls.Add(this._PauseBtn);
-
-            this._StopBtn = new WebButton(Properties.Resources.media_playback_stop_4, new Rectangle(931, 9, 45, 32), ref tabIndex) { Anchor = AnchTR, Visible = false };
-            this._StopBtn.Click += new EventHandler(_StopBtn_Click);
-            this.Controls.Add(this._StopBtn);
-
-            this.Size = new System.Drawing.Size(993, 263);
+            int minW = DesignPanelWidthMin;
+            int minH = y - DesignWebGridHeight + DesignWebGridHeightMin;
+            this.MinimumSize = new Size(minW, minH);
 
             this.ShowButtonByState();
 
@@ -1123,7 +1208,101 @@ namespace Djs.Tools.WebDownloader.Download
 
             this.ResumeLayout(false);
         }
+        protected override void RecalcLayout()
+        {
+            base.RecalcLayout();
 
+            int x = DesignContentLeft;
+            int y = DesignContentTop;
+            int r = CurrentContentRight;
+            int b = CurrentContentBottom;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+            int textDistanceY = DesignTextSpaceY;
+            int textLabelOffset = DesignTextToLabelOffsetY;
+
+            this._TargetDirLbl.Bounds = new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight);
+            y += labelDistanceY;
+            this._TargetDirTxt.Bounds = new Rectangle(x, y, r - x - DesignSmallButtonWidth - 0, textHeight);
+            this._TargetDirBtn.Bounds = new Rectangle(r - DesignSmallButtonWidth, y, DesignSmallButtonWidth, textHeight);
+            y += textDistanceY;
+
+            // Tři buttony pro Pause/Stop/Run v místě ActiveButton:
+            int cy = this.CurrentButtonTop;
+            int cx = this.CurrentButtonLeft;
+            int cw = this.CurrentButtonWidth;
+            int tx = cx;
+            int tw = (cw - 4) / 3;
+
+            this._RunBtn.Bounds = new Rectangle(tx, cy, tw, 32);
+            tx = tx + tw + 2;
+            this._PauseBtn.Bounds = new Rectangle(tx, cy, tw, 32);
+            tx = cx + cw - tw;
+            this._StopBtn.Bounds = new Rectangle(tx, cy, tw, 32);
+
+            // Prostor pro WebGrid:
+            int lh = (DesignContentTop + textHeight + 2 * textDistanceY + labelDistanceY + DesignSpaceY);    // Prostor pro dolní blok: dolní okraj + textbox + 2 textboxy s mezerou + 1 label s mezerou pod ním
+            int wb = b - lh - DesignSpaceY;                          // Dolní souřadnice Y prvku WebGrid
+            this._WebGrid.Bounds = new Rectangle(x, y, r - x, wb - y);
+            y = wb + DesignSpaceY;
+
+            // Dolní prvky:
+            this._FileCntLbl.Bounds = new Rectangle(x + DesignLabelOffsetX, y, 129, labelHeight);
+            this._FileCntOkLbl.Bounds = new Rectangle(x + 153, y, 109, labelHeight);
+            this._FileCntErLbl.Bounds = new Rectangle(x + 312, y, 89, labelHeight);
+            this._AutoEndLbl.Bounds = new Rectangle(x + 464, y, 257, labelHeight);
+            y += labelDistanceY;
+
+            this._FileCntTxt.Bounds = new Rectangle(x, y, 119, textHeight);
+            this._FileCntOkTxt.Bounds = new Rectangle(x + 156, y, 119, textHeight);
+            this._FileCntErTxt.Bounds = new Rectangle(x + 315, y, 119, textHeight);
+            this._AutoEndTxt.Bounds = new Rectangle(x + 467, y, 95, textHeight);
+            y += textDistanceY;
+
+            this._FileSizeTxt.Bounds = new Rectangle(x, y, 87, textHeight);
+            this._FileSizeLbl.Bounds = new Rectangle(x + 93, y + textLabelOffset, 28, labelHeight);
+            this._FileCurrOkLbl.Bounds = new Rectangle(x + 153, y + textLabelOffset, 139, labelHeight);
+            this._FileCurrErLbl.Bounds = new Rectangle(x + 312, y + textLabelOffset, 119, labelHeight);
+            y += textDistanceY;
+
+            this._BandKbsTxt.Bounds = new Rectangle(x, y, 67, textHeight);
+            this._BandKbsLbl.Bounds = new Rectangle(x + 73, y + textLabelOffset, 51, labelHeight);
+            this._FileCurrOkTxt.Bounds = new Rectangle(x + 156, y, 119, textHeight);
+            this._FileCurrErTxt.Bounds = new Rectangle(x + 315, y, 119, textHeight);
+            y += textHeight + DesignContentTop;
+        }
+        private void _TargetDirBtn_Click(object sender, EventArgs e)
+        {
+            string path = TargetPath;
+            using (var fb = new FolderBrowserDialog())
+            {
+                if (!String.IsNullOrEmpty(path) && System.IO.Directory.Exists(path))
+                    fb.SelectedPath = path;
+                fb.Description = "Adresář pro uložení souborů:";
+                fb.RootFolder = Environment.SpecialFolder.MyComputer;
+                fb.ShowNewFolderButton = true;
+                var result = fb.ShowDialog(this.FindForm());
+                if (result == DialogResult.OK)
+                    TargetPath = fb.SelectedPath;
+            }
+        }
+        private void _TargetDirTxt_TextChanged(object sender, EventArgs e)
+        {
+            OnTargetPathChanged();
+        }
+        protected virtual void OnTargetPathChanged()
+        {
+            if (TargetPathChanged != null)
+                TargetPathChanged(this, EventArgs.Empty);
+        }
+        protected static int DesignWebGridHeight { get { return 160; } }
+        protected static int DesignWebGridHeightMin { get { return 45; } }
+        protected static int DesignSmallButtonWidth { get { return 28; } }
+
+        private WebLabel _TargetDirLbl;
+        private WebText _TargetDirTxt;
+        private WebButton _TargetDirBtn;
         private WebGrid _WebGrid;
         private WebLabel _FileCntLbl;
         private WebText _FileCntTxt;
@@ -1223,6 +1402,12 @@ namespace Djs.Tools.WebDownloader.Download
             if (control.Enabled != enabled)
                 control.Enabled = enabled;
         }
+
+        protected void ShowProgress(DownloadProgressChangedArgs args)
+        {
+            
+        }
+
         /// <summary>
         /// Událost, kdy se zahájit download
         /// </summary>
@@ -1249,7 +1434,8 @@ namespace Djs.Tools.WebDownloader.Download
         private void DataInit()
         {
             this.WebDownload = new WebDownload();
-            this.WebDownload.StateChanged += new DownloadStateChangedHandler(WebDownload_StateChanged);
+            this.WebDownload.StateChanged += WebDownload_StateChanged;
+            this.WebDownload.DownloadProgress += WebDownload_DownloadProgress;
         }
         /// <summary>
         /// Po změně stavu downloadu = reakce se projeví na buttonech
@@ -1268,13 +1454,37 @@ namespace Djs.Tools.WebDownloader.Download
             this.ShowButtonByState(e.StateCurrent);
         }
         /// <summary>
+        /// Po nějakém pokroku při stahování
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void WebDownload_DownloadProgress(object sender, DownloadProgressChangedArgs args)
+        {
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action<DownloadProgressChangedArgs>(this.AfterDownloadProgress), args);
+            else
+                this.AfterDownloadProgress(args);
+        }
+        protected void AfterDownloadProgress(DownloadProgressChangedArgs args)
+        {
+            this.ShowProgress(args);
+        }
+        /// <summary>
         /// Zahájí provádění downloadu souborů daných generátorem adres
         /// </summary>
         /// <param name="webAdress"></param>
         public void Start(WebAdress webAdress)
         {
-            this.WebDownload.Start(webAdress);
+            this.WebDownload.Start(webAdress, TargetPath);
         }
+        /// <summary>
+        /// Cílový adresář
+        /// </summary>
+        public string TargetPath { get { return this._TargetDirTxt.Text; } set { this._TargetDirTxt.Text = value; } }
+        /// <summary>
+        /// Událost po změně <see cref="TargetPath"/>
+        /// </summary>
+        public event EventHandler TargetPathChanged;
         private WebDownload WebDownload;
         #endregion
     }

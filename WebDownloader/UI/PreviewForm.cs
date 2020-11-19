@@ -15,24 +15,39 @@ namespace Djs.Tools.WebDownloader.UI
         {
             InitializeComponent();
         }
-        public Download.WebAdress WebAdress { get { return this._WebAdress; } set { this._WebAdress = value; this._FillText(); } }
-
-        private void _FillText()
+        /// <summary>
+        /// Adresní definice
+        /// </summary>
+        public Download.WebAdress WebAdress { get; set; }
+        /// <summary>
+        /// Cílový lokální adresář, root
+        /// </summary>
+        public string TargetPath { get; set; }
+        /// <summary>
+        /// Vytvořit sadu ukázkových adres
+        /// </summary>
+        /// <param name="count"></param>
+        public void CreateSampleUrls(int count = 100)
         {
             this._PreviewTxt.Text = "";
+
             Download.WebAdress webAdress = this.WebAdress;
             if (webAdress == null) return;
 
+            count = (count < 10 ? 10 : (count > 1000 ? 1000 : count));
+
+            string targetPath = TargetPath ?? "";
+
             StringBuilder sb = new StringBuilder();
-            for (int n = 0; n < 500; n++)
+            for (int n = 0; n < count; n++)
             {
                 string url = webAdress.Text;
-                string file = Download.DownloadItem.CreateLocalPath(url);
+                string file = Download.DownloadItem.CreateLocalPath(url, targetPath);
                 sb.AppendLine(webAdress.Text + "\t=>\t" + file);
                 if (webAdress.Increment()) break;
             }
             this._PreviewTxt.Text = sb.ToString();
         }
-        private Download.WebAdress _WebAdress;
+        
     }
 }

@@ -62,6 +62,8 @@ namespace Djs.Tools.WebDownloader
         /// </summary>
         public void Save()
         {
+            if (!SaveEnabled) return;
+
             using (StreamWriter sw = new StreamWriter(this.ConfigFile, false, WebData.Encoding))
             {
                 sw.WriteLine(NAME_TITLE);
@@ -70,6 +72,10 @@ namespace Djs.Tools.WebDownloader
                 sw.WriteLine(CreatePair(NAME_SAVETOPATH, this.SaveToPath, false));
             }
         }
+        /// <summary>
+        /// Je povoleno ukládat data do Config souboru? Default = false, je nutno nastavit ručně na true po inicializaci UI
+        /// </summary>
+        public bool SaveEnabled { get; set; }
         /// <summary>== WebDownloader v3.0 config ==</summary>
         protected const string NAME_TITLE = "== WebDownloader v3.0 config ==";
         /// <summary>SaveAutomatic</summary>

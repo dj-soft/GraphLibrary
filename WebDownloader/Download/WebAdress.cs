@@ -22,6 +22,10 @@ namespace Djs.Tools.WebDownloader.Download
             this.Clear(true);
         }
         /// <summary>
+        /// Vstupní ukázka URL
+        /// </summary>
+        public string Sample { get; set; }
+        /// <summary>
         /// Vzorec obsahující klíčové názvy proměnných
         /// </summary>
         public string Formula { get; set; }
@@ -120,6 +124,7 @@ namespace Djs.Tools.WebDownloader.Download
                 item.Level = level--;
 
             this.Clear(true);
+            this.Sample = sample;
             this.Formula = formula;
             this.Items.AddRange(items);
         }
@@ -233,6 +238,7 @@ namespace Djs.Tools.WebDownloader.Download
         public void Save(Stream stream)
         {
             SaveLine(stream, NAME_TITLE);
+            SaveLine(stream, CreatePair(NAME_SAMPLE, this.Sample, false));
             SaveLine(stream, CreatePair(NAME_FORMULA, this.Formula, false));
             SaveLine(stream, CreatePair(NAME_THREADMAXCOUNT, this.ThreadMaxCount, false));
             foreach (WebItem item in this.Items)
@@ -342,6 +348,8 @@ namespace Djs.Tools.WebDownloader.Download
         public string ConfigFileName { get; private set; }
         /// <summary>== WebDownloader v3.0 data ==</summary>
         protected const string NAME_TITLE = "== WebDownloader v3.0 data ==";
+        /// <summary>Sample</summary>
+        protected const string NAME_SAMPLE = "Sample";
         /// <summary>Formula</summary>
         protected const string NAME_FORMULA = "Formula";
         /// <summary>ThreadMaxCount</summary>
@@ -353,27 +361,51 @@ namespace Djs.Tools.WebDownloader.Download
     #endregion
     #region UI
     #region WebSamplePanel
-    public class WebSamplePanel : WebPanel
+    public class WebSamplePanel : WebActionPanel
     {
-        public WebSamplePanel()
+        #region Konstrukce
+        public WebSamplePanel() { }
+        protected override void InitComponents()
         {
-            this.Init();
-        }
-        protected void Init()
-        {
+            this.SuspendLayout();
+
             int tabIndex = 0;
-            this._SampleLbl = new WebLabel("Ukázka adresy:", new Rectangle(11, 9, 102, 16), ref tabIndex);
-            this._SampleTxt = new WebText(new Rectangle(14, 29, 805, 24), ref tabIndex) { Anchor = AnchTLR };
+            int x = DesignContentLeft;
+            int y = DesignContentTop;
+            int r = DesignContentRight;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+            int textDistanceY = DesignTextSpaceY;
+            int textLabelOffset = DesignTextToLabelOffsetY;
+
+            this._SampleLbl = new WebLabel("Ukázka adresy:", new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight), ref tabIndex) { TextAlign = ContentAlignment.MiddleLeft }; y += labelDistanceY;
+            this._SampleTxt = new WebText(new Rectangle(x, y, r - x, textHeight), ref tabIndex);
+            y += textHeight + DesignContentTop;
+
             this.SuspendLayout();
 
             this.Controls.Add(this._SampleLbl);
             this.Controls.Add(this._SampleTxt);
-
             this.CreateActionButton("NAJDI", Properties.Resources.view_nofullscreen_2, ref tabIndex); // system_search_4
 
             this.Size = new System.Drawing.Size(993, 62);
 
             this.ResumeLayout(false);
+        }
+        protected override void RecalcLayout()
+        {
+            base.RecalcLayout();
+
+            int x = DesignContentLeft;
+            int y = DesignContentTop;
+            int r = CurrentContentRight;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+
+            this._SampleLbl.Bounds = new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight); y += labelDistanceY;
+            this._SampleTxt.Bounds = new Rectangle(x, y, r - x, textHeight);
         }
         protected override void OnActionButton()
         {
@@ -382,6 +414,8 @@ namespace Djs.Tools.WebDownloader.Download
         }
         private System.Windows.Forms.TextBox _SampleTxt;
         private System.Windows.Forms.Label _SampleLbl;
+        #endregion
+        #region Data
         /// <summary>
         /// Událost, kdy se má parsovat text this.SampleText
         /// </summary>
@@ -394,68 +428,79 @@ namespace Djs.Tools.WebDownloader.Download
             get { return this._SampleTxt.Text; }
             set { this._SampleTxt.Text = value; }
         }
+        #endregion
     }
     #endregion
     #region WebAdressPanel
     /// <summary>
     /// Adresní panel (vzorec, seznam, panel s detailem konkrétní položky)
     /// </summary>
-    public class WebAdressPanel : WebPanel
+    public class WebAdressPanel : WebActionPanel
     {
         #region Konstrukce
-        public WebAdressPanel()
+        public WebAdressPanel() { }
+        protected override void InitComponents()
         {
             this._WebAdress = new WebAdress();
-            this.Init();
-        }
-        protected void Init()
-        {
+
+            this.SuspendLayout();
+
             int tabIndex = 0;
-            this._FormulaLbl = new WebLabel("Vzorec adresy, nalezené číselné řady:", new Rectangle(11, 9, 300, 16), ref tabIndex) { TextAlign = ContentAlignment.MiddleLeft };
-            this._FormulaTxt = new WebText(new Rectangle(14, 29, 805, 24), ref tabIndex) { Anchor = AnchTLR };
+            int x = DesignContentLeft;
+            int y = DesignContentTop;
+            int r = DesignContentRight;
+            int ix;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+            int textDistanceY = DesignTextSpaceY;
+            int textLabelOffset = DesignTextToLabelOffsetY;
+
+            this._FormulaLbl = new WebLabel("Vzorec adresy, nalezené číselné řady:", new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight), ref tabIndex) { TextAlign = ContentAlignment.MiddleLeft }; y += labelDistanceY;
+            this._FormulaTxt = new WebText(new Rectangle(x, y, r - x, textHeight), ref tabIndex); y += textDistanceY;
             this._FormulaTxt.TextChanged += new EventHandler(_FormulaTxt_TextChanged);
-            this._ItemsLst = new WebList(new Rectangle(14, 59, 250, 168), ref tabIndex) { Anchor = AnchLTB };
+            this.CreateActionButton("NÁHLED", Properties.Resources.text_x_preview, ref tabIndex);
+
+
+            this._ItemsLst = new WebList(new Rectangle(x, y, DesignItemListWidth, DesignItemListHeight), ref tabIndex);
             this.InitItemsLstColumns();
             this._ItemsLst.SelectedIndexChanged += new EventHandler(_ItemsLst_SelectedIndexChanged);
-            this._ItemNumericPanel = new WebNumericPanel();
+
+            ix = x + DesignItemListWidth + DesignSpaceX;
+            this._ItemNumericPanel = new WebNumericPanel(new Rectangle(ix, y, r - ix, DesignItemListHeight), ref tabIndex) { Visible = false };
             this._ItemNumericPanel.DataChanged += new EventHandler(_ItemNumericPanel_DataChanged);
-            this._ThreadLbl = new WebLabel("Současně", new Rectangle(871, 58, 69, 16), ref tabIndex) { TextAlign = ContentAlignment.MiddleCenter, Anchor = AnchTR };
-            this._ThreadTrc = new WebTrack(Orientation.Vertical, 1, 12, new Rectangle(886, 77, 45, 151), ref tabIndex) { LargeChange = 2, TickStyle = TickStyle.TopLeft, Anchor = AnchTBR };
-            this._ThreadTrc.ValueChanged += new EventHandler(_ThreadTrc_ValueChanged);
-            this._ThreadTxt = new WebText(new Rectangle(886, 230, 39, 20), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Center, Anchor = AnchBR };
-            this._CurrentTxt = new WebText(new Rectangle(14, 230, 805, 24), ref tabIndex) { ReadOnly = true, Anchor = AnchBLR };
-            
-            ((System.ComponentModel.ISupportInitialize)(this._ThreadTrc)).BeginInit();
+
+            this._ThreadTrk = new WebTrackBarPanel(new Rectangle(DesignButtonLeft, y, DesignButtonWidth, DesignItemListHeight), ref tabIndex);
+            this._ThreadTrk.ValueChanged += new EventHandler(_ThreadTrk_ValueChanged);
+            y += (DesignItemListHeight + DesignSpaceY);
+
+            this._CurrentTxt = new WebText(new Rectangle(x, y, r -x, textHeight), ref tabIndex) { ReadOnly = true };
+            y += textHeight + DesignContentTop;
+
+            this._ThreadTrk.SuspendLayout();
             this._ItemNumericPanel.SuspendLayout();
-            this.SuspendLayout();
 
             this.Controls.Add(this._FormulaLbl);
             this.Controls.Add(this._FormulaTxt);
             this.Controls.Add(this._ItemsLst);
             this.Controls.Add(this._ItemNumericPanel);
-            this.Controls.Add(this._ThreadLbl);
-            this.Controls.Add(this._ThreadTrc);
-            this.Controls.Add(this._ThreadTxt);
+            this.Controls.Add(this._ThreadTrk);
             this.Controls.Add(this._CurrentTxt);
 
 
-            // _ItemPanel
-            this._ItemNumericPanel.Location = new System.Drawing.Point(270, 59);
-            this._ItemNumericPanel.Size = new System.Drawing.Size(549, 168);
-            // this._ItemNumericPanel.MinimumSize = this._ItemNumericPanel.Size;
-            this._ItemNumericPanel.TabIndex = tabIndex++;
-            this._ItemNumericPanel.Anchor = AnchLRTB;
-            this._ItemNumericPanel.Visible = false;
+            this.ClientSize = new Size(DesignPanelWidth, y);
 
-            this.CreateActionButton("NÁHLED", Properties.Resources.text_x_preview, ref tabIndex);
-
-            this.Size = new System.Drawing.Size(993, 263);
-
-            ((System.ComponentModel.ISupportInitialize)(this._ThreadTrc)).EndInit();
             this._ItemNumericPanel.ResumeLayout(false);
             this._ItemNumericPanel.PerformLayout();
+            this._ThreadTrk.ResumeLayout(false);
+            this._ThreadTrk.PerformLayout();
             this.ResumeLayout(false);
         }
+        protected static int DesignItemListWidth { get { return 250; } }
+        protected static int DesignItemListHeight { get { return 168; } }
+        /// <summary>
+        /// Inicializace sloupců v <see cref="_ItemsLst"/>
+        /// </summary>
         private void InitItemsLstColumns()
         {
             this._ItemsLst.Columns.Clear();
@@ -466,6 +511,35 @@ namespace Djs.Tools.WebDownloader.Download
             this._ItemsLst.Columns[1].Width = 50;
             this._ItemsLst.Columns[2].Width = 100;
         }
+        protected override void RecalcLayout()
+        {
+            base.RecalcLayout();
+
+            int x = DesignContentLeft;
+            int r = CurrentContentRight;
+            int y = DesignContentTop;
+            int b = CurrentContentBottom;
+            int ix, ih;
+            int labelHeight = DesignLabelHeight;
+            int labelDistanceY = DesignLabelSpaceY;
+            int textHeight = DesignTextHeight;
+            int textDistanceY = DesignTextSpaceY;
+            int textLabelOffset = DesignTextToLabelOffsetY;
+
+            this._FormulaLbl.Bounds = new Rectangle(x + DesignLabelOffsetX, y, 320, labelHeight); y += labelDistanceY;
+            this._FormulaTxt.Bounds = new Rectangle(x, y, r - x, textHeight); y += textDistanceY;
+
+            ih = (b - textHeight - DesignSpaceY) - y;
+            this._ItemsLst.Bounds = new Rectangle(x, y, DesignItemListWidth, ih);
+            ix = x + DesignItemListWidth + DesignSpaceX;
+            this._ItemNumericPanel.Bounds = new Rectangle(ix, y, r - ix, ih);
+            ix = CurrentButtonLeft;
+            ih = b - y - textLabelOffset;
+            this._ThreadTrk.Bounds = new Rectangle(ix, y + textLabelOffset, CurrentButtonWidth, ih);
+            y = b - textHeight;
+
+            this._CurrentTxt.Bounds = new Rectangle(x, y, r - x, textHeight);
+        }
         void _FormulaTxt_TextChanged(object sender, EventArgs e)
         {
             if (this._WebAdress != null)
@@ -475,13 +549,11 @@ namespace Djs.Tools.WebDownloader.Download
                 this.DataShowCurrent();
             }
         }
-        private void _ThreadTrc_ValueChanged(object sender, EventArgs e)
+        private void _ThreadTrk_ValueChanged(object sender, EventArgs e)
         {
-            this._ThreadTxt.Text = this._ThreadTrc.Value.ToString();
-
             if (this._WebAdress != null)
             {
-                this._WebAdress.ThreadMaxCount = this._ThreadTrc.Value;
+                this._WebAdress.ThreadMaxCount = this._ThreadTrk.Value;
                 this.OnDataChanged();
             }
 
@@ -499,9 +571,7 @@ namespace Djs.Tools.WebDownloader.Download
         private WebText _FormulaTxt;
         private WebList _ItemsLst;
         private WebNumericPanel _ItemNumericPanel;
-        private WebLabel _ThreadLbl;
-        private WebTrack _ThreadTrc;
-        private WebText _ThreadTxt;
+        private WebTrackBarPanel _ThreadTrk;
         private WebText _CurrentTxt;
         /// <summary>
         /// Událost, kdy uživatel změnil data adresy, někdo na to může chtít reagovat.
@@ -515,7 +585,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// <summary>
         /// Hodnota ThreadMaxCount načtená přímo z odpovídajícího controlu
         /// </summary>
-        public int ThreadMaxCount { get { return this._ThreadTrc.Value; } }
+        public int ThreadMaxCount { get { return this._ThreadTrk.Value; } }
         /// <summary>
         /// Událost, kdy se má zobrazit náhled adres (uživatel klikl na tlačítko NÁHLED)
         /// </summary>
@@ -545,7 +615,6 @@ namespace Djs.Tools.WebDownloader.Download
             if (this.ThreadMaxCountChanged != null)
                 this.ThreadMaxCountChanged(this, EventArgs.Empty);
         }
-        
         #endregion
         #region Data
         /// <summary>
@@ -590,8 +659,7 @@ namespace Djs.Tools.WebDownloader.Download
                 this._ItemsLst.SelectedIndices.Add(0);
             }
             this.ListItemChanged();
-            this._ThreadTrc.Value = data.ThreadMaxCount;
-            this._ThreadTxt.Text = data.ThreadMaxCount.ToString();
+            this._ThreadTrk.Value = data.ThreadMaxCount;
             this.DataShowCurrent();
         }
         /// <summary>
@@ -659,44 +727,91 @@ namespace Djs.Tools.WebDownloader.Download
         public WebItem WebItem { get { return this._WebItem; } }
         private WebItem _WebItem;
         #endregion
-        #region Buttony
-        protected  void xOnActionButton()
+    }
+    #endregion
+    #region WebTrackBarPanel : svislý Trackbar s titulkem a dole umístěným počtem
+    public class WebTrackBarPanel : WebBasePanel
+    {
+        #region Konstrukce
+        public WebTrackBarPanel() : base() { }
+        public WebTrackBarPanel(Rectangle bounds, ref int tabIndex) : base(bounds, ref tabIndex) { }
+        protected override void InitComponents()
         {
-            /*
-            using (UI.PreviewForm pvf = new UI.PreviewForm())
-            {
-                pvf.WebAdress = this.WebAdress.Clone;
-                pvf.ShowDialog(this.FindForm());
-            }
-            */
+            this.SuspendLayout();
 
-            /*
-            byte[] data = null;
-            string text = null;
+            int tabIndex = 0;
+            int w = 150;
+            int c = w / 2;
+            int h = 250;
+            int labelHeight = DesignLabelHeight;
+            int textHeight = DesignTextHeight;
+            int spaceY = DesignSpaceY;
 
-            using (System.IO.MemoryStream sw = new MemoryStream())
-            {
-                this.WebAdress.Save(sw);
-                data = sw.ToArray();
-                text = WebData.Encoding.GetString(data);
-            }
-            data = WebData.Encoding.GetBytes(text);
-            using (System.IO.MemoryStream sw = new MemoryStream(data))
-            {
-                sw.Seek(0L, SeekOrigin.Begin);
-                this.WebAdress.Load(sw);
-            }
-            this.DataShow();
-             */
+            this._ThreadLbl = new WebLabel("Současně", new Rectangle(0, 0, w, labelHeight), ref tabIndex) { TextAlign = ContentAlignment.MiddleCenter };
+            this._ThreadTrc = new WebTrack(Orientation.Vertical, 1, 12, new Rectangle(c - 25, labelHeight + spaceY, 50, h - (labelHeight + spaceY + spaceY + textHeight)), ref tabIndex) { LargeChange = 2, TickStyle = TickStyle.TopLeft };
+            this._ThreadTxt = new WebText(new Rectangle(c - 20, h - textHeight - 2, 40, textHeight), ref tabIndex) { Enabled = false, TextAlign = HorizontalAlignment.Center };
+            this._ThreadTrc.ValueChanged += new EventHandler(_ThreadTrc_ValueChanged);
+
+            ((System.ComponentModel.ISupportInitialize)(this._ThreadTrc)).BeginInit();
+            this._ThreadTrc.SuspendLayout();
+
+            this.Controls.Add(this._ThreadLbl);
+            this.Controls.Add(this._ThreadTrc);
+            this.Controls.Add(this._ThreadTxt);
+
+            this.ClientSize = new Size(w, h);
+            this.MinimumSize = new Size(80, 100);
+
+            ((System.ComponentModel.ISupportInitialize)(this._ThreadTrc)).EndInit();
+            this._ThreadTrc.ResumeLayout(false);
+            this._ThreadTrc.PerformLayout();
+            this.ResumeLayout(false);
+
+            ShowValue();
         }
-
-        void _LoadBtn_Click(object sender, EventArgs e)
+        protected override void RecalcLayout()
         {
-            string url = this.WebAdress.Text;
-            DownloadItem dwnl = new DownloadItem();
-            dwnl.Start(0, url);
+            Size size = this.ClientSize;
+            int w = size.Width;
+            int c = w / 2;
+            int h = size.Height;
+            int labelHeight = DesignLabelHeight;
+            int textHeight = DesignTextHeight;
+            int spaceY = DesignSpaceY;
+
+            this._ThreadLbl.Bounds = new Rectangle(0, 0, w, labelHeight);
+            int tw = this._ThreadTrc.Width;
+            this._ThreadTrc.Bounds = new Rectangle(c - (tw / 2), labelHeight + spaceY, tw, h - (labelHeight + (3 * spaceY) + textHeight));
+            this._ThreadTxt.Bounds = new Rectangle(c - 20, h - textHeight - spaceY, 40, textHeight);
         }
-        
+        private WebLabel _ThreadLbl;
+        private WebTrack _ThreadTrc;
+        private WebText _ThreadTxt;
+
+        private void _ThreadTrc_ValueChanged(object sender, EventArgs e)
+        {
+            ShowValue();
+            OnValueChanged();
+        }
+        private void ShowValue()
+        {
+            _ThreadTxt.Text = _ThreadTrc.Value.ToString();
+        }
+        #endregion
+        #region Public data
+        /// <summary>
+        /// Titulkový text
+        /// </summary>
+        public string Title { get { return _ThreadLbl.Text; } set { _ThreadLbl.Text = value; } }
+        public int ValueMin { get { return _ThreadTrc.Minimum; } set { _ThreadTrc.Minimum = value; } }
+        public int ValueMax { get { return _ThreadTrc.Maximum; } set { _ThreadTrc.Maximum = value; } }
+        public int Value { get { return _ThreadTrc.Value; } set { _ThreadTrc.Value = value; } }
+        protected virtual void OnValueChanged()
+        {
+            if (ValueChanged != null)
+                ValueChanged(this, EventArgs.Empty);
+        }
+        public event EventHandler ValueChanged;
         #endregion
     }
     #endregion
