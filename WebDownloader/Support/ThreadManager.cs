@@ -52,6 +52,10 @@ namespace Djs.Tools.WebDownloader.Support
             Instance.__StopAll(abortNow);
         }
         /// <summary>
+        /// true pokud se loguje práce s thready
+        /// </summary>
+        public static bool LogActive { get { return Instance.__LogActive; } set { Instance.__LogActive = value; } }
+        /// <summary>
         /// Max počet threadů. Při překročení dojde k chybě. Lze zadat počet 2 až 500 (včetně). Výchozí nastavení je dáno podle počtu procesorů.
         /// </summary>
         public static int MaxThreadCount { get { return Instance.__MaxThreadCount; } set { Instance.__MaxThreadCount = (value < 2 ? 2 : (value > 500 ? 500 : value)); } }
@@ -68,13 +72,23 @@ namespace Djs.Tools.WebDownloader.Support
         private ThreadWrap __GetThread()
         {
             ThreadWrap threadWrap = null;
+            bool logThread = false;
             while (true)
             {
+                // Vynuluji semafor: pokud byl semafor nyní aktivní (=některý předchozí thread skončil a rozsvítil semafor), 
+                //   pak v metodě __TryGetThread() najdu ten volný Thread a nepotřebuji na to semafor.
+                // Pokud by thread volný nebyl, pak přejdu do WaitOne(), a tam by mě rozsvícený semafor rovnou pustil ven a testoval bych to znovu.
+                __Semaphore.Reset();
+
                 if (__TryGetThread(out threadWrap)) break;                                         // Najde volný thread / vytvoří nový thread a vrátí jej.
-                __Semaphore.WaitOne(1000);                                                         //  ... počká na uvolnění threadu ...
+                App.AddLog($"ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");
+                __Semaphore.WaitOne(1000);                                                         //  ... počká na uvolnění některého threadu ...
                 // Až některý thread skončí svoji práci, vyvolá svůj event ThreadDone, přijde k nám do handleru AnyThreadDone(), 
                 // tam zazvoní budíček (__Semaphore) a my se vrátíme do this smyčky a zkusíme si vyzvednout uvolněný thread v příštím kole smyčky...
+                // A protože jsme do logu dali čekání, dáme tam i nalezený thread:
+                logThread = true;
             }
+            if (__LogActive || logThread) App.AddLog($"Allocated thread: {threadWrap}");
             return threadWrap;
         }
 
@@ -87,15 +101,21 @@ namespace Djs.Tools.WebDownloader.Support
             {
                 var threadList = __Threads.ToList();
                 if (threadList.Count > 1) threadList.Sort(ThreadWrap.CompareForAllocate);          // Setřídíme tak, že na začátku budou nejstarší volné thready
-                threadWrap = threadList.FirstOrDefault(t => !t.TryAllocate());                     // Najdeme první thread, který je možno alokovat a rovnou jej Alokujeme
-                if (threadWrap == null)
+                threadWrap = threadList.FirstOrDefault(t => t.TryAllocate());                      // Najdeme první thread, který je možno alokovat a rovnou jej Alokujeme
+                if (threadWrap != null)
+                {
+                    if (__LogActive) App.AddLog($"Allocated existing thread: {threadWrap}");
+                }
+                else
                 {
                     int count = __Threads.Count;
                     if (count < __MaxThreadCount)
                     {   // Můžeme ještě přidat další thread:
-                        threadWrap = new ThreadWrap(this, $"ThreadInPool{(count + 1)}", ThreadWrapState.Allocated);    // Vytvoříme nový thread, a rovnou jako Alokovaný
+                        string name = $"ThreadInPool{(count + 1)}";
+                        threadWrap = new ThreadWrap(this, name, ThreadWrapState.Allocated);       // Vytvoříme nový thread, a rovnou jako Alokovaný
                         threadWrap.ThreadDone += AnyThreadDone;
                         __Threads.Add(threadWrap);
+                        if (__LogActive) App.AddLog($"Created new thread: {threadWrap}");
                     }
                     // Pokud již nemůžeme přidat další thread a všechny existující jsou právě nyní obsazené, 
                     //  pak vrátíme false a nadřízená metoda počká ve smyčce (s pomocí semaforu) na uvolnění některého threadu.
@@ -112,7 +132,10 @@ namespace Djs.Tools.WebDownloader.Support
         {
             __Semaphore.Set();
         }
-
+        /// <summary>
+        /// Zastaví všechny thready
+        /// </summary>
+        /// <param name="abortNow"></param>
         private void __StopAll(bool abortNow = false)
         {
             lock (__Threads)
@@ -169,12 +192,18 @@ namespace Djs.Tools.WebDownloader.Support
         private int __MaxThreadCount;
         private AutoResetEvent __Semaphore;
         private bool __IsStopped;
+        private bool __LogActive;
         #endregion
         #region class ThreadWrap
         protected class ThreadWrap : IDisposable
         {
             #region Konstruktor a proměnné
-
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="name"></param>
+            /// <param name="initialState"></param>
             public ThreadWrap(ThreadManager owner, string name, ThreadWrapState initialState = ThreadWrapState.Disponible)
             {
                 __Owner = owner;
@@ -183,20 +212,32 @@ namespace Djs.Tools.WebDownloader.Support
                 __State = initialState;
                 __DisponibleFrom = DateTime.UtcNow;
                 __End = false;
+                __Name = name;
                 __Thread = new Thread(__Loop) { IsBackground = true, Name = name, Priority = ThreadPriority.BelowNormal };
                 __Thread.Start();
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"{Name} [{State}]";
+            }
             private ThreadManager __Owner;
+            private bool __LogActive { get { return __Owner.__LogActive; } }
             private SpinLock __Lock;
             private AutoResetEvent __Semaphore;
             private volatile ThreadWrapState __State;
             private bool __End;
             private DateTime __DisponibleFrom;
             private Thread __Thread;
+            private string __Name;
             private volatile Action __Action;
             private volatile Action<object[]> __ActionArgs;
             private volatile object[] __Arguments;
             private volatile Action __Done;
+            public string Name { get { return __Name; } }
             #endregion
             #region Kód volaný v aplikačním threadu
             /// <summary>
@@ -217,6 +258,7 @@ namespace Djs.Tools.WebDownloader.Support
                     var state = __State;
                     if (!__End && __State == ThreadWrapState.Disponible)
                     {
+                        if (__LogActive) App.AddLog($"Allocate current thread {this}");
                         __State = ThreadWrapState.Allocated;
                         isAllocated = true;
                     }
@@ -247,7 +289,7 @@ namespace Djs.Tools.WebDownloader.Support
 
                     var state = __State;
                     if (state != ThreadWrapState.Allocated)
-                        throw new InvalidOperationException($"ThreadWrap.RunAction error: invalid state of Thread instance ({nameof(ThreadWrapState)}.{state}) for AddAction.");
+                        throw new InvalidOperationException($"ThreadWrap.RunAction error: invalid state for AddAction in thread {this}.");
 
                     __Action = action;
                     __ActionArgs = actionArgs;
@@ -263,7 +305,6 @@ namespace Djs.Tools.WebDownloader.Support
 
                 __Semaphore.Set();                   // Požádáme thread na pozadí o vykonání akce.
             }
-
             #endregion
             #region Kód běžící na pozadí
             /// <summary>
@@ -318,18 +359,21 @@ namespace Djs.Tools.WebDownloader.Support
                 {   // Běh aplikační akce probíhá už bez zámku:
                     try
                     {
+                        if (__LogActive) App.AddLog($"Thread {this} : RunAction");
                         if (action != null)
                             action();
                         else if (actionArgs != null)
                             actionArgs(arguments);
                         if (done != null)
                             done();
+                        if (__LogActive) App.AddLog($"Thread {this} : DoneAction");
                     }
-                    catch (Exception) { }
+                    catch (Exception exc) { App.AddLog(exc); }
                     finally
                     {
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
+                        if (__LogActive) App.AddLog($"Thread {this} : Disponible");
                         OnThreadDone();
                     }
                 }
@@ -426,3 +470,95 @@ namespace Djs.Tools.WebDownloader.Support
     }
     #endregion
 }
+
+#region testy
+namespace Djs.Tools.WebDownloader.Tests
+{
+    using Djs.Tools.WebDownloader.Support;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    [TestClass]
+    public class ThreadManagerTests
+    {
+        [TestMethod]
+        public void TestDataRun()
+        {
+            System.Windows.Forms.Clipboard.Clear();
+
+            Thread.CurrentThread.Name = "MainThread";
+            App.AddLog($"Start aplikace");
+
+            for (int r = 0; r < 60; r++)
+            {
+                App.AddLog($"Řádek {r}", "Test");
+                for (int t = 0; t < 100; t++)              // 100 cyklů = 8 mikrosecs
+                {
+                    double a = Math.Cos(0.45d * Math.PI);
+                    double b = Math.Sin(0.45d * Math.PI);
+                }
+
+                // System.Threading.Thread.Sleep(10);
+            }
+
+            var text = App.LogText;
+            System.Windows.Forms.Clipboard.SetText(text);
+        }
+        [TestMethod]
+        public void TestThreadManager()
+        {
+            System.Windows.Forms.Clipboard.Clear();
+            ThreadManager.MaxThreadCount = 4;
+            Rand = new Random();
+
+            Thread.CurrentThread.Name = "MainThread";
+            App.AddLog($"Start aplikace");
+
+            int actionCount = 1024;
+
+            try
+            {
+                actionCount = 512;
+                for (int r = 1; r <= actionCount; r++)
+                {
+                    App.AddLog($"Spouštíme akci {r}");
+                    ThreadManager.RunActionAsync(_TestDataOneAction, r);
+                    if (Rand.Next(50) < 3)
+                    {
+                        int wait = Rand.Next(5, 10);
+                        App.AddLog($"Počkáme čas {wait} ms");
+                        Thread.Sleep(wait);
+                    }
+                }
+            }
+
+            catch (Exception exc)
+            {
+                App.AddLog(exc);
+            }
+            finally
+            {
+                App.AddLog($"Konec aplikace");
+            }
+
+            var text = App.LogText;
+            System.Windows.Forms.Clipboard.SetText(text);
+        }
+        private void _TestDataOneAction(object[] arguments)
+        {
+            int number = (int)arguments[0];
+            int time = Rand.Next(400, 2000);               // Cílový čas v mikrosekundách
+            int count = 100 * time / 8;                    // 100 cyklů = 8 mikrosecs
+            App.AddLog($"Zahájení výpočtů, akce číslo {number}, počet výpočtů {count}, očekávaný čas {time}");
+
+            for (int t = 0; t < count; t++)
+            {
+                double a = Math.Cos(0.45d * Math.PI);
+                double b = Math.Sin(0.45d * Math.PI);
+            }
+
+            App.AddLog($"Dokončení výpočtů, akce číslo {number}");
+        }
+        private Random Rand;
+    }
+}
+#endregion
