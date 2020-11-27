@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this._StatusStrip = new System.Windows.Forms.StatusStrip();
             this._StatusInfoLabel = new System.Windows.Forms.ToolStripStatusLabel();
@@ -48,11 +49,17 @@
             this._SaveButton = new System.Windows.Forms.ToolStripSplitButton();
             this._ToolSaveAuto = new System.Windows.Forms.ToolStripMenuItem();
             this._ToolSaveOnDownload = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this._DirectoryCleanBtn = new System.Windows.Forms.ToolStripButton();
             this._MainSpl = new System.Windows.Forms.SplitContainer();
             this._InputSpl = new System.Windows.Forms.SplitContainer();
             this._SamplePanel = new Djs.Tools.WebDownloader.Download.WebSamplePanel();
             this._AdressPanel = new Djs.Tools.WebDownloader.Download.WebAdressPanel();
             this._DownloadPanel = new Djs.Tools.WebDownloader.Download.WebDownloadPanel();
+            this.MainTabControl = new System.Windows.Forms.TabControl();
+            this.TagbPageDownloader = new System.Windows.Forms.TabPage();
+            this.TabPageCleanDir = new System.Windows.Forms.TabPage();
+            this.ImageList = new System.Windows.Forms.ImageList(this.components);
             this._StatusStrip.SuspendLayout();
             this._ToolStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._MainSpl)).BeginInit();
@@ -63,22 +70,24 @@
             this._InputSpl.Panel1.SuspendLayout();
             this._InputSpl.Panel2.SuspendLayout();
             this._InputSpl.SuspendLayout();
+            this.MainTabControl.SuspendLayout();
+            this.TagbPageDownloader.SuspendLayout();
             this.SuspendLayout();
             // 
             // _StatusStrip
             // 
             this._StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this._StatusInfoLabel});
-            this._StatusStrip.Location = new System.Drawing.Point(0, 661);
+            this._StatusStrip.Location = new System.Drawing.Point(0, 722);
             this._StatusStrip.Name = "_StatusStrip";
-            this._StatusStrip.Size = new System.Drawing.Size(1151, 22);
+            this._StatusStrip.Size = new System.Drawing.Size(1384, 22);
             this._StatusStrip.TabIndex = 6;
             this._StatusStrip.Text = "_StatusStrip";
             // 
             // _StatusInfoLabel
             // 
             this._StatusInfoLabel.Name = "_StatusInfoLabel";
-            this._StatusInfoLabel.Size = new System.Drawing.Size(1129, 17);
+            this._StatusInfoLabel.Size = new System.Drawing.Size(1425, 17);
             this._StatusInfoLabel.Spring = true;
             this._StatusInfoLabel.Text = "Informace...";
             this._StatusInfoLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -90,11 +99,13 @@
             this._ToolOpenDrop,
             this._ToolDeleteBtn,
             this.toolStripSeparator1,
-            this._SaveButton});
+            this._SaveButton,
+            this.toolStripSeparator3,
+            this._DirectoryCleanBtn});
             this._ToolStrip.Location = new System.Drawing.Point(0, 0);
             this._ToolStrip.Name = "_ToolStrip";
             this._ToolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
-            this._ToolStrip.Size = new System.Drawing.Size(1151, 31);
+            this._ToolStrip.Size = new System.Drawing.Size(1384, 31);
             this._ToolStrip.TabIndex = 7;
             this._ToolStrip.Text = "_ToolStrip";
             // 
@@ -227,11 +238,25 @@
             this._ToolSaveOnDownload.ToolTipText = "Ukládá definici v průběhu downloadu po úspěšném downloadu každého jednoho souboru" +
     "";
             // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 31);
+            // 
+            // _DirectoryCleanBtn
+            // 
+            this._DirectoryCleanBtn.Image = global::Djs.Tools.WebDownloader.Properties.Resources.edit_clear_2;
+            this._DirectoryCleanBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this._DirectoryCleanBtn.Name = "_DirectoryCleanBtn";
+            this._DirectoryCleanBtn.Size = new System.Drawing.Size(127, 28);
+            this._DirectoryCleanBtn.Text = "Čištění adresáře...";
+            this._DirectoryCleanBtn.Click += new System.EventHandler(this._DirectoryCleanBtn_Click);
+            // 
             // _MainSpl
             // 
             this._MainSpl.Dock = System.Windows.Forms.DockStyle.Fill;
             this._MainSpl.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
-            this._MainSpl.Location = new System.Drawing.Point(0, 31);
+            this._MainSpl.Location = new System.Drawing.Point(3, 3);
             this._MainSpl.Name = "_MainSpl";
             this._MainSpl.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -243,7 +268,7 @@
             // _MainSpl.Panel2
             // 
             this._MainSpl.Panel2.Controls.Add(this._DownloadPanel);
-            this._MainSpl.Size = new System.Drawing.Size(1151, 630);
+            this._MainSpl.Size = new System.Drawing.Size(1370, 645);
             this._MainSpl.SplitterDistance = 320;
             this._MainSpl.TabIndex = 5;
             // 
@@ -265,50 +290,93 @@
             // 
             this._InputSpl.Panel2.Controls.Add(this._AdressPanel);
             this._InputSpl.Panel2MinSize = 150;
-            this._InputSpl.Size = new System.Drawing.Size(1151, 320);
+            this._InputSpl.Size = new System.Drawing.Size(1370, 320);
             this._InputSpl.SplitterDistance = 71;
             this._InputSpl.SplitterWidth = 1;
             this._InputSpl.TabIndex = 6;
             // 
             // _SamplePanel
             // 
-            this._SamplePanel.BackColor = System.Drawing.SystemColors.Info;
             this._SamplePanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this._SamplePanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._SamplePanel.Location = new System.Drawing.Point(0, 0);
             this._SamplePanel.Name = "_SamplePanel";
             this._SamplePanel.SampleText = "";
-            this._SamplePanel.Size = new System.Drawing.Size(1151, 71);
+            this._SamplePanel.Size = new System.Drawing.Size(1370, 71);
             this._SamplePanel.TabIndex = 0;
             // 
             // _AdressPanel
             // 
-            this._AdressPanel.BackColor = System.Drawing.SystemColors.Info;
             this._AdressPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this._AdressPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._AdressPanel.Location = new System.Drawing.Point(0, 0);
             this._AdressPanel.Name = "_AdressPanel";
-            this._AdressPanel.Size = new System.Drawing.Size(1151, 248);
+            this._AdressPanel.Size = new System.Drawing.Size(1370, 248);
             this._AdressPanel.TabIndex = 3;
             // 
             // _DownloadPanel
             // 
-            this._DownloadPanel.BackColor = System.Drawing.SystemColors.Info;
             this._DownloadPanel.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this._DownloadPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._DownloadPanel.Location = new System.Drawing.Point(0, 0);
             this._DownloadPanel.MinimumSize = new System.Drawing.Size(500, 203);
             this._DownloadPanel.Name = "_DownloadPanel";
-            this._DownloadPanel.Size = new System.Drawing.Size(1151, 306);
+            this._DownloadPanel.Size = new System.Drawing.Size(1370, 321);
             this._DownloadPanel.TabIndex = 4;
             this._DownloadPanel.TargetPath = "";
+            // 
+            // MainTabControl
+            // 
+            this.MainTabControl.Appearance = System.Windows.Forms.TabAppearance.FlatButtons;
+            this.MainTabControl.Controls.Add(this.TagbPageDownloader);
+            this.MainTabControl.Controls.Add(this.TabPageCleanDir);
+            this.MainTabControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.MainTabControl.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.MainTabControl.ImageList = this.ImageList;
+            this.MainTabControl.ItemSize = new System.Drawing.Size(101, 32);
+            this.MainTabControl.Location = new System.Drawing.Point(0, 31);
+            this.MainTabControl.Name = "MainTabControl";
+            this.MainTabControl.SelectedIndex = 0;
+            this.MainTabControl.Size = new System.Drawing.Size(1384, 691);
+            this.MainTabControl.TabIndex = 8;
+            // 
+            // TagbPageDownloader
+            // 
+            this.TagbPageDownloader.Controls.Add(this._MainSpl);
+            this.TagbPageDownloader.ImageKey = "download-later.png";
+            this.TagbPageDownloader.Location = new System.Drawing.Point(4, 36);
+            this.TagbPageDownloader.Name = "TagbPageDownloader";
+            this.TagbPageDownloader.Padding = new System.Windows.Forms.Padding(3);
+            this.TagbPageDownloader.Size = new System.Drawing.Size(1376, 651);
+            this.TagbPageDownloader.TabIndex = 0;
+            this.TagbPageDownloader.Text = "Download";
+            this.TagbPageDownloader.UseVisualStyleBackColor = true;
+            // 
+            // TabPageCleanDir
+            // 
+            this.TabPageCleanDir.ImageKey = "edit-clear-2.png";
+            this.TabPageCleanDir.Location = new System.Drawing.Point(4, 36);
+            this.TabPageCleanDir.Name = "TabPageCleanDir";
+            this.TabPageCleanDir.Padding = new System.Windows.Forms.Padding(3);
+            this.TabPageCleanDir.Size = new System.Drawing.Size(1432, 697);
+            this.TabPageCleanDir.TabIndex = 1;
+            this.TabPageCleanDir.Text = "Čištění adresáře";
+            this.TabPageCleanDir.UseVisualStyleBackColor = true;
+            // 
+            // ImageList
+            // 
+            this.ImageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("ImageList.ImageStream")));
+            this.ImageList.TransparentColor = System.Drawing.Color.Transparent;
+            this.ImageList.Images.SetKeyName(0, "download-3.png");
+            this.ImageList.Images.SetKeyName(1, "download-later.png");
+            this.ImageList.Images.SetKeyName(2, "edit-clear-2.png");
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1151, 683);
-            this.Controls.Add(this._MainSpl);
+            this.ClientSize = new System.Drawing.Size(1384, 744);
+            this.Controls.Add(this.MainTabControl);
             this.Controls.Add(this._ToolStrip);
             this.Controls.Add(this._StatusStrip);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -326,6 +394,8 @@
             this._InputSpl.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._InputSpl)).EndInit();
             this._InputSpl.ResumeLayout(false);
+            this.MainTabControl.ResumeLayout(false);
+            this.TagbPageDownloader.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -357,6 +427,12 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem8;
         private System.Windows.Forms.ToolStripButton _ToolDeleteBtn;
         private System.Windows.Forms.ToolStripStatusLabel _StatusInfoLabel;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripButton _DirectoryCleanBtn;
+        private System.Windows.Forms.TabControl MainTabControl;
+        private System.Windows.Forms.TabPage TagbPageDownloader;
+        private System.Windows.Forms.TabPage TabPageCleanDir;
+        private System.Windows.Forms.ImageList ImageList;
     }
 }
 

@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using Djs.Tools.WebDownloader.Download;
 
 namespace Djs.Tools.WebDownloader.UI
 {
@@ -103,6 +104,46 @@ namespace Djs.Tools.WebDownloader.UI
                     this._ToolSaveOnDownload.Image = GetImage(App.Config.SaveOnDownload, Properties.Resources.dialog_accept);
                     break;
             }
+        }
+        private void _DirectoryCleanBtn_Click(object sender, EventArgs e)
+        {
+            string currUrl = this._AdressPanel.WebAdress.Text;                // Aktuální konkrétní adresa URL
+            string path = Download.DownloadItem.CreateRootPath(currUrl, this.TargetPath);
+
+            path = @"f:\WebPages\NudesPuri";
+            path = @"f:\WebPages\2017\Nudes Puri\www.nudespuri.com";
+            if (Clipboard.ContainsText())
+            {
+                string clip = Clipboard.GetText();
+                if (!String.IsNullOrEmpty(clip) && clip.Length < 300)
+                {
+                    clip = clip.Trim();
+                    if (System.IO.Directory.Exists(clip))
+                        path = clip;
+                }
+            }
+
+
+            DirClean dirClean = new DirClean() { DirectoryToClean = path, DeleteFileSmallerThan = 1200, HasMoveToResultDir = true };
+            dirClean.TestOnly = true;
+            dirClean.Progress += DirClean_Progress;
+            dirClean.Start();
+            return;
+
+            using (var cleanForm = new DirCleanForm())
+            {
+                cleanForm.ShowDialog(this);
+            }
+        }
+
+        private void DirClean_Progress(object sender, DirCleanProgressArgs e)
+        {
+            if (this.InvokeRequired) this.BeginInvoke(new Action<DirCleanProgressArgs>(RunPogress), e);
+            else RunPogress(e);
+        }
+        private void RunPogress(DirCleanProgressArgs args)
+        {
+
         }
         private Image GetImage(bool value, Image image)
         {

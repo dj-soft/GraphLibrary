@@ -50,13 +50,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Download\Common.cs" />
+    <Compile Include="Download\DirClean.cs" />
     <Compile Include="Download\Downloader.cs" />
     <Compile Include="Download\WebAdress.cs" />
+    <Compile Include="Download\WebItem.cs" />
     <Compile Include="Download\WebNumericItem.cs" />
     <Compile Include="Support\App.cs" />
     <Compile Include="Support\Config.cs" />
     <Compile Include="Support\Data.cs" />
     <Compile Include="Support\Dialogs.cs" />
+    <Compile Include="Support\ThreadManager.cs" />
+    <Compile Include="UI\DirCleanForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\DirCleanForm.Designer.cs">
+      <DependentUpon>DirCleanForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -129,6 +138,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="download-3.ico" />
+    <None Include="img\run-build-clean.png" />
+    <None Include="img\edit-clear-2.png" />
     <None Include="img\media-playback-start-4.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

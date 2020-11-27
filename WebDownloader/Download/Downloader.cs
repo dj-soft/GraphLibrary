@@ -15,12 +15,11 @@ namespace Djs.Tools.WebDownloader.Download
     /// <summary>
     /// Controler paralelních downloadů
     /// </summary>
-    public class WebDownload
+    public class WebDownload : WebBase
     {
         #region Konstrukce, proměnné
-        public WebDownload()
+        public WebDownload() : base()
         {
-            this._State = DownloadState.Initiated;
             this._ItemList = new List<DownloadItem>();
         }
         /// <summary>
@@ -42,7 +41,7 @@ namespace Djs.Tools.WebDownloader.Download
                 return;
             }
 
-            this.State = DownloadState.Initiated;
+            this.State = WorkingState.Initiated;
 
             if (this._SemaphoreDownload != null)
             {
@@ -62,15 +61,7 @@ namespace Djs.Tools.WebDownloader.Download
             this.WebAdress = webAdress;
             this.TargetPath = targetPath;
 
-            this.State = DownloadState.Working;
-
-            if (this._WorkThread != null && this._WorkThread.ThreadState == ThreadState.Running)
-            {
-                this._WorkThread.Abort();
-                this._WorkThread = null;
-            }
-            this._WorkThread = new Thread(this._StartDwnl) { Name = "WorkThread", IsBackground = true, Priority = ThreadPriority.BelowNormal };
-            this._WorkThread.Start();
+            this.StartBackThread("DownloadThread");
         }
         /// <summary>
         /// Kontrola adresy. Vrací true pokud je platná. Hlásí Warning pokud je neplatná, pak vrací false.
@@ -91,10 +82,6 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         internal string TargetPath { get; private set; }
         /// <summary>
-        /// Thread který řídí download
-        /// </summary>
-        private Thread _WorkThread;
-        /// <summary>
         /// Semafor, který řídí čekání na uvolnění pracovního slotu downloadu
         /// </summary>
         private AutoResetEvent _SemaphoreDownload;
@@ -109,49 +96,35 @@ namespace Djs.Tools.WebDownloader.Download
         #endregion
         #region Stavy, změny stavu, požadavky na změnu, eventy
         /// <summary>
-        /// true pokud objekt pracuje (stav je: Working, Paused, Cancelling).
-        /// </summary>
-        public bool IsWorking
-        {
-            get
-            {
-                DownloadState s = this._State; 
-                return (
-                    s == DownloadState.Working ||
-                    s == DownloadState.Paused ||
-                    s == DownloadState.Cancelling);
-            }
-        }
-        /// <summary>
         /// Povolí pokračování stahování poté, kdy bylo pauzováno (DownloadPause)
         /// </summary>
         public void DownloadResume()
         {
-            if (this.State == DownloadState.Paused || this.State == DownloadState.Cancelling)
-                this.State = DownloadState.Working;
+            if (this.State == WorkingState.Paused || this.State == WorkingState.Cancelling)
+                this.State = WorkingState.Working;
         }
         /// <summary>
         /// Pozastaví stahování (Pauza), z pauzy lze pokračovat (DownloadResume) nebo stopnout (DownloadCancel).
         /// </summary>
         public void DownloadPause()
         {
-            if (this.State == DownloadState.Working)
-                this.State = DownloadState.Paused;
+            if (this.State == WorkingState.Working)
+                this.State = WorkingState.Paused;
         }
         /// <summary>
         /// Zruší stahování (Stop). Pokud běží nějaké downloady, přechází se do stavu Cancelling, jinak do stavu Cancelled.
         /// </summary>
         public void DownloadCancel()
         {
-            if (this.State == DownloadState.Working || this.State == DownloadState.Paused)
-                this.State = DownloadState.Cancelling;
-            else if (this.State == DownloadState.Cancelling)
-                this.State = DownloadState.Cancelled;
+            if (this.State == WorkingState.Working || this.State == WorkingState.Paused)
+                this.State = WorkingState.Cancelling;
+            else if (this.State == WorkingState.Cancelling)
+                this.State = WorkingState.Cancelled;
         }
         /// <summary>
         /// Obsahuje true pokud stav == Cancelled.
         /// </summary>
-        public bool AbortNow { get { return (this._State == DownloadState.Cancelled); } }
+        public bool AbortNow { get { return (this.State == WorkingState.Cancelled); } }
         /// <summary>
         /// Příznak dokončení číselné řady
         /// </summary>
@@ -160,42 +133,31 @@ namespace Djs.Tools.WebDownloader.Download
         /// Stav downloadu.
         /// Změnit hodnotu stavu může jen proces sám, změna stavu nastavuje další příznaky.
         /// </summary>
-        public DownloadState State
+        public override WorkingState State
         {
-            get { return this._State; }
+            get { return base.State; }
             protected set
             {
-                if (value != this._State)
+                WorkingState stateBefore = base.State;
+                WorkingState stateCurrent = value;
+                if (stateCurrent != stateBefore)
                 {
-                    DownloadState stateBefore = this._State;
-                    this._State = value;
-
-                    if (stateBefore != DownloadState.Initiated && value == DownloadState.Initiated)
+                    base.State = value;                              // Už tady? Protože může dojít k vyvolání _SemaphoreSendInteractiveSignal() a tedy odblokování jiného threadu, tak ať zná svůj stav...
+                    if (stateBefore != WorkingState.Initiated && stateCurrent == WorkingState.Initiated)
                     {   // Jedenkrát při zahájení downloadu
                         this.IsDone = false;
                     }
-                    if (stateBefore != DownloadState.Working && value == DownloadState.Working)
+                    if (stateBefore != WorkingState.Working && stateCurrent == WorkingState.Working)
                     {   // Při zahájení downloadu a při přechodu ze stavu Paused nebo Cancelling zpátky do Working
+
                     }
-                    if ((stateBefore == DownloadState.Paused || stateBefore == DownloadState.Cancelling) && value != stateBefore)
+                    if ((stateBefore == WorkingState.Paused || stateBefore == WorkingState.Cancelling) && value != stateBefore)
                     {   // Při ukončení pauzy nebo stavu Cancelling:
                         this._SemaphoreSendInteractiveSignal();
                     }
-
-                    this.OnStateChanged(stateBefore, value);
                 }
             }
         }
-        private DownloadState _State;
-        protected virtual void OnStateChanged(DownloadState stateBefore, DownloadState stateCurrent)
-        {
-            if (this.StateChanged != null)
-                this.StateChanged(this, new DownloadStateChangedArgs(stateBefore, stateCurrent));
-        }
-        /// <summary>
-        /// Událost volaná po změně stavu celkového procesu downloadu
-        /// </summary>
-        public event DownloadStateChangedHandler StateChanged;
         protected virtual void OnDownloadProgress()
         {
         }
@@ -205,7 +167,7 @@ namespace Djs.Tools.WebDownloader.Download
         public event DownloadProgressChangedHandler DownloadProgress;
         #endregion
         #region Řízení downloadu
-        private void _StartDwnl()
+        protected override void RunBackThread()
         {
             this.IsDone = false;
             this._SemaphoreDownload.Reset();
@@ -214,6 +176,7 @@ namespace Djs.Tools.WebDownloader.Download
 
             while (true)
             {
+                if (State == WorkingState.Cancelling) State = WorkingState.Cancelled;
                 if (this.AbortNow) break;
                 DownloadItem item = this._GetWorkItem();
                 if (item == null) break;
@@ -231,13 +194,13 @@ namespace Djs.Tools.WebDownloader.Download
         {
             if (this.IsInteractiveStop()) return null;
 
-            if (this.IsDone)
+            if (this.IsDone || this.State == WorkingState.Cancelling || this.State == WorkingState.Cancelled)
             {   // Pokud je vše hotovo, pak jen počkám na dokončení všech downloadovaných položek:
                 this._WaitForItemCount(0);
                 return null;
             }
 
-            // Není hotovo, a není ani interaktivní důvod skončit: počkáme na volný slot:
+            // Není hotovo, a není ani interaktivní důvod skončit: počkáme na uvolnění nějakého slotu (DownloadItem), a taky čekáme ve stavu Pause:
             this._WaitForFreeItem();
             if (this.AbortNow) return null;
 
@@ -277,18 +240,18 @@ namespace Djs.Tools.WebDownloader.Download
             {
                 switch (this.State)
                 {
-                    case DownloadState.Paused:
+                    case WorkingState.Paused:
                         // V pauze čekám (1 sec) na jakoukoli interaktivní změnu, poté to vyhodnotíme znovu:
                         this._SemaphoreWaitForInteractiveChange(1000);
                         break;
-                    case DownloadState.Cancelling:
+                    case WorkingState.Cancelling:
                         // Cancelujeme: pokud nám už doběhly všechny downloady, pak vracím true = konec:
                         int count = this._ItemListWorkingCount();
                         if (count == 0) return true;
                         // Nedoběhly: počkám chvilku (1 sec) na interaktivní změnu, a pak se na to podíváme znovu:
                         this._SemaphoreWaitForInteractiveChange(1000);
                         break;
-                    case DownloadState.Cancelled:
+                    case WorkingState.Cancelled:
                         // Abortováno: vracím true bez čekání:
                         return true;
                     default:
@@ -301,6 +264,7 @@ namespace Djs.Tools.WebDownloader.Download
         /// Tato metoda čeká, až počet běžících downloadů bude menší než this._MaxThread.
         /// Tuto hodnotu vyhodnocuje před každým testem znovu = tím umožní měnit hodnotu dynamicky i při čekání.
         /// Pokud při čekání zjistí, že je nahozen příznak AbortNow = true, pak nečeká na nic a končí, pak vrací false.
+        /// Pokud 
         /// </summary>
         /// <param name="count"></param>
         /// <returns></returns>
@@ -426,6 +390,9 @@ namespace Djs.Tools.WebDownloader.Download
         /// Maximum vláken dle WebAdress v rozmezí 1 ÷ 12
         /// </summary>
         private int _MaxThread { get { int max = this.WebAdress.ThreadMaxCount; return (max > 12 ? 12 : (max < 1 ? 1 : max)); } }
+        /// <summary>
+        /// List prvků k downloadu. Prvky se po dokončení downloadu recyklují a znovu používají = nezahazují se.
+        /// </summary>
         private List<DownloadItem> _ItemList;
         #endregion
         protected virtual void OnDownloadChanged(DownloadItemStateChangedArgs args)
@@ -435,56 +402,7 @@ namespace Djs.Tools.WebDownloader.Download
         }
         public event DownloadItemStateChangedHandler DownloadChanged;
     }
-    /// <summary>
-    /// Stavy procesu celého downloadu (nikoli jednotlivé soubory)
-    /// </summary>
-    public enum DownloadState
-    {
-        /// <summary>
-        /// Připraveno
-        /// </summary>
-        Initiated,
-        /// <summary>
-        /// Pracuje
-        /// </summary>
-        Working,
-        /// <summary>
-        /// Pauza
-        /// </summary>
-        Paused,
-        /// <summary>
-        /// Požadavek na Cancel, čekání na dokončení běžících přenosů
-        /// </summary>
-        Cancelling,
-        /// <summary>
-        /// Dokončeno po Cancel, neběží žádné přenosy.
-        /// </summary>
-        Cancelled,
-        /// <summary>
-        /// Abortováno bez čekání na dokončení přenosů (Cancel i při běžících downloadech).
-        /// </summary>
-        Aborted,
-        /// <summary>
-        /// Ukončeno vlivem počtu chyb
-        /// </summary>
-        StoppedDueErrors,
-        /// <summary>
-        /// Dokončeno samovolně po dojetí do konce, bez jiného důvodu
-        /// </summary>
-        Done
-    }
     #region Delegáty a EventArgs
-    public class DownloadStateChangedArgs : EventArgs
-    {
-        public DownloadStateChangedArgs(DownloadState stateBefore, DownloadState stateCurrent)
-        {
-            this.StateBefore = stateBefore;
-            this.StateCurrent = stateCurrent;
-        }
-        public DownloadState StateBefore { get; private set; }
-        public DownloadState StateCurrent { get; private set; }
-    }
-    public delegate void DownloadStateChangedHandler(object sender, DownloadStateChangedArgs args);
     public class DownloadProgressChangedArgs : EventArgs
     {
 
@@ -1040,6 +958,27 @@ namespace Djs.Tools.WebDownloader.Download
             return Path.Combine(rootPath, file);
         }
         /// <summary>
+        /// Vytvoří lokální jméno Root adresáře pro danou URL. Vrátí tedy Host:
+        /// Např. pro vstupní URL: "http://www.seznam.cz/novinky?id=123456" vrátí "www.seznam.cz".
+        /// Pokud je zadán adresář rootPath, bude použit.
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="rootPath"></param>
+        /// <returns></returns>
+        public static string CreateRootPath(string url, string rootPath = null)
+        {
+            if (String.IsNullOrEmpty(url)) return "";
+            Uri uri;
+            if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return null;
+            string path = uri.GetComponents(UriComponents.Host | UriComponents.KeepDelimiter, UriFormat.Unescaped);
+            path = path.Replace("/", "\\");
+            while (path.Length >= 2 && path.Contains(@"\\"))
+                path = path.Replace(@"\\", @"\");
+            if (!String.IsNullOrEmpty(rootPath))
+                path = Path.Combine(rootPath, path);
+            return path;
+        }
+        /// <summary>
         /// Ověří a zajistí existenci adresáře pro daný soubor
         /// </summary>
         /// <param name="localFile"></param>
@@ -1328,10 +1267,10 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         protected void ShowButtonByState()
         {
-            DownloadState state = ((this.WebDownload == null) ? DownloadState.Initiated : this.WebDownload.State);
+            WorkingState state = ((this.WebDownload == null) ? WorkingState.Initiated : this.WebDownload.State);
             this.ShowButtonByState(state);
         }
-        protected void ShowButtonByState(DownloadState state)
+        protected void ShowButtonByState(WorkingState state)
         {
             bool showStart = false;
             bool canStart = false;
@@ -1343,12 +1282,12 @@ namespace Djs.Tools.WebDownloader.Download
             bool canStop = false;
             switch (state)
             {
-                case DownloadState.Initiated:
+                case WorkingState.Initiated:
                     // Na začátku
                     showStart = true;
                     canStart = true;
                     break;
-                case DownloadState.Working:
+                case WorkingState.Working:
                     // Pracuje se
                     showRun = true;
                     canRun = false;
@@ -1357,7 +1296,7 @@ namespace Djs.Tools.WebDownloader.Download
                     showStop = true;
                     canStop = true;
                     break;
-                case DownloadState.Paused:
+                case WorkingState.Paused:
                     // Jsme v pauze
                     showRun = true;
                     canRun = true;
@@ -1366,7 +1305,7 @@ namespace Djs.Tools.WebDownloader.Download
                     showStop = true;
                     canStop = true;
                     break;
-                case DownloadState.Cancelling:
+                case WorkingState.Cancelling:
                     // Čekáme na doběhnutí a budeme cancelovat
                     showRun = true;
                     canRun = false;
@@ -1375,10 +1314,10 @@ namespace Djs.Tools.WebDownloader.Download
                     showStop = true;
                     canStop = true;
                     break;
-                case DownloadState.Cancelled:
-                case DownloadState.Aborted:
-                case DownloadState.StoppedDueErrors:
-                case DownloadState.Done:
+                case WorkingState.Cancelled:
+                case WorkingState.Aborted:
+                case WorkingState.StoppedDueErrors:
+                case WorkingState.Done:
                     // Různé stavy po dokončení
                     showStart = true;
                     canStart = true;
@@ -1442,14 +1381,14 @@ namespace Djs.Tools.WebDownloader.Download
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void WebDownload_StateChanged(object sender, DownloadStateChangedArgs e)
+        void WebDownload_StateChanged(object sender, WorkingStateChangedArgs e)
         {
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action<DownloadStateChangedArgs>(this.AfterDownloadStateChanged), e);
+                this.BeginInvoke(new Action<WorkingStateChangedArgs>(this.AfterDownloadStateChanged), e);
             else
                 this.AfterDownloadStateChanged(e);
         }
-        protected void AfterDownloadStateChanged(DownloadStateChangedArgs e)
+        protected void AfterDownloadStateChanged(WorkingStateChangedArgs e)
         {
             this.ShowButtonByState(e.StateCurrent);
         }
@@ -1478,7 +1417,7 @@ namespace Djs.Tools.WebDownloader.Download
             this.WebDownload.Start(webAdress, TargetPath);
         }
         /// <summary>
-        /// Cílový adresář
+        /// Cílový Root adresář
         /// </summary>
         public string TargetPath { get { return this._TargetDirTxt.Text; } set { this._TargetDirTxt.Text = value; } }
         /// <summary>

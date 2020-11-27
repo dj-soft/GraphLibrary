@@ -206,10 +206,8 @@ namespace Djs.Tools.WebDownloader.Download
             WebNumericItem data = this.WebNumericItem;
             if (data == null) return;
 
-            this._ValueTxt.Value = data.Value;
+            StoreValuesToControl(data.Value, data.RangeFrom, data.RangeTo);
             this._LengthTxt.Value = data.TextLength;
-            this._RangeFromTxt.Value = data.RangeFrom;
-            this._RangeToTxt.Value = data.RangeTo;
             this._StepTxt.Value = data.Step;
 
             this._DataNowChanging = false;
@@ -217,18 +215,7 @@ namespace Djs.Tools.WebDownloader.Download
         protected override void OnDataCollect()
         {
             // Validace na vizuální úrovni:
-            if (this._RangeToTxt.Value < this._RangeFromTxt.Value)
-                this._RangeToTxt.Value = this._RangeFromTxt.Value;
-
-            if (this._ValueTxt.Minimum != this._RangeFromTxt.Value)
-                this._ValueTxt.Minimum = this._RangeFromTxt.Value;
-            if (this._ValueTxt.Maximum != this._RangeToTxt.Value)
-                this._ValueTxt.Maximum = this._RangeToTxt.Value;
-
-            if (this._ValueTxt.Value > this._RangeToTxt.Value)
-                this._ValueTxt.Value = this._RangeToTxt.Value;
-            if (this._ValueTxt.Value < this._RangeFromTxt.Value)
-                this._ValueTxt.Value = this._RangeFromTxt.Value;
+            StoreValuesToControl((long)this._ValueTxt.Value, (long)this._RangeFromTxt.Value, (long)this._RangeToTxt.Value);
 
             WebNumericItem data = this.WebNumericItem;
             if (data == null) return;
@@ -238,6 +225,21 @@ namespace Djs.Tools.WebDownloader.Download
             data.RangeFrom = (long)this._RangeFromTxt.Value;
             data.RangeTo = (long)this._RangeToTxt.Value;
             data.Step = (long)this._StepTxt.Value;
+        }
+        /// <summary>
+        /// Zadané hodnoty vloží do UI controlů ve správném pořadí
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        protected void StoreValuesToControl(long value, long min, long max)
+        {
+            if (max < min) max = min;
+            value = (value < min ? min : (value > max ? max : value));
+
+            if (this._RangeFromTxt.Value != min) this._RangeFromTxt.Value = min;
+            if (this._RangeToTxt.Value != max) this._RangeToTxt.Value = max;
+            this._ValueTxt.SetValues(value, min, max);
         }
         #endregion
     }
