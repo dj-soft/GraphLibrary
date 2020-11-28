@@ -8,6 +8,209 @@ namespace Djs.Tools.WebDownloader.Support
 {
     public class ThreadManager
     {
+        #region Fronta požadavků na zpracování akce na pozadí
+        public static IActionInfo AddAction(Action actionRun, Action actionDone = null)
+        {
+            ActionInfo actionInfo = new ActionInfo(actionRun, null, null, actionDone, null, null);
+            Instance._AddAction(actionInfo);
+            return actionInfo;
+        }
+
+        public static IActionInfo AddAction(Action actionRun, Action<object[]> actionDoneArgs, params object[] doneArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(actionRun, null, null, null, actionDoneArgs, doneArguments);
+            Instance._AddAction(actionInfo);
+            return actionInfo;
+        }
+
+        public static IActionInfo AddAction(Action<object[]> actionRunArgs, params object[] runArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, actionRunArgs, runArguments, null, null, null);
+            Instance._AddAction(actionInfo);
+            return actionInfo;
+        }
+
+        public static IActionInfo AddAction(Action<object[]> actionRunArgs, Action actionDone, params object[] runArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, actionRunArgs, runArguments, actionDone, null, null);
+            Instance._AddAction(actionInfo);
+            return actionInfo;
+        }
+        public static IActionInfo AddAction(Action<object[]> actionRunArgs, object[] runArguments, Action<object[]> actionDoneArgs, object[] doneArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, actionRunArgs, runArguments, null, actionDoneArgs, doneArguments);
+            Instance._AddAction(actionInfo);
+            return actionInfo;
+        }
+
+
+        /// <summary>
+        /// Do fronty akcí přidá další akci a zařídí její spuštění, pokud to lze
+        /// </summary>
+        /// <param name="actionInfo"></param>
+        private void _AddAction(ActionInfo actionInfo)
+        {
+            if (!actionInfo.IsValid)
+                throw new InvalidOperationException("Invalid action to ThreadManager.AddAction: no method Run nor RunArgs!");
+
+            lock (__ActionQueue)
+            {
+                actionInfo.Id = ++__ActionId;
+                if (__LogActive) App.AddLog($"Add Action: {actionInfo}");
+                __ActionQueue.Enqueue(actionInfo);
+            }
+            __ActionSignal.Set();                                    // To probudí thread __ActionThread, který čeká na přidání další akce do fronty v metodě _ActionWaitToAnyAction()...
+        }
+        /// <summary>
+        /// Inicializace bloku pro spouštění akcí v různých threadech
+        /// </summary>
+        private void _ActionInit()
+        {
+            __ActionId = 0;
+            __ActionQueue = new Queue<ActionInfo>();
+            __ActionSignal = new AutoResetEvent(false);
+            __ActionThread = new Thread(__ActionDispatcher) { Name = "ActionDispatcher", IsBackground = true, Priority = ThreadPriority.BelowNormal };
+            __ActionThread.Start();
+        }
+        /// <summary>
+        /// Smyčka vlákna, které je dispečerem spouštění akcí
+        /// </summary>
+        private void __ActionDispatcher()
+        {
+            while (!__IsStopped)
+            {
+                _ActionWaitToAnyAction();                            // Tady v té metodě čekám, než přijde nějaká práce...
+                if (__IsStopped) break;                              // Nepřišla mi práce, ale konec aplikace!
+                // Ve frontě máme alespoň jednu akci (=práce) => pak tedy potřebujeme disponibilní thread, aby bylo práci kde provádět:
+                ThreadWrap threadWrap = __GetThread();               // Tady v té metodě čekám, než dostanu disponibilní thread k provedení nějaké práce
+                if (__IsStopped || threadWrap == null) break;        // končíme?
+                ActionInfo actionInfo = _ActionGetAction();          // Tady si vyzvednu tu práci, které jsem se dočkal (ona není zajíc, neutekla mi - neměla kudy)
+                _ActionRunInThread(threadWrap, actionInfo);          // A tady konečně v přidělením threadu provedu nalezenou práci.
+            }
+        }
+        /// <summary>
+        /// Tato metoda vrátí řízení ihned, jakmile ve frontě <see cref="__ActionQueue"/> bude alespoň jedna požadovaná akce.
+        /// Pokud ve frontě není žádná akce, tato metoda čeká a čeká a nic nedělá, čeká na signál <see cref="__ActionSignal"/>.
+        /// </summary>
+        /// <remarks>Tato metoda běží výhradně v threadu <see cref="__ActionThread"/>, je tedy synchronní s odebíráním akcí z fronty, a asynchronní s přidáváním.</remarks>
+        private void _ActionWaitToAnyAction()
+        {
+            while (!__IsStopped)
+            {
+                if (__ActionQueue.Count > 0) break;
+                if (__LogActive) App.AddLog($"Wait to any Action");
+                __ActionSignal.WaitOne(3000);
+            }
+        }
+        /// <summary>
+        /// Z fronty akcí vyjme akci k jejímu provedení a vrátí ji.
+        /// </summary>
+        /// <returns></returns>
+        private ActionInfo _ActionGetAction()
+        {
+            ActionInfo actionInfo = null;
+            lock (__ActionQueue)
+            {
+                if (__ActionQueue.Count > 0)
+                    actionInfo = __ActionQueue.Dequeue();
+            }
+            if (__LogActive) App.AddLog($"Found Action {(actionInfo?.Id ?? 0)} to Run...");
+            return actionInfo;
+        }
+        /// <summary>
+        /// V dodaném threadu nastartuje dodanou akci.
+        /// Tato metoda je vyvolána v threadu <see cref="__ActionThread"/>, ale akci spouští v threadu dodaném jako parametr.
+        /// </summary>
+        /// <param name="threadWrap"></param>
+        /// <param name="actionInfo"></param>
+        private void _ActionRunInThread(ThreadWrap threadWrap, ActionInfo actionInfo)
+        {
+            if (actionInfo != null)
+                threadWrap.RunAction(actionInfo);
+            else
+                threadWrap.Release();
+        }
+        /// <summary>
+        /// ID posledně přidané akce, příští bude mít +1
+        /// </summary>
+        private volatile int __ActionId;
+        /// <summary>
+        /// Fronta akcí ke zpracování
+        /// </summary>
+        private Queue<ActionInfo> __ActionQueue;
+        /// <summary>
+        /// Signál k akci ve frontě akcí
+        /// </summary>
+        private AutoResetEvent __ActionSignal;
+        /// <summary>
+        /// Vlákno řídící frontu akcí
+        /// </summary>
+        private Thread __ActionThread;
+        /// <summary>
+        /// Informace k jedné uložené akci
+        /// </summary>
+        protected class ActionInfo : IActionInfo
+        {
+            public ActionInfo(Action actionRun, Action<object[]> actionRunArgs, object[] runArguments, Action actionDone, Action<object[]> actionDoneArgs, object[] doneArguments)
+            {
+                _ActionRun = actionRun;
+                _ActionRunArgs = actionRunArgs;
+                _RunArguments = runArguments;
+                _ActionDone = actionDone;
+                _ActionDoneArgs = actionDoneArgs;
+                _DoneArguments = doneArguments;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return "Action: " + _Id;
+            }
+            public int _Id;
+            private Action _ActionRun;
+            private Action<object[]> _ActionRunArgs;
+            private object[] _RunArguments;
+            private Action _ActionDone;
+            private Action<object[]> _ActionDoneArgs;
+            private object[] _DoneArguments;
+
+            public int Id { get { return _Id; } set { _Id = value; } }
+            public Action ActionRun { get { return _ActionRun; } }
+            public Action<object[]> ActionRunArgs { get { return _ActionRunArgs; }    }
+            public object[] RunArguments { get { return _RunArguments; } }
+            public Action ActionDone { get { return _ActionDone; } }
+            public Action<object[]> ActionDoneArgs { get { return _ActionDoneArgs; } }
+            public object[] DoneArguments { get { return _DoneArguments; } }
+            public bool IsValid { get { return (_ActionRun != null || _ActionRunArgs != null); } }
+            /// <summary>
+            /// Provede požadovanou sérii akcí
+            /// </summary>
+            public void Run()
+            {
+                if (this.ActionRun != null) this.ActionRun();
+                else if (this.ActionRunArgs != null) this.ActionRunArgs(this.RunArguments);
+
+                if (this.ActionDone != null) this.ActionDone();
+                else if (this.ActionDoneArgs != null) this.ActionDoneArgs(this.DoneArguments);
+
+                Clear();
+            }
+            /// <summary>
+            /// Zahodí reference na všechny akce i parametry
+            /// </summary>
+            public void Clear()
+            {
+                _ActionRun = null;
+                _ActionRunArgs = null;
+                _RunArguments = null;
+                _ActionDone = null;
+                _ActionDoneArgs = null;
+                _DoneArguments = null;
+            }
+        }
+        #endregion
         #region Public static prvky
         /// <summary>
         /// Spustí danou akci v threadu "na pozadí" = daná akce poběží v jiném vláknu, a toto vlákno vrátí řízení ihned a bude moci provádět cokoli potřebuje.
@@ -16,9 +219,11 @@ namespace Djs.Tools.WebDownloader.Support
         /// </summary>
         /// <param name="action"></param>
         /// <param name="done"></param>
+        [Obsolete("Přejdi na AddAction()", true)]
         public static void RunActionAsync(Action action, Action done = null)
         {
-            Instance.__RunAction(action, null, null, null);
+            ActionInfo actionInfo = new ActionInfo(action, null, null, null, null, null);
+            Instance.__RunActionAsync(actionInfo);
         }
         /// <summary>
         /// Spustí danou akci v threadu "na pozadí" = daná akce poběží v jiném vláknu, a toto vlákno vrátí řízení ihned a bude moci provádět cokoli potřebuje.
@@ -27,9 +232,11 @@ namespace Djs.Tools.WebDownloader.Support
         /// </summary>
         /// <param name="actionArgs"></param>
         /// <param name="arguments"></param>
+        [Obsolete("Přejdi na AddAction()", true)]
         public static void RunActionAsync(Action<object[]> actionArgs, params object[] arguments)
         {
-            Instance.__RunAction(null, actionArgs, arguments, null);
+            ActionInfo actionInfo = new ActionInfo(null, actionArgs, arguments, null, null, null);
+            Instance.__RunActionAsync(actionInfo);
         }
         /// <summary>
         /// Spustí danou akci v threadu "na pozadí" = daná akce poběží v jiném vláknu, a toto vlákno vrátí řízení ihned a bude moci provádět cokoli potřebuje.
@@ -39,9 +246,11 @@ namespace Djs.Tools.WebDownloader.Support
         /// <param name="actionArgs"></param>
         /// <param name="done"></param>
         /// <param name="arguments"></param>
+        [Obsolete("Přejdi na AddAction()", true)]
         public static void RunActionAsync(Action<object[]> actionArgs, Action done, params object[] arguments)
         {
-            Instance.__RunAction(null, actionArgs, arguments, done);
+            ActionInfo actionInfo = new ActionInfo(null, actionArgs, arguments, done, null, null);
+            Instance.__RunActionAsync(actionInfo);
         }
         /// <summary>
         /// Zastaví všechny pracující thready a ukončí práci
@@ -60,13 +269,16 @@ namespace Djs.Tools.WebDownloader.Support
         /// </summary>
         public static int MaxThreadCount { get { return Instance.__MaxThreadCount; } set { Instance.__MaxThreadCount = (value < 2 ? 2 : (value > 500 ? 500 : value)); } }
 
-        private void __RunAction(Action action, Action<object[]> actionArgs, object[] arguments, Action done)
+        private void __RunActionAsync(ActionInfo actionInfo)
         {
             ThreadWrap threadWrap = __GetThread();
-            threadWrap.RunAction(action, actionArgs, arguments, done);
+            if (threadWrap != null)
+                threadWrap.RunAction(actionInfo);
         }
         /// <summary>
         /// Najde volný thread / vytvoří nový thread / počká na uvolnění threadu a vrátí jej.
+        /// Tato metoda tedy v případě potřeby čeká na uvolnění nějakého threadu a ten pak vrátí.
+        /// Pouze v případě Stop může vrátit null.
         /// </summary>
         /// <returns></returns>
         private ThreadWrap __GetThread()
@@ -80,12 +292,13 @@ namespace Djs.Tools.WebDownloader.Support
                 // Pokud by thread volný nebyl, pak přejdu do WaitOne(), a tam by mě rozsvícený semafor rovnou pustil ven a testoval bych to znovu.
                 __Semaphore.Reset();
 
-                if (__TryGetThread(out threadWrap)) break;                                         // Najde volný thread / vytvoří nový thread a vrátí jej.
+                if (__TryGetThread(out threadWrap)) break;                               // Najde volný thread / vytvoří nový thread a vrátí jej.
+                if (__IsStopped) break;                                                  // Končíme jako celek? Vrátíme null...
                 App.AddLog($"ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");
-                __Semaphore.WaitOne(1000);                                                         //  ... počká na uvolnění některého threadu ...
+                __Semaphore.WaitOne(3000);                                               //  ... počká na uvolnění některého threadu ...
                 // Až některý thread skončí svoji práci, vyvolá svůj event ThreadDone, přijde k nám do handleru AnyThreadDone(), 
                 // tam zazvoní budíček (__Semaphore) a my se vrátíme do this smyčky a zkusíme si vyzvednout uvolněný thread v příštím kole smyčky...
-                // A protože jsme do logu dali čekání, dáme tam i nalezený thread:
+                // A protože jsme do logu dali info o čekání, dáme tam i nalezený thread:
                 logThread = true;
             }
             if (__LogActive || logThread) App.AddLog($"Allocated thread: {threadWrap}");
@@ -113,7 +326,7 @@ namespace Djs.Tools.WebDownloader.Support
                     {   // Můžeme ještě přidat další thread:
                         string name = $"ThreadInPool{(count + 1)}";
                         threadWrap = new ThreadWrap(this, name, ThreadWrapState.Allocated);       // Vytvoříme nový thread, a rovnou jako Alokovaný
-                        threadWrap.ThreadDone += AnyThreadDone;
+                        threadWrap.ThreadDisponible += AnyThreadDone;
                         __Threads.Add(threadWrap);
                         if (__LogActive) App.AddLog($"Created new thread: {threadWrap}");
                     }
@@ -187,6 +400,7 @@ namespace Djs.Tools.WebDownloader.Support
             __MaxThreadCount = 8 + 32 * Environment.ProcessorCount;
             __Semaphore = new AutoResetEvent(false);
             __IsStopped = false;
+            _ActionInit();
         }
         private List<ThreadWrap> __Threads;
         private int __MaxThreadCount;
@@ -233,10 +447,7 @@ namespace Djs.Tools.WebDownloader.Support
             private DateTime __DisponibleFrom;
             private Thread __Thread;
             private string __Name;
-            private volatile Action __Action;
-            private volatile Action<object[]> __ActionArgs;
-            private volatile object[] __Arguments;
-            private volatile Action __Done;
+            private volatile ActionInfo __ActionInfo;
             public string Name { get { return __Name; } }
             #endregion
             #region Kód volaný v aplikačním threadu
@@ -277,10 +488,10 @@ namespace Djs.Tools.WebDownloader.Support
             /// <param name="actionArgs"></param>
             /// <param name="arguments"></param>
             /// <param name="done"></param>
-            public void RunAction(Action action, Action<object[]> actionArgs, object[] arguments, Action done)
+            public void RunAction(ActionInfo actionInfo)
             {
-                if (action == null && actionArgs == null)
-                    throw new InvalidOperationException($"ThreadWrap.RunAction error: no action method is given.");
+                if (!actionInfo.IsValid)
+                    throw new InvalidOperationException("Invalid action to ThreadManager.AddAction: no method Run nor RunArgs!");
 
                 bool lockTaken = false;
                 try
@@ -291,10 +502,7 @@ namespace Djs.Tools.WebDownloader.Support
                     if (state != ThreadWrapState.Allocated)
                         throw new InvalidOperationException($"ThreadWrap.RunAction error: invalid state for AddAction in thread {this}.");
 
-                    __Action = action;
-                    __ActionArgs = actionArgs;
-                    __Arguments = arguments;
-                    __Done = done;
+                    __ActionInfo = actionInfo;
                     __State = ThreadWrapState.WaitToRun;
                 }
                 finally
@@ -304,6 +512,40 @@ namespace Djs.Tools.WebDownloader.Support
                 }
 
                 __Semaphore.Set();                   // Požádáme thread na pozadí o vykonání akce.
+            }
+            /// <summary>
+            /// Zajistí uvolnění threadu ze stavu <see cref="ThreadWrapState.Allocated"/> do stavu <see cref="ThreadWrapState.Disponible"/>.
+            /// Volá se tehdy, když je thread získán (alokován), ale nebude použit (nebude v něm spuštěna žádná akce). 
+            /// Pak je třeba jej uvolnit obdobně, jako je uvolněn po doběhnutí akce.
+            /// </summary>
+            public void Release()
+            {
+                bool isReleased = false;
+                bool lockTaken = false;
+                try
+                {
+                    __Lock.Enter(ref lockTaken);
+
+                    var state = __State;
+                    if (state == ThreadWrapState.Allocated)
+                    {
+                        if (__LogActive) App.AddLog($"Thread {this} : Released");
+                        __DisponibleFrom = DateTime.UtcNow;
+                        __State = ThreadWrapState.Disponible;
+                        isReleased = true;
+                    }
+                }
+                finally
+                {
+                    if (lockTaken)
+                        __Lock.Exit();
+                }
+
+                if (isReleased)
+                {
+                    if (__LogActive) App.AddLog($"Thread {this} : Disponible");
+                    OnThreadDisponible();
+                }
             }
             #endregion
             #region Kód běžící na pozadí
@@ -326,28 +568,19 @@ namespace Djs.Tools.WebDownloader.Support
             /// </summary>
             private void _TryRunAction()
             {
-                Action action = null;
-                Action<object[]> actionArgs = null;
-                object[] arguments = null;
-                Action done = null;
+                ActionInfo actionInfo = null;
                 bool needRun = false;
                 bool lockTaken = false;
                 try
                 {   // Pod zámkem načtu požadované akce, vyhodnotím a nastavím stav Working:
                     __Lock.Enter(ref lockTaken);
-                    action = __Action;
-                    actionArgs = __ActionArgs;
-                    arguments = __Arguments;
-                    done = __Done;
 
-                    needRun = (action != null || actionArgs != null);
+                    actionInfo = __ActionInfo;
+                    needRun = actionInfo?.IsValid ?? false;
                     if (needRun)
                         __State = ThreadWrapState.Working;
 
-                    __Action = null;
-                    __ActionArgs = null;
-                    __Arguments = null;
-                    __Done = null;
+                    __ActionInfo = null;
                 }
                 finally
                 {
@@ -360,12 +593,7 @@ namespace Djs.Tools.WebDownloader.Support
                     try
                     {
                         if (__LogActive) App.AddLog($"Thread {this} : RunAction");
-                        if (action != null)
-                            action();
-                        else if (actionArgs != null)
-                            actionArgs(arguments);
-                        if (done != null)
-                            done();
+                        actionInfo.Run();
                         if (__LogActive) App.AddLog($"Thread {this} : DoneAction");
                     }
                     catch (Exception exc) { App.AddLog(exc); }
@@ -374,16 +602,16 @@ namespace Djs.Tools.WebDownloader.Support
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
                         if (__LogActive) App.AddLog($"Thread {this} : Disponible");
-                        OnThreadDone();
+                        OnThreadDisponible();
                     }
                 }
             }
             protected bool IsEnding { get { var s = __State; return (__End || s == ThreadWrapState.Abort); } }
-            protected virtual void OnThreadDone()
+            protected virtual void OnThreadDisponible()
             {
-                ThreadDone?.Invoke(this, EventArgs.Empty);
+                ThreadDisponible?.Invoke(this, EventArgs.Empty);
             }
-            public event EventHandler ThreadDone;
+            public event EventHandler ThreadDisponible;
             #endregion
             #region Stop a Abort a Dispose
             /// <summary>
@@ -409,9 +637,7 @@ namespace Djs.Tools.WebDownloader.Support
             /// </summary>
             void IDisposable.Dispose()
             {
-                __Action = null;
-                __ActionArgs = null;
-                __Arguments = null;
+                __ActionInfo = null;
             }
             #endregion
             #region Support
@@ -469,6 +695,8 @@ namespace Djs.Tools.WebDownloader.Support
         Abort
     }
     #endregion
+    public interface IActionInfo
+    { }
 }
 
 #region testy
@@ -508,6 +736,7 @@ namespace Djs.Tools.WebDownloader.Tests
         {
             System.Windows.Forms.Clipboard.Clear();
             ThreadManager.MaxThreadCount = 4;
+            ThreadManager.LogActive = true;
             Rand = new Random();
 
             Thread.CurrentThread.Name = "MainThread";
@@ -517,12 +746,15 @@ namespace Djs.Tools.WebDownloader.Tests
 
             try
             {
-                actionCount = 512;
+                actionCount = 500;
                 for (int r = 1; r <= actionCount; r++)
                 {
-                    App.AddLog($"Spouštíme akci {r}");
-                    ThreadManager.RunActionAsync(_TestDataOneAction, r);
-                    if (Rand.Next(50) < 3)
+                    string code = "Main";
+                    string name = $"{r}/{code}";
+                    App.AddLog($"Spouštíme akci {name}");
+                    ThreadManager.AddAction(_TestDataOneAction, r, code);
+                    App.AddLog($"Spuštěna akce {name}");
+                    if ((r % 40) == 0)   // Rand.Next(50) < 3)
                     {
                         int wait = Rand.Next(5, 10);
                         App.AddLog($"Počkáme čas {wait} ms");
@@ -546,9 +778,12 @@ namespace Djs.Tools.WebDownloader.Tests
         private void _TestDataOneAction(object[] arguments)
         {
             int number = (int)arguments[0];
+            string code = (string)arguments[1];
+            string name = $"{number}/{code}";
+
             int time = Rand.Next(400, 2000);               // Cílový čas v mikrosekundách
             int count = 100 * time / 8;                    // 100 cyklů = 8 mikrosecs
-            App.AddLog($"Zahájení výpočtů, akce číslo {number}, počet výpočtů {count}, očekávaný čas {time}");
+            App.AddLog($"Zahájení výpočtů, akce {name}, počet výpočtů {count}, očekávaný čas {time}");
 
             for (int t = 0; t < count; t++)
             {
@@ -556,7 +791,15 @@ namespace Djs.Tools.WebDownloader.Tests
                 double b = Math.Sin(0.45d * Math.PI);
             }
 
-            App.AddLog($"Dokončení výpočtů, akce číslo {number}");
+            if (code == "Main")
+            {
+                string subCode = "Inner";
+                string subName = $"{number}/{subCode}";
+                App.AddLog($"Spouštíme akci {subName}");
+                ThreadManager.AddAction(_TestDataOneAction, number, subCode);
+                App.AddLog($"Spuštěna akce {subName}");
+            }
+            App.AddLog($"Dokončení výpočtů, akce {name}");
         }
         private Random Rand;
     }

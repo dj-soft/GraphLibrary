@@ -84,7 +84,7 @@ namespace Djs.Tools.WebDownloader.Download
         protected void StartBackThread(string threadName = null)
         {
             this.State = WorkingState.Working;
-            ThreadManager.RunActionAsync(_RunBackThread);
+            ThreadManager.AddAction(_RunBackThread);
 
 
 
