@@ -132,7 +132,16 @@ namespace Djs.Tools.WebDownloader
         /// <summary>
         /// Aktuální text logu
         /// </summary>
-        public static string LogText { get { return Instance._Log.ToString(); } }
+        public static string LogText { get { return Instance._GetLogText(); } }
+        private string _GetLogText()
+        {
+            string text = null;
+            lock (_Log)
+            {
+                text = _Log.ToString();
+            }
+            return text;
+        }
         /// <summary>
         /// Inicializace logu
         /// </summary>

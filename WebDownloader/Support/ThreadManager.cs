@@ -60,6 +60,7 @@ namespace Djs.Tools.WebDownloader.Support
                 __ActionQueue.Enqueue(actionInfo);
             }
             __ActionSignal.Set();                                    // To probudí thread __ActionThread, který čeká na přidání další akce do fronty v metodě _ActionWaitToAnyAction()...
+            __ActionCaller.WaitOne(5);
         }
         /// <summary>
         /// Inicializace bloku pro spouštění akcí v různých threadech
@@ -68,6 +69,7 @@ namespace Djs.Tools.WebDownloader.Support
         {
             __ActionId = 0;
             __ActionQueue = new Queue<ActionInfo>();
+            __ActionCaller = new AutoResetEvent(false);
             __ActionSignal = new AutoResetEvent(false);
             __ActionThread = new Thread(__ActionDispatcher) { Name = "ActionDispatcher", IsBackground = true, Priority = ThreadPriority.BelowNormal };
             __ActionThread.Start();
@@ -101,6 +103,7 @@ namespace Djs.Tools.WebDownloader.Support
                 if (__LogActive) App.AddLog($"Wait to any Action");
                 __ActionSignal.WaitOne(3000);
             }
+            __ActionCaller.Set();
         }
         /// <summary>
         /// Z fronty akcí vyjme akci k jejímu provedení a vrátí ji.
@@ -138,6 +141,7 @@ namespace Djs.Tools.WebDownloader.Support
         /// Fronta akcí ke zpracování
         /// </summary>
         private Queue<ActionInfo> __ActionQueue;
+        private AutoResetEvent __ActionCaller;
         /// <summary>
         /// Signál k akci ve frontě akcí
         /// </summary>
