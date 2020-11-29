@@ -56,8 +56,10 @@ namespace Djs.Tools.WebDownloader.Support
             lock (__ActionQueue)
             {
                 actionInfo.Id = ++__ActionId;
+                actionInfo.Owner = this;
                 if (__LogActive) App.AddLog("ThreadManager", $"Add Action: {actionInfo}; Queue.Count: {(__ActionQueue.Count + 1)}");
                 __ActionQueue.Enqueue(actionInfo);
+                actionInfo.ActionState = ThreadActionState.WaitingInQueue;
             }
             __ActionSignal.Set();                                    // To probudí thread __ActionThread, který čeká na přidání další akce do fronty v metodě _ActionWaitToAnyAction()...
             __ActionCaller.WaitOne(1);
@@ -115,7 +117,10 @@ namespace Djs.Tools.WebDownloader.Support
             lock (__ActionQueue)
             {
                 if (__ActionQueue.Count > 0)
+                {
                     actionInfo = __ActionQueue.Dequeue();
+                    actionInfo.ActionState = ThreadActionState.WaitingToThread;
+                }
             }
             if (__LogActive) App.AddLog("ThreadManager", $"Found Action {actionInfo} to Run; Queue.Count: {(__ActionQueue.Count + 1)}");
             return actionInfo;
@@ -136,6 +141,13 @@ namespace Djs.Tools.WebDownloader.Support
             else
                 threadWrap.Release();
         }
+        /// <summary>
+        /// Metoda je vyvolána z konkrétní akce v situaci, kdy akce sama doběhla do konce, včetně Done.
+        /// Metoda je volána i po chybě v běhu akce.
+        /// </summary>
+        /// <param name="actionInfo"></param>
+        protected void ActionCompleted(ActionInfo actionInfo)
+        { }
         /// <summary>
         /// ID posledně přidané akce, příští bude mít +1
         /// </summary>
@@ -160,6 +172,7 @@ namespace Djs.Tools.WebDownloader.Support
         {
             public ActionInfo(Action actionRun, Action<object[]> actionRunArgs, object[] runArguments, Action actionDone, Action<object[]> actionDoneArgs, object[] doneArguments)
             {
+                _ActionState = ThreadActionState.Initialized;
                 _ActionRun = actionRun;
                 _ActionRunArgs = actionRunArgs;
                 _RunArguments = runArguments;
@@ -175,7 +188,9 @@ namespace Djs.Tools.WebDownloader.Support
             {
                 return "Action: " + _Id;
             }
-            public int _Id;
+            private ThreadManager _Owner;
+            private int _Id;
+            private ThreadActionState _ActionState;
             private Action _ActionRun;
             private Action<object[]> _ActionRunArgs;
             private object[] _RunArguments;
@@ -183,7 +198,9 @@ namespace Djs.Tools.WebDownloader.Support
             private Action<object[]> _ActionDoneArgs;
             private object[] _DoneArguments;
 
+            public ThreadManager Owner { get { return _Owner; } set { _Owner = value; } }
             public int Id { get { return _Id; } set { _Id = value; } }
+            public ThreadActionState ActionState { get { return _ActionState; } set { _ActionState = value; } }
             public Action ActionRun { get { return _ActionRun; } }
             public Action<object[]> ActionRunArgs { get { return _ActionRunArgs; }    }
             public object[] RunArguments { get { return _RunArguments; } }
@@ -196,13 +213,26 @@ namespace Djs.Tools.WebDownloader.Support
             /// </summary>
             public void Run()
             {
-                if (this.ActionRun != null) this.ActionRun();
-                else if (this.ActionRunArgs != null) this.ActionRunArgs(this.RunArguments);
+                try
+                {
+                    this.ActionState = ThreadActionState.Running;
 
-                if (this.ActionDone != null) this.ActionDone();
-                else if (this.ActionDoneArgs != null) this.ActionDoneArgs(this.DoneArguments);
+                    if (this.ActionRun != null) this.ActionRun();
+                    else if (this.ActionRunArgs != null) this.ActionRunArgs(this.RunArguments);
 
-                Clear();
+                    if (this.ActionDone != null) this.ActionDone();
+                    else if (this.ActionDoneArgs != null) this.ActionDoneArgs(this.DoneArguments);
+                }
+                catch (Exception exc)
+                {
+                    App.AddLog(exc);
+                }
+                finally
+                {
+                    this.ActionState = ThreadActionState.Completed;
+                    this.Owner.ActionCompleted(this);
+                    Clear();
+                }
             }
             /// <summary>
             /// Zahodí reference na všechny akce i parametry
@@ -704,6 +734,32 @@ namespace Djs.Tools.WebDownloader.Support
     #endregion
     public interface IActionInfo
     { }
+    /// <summary>
+    /// Stav akce
+    /// </summary>
+    public enum ThreadActionState
+    {
+        /// <summary>
+        /// Inicializováno
+        /// </summary>
+        Initialized,
+        /// <summary>
+        /// Čeká ve frontě
+        /// </summary>
+        WaitingInQueue,
+        /// <summary>
+        /// Je na řadě ke zpracování, čeká na uvolnění pracovního vlákna
+        /// </summary>
+        WaitingToThread,
+        /// <summary>
+        /// Právě probíhá akce
+        /// </summary>
+        Running,
+        /// <summary>
+        /// Akce doběhla
+        /// </summary>
+        Completed
+    }
 }
 
 #region testy
