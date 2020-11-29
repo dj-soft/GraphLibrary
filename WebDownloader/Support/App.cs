@@ -100,15 +100,15 @@ namespace Djs.Tools.WebDownloader
         private Form _MainForm;
         private Thread _GuiThread;
         #endregion
-        #region Logování
+        #region Logování a čas
         /// <summary>
         /// Do logu vloží sadu itemů
         /// </summary>
         /// <param name="items"></param>
-        public static void AddLog(params object[] items)
+        public static void AddLog(string source, params object[] items)
         {
             if (items == null || items.Length == 0) return;
-            Instance._AddLog(items);
+            Instance._AddLog(source, items);
         }
         /// <summary>
         /// Do logu vloží danou chybu
@@ -120,12 +120,11 @@ namespace Djs.Tools.WebDownloader
             {
                 object[] items = new object[]
                 {
-                    "Exception",
                     exc.GetType().FullName,
                     exc.Message,
                     exc.StackTrace.Replace('\r', ';').Replace('\n', ' ').Replace('\t', ' ')
                 };
-                Instance._AddLog(items);
+                Instance._AddLog("Exception", items);
                 exc = exc.InnerException;
             }
         }
@@ -133,6 +132,34 @@ namespace Djs.Tools.WebDownloader
         /// Aktuální text logu
         /// </summary>
         public static string LogText { get { return Instance._GetLogText(); } }
+        /// <summary>
+        /// Obsahuje aktuální čas od spuštění aplikace v hodnotách Tick.
+        /// Zásadní význam má pro přesné měření uplynulého času, více v metodě <see cref="GetElapsedTime(long, ElapsedTimeType, int)"/>.
+        /// </summary>
+        public static long CurrentTime { get { return Instance._Stopwatch.ElapsedTicks; } }
+        /// <summary>
+        /// Vrátí čas (jako číslo), uplynulý od daného času startu (<paramref name="startTime"/>) do teď, jak počet sekund / milisekund / mikrosekund.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="timeType"></param>
+        /// <param name="precission"></param>
+        /// <returns></returns>
+        public static decimal GetElapsedTime(long startTime, ElapsedTimeType timeType = ElapsedTimeType.Seconds, int precission = 3)
+        {
+            return Instance._GetElapsedTime(startTime, null, timeType, precission);
+        }
+        private decimal _GetElapsedTime(long startTime, long? stopTime, ElapsedTimeType timeType = ElapsedTimeType.Seconds, int precission = 3)
+        {
+            long time = _Stopwatch.ElapsedTicks - startTime;
+            precission = (precission < 0 ? 0 : (precission > 6 ? 6 : precission));
+            switch (timeType)
+            {
+                case ElapsedTimeType.Seconds: return Math.Round((time / _StopwatchSeconds), precission);
+                case ElapsedTimeType.Miliseconds: return Math.Round((time / _StopwatchMilisecs), precission);
+                case ElapsedTimeType.Microseconds: return Math.Round((time / _StopwatchMicrosecs), precission);
+            }
+            return 0m;
+        }
         private string _GetLogText()
         {
             string text = null;
@@ -148,7 +175,9 @@ namespace Djs.Tools.WebDownloader
         private void _InitLog()
         {
             this._Stopwatch = new System.Diagnostics.Stopwatch();
-            this._StopwatchFq = (decimal)System.Diagnostics.Stopwatch.Frequency / 1000000m;
+            this._StopwatchSeconds = (decimal)System.Diagnostics.Stopwatch.Frequency;
+            this._StopwatchMilisecs = this._StopwatchSeconds / 1000m;
+            this._StopwatchMicrosecs = this._StopwatchSeconds / 1000000m;
             this._LogRow = 0L;
             this._Log = new StringBuilder();
             this._AddLogTitle();
@@ -173,6 +202,8 @@ namespace Djs.Tools.WebDownloader
                 sb.Append("Delta [us]");
                 sb.Append(tab);
                 sb.Append("Thread");
+                sb.Append(tab);
+                sb.Append("Source");
                 for (int i = 0; i < 12; i++)
                     sb.Append(tab + "Item:" + i.ToString());
                 _Log.AppendLine(sb.ToString());
@@ -182,7 +213,7 @@ namespace Djs.Tools.WebDownloader
         /// přidá dané prvky do logu
         /// </summary>
         /// <param name="items"></param>
-        private void _AddLog(object[] items)
+        private void _AddLog(string source, object[] items)
         {
             string tab = "\t";
             StringBuilder sb = new StringBuilder();
@@ -191,31 +222,41 @@ namespace Djs.Tools.WebDownloader
                 long row = ++_LogRow;
                 sb.Append(row.ToString());
                 sb.Append(tab);
+
                 sb.Append(DateTime.Now.ToString("HH:mm:ss.fff"));
                 sb.Append(tab);
 
-                long total = _Stopwatch.ElapsedTicks;
-                long microsecs = (long)Math.Round((total / _StopwatchFq), 0);
+                long startTime = _LogLastTick;
+                long stopTime = _Stopwatch.ElapsedTicks;
+                long microsecs;
+
+                microsecs = (long)_GetElapsedTime(0L, stopTime, ElapsedTimeType.Microseconds, 0);
                 sb.Append(microsecs.ToString());
                 sb.Append(tab);
 
-                long delta = total - _LogLastTick;
-                microsecs = (long)Math.Round((delta / _StopwatchFq), 0);
+                microsecs = (long)_GetElapsedTime(startTime, stopTime, ElapsedTimeType.Microseconds, 0);
                 sb.Append(microsecs.ToString());
                 sb.Append(tab);
-                _LogLastTick = total;
+
+                _LogLastTick = stopTime;
 
                 sb.Append(Thread.CurrentThread.Name);
+                sb.Append(tab);
+
+                sb.Append(source);
 
                 foreach (object item in items)
                     sb.Append(tab + (item?.ToString() ?? ""));
+
                 _Log.AppendLine(sb.ToString());
             }
         }
         private long _LogRow;
         private long _LogLastTick;
         private System.Diagnostics.Stopwatch _Stopwatch;
-        private decimal _StopwatchFq;
+        private decimal _StopwatchSeconds;
+        private decimal _StopwatchMilisecs;
+        private decimal _StopwatchMicrosecs;
         private StringBuilder _Log;
         #endregion
         #region Run
@@ -239,6 +280,15 @@ namespace Djs.Tools.WebDownloader
             }
         }
         #endregion
+    }
+    /// <summary>
+    /// Jednotka vráceného času v metodě <see cref="App.GetElapsedTime(long, ElapsedTimeType)"/>
+    /// </summary>
+    public enum ElapsedTimeType
+    {
+        Seconds,
+        Miliseconds,
+        Microseconds
     }
     #region AppException
     public class AppException : Exception

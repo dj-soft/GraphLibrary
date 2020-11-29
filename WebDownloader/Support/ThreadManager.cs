@@ -56,11 +56,11 @@ namespace Djs.Tools.WebDownloader.Support
             lock (__ActionQueue)
             {
                 actionInfo.Id = ++__ActionId;
-                if (__LogActive) App.AddLog($"Add Action: {actionInfo}");
+                if (__LogActive) App.AddLog("ThreadManager", $"Add Action: {actionInfo}; Queue.Count: {(__ActionQueue.Count + 1)}");
                 __ActionQueue.Enqueue(actionInfo);
             }
             __ActionSignal.Set();                                    // To probudí thread __ActionThread, který čeká na přidání další akce do fronty v metodě _ActionWaitToAnyAction()...
-            __ActionCaller.WaitOne(5);
+            __ActionCaller.WaitOne(1);
         }
         /// <summary>
         /// Inicializace bloku pro spouštění akcí v různých threadech
@@ -71,7 +71,7 @@ namespace Djs.Tools.WebDownloader.Support
             __ActionQueue = new Queue<ActionInfo>();
             __ActionCaller = new AutoResetEvent(false);
             __ActionSignal = new AutoResetEvent(false);
-            __ActionThread = new Thread(__ActionDispatcher) { Name = "ActionDispatcher", IsBackground = true, Priority = ThreadPriority.BelowNormal };
+            __ActionThread = new Thread(__ActionDispatcher) { Name = "ActionDispatcher", IsBackground = true, Priority = ThreadPriority.AboveNormal };
             __ActionThread.Start();
         }
         /// <summary>
@@ -100,7 +100,7 @@ namespace Djs.Tools.WebDownloader.Support
             while (!__IsStopped)
             {
                 if (__ActionQueue.Count > 0) break;
-                if (__LogActive) App.AddLog($"Wait to any Action");
+                if (__LogActive) App.AddLog("ThreadManager", $"Wait to any Action...");
                 __ActionSignal.WaitOne(3000);
             }
             __ActionCaller.Set();
@@ -117,7 +117,7 @@ namespace Djs.Tools.WebDownloader.Support
                 if (__ActionQueue.Count > 0)
                     actionInfo = __ActionQueue.Dequeue();
             }
-            if (__LogActive) App.AddLog($"Found Action {(actionInfo?.Id ?? 0)} to Run...");
+            if (__LogActive) App.AddLog("ThreadManager", $"Found Action {actionInfo} to Run; Queue.Count: {(__ActionQueue.Count + 1)}");
             return actionInfo;
         }
         /// <summary>
@@ -129,7 +129,10 @@ namespace Djs.Tools.WebDownloader.Support
         private void _ActionRunInThread(ThreadWrap threadWrap, ActionInfo actionInfo)
         {
             if (actionInfo != null)
+            {
+                if (__LogActive) App.AddLog("ThreadManager", $"Run Action {actionInfo} in thread {threadWrap}");
                 threadWrap.RunAction(actionInfo);
+            }
             else
                 threadWrap.Release();
         }
@@ -298,14 +301,14 @@ namespace Djs.Tools.WebDownloader.Support
 
                 if (__TryGetThread(out threadWrap)) break;                               // Najde volný thread / vytvoří nový thread a vrátí jej.
                 if (__IsStopped) break;                                                  // Končíme jako celek? Vrátíme null...
-                App.AddLog($"ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");
+                App.AddLog("ThreadManager", $"ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");
                 __Semaphore.WaitOne(3000);                                               //  ... počká na uvolnění některého threadu ...
                 // Až některý thread skončí svoji práci, vyvolá svůj event ThreadDone, přijde k nám do handleru AnyThreadDone(), 
                 // tam zazvoní budíček (__Semaphore) a my se vrátíme do this smyčky a zkusíme si vyzvednout uvolněný thread v příštím kole smyčky...
                 // A protože jsme do logu dali info o čekání, dáme tam i nalezený thread:
                 logThread = true;
             }
-            if (__LogActive || logThread) App.AddLog($"Allocated thread: {threadWrap}");
+            if (__LogActive || logThread) App.AddLog("ThreadManager", $"Allocated thread: {threadWrap}");
             return threadWrap;
         }
 
@@ -321,7 +324,7 @@ namespace Djs.Tools.WebDownloader.Support
                 threadWrap = threadList.FirstOrDefault(t => t.TryAllocate());                      // Najdeme první thread, který je možno alokovat a rovnou jej Alokujeme
                 if (threadWrap != null)
                 {
-                    if (__LogActive) App.AddLog($"Allocated existing thread: {threadWrap}");
+                    if (__LogActive) App.AddLog("ThreadManager", $"Allocated existing thread: {threadWrap}");
                 }
                 else
                 {
@@ -332,7 +335,7 @@ namespace Djs.Tools.WebDownloader.Support
                         threadWrap = new ThreadWrap(this, name, ThreadWrapState.Allocated);       // Vytvoříme nový thread, a rovnou jako Alokovaný
                         threadWrap.ThreadDisponible += AnyThreadDone;
                         __Threads.Add(threadWrap);
-                        if (__LogActive) App.AddLog($"Created new thread: {threadWrap}");
+                        if (__LogActive) App.AddLog("ThreadManager", $"Created new thread: {threadWrap}");
                     }
                     // Pokud již nemůžeme přidat další thread a všechny existující jsou právě nyní obsazené, 
                     //  pak vrátíme false a nadřízená metoda počká ve smyčce (s pomocí semaforu) na uvolnění některého threadu.
@@ -473,7 +476,7 @@ namespace Djs.Tools.WebDownloader.Support
                     var state = __State;
                     if (!__End && __State == ThreadWrapState.Disponible)
                     {
-                        if (__LogActive) App.AddLog($"Allocate current thread {this}");
+                        if (__LogActive) App.AddLog("ThreadWrap", $"Allocate current thread {this}");
                         __State = ThreadWrapState.Allocated;
                         isAllocated = true;
                     }
@@ -494,8 +497,8 @@ namespace Djs.Tools.WebDownloader.Support
             /// <param name="done"></param>
             public void RunAction(ActionInfo actionInfo)
             {
-                if (!actionInfo.IsValid)
-                    throw new InvalidOperationException("Invalid action to ThreadManager.AddAction: no method Run nor RunArgs!");
+                if (actionInfo == null || !actionInfo.IsValid)
+                    throw new InvalidOperationException("Invalid action to ThreadManager.AddAction: no Action, or not method Run nor RunArgs!");
 
                 bool lockTaken = false;
                 try
@@ -533,7 +536,7 @@ namespace Djs.Tools.WebDownloader.Support
                     var state = __State;
                     if (state == ThreadWrapState.Allocated)
                     {
-                        if (__LogActive) App.AddLog($"Thread {this} : Released");
+                        if (__LogActive) App.AddLog("ThreadWrap", $"Thread {this} : Released");
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
                         isReleased = true;
@@ -547,7 +550,7 @@ namespace Djs.Tools.WebDownloader.Support
 
                 if (isReleased)
                 {
-                    if (__LogActive) App.AddLog($"Thread {this} : Disponible");
+                    if (__LogActive) App.AddLog("ThreadWrap", $"Thread {this} : Disponible");
                     OnThreadDisponible();
                 }
             }
@@ -596,16 +599,16 @@ namespace Djs.Tools.WebDownloader.Support
                 {   // Běh aplikační akce probíhá už bez zámku:
                     try
                     {
-                        if (__LogActive) App.AddLog($"Thread {this} : RunAction");
+                        if (__LogActive) App.AddLog("ThreadWrap", $"Thread {this} : RunAction {actionInfo}");
                         actionInfo.Run();
-                        if (__LogActive) App.AddLog($"Thread {this} : DoneAction");
+                        if (__LogActive) App.AddLog("ThreadWrap", $"Thread {this} : DoneAction {actionInfo}");
                     }
                     catch (Exception exc) { App.AddLog(exc); }
                     finally
                     {
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
-                        if (__LogActive) App.AddLog($"Thread {this} : Disponible");
+                        if (__LogActive) App.AddLog("ThreadWrap", $"Thread {this} : Disponible");
                         OnThreadDisponible();
                     }
                 }
@@ -718,11 +721,11 @@ namespace Djs.Tools.WebDownloader.Tests
             System.Windows.Forms.Clipboard.Clear();
 
             Thread.CurrentThread.Name = "MainThread";
-            App.AddLog($"Start aplikace");
+            App.AddLog("ThreadManagerTests", $"Start aplikace");
 
             for (int r = 0; r < 60; r++)
             {
-                App.AddLog($"Řádek {r}", "Test");
+                App.AddLog("ThreadManagerTests", $"Řádek {r}", "Test");
                 for (int t = 0; t < 100; t++)              // 100 cyklů = 8 mikrosecs
                 {
                     double a = Math.Cos(0.45d * Math.PI);
@@ -744,7 +747,7 @@ namespace Djs.Tools.WebDownloader.Tests
             Rand = new Random();
 
             Thread.CurrentThread.Name = "MainThread";
-            App.AddLog($"Start aplikace");
+            App.AddLog("ThreadManagerTests", $"Start aplikace");
 
             int actionCount = 1024;
 
@@ -753,15 +756,15 @@ namespace Djs.Tools.WebDownloader.Tests
                 actionCount = 500;
                 for (int r = 1; r <= actionCount; r++)
                 {
-                    string code = "Main";
-                    string name = $"{r}/{code}";
-                    App.AddLog($"Spouštíme akci {name}");
+                    string code = "M";
+                    string name = $"{r}{code}";
+                    App.AddLog("ThreadManagerTests", $"Spouštíme akci {name}");
                     ThreadManager.AddAction(_TestDataOneAction, r, code);
-                    App.AddLog($"Spuštěna akce {name}");
+                    App.AddLog("ThreadManagerTests", $"Spuštěna akce {name}");
                     if ((r % 40) == 0)   // Rand.Next(50) < 3)
                     {
                         int wait = Rand.Next(5, 10);
-                        App.AddLog($"Počkáme čas {wait} ms");
+                        App.AddLog("ThreadManagerTests", $"Počkáme čas {wait} ms");
                         Thread.Sleep(wait);
                     }
                 }
@@ -773,7 +776,8 @@ namespace Djs.Tools.WebDownloader.Tests
             }
             finally
             {
-                App.AddLog($"Konec aplikace");
+                // ThreadManager.WaitTo
+                App.AddLog("ThreadManagerTests", $"Konec aplikace");
             }
 
             var text = App.LogText;
@@ -785,25 +789,31 @@ namespace Djs.Tools.WebDownloader.Tests
             string code = (string)arguments[1];
             string name = $"{number}/{code}";
 
-            int time = Rand.Next(400, 2000);               // Cílový čas v mikrosekundách
-            int count = 100 * time / 8;                    // 100 cyklů = 8 mikrosecs
-            App.AddLog($"Zahájení výpočtů, akce {name}, počet výpočtů {count}, očekávaný čas {time}");
+            int estimatedTime = Rand.Next(400, 2000);               // Cílový čas v mikrosekundách
+            int count = 100 * estimatedTime / 8;                    // 100 cyklů = 8 mikrosecs
+
+            string source = $"ThreadManagerTests_{name}";
+            App.AddLog(source, $"Zahájení výpočtů");
+            var startTime = App.CurrentTime;
 
             for (int t = 0; t < count; t++)
             {
                 double a = Math.Cos(0.45d * Math.PI);
                 double b = Math.Sin(0.45d * Math.PI);
             }
+            var realTime = App.GetElapsedTime(startTime, ElapsedTimeType.Microseconds, 0);
+            App.AddLog(source, $"Dokončení výpočtů", realTime);
 
-            if (code == "Main")
+            if (code == "M")
             {
-                string subCode = "Inner";
+                string subCode = "S";
                 string subName = $"{number}/{subCode}";
-                App.AddLog($"Spouštíme akci {subName}");
+                App.AddLog(source, $"Spouštíme akci {subName}");
                 ThreadManager.AddAction(_TestDataOneAction, number, subCode);
-                App.AddLog($"Spuštěna akce {subName}");
+                App.AddLog(source, $"Spuštěna akce {subName}");
             }
-            App.AddLog($"Dokončení výpočtů, akce {name}");
+
+            App.AddLog(source, $"Dokončení akce");
         }
         private Random Rand;
     }
