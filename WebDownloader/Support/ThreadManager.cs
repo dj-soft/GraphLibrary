@@ -1130,11 +1130,29 @@ namespace Djs.Tools.WebDownloader.Support
         #endregion
     }
     #region interface ISignal, class SignalFactory, implementace SignalAutoReset a SignalMonitor
+    /// <summary>
+    /// Rozhraní pro instanci mezivláknového signálu.
+    /// Implementace může být postavena na třídě <see cref="AutoResetEvent"/> nebo <see cref="Monitor"/>, vhodné pro testování a srovnání výkonu.
+    /// </summary>
     public interface ISignal
     {
+        /// <summary>
+        /// Zruší vydaný signál
+        /// </summary>
         void Reset();
+        /// <summary>
+        /// Pošle signál čekajícímu threadu
+        /// </summary>
         void Set();
+        /// <summary>
+        /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, bez timeoutu.
+        /// </summary>
         void WaitOne();
+        /// <summary>
+        /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, s daným timeoutem.
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
         bool WaitOne(int timeout);
     }
     /// <summary>
@@ -1150,10 +1168,18 @@ namespace Djs.Tools.WebDownloader.Support
         /// <returns></returns>
         public static ISignal Create(bool initialState, bool autoReset)
         {
+            _IsCreated = true;
             if (UseMonitor) return new SignalMonitor(initialState, autoReset);
             return new SignalAutoReset(initialState, autoReset);
         }
-        private const bool UseMonitor = false;
+        /// <summary>
+        /// Jaký druh signálu použít ? false = <see cref="AutoResetEvent"/> / true = <see cref="Monitor"/>.
+        /// Varianta false = <see cref="AutoResetEvent"/> je o něco málo rychlejší a má menší výkonové výkyvy. Je defaultní.
+        /// Má smysl nastavit jen před prvním použitím třídy <see cref="ThreadManager"/>, protože jejím použitím se vygenerují instance signálu a pak už se nezmění.
+        /// </summary>
+        public static bool UseMonitor { get { return _UseMonitor; } set { if (!_IsCreated) _UseMonitor = value; } }
+        private static bool _UseMonitor = false;
+        private static bool _IsCreated = false;
         /// <summary>
         /// Implementace <see cref="ISignal"/> s použitím <see cref="AutoResetEvent"/>
         /// </summary>
@@ -1414,18 +1440,22 @@ namespace Djs.Tools.WebDownloader.Tests
         [TestMethod]
         public void TestThreadManager()
         {
+            Thread.CurrentThread.Name = "MainThread";
+
             System.Windows.Forms.Clipboard.Clear();
+
             // ThreadManager.MaxThreadCount = 8;
+            SignalFactory.UseMonitor = false;                         // false = AutoResetEvent (lepší)
             ThreadManager.LogActive = true;
-            // ThreadManager.LogActive = false;                    // Pro testy výkonu aktivovat řádek = zakázat velké logování
+            // ThreadManager.LogActive = false;                      // Pro testy výkonu aktivovat řádek = zakázat velké logování
+
             Rand = new Random();
 
-            Thread.CurrentThread.Name = "MainThread";
-            App.AddLog("ThreadManagerTests", $"Start aplikace", "MaxThreadCount = " + ThreadManager.MaxThreadCount);
+            App.AddLog("ThreadManagerTests", $"Start aplikace", "MaxThreadCount = " + ThreadManager.MaxThreadCount, "SignalType = " + (SignalFactory.UseMonitor ? "Monitor" : "AutoResetEvent"));
 
             int actionCount = 500;
 
-            // actionCount = 20000;                               // Pro testy výkonu aktivovat řádek = testovat pro 20000 cyklů Main
+            // actionCount = 20000;                                  // Pro testy výkonu aktivovat řádek = testovat pro 20000 cyklů Main
             try
             {
                 for (int r = 1; r <= actionCount; r++)
