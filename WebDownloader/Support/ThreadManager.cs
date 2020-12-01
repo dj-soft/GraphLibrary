@@ -14,93 +14,200 @@ namespace Djs.Tools.WebDownloader.Support
     /// </summary>
     public class ThreadManager
     {
-        #region Public static prvky
+        #region Public static přístup: přidání akcí, zjištění stavu, čekání a zastavení
         /// <summary>
-        /// Maximální počet threadů, v nichž se paralelně zpracovávají akce.
-        /// Jakmile se zadá více akcí než toto maximum, pak nově zadané akce čekají ve frontě, až některé z běžících akcí skončí - a nejstarší čekající akce pak využije její uvolněný thread.
-        /// Lze zadat počet 2 až 500 (včetně). 
-        /// Výchozí nastavení je dáno podle počtu procesorů.
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
         /// </summary>
-        public static int MaxThreadCount { get { return Instance.__MaxThreadCount; } set { Instance.__MaxThreadCount = (value < 2 ? 2 : (value > 500 ? 500 : value)); } }
-        /// <summary>
-        /// true pokud se loguje práce s thready
-        /// </summary>
-        public static bool LogActive { get { return Instance.__LogActive; } set { Instance.__LogActive = value; } }
-        /// <summary>
-        /// Zastaví všechny pracující thready a ukončí práci.
-        /// Po zastavení nebude manager provádět žádné další požadované akce.
-        /// </summary>
-        /// <param name="abortNow"></param>
-        public static void StopAll(bool abortNow = false) { Instance.__StopAll(abortNow); }
-        /// <summary>
-        /// Příznak, že tento manager už zastavil svoji práci, po metodě <see cref="StopAll(bool)"/>.
-        /// </summary>
-        public static bool IsStopped { get { return Instance.__IsStopped; } }
-        #endregion
-        #region Fronta požadavků na zpracování akce na pozadí
+        /// <param name="actionRun"></param>
+        /// <param name="actionDone"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(Action actionRun, Action actionDone = null)
         {
             ActionInfo actionInfo = new ActionInfo(null, actionRun, null, null, actionDone, null, null);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(Action actionRun, Action<object[]> actionDoneArgs, params object[] doneArguments)
         {
             ActionInfo actionInfo = new ActionInfo(null, actionRun, null, null, null, actionDoneArgs, doneArguments);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(Action<object[]> actionRunArgs, params object[] runArguments)
         {
             ActionInfo actionInfo = new ActionInfo(null, null, actionRunArgs, runArguments, null, null, null);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="actionDone"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(Action<object[]> actionRunArgs, Action actionDone, params object[] runArguments)
         {
             ActionInfo actionInfo = new ActionInfo(null, null, actionRunArgs, runArguments, actionDone, null, null);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(Action<object[]> actionRunArgs, object[] runArguments, Action<object[]> actionDoneArgs, object[] doneArguments)
         {
             ActionInfo actionInfo = new ActionInfo(null, null, actionRunArgs, runArguments, null, actionDoneArgs, doneArguments);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
-
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDone"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(string name, Action actionRun, Action actionDone = null)
         {
             ActionInfo actionInfo = new ActionInfo(name, actionRun, null, null, actionDone, null, null);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(string name, Action actionRun, Action<object[]> actionDoneArgs, params object[] doneArguments)
         {
             ActionInfo actionInfo = new ActionInfo(name, actionRun, null, null, null, actionDoneArgs, doneArguments);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(string name, Action<object[]> actionRunArgs, params object[] runArguments)
         {
             ActionInfo actionInfo = new ActionInfo(name, null, actionRunArgs, runArguments, null, null, null);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="actionDone"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(string name, Action<object[]> actionRunArgs, Action actionDone, params object[] runArguments)
         {
             ActionInfo actionInfo = new ActionInfo(name, null, actionRunArgs, runArguments, actionDone, null, null);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
         public static IActionInfo AddAction(string name, Action<object[]> actionRunArgs, object[] runArguments, Action<object[]> actionDoneArgs, object[] doneArguments)
         {
             ActionInfo actionInfo = new ActionInfo(name, null, actionRunArgs, runArguments, null, actionDoneArgs, doneArguments);
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
-
-
         /// <summary>
         /// Obsahuje true, pokud aktuálně běžící kód běží ve vláknu, které je spravováno jako vlákno pro spouštěné akce.
         /// Tedy, pokud tuto hodnotu čteme z vlákna provádějícího akci, obsahuje true, z jiných vláken obsahuje false.
@@ -118,6 +225,31 @@ namespace Djs.Tools.WebDownloader.Support
 
         public static void WaitToActionsDone(IActionInfo action, TimeSpan? timeout = null)
         { }
+        /// <summary>
+        /// Zastaví všechny pracující thready a ukončí práci.
+        /// Po zastavení nebude manager provádět žádné další požadované akce.
+        /// </summary>
+        /// <param name="abortNow"></param>
+        public static void StopAll(bool abortNow = false) { Instance.__StopAll(abortNow); }
+        /// <summary>
+        /// Maximální počet threadů, v nichž se paralelně zpracovávají akce.
+        /// Jakmile se zadá více akcí než toto maximum, pak nově zadané akce čekají ve frontě, až některé z běžících akcí skončí - a nejstarší čekající akce pak využije její uvolněný thread.
+        /// Lze zadat počet 1 až (2 x počet jader procesoru, včetně). 
+        /// Výchozí nastavení je dáno podle počtu procesorů = (CoreCount / 2) + 2. Pro 4 jádra nastaví 4, pro 12 jader nastaví 8.
+        /// Podle testování výkonu jde o optimální hodnotu z hlediska rychlosti zpracování.
+        /// </summary>
+        public static int MaxThreadCount { get { return Instance._MaxThreadCount; } set { Instance._MaxThreadCount = value; } }
+        /// <summary>
+        /// true pokud se loguje práce s thready
+        /// </summary>
+        public static bool LogActive { get { return Instance.__LogActive; } set { Instance.__LogActive = value; } }
+        /// <summary>
+        /// Příznak, že tento manager už zastavil svoji práci, po metodě <see cref="StopAll(bool)"/>.
+        /// </summary>
+        public static bool IsStopped { get { return Instance.__IsStopped; } }
+        #endregion
+        #region Private - Fronta požadavků na zpracování akce na pozadí
+        #region Private - výkonné metody
         /// <summary>
         /// Inicializace bloku pro spouštění akcí v různých threadech
         /// </summary>
@@ -332,6 +464,7 @@ namespace Djs.Tools.WebDownloader.Support
         /// Jméno threadu, který je dispečerem akcí
         /// </summary>
         private const string __ActionDispatcherName = "ActionDispatcherThread";
+        #endregion
         #region class ActionInfo : obálka jedné akce ve frontě
         /// <summary>
         /// Informace k jedné uložené akci
@@ -432,17 +565,24 @@ namespace Djs.Tools.WebDownloader.Support
                 _ActionDoneArgs = null;
                 _DoneArguments = null;
             }
+
+            #region Implementace IActionInfo
+            string IActionInfo.Name { get { return _ActionName; } }
+            ThreadActionState IActionInfo.State { get { return _ActionState; } }
+            #endregion
         }
         #endregion
         #endregion
-        #region Řízení vláken: získání, čekání, tvorba nových, zastavení všech
+        #region Private - Řízení vláken: získání, čekání, tvorba nových, zastavení všech
+        #region Private - výkonné metody
         /// <summary>
         /// Inicializace systému pracovních threadů
         /// </summary>
         private void _ThreadInit()
         {
+            __CpuCoreCount = Environment.ProcessorCount;
             __Threads = new List<ThreadWrap>();
-            __MaxThreadCount = 8 + 32 * Environment.ProcessorCount;
+            __MaxThreadCount = (__CpuCoreCount / 2) + 2;
             __AnyThreadDisponibleSignal = SignalFactory.Create(false, true);
             __IsStopped = false;
         }
@@ -642,6 +782,24 @@ namespace Djs.Tools.WebDownloader.Support
         /// </summary>
         private List<ThreadWrap> __Threads;
         /// <summary>
+        /// Maximální počet threads. Setování provádí kontrolu.
+        /// </summary>
+        private int _MaxThreadCount
+        {
+            get { return __MaxThreadCount; }
+            set
+            {
+                int count = (value < 1 ? 1 : value);
+                int cpuMax = 2 * __CpuCoreCount;
+                if (count > cpuMax) count = cpuMax;
+                __MaxThreadCount = count;
+            }
+        }
+        /// <summary>
+        /// Počet jader procesoru
+        /// </summary>
+        private int __CpuCoreCount;
+        /// <summary>
         /// Maximální počet threadů. 
         /// Lze kdykoliv změnit, systém při snížení hodnoty nechá běžící thready doběhnout a teprve poté je odebere z disponibilního soupisu <see cref="__Threads"/>.
         /// </summary>
@@ -656,7 +814,11 @@ namespace Djs.Tools.WebDownloader.Support
         /// Obsahuje true poté, kdy <see cref="ThreadManager"/> je zastaven a nebude již přijímat další požadavky na práci.
         /// </summary>
         private bool __IsStopped;
-        #region class ThreadWrap
+        #endregion
+        #region class ThreadWrap : obálka jednoho výkonného vlákna
+        /// <summary>
+        /// ThreadWrap : obálka jednoho výkonného vlákna
+        /// </summary>
         protected class ThreadWrap : IDisposable
         {
             #region Konstruktor a proměnné
@@ -991,7 +1153,7 @@ namespace Djs.Tools.WebDownloader.Support
             if (UseMonitor) return new SignalMonitor(initialState, autoReset);
             return new SignalAutoReset(initialState, autoReset);
         }
-        private const bool UseMonitor = true;
+        private const bool UseMonitor = false;
         /// <summary>
         /// Implementace <see cref="ISignal"/> s použitím <see cref="AutoResetEvent"/>
         /// </summary>
@@ -1137,8 +1299,22 @@ namespace Djs.Tools.WebDownloader.Support
         Abort
     }
     #endregion
+    #region interface IActionInfo
+    /// <summary>
+    /// Deklarace prvků, které jsou k dispozici na akci ke zpracování
+    /// </summary>
     public interface IActionInfo
-    { }
+    {
+        /// <summary>
+        /// Název akce
+        /// </summary>
+        string Name { get; }
+        /// <summary>
+        /// Stav akce
+        /// </summary>
+        ThreadActionState State { get; }
+    }
+    #endregion
 }
 
 #region Testy
@@ -1175,6 +1351,7 @@ namespace Djs.Tools.WebDownloader.Tests
         }
 
         /*   VÝSLEDKY TESTOVÁNÍ, časy v mikrosekundách!
+
           SROVNÁNÍ VÝKONU s použitím synchronizačního signálního objektu:                                                                    AutoResetEvent         Monitor
           1. Vložení požadavku na akci = režie v aplikačním kódu = zdržení řídícího vlákna průměrně (vyjma první akce), optimálně       :    39 mikrosekund      46 mikrosekund
             a) analýza z 1000 požadavků: průměr 5% nejlepších časů                                                                      :    22 mikrosekund      20 mikrosekund
@@ -1195,8 +1372,15 @@ namespace Djs.Tools.WebDownloader.Tests
             a)                                                                                                            Vytížení CPU  :    95 %                95 %
             b)                                                                                                            Čas práce     :    13 sec              13 sec
             c) všechna CPU jádra jsou vytížena rovnoměrně v obou případech, při počtu jader = 4 a počtu threadů = 4
+
+          5. Srovnání výkonu v závislosti na počtu pracovních threadů ku počtu jader procesoru:
             - na 4-jádrovém středním CPU
-            d) při snížení počtu threadů na  2 pro CPU se 4 jádry: 2 jádra využita na 70%, druhá 2 na 30%, čas vzroste 13 => 18 sekund
+             2 threads :     2 jádra  70%, 2 jádra 40%,                       18,726 sec
+             3 threads :     2 jádra  90%, 2 jádra 70%,                       14,678 sec
+             4 threads :     4 jádra  95%                                     12,776 sec
+             6 threads :     4 jádra  95%                                     12,830 sec
+             8 threads :     4 jádra  95%                                     13,039 sec
+
             e) při snížení počtu threadů na  3 pro CPU se 4 jádry: 2 jádra využita na 90%, druhá 2 na 70%, čas vzroste 13 => 14 sekund
             f) při zvýšení počtu threadů na  8 pro CPU se 4 jádry: 4 jádra využita na 98%                  čas zůstává na 13 sec jako pro 4 thready
             g) při zvýšení počtu threadů na 16 pro CPU se 4 jádry: 4 jádra využita na 94%                  čas zůstává na 13 sec jako pro 4 thready
@@ -1224,23 +1408,24 @@ namespace Djs.Tools.WebDownloader.Tests
           V našem scénáři to na to ale nevypadá.
           Implementace Signal s využitím Monitoru je podle:
              https://stackoverflow.com/questions/2816903/lightweight-alternative-to-manual-autoresetevent-in-c-sharp
+
         */
 
         [TestMethod]
         public void TestThreadManager()
         {
             System.Windows.Forms.Clipboard.Clear();
-            ThreadManager.MaxThreadCount = 6;
+            // ThreadManager.MaxThreadCount = 8;
             ThreadManager.LogActive = true;
-            ThreadManager.LogActive = false;
+            // ThreadManager.LogActive = false;                    // Pro testy výkonu aktivovat řádek = zakázat velké logování
             Rand = new Random();
 
             Thread.CurrentThread.Name = "MainThread";
-            App.AddLog("ThreadManagerTests", $"Start aplikace");
+            App.AddLog("ThreadManagerTests", $"Start aplikace", "MaxThreadCount = " + ThreadManager.MaxThreadCount);
 
             int actionCount = 500;
 
-            actionCount = 20000;
+            // actionCount = 20000;                               // Pro testy výkonu aktivovat řádek = testovat pro 20000 cyklů Main
             try
             {
                 for (int r = 1; r <= actionCount; r++)
