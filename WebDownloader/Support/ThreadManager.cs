@@ -967,16 +967,7 @@ namespace Djs.Tools.WebDownloader.Support
         private bool __LogActive;
         #endregion
     }
-    #region class Signal
-    public static class SignalFactory
-    {
-        public static ISignal Create(bool initialState, bool autoReset)
-        {
-            if (UseMonitor) return new SignalMonitor(initialState, autoReset);
-            return new SignalAutoReset(initialState, autoReset);
-        }
-        private const bool UseMonitor = true;
-    }
+    #region interface ISignal, class SignalFactory, implementace SignalAutoReset a SignalMonitor
     public interface ISignal
     {
         void Reset();
@@ -984,91 +975,106 @@ namespace Djs.Tools.WebDownloader.Support
         void WaitOne();
         bool WaitOne(int timeout);
     }
-    public class SignalAutoReset : ISignal
+    /// <summary>
+    /// V metodě <see cref="Create(bool, bool)"/> vygeneruje a vrátí vhodnou implementaci objektu <see cref="ISignal"/>
+    /// </summary>
+    public static class SignalFactory
     {
-        private readonly AutoResetEvent _AutoReset;
-        private readonly bool _autoResetSignal;
-        public SignalAutoReset()
-          : this(false, false)
+        /// <summary>
+        /// Vrátí vhodnou implementaci objektu <see cref="ISignal"/>
+        /// </summary>
+        /// <param name="initialState"></param>
+        /// <param name="autoReset"></param>
+        /// <returns></returns>
+        public static ISignal Create(bool initialState, bool autoReset)
         {
+            if (UseMonitor) return new SignalMonitor(initialState, autoReset);
+            return new SignalAutoReset(initialState, autoReset);
         }
-
-        public SignalAutoReset(bool initialState, bool autoReset)
+        private const bool UseMonitor = true;
+        /// <summary>
+        /// Implementace <see cref="ISignal"/> s použitím <see cref="AutoResetEvent"/>
+        /// </summary>
+        protected class SignalAutoReset : ISignal
         {
-            _AutoReset = new AutoResetEvent(initialState);
-            _autoResetSignal = autoReset;
-        }
-
-        public void Reset() { _AutoReset.Reset(); }
-        public void Set() { _AutoReset.Set(); }
-        public void WaitOne() { _AutoReset.WaitOne(); }
-        public bool WaitOne(int milliseconds) { return _AutoReset.WaitOne(milliseconds); }
-
-    }
-    public class SignalMonitor : ISignal
-    {
-        private readonly object _lock = new object();
-        private readonly bool _autoResetSignal;
-        private bool _notified;
-
-        public SignalMonitor()
-          : this(false, false)
-        {
-        }
-
-        public SignalMonitor(bool initialState, bool autoReset)
-        {
-            _notified = initialState;
-            _autoResetSignal = autoReset;
-        }
-
-        public void Reset()
-        {
-            _notified = false;
-        }
-
-        public void Set()
-        {
-            lock (_lock)
+            private readonly AutoResetEvent _AutoReset;
+            private readonly bool _autoResetSignal;
+            public SignalAutoReset()
+              : this(false, false)
             {
-                // first time?
-                if (!_notified)
+            }
+            public SignalAutoReset(bool initialState, bool autoReset)
+            {
+                _AutoReset = new AutoResetEvent(initialState);
+                _autoResetSignal = autoReset;
+            }
+            public void Reset() { _AutoReset.Reset(); }
+            public void Set() { _AutoReset.Set(); }
+            public void WaitOne() { _AutoReset.WaitOne(); }
+            public bool WaitOne(int milliseconds) { return _AutoReset.WaitOne(milliseconds); }
+        }
+        /// <summary>
+        /// Implementace <see cref="ISignal"/> s použitím <see cref="Monitor"/>
+        /// </summary>
+        protected class SignalMonitor : ISignal
+        {
+            private readonly object _Lock = new object();
+            private readonly bool _AutoResetSignal;
+            private bool _IsNotified;
+            public SignalMonitor()
+              : this(false, false)
+            {
+            }
+            public SignalMonitor(bool initialState, bool autoReset)
+            {
+                _IsNotified = initialState;
+                _AutoResetSignal = autoReset;
+            }
+            public void Reset()
+            {
+                _IsNotified = false;
+            }
+            public void Set()
+            {
+                lock (_Lock)
                 {
-                    // set the flag
-                    _notified = true;
+                    // first time?
+                    if (!_IsNotified)
+                    {
+                        // set the flag
+                        _IsNotified = true;
 
-                    // unblock a thread which is waiting on this signal 
-                    Monitor.Pulse(_lock);
+                        // unblock a thread which is waiting on this signal 
+                        Monitor.Pulse(_Lock);
+                    }
                 }
             }
-        }
-
-        public void WaitOne()
-        {
-            WaitOne(Timeout.Infinite);
-        }
-
-        public bool WaitOne(int milliseconds)
-        {
-            lock (_lock)
+            public void WaitOne()
             {
-                bool result = true;
-                // this check needs to be inside the lock otherwise you can get nailed
-                // with a race condition where the notify thread sets the flag AFTER 
-                // the waiting thread has checked it and acquires the lock and does the 
-                // pulse before the Monitor.Wait below - when this happens the caller
-                // will wait forever as he "just missed" the only pulse which is ever 
-                // going to happen 
-                if (!_notified)
+                WaitOne(Timeout.Infinite);
+            }
+            public bool WaitOne(int milliseconds)
+            {
+                lock (_Lock)
                 {
-                    result = Monitor.Wait(_lock, milliseconds);
-                }
+                    bool result = true;
+                    // this check needs to be inside the lock otherwise you can get nailed
+                    // with a race condition where the notify thread sets the flag AFTER 
+                    // the waiting thread has checked it and acquires the lock and does the 
+                    // pulse before the Monitor.Wait below - when this happens the caller
+                    // will wait forever as he "just missed" the only pulse which is ever 
+                    // going to happen 
+                    if (!_IsNotified)
+                    {
+                        result = Monitor.Wait(_Lock, milliseconds);
+                    }
 
-                if (_autoResetSignal)
-                {
-                    _notified = false;
+                    if (_AutoResetSignal)
+                    {
+                        _IsNotified = false;
+                    }
+                    return (result);
                 }
-                return (result);
             }
         }
     }
@@ -1185,6 +1191,17 @@ namespace Djs.Tools.WebDownloader.Tests
             b) Vyhledání další akce a její přidělení do výkonného threadu (v threadu Dispatchera)                                       :    31 mikrosekund      44 mikrosekund
             c) Nastartování akce ve výkonném threadu (z threadu Dispatchera do výkonného threadu)                                       :    12 mikrosekund      37 mikrosekund
 
+          4. Srovnání vytížení CPU pro 20000 x 2 akce po 1 milisekundě při využití různých implementací ISignal
+            a)                                                                                                            Vytížení CPU  :    95 %                95 %
+            b)                                                                                                            Čas práce     :    13 sec              13 sec
+            c) všechna CPU jádra jsou vytížena rovnoměrně v obou případech, při počtu jader = 4 a počtu threadů = 4
+            d) při snížení počtu threadů na  2 pro CPU se 4 jádry: 2 jádra využita na 70%, druhá 2 na 30%, čas vzroste 13 => 18 sekund
+            d) při snížení počtu threadů na  3 pro CPU se 4 jádry: 2 jádra využita na 90%, druhá 2 na 70%, čas vzroste 13 => 14 sekund
+            d) při zvýšení počtu threadů na  8 pro CPU se 4 jádry: 4 jádra využita na 98%                  čas zůstává na 13 sec jako pro 4 thready
+            d) při zvýšení počtu threadů na 16 pro CPU se 4 jádry: 4 jádra využita na 94%                  čas zůstává na 13 sec jako pro 4 thready
+
+
+
           9. Celkový poměr času:
            a) doba běhu testu od startu do konce čekání na doběhnutí všech akcí               :   346 227 mikrosekund
            b) součet času na vložení 1000 požadavků na provedení akce                         :    63 346 mikrosekund
@@ -1195,24 +1212,28 @@ namespace Djs.Tools.WebDownloader.Tests
           Podle údajů na webu je použití objektu Monitor pro synchronizaci dvou threadů 100x výkonnější než AutoResetEvent:
              http://blog.teamleadnet.com/2012/02/why-autoresetevent-is-slow-and-how-to.html
              Pozor, jde o článek z roku 2012 a dnes je 2020.
-          V daném scénáři to na to nevypadá.
+
+          V našem scénáři to na to ale nevypadá.
+          Implementace Signal s využitím Monitoru je podle:
+             https://stackoverflow.com/questions/2816903/lightweight-alternative-to-manual-autoresetevent-in-c-sharp
         */
         [TestMethod]
         public void TestThreadManager()
         {
             System.Windows.Forms.Clipboard.Clear();
-            ThreadManager.MaxThreadCount = 4;
+            ThreadManager.MaxThreadCount = 3;
             ThreadManager.LogActive = true;
+            ThreadManager.LogActive = false;
             Rand = new Random();
 
             Thread.CurrentThread.Name = "MainThread";
             App.AddLog("ThreadManagerTests", $"Start aplikace");
 
-            int actionCount = 1024;
+            int actionCount = 500;
 
+            actionCount = 20000;
             try
             {
-                actionCount = 500;
                 for (int r = 1; r <= actionCount; r++)
                 {
                     string code = "M";
