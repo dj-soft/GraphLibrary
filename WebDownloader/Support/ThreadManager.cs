@@ -1196,9 +1196,9 @@ namespace Djs.Tools.WebDownloader.Tests
             b)                                                                                                            Čas práce     :    13 sec              13 sec
             c) všechna CPU jádra jsou vytížena rovnoměrně v obou případech, při počtu jader = 4 a počtu threadů = 4
             d) při snížení počtu threadů na  2 pro CPU se 4 jádry: 2 jádra využita na 70%, druhá 2 na 30%, čas vzroste 13 => 18 sekund
-            d) při snížení počtu threadů na  3 pro CPU se 4 jádry: 2 jádra využita na 90%, druhá 2 na 70%, čas vzroste 13 => 14 sekund
-            d) při zvýšení počtu threadů na  8 pro CPU se 4 jádry: 4 jádra využita na 98%                  čas zůstává na 13 sec jako pro 4 thready
-            d) při zvýšení počtu threadů na 16 pro CPU se 4 jádry: 4 jádra využita na 94%                  čas zůstává na 13 sec jako pro 4 thready
+            e) při snížení počtu threadů na  3 pro CPU se 4 jádry: 2 jádra využita na 90%, druhá 2 na 70%, čas vzroste 13 => 14 sekund
+            f) při zvýšení počtu threadů na  8 pro CPU se 4 jádry: 4 jádra využita na 98%                  čas zůstává na 13 sec jako pro 4 thready
+            g) při zvýšení počtu threadů na 16 pro CPU se 4 jádry: 4 jádra využita na 94%                  čas zůstává na 13 sec jako pro 4 thready
 
 
 
