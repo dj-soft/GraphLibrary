@@ -125,9 +125,9 @@ namespace Djs.Tools.WebDownloader.Support
         {
             __ActionId = 0;
             __ActionQueue = new Queue<ActionInfo>();
-            __ActionAcceptedSignal = new AutoResetEvent(false);
-            __NewActionIncomeSignal = new AutoResetEvent(false);
-            __WaitToActionsDoneSignal = new AutoResetEvent(false);
+            __ActionAcceptedSignal = SignalFactory.Create(false, true);
+            __NewActionIncomeSignal = SignalFactory.Create(false, true);
+            __WaitToActionsDoneSignal = SignalFactory.Create(false, true);
             __WaitingToActionsDone = false;
             __ActionDispatcherThread = new Thread(__ActionDispatcherLoop) { Name = __ActionDispatcherName, IsBackground = true, Priority = ThreadPriority.AboveNormal };
             __ActionDispatcherThread.Start();
@@ -308,12 +308,12 @@ namespace Djs.Tools.WebDownloader.Support
         /// Signál od dispečera (thread <see cref="__ActionDispatcherThread"/>) do uživatelského vlákna, které podávalo žádost o zpracování akce, 
         /// že tato žádost byla akceptována dispečerem, a volající se může věnovat své práci.
         /// </summary>
-        private AutoResetEvent __ActionAcceptedSignal;
+        private ISignal __ActionAcceptedSignal;
         /// <summary>
         /// Signál pro dispečera zpracování fronty akcí, že byla vložena nějaká další akce jako požadavek na zpracování.
         /// Pokud vlákno 
         /// </summary>
-        private AutoResetEvent __NewActionIncomeSignal;
+        private ISignal __NewActionIncomeSignal;
         /// <summary>
         /// Příznak, že někdo čeká na ukončení akcí. Pak je třeba posílat signál <see cref="__WaitToActionsDoneSignal"/> po ukončení práce v threadu i po ukončení práce na akci, 
         /// aby čekající metoda mohla prověřit aktuální stav.
@@ -323,7 +323,7 @@ namespace Djs.Tools.WebDownloader.Support
         /// <summary>
         /// Signál aktivovaný v situaci, kdy <see cref="__WaitingToActionsDone"/> je true = někdo (metoda <see cref="__WaitToActionsDone(TimeSpan?)"/>) čeká na ukončení threadu a akcí.
         /// </summary>
-        private AutoResetEvent __WaitToActionsDoneSignal;
+        private ISignal __WaitToActionsDoneSignal;
         /// <summary>
         /// Instance threadu, který je dispečerem akcí
         /// </summary>
@@ -443,7 +443,7 @@ namespace Djs.Tools.WebDownloader.Support
         {
             __Threads = new List<ThreadWrap>();
             __MaxThreadCount = 8 + 32 * Environment.ProcessorCount;
-            __AnyThreadDisponibleSignal = new AutoResetEvent(false);
+            __AnyThreadDisponibleSignal = SignalFactory.Create(false, true);
             __IsStopped = false;
         }
         /// <summary>
@@ -651,7 +651,7 @@ namespace Djs.Tools.WebDownloader.Support
         /// Pokud thread manager čeká na uvolnění threadu (v metodě <see cref="__GetDisponibleThread()"/>), pak aktivací tohoto signálu je jeho čekání ukončeno 
         /// a manager může nalézt a použít toto disponibilní vlákno pro další akci.
         /// </summary>
-        private AutoResetEvent __AnyThreadDisponibleSignal;
+        private ISignal __AnyThreadDisponibleSignal;
         /// <summary>
         /// Obsahuje true poté, kdy <see cref="ThreadManager"/> je zastaven a nebude již přijímat další požadavky na práci.
         /// </summary>
@@ -670,7 +670,7 @@ namespace Djs.Tools.WebDownloader.Support
             {
                 __Owner = owner;
                 __Lock = new SpinLock();
-                __Semaphore = new AutoResetEvent(false);
+                __Semaphore = SignalFactory.Create(false, true);
                 __State = initialState;
                 __DisponibleFrom = DateTime.UtcNow;
                 __End = false;
@@ -689,7 +689,7 @@ namespace Djs.Tools.WebDownloader.Support
             private ThreadManager __Owner;
             private bool __LogActive { get { return __Owner.__LogActive; } }
             private SpinLock __Lock;
-            private AutoResetEvent __Semaphore;
+            private ISignal __Semaphore;
             private volatile ThreadWrapState __State;
             /// <summary>
             /// Nastavením na true dojde k ukončení vlákna poté, kdy doběhne případná běžící akce.
@@ -967,6 +967,112 @@ namespace Djs.Tools.WebDownloader.Support
         private bool __LogActive;
         #endregion
     }
+    #region class Signal
+    public static class SignalFactory
+    {
+        public static ISignal Create(bool initialState, bool autoReset)
+        {
+            if (UseMonitor) return new SignalMonitor(initialState, autoReset);
+            return new SignalAutoReset(initialState, autoReset);
+        }
+        private const bool UseMonitor = true;
+    }
+    public interface ISignal
+    {
+        void Reset();
+        void Set();
+        void WaitOne();
+        bool WaitOne(int timeout);
+    }
+    public class SignalAutoReset : ISignal
+    {
+        private readonly AutoResetEvent _AutoReset;
+        private readonly bool _autoResetSignal;
+        public SignalAutoReset()
+          : this(false, false)
+        {
+        }
+
+        public SignalAutoReset(bool initialState, bool autoReset)
+        {
+            _AutoReset = new AutoResetEvent(initialState);
+            _autoResetSignal = autoReset;
+        }
+
+        public void Reset() { _AutoReset.Reset(); }
+        public void Set() { _AutoReset.Set(); }
+        public void WaitOne() { _AutoReset.WaitOne(); }
+        public bool WaitOne(int milliseconds) { return _AutoReset.WaitOne(milliseconds); }
+
+    }
+    public class SignalMonitor : ISignal
+    {
+        private readonly object _lock = new object();
+        private readonly bool _autoResetSignal;
+        private bool _notified;
+
+        public SignalMonitor()
+          : this(false, false)
+        {
+        }
+
+        public SignalMonitor(bool initialState, bool autoReset)
+        {
+            _notified = initialState;
+            _autoResetSignal = autoReset;
+        }
+
+        public void Reset()
+        {
+            _notified = false;
+        }
+
+        public void Set()
+        {
+            lock (_lock)
+            {
+                // first time?
+                if (!_notified)
+                {
+                    // set the flag
+                    _notified = true;
+
+                    // unblock a thread which is waiting on this signal 
+                    Monitor.Pulse(_lock);
+                }
+            }
+        }
+
+        public void WaitOne()
+        {
+            WaitOne(Timeout.Infinite);
+        }
+
+        public bool WaitOne(int milliseconds)
+        {
+            lock (_lock)
+            {
+                bool result = true;
+                // this check needs to be inside the lock otherwise you can get nailed
+                // with a race condition where the notify thread sets the flag AFTER 
+                // the waiting thread has checked it and acquires the lock and does the 
+                // pulse before the Monitor.Wait below - when this happens the caller
+                // will wait forever as he "just missed" the only pulse which is ever 
+                // going to happen 
+                if (!_notified)
+                {
+                    result = Monitor.Wait(_lock, milliseconds);
+                }
+
+                if (_autoResetSignal)
+                {
+                    _notified = false;
+                }
+                return (result);
+            }
+        }
+    }
+    #endregion
     #region enum ThreadActionState a ThreadWrapState
     /// <summary>
     /// Stav akce
@@ -1063,21 +1169,21 @@ namespace Djs.Tools.WebDownloader.Tests
         }
 
         /*   VÝSLEDKY TESTOVÁNÍ, časy v mikrosekundách!
-
-          1. Vložení požadavku na akci = režie v aplikačním kódu = zdržení řídícího vlákna průměrně (vyjma první akce), optimálně       :    39 mikrosekund
-            a) analýza z 1000 požadavků: průměr 5% nejlepších časů                                                                      :    22 mikrosekund
-            b) analýza z 1000 požadavků: průměr středu = po odečtení 5% nejhorších a 5% nejlepších časů                                 :    39 mikrosekund
-            c) analýza z 1000 požadavků: průměr 5% nejhorších                                                                           :   544 mikrosekund
+          SROVNÁNÍ VÝKONU s použitím synchronizačního signálního objektu:                                                                    AutoResetEvent         Monitor
+          1. Vložení požadavku na akci = režie v aplikačním kódu = zdržení řídícího vlákna průměrně (vyjma první akce), optimálně       :    39 mikrosekund      46 mikrosekund
+            a) analýza z 1000 požadavků: průměr 5% nejlepších časů                                                                      :    22 mikrosekund      20 mikrosekund
+            b) analýza z 1000 požadavků: průměr středu = po odečtení 5% nejhorších a 5% nejlepších časů                                 :    39 mikrosekund      46 mikrosekund
+            c) analýza z 1000 požadavků: průměr 5% nejhorších                                                                           :   544 mikrosekund     842 mikrosekund
 
           2. Čas mezi vložením požadavku na akci a jejím fyzickým zahájením v jejím threadu, v případě, kdy je k dispozici volný thread
-            a) úplně první thread systému = rozbíhání celého systému                                                                    : 5 968 mikrosekund
-            b) druhý thread = vytvoření new instance Thread                                                                             : 1 094 mikrosekund
-            c) průběžné požadavky v době, kdy systém běží (jsou založeny instance pro výkonné thready), a má volné thready              :    57 - 500 mikrosekund
+            a) úplně první thread systému = rozbíhání celého systému                                                                    : 5 968 mikrosekund   5 657 mikrosekund
+            b) druhý thread = vytvoření new instance Thread                                                                             : 1 094 mikrosekund   4 341 mikrosekund
+            c) průběžné požadavky v době, kdy systém běží (jsou založeny instance pro výkonné thready), a má volné thready              :    57 - 500            90 - 360
 
-          3. Čas prodlevy ve využití threadu mezi ukončením jedné akce a přidělením threadu pro další akci, z hlediska výkonného kódu   :    62 mikrosekund
-            a) Rychlost přechodu z ukončení výkonného kódu do threadu Dispatchera = pro obsloužení dalších akcí                         :    19 mikrosekund
-            b) Vyhledání další akce a její přidělení do výkonného threadu (v threadu Dispatchera)                                       :    31 mikrosekund
-            c) Nastartování akce ve výkonném threadu (z threadu Dispatchera do výkonného threadu)                                       :    12 mikrosekund
+          3. Čas prodlevy ve využití threadu mezi ukončením jedné akce a přidělením threadu pro další akci, z hlediska výkonného kódu   :    62 mikrosekund      76 mikrosekund
+            a) Rychlost přechodu z ukončení výkonného kódu do threadu Dispatchera = pro obsloužení dalších akcí                         :    19 mikrosekund      23 mikrosekund
+            b) Vyhledání další akce a její přidělení do výkonného threadu (v threadu Dispatchera)                                       :    31 mikrosekund      44 mikrosekund
+            c) Nastartování akce ve výkonném threadu (z threadu Dispatchera do výkonného threadu)                                       :    12 mikrosekund      37 mikrosekund
 
           9. Celkový poměr času:
            a) doba běhu testu od startu do konce čekání na doběhnutí všech akcí               :   346 227 mikrosekund
@@ -1086,12 +1192,16 @@ namespace Djs.Tools.WebDownloader.Tests
            d) poměr času výkonné části / celkovém fyzickému času, použity 4 výkonné thready   :       321 %
            e) poměr pro 8 threadů (1358438 / 385126)                                          :       353 %    (CPU: 1 procesor, 2 core, 4 logical processors) 
 
+          Podle údajů na webu je použití objektu Monitor pro synchronizaci dvou threadů 100x výkonnější než AutoResetEvent:
+             http://blog.teamleadnet.com/2012/02/why-autoresetevent-is-slow-and-how-to.html
+             Pozor, jde o článek z roku 2012 a dnes je 2020.
+          V daném scénáři to na to nevypadá.
         */
         [TestMethod]
         public void TestThreadManager()
         {
             System.Windows.Forms.Clipboard.Clear();
-            ThreadManager.MaxThreadCount = 8;
+            ThreadManager.MaxThreadCount = 4;
             ThreadManager.LogActive = true;
             Rand = new Random();
 
