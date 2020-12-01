@@ -1141,7 +1141,7 @@ namespace Djs.Tools.WebDownloader.Support
     { }
 }
 
-#region testy
+#region Testy
 namespace Djs.Tools.WebDownloader.Tests
 {
     using Djs.Tools.WebDownloader.Support;
@@ -1195,12 +1195,20 @@ namespace Djs.Tools.WebDownloader.Tests
             a)                                                                                                            Vytížení CPU  :    95 %                95 %
             b)                                                                                                            Čas práce     :    13 sec              13 sec
             c) všechna CPU jádra jsou vytížena rovnoměrně v obou případech, při počtu jader = 4 a počtu threadů = 4
+            - na 4-jádrovém středním CPU
             d) při snížení počtu threadů na  2 pro CPU se 4 jádry: 2 jádra využita na 70%, druhá 2 na 30%, čas vzroste 13 => 18 sekund
             e) při snížení počtu threadů na  3 pro CPU se 4 jádry: 2 jádra využita na 90%, druhá 2 na 70%, čas vzroste 13 => 14 sekund
             f) při zvýšení počtu threadů na  8 pro CPU se 4 jádry: 4 jádra využita na 98%                  čas zůstává na 13 sec jako pro 4 thready
             g) při zvýšení počtu threadů na 16 pro CPU se 4 jádry: 4 jádra využita na 94%                  čas zůstává na 13 sec jako pro 4 thready
 
-
+            - na 12-jádrovém silnějším
+             2 threads :     2 jádra 100%, 1 jádro 30%, ostatní nic           17,155 sec
+             3 threads :     3 jádra 100%, 1 jádro 30%, ostatní nic           12,322 sec
+             4 threads :     4 jádra 100%, 1 jádro 30%, ostatní nic           10,634 sec
+             6 threads :     6 jádra  80%, 6 jádro 40%                        10,000 sec
+             8 threads :    12 jádra  60%                                      9,402 sec
+            10 threads :    12 jádra  60%                                     10,314 sec
+            12 threads :    12 jádra  60%                                     11,732 sec
 
           9. Celkový poměr času:
            a) doba běhu testu od startu do konce čekání na doběhnutí všech akcí               :   346 227 mikrosekund
@@ -1217,11 +1225,12 @@ namespace Djs.Tools.WebDownloader.Tests
           Implementace Signal s využitím Monitoru je podle:
              https://stackoverflow.com/questions/2816903/lightweight-alternative-to-manual-autoresetevent-in-c-sharp
         */
+
         [TestMethod]
         public void TestThreadManager()
         {
             System.Windows.Forms.Clipboard.Clear();
-            ThreadManager.MaxThreadCount = 3;
+            ThreadManager.MaxThreadCount = 6;
             ThreadManager.LogActive = true;
             ThreadManager.LogActive = false;
             Rand = new Random();
