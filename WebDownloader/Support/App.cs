@@ -201,9 +201,9 @@ namespace Djs.Tools.WebDownloader
                 sb.Append(tab);
                 sb.Append("Delta [us]");
                 sb.Append(tab);
-                sb.Append("Thread");
-                sb.Append(tab);
                 sb.Append("Source");
+                sb.Append(tab);
+                sb.Append("Thread");
                 for (int i = 0; i < 12; i++)
                     sb.Append(tab + "Item:" + i.ToString());
                 _Log.AppendLine(sb.ToString());
@@ -238,17 +238,17 @@ namespace Djs.Tools.WebDownloader
                 sb.Append(microsecs.ToString());
                 sb.Append(tab);
 
-                _LogLastTick = stopTime;
-
-                sb.Append(Thread.CurrentThread.Name);
+                sb.Append(source);
                 sb.Append(tab);
 
-                sb.Append(source);
+                sb.Append(Thread.CurrentThread.Name);
 
                 foreach (object item in items)
                     sb.Append(tab + (item?.ToString() ?? ""));
 
                 _Log.AppendLine(sb.ToString());
+
+                _LogLastTick = stopTime;
             }
         }
         private long _LogRow;
