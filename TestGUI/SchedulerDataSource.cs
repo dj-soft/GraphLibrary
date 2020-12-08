@@ -53,8 +53,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateToolBar();
             this.CreateMainPage();
             this.CreateLeftPanel();
-            this.CreateCenterPanelWorkplace();
+            this.CreateCenterPanelWorkplaces();
             this.CreateCenterPanelPersons();
+            this.CreateCenterPanelSources();
             this.CreateRightPanel();
             this.CreateContextFunctions();
             this.CreateInitialDialog();
@@ -127,46 +128,64 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // DÍLNY:
             Color? colorLak = null;         // Color.FromArgb(224, 240, 255);
             this.WorkplaceDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCWp("Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h, colorLak);
-            this.CreatePlanUnitCWp("Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h, colorLak);
-            this.CreatePlanUnitCWp("Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h, colorLak);
-            this.CreatePlanUnitCWp("Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h, colorLak);
-            this.CreatePlanUnitCWp("Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h, null);
-            this.CreatePlanUnitCWp("Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h, null);
-            this.CreatePlanUnitCWp("Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h, null);
-            this.CreatePlanUnitCWp("Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h, null);
-            this.CreatePlanUnitCWp("Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWorkplace("Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWorkplace("Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWorkplace("Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWorkplace("Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h, colorLak);
+            this.CreatePlanUnitCWorkplace("Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWorkplace("Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWorkplace("Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWorkplace("Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWorkplace("Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h, null);
 
             // OSOBY, RANNÍ SMĚNA:
             this.PersonDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCZm("NOVÁK Jiří", CalendarType.Work5d1x8hR, "F1", null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("DVOŘÁK Pavel", CalendarType.Work5d1x8hR, "A12", colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("STARÝ Slavomír", CalendarType.Work5d1x8hR, "C2", null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("PEŠEK Petr", CalendarType.Work5d1x8hR, null, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("JENČÍK Jan", CalendarType.Work5d1x8hR, "H05", null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("KRULIŠ Karel", CalendarType.Work5d1x8hR, "B12", colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, "S123", null, WP_DILN);
-            this.CreatePlanUnitCZm("NEKOKSA Jindřich", CalendarType.Work5d1x8hR, "X4", colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("POKORNÝ Dan", CalendarType.Work5d1x8hR, "T15", null, WP_DILN, WP_KONT);
-            this.CreatePlanUnitCZm("DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, null, WP_KONT);
+            this.CreatePlanUnitCPerson("NOVÁK Jiří", CalendarType.Work5d1x8hR, "F1", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCPerson("DVOŘÁK Pavel", CalendarType.Work5d1x8hR, "A12", colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCPerson("STARÝ Slavomír", CalendarType.Work5d1x8hR, "C2", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCPerson("PEŠEK Petr", CalendarType.Work5d1x8hR, null, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCPerson("JENČÍK Jan", CalendarType.Work5d1x8hR, "H05", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCPerson("KRULIŠ Karel", CalendarType.Work5d1x8hR, "B12", colorLak, WP_LAKO);
+            this.CreatePlanUnitCPerson("BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, "S123", null, WP_DILN);
+            this.CreatePlanUnitCPerson("NEKOKSA Jindřich", CalendarType.Work5d1x8hR, "X4", colorLak, WP_LAKO);
+            this.CreatePlanUnitCPerson("POKORNÝ Dan", CalendarType.Work5d1x8hR, "T15", null, WP_DILN, WP_KONT);
+            this.CreatePlanUnitCPerson("DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, null, WP_KONT);
 
             // OSOBY, ODPOLEDNÍ SMĚNA:
-            this.CreatePlanUnitCZm("VETCHÝ Marek", CalendarType.Work5d1x8hO, "F07", null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("SUP Václav", CalendarType.Work5d1x8hO, "J2", colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, "U02", null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("ČERNÁ Marta", CalendarType.Work5d1x8hO, null, colorLak, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm("VIDÍM Dan", CalendarType.Work5d1x8hO, "L50", null, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm("NĚMEC Jaroslav", CalendarType.Work5d1x8hO, "N80", colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, null, WP_DILN);
-            this.CreatePlanUnitCZm("HANZAL Patrik", CalendarType.Work5d1x8hO, "R25", colorLak, WP_LAKO);
-            this.CreatePlanUnitCZm("SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, "D16", null, WP_DILN);
-            this.CreatePlanUnitCZm("DIETRICH Zdenek", CalendarType.Work5d1x8hO, "B0", null, WP_KONT);
+            this.CreatePlanUnitCPerson("VETCHÝ Marek", CalendarType.Work5d1x8hO, "F07", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCPerson("SUP Václav", CalendarType.Work5d1x8hO, "J2", colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCPerson("OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, "U02", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCPerson("ČERNÁ Marta", CalendarType.Work5d1x8hO, null, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCPerson("VIDÍM Dan", CalendarType.Work5d1x8hO, "L50", null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCPerson("NĚMEC Jaroslav", CalendarType.Work5d1x8hO, "N80", colorLak, WP_LAKO);
+            this.CreatePlanUnitCPerson("DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, null, WP_DILN);
+            this.CreatePlanUnitCPerson("HANZAL Patrik", CalendarType.Work5d1x8hO, "R25", colorLak, WP_LAKO);
+            this.CreatePlanUnitCPerson("SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, "D16", null, WP_DILN);
+            this.CreatePlanUnitCPerson("DIETRICH Zdenek", CalendarType.Work5d1x8hO, "B0", null, WP_KONT);
+
+            // ZDROJE:
+            this.SourceDict = new Dictionary<GuiId, PlanUnitC>();
+            this.CreatePlanUnitCSource("Šablona frézování pantů", CalendarType.Work7d1x24h, "FP30", null, 3);
+            this.CreatePlanUnitCSource("Šablona frézování madla", CalendarType.Work7d1x24h, "FM62", null, 3);
+            this.CreatePlanUnitCSource("Šablona vrtání zámku FAB", CalendarType.Work7d1x24h, "FZFaB", null, 2);
+            this.CreatePlanUnitCSource("Šablona vrtání zámku SEC", CalendarType.Work7d1x24h, "FZSec", null, 1);
+            this.CreatePlanUnitCSource("Odsávač výparů", CalendarType.Work7d1x24h, "ODSV", null, 2);
+            this.CreatePlanUnitCSource("Čistící souprava", CalendarType.Work7d1x24h, "ČiSpr", null, 2);
+            this.CreatePlanUnitCSource("Sada vrtáků 3 až 12 H7", CalendarType.Work7d1x24h, "VrtMH7", null, 5);
+            this.CreatePlanUnitCSource("Sada vrtáků 8 až 16 H3", CalendarType.Work7d1x24h, "VrtVH3", null, 5);
+            this.CreatePlanUnitCSource("Frézovací hlava 45° 15÷45", CalendarType.Work7d1x24h, "fH16748", null, 2);
+            this.CreatePlanUnitCSource("Frézovací hlava 30° 2÷16", CalendarType.Work7d1x24h, "fH16752", null, 2);
+            this.CreatePlanUnitCSource("Frézovací hlava 45° 4÷18", CalendarType.Work7d1x24h, "fH16787", null, 2);
+            this.CreatePlanUnitCSource("Nůž soustruh CM50 48/12/4", CalendarType.Work7d1x24h, "SN-251", null, 3);
+            this.CreatePlanUnitCSource("Nůž soustruh CM50 60/10/9A", CalendarType.Work7d1x24h, "SN-252", null, 3);
+            this.CreatePlanUnitCSource("Nůž soustruh CM50 60/6/2x", CalendarType.Work7d1x24h, "SN-253", null, 3);
+            this.CreatePlanUnitCSource("Nůž soustruh CM50 48/6/2y", CalendarType.Work7d1x24h, "SN-254", null, 3);
 
             this.PlanAllProductOrdersToWorkplaces();
         }
@@ -469,7 +488,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
         /// <param name="rowBackColor"></param>
-        protected PlanUnitC CreatePlanUnitCWp(string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
+        protected PlanUnitC CreatePlanUnitCWorkplace(string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
         {
              PlanUnitC planUnitC = new PlanUnitC(this)
             {
@@ -494,7 +513,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="note"></param>
         /// <param name="rowBackColor"></param>
         /// <param name="workPlaces"></param>
-        protected GuiId CreatePlanUnitCZm(string name, CalendarType calendar, string note, Color? rowBackColor, params string[] workPlaces)
+        protected GuiId CreatePlanUnitCPerson(string name, CalendarType calendar, string note, Color? rowBackColor, params string[] workPlaces)
         {
             string workplace = workPlaces.ToString(";");
             PlanUnitC planUnitC = new PlanUnitC(this)
@@ -510,6 +529,32 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             planUnitC.Refer = "Z" + planUnitC.RecordId.ToString();
             planUnitC.WorkTimes = CreateWorkingItems(planUnitC, calendar, 1f, this.TimeRangeTotal);
             this.PersonDict.Add(planUnitC.RecordGid, planUnitC);
+
+            return planUnitC.RecordGid;
+        }
+        /// <summary>
+        /// Vytvoří a uloží jeden záznam Zdroj včetně jeho pracovních směn, pro dané zadání.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="calendar"></param>
+        /// <param name="note"></param>
+        /// <param name="rowBackColor"></param>
+        /// <param name="machinesCount"></param>
+        protected GuiId CreatePlanUnitCSource(string name, CalendarType calendar, string note, Color? rowBackColor, int machinesCount)
+        {
+            PlanUnitC planUnitC = new PlanUnitC(this)
+            {
+                Name = name,
+                Note = note,
+                WorkPlace = null,
+                RowBackColor = rowBackColor,
+                TagTexts = null,
+                MachinesCount = machinesCount,
+                PlanUnitType = PlanUnitType.Source
+            };
+            planUnitC.Refer = "S" + planUnitC.RecordId.ToString();
+            planUnitC.WorkTimes = CreateWorkingItems(planUnitC, calendar, (float)machinesCount, this.TimeRangeTotal);
+            this.SourceDict.Add(planUnitC.RecordGid, planUnitC);
 
             return planUnitC.RecordGid;
         }
@@ -668,6 +713,14 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                     time = time.AddDays(1d);
                     break;
 
+                case CalendarType.Work7d1x24h:
+                    // Po ÷ Ne; { 0:00 ÷ 0:00 }
+                    time = time.Date;
+                    workingTimeRange = new GuiTimeRange(time.AddHours(0), time.AddHours(24));
+                    backColor = Color.FromArgb(160, Color.LightBlue);
+                    time = time.AddDays(1d);
+                    break;
+
                 default:
                     var kalendar = calendar;
                     break;
@@ -709,7 +762,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <summary>
         /// Typ kalendáře
         /// </summary>
-        protected enum CalendarType { None, Work5d1x8hR, Work5d1x8hO, Work5d2x8h, Work7d3x8h, Work5d1x24h }
+        protected enum CalendarType { None, Work5d1x8hR, Work5d1x8hO, Work5d2x8h, Work7d3x8h, Work5d1x24h, Work7d1x24h }
         /// <summary>
         /// Dictionary s Výrobními příkazy
         /// </summary>
@@ -730,6 +783,10 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// Dictionary s Dělníky
         /// </summary>
         protected Dictionary<GuiId, PlanUnitC> PersonDict;
+        /// <summary>
+        /// Dictionary s Zdroji
+        /// </summary>
+        protected Dictionary<GuiId, PlanUnitC> SourceDict;
         /// <summary>
         /// Dictionary s Pracovními směnami
         /// </summary>
@@ -919,7 +976,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 StoreValueToConfig = false,         /* Button sice jde aktivovat, ale tento stav nechceme ukládat pro příští start. */
                 Image = RES.Images.Actions24.FormatIndentLess3Png,
                 GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionFilterProductOrder,
+                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionFilterProductOrder,
                 RunInteractionSource = SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked
             });
 
@@ -973,7 +1030,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagBluePng,
                 GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":0",        // :0 = parametr pro interakci (GuiNameInteractionShowColorSet)
+                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionShowColorSet + ":0",        // :0 = parametr pro interakci (GuiNameInteractionShowColorSet)
                 RunInteractionSource = SourceActionType.ToolbarClicked
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -988,7 +1045,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagRedPng,
                 GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":1",
+                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionShowColorSet + ":1",
                 RunInteractionSource = SourceActionType.ToolbarClicked
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1003,7 +1060,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagGreenPng,
                 GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":2",
+                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionShowColorSet + ":2",
                 RunInteractionSource = SourceActionType.ToolbarClicked
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1018,7 +1075,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagBlackPng,
                 GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":3",
+                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionShowColorSet + ":3",
                 RunInteractionSource = SourceActionType.ToolbarClicked
             });
 
@@ -1074,7 +1131,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Title = "Vpravo",
                 ToolTip = "Zobrazí tabulku zaměstnanců VPRAVO",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
-                ActionTargetNames = "!" + GuiFullNameGridCenterBottom + ";" + GuiFullNameRightPanel,
+                ActionTargetNames = "!" + GuiFullNameGridCenterPersons + ";" + GuiFullNameRightPanel,
                 Image = RES.Images.Actions.ViewSplitLeftRight2Png
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1090,7 +1147,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Title = "Dole",
                 ToolTip = "Zobrazí tabulku zaměstnanců DOLE",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
-                ActionTargetNames = GuiFullNameGridCenterBottom + ";!" + GuiFullNameRightPanel,
+                ActionTargetNames = GuiFullNameGridCenterPersons + ";!" + GuiFullNameRightPanel,
                 Image = RES.Images.Actions.ViewSplitTopBottom2Png
             });
 
@@ -1105,7 +1162,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Title = "Vztahy",
                 ToolTip = "Zobrazí / skryje vztahy mezi operacemi",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
-                ActionTargetNames = GuiFullNameGridCenterTop + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME,
+                ActionTargetNames = GuiFullNameGridCenterWorkplaces + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME,
                 Image = RES.Images.Actions.OfficeChartLineStackedPng
             });
         }
@@ -1125,7 +1182,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Title = "Nastav FIXOVÁNÍ",
                 Image = RES.Images.Actions24.Lock4Png,
                 ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
+                VisibleFor = GuiFullNameGridCenterWorkplaces + ":" + WorkUnit.ClassNumber.ToString()
             });
 
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
@@ -1134,7 +1191,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Title = "Zrušit FIXOVÁNÍ",
                 Image = RES.Images.Actions24.Lock2Png,
                 ToolTip = "Tato funkce zruší fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + WorkUnit.ClassNumber.ToString()
+                VisibleFor = GuiFullNameGridCenterWorkplaces + ":" + WorkUnit.ClassNumber.ToString()
             });
 
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
@@ -1144,7 +1201,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Image = RES.Images.Actions24.ViewCalendarTimeSpentPng,
                 BackColor = Color.FromArgb(255, 235, 235),
                 ToolTip = "Pouze zobrazí čas.",
-                VisibleFor = GuiFullNameGridCenterTop + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
+                VisibleFor = GuiFullNameGridCenterWorkplaces + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
             });
 
             this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
@@ -1249,7 +1306,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             {
                 Name = GuiNameInteractionSelectOperations,
                 SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
-                TargetGridFullName = GuiFullNameGridCenterTop,
+                TargetGridFullName = GuiFullNameGridCenterWorkplaces,
                 TargetAction = (TargetActionType.SearchSourceItemId | TargetActionType.SearchTargetGroupId | TargetActionType.SelectTargetItem)
             });
 
@@ -1349,20 +1406,20 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu do horní tabulky = Pracoviště
         /// </summary>
-        protected void CreateCenterPanelWorkplace()
+        protected void CreateCenterPanelWorkplaces()
         {
-            GuiGrid gridCenterWorkplace = new GuiGrid() { Name = GuiNameGridCenterTop, Title = "Pracoviště" };
+            GuiGrid gridCenterWorkplaces = new GuiGrid() { Name = GuiNameGridCenterWorkplaces, Title = "Pracoviště" };
 
-            this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameRowsCenterTop);
-            gridCenterWorkplace.RowTable.RowCheckEnabled = false;
+            this.SetCenterGridProperties(gridCenterWorkplaces, true, true, true, true, GuiNameRowsCenterWorkplaces);
+            gridCenterWorkplaces.RowTable.RowCheckEnabled = false;
             // gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
             // gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
-            gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 100 };
-            gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 100 };
+            gridCenterWorkplaces.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 100 };
+            gridCenterWorkplaces.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 100 };
 
-            gridCenterWorkplace.GridProperties.MousePaintLink = this.CreateCenterPanelMousePaint();
+            gridCenterWorkplaces.GridProperties.MousePaintLink = this.CreateCenterPanelMousePaint();
 
-            gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
+            gridCenterWorkplaces.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
                 GuiChildRowsEvaluateMode.VisibleTimeOnly |
                 // K identifikátoru GroupId z Parent řádku najdeme shodný GroupId v Child řádku 
@@ -1373,13 +1430,13 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 // A navíc ty dva prvky musí mít společný čas:
                 GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
 
-            gridCenterWorkplace.GridProperties.ChildRowsTableName = GuiFullNameGridCenterBottom;
-            gridCenterWorkplace.GridProperties.ChildRowsCopyClassesMode =
+            gridCenterWorkplaces.GridProperties.ChildRowsTableName = GuiFullNameGridCenterPersons;
+            gridCenterWorkplaces.GridProperties.ChildRowsCopyClassesMode =
                 WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
                 WorkUnit.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
                 "0:N";                                // 0 = jiné třídy   : nepřenášet
 
-            gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
+            gridCenterWorkplaces.GridProperties.AddInteraction(new GuiGridInteraction()
             {
                 Name = GuiNameInteractionFilterProductOrder,
                 SourceAction = (SourceActionType.TimeAxisChanged | SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
@@ -1393,7 +1450,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Conditions = GuiNameToolbarFilterLeft
             });
 
-            gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
+            gridCenterWorkplaces.GridProperties.AddInteraction(new GuiGridInteraction()
             {
                 Name = GuiNameInteractionShowColorSet,
                 // Interakce deklarovaná v GuiGridu CenterTop, která po kliknutí v toolbaru zajistí aktivaci daného skinu.
@@ -1403,22 +1460,22 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
 
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
-                this.AddPlanUnitCToGridCenter(gridCenterWorkplace.RowTable, planUnitC, GridPositionType.Workplace);
+                this.AddPlanUnitCToGridCenter(gridCenterWorkplaces.RowTable, planUnitC, GridPositionType.Workplace);
 
             // Vztahy prvků (Link):
-            gridCenterWorkplace.RowTable.GraphLinks = new List<GuiGraphLink>();
+            gridCenterWorkplaces.RowTable.GraphLinks = new List<GuiGraphLink>();
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
-                productOrder.AddGuiGraphLinksTo(gridCenterWorkplace.RowTable.GraphLinks);
+                productOrder.AddGuiGraphLinksTo(gridCenterWorkplaces.RowTable.GraphLinks);
 
             // Chci zavolat, když uživatel zmáčkne Delete:
-            gridCenterWorkplace.ActiveKeys = new List<GuiKeyAction>();
-            gridCenterWorkplace.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
+            gridCenterWorkplaces.ActiveKeys = new List<GuiKeyAction>();
+            gridCenterWorkplaces.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
 
-            this.GridCenterWorkplace = gridCenterWorkplace;
-            this.MainPage.MainPanel.Grids.Add(gridCenterWorkplace);
+            this.GridCenterWorkplaces = gridCenterWorkplaces;
+            this.MainPage.MainPanel.Grids.Add(gridCenterWorkplaces);
         }
         /// <summary>
-        /// Vrátí definici pro ruční zakreslenování vztahů
+        /// Vrátí definici pro ruční zakreslování vztahů
         /// </summary>
         /// <returns></returns>
         private GuiMousePaintLink CreateCenterPanelMousePaint()
@@ -1438,14 +1495,14 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// </summary>
         protected void CreateCenterPanelPersons()
         {
-            GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterBottom, Title = "Pracovníci" };
+            GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterPersons, Title = "Pracovníci" };
 
-            this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameRowsCenterBottom);
+            this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameRowsCenterPersons);
             gridCenterPersons.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
             gridCenterPersons.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
             gridCenterPersons.RowTable.RowCheckEnabled = false;
             gridCenterPersons.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragActivePlusSelectedRows + " " + GuiGridProperties.RowDragSource_Root;
-            gridCenterPersons.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + ", " + GuiGridProperties.RowDragTarget_ToItem;
+            gridCenterPersons.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterWorkplaces + " " + GuiGridProperties.RowDragTarget_RowRoot + ", " + GuiGridProperties.RowDragTarget_ToItem;
 
             gridCenterPersons.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -1458,7 +1515,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 // A navíc ty dva prvky musí mít společný čas:
                 GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
 
-            gridCenterPersons.GridProperties.ChildRowsTableName = GuiFullNameGridCenterTop;
+            gridCenterPersons.GridProperties.ChildRowsTableName = GuiFullNameGridCenterWorkplaces;
             gridCenterPersons.GridProperties.ChildRowsCopyClassesMode =
                 WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
                 WorkUnit.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
@@ -1476,6 +1533,48 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             this.MainPage.MainPanel.Grids.Add(gridCenterPersons);
         }
         /// <summary>
+        /// Vygeneruje kompletní data do středního panelu do dolní dolní tabulky = Zdroje
+        /// </summary>
+        protected void CreateCenterPanelSources()
+        {
+            GuiGrid gridCenterSources = new GuiGrid() { Name = GuiNameGridCenterSources, Title = "Další zdroje" };
+
+            this.SetCenterGridProperties(gridCenterSources, true, true, true, true, GuiNameRowsCenterSources);
+            gridCenterSources.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
+            gridCenterSources.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
+            gridCenterSources.RowTable.RowCheckEnabled = false;
+            gridCenterSources.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragActivePlusSelectedRows + " " + GuiGridProperties.RowDragSource_Root;
+            gridCenterSources.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterWorkplaces + " " + GuiGridProperties.RowDragTarget_RowRoot + ", " + GuiGridProperties.RowDragTarget_ToItem;
+
+            gridCenterSources.GridProperties.ChildRowsEvaluate =
+                // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
+                GuiChildRowsEvaluateMode.VisibleTimeOnly |
+                // K identifikátoru GroupId z Parent řádku najdeme shodný GroupId v Child řádku 
+                //   (tzn. Child pracuje na stejné operaci, jako Parent):
+                GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup |
+                // Child věty budeme hledat v jiné tabulce (což znamená provést duplikát řádku!), a to pouze v jejích Root řádcích:
+                GuiChildRowsEvaluateMode.InOtherRootRowsOnly |
+                // A navíc ty dva prvky musí mít společný čas:
+                GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
+
+            gridCenterSources.GridProperties.ChildRowsTableName = GuiFullNameGridCenterWorkplaces;
+            gridCenterSources.GridProperties.ChildRowsCopyClassesMode =
+                WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
+                WorkUnit.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
+                "0:N";                                // 0 = jiné třídy   : nepřenášet
+
+            // Data tabulky = Plánovací jednotky Zdroje:
+            foreach (PlanUnitC planUnitC in this.SourceDict.Values)
+                this.AddPlanUnitCToGridCenter(gridCenterSources.RowTable, planUnitC, GridPositionType.Person);
+
+            // Chci zavolat, když uživatel zmáčkne Delete:
+            gridCenterSources.ActiveKeys = new List<GuiKeyAction>();
+            gridCenterSources.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
+
+            this.GridCenterSources = gridCenterSources;
+            this.MainPage.MainPanel.Grids.Add(gridCenterSources);
+        }
+        /// <summary>
         /// Vytvoří panel vpravo se zaměstnanci
         /// </summary>
         protected void CreateRightPanel()
@@ -1491,7 +1590,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             gridRight.GridProperties.RowDragMoveSource = GuiGridProperties.RowDragSource_DragSelectedThenActiveRow;
             // gridRight.GridProperties.RowDragMoveToTarget = GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItem;
             gridRight.GridProperties.RowDragMoveToTarget = 
-                GuiFullNameGridCenterTop + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItemClassPrefix + "1190";
+                GuiFullNameGridCenterWorkplaces + " " + GuiGridProperties.RowDragTarget_RowRoot + "," + GuiGridProperties.RowDragTarget_ToItemClassPrefix + "1190";
 
             gridRight.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridRight.GraphProperties.BottomMarginPixel = 2;
@@ -1761,8 +1860,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         protected GuiData MainData;
         protected GuiPage MainPage;
         protected GuiGrid GridLeft;
-        protected GuiGrid GridCenterWorkplace;
+        protected GuiGrid GridCenterWorkplaces;
         protected GuiGrid GridCenterPersons;
+        protected GuiGrid GridCenterSources;
         protected GuiGrid GridRight;
         protected DateTime DateTimeNow;
         protected DateTime DateTimeFirst;
@@ -1958,8 +2058,8 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             switch (gridName)
             {
                 case GuiFullNameGridLeft: return GridPositionType.ProductOrder;
-                case GuiFullNameGridCenterTop: return GridPositionType.Workplace;
-                case GuiFullNameGridCenterBottom: return GridPositionType.Person;
+                case GuiFullNameGridCenterWorkplaces: return GridPositionType.Workplace;
+                case GuiFullNameGridCenterPersons: return GridPositionType.Person;
                 case GuiFullNameGridRight: return GridPositionType.Employee;
             }
             return GridPositionType.None;
@@ -1990,6 +2090,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                     PlanUnitC planUnitC;
                     if (this.WorkplaceDict.TryGetValue(id, out planUnitC)) return planUnitC;
                     if (this.PersonDict.TryGetValue(id, out planUnitC)) return planUnitC;
+                    if (this.SourceDict.TryGetValue(id, out planUnitC)) return planUnitC;
                     break;
                 case WorkTime.ClassNumber:
                     WorkTime workTime;
@@ -2031,7 +2132,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                     if (resultW) this.WorkplaceDict.Remove(id);
                     bool resultP = (this.PersonDict.ContainsKey(id));
                     if (resultP) this.PersonDict.Remove(id);
-                    result = (resultW || resultP);
+                    bool resultS = (this.SourceDict.ContainsKey(id));
+                    if (resultS) this.SourceDict.Remove(id);
+                    result = (resultW || resultP || resultS);
                     break;
                 case WorkTime.ClassNumber:
                     result = (this.WorkTimeDict.ContainsKey(id));
@@ -2244,7 +2347,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             int machines = GetRandom(1, 1, 1, 2, 3);
             CalendarType calendar = GetRandom(CalendarType.Work5d1x8hR, CalendarType.Work5d1x8hO, CalendarType.Work5d1x8hR, CalendarType.Work5d1x8hO, CalendarType.Work5d2x8h);
 
-            PlanUnitC workplace = this.CreatePlanUnitCWp(name, wplc, tags, machines, calendar, null);
+            PlanUnitC workplace = this.CreatePlanUnitCWorkplace(name, wplc, tags, machines, calendar, null);
             this.DataChanged = true;
 
             // Pracoviště vygeneruje standardní řádek GUI:
@@ -2252,7 +2355,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
 
             // Řádky přidáme do response tak, aby se zařadily do tabulky uprostřed nahoře:
             guiResponse.RefreshRows = new List<GuiRefreshRow>() {
-                new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridCenterTop, RowId = row.RowGuiId }, RowData = row }
+                new GuiRefreshRow() { GridRowId = new GuiGridRowId() { TableName = GuiFullNameGridCenterWorkplaces, RowId = row.RowGuiId }, RowData = row }
                 };
         }
         /// <summary>
@@ -2650,8 +2753,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
-        protected const string GuiNameGridCenterTop = "GridCenterTop";
-        protected const string GuiNameGridCenterBottom = "GridCenterBottom";
+        protected const string GuiNameGridCenterWorkplaces = "GridCenterWorkplaces";
+        protected const string GuiNameGridCenterPersons = "GridCenterPersons";
+        protected const string GuiNameGridCenterSources = "GridCenterSources";
         protected const string GuiNameGridRight = "GridRight";
 
         protected const string GuiNameInteractionSelectOperations = "InteractionSelectOperations";
@@ -2659,15 +2763,17 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         protected const string GuiNameInteractionShowColorSet = "InteractionShowColorSet";
 
         protected const string GuiNameLeftRowTable = "RowsLeft";
-        protected const string GuiNameRowsCenterTop = "RowsCenterTop";
-        protected const string GuiNameRowsCenterBottom = "RowsCenterBottom";
+        protected const string GuiNameRowsCenterWorkplaces = "RowsCenterWorkplaces";
+        protected const string GuiNameRowsCenterPersons = "RowsCenterPersons";
+        protected const string GuiNameRowsCenterSources = "RowsCenterSources";
 
         protected const string GuiFullNameMainPage = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage;
         protected const string GuiFullNameLeftPanel = GuiFullNameMainPage + GuiNameDelimiter + GuiNameLeftPanel;
         protected const string GuiFullNameGridLeft = GuiFullNameLeftPanel + GuiNameDelimiter + GuiNameGridLeft;
         protected const string GuiFullNameMainPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameMainPanel;
-        protected const string GuiFullNameGridCenterTop = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterTop;
-        protected const string GuiFullNameGridCenterBottom = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterBottom;
+        protected const string GuiFullNameGridCenterWorkplaces = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterWorkplaces;
+        protected const string GuiFullNameGridCenterPersons = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterPersons;
+        protected const string GuiFullNameGridCenterSources = GuiFullNameMainPanel + GuiNameDelimiter + GuiNameGridCenterSources;
         protected const string GuiFullNameRightPanel = GuiFullNameMainPage + GuiNameDelimiter + GuiNameRightPanel;
         protected const string GuiFullNameGridRight = GuiFullNameRightPanel + GuiNameDelimiter + GuiNameGridRight;
 
@@ -3586,7 +3692,11 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <summary>
         /// Osoba
         /// </summary>
-        Person
+        Person,
+        /// <summary>
+        /// Zdroj
+        /// </summary>
+        Source
     }
     #endregion
     #region class WorkUnit : Pracovní jednotka = část práce na určité operaci na určitém pracovišti
