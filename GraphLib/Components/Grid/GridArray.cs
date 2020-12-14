@@ -69,19 +69,14 @@ namespace Asol.Tools.WorkScheduler.Components
             ((IInteractiveItem)grid).Parent = this;
             this._GridList.Add(grid);
 
-
             this._TabHeader.AddHeader(table.Title, table.Image, linkItem: grid);
-
-
         }
-
         #endregion
         #region Přepínání TabHeader, aktivní Grid
         /// <summary>
         /// Zobrazit tabulku i pro jeden Grid
         /// </summary>
         public bool ShowHeaderForOnlyTable;
-
         #endregion
         #region Draw, Interactivity, Childs
         /// <summary>

@@ -1336,7 +1336,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             else if (control is MainDataTable)
             {
                 MainDataTable mainDataTable = control as MainDataTable;
-                mainDataTable.TableRow.IsVisible = isVisible;
+                mainDataTable.TableRow.Visible = isVisible;
                 callRefresh = true;
             }
             else if (control is ToolBarItem)

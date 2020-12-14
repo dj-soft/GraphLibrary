@@ -155,7 +155,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._GridVoidBounds2 = new Rectangle(x2r, y2, x3 - x2r, y3 - y2);
 
             // Invalidace závislých prvků:
-            this._TablesVisible = null;
+            this._TablesVisibleCurrent = null;
             this._TablesScrollBarDataValid = false;
             this._ColumnsScrollBarDataValid = false;
             this._ChildArrayValid = false;
@@ -318,12 +318,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="args"></param>
         protected void TableAdded(EList<GTable>.EListAfterEventArgs args)
         {
-            IGridMember igm = args.Item as IGridMember;
+            GTable gTable = args.Item;
+            IGridMember iGridMember = gTable as IGridMember;
             int id = this._TableID++;
-            if (igm != null)
+            if (iGridMember != null)
             {
-                igm.GGrid = this;
-                igm.Id = id;
+                iGridMember.GGrid = this;
+                iGridMember.Id = id;
             }
             this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
         }
@@ -354,11 +355,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="args"></param>
         protected void TableRemoved(EList<GTable>.EListAfterEventArgs args)
         {
-            IGridMember igm = args.Item as IGridMember;
-            if (igm != null)
+            IGridMember iGridMember = args.Item as IGridMember;
+            if (iGridMember != null)
             {
-                igm.GGrid = null;
-                igm.Id = -1;
+                iGridMember.GGrid = null;
+                iGridMember.Id = -1;
             }
             this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
         }
@@ -467,7 +468,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     Dictionary<int, GridColumn> allColumnDict = new Dictionary<int, GridColumn>();        // Všechny sloupce z viditelných tabulek
                     foreach (GTable table in this._Tables)
                     {
-                        if (table.DataTable == null || !table.DataTable.IsVisible) continue;              // Neviditelné tabulky nebudu vůbec řešit
+                        if (table.DataTable == null || !table.DataTable.Visible) continue;              // Neviditelné tabulky nebudu vůbec řešit
                         foreach (Column column in table.DataTable.Columns)
                         {
                             int columnId = column.ColumnId;
@@ -803,10 +804,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private int _TablesPositionGetDataSize()
         {
-            return this.TablesAllDataSize;
+            return this.TablesVisibleDataSize;
         }
         /// <summary>
-        /// Metoda je volána poté, kdy dojde ke změně výšky tabulky, a Grid by měl reagovat v případě potřeby změnou výšky okolních tabulek, aby byl zajištěn režim AutoSize
+        /// Metoda je volána poté, kdy dojde ke změně výšky tabulky, a Grid by měl reagovat v případě potřeby změnou výšky okolních tabulek, aby byl zajištěn režim AutoSize.
+        /// Tato metoda "není líná jako celý GGrid", protože rovnou dopočítá výšky ostatních tabulek v TablesVisible (=nečeká až na přepočet "až to bude nutné").
+        /// Tento dopočet je vhodný k tomu, aby Splitter (který Resize provádí) mohl reagovat na krajní meze přesunu a mohl tedy omezovat pohyb spliteru v rámci Gridu.
         /// </summary>
         /// <param name="gTable"></param>
         /// <param name="heightOld">Původní výška tabulky před změnou</param>
@@ -815,28 +818,38 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.TablesHasAutoSize)
             {   // Pokud máme režim AutoSize u tabulek v Gridu, pak změna výšky tabulky 01 se projeví jako opačná změna u tabulky 02:
-                ISequenceLayout nearTable = this.Tables.GetNearestItem(gTable) as ISequenceLayout;
+                // Protože poslední tabulka v řadě nemá Resize splitter (dolní jej nemívá), pak nearTable bude tabulka následující za gTable:
+                var tablesVisible = this.TablesVisible;
+                GTable nearTable = tablesVisible.GetNearestItem(gTable);
                 if (nearTable != null)
-                    nearTable.Size = nearTable.Size - (heightNew - heightOld);
+                {
+                    ISequenceLayout nearItem = nearTable as ISequenceLayout;
+                    int oldSize = nearItem.Size;
+                    int newSize = oldSize - (heightNew - heightOld);
+                    string sequence = this.TablesVisibleSequenceHeight;
+                    Application.Log.AddInfo(this.GetType(), "TableHeightChanged", "Grid.SequenceHeight(After) = " + sequence, "HasNearTable", "NearTable.Size(Before) = " + oldSize.ToString(), "NearTable.Size(After) = " + newSize.ToString());
+                    // nearItem.Size = newSize;
+
+                    _TablesPositionCalculateAutoSize(fixedTable: gTable, variableTable: nearTable);
+                }
             }
             this.Invalidate(InvalidateItem.TableHeight);
         }
         /// <summary>
-        /// Umožní tabulkám aplikovat jejich AutoSize (pokud některá tabulka tuto vlastnost má), pro aktuální výšku viditelné oblasti
-        /// </summary>
-        private void _TablesPositionCalculateAutoSize()
-        {
-            int height = this.ClientSize.Height - GScrollBar.DefaultSystemBarHeight;
-            this._TablesPositionCalculateAutoSize(height);
-        }
-        /// <summary>
         /// Umožní tabulkám aplikovat jejich AutoSize (pokud některá tabulka tuto vlastnost má), pro danou výšku viditelné oblasti
         /// </summary>
-        /// <param name="height">Výška prostoru pro tabulky</param>
-        private void _TablesPositionCalculateAutoSize(int height)
+        /// <param name="tablesHeight">Výška prostoru pro tabulky</param>
+        /// <param name="implicitAutoSize"></param>
+        /// <param name="fixedTable">Tabulka, jejíž velikost bychom neradi měnili (anebo až jako poslední možnost)</param>
+        /// <param name="variableTable">Tabulka, jejíž velikost bychom rádi upravili v první řadě (nehledě na příznak AutoSize)</param>
+        private void _TablesPositionCalculateAutoSize(int? tablesHeight = null, ImplicitAutoSizeType? implicitAutoSize = null, GTable fixedTable = null, GTable variableTable = null)
         {
             if (!this.TablesHasAutoSize) return;
-            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Tables, height, GTable.TableSplitterSize, this.TablesAutoSize);
+            int targetHeight = (tablesHeight ?? DefaultTablesHeight);
+            ImplicitAutoSizeType autoSize = implicitAutoSize ?? this.TablesAutoSize;
+
+            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.TablesVisible, targetHeight, GTable.TableSplitterSize, autoSize, fixedTable, variableTable);
+            Application.Log.AddInfo(this.GetType(), "_TablesPositionCalculateAutoSize", "Grid.SequenceHeight(After) = " + this.TablesVisibleSequenceHeight, "totalHeight = " + targetHeight.ToString(), "isChanged = " + isChanged.ToString());
             if (isChanged)
                 this.Invalidate(InvalidateItem.TableHeight);
         }
@@ -844,6 +857,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// true pokud existuje nějaká tabulka s vlastností <see cref="ISequenceLayout.AutoSize"/> = true,
         /// anebo pokud režim <see cref="TablesAutoSize"/> je <see cref="ImplicitAutoSizeType.FirstItem"/> nebo <see cref="ImplicitAutoSizeType.LastItem"/>.
         /// Pokud je true, pak poslední tabulka nemá mít svůj dolní splitter, protože jeho chování v AutoSize gridu je nevhodné.
+        /// <para/>
+        /// Při <see cref="TablesHasAutoSize"/> = true se Grid chová tak, že při Resize některé z tabulek (pomocí jejího Splitteru) najde nejbližší tabulku, která se smí resizovat, 
+        /// a upraví její výšku tak, aby vytvořila prostor pro aktuálně resizovanou tabulku. V podstatě se vždy resizuje tabulka pod aktuální tabulkou.
         /// </summary>
         protected bool TablesHasAutoSize { get { return ((this.TablesAutoSize == ImplicitAutoSizeType.FirstItem || this.TablesAutoSize == ImplicitAutoSizeType.LastItem) || this.Tables.Any(t => ((ISequenceLayout)t).AutoSize)); } }
         /// <summary>
@@ -859,80 +875,105 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Invalidate(InvalidateItem.GridTablesScroll);
         }
         /// <summary>
-        /// Soupis všech grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Soupis všech potenciálně viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Potenciálně viditelná = aktuálně nemusí být vidět, ale může se na ni nascrollovat. Neobsahuje tedy tabulky, jejichž IsVisible je false.
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
         /// Invalidace seznamu se provádí metodou Invalidate(), ta se má volat po těchto akcích:
-        /// Změna pořadí tabulek, Změna počtu tabulek.
+        /// Změna pořadí tabulek, Změna počtu tabulek, Změna IsVisible tabulek.
         /// Nemusí se volat při posunech svislého scrollbaru ani při resize gridu, ani při změně výšky tabulek!
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
-        protected GTable[] TablesAll { get { this._TablesAllCheck(); return this._TablesAll; } }
+        protected GTable[] TablesVisible { get { this._TablesVisibleCheck(); return this._TablesVisible; } }
         /// <summary>
-        /// Součet velikostí (Height) všech tabulek v gridu
+        /// Stringem vyjádřené souřadnice viditelných tabulek v ose Y (Top, Height, Bottom)
         /// </summary>
-        protected int TablesAllDataSize { get { this._TablesAllDataSizeCheck(); return this._TablesAllDataSize.Value; } }
+        internal string TablesVisibleSequenceHeight
+        {
+            get
+            {
+                var tablesVisible = this._TablesVisible;
+                if (tablesVisible == null) return "NULL";
+                string result = "";
+                for (int t = 0; t < tablesVisible.Length; t++)
+                {
+                    var table = tablesVisible[t];
+                    var bounds = table.Bounds;
+                    result += $"[{t}]: T={bounds.Top},H={bounds.Height},B={bounds.Bottom}; ";
+                }
+                return result;
+            }
+        }
         /// <summary>
-        /// Soupis viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End (=datová oblast).
+        /// Součet velikostí (Height) všech tabulek v gridu.
+        /// Jde o počet datových pixelů kolekce <see cref="TablesVisible"/>, 
+        /// je určeno při nápočtu <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> pro pole tabulek <see cref="TablesVisible"/>.
+        /// </summary>
+        protected int TablesVisibleDataSize { get { this._TablesVisibleDataSizeCheck(); return this._TablesVisibleDataSize.Value; } }
+        /// <summary>
+        /// Soupis aktuálně viditelných grafických objektů tabulek (viditelný = právě je zobrazeno prostoru v Gridu, nejsou zde tedy tabulky odscrollované dole nebo nahoře),
+        /// setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End (=datová oblast).
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
         /// Tabulky mají korektně napočtenou hodnotu VisualRange = vizuální pozice na ose Y v rámci Gridu.
         /// Invalidace seznamu se provádí metodou Invalidate(), ta se má volat po těchto akcích:
         /// Invalidace Scroll nebo Resize tabulek.
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
-        protected GTable[] TablesVisible { get { this._TablesVisibleCheck(); return this._TablesVisible; } }
+        internal GTable[] TablesVisibleCurrent { get { this._TablesVisibleCurrentCheck(); return this._TablesVisibleCurrent; } }
         /// <summary>
-        /// Ověří a zajistí připravenost pole TablesAll
-        /// </summary>
-        private void _TablesAllCheck()
-        {
-            GTable[] tables = this._TablesAll;
-            if (tables == null)
-            {   // Tabulky v TablesAll mají být sice VŠECHNY, ale jen ty všechny, které se uživateli mohou zobrazit při vhodném scrollování gridu nahoru/dolů.
-                //  Proto v nich NESMÍ být tabulky, které jsou označeny jako IsVisible = false.
-                List<GTable> tableList = this._Tables.Where(t => t.Is.Visible).ToList();
-                if (tableList.Count > 1)
-                    tableList.Sort(GTable.CompareOrder);
-                tables = tableList.ToArray();
-                this._TablesAll = tables;
-                this._TablesAllDataSize = null;
-            }
-            if (!this._TablesAllDataSize.HasValue)
-            {
-                this._TablesAllDataSize = SequenceLayout.SequenceLayoutCalculate(tables, GTable.TableSplitterSize);
-                this._TablesVisible = null;
-            }
-        }
-        /// <summary>
-        /// Ověří a zajistí připravenost hodnoty TablesAllDataSize
-        /// </summary>
-        private void _TablesAllDataSizeCheck()
-        {
-            if (this._TablesAllDataSize.HasValue) return;
-
-            GTable[] tables = this._TablesAll;
-            if (tables == null)
-            {   // Protože není platná ani kolekce tabulek, předáme to tam:
-                this._TablesAllCheck();
-            }
-            else
-            {   // Kolekce tabulek je OK, pouze přepočteme SequenceLayoutCalculate a tím určíme this._TablesAllDataSize:
-                this._TablesAllDataSize = SequenceLayout.SequenceLayoutCalculate(tables, GTable.TableSplitterSize);
-                this._TablesVisible = null;
-            }
-        }
-        /// <summary>
-        /// Ověří a zajistí připravenost pole TablesVisible
+        /// Ověří a zajistí připravenost pole <see cref="TablesVisible"/> a hodnoty <see cref="_TablesVisibleDataSize"/>.
         /// </summary>
         private void _TablesVisibleCheck()
         {
-            if (this._TablesVisible != null) return;
+            GTable[] tablesVisible = this._TablesVisible;
+            if (tablesVisible == null)
+            {   // Tabulky v TablesVisible mají být sice VŠECHNY, ale jen ty všechny, které se uživateli mohou zobrazit při vhodném scrollování gridu nahoru/dolů.
+                //  Proto v nich NESMÍ být tabulky, které jsou označeny jako IsVisible = false:
+                List<GTable> tableList = this._Tables.Where(t => t.Is.Visible).ToList();
+                if (tableList.Count > 1)
+                    tableList.Sort(GTable.CompareOrder);
+                tablesVisible = tableList.ToArray();
+                this._TablesVisible = tablesVisible;
+                this._TablesVisibleDataSize = null;
+            }
+            if (!this._TablesVisibleDataSize.HasValue)
+            {
+                this._TablesVisibleDataSize = SequenceLayout.SequenceLayoutCalculate(tablesVisible, GTable.TableSplitterSize);
+                Application.Log.AddInfo(this.GetType(), "_TablesVisibleCheck", "Grid.SequenceHeight(After) = " + this.TablesVisibleSequenceHeight);
+                this._TablesVisibleCurrent = null;
+            }
+        }
+        /// <summary>
+        /// Ověří a zajistí připravenost hodnoty <see cref="TablesVisibleDataSize"/>
+        /// </summary>
+        private void _TablesVisibleDataSizeCheck()
+        {
+            if (this._TablesVisibleDataSize.HasValue) return;
+
+            GTable[] tables = this._TablesVisible;
+            if (tables == null)
+            {   // Protože není platná ani kolekce tabulek, předáme to tam:
+                this._TablesVisibleCheck();
+            }
+            else
+            {   // Kolekce tabulek je OK, pouze přepočteme SequenceLayoutCalculate a tím určíme this._TablesAllDataSize:
+                this._TablesVisibleDataSize = SequenceLayout.SequenceLayoutCalculate(tables, GTable.TableSplitterSize);
+                Application.Log.AddInfo(this.GetType(), "_TablesVisibleDataSizeCheck", "Grid.SequenceHeight(After) = " + this.TablesVisibleSequenceHeight);
+                this._TablesVisibleCurrent = null;
+            }
+        }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole <see cref="TablesVisibleCurrent"/>
+        /// </summary>
+        private void _TablesVisibleCurrentCheck()
+        {
+            if (this._TablesVisibleCurrent != null) return;
 
             List<GTable> visibleTables = new List<GTable>();
             GridPosition tablesPositions = this.TablesPositions;
             Int32Range dataVisibleRange = tablesPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
-            foreach (GTable table in this.TablesAll)
+            foreach (GTable table in this.TablesVisible)
             {
-                if (table.DataTable.IsVisible)
+                if (table.DataTable.Visible)
                 {
                     ISequenceLayout isl = table as ISequenceLayout;
                     bool isTableVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tato tabulka je vidět?
@@ -941,21 +982,24 @@ namespace Asol.Tools.WorkScheduler.Components
                         visibleTables.Add(table);
                 }
             }
-            this._TablesVisible = visibleTables.ToArray();
+            this._TablesVisibleCurrent = visibleTables.ToArray();
+
+            Application.Log.AddInfo(this.GetType(), "_TablesVisibleCurrentCheck", "Grid.SequenceHeight(After) = " + this.TablesVisibleSequenceHeight);
         }
         /// <summary>
-        /// Cache kolekce TablesAll
-        /// </summary>
-        private GTable[] _TablesAll;
-        /// <summary>
-        /// Počet datových pixelů kolekce _TablesAll, je určeno při nápočtu SequenceLayoutCalculate().
-        /// Pokud je null, pak není platný tento nápočet a je nutno jej přepočítat znovu.
-        /// </summary>
-        private int? _TablesAllDataSize;
-        /// <summary>
-        /// Cache kolekce TablesVisible
+        /// Cache kolekce <see cref="TablesVisible"/>
         /// </summary>
         private GTable[] _TablesVisible;
+        /// <summary>
+        /// Počet datových pixelů kolekce <see cref="TablesVisible"/>, 
+        /// je určeno při nápočtu <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> pro pole tabulek <see cref="TablesVisible"/>.
+        /// Pokud je null, pak není platný tento nápočet a je nutno jej přepočítat znovu.
+        /// </summary>
+        private int? _TablesVisibleDataSize;
+        /// <summary>
+        /// Cache kolekce <see cref="TablesVisibleCurrent"/>
+        /// </summary>
+        private GTable[] _TablesVisibleCurrent;
         /// <summary>
         /// Svislý Scrollbar pro posouvání pole tabulek nahoru/dolů (nikoli jejich řádků, na to má každá tabulka svůj vlastní Scrollbar).
         /// </summary>
@@ -1212,6 +1256,8 @@ namespace Asol.Tools.WorkScheduler.Components
             // Pokud bude nastaven tento bit OnlyForTable, znamená to, že tuto invalidaci rozeslal Grid do podřízených tabulek, a některá podřízená tabulka ji poslala zase do Gridu.
             if (items.HasFlag(InvalidateItem.OnlyForTable)) return;
 
+            Application.Log.AddInfo(this.GetType(), nameof(Invalidate), "Grid.SequenceHeight(After) = " + this.TablesVisibleSequenceHeight, "InvalidateItems = " + items.ToString());
+
             bool callTables = false;
             bool repaint = false;
 
@@ -1225,22 +1271,23 @@ namespace Asol.Tools.WorkScheduler.Components
             if (items.HasFlag(InvalidateItem.GridTablesChange))
             {
                 this._TableInnerLayoutValid = false;
-                this._TablesAll = null;
+                this._TablesVisible = null;
                 this._ChildArrayValid = false;
                 repaint = true;
             }
             if (items.HasFlag(InvalidateItem.TableHeight))
-            {
+            {   // Sem přijdu, když se změní výška nebo viditelnost některé z mých tabulek:
                 this._TableInnerLayoutValid = false;
-                this._TablesAllDataSize = null;
+                this._TablesVisibleDataSize = null;
                 this._TablesVisible = null;
+                this._TablesVisibleCurrent = null;
                 this._ChildArrayValid = false;
                 repaint = true;
                 callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridTablesScroll))
             {
-                this._TablesVisible = null;
+                this._TablesVisibleCurrent = null;
                 this._ChildArrayValid = false;
             }
             if (items.HasFlag(InvalidateItem.GridColumnsChange))
@@ -1304,7 +1351,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void _ChildItemsAddTables()
         {
             Rectangle tablesBounds = this.TablesBounds;
-            GTable[] tables = this.TablesVisible;
+            GTable[] tables = this.TablesVisibleCurrent;
             int count = tables.Length;
             for (int i = 0; i < count; i++)
             {
@@ -1337,7 +1384,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void _ChildItemsAddTableSplitters()
         {
             Rectangle tablesBounds = this.TablesBounds;
-            GTable [] tables = this.TablesVisible;
+            GTable [] tables = this.TablesVisibleCurrent;
             int count = tables.Length;
             // Pokud Grid má tabulky v režimu AutoSize, pak poslední tabulka gridu nebude mít svůj TableSplitter. Chování Gridu s ním by bylo nevhodné!
             if (this.TablesHasAutoSize)
@@ -1414,6 +1461,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výchozí šířka sloupce RowHeader
         /// </summary>
         public static int DefaultRowHeaderWidth { get { return 32; } }
+        /// <summary>
+        /// Výška prostoru pro tabulky určená jako (<see cref="InteractiveObject.ClientSize"/>.Height - <see cref="GScrollBar.DefaultSystemBarHeight"/>)
+        /// </summary>
+        protected int DefaultTablesHeight { get { return (this.ClientSize.Height - GScrollBar.DefaultSystemBarHeight); } }
         #endregion
     }
     #region class GridColumn : Třída popisující jeden sloupec Gridu
@@ -1611,9 +1662,9 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class GridPosition : Třída, která řídí zobrazení většího obsahu dat (typicky sada řádků) v omezeném prostoru Controlu (typicky Grid, Tabulka)
+    #region class GridPosition : Třída, která řídí zobrazení většího obsahu dat (typicky sada tabulek) v omezeném prostoru Controlu (typicky Grid, Tabulka)
     /// <summary>
-    /// GridPosition : Třída, která řídí zobrazení většího obsahu dat (typicky sada řádků) v omezeném prostoru Controlu (typicky Grid, Tabulka),
+    /// GridPosition : Třída, která řídí zobrazení většího obsahu dat (typicky sada tabulek) v omezeném prostoru Controlu (typicky Grid, Tabulka),
     /// kde část prostoru je vyhrazena pro záhlaví, další část pro data a další část pro zápatí.
     /// Prostor pro data je typicky spojen se Scrollbarem, do kterého se promítá poměr viditelné části ku celkovému množství dat, a aktuální pozice dat.
     /// Tato třída eviduje: velikost záhlaví (=vizuální začátek dat), velikost prostoru pro data, počáteční logickou pozici dat (od kterého pixelu jsou data viditelná),

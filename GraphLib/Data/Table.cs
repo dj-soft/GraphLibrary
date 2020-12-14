@@ -1002,14 +1002,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// true pro viditelnou tabulku (default), false pro skrytou
         /// </summary>
-        public bool IsVisible
+        public bool Visible
         {
             get { return this.TableSize.Visible; }
             set
             {
-                bool oldValue = this.IsVisible;
+                bool oldValue = this.Visible;
                 this.TableSize.Visible = value;
-                bool newValue = this.IsVisible;
+                bool newValue = this.Visible;
                 if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.InvalidateData(InvalidateItem.TableHeight);
             }
@@ -1274,22 +1274,22 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Layouty (výšky, šířky, rozmezí) : kořenové hodnoty uložené na tabulce
         /// <summary>
-        /// Koordinátor výšky tabulky
+        /// Koordinátor výšky tabulky (celá výška tabulky včetně záhlaví)
         /// </summary>
         internal ItemSizeInt TableSize { get { if (this._TableSize == null) this._TableSize = new ItemSizeInt(60, 300, 4000); return this._TableSize; } }
         private ItemSizeInt _TableSize;
         /// <summary>
-        /// Koordinátor výšky prostoru ColumnHeader
+        /// Koordinátor výšky prostoru ColumnHeader (hlavička sloupce = nahoře)
         /// </summary>
         internal ItemSizeInt HeaderColumnSize { get { if (this._HeaderColumnSize == null) this._HeaderColumnSize = new ItemSizeInt(20, 45, 160); return this._HeaderColumnSize; } }
         private ItemSizeInt _HeaderColumnSize;
         /// <summary>
-        /// Koordinátor výšky prostoru ColumnHeader
+        /// Koordinátor šířky prostoru RowHeader (záhlaví řádku = vlevo)
         /// </summary>
         internal ItemSizeInt HeaderRowSize { get { if (this._HeaderRowSize == null) this._HeaderRowSize = new ItemSizeInt(20, 35, 120); return this._HeaderRowSize; } }
         private ItemSizeInt _HeaderRowSize;
         /// <summary>
-        /// Koordinátor výšky řádku
+        /// Koordinátor výšky řádku (implicitní výška řádku)
         /// </summary>
         internal ItemSizeInt RowSize { get { if (this._RowSize == null) this._RowSize = new ItemSizeInt(8, 24, 512); return this._RowSize; } }
         private ItemSizeInt _RowSize;

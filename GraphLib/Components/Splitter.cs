@@ -891,7 +891,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         int location = this._GetValue(e.UserDragPoint.Value, this.Orientation);
                         // e.RepaintAllItems =  ... 
                         repaintParent = this.SetSplitter(null, location, null, null, null, null, null, 
-                            DragResponseType.InDragMove, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.ApplicationCode);
+                            DragResponseType.InDragMove, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.InteractiveChanging);
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMoveCancel:
@@ -899,13 +899,15 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         int location = this._GetValue(this._LocationOriginal.Value, this.Orientation);
                         // e.RepaintAllItems =  ...
-                        repaintParent = this.SetSplitter(null, location, null, null, null, null, null, DragResponseType.AfterDragEnd);
+                        repaintParent = this.SetSplitter(null, location, null, null, null, null, null, 
+                            DragResponseType.AfterDragEnd, ProcessAction.DragValueActions, EventSourceType.ValueChange | EventSourceType.InteractiveChanged);
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMoveDone:
                     // To call "ValueChanged" events we must accept "_LocationOriginal" as LocationOriginal:
                     // e.RepaintAllItems =  ...
-                    repaintParent = this.SetSplitter(null, this.Value, null, null, null, null, this._LocationOriginal, DragResponseType.AfterDragEnd);
+                    repaintParent = this.SetSplitter(null, this.Value, null, null, null, null, this._LocationOriginal, 
+                        DragResponseType.AfterDragEnd, ProcessAction.DragValueActions, EventSourceType.ValueChange | EventSourceType.InteractiveChanged);
                     break;
                 case GInteractiveChangeState.LeftDragMoveEnd:
                     this._LocationOriginal = null;

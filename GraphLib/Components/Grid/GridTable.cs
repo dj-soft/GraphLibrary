@@ -50,6 +50,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void InitInteractive()
         {
             this.Is.Set(InteractiveProperties.Bit.DefaultMouseProperties | InteractiveProperties.Bit.KeyboardInput);
+            // Přesměruji údaj Is.GetVisible tohoto grafického objektu na odpovídající hodnotu datového řádku:
+            this.Is.GetVisible = this._GetVisible;
+            this.Is.SetVisible = this._SetVisible;
         }
         void IDisposable.Dispose()
         {
@@ -61,6 +64,17 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._SetTableOrder();
             this._DataTable = null;
         }
+        /// <summary>
+        /// Metoda vrací viditelnost tabulky, hodnotu načítá z datového objektu z <see cref="Table.Visible"/>
+        /// </summary>
+        /// <param name="isVisible"></param>
+        /// <returns></returns>
+        private bool _GetVisible(bool isVisible) { return this._DataTable.Visible; }
+        /// <summary>
+        /// Metoda nastavuje viditelnost řádku, hodnotu vepisuje do datového objektu do <see cref="Table.Visible"/>
+        /// </summary>
+        /// <param name="isVisible"></param>
+        private void _SetVisible(bool isVisible) { this._DataTable.Visible = isVisible; }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -1717,16 +1731,47 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         private void _TableSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
-            // Vypočteme výšku tabulky:
+            // Tato metoda obhospodařuje události ValueChanging i ValueChanged; ale při Interaktivní změně hodnoty vynecháváme konec interaktivního pohybu:
+            //   Důvod? Reagovali jsme průběžně (na InteractiveChanging), ale v události InteractiveChanged je hodnota (e.NewValue - e.OldValue) vztažena k výchozí pozici Splitteru (na začátku pohybu)
+            //     a na to tady nejsme připraveni...
+            if (e.EventSource.HasFlag(EventSourceType.InteractiveChanged)) return;
+            int offset = e.OldValue - this.Bounds.Bottom;  // O kolik pixelů je posunutá hodnota Splitteru (původní Value) proti Bottom tabulky = půl šířky splitteru?
+
             int heightOld = this.DataTable.Height;
-            int value = this._TableSplitter.Value - this.Bounds.Top;
-            this.DataTable.Height = value;                 // Tady dojde ke kompletnímu vyhodnocení vnitřních pravidel pro výšku Table (Minimum, Default, Range)
+            Application.Log.AddInfo(this.GetType(), "TableSplitter.LocationChange", "Grid.SequenceHeight(Before) = " + this.Grid.TablesVisibleSequenceHeight, "heightOld = " + heightOld.ToString());
+
+            int delta = e.NewValue - e.OldValue;           // Rozdíl v hodnotě
+            int height = heightOld + delta;
+            this.DataTable.Height = height;                // Tady dojde ke kompletnímu vyhodnocení vnitřních pravidel pro výšku Table (Minimum, Default, Range)
             int heightNew = this.DataTable.Height;
-            e.CorrectValue = heightNew;                    // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
+
+            if (heightNew != heightOld && this.Grid != null)
+            {   // Tabulka sama novou výšku akceptovala; musíme ji protlačit do Gridu:
+                this.Grid.TableHeightChanged(this, heightOld, heightNew);      // Tady proběhne invalidace výšky
+                var tablesCurrent = this.Grid.TablesVisibleCurrent;            // Tady proběhne validace souřadnic Y pro viditelné tabulky
+                int valueNew = this.Bounds.Bottom + offset;                    // Tady by měl býti Splitter (=jeho Value) po všech validacích výšek GTable uvnitř GGridu
+                e.CorrectValue = valueNew;
+            }
+
+            Application.Log.AddInfo(this.GetType(), "TableSplitter.LocationChange", "Grid.SequenceHeight(After) = " + this.Grid.TablesVisibleSequenceHeight, "heightNew = " + heightNew.ToString());
+
+
+            /*
+            // Vypočteme výšku tabulky - pozice splitteru (_TableSplitter) je na dolním okraji tabulky, a řídí výšku tabulky = relativně k její pozici Top:
+            int tableTop = this.Bounds.Top;
+            int heightOld = this.DataTable.Height;
+            Application.Log.AddInfo(this.GetType(), "TableSplitter.LocationChange", "Grid.SequenceHeight(Before) = " + this.Grid.TablesVisibleSequenceHeight, "heightOld = " + heightOld.ToString());
+
+            int height = this._TableSplitter.Value - tableTop;
+            this.DataTable.Height = height;                // Tady dojde ke kompletnímu vyhodnocení vnitřních pravidel pro výšku Table (Minimum, Default, Range)
+            int heightNew = this.DataTable.Height;
+            e.CorrectValue = tableTop + heightNew;         // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
                 this.Grid.TableHeightChanged(this, heightOld, heightNew);
             }
+            Application.Log.AddInfo(this.GetType(), "TableSplitter.LocationChange", "Grid.SequenceHeight(After) = " + this.Grid.TablesVisibleSequenceHeight, "heightNew = " + heightNew.ToString());
+            */
         }
         /// <summary>
         /// TableSplitter = Splitter dole pod tabulkou.

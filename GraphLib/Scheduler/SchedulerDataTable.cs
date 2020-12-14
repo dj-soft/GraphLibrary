@@ -104,6 +104,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.TableName = this.GuiGrid.FullName;
             this.TableRow = Table.CreateFrom(this.GuiGrid.RowTable);
+            this.TableRow.TableName = this.GuiGrid.FullName;
             this.TableRow.CalculateBoundsForAllRows = true;
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.KeyboardKeyUp += TableRow_KeyboardKeyUp;
@@ -209,6 +210,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 GTable gTableRow = this.GTableRow;
                 GuiGridProperties gridProperties = this.GuiGrid.GridProperties;
+                gTableRow.DataTable.Visible = gridProperties.Visible;
                 gTableRow.TagFilterBackColor = gridProperties.TagFilterBackColor;
                 gTableRow.TagFilterEnabled = gridProperties.TagFilterEnabled;
                 gTableRow.TagFilterItemHeight = gridProperties.TagFilterItemHeight;

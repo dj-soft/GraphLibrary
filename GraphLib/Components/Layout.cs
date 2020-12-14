@@ -429,7 +429,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Int32? Size
         {
-            get { return (this._Size.HasValue ? this._ItemSize.AlignSize(this._Size.Value) : this._ItemSize.Size.Value); }
+            get
+            {
+                int size = this._ItemSize.Size ?? this._Size ?? 0;
+                return size;
+                //return this._ItemSize.Size;
+                //Int32? size = this._ItemSize?.Size;
+                //if (!size.HasValue)
+                //return (this._Size.HasValue ? this._ItemSize.AlignSize(this._Size.Value) : this._ItemSize.Size.Value);
+            }
             set { this._Size = value; if (value.HasValue) this._ItemSize.Size = value; }
         }
         /// <summary>
@@ -549,10 +557,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="visualSize">Cílová sumární velikost</param>
         /// <param name="spacing">Mezera mezi prvky</param>
         /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <param name="fixedItem">Prvek, který by se měl resizovat až když nebude jiná možnost (například proto, že tento prvek právě resizuje uživatel interaktivně)</param>
+        /// <param name="variableItem">Prvek, který by se měl resizovat jako první</param>
         /// <returns></returns>
-        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing = 0, ImplicitAutoSizeType implicitAutoSize = ImplicitAutoSizeType.None)
+        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing = 0, ImplicitAutoSizeType implicitAutoSize = ImplicitAutoSizeType.None, 
+            ISequenceLayout fixedItem = null, ISequenceLayout variableItem = null)
         {
-            return _AutoSizeLayoutCalculate(items, visualSize, spacing, implicitAutoSize);
+            return _AutoSizeLayoutCalculate(items, visualSize, spacing, implicitAutoSize, fixedItem, variableItem);
         }
         /// <summary>
         /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
@@ -564,37 +575,57 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="visualSize">Cílová sumární velikost</param>
         /// <param name="spacing">Mezera mezi prvky</param>
         /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <param name="fixedItem">Prvek, který by se měl resizovat až když nebude jiná možnost (například proto, že tento prvek právě resizuje uživatel interaktivně)</param>
+        /// <param name="variableItem">Prvek, který by se měl resizovat jako první</param>
         /// <returns></returns>
-        private static bool _AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
+        private static bool _AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize, 
+            ISequenceLayout fixedItem, ISequenceLayout variableItem = null)
         {
+            if (items == null) return false;
+
             ISequenceLayout[] array = items.ToArray();
             int count = array.Length;
             if (count == 0) return false;
 
+            // Explicitně dodané prvky:
+            ISequenceLayout currentFixedItem = null;
+            bool hasFixedItem = false;
+            bool isFixedItemInVarList = false;
+            ISequenceLayout currentVariableItem = null;
+            bool hasVariableItem = false;
+
             // Nejprve projdu všechny vstupní prvky, oddělím prvky s AutoSize = true, sečtu jejich Size zvlášť za Fixní a zvlášť za Variabilní:
-            List<ISequenceLayout> itemsVarList = new List<ISequenceLayout>();
-            int sizeSumFix = 0;
-            int sizeSumVar = 0;
-            int sizeOneSpc = (spacing < 0 ? 0 : spacing);
-            int sizeSumSpc = 0;
+            List<ISequenceLayout> variableItems = new List<ISequenceLayout>();
+            int fixedSize = 0;
+            int currentSize = 0;
+            int spaceSizeOne = (spacing < 0 ? 0 : spacing);
+            int spaceSize = 0;
             foreach (ISequenceLayout item in items)
             {
-                if (item.AutoSize)
-                {
-                    sizeSumVar += item.Size;
-                    itemsVarList.Add(item);
+                bool isFixedItem = (!hasFixedItem && fixedItem != null && currentFixedItem == null && Object.ReferenceEquals(item, fixedItem));
+                if (isFixedItem) { currentFixedItem = item; hasFixedItem = true; }
+
+                bool isVariableItem = (!hasVariableItem && variableItem != null && currentVariableItem == null && Object.ReferenceEquals(item, variableItem));
+                if (isVariableItem) { currentVariableItem = item; hasVariableItem = true; }
+
+                if (item.AutoSize || isVariableItem)
+                {   // a) Variable prvek (z paranmetru) se bere jako AutoSize i kdyby to na sobě neměl uvedené:
+                    // b) Fixed prvek (z paranmetru) dáme do pole (itemsVarList) podle jeho AutoSize, ale jeho velikost budeme měnit "až jako poslední":
+                    currentSize += item.Size;
+                    if (isFixedItem) isFixedItemInVarList = true;              // To abych prvky v (itemsVarList) nejprve resizoval bez prvku fixedItem
+                    variableItems.Add(item);
                 }
                 else
                 {
-                    sizeSumFix += item.Size;
+                    fixedSize += item.Size;
                 }
-                sizeSumSpc += sizeOneSpc;
+                spaceSize += spaceSizeOne;
             }
-            if (sizeSumSpc > 0) sizeSumSpc -= sizeOneSpc;                      // Odečtu spacing, který byl přičtený za posledním prvkem pole, protože tam se space již nezapočítává!
+            if (spaceSize > 0) spaceSize -= spaceSizeOne;                      // Odečtu spacing, který byl přičtený za posledním prvkem pole, protože tam se space již nezapočítává!
 
-            // Žádný prvek není AutoSize => ke slovu přichází ImplicitAutoSizeType:
-            if (itemsVarList.Count == 0)
-            {
+            // Žádný prvek není AutoSize => ke slovu přichází řešení pomocí ImplicitAutoSizeType:
+            if (variableItems.Count == 0)
+            {   // Pole (array) má vždy přinejmenším jeden prvek, podmínka je na začátku metody...
                 ISequenceLayout implicitItem = null;
                 switch (implicitAutoSize)
                 {
@@ -607,32 +638,134 @@ namespace Asol.Tools.WorkScheduler.Components
                     default:
                         return false;                                          // Není zde žádný variabilní prvek
                 }
+
                 // Jako AutoSize vezmeme prvek implicitItem:
-                sizeSumVar += implicitItem.Size;
-                sizeSumFix -= implicitItem.Size;
-                itemsVarList.Add(implicitItem);
+                currentSize += implicitItem.Size;
+                fixedSize -= implicitItem.Size;
+                variableItems.Add(implicitItem);
             }
 
             // Přepočet Size u prvků AutoSize:
             bool isChanged = false;
-            int sizeNewVar = visualSize - (sizeSumFix + sizeSumSpc);           // Nová sumární šířka variabilních prvků = daný prostor mínus (pevné prvky + mezery)
-            if (sizeNewVar == sizeSumVar) return false;
+            int targetSize = visualSize - (fixedSize + spaceSize);             // Nová sumární šířka variabilních prvků = daný prostor mínus (pevné prvky + mezery)
+            if (targetSize == currentSize) return false;
 
-            decimal ratio = (decimal)sizeNewVar / (decimal)sizeSumVar;
-            foreach (ISequenceLayout column in itemsVarList)
+            // 1. Pokud máme zadán Variable prvek, pak prioritně upravím jeho velikost:
+            if (hasVariableItem)
+                _AutoSizeLayoutCalculateAbsolute(currentVariableItem, ref currentSize, targetSize, ref isChanged);
+
+            // 2. máme nějaký rozdíl mezi tím, co má být a co je, provedem přepočet variabilních prvků pomocí Ratio:
+            if (targetSize != currentSize)
             {
-                int sizeOneOld = column.Size;
-                int sizeOneNew = (int)(Math.Round(ratio * (decimal)sizeOneOld, 0));
-                column.Size = sizeOneNew;
-                int sizeOneMod = column.Size;
-                if (!isChanged && sizeOneMod != sizeOneOld)
-                    isChanged = true;
+                if (isFixedItemInVarList)
+                {
+                    // 2a. Pokud je přítomen Fixní prvek, a ten je uložen v itemsVarList, pak resizuji pouze proměnné prvky (v itemsVarList) bez fixního prvku:
+                    var varItems = variableItems.Where(i => !Object.ReferenceEquals(i, currentFixedItem)).ToList();
+                    _AutoSizeLayoutCalculateRatio(varItems, ref currentSize, targetSize, ref isChanged);
+                }
+                else
+                {
+                    // 2b. Pokud není přítomen Fixní prvek, pak pomocí Ratio resizuji všechny proměnné prvky:
+                    _AutoSizeLayoutCalculateRatio(variableItems, ref currentSize, targetSize, ref isChanged);
+                }
             }
-            if (!isChanged) return false;
 
-            // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
-            SequenceLayout.SequenceLayoutCalculate(items, sizeOneSpc);
-            return true;
+            // 3. Pokud dosud není srovnáno, pak rozdíl promítnu do jakéhokoli ochotného prvku, počínaje prvním, včetně fixního:
+            if (targetSize != currentSize)
+                _AutoSizeLayoutCalculateAbsolute(variableItems, ref currentSize, targetSize, ref isChanged);
+
+            // 4. Pokud stále není srovnáno, pak mohu zkusit rozdíl promítnout do FixedItem (pokud je) = protože to je prvek, který za nesrovnalost může (byl resizován na novou ale nevyhovující velikost):
+            if (targetSize != currentSize && hasFixedItem)
+                _AutoSizeLayoutCalculateAbsolute(currentFixedItem, ref currentSize, targetSize, ref isChanged);
+
+            // 5. Pokud stále není srovnáno, pak rozdíl dám do prvního z fixních prvků (fixních = proto, že variabilní to nedokážou akceptovat):
+            if (targetSize != currentSize)
+                _AutoSizeLayoutCalculateAbsolute(items.Where(i => !i.AutoSize), ref currentSize, targetSize, ref isChanged);
+
+            // 6. Po nějaké změně: Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
+            if (isChanged)
+                SequenceLayout.SequenceLayoutCalculate(items, spaceSizeOne);
+
+            return isChanged;
+        }
+        /// <summary>
+        /// Zajistí proporcionální úpravu velikosti všech daných prvků tak, aby sumární velikost odpovídala danému cíli.
+        /// </summary>
+        /// <param name="variableItems"></param>
+        /// <param name="currentSize"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="isChanged"></param>
+        private static void _AutoSizeLayoutCalculateRatio(List<ISequenceLayout> variableItems, ref int currentSize, int targetSize, ref bool isChanged)
+        {
+            decimal ratio = (decimal)targetSize / (decimal)currentSize;
+            foreach (ISequenceLayout item in variableItems)
+            {
+                int sizeOneOld = item.Size;
+                int sizeOneNew = (int)(Math.Round(ratio * (decimal)sizeOneOld, 0));
+                _AutoSizeLayoutCalculateOne(item, sizeOneNew, ref currentSize, ref isChanged);
+            }
+        }
+        /// <summary>
+        /// Pokusí se upravit velikost všech daných prvků o tolik, kolik zbývá z aktuální sumární velikosti <paramref name="currentSize"/> do cílové sumární velikosti <paramref name="targetSize"/>.
+        /// Tedy do hodnoty Size v poli prvků daného prvku přičte rozdíl (<paramref name="targetSize"/> - <paramref name="currentSize"/>).
+        /// Zpětně pak vyhodnotí reálnou změnu na daném prvku (prvek sám může korigovat svoji Size), a metoda pak upraví ref <paramref name="currentSize"/> o reálně provedenou změnu prvku.
+        /// Pokouší se tedy rozdíl umístit do kteréhokoli ochotného prvku v poli, počínaje prvním.
+        /// <para/>
+        /// Jinými slovy: metoda se pokusí s pomocí daných prvků dosáhnout dané cílové velikosti. 
+        /// Výsledky této činnosti promítá do ref parametrů <paramref name="currentSize"/> a <paramref name="isChanged"/>.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="currentSize"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="isChanged"></param>
+        private static void _AutoSizeLayoutCalculateAbsolute(IEnumerable<ISequenceLayout> items, ref int currentSize, int targetSize, ref bool isChanged)
+        {
+            foreach (var item in items)
+            {
+                if (currentSize == targetSize) break;                          // Je hotovo?
+                _AutoSizeLayoutCalculateAbsolute(item, ref currentSize, targetSize, ref isChanged);
+            }
+        }
+        /// <summary>
+        /// Pokusí se upravit velikost jednoho daného prvku o tolik, kolik zbývá z aktuální sumární velikosti <paramref name="currentSize"/> do cílové sumární velikosti <paramref name="targetSize"/>.
+        /// Tedy do hodnoty Size daného prvku přičte rozdíl (<paramref name="targetSize"/> - <paramref name="currentSize"/>).
+        /// Zpětně pak vyhodnotí reálnou změnu na daném prvku (prvek sám může korigovat svoji Size), a metoda pak upraví ref <paramref name="currentSize"/> o reálně provedenou změnu prvku.
+        /// <para/>
+        /// Jinými slovy: metoda se pokusí s pomocí daného prvku dosáhnout dané cílové velikosti. 
+        /// Výsledky této činnosti promítá do ref parametrů <paramref name="currentSize"/> a <paramref name="isChanged"/>.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="currentSize"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="isChanged"></param>
+        private static void _AutoSizeLayoutCalculateAbsolute(ISequenceLayout item, ref int currentSize, int targetSize, ref bool isChanged)
+        {
+            if (currentSize == targetSize) return;                             // Zkratka, pokud není co řešit
+
+            int sizeOneOld = item.Size;
+            int sizeOneNew = sizeOneOld + (targetSize - currentSize);          // Zkusíme daný prvek celý resizovat tak, aby prvek absorboval celou požadovanou změnu
+            _AutoSizeLayoutCalculateOne(item, sizeOneNew, ref currentSize, ref isChanged);
+        }
+        /// <summary>
+        /// Pokusí se upravit velikost jednoho daného prvku tak, aby měl danou velikost.
+        /// Zpětně pak vyhodnotí reálnou změnu na daném prvku (prvek sám může korigovat svoji Size), a metoda pak upraví ref <paramref name="currentSize"/> o reálně provedenou změnu prvku.
+        /// <para/>
+        /// Výsledky této činnosti promítá do ref parametrů <paramref name="currentSize"/> a <paramref name="isChanged"/>.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="targetItemSize"></param>
+        /// <param name="currentSize"></param>
+        /// <param name="isChanged"></param>
+        private static void _AutoSizeLayoutCalculateOne(ISequenceLayout item, int targetItemSize, ref int currentSize, ref bool isChanged)
+        {
+            int sizeOneOld = item.Size;
+            item.Size = targetItemSize;
+            int sizeOneNew = item.Size;                                        // Prvek mohl aplikovat svoje Min-Max limity, proto si přečteme jeho korigovanou velikost
+            if (sizeOneNew != sizeOneOld)
+            {   // Došlo ke změně: upravíme sumární velikost proměnných prvků tak, aby odpovídala aktuální velikosti:
+                isChanged = true;
+                currentSize = currentSize + (sizeOneNew - sizeOneOld);
+            }
         }
         #endregion
         #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti

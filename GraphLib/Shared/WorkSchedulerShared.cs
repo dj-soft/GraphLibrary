@@ -667,32 +667,46 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGridProperties() : base()
         {
+            this.Visible = true;
             this.TagFilterEnabled = true;
             this.TagFilterItemHeight = 26;
             this.TagFilterItemMaxCount = 100;
+            this.TagFilterRoundItemPercent = 35;
         }
+        /// <summary>
+        /// Výchozí stav viditelnosti Gridu.
+        /// Změnu viditelnosti prvků lze realizovat pomocí <see cref="GuiResponse.RefreshProperties"/>.
+        /// <para/>
+        /// Default = true.
+        /// </summary>
+        public bool Visible { get; set; }
         /// <summary>
         /// Obsahuje true, pokud má být zobrazen TagFilter = filtr s jednotlivými štítky.
         /// Data pro filtr se ukládají do <see cref="GuiDataRow.TagItems"/>, reprezentují jednoduché pole prvků, 
         /// kde prvek obsahuje klíč svého řádku (řádek v dané tabulce) a dále obsahuje text štítku (zobrazuje se uživateli) plus volitelně barvy štítku.
+        /// <para/>
+        /// Default = true.
         /// </summary>
         public bool TagFilterEnabled { get; set; }
         /// <summary>
         /// Výška prvků v objektu TagFilter, v pixelech.
-        /// Výchozí hodnota = 26.
         /// Objekt TagFilter zobrazuje běžně jen jeden řádek prvků, a až při najetí myší se rozbalí dolů na potřebnou výšku.
+        /// <para/>
+        /// Default = 26.
         /// </summary>
         public int TagFilterItemHeight { get; set; }
         /// <summary>
         /// Nejvyšší počet prvků zobrazených v TagFilter.
         /// Pokud jich bude více, pak ty s nejmenším počtem výskytů v řádcích budou skryty.
-        /// Výchozí hodnota = 100;
+        /// <para/>
+        /// Default = 100.
         /// </summary>
         public int TagFilterItemMaxCount { get; set; }
         /// <summary>
         /// Procento kulatých krajů jednotlivých prvků v TagFilter.
         /// 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
-        /// Výchozí hodnota = 35;
+        /// <para/>
+        /// Default = 35.
         /// </summary>
         public int TagFilterRoundItemPercent { get; set; }
         /// <summary>
@@ -3900,7 +3914,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// a) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty <see cref="IsChecked"/> neovlivní žádný jiný prvek.
         /// Kliknutí na takový prvek mění hodnotu <see cref="IsChecked"/> z false na true a naopak = lze jej shodit na false.
         /// <para/>
-        /// b) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
+        /// b) Pokud <see cref="CheckedGroupName"/> NENÍ prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
         /// Opakované kliknutí na označený button jej neodznačí.
         /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině <see cref="GroupName"/> (platí pro Toolbar).
         /// Pokud by byly umístěny v jiné grupě, nebudou považovány za jednu skupinu, ale více oddělených skupin.
@@ -6079,6 +6093,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// a následně do grafu budou přidány ty linky, které mají nastaven <see cref="GuiGraphLink.LinkType"/>.
         /// </summary>
         public List<GuiGraphLink> ChangeLinks { get; set; }
+        /// <summary>
+        /// Pole změn vlastností.
+        /// </summary>
+        public List<GuiRefreshProperty> RefreshProperties { get; set; }
         #endregion
         #region Statické konstruktory: Success, Warning, Error
         /// <summary>
@@ -6314,6 +6332,28 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Data prvku grafu. Pokud je null, pak se má uvedený prvek odebrat z grafu.
         /// </summary>
         public GuiGraphItem ItemData { get; set; }
+    }
+    /// <summary>
+    /// Třída pro předání instrukcí o změně hodnoty z aplikačního kódu do GUI
+    /// </summary>
+    public class GuiRefreshProperty
+    {
+        /// <summary>
+        /// ID prvku: obsahuje Fullname prvku, což může být ledasco, má prostor i pro adresování řádku tabulky a prvku v jejím grafu.
+        /// </summary>
+        public GuiGridItemId GridItemId { get; set; }
+        /// <summary>
+        /// Název měněné vlastnosti. Není od věci namísto stringu použít kód, například: nameof(<see cref="GuiGridProperties.Visible"/>).
+        /// </summary>
+        public string PropertyName { get; set; }
+        /// <summary>
+        /// Požadavek na reset hodnoty do výchozího stavu
+        /// </summary>
+        public bool Reset { get; set; }
+        /// <summary>
+        /// Nová hodnota
+        /// </summary>
+        public object Value { get; set; }
     }
     /// <summary>
     /// GuiResponseGraphLink : třída sloužící pro přenos vztahů grafu (data z <see cref="GuiGraphLink"/>) z aplikace do GUI v nestrukturovaném seznamu.
