@@ -14,7 +14,7 @@ using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
-    [IsMainForm("Testy okna Scheduleru [Manufacturing]", MainFormMode.Default, 10)]
+    [IsMainForm("Testy okna Scheduleru [Manufacturing]", MainFormMode.AutoRun, 10)]
     public partial class SchedulerForm : Form
     {
         public SchedulerForm()

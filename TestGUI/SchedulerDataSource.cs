@@ -1120,14 +1120,30 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
+                Name = GuiNameToolbarSwitchEmployeeB,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.ThisItemSkipToNextTable,
+                IsCheckable = true,
+                IsChecked = false,
+                StoreValueToConfig = true,
+                CheckedGroupName = "ViewSwitchEmployee",
+                GroupName = "DALŠÍ TABULKY",
+                Title = "Dole",
+                ToolTip = "Zobrazí tabulku zaměstnanců DOLE",
+                GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
+                ActionTargetNames = GuiFullNameGridCenterPersons + ";!" + GuiFullNameRightPanel,
+                Image = RES.Images.Actions.ViewSplitTopBottom2Png
+            });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
                 Name = GuiNameToolbarSwitchEmployeeA,
                 Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.ThisItemSkipToNextTable | LayoutHint.NextItemSkipToNextRow,
+                LayoutHint = LayoutHint.ThisItemOnSameRow,
                 IsCheckable = true,
                 IsChecked = true,
                 StoreValueToConfig = true,
                 CheckedGroupName = "ViewSwitchEmployee",
-                GroupName = "ZAMĚSTNANCI",
+                GroupName = "DALŠÍ TABULKY",
                 Title = "Vpravo",
                 ToolTip = "Zobrazí tabulku zaměstnanců VPRAVO",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
@@ -1136,19 +1152,19 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = GuiNameToolbarSwitchEmployeeB,
+                Name = GuiNameToolbarSwitchSources,
                 Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.ThisItemSkipToNextRow | LayoutHint.NextItemSkipToNextTable,
+                LayoutHint = LayoutHint.ThisItemSkipToNextRow,
                 IsCheckable = true,
-                IsChecked = false,
+                IsChecked = true,
                 StoreValueToConfig = true,
-                CheckedGroupName = "ViewSwitchEmployee",
-                GroupName = "ZAMĚSTNANCI",
-                Title = "Dole",
-                ToolTip = "Zobrazí tabulku zaměstnanců DOLE",
+                CheckedGroupName = null,
+                GroupName = "DALŠÍ TABULKY",
+                Title = "Zdroje operací",
+                ToolTip = "Zobrazí tabulku zdrojů operací (vždy je pouze dole)",
                 GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
-                ActionTargetNames = GuiFullNameGridCenterPersons + ";!" + GuiFullNameRightPanel,
-                Image = RES.Images.Actions.ViewSplitTopBottom2Png
+                ActionTargetNames = GuiFullNameGridCenterSources,
+                Image = RES.Images.Categories.ApplicationsDevelopment4Png
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -2750,6 +2766,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         protected const string GuiNameToolbarShowMainLink = "ShowMainLink";
         protected const string GuiNameToolbarSwitchEmployeeA = "SwitchEmployeeA";
         protected const string GuiNameToolbarSwitchEmployeeB = "SwitchEmployeeB";
+        protected const string GuiNameToolbarSwitchSources = "SwitchSourcesVisible";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
