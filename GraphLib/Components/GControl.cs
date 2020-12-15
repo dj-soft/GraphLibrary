@@ -515,7 +515,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Příznak, že skutečně může proběhnout kreslení
         /// </summary>
-        protected bool ReallyCanDraw { get { return (this.CanDraw && !this.DrawInProgress && this.Width > 0 && this.Height > 0 && this.Parent != null); } }
+        protected bool ReallyCanDraw { get { return (this.CanDraw && this.IsReadyToDraw && !this.DrawInProgress); } }
+        /// <summary>
+        /// Obsahuje true tehdy, když this control je umístěn na formuláři, a tento formulář je viditelný, a this control má kladné rozměry
+        /// </summary>
+        public bool IsReadyToDraw
+        {
+            get
+            {
+                return (this.Width > 0 && this.Height > 0 && this.Parent != null && this.IsVisibleParentForm);
+            }
+        }
+        /// <summary>
+        /// Obsahuje true tehdy, když this control je umístěn na formuláři, a tento formulář je viditelný
+        /// </summary>
+        protected bool IsVisibleParentForm
+        {
+            get
+            {
+                var form = (this.Parent != null ? this.FindForm() : null);
+                return (form != null && form.Visible);
+            }
+        }
         /// <summary>
         /// Descendant can override this property, and disable (with false) any drawing.
         /// </summary>

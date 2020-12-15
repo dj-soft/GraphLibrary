@@ -544,7 +544,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             int left = this.Bounds.Left;
             int location = this.ColumnSplitter.Value;
             int width = location - left;
-            this.OwnerGGrid.ColumnResizeTo(this.OwnerColumn, e, ref width);
+            if (this.OwnerGGrid != null && this.OwnerColumn != null)
+                this.OwnerGGrid.ColumnResizeTo(this.OwnerColumn.ColumnId, e, ref width);
             e.CorrectValue = left + width;
         }
         /// <summary>

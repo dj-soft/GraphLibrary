@@ -55,6 +55,17 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
+        /// Obsahuje true tehdy, když this objekt je umístěn na formuláři, a tento formulář je viditelný, a this control má kladné rozměry
+        /// </summary>
+        protected bool IsReadyToDraw
+        {
+            get
+            {
+                var host = this.Host;
+                return host?.IsReadyToDraw ?? false;
+            }
+        }
+        /// <summary>
         /// Vizuální hostitel, typicky <see cref="GInteractiveControl"/> přetypovaný na <see cref="IInteractiveHost"/> pro přístup k interním členům
         /// </summary>
         protected IInteractiveHost IHost { get { return this.Host as IInteractiveHost; } }
@@ -347,6 +358,27 @@ namespace Asol.Tools.WorkScheduler.Components
         private Rectangle __Bounds;
         private Padding? __ClientBorder;
         private Padding? __ActivePadding;
+        /// <summary>
+        /// Souřadnice this prvku (relativní, absolutní) plus všichni jeho Parents
+        /// </summary>
+        internal string DebugBounds
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                string tab = "\t";
+                sb.AppendLine($"Level{tab}ItemType{tab}Bounds{tab}AbsoluteBounds{tab}Visible");
+                InteractiveObject item = this;
+                int level = 0;
+                while (item != null)
+                {
+                    sb.AppendLine(level.ToString() + tab + item.GetType().Name + tab + item.Bounds.ToLog() + tab + item.BoundsAbsolute.ToLog() + tab + item.Is.Visible.ToLog());
+                    item = item.Parent as InteractiveObject;
+                    level++;
+                }
+                return sb.ToString();
+            }
+        }
         #endregion
         #region Events and virtual methods
         /// <summary>

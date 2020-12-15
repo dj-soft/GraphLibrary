@@ -582,6 +582,7 @@ namespace Asol.Tools.WorkScheduler.Components
             ISequenceLayout fixedItem, ISequenceLayout variableItem = null)
         {
             if (items == null) return false;
+            if (visualSize < 100) return false;
 
             ISequenceLayout[] array = items.ToArray();
             int count = array.Length;

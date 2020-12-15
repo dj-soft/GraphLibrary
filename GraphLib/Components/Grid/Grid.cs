@@ -455,7 +455,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ColumnsCheck()
         {
             bool needContent = (this._ColumnDict == null || this._Columns == null || this._AllColumns == null);
-            bool needRecalc = !this._ColumnsLayoutValid;
+            bool needRecalc = !this._ColumnsLayoutValid || !this._ColumnsSizeValid;
             if (needContent || needRecalc)
             {
                 Dictionary<int, GridColumn> columnDict = this._ColumnDict;
@@ -493,6 +493,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 List<GridColumn> columnList = columnDict.Values.ToList();
                 columnList.Sort(GridColumn.CompareOrder);
 
+                if (!this._ColumnsSizeValid)
+                    _ColumnsPositionCalculateAutoSize(columnList);
+
                 // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
                 SequenceLayout.SequenceLayoutCalculate(columnList, 0);         // explicitně zadávám spacing = 0
 
@@ -513,6 +516,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public bool TryGetGridColumn(int columnId, out GridColumn gridColumn)
         {
+            return TryGetGridColumn(columnId, false, out gridColumn);
+        }
+        /// <summary>
+        /// Metoda zkusí najít a vrátit data o sloupci Gridu pro dané ID.
+        /// Sloupec Gridu (instance třídy GridColumn) reprezentuje jeden svislý sloupec stejného ColumnId, přes všechny tabulky.
+        /// Sloupec obsahuje MasterColumn = sloupec tohoto ColumnId z první tabulky, ve které se vyskytl. Ten pak hraje roli Mastera.
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="skipValidations">true = přeskoč validace, pokud to jde</param>
+        /// <param name="gridColumn"></param>
+        /// <returns></returns>
+        protected bool TryGetGridColumn(int columnId, bool skipValidations, out GridColumn gridColumn)
+        {
+            if (skipValidations)
+            {   // Přeskočit validace: pokud máme sloupce načteny, a pro dané ID sloupec existuje, pak mi stačí jej vrátit bez dalších validací:
+                if (this._ColumnDict != null && this._ColumnDict.TryGetValue(columnId, out gridColumn))
+                    return true;
+            }
+
+            // Plné získání sloupce včetně validací:
             this._ColumnsCheck();
             return this._ColumnDict.TryGetValue(columnId, out gridColumn);
         }
@@ -528,6 +551,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Seznam všech sloupců (tj. včetně neviditelných) podle jejich pořadí
         /// </summary>
         private GridColumn[] _AllColumns;
+        /// <summary>
+        /// true pokud obsah pole _Columns má správné hodnoty Size (=AutoSize na odpovídající sloupec s grafem), false pokud ne
+        /// </summary>
+        private bool _ColumnsSizeValid = false;
         /// <summary>
         /// true pokud obsah pole _Columns má správné souřadnice, false pokud ne
         /// </summary>
@@ -629,18 +656,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
         /// </summary>
-        /// <param name="column"></param>
-        /// <param name="e"></param>
-        /// <param name="width">Požadovaná šířka, může se změnit</param>
-        /// <returns></returns>
-        public bool ColumnResizeTo(Column column, GPropertyChangeArgs<int> e, ref int width)
-        {
-            if (column == null) return false;
-            return this.ColumnResizeTo(column.ColumnId, e, ref width);
-        }
-        /// <summary>
-        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
-        /// </summary>
         /// <param name="columnId"></param>
         /// <param name="e"></param>
         /// <param name="width"></param>
@@ -648,7 +663,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool ColumnResizeTo(int columnId, GPropertyChangeArgs<int> e, ref int width)
         {
             GridColumn sourceColumn;
-            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
+            if (!this.TryGetGridColumn(columnId, true, out sourceColumn)) return false;        // ,true: přeskočíme kompletní validace, pokud to jde. Výsledek false = Daný sloupec neznáme!
 
             int widthOld = sourceColumn.ColumnWidth;
             if (!sourceColumn.ColumnWidthOriginal.HasValue) sourceColumn.ColumnWidthOriginal = widthOld;
@@ -660,7 +675,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 width = widthNew;
                 // Zajistit invalidaci a překresení:
-                this.Invalidate(InvalidateItem.GridColumnsScroll);
+                this.Invalidate(InvalidateItem.GridColumnsWidth);
+                _ColumnsPositionCalculateAutoSize(this._Columns);
             }
 
             // Finální změna (=nejde o změnu typu "Changing" = stále probíhající, ale změna už je finální):
@@ -844,7 +860,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="variableTable">Tabulka, jejíž velikost bychom rádi upravili v první řadě (nehledě na příznak AutoSize)</param>
         private void _TablesPositionCalculateAutoSize(int? tablesHeight = null, ImplicitAutoSizeType? implicitAutoSize = null, GTable fixedTable = null, GTable variableTable = null)
         {
-            if (!this.TablesHasAutoSize) return;
+            if (!this.TablesHasAutoSize || !this.IsReadyToDraw) return;
+
             int targetHeight = (tablesHeight ?? DefaultTablesHeight);
             ImplicitAutoSizeType autoSize = implicitAutoSize ?? this.TablesAutoSize;
 
@@ -935,6 +952,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._TablesVisible = tablesVisible;
                 this._TablesVisibleDataSize = null;
             }
+
             if (!this._TablesVisibleDataSize.HasValue)
             {
                 this._TablesVisibleDataSize = SequenceLayout.SequenceLayoutCalculate(tablesVisible, GTable.TableSplitterSize);
@@ -1067,22 +1085,25 @@ namespace Asol.Tools.WorkScheduler.Components
             return (count > 0 ? array[count - 1].End : 0);
         }
         /// <summary>
-        /// Umožní sloupcům aplikovat jejich AutoSize (pokud některý sloupec tuto vlastnost má), pro aktuální šířku viditelné oblasti
-        /// </summary>
-        private void _ColumnsPositionCalculateAutoSize()
-        {
-            int width = this.ClientSize.Width - GScrollBar.DefaultSystemBarWidth - this.ColumnsPositions.VisualFirstPixel;
-            this._ColumnsPositionCalculateAutoSize(width);
-        }
-        /// <summary>
         /// Umožní sloupcům aplikovat jejich AutoSize (pokud některý sloupec tuto vlastnost má), pro danou šířku viditelné oblasti
         /// </summary>
-        /// <param name="width"></param>
-        private void _ColumnsPositionCalculateAutoSize(int width)
+        /// <param name="columns"></param>
+        /// <param name="columnsWidth"></param>
+        /// <param name="fixedColumn"></param>
+        /// <param name="variableColumn"></param>
+        private void _ColumnsPositionCalculateAutoSize(IEnumerable<GridColumn> columns = null, int? columnsWidth = null, GridColumn fixedColumn = null, GridColumn variableColumn = null)
         {
-            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Columns, width, 0);
-            if (isChanged)
-                this._ChildArrayValid = false;
+            if (!this.IsReadyToDraw) return;
+
+            if (this.ColumnsHasAutoSize)
+            {
+                if (columns == null) columns = this.Columns;
+                int targetWidth = (columnsWidth ?? DefaultColumnsWidth);
+                bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(columns, targetWidth, 0, ImplicitAutoSizeType.None, fixedColumn, variableColumn);
+                if (isChanged)
+                    this._ChildArrayValid = false;
+            }
+            this._ColumnsSizeValid = true;
         }
         /// <summary>
         /// Eventhandler volaný při/po změně hodnoty na vodorovném scrollbaru = posuny sloupců
@@ -1115,6 +1136,14 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this._ColumnsScrollBarDataValid = true;
         }
+        /// <summary>
+        /// Defaultní šířka pro zobrazení prostoru sloupců (od prvního pixelu pro vlastní sloupce po prostor svislého scrollbaru)
+        /// </summary>
+        protected int DefaultColumnsWidth { get { return this.ClientSize.Width - GScrollBar.DefaultSystemBarWidth - this.ColumnsPositions.VisualFirstPixel; } }
+        /// <summary>
+        /// Obsahuje true, pokud existuje sloupec s vlastností AutoSize
+        /// </summary>
+        protected bool ColumnsHasAutoSize { get { var columns = _AllColumns; return (columns != null && columns.Any(c => ((ISequenceLayout)c).AutoSize)); } }
         /// <summary>
         /// Pozicování sloupců
         /// </summary>
@@ -1289,6 +1318,14 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this._TablesVisibleCurrent = null;
                 this._ChildArrayValid = false;
+            }
+            if (items.HasFlag(InvalidateItem.GridColumnsWidth))
+            {
+                this._ColumnsLayoutValid = false;
+                this._ColumnsSizeValid = false;
+                items |= InvalidateItem.ColumnWidth;
+                repaint = true;
+                callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridColumnsChange))
             {
@@ -2039,8 +2076,10 @@ namespace Asol.Tools.WorkScheduler.Components
         GridColumnsChange = GridTablesScroll << 1,
         /// <summary>Změna v pozici sloupců v Gridu (volat po akcích: resize sloupce, scroll sloupců)</summary>
         GridColumnsScroll = GridColumnsChange << 1,
+        /// <summary>Změna v šířce sloupců v Gridu (volat po akcích: resize sloupce)</summary>
+        GridColumnsWidth = GridColumnsScroll << 1,
         /// <summary>Změna v ChildItems u Gridu, např. po přidání/odebrání tabulky nebo viditelnosti některého splitteru mezi tabulkami (po změně Table.AllowResize*): nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o invalidaci Child prvků gridu</summary>
-        GridItems = GridColumnsScroll << 1,
+        GridItems = GridColumnsWidth << 1,
         /// <summary>Souřadnice Tabulky (pouze její umístění, ale ne velikost = bez vlivu na vnitřní prvky)</summary>
         TablePosition = GridItems << 1,
         /// <summary>Velikost vnitřního prostoru Tabulky (má vliv na vnitřní prvky)</summary>

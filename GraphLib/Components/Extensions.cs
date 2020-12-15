@@ -2609,6 +2609,50 @@ namespace Asol.Tools.WorkScheduler.Components
             return new Size(w, h);
         }
         #endregion
+        #region Any.ToLog()
+        /// <summary>
+        /// Vrátí string do logu za daný objekt
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        public static string ToLog(this Rectangle bounds)
+        {
+            return $"L:{bounds.Left.ToLog(4)},T:{bounds.Top.ToLog(4)},W:{bounds.Width.ToLog(4)},H:{bounds.Height.ToLog(4)},R:{bounds.Right.ToLog(4)},B:{bounds.Bottom.ToLog(4)}";
+        }
+        /// <summary>
+        /// Vrátí string do logu za daný objekt
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public static string ToLog(this Size size)
+        {
+            return $"W:{size.Width.ToLog(4)},H:{size.Height.ToLog(4)}";
+        }
+        /// <summary>
+        /// Vrátí string do logu za daný objekt
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static string ToLog(this Point point)
+        {
+            return $"X:{point.X.ToLog(4)},Y:{point.Y.ToLog(4)}";
+        }
+        /// <summary>
+        /// Vrátí string do logu za daný objekt
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ToLog(this Boolean value)
+        {
+            return (value ? "True" : "False");
+        }
+        private static string ToLog(this int value, int length)
+        {
+            string text = value.ToString();
+            if (text.Length < length) text = text.PadLeft(length);
+            return text;
+        }
+        #endregion
         #region Font: Modify
         /// <summary>
         /// Returns a new Font from current font, with only modified FontStyle.

@@ -2374,7 +2374,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            e.GraphicsClipWith(absoluteBounds);
+            e.GraphicsClipWith(absoluteVisibleBounds);               // ne absoluteBounds!
 
             if (this.IsBoundsValid && this.IsVisualValid && this.IsValueValid && !this.IsScaleValid)
                 this.CalculateRequiredEntities();
@@ -2382,7 +2382,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.IsBoundsValid && this.IsAxisValid && e.DrawLayer == GInteractiveDrawLayer.Standard)
             {
                 this.CalculateRequiredEntities();
-                Rectangle clip = e.GetClip(absoluteBounds);
+                Rectangle clip = e.GetClip(absoluteVisibleBounds);
                 using (GPainter.GraphicsUseText(e.Graphics, clip))
                 {
                     this.DrawBackground(e.Graphics, absoluteBounds);
