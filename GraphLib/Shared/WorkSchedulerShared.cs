@@ -2085,6 +2085,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Ikonka v tomto řádku (v záhlaví)
         /// </summary>
         public GuiImage Icon { get; set; }
+        /// <summary>
+        /// Viditelnost řádku. Null = default = true.
+        /// </summary>
+        public bool? Visible { get; set; }
         #endregion
         #region Servis
         /// <summary>
@@ -6343,7 +6347,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGridItemId GridItemId { get; set; }
         /// <summary>
-        /// Název měněné vlastnosti. Není od věci namísto stringu použít kód, například: nameof(<see cref="GuiGridProperties.Visible"/>).
+        /// Název měněné vlastnosti. Není od věci namísto stringu použít kód, například: nameof(<see cref="GuiGridProperties.Visible"/> nebo <see cref="GuiDataRow.TagItems"/>).
         /// </summary>
         public string PropertyName { get; set; }
         /// <summary>

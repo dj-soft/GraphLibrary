@@ -1018,6 +1018,53 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return this.TimeGraphDict.TryGetValue(rowId, out gTimeGraph);
         }
         #endregion
+        #region Refresh dalších vlastností
+        /// <summary>
+        /// Refresh dalších vlastností prvků v rámci tabulky
+        /// </summary>
+        /// <param name="refreshProperty"></param>
+        /// <param name="repaintGraphDict"></param>
+        internal void RefreshProperty(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        {
+            if (refreshProperty == null || refreshProperty.GridItemId == null || refreshProperty.PropertyName == null) return;
+
+            if (refreshProperty.GridItemId.ItemId != null)
+                RefreshPropertyGraphItem(refreshProperty, repaintGraphDict);
+            else if (refreshProperty.GridItemId.RowId != null)
+                RefreshPropertyRow(refreshProperty, repaintGraphDict);
+            else
+                RefreshPropertyTable(refreshProperty, repaintGraphDict);
+        }
+        /// <summary>
+        /// Refresh dalších vlastností prvků přímo v rámci tabulky
+        /// </summary>
+        /// <param name="refreshProperty"></param>
+        /// <param name="repaintGraphDict"></param>
+        private void RefreshPropertyTable(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        {
+            if (refreshProperty.PropertyName == nameof(GuiGridProperties.Visible) && refreshProperty.Value != null && refreshProperty.Value is bool)
+                this.TableRow.Visible = (bool)refreshProperty.Value;
+        }
+        /// <summary>
+        /// Refresh dalších vlastností prvků v rámci řádku
+        /// </summary>
+        /// <param name="refreshProperty"></param>
+        /// <param name="repaintGraphDict"></param>
+        private void RefreshPropertyRow(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        {
+            Row row;
+            if (!this.TryGetRow(refreshProperty.GridItemId.RowId, out row)) return;
+            if (refreshProperty.PropertyName == nameof(GuiDataRow.Visible) && refreshProperty.Value != null && refreshProperty.Value is bool)
+                row.Visible = (bool)refreshProperty.Value;
+        }
+        /// <summary>
+        /// Refresh dalších vlastností prvků v rámci prvku grafu
+        /// </summary>
+        /// <param name="refreshProperty"></param>
+        /// <param name="repaintGraphDict"></param>
+        private void RefreshPropertyGraphItem(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        { }
+        #endregion
         /// <summary>
         /// Zajistí provedení Refresh() na modifikovaném grafu (parametr):
         /// Buď je zadána Dictionary s grafy pro hromadný Refresh, pak aktuální graf do ní přidá;

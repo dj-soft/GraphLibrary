@@ -3191,6 +3191,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseRefreshGraphItems(guiResponse.RefreshGraphItems, mainTableDict, repaintGraphDict);
             this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, repaintGraphDict);
             this._ProcessResponseExpandRows(guiResponse.ExpandRows, mainTableDict, repaintGraphDict);
+            this._ProcessResponseRefreshProperties(guiResponse.RefreshProperties, mainTableDict, repaintGraphDict);
             this._ProcessResponseRepaintGraphs(repaintGraphDict.Values);
             this._ProcessResponseRepaintParentChilds(repaintGraphDict.Values);
             this._ProcessResponseRepaintControl(repaintGraphDict.Values);
@@ -3334,6 +3335,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 MainDataTable mainDataTable;
                 if (mainTableDict.TryGetValue(expandRow.TableName, out mainDataTable))
                     mainDataTable.ExpandRow(expandRow, repaintGraphDict);
+            }
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.RefreshProperties"/>
+        /// </summary>
+        /// <param name="refreshProperties">Řádky, které mají být Expanded</param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseRefreshProperties(IEnumerable<GuiRefreshProperty> refreshProperties, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        {
+            if (refreshProperties == null) return;
+            foreach (GuiRefreshProperty refreshProperty in refreshProperties)
+            {
+                if (refreshProperty == null || refreshProperty.GridItemId == null || refreshProperty.GridItemId.TableName == null) continue;
+                MainDataTable mainDataTable;
+                if (mainTableDict.TryGetValue(refreshProperty.GridItemId.TableName, out mainDataTable))
+                    mainDataTable.RefreshProperty(refreshProperty, repaintGraphDict);
             }
         }
         /// <summary>
