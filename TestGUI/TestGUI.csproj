@@ -173,7 +173,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SchedulerDataSource.cs" />
+    <Compile Include="SchedulerSample\SchedulerDataSource.cs" />
     <Compile Include="TestComponents\WinFormDataForm.cs">
       <SubType>Component</SubType>
     </Compile>
