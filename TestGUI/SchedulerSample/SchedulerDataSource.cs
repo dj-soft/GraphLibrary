@@ -187,6 +187,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreatePlanUnitCSource("Nůž soustruh CM50 60/6/2x", CalendarType.Work7d1x24h, "SN-253", null, 3);
             this.CreatePlanUnitCSource("Nůž soustruh CM50 48/6/2y", CalendarType.Work7d1x24h, "SN-254", null, 3);
 
+            // Zde proběhne "zaplánování" práce z ProductOrderDict do pracovišť WorkplaceDict s využitím osob PersonDict a zdrojů SourceDict:
             this.PlanAllProductOrdersToWorkplaces();
         }
         /// <summary>
@@ -365,10 +366,10 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             if (add.Ticks > 0L) operation.TAc = operation.TAc + add;
             */
 
-            if (IsExpectable(5))
+            if (operation.TTc.Ticks == 0L)                 // Nulové operace mají vždy ikonu:
+                operation.Icon = RES.Images.Actions24.SystemSwitchUser2Png;
+            else if (IsExpectable(5))                      // Jiné operace mají ikonu jen někdy:
                 operation.Icon = RES.Images.Small16.BulletPinkPng;
-            if (operation.TTc.Ticks == 0L && IsExpectable(50))
-                operation.Icon = RES.Images.Actions24.SystemLogOut2Png;
 
             operation.ToolTip = "Operace:\t" + operation.ReferName + Eol + "Výrobní příkaz:\t" + productOrder.ReferName + Eol + toolTip;
 
@@ -865,9 +866,12 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             PlanUnitC[] persons = this.PersonDict.Values.Where(p => p.WorkPlace.Contains(workPlace)).ToArray();
             PlanUnitC person = this.GetRandom(persons);
 
+            PlanUnitC source = null;
+            if (Pbb(33)) source = this.GetRandomFrom(this.SourceDict.Values);
+
             if (Pbb(25))
                 flowTime = flowTime + TimeSpan.FromHours(Rand.Next(1, 9));        // Random pauza mezi operacemi 1 až 8 hodin, zařadím v 25% případů
-            productOperation.PlanTimeOperation(ref flowTime, Direction.Positive, workplace, person);
+            productOperation.PlanTimeOperation(ref flowTime, Direction.Positive, workplace, person, source);
 
             foreach (WorkUnit workUnit in productOperation.WorkUnitDict.Values)   // Sumarizuji WorkUnit z operace do globální Dictionary
                 this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
@@ -1581,7 +1585,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
 
             // Data tabulky = Plánovací jednotky Zdroje:
             foreach (PlanUnitC planUnitC in this.SourceDict.Values)
-                this.AddPlanUnitCToGridCenter(gridCenterSources.RowTable, planUnitC, GridPositionType.Person);
+                this.AddPlanUnitCToGridCenter(gridCenterSources.RowTable, planUnitC, GridPositionType.Source);
 
             // Chci zavolat, když uživatel zmáčkne Delete:
             gridCenterSources.ActiveKeys = new List<GuiKeyAction>();
@@ -2076,6 +2080,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 case GuiFullNameGridLeft: return GridPositionType.ProductOrder;
                 case GuiFullNameGridCenterWorkplaces: return GridPositionType.Workplace;
                 case GuiFullNameGridCenterPersons: return GridPositionType.Person;
+                case GuiFullNameGridCenterSources: return GridPositionType.Source;
                 case GuiFullNameGridRight: return GridPositionType.Employee;
             }
             return GridPositionType.None;
@@ -2870,6 +2875,18 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
+        internal T GetRandomFrom<T>(IEnumerable<T> items)
+        {
+            if (items == null) return default(T);
+            var itemArray = items.ToArray();
+            return GetRandom(itemArray);
+        }
+        /// <summary>
+        /// Vrátí jeden z prvků daného pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
         internal T GetRandom<T>(params T[] items)
         {
             int count = (items != null ? items.Length : 0);
@@ -3327,15 +3344,15 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="direction"></param>
         /// <param name="workplace"></param>
         /// <param name="person"></param>
-        public void PlanTimeOperation(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person)
+        public void PlanTimeOperation(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, PlanUnitC source)
         {
             if (workplace == null) return;
             if (!(direction == Direction.Positive || direction == Direction.Negative))
                 throw new Asol.Tools.WorkScheduler.Application.GraphLibCodeException("Směr plánu musí být pouze Positive nebo Negative.");
 
-            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f), this.TextColor);
-            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TAc, this.BackColor, this.TextColor);
-            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f), this.TextColor);
+            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TBc, this.BackColor.Morph(Color.Green, 0.25f), this.TextColor);
+            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TAc, this.BackColor, this.TextColor);
+            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TEc, this.BackColor.Morph(Color.Black, 0.25f), this.TextColor);
             this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
         }
         /// <summary>
@@ -3345,31 +3362,35 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="direction"></param>
         /// <param name="workplace"></param>
         /// <param name="person"></param>
-        /// <param name="time"></param>
+        /// <param name="requestTime"></param>
         /// <param name="backColor"></param>
         /// <param name="textColor"></param>
-        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor, Color? textColor)
+        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, PlanUnitC source, TimeSpan requestTime, Color backColor, Color? textColor)
         {
-            if (workplace == null || time.Ticks <= 0L) return new GuiTimeRange(flowTime, flowTime);
+            if (workplace == null || requestTime.Ticks <= 0L) return new GuiTimeRange(flowTime, flowTime);
 
             DateTime? phaseBegin = null;
             DateTime? phaseEnd = null;
             DateTime startTime = flowTime;
-            for (int w = 0; w < 2; w++)
-            {
-                PlanUnitC[] planUnits = (person != null ? new PlanUnitC[] { workplace, person } : new PlanUnitC[] { workplace });
+
+            List<PlanUnitC> planUnits = new List<PlanUnitC>();
+            if (workplace != null) planUnits.Add(workplace);
+            if (person != null) planUnits.Add(person);
+            if (source != null) planUnits.Add(source);
+
+            while (planUnits.Count > 0)
+            {   // Dokud máme nějaké KPJ, kam máme dávat práci:
                 flowTime = startTime;
-                for (int t = 0; t < 25; t++)         // jenom Timeout
+                for (int t = 0; t < 25; t++)               // jenom Timeout
                 {
-                    if (time.Ticks <= 0L) break;     // Je hotovo.
-                    bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref time, backColor, textColor);
-                    if (!isPlanned) break;           // Nejde to.
+                    if (requestTime.Ticks <= 0L) break;    // Je hotovo.
+                    bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref requestTime, backColor, textColor);
+                    if (!isPlanned) break;                 // Nejde to.
                 }
-                if (time.Ticks <= 0L) break;         // Je hotovo.
-                // Pokud tato smyčka byla plánována již bez pracovníka (= pouze s pracovištěm), skončíme:
-                if (person == null) break;
-                // Další smyčku pojedu bez pracovníka:
-                person = null;
+                if (requestTime.Ticks <= 0L) break;        // Je hotovo.
+
+                // Není hotovo => odebereme poslední KPJ:
+                planUnits.RemoveAt(planUnits.Count - 1);
             }
 
             if (!phaseBegin.HasValue || !phaseEnd.HasValue) return new GuiTimeRange(startTime, startTime);
@@ -3388,7 +3409,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="backColor"></param>
         /// <param name="textColor"></param>
         /// <returns></returns>
-        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor, Color? textColor)
+        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, List<PlanUnitC> planUnits, ref TimeSpan needTime, Color backColor, Color? textColor)
         {
             // Provedu přípravu pracovních časů pro každou PlanUnitC tak, aby její CurrentWorkTime začínal v flowTime nebo později:
             foreach (PlanUnitC planUnit in planUnits)
@@ -3635,7 +3656,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// </summary>
         public GuiTimeRange CurrentWorkTime { get; set; }
         /// <summary>
-        /// Vytvoří a vrátí graf práce za toto Pracoviště / Pracovníka (obsahuje prvky = pracovní směny a prvky práce)
+        /// Vytvoří a vrátí graf práce za toto Pracoviště / Pracovníka / Zdroj (obsahuje prvky = pracovní směny a prvky práce)
         /// </summary>
         /// <param name="gridType">Cílový graf, ovlivňuje detaily prvků grafu</param>
         /// <returns></returns>
@@ -3655,7 +3676,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             return guiGraph;
         }
         /// <summary>
-        /// Vytvoří a vrátí graf času za toto Pracoviště / Pracovníka (obsahuje prvky = pracovní směny a jejich Ratio)
+        /// Vytvoří a vrátí graf času za toto Pracoviště / Pracovníka / Zdroj (obsahuje prvky = pracovní směny a jejich Ratio)
         /// </summary>
         /// <param name="gridType">Cílový graf, ovlivňuje detaily prvků grafu</param>
         /// <returns></returns>
@@ -3681,6 +3702,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             {
                 case GridPositionType.Workplace:
                 case GridPositionType.Person:
+                case GridPositionType.Source:
                     GuiIdText mc = new GuiIdText() { GuiId = new GuiId(PlanUnitC.ClassNumber, this.RecordId), Text = this.MachinesCount.ToString() };
                     guiRow = new GuiDataRow(this.RecordGid, this.Refer, this.Name, mc);
                     guiRow.Graph = this.CreateGuiGraphWork(gridType);
@@ -3783,14 +3805,15 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                     case PlanUnitType.Workplace:
                         guiGraphItem.BehaviorMode |=
                             GraphItemBehaviorMode.ShowLinks |
-                            GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
-                        if (this.Operation != null)
-                        {
-                            if (!this.Operation.IsFixed)
-                                guiGraphItem.BehaviorMode |= GraphItemBehaviorMode.MoveToAnotherRow;
-                        }
+                            GraphItemBehaviorMode.MoveToAnotherTime | 
+                            GraphItemBehaviorMode.ResizeTime;
+                        if (this.Operation != null && !this.Operation.IsFixed)
+                            guiGraphItem.BehaviorMode |= 
+                                GraphItemBehaviorMode.MoveToAnotherRow;
+                        guiGraphItem.TextPosition = GuiTextPosition.Right | GuiTextPosition.Outside;
                         break;
                     case PlanUnitType.Person:
+                    case PlanUnitType.Source:
                         guiGraphItem.BehaviorMode |=
                             GraphItemBehaviorMode.CanSelect;
                         break;
@@ -3912,17 +3935,15 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Time = this.Time
             };
 
-            // V property this.PlanUnitC.PlanUnitType je uveden typ plánovací jednotky (stroj / osoba)
+            // V property this.PlanUnitC.PlanUnitType je uveden typ plánovací jednotky (stroj / osoba / zdroj)
             // V parametru "target" je uveden typ cílového grafu;
 
-            if (this.PlanUnitC.PlanUnitType == PlanUnitType.Person)
-            {   // Osoba:
-                switch (gridType)
-                {
-                    case GridPositionType.Workplace:
-                        break;
-                    case GridPositionType.Person:          // Hlavní grid, dolná tabulka
-                    case GridPositionType.Employee:        // Tabulka vpravo
+            switch (this.PlanUnitC.PlanUnitType)
+            {
+                case PlanUnitType.Person:
+                    // Typ prvku = Osoba
+                    if (gridType == GridPositionType.Person || gridType == GridPositionType.Employee)
+                    {   // Osoba se dává do dvou typů grafů = uprostřed uprostřed, a vpravo:
                         // Bude mít šrafovanou výplň pozadí:
                         guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
                         guiGraphItem.HatchColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Black, 0.667f) : Color.DimGray);
@@ -3936,10 +3957,30 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                         // Výška prvku v grafu bude pro dolní graf == null, pro graf vpravo = 1:
                         guiGraphItem.Height = (gridType == GridPositionType.Person ? (float?)null : (float?)this.Height);
                         guiGraphItem.BackEffectNonEditable = GuiGraphItemBackEffectStyle.Flat;
+                    }
+                    break;
 
-                        break;
-                }
+                case PlanUnitType.Source:
+                    // Typ prvku = Zdroj
+                    if (gridType == GridPositionType.Source)
+                    {   // Osoba se dává do jednoho grafu = uprostřed dole:
+                        // Bude mít šrafovanou výplň pozadí:
+                        guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent20;
+                        guiGraphItem.HatchColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Black, 0.667f) : Color.DimGray);
+                        // Zobrazíme poměr využití kapacity:
+                        guiGraphItem.RatioBegin = this.UsedRatio;
+                        guiGraphItem.RatioBeginBackColor = this.RatioBeginBackColor;
+                        if (!guiGraphItem.RatioBeginBackColor.HasValue)
+                            guiGraphItem.RatioBeginBackColor = (this.BackColor.HasValue ? this.BackColor.Value.Morph(Color.Red, 0.450f) : Color.LightPink);
+                        // Dolní graf bude mít RatioStyle = VerticalFill, graf vpravo = HorizontalInner:
+                        guiGraphItem.RatioStyle = GuiRatioStyle.HorizontalInner;
+                        // Výška prvku v grafu bude vždy == null (Source jsou jen v dolním grafu):
+                        guiGraphItem.Height = (float?)null;
+                        guiGraphItem.BackEffectNonEditable = GuiGraphItemBackEffectStyle.Flat;
+                    }
+                    break;
             }
+
             return guiGraphItem;
         }
     }
@@ -4065,9 +4106,13 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// </summary>
         Workplace,
         /// <summary>
-        /// Uprostřed dole - osoby a jejich práce
+        /// Uprostřed uprostřed - osoby a jejich práce
         /// </summary>
         Person,
+        /// <summary>
+        /// Uprostřed dole - zdroje a jejich práce
+        /// </summary>
+        Source,
         /// <summary>
         /// Vpravo - zaměstnanci a jejich pracovní doba, nikoli práce
         /// </summary>
