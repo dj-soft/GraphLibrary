@@ -35,10 +35,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public GTimeGraphGroup(GTimeGraph parent, bool acceptZeroTime, ITimeGraphItem item)
             : this(parent)
         {
-            this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
+            this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.GControl)
             this._FirstItem = item;
             this._Items = new ITimeGraphItem[] { item };
             bool canResize = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime);
+            if (!acceptZeroTime && (item.ImageBegin != null || item.ImageEnd != null)) acceptZeroTime = true;
             this._Store(item.Time.Begin, item.Time.End, acceptZeroTime, item.Height, canResize);
         }
         /// <summary>
@@ -62,12 +63,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool canResize = false;
             foreach (ITimeGraphItem item in this.Items)
             {
-                this._PrepareGControlItem(item);                          // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
+                this._PrepareGControlItem(item);                          // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.GControl)
                 if (this._FirstItem == null) this._FirstItem = item;
                 if (item.Height.HasValue && (!height.HasValue || item.Height.Value > height.Value)) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
                 if (item.Time.End.HasValue && (!end.HasValue || item.Time.End.Value > end.Value)) end = item.Time.End;
                 if (!canResize && item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime)) canResize = true;
+                if (!acceptZeroTime && (item.ImageBegin != null || item.ImageEnd != null)) acceptZeroTime = true;
                 item.OwnerGraph = parent;
             }
             this._Store(begin, end, acceptZeroTime, height, canResize);

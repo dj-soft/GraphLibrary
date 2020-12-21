@@ -2924,6 +2924,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string Text { get; set; }
         /// <summary>
+        /// Umístění textu, default = Center.
+        /// <para/>
+        /// Pokud bude specifikováno umístění <see cref="GuiTextPosition.Outside"/>, bude text kreslen pokud možno mimo vnitřek prvku.
+        /// Pokud na dané straně (např. <see cref="GuiTextPosition.Right"/> = vpravo od prvku) nebude dost místa, budeme hledat prostor pro text vlevo od prvku.
+        /// Pokud ani vlevo nebude dost místa, dáme text dovnitř prvku.
+        /// <para/>
+        /// Obdobně platí i pro ostatní směry.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public GuiTextPosition TextPosition { get; set; }
+        /// <summary>
         /// ToolTip pro zobrazení u tohoto tohoto prvku.
         /// Pokud je null, bude se hledat v tabulce textů.
         /// Z databáze se načítá ze sloupce: "tooltip", je NEPOVINNÝ.
@@ -3223,7 +3234,7 @@ namespace Noris.LCS.Base.WorkScheduler
         #region Optimalizace pro persistenci dat : protected properties s menší velikosti v serializaci, nahrazující standardní serializaci některých public properties
         /// <summary>
         /// Property která slouží k serializaci hodnot z <see cref="BehaviorMode"/>, <see cref="Layer"/>, 
-        /// <see cref="Level"/>, <see cref="Order"/>, <see cref="Height"/>
+        /// <see cref="Level"/>, <see cref="Order"/>, <see cref="Height"/>, <see cref="TextPosition"/>
         /// </summary>
         [PropertyName("Spec")]
         private string Specification
@@ -3234,7 +3245,8 @@ namespace Noris.LCS.Base.WorkScheduler
                                 ConvertToSerial(this.Height) + ";" +
                                 this.Layer.ToString() + ";" +
                                 this.Level.ToString() + ";" +
-                                this.Order.ToString();
+                                this.Order.ToString() + ";" +
+                                ((int)this.TextPosition).ToString();
                 return result;
             }
             set
@@ -3244,6 +3256,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 int layer = 0;
                 int level = 0;
                 int order = 0;
+                GuiTextPosition textPosition = GuiTextPosition.None;
 
                 if (!String.IsNullOrEmpty(value))
                 {
@@ -3253,6 +3266,7 @@ namespace Noris.LCS.Base.WorkScheduler
                     layer = ConvertToInt32(items, 2);
                     level = ConvertToInt32(items, 3);
                     order = ConvertToInt32(items, 4);
+                    textPosition = (GuiTextPosition)ConvertToInt32(items, 5);
                 }
 
                 this.BehaviorMode = behaviorMode;
@@ -3260,6 +3274,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 this.Layer = layer;
                 this.Level = level;
                 this.Order = order;
+                this.TextPosition = textPosition;
             }
         }
         #endregion
@@ -4859,6 +4874,39 @@ namespace Noris.LCS.Base.WorkScheduler
         Vertical = Left | Right,
         /// <summary>Všechny</summary>
         All = Horizontal | Vertical
+    }
+    /// <summary>
+    /// Umístění textu vzhledem k prostoru
+    /// </summary>
+    [Flags]
+    public enum GuiTextPosition
+    {
+        None = 0,
+        Left = 0x01,
+        Right = 0x02,
+        Top = 0x10,
+        Bottom = 0x20,
+        /// <summary>
+        /// Vždy mimo vnitřní prostor
+        /// </summary>
+        Outside = 0x100,
+
+        Center = None,
+        LeftTop = Left | Top,
+        LeftCenter = Left,
+        LeftBottom = Left | Bottom,
+        MiddleTop = Top,
+        MiddleCenter = None,
+        MiddleBottom = Bottom,
+        RightTop = Right | Top,
+        RightCenter = Right,
+        RightBottom = Right | Bottom,
+
+        OutsideLeft = Outside | Left,
+        OutsideRight = Outside | Right,
+        OutsideTop = Outside | Top,
+        OutsideBottom = Outside | Bottom
+
     }
     #endregion
     #region GuiIdText : třída pro předání odkazu na záznam (GuiId) plus vizuální text

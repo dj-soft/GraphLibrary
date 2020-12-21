@@ -535,12 +535,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             foreach (GTimeGraphGroup group in groupList)
             {
                 if (group.IsValidRealTime)
-                {   // Grupa je reálná (časy a výška jsou kladné):
-                    // Instance layerUsing je PointArray pro Point = DateTime, a Value = pole intervalů typu float.
+                {   // Grupa je reálná (výška je kladná, a čas je buďto kladný, anebo nulový a obsahuje ikonu zobrazovanou v daném čase):
+                    // Instance layerUsing je PointArray pro: Point = DateTime, a Value = pole intervalů typu float.
                     // Což znamená: instance obsahuje prvky, kde klíčem (na ose X) je datum, kdy se mění využití daného prostoru, 
                     // a hodnotou na této X souřadnici je využití prostoru počínaje tímto datem.
                     // Využití prostoru (obsazení na ose Y) reprezentuje IntervalArray, což je pole intervalů, kde interval má Begin a End, 
                     // v tomto rozmezí osy Y je prostor obsazen.
+                    qqq;
 
                     // Nejprve získáme pole obsahující datum změny (souřadnice X) a využití prostoru (souřadnice Y), pro daný časový interval:
                     TimeRange time = group.Time;
