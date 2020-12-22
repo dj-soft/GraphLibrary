@@ -541,7 +541,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     // a hodnotou na této X souřadnici je využití prostoru počínaje tímto datem.
                     // Využití prostoru (obsazení na ose Y) reprezentuje IntervalArray, což je pole intervalů, kde interval má Begin a End, 
                     // v tomto rozmezí osy Y je prostor obsazen.
-                    qqq;
 
                     // Nejprve získáme pole obsahující datum změny (souřadnice X) a využití prostoru (souřadnice Y), pro daný časový interval:
                     TimeRange time = group.Time;
@@ -1548,6 +1547,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
+            this.BoundsAbsoluteDrawed = absoluteBounds;
             this.DrawBackground(e, absoluteBounds);
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "Draw", ""))
             {
@@ -1787,6 +1787,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
         /// </summary>
         public Color? LinkColorError { get { return this.CurrentGraphProperties.LinkColorError; } }
+        /// <summary>
+        /// Souřadnice absolutní, kam byl graf naposledy kreslen. Slouží jako OuterBounds pro pozicování textů jednotlivých prvků.
+        /// Hodnota je uložena do proměnné v okamžiku každého kreslení grafu, a její čtení je tedy okamžité na rozdíl 
+        /// od property <see cref="InteractiveObject.BoundsAbsolute"/>, která se vždy napočítává od Root parenta.
+        /// </summary>
+        public Rectangle? BoundsAbsoluteDrawed { get; protected set; }
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
         /// <summary>
@@ -2639,6 +2645,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Režim chování položky grafu (editovatelnost, texty, atd).
         /// </summary>
         GraphItemBehaviorMode BehaviorMode { get; }
+        /// <summary>
+        /// Zarovnání textu v prvku grafu
+        /// </summary>
+        ExtendedContentAlignment TextPosition { get; }
         /// <summary>
         /// Efekt pro vykreslení prvku, pokud je Editovatelný
         /// </summary>

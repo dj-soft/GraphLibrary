@@ -830,13 +830,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="boundsAbsolute"></param>
         /// <param name="text"></param>
         /// <param name="fontInfo"></param>
-        internal void DrawText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, string text, FontInfo fontInfo)
+        /// <param name="textPosition"></param>
+        internal void DrawText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, string text, FontInfo fontInfo, ExtendedContentAlignment textPosition)
         {
             if (boundsAbsolute.Width < 10 || String.IsNullOrEmpty(text)) return;
 
             Color textColor = this.TextColorCurrent;
             StringFormatFlags stringFormat = Graph.CurrentGraphProperties.TextStringFormat;
-            GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, textColor, stringFormatFlags: stringFormat);
+            GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, textPosition, outerBounds: this.Graph.BoundsAbsoluteDrawed, color: textColor, stringFormatFlags: stringFormat);
         }
         /// <summary>
         /// Barva textu (písma) získaná dle pravidel z prvku

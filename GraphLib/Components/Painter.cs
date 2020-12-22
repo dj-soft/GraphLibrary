@@ -455,9 +455,30 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region DrawString, DrawStringMeasure, MeasureString
+        #region DrawString, DrawStringMeasure, MeasureString, ConvertAlignment
         /// <summary>
-        /// Vykreslí zadaný text
+        /// Vykreslí daný text do daného prostoru.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <param name="bounds"></param>
+        /// <param name="extAlignment"></param>
+        /// <param name="outerBounds">Vnější souřadnice prostoru, pro umisťování textu vně daného prostoru (<see cref="ExtendedContentAlignment.PreferOuter"/> atd)</param>
+        /// <param name="color"></param>
+        /// <param name="brush"></param>
+        /// <param name="transformation"></param>
+        /// <param name="drawBackground"></param>
+        /// <param name="stringFormatFlags"></param>
+        /// <param name="stringFormat"></param>
+        /// <returns></returns>
+        public static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ExtendedContentAlignment extAlignment, Rectangle? outerBounds, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
+        {
+            RectangleF[] positions;
+            return _DrawString(graphics, bounds, text, brush, color, fontInfo, extAlignment, outerBounds, transformation, drawBackground, stringFormatFlags, stringFormat, false, out positions);
+        }
+        /// <summary>
+        /// Vykreslí daný text do daného prostoru.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="text"></param>
@@ -473,11 +494,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Rectangle DrawString(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
         {
+            ExtendedContentAlignment extAlignment = ConvertAlignment(alignment);
             RectangleF[] positions;
-            return _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormatFlags, stringFormat, false, out positions);
+            return _DrawString(graphics, bounds, text, brush, color, fontInfo, extAlignment, null, transformation, drawBackground, stringFormatFlags, stringFormat, false, out positions);
         }
         /// <summary>
-        /// Vykreslí zadaný text
+        /// Vykreslí daný text do daného prostoru. Změří a vrátí souřadnice. Bohužel ve WinForm to není úplně přesné.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="text"></param>
@@ -493,8 +515,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         internal static RectangleF[] DrawStringMeasureChars(Graphics graphics, string text, FontInfo fontInfo, Rectangle bounds, ContentAlignment alignment, Color? color = null, Brush brush = null, MatrixTransformationType? transformation = null, Action<Rectangle> drawBackground = null, StringFormatFlags? stringFormatFlags = null, StringFormat stringFormat = null)
         {
+            ExtendedContentAlignment extAlignment = ConvertAlignment(alignment);
             RectangleF[] positions;
-            _DrawString(graphics, bounds, text, brush, color, fontInfo, alignment, transformation, drawBackground, stringFormatFlags, stringFormat, true, out positions);
+            _DrawString(graphics, bounds, text, brush, color, fontInfo, extAlignment, null, transformation, drawBackground, stringFormatFlags, stringFormat, true, out positions);
             return positions;
         }
         /// <summary>
@@ -502,7 +525,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         internal static StringFormatFlags DrawStringStandardFormatFlags { get { return FontManagerInfo.StandardStringFormatFlags; } }
         /// <summary>
-        /// Draw a text to specified area
+        /// Vykreslí daný text do daného prostoru.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
@@ -510,14 +533,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="brush"></param>
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
-        /// <param name="alignment"></param>
+        /// <param name="extAlignment"></param>
+        /// <param name="outerBounds"></param>
         /// <param name="transformation"></param>
         /// <param name="drawBackground"></param>
         /// <param name="stringFormatFlags"></param>
         /// <param name="stringFormat"></param>
         /// <param name="measureChars"></param>
         /// <param name="positions"></param>
-        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, StringFormatFlags? stringFormatFlags, StringFormat stringFormat, bool measureChars, out RectangleF[] positions)
+        private static Rectangle _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ExtendedContentAlignment extAlignment, Rectangle? outerBounds, MatrixTransformationType? transformation, Action<Rectangle> drawBackground, StringFormatFlags? stringFormatFlags, StringFormat stringFormat, bool measureChars, out RectangleF[] positions)
         {
             positions = null;
 
@@ -534,7 +558,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 stringFormat = FontManagerInfo.CreateNewStandardStringFormat(sff);
             }
 
-
             using (GraphicsUseText(graphics))    // Nedávej tady CLIP na grafiku pro bounds: ona grafika už touhle dobou je korektně clipnutá na správný prostor controlu. Clipnutím na bounds se může část textu vykreslit i mimo control !!!
             {
                 // graphics.SmoothingMode = SmoothingMode.HighQuality;
@@ -547,7 +570,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 Font font = fontInfo.Font;
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, stringFormat);
                 if (isVertical) textSize = textSize.Swap();               // Pro vertikální text převedu prostor textu "na výšku"
-                textArea = textSize.AlignTo(bounds, alignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
+
+                textArea = AlignContentToBounds(textSize, extAlignment, bounds, 1, true, outerBounds);
+
+                // textArea = textSize.AlignTo(bounds, extAlignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
 
                 if (drawBackground != null)
                     drawBackground(textArea);                             // UserDraw pozadí pod textem: v nativní orientaci
@@ -656,6 +682,358 @@ namespace Asol.Tools.WorkScheduler.Components
             SizeF sizeF = graphics.MeasureString(text, font);
             Size size = sizeF.Enlarge(1f, 3f).ToSize();
             return size;
+        }
+        #endregion
+        #region Zarovnání obsahu do daného prostoru
+        /// <summary>
+        /// Metoda vrátí <see cref="ExtendedContentAlignment"/> pro daný <see cref="ContentAlignment"/>
+        /// </summary>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        public static ExtendedContentAlignment ConvertAlignment(ContentAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case ContentAlignment.TopLeft: return ExtendedContentAlignment.InnerLeftTop;
+                case ContentAlignment.TopCenter: return ExtendedContentAlignment.InnerMiddleTop;
+                case ContentAlignment.TopRight: return ExtendedContentAlignment.InnerRightTop;
+                case ContentAlignment.MiddleLeft: return ExtendedContentAlignment.InnerLeft;
+                case ContentAlignment.MiddleCenter: return ExtendedContentAlignment.Center;
+                case ContentAlignment.MiddleRight: return ExtendedContentAlignment.InnerRight;
+                case ContentAlignment.BottomLeft: return ExtendedContentAlignment.InnerLeftBottom;
+                case ContentAlignment.BottomCenter: return ExtendedContentAlignment.InnerBottom;
+                case ContentAlignment.BottomRight: return ExtendedContentAlignment.InnerRightBottom;
+            }
+            return ExtendedContentAlignment.Center;
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="ExtendedContentAlignment"/> pro daný <see cref="Noris.LCS.Base.WorkScheduler.GuiTextPosition"/>
+        /// </summary>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        public static ExtendedContentAlignment ConvertGuiAlignment(Noris.LCS.Base.WorkScheduler.GuiTextPosition alignment)
+        {
+            // Využíváme toho, že oba enumy mají identické číselné hodnoty na dolních 12 bitech:
+            return (ExtendedContentAlignment)(((int)alignment) & 0x0FFF);
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané ve stylu <paramref name="alignment"/> do daného prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignment">Definice zarovnání obsahu</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <param name="outerBounds">Vnější prostor pro umísťování obsahu vně daného prostoru</param>
+        /// <returns></returns>
+        public static Rectangle AlignContentToBounds(SizeF size, ExtendedContentAlignment alignment, Rectangle bounds, int margins = 0, bool cropSize = false, Rectangle? outerBounds = null)
+        {
+            ExtendedContentAlignmentState alignState = new ExtendedContentAlignmentState(alignment);
+            return _AlignContentToBounds(Size.Ceiling(size), alignState, bounds, margins, cropSize, outerBounds);
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané ve stylu <paramref name="alignment"/> do daného prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignment">Definice zarovnání obsahu</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <param name="outerBounds">Vnější prostor pro umísťování obsahu vně daného prostoru</param>
+        /// <returns></returns>
+        public static Rectangle AlignContentToBounds(Size size, ExtendedContentAlignment alignment, Rectangle bounds, int margins = 0, bool cropSize = false, Rectangle? outerBounds = null)
+        {
+            ExtendedContentAlignmentState alignState = new ExtendedContentAlignmentState(alignment);
+            return _AlignContentToBounds(size, alignState, bounds, margins, cropSize, outerBounds);
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané dovnitř ve stylu <paramref name="alignment"/> do daného prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignment">Definice zarovnání obsahu</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <returns></returns>
+        public static Rectangle AlignContentToBoundsInner(Size size, ExtendedContentAlignment alignment, Rectangle bounds, int margins = 0, bool cropSize = false)
+        {
+            ExtendedContentAlignmentState alignState = new ExtendedContentAlignmentState(alignment);
+            if (margins < 0) margins = 0;
+            return _AlignContentToBoundsInner(size, alignState, bounds, margins, cropSize);
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané dovnitř ve stylu <paramref name="alignState"/> do daného prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignState">Definice zarovnání obsahu</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <param name="outerBounds">Vnější prostor pro umísťování obsahu vně daného prostoru</param>
+        /// <returns></returns>
+        private static Rectangle _AlignContentToBounds(Size size, ExtendedContentAlignmentState alignState, Rectangle bounds, int margins, bool cropSize, Rectangle? outerBounds)
+        {
+            if (margins < 0) margins = 0;
+            int margins2 = 2 * margins;
+            bool fitInside = (size.Width <= (bounds.Width - margins2) && size.Height <= (bounds.Height - margins2));
+
+            // Pokud MUSÍME dát obsah dovnitř, anebo pokud jej MŮŽEME dát dovnitř a aktuálně je to možné, anebo pokud NENÍ definované žádné umístění venku, pak umístíme obsah DOVNITŘ:
+            if (alignState.OnlyInner || (alignState.PreferInner && fitInside) || !alignState.OuterAny)
+                return _AlignContentToBoundsInner(size, alignState, bounds, margins, cropSize);
+
+            // Měli bychom obsah dát zvenku k danému prostoru (vnější pozice je definovaná - alignState.OuterAny je true), ale i ten vnější prostor může být omezen:
+            // Pokud NENÍ vnější prostor omezen, anebo pokud MUSÍME dát obsah vně, anebo pokud MÁME PREFEROVAT umístění vně a obsah se vejde, pak umístíme obsah VNĚ:
+            if (!outerBounds.HasValue || alignState.OnlyOuter || (alignState.PreferInner && !fitInside) || (alignState.PreferOuter && outerBounds.HasValue && _FitContentToOuterBounds(size, alignState, bounds, margins2, outerBounds.Value)))
+                return _AlignContentToBoundsOuter(size, alignState, bounds, margins, cropSize);
+
+            // Dáme obsah dovnit:
+            return _AlignContentToBoundsInner(size, alignState, bounds, margins, cropSize);
+        }
+        /// <summary>
+        /// Zjistí, zda se obsah s danou velikostí <paramref name="size"/> vejde vně daného prostoru <paramref name="bounds"/> = do meziprostoru ku <paramref name="outerBounds"/>.
+        /// Volitelně může upravit režim umístění (prohodit OuterLeft a Right, nebo Top a Bottom), pokud je povoleno <see cref="ExtendedContentAlignment.CanSwapOuter"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignState">Definice zarovnání obsahu</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins2">Okraje, dvojnásobek = prostor na začátku + konci, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="outerBounds">Vnější prostor pro umísťování obsahu vně daného prostoru</param>
+        /// <returns></returns>
+        private static bool _FitContentToOuterBounds(Size size, ExtendedContentAlignmentState alignState, Rectangle bounds, int margins2, Rectangle outerBounds)
+        {
+            if (alignState.OuterHorizontal)
+            {
+                int sizeL = (bounds.Left - outerBounds.Left - margins2);
+                int sizeR = (outerBounds.Right - bounds.Right - margins2);
+                if (alignState.OuterLeft)
+                {
+                    if (size.Width <= sizeL)
+                        return true;
+                    if (alignState.CanSwapOuter && size.Width <= sizeR)
+                    {
+                        alignState.OuterLeft = false;
+                        alignState.OuterRight = true;
+                        return true;
+                    }
+                }
+                else if (alignState.OuterRight)
+                {
+                    if (size.Width <= sizeR)
+                        return true;
+                    if (alignState.CanSwapOuter && size.Width <= sizeL)
+                    {
+                        alignState.OuterRight = false;
+                        alignState.OuterLeft = true;
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            if (alignState.OuterVertical)
+            {
+                int sizeT = (bounds.Top - outerBounds.Top - margins2);
+                int sizeB = (outerBounds.Bottom - bounds.Bottom - margins2);
+                if (alignState.OuterTop)
+                {
+                    if (size.Height <= sizeT)
+                        return true;
+                    if (alignState.CanSwapOuter && size.Height <= sizeB)
+                    {
+                        alignState.OuterTop = false;
+                        alignState.OuterBottom = true;
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (alignState.OuterBottom)
+                {
+                    if (size.Height <= sizeB)
+                        return true;
+                    if (alignState.CanSwapOuter && size.Height <= sizeT)
+                    {
+                        alignState.OuterBottom = false;
+                        alignState.OuterTop = true;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané dovnitř ve stylu <paramref name="alignState"/> do daného prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignState">Režim zarovnání</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <returns></returns>
+        private static Rectangle _AlignContentToBoundsInner(Size size, ExtendedContentAlignmentState alignState, Rectangle bounds, int margins, bool cropSize = false)
+        {
+            int margins2 = 2 * margins;
+            int bw = bounds.Width - margins2;
+            int bh = bounds.Height - margins2;
+            int cw = (cropSize && size.Width > bw ? bw : size.Width);
+            int ch = (cropSize && size.Height > bh ? bh : size.Height);
+            int cx = _AlignContentInnerOne(bounds.X, (bw - cw), alignState.InnerLeft, alignState.InnerRight);
+            int cy = _AlignContentInnerOne(bounds.Y, (bh - ch), alignState.InnerTop, alignState.InnerBottom);
+            return new Rectangle(cx, cy, cw, ch);
+        }
+        /// <summary>
+        /// Vrátí počáteční souřadnici prostoru dle počátku prostoru, volného prostru a zarovnání
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="space"></param>
+        /// <param name="toBegin"></param>
+        /// <param name="toEnd"></param>
+        /// <returns></returns>
+        private static int _AlignContentInnerOne(int begin, int space, bool toBegin, bool toEnd)
+        {
+            if (toBegin && !toEnd) return begin;                     // Left nebo Top: vracíme Begin = Left nebo Top
+            if (!toBegin && toEnd) return begin + space;             // Right nebo Bottom: vracíme (Begin + Space) = tak, aby End = Right nebo Bottom
+            return begin + space / 2;                                // Jinak je to Center: vracíme (Begin + 1/2 Space) = tak, aby Střed = Center
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané vně daného prostoru <paramref name="bounds"/> ve stylu <paramref name="alignState"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignState">Režim zarovnání</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <returns></returns>
+        private static Rectangle _AlignContentToBoundsOuter(Size size, ExtendedContentAlignmentState alignState, Rectangle bounds, int margins, bool cropSize)
+        {
+            int margins2 = 2 * margins;
+            int bx = bounds.X;
+            int by = bounds.Y;
+            int bw = bounds.Width;
+            int bh = bounds.Height;
+
+            int cx = bx;
+            int cy = by;
+            int cw = size.Width;
+            int ch = size.Height;
+            if (alignState.OuterHorizontal)
+            {
+                cy = by + margins + ((bh - ch) / 2);
+                if (alignState.OuterLeft)
+                    cx = bx - margins - cw;
+                else if (alignState.OuterRight)
+                    cx = bx + bw + margins;
+            }
+            else if (alignState.OuterVertical)
+            {
+                cx = bx + margins + ((bw - cw) / 2);
+                if (alignState.OuterTop)
+                    cy = by - margins - ch;
+                else if (alignState.OuterBottom)
+                    cy = by + bh + margins;
+            }
+            return new Rectangle(cx, cy, cw, ch);
+        }
+        /// <summary>
+        /// Rozpad enumu <see cref="ExtendedContentAlignment"/>, aby se provedl pouze 1x
+        /// </summary>
+        private class ExtendedContentAlignmentState
+        {
+            public ExtendedContentAlignmentState(ExtendedContentAlignment alignment)
+            {
+                InnerLeft = ((alignment & ExtendedContentAlignment.InnerLeft) != 0);
+                InnerRight = ((alignment & ExtendedContentAlignment.InnerRight) != 0);
+                InnerTop = ((alignment & ExtendedContentAlignment.InnerTop) != 0);
+                InnerBottom = ((alignment & ExtendedContentAlignment.InnerBottom) != 0);
+
+                OuterLeft = ((alignment & ExtendedContentAlignment.OuterLeft) != 0);
+                OuterRight = ((alignment & ExtendedContentAlignment.OuterRight) != 0);
+                OuterTop = ((alignment & ExtendedContentAlignment.OuterTop) != 0);
+                OuterBottom = ((alignment & ExtendedContentAlignment.OuterBottom) != 0);
+
+                OnlyInner = ((alignment & (ExtendedContentAlignment.PreferInner | ExtendedContentAlignment.OnlyOuter | ExtendedContentAlignment.PreferOuter)) == 0);
+                PreferInner = ((alignment & ExtendedContentAlignment.PreferInner) != 0);
+                OnlyOuter = ((alignment & ExtendedContentAlignment.OnlyOuter) != 0);
+                PreferOuter = ((alignment & ExtendedContentAlignment.PreferOuter) != 0);
+
+                CanSwapOuter = ((alignment & ExtendedContentAlignment.CanSwapOuter) != 0);
+            }
+            /// <summary>
+            /// K levému vnitřnímu okraji.
+            /// </summary>
+            public bool InnerLeft;
+            /// <summary>
+            /// K pravému vnitřnímu okraji.
+            /// </summary>
+            public bool InnerRight;
+            /// <summary>
+            /// K hornímu vnitřnímu okraji.
+            /// </summary>
+            public bool InnerTop;
+            /// <summary>
+            /// K dolnímu vnitřnímu okraji.
+            /// </summary>
+            public bool InnerBottom;
+
+            /// <summary>
+            /// K levému okraji zvenku.
+            /// </summary>
+            public bool OuterLeft;
+            /// <summary>
+            /// K pravému okraji zvenku.
+            /// </summary>
+            public bool OuterRight;
+            /// <summary>
+            /// K hornímu okraji zvenku = nad daný prostor
+            /// </summary>
+            public bool OuterTop;
+            /// <summary>
+            /// K dolnímu okraji zvenku = pod daný prostor.
+            /// </summary>
+            public bool OuterBottom;
+            /// <summary>
+            /// Vnější okraj vlevo nebo vpravo
+            /// </summary>
+            public bool OuterHorizontal { get { return OuterLeft || OuterRight; } }
+            /// <summary>
+            /// Vnější okraj nahoře nebo dole
+            /// </summary>
+            public bool OuterVertical { get { return OuterTop || OuterBottom; } }
+            /// <summary>
+            /// Vnější okraj kdekoli
+            /// </summary>
+            public bool OuterAny { get { return OuterLeft || OuterRight || OuterTop || OuterBottom; } }
+
+            /// <summary>
+            /// Pouze uvnitř prostoru, i kdyby se dovnitř nevešel
+            /// </summary>
+            public bool OnlyInner;
+            /// <summary>
+            /// Nejprve uvnitř prostoru, ale pokud se dovnitř nevejde pak je možno použít vnější umístění podle 
+            /// <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+            /// Pokud ale nebude nic z toho specifikováno, nebude se text umísťovat Outer.
+            /// </summary>
+            public bool PreferInner;
+            /// <summary>
+            /// Pouze vně daného prostoru, nikdy ne dovnitř.
+            /// Musí být zadáno něco z <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+            /// Pokud nebude nic z toho specifikováno, bude text umístěn Inner.
+            /// </summary>
+            public bool OnlyOuter;
+            /// <summary>
+            /// Neprve vně daného prostoru, podle hodnot <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+            /// Pokud se nevejde vně prostoru (který musí být něčím určen!), teprve pak se umisťuje uvnitř.
+            /// </summary>
+            public bool PreferOuter;
+
+            /// <summary>
+            /// Povolení k přemístění u vnějšího prostoru: pokud bude např. specifikována pozice <see cref="OuterLeft"/> a vnější prostor bude omezen tak, že obsah se nevejde doleva od daného prostoru,
+            /// pak <see cref="CanSwapOuter"/> způsobí, že otestujeme pozici <see cref="OuterRight"/> (tedy místo vlevo od objektu dáme popisek doprava) a případně ji využijeme.
+            /// Pokud ani vpravo nebude místo, pak můžeme přejít dovnitř (pokud bude dáno <see cref="PreferOuter"/> = nejprve vnější, a pak vnitřní pozice).
+            /// </summary>
+            public bool CanSwapOuter;
         }
         #endregion
         #region DrawTableText
@@ -5513,6 +5891,131 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         MirrorHorizontal,
         /// <summary>Zrcadlení vertikální = shora dolů, a sdola nahoru</summary>
         MirrorVertical
+    }
+    /// <summary>
+    /// Umístění jednoho prostoru (typicky písmena) v rámci jiného prostoru (typicky control) včetně možnosti umístit obsah vně controlu (podle potřeby a podle definice).
+    /// Pro konverzi existují metody <see cref="GPainter.ConvertAlignment"/>.
+    /// </summary>
+    public enum ExtendedContentAlignment
+    { // POZOR: AŽ BUDEŠ MĚNIT HODNOTY (přidávat nebo upravovat numerické bity), uprav i stejný enum GuiTextPosition v GraphLib\Shared\WorkSchedulerShared.cs !!!
+        /// <summary>
+        /// Nezadáno, použije se <see cref="Center"/>
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Doprostřed
+        /// </summary>
+        Center = None,
+
+        /// <summary>
+        /// K levému vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerLeft"/> i <see cref="InnerRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerLeft = 0x01,
+        /// <summary>
+        /// K pravému vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerLeft"/> i <see cref="InnerRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerRight = 0x02,
+        /// <summary>
+        /// K hornímu vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerTop"/> i <see cref="InnerBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerTop = 0x04,
+        /// <summary>
+        /// K dolnímu vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerTop"/> i <see cref="InnerBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerBottom = 0x08,
+
+        /// <summary>
+        /// K levému okraji zvenku.
+        /// Pokud bude zadán současně <see cref="OuterLeft"/> i <see cref="OuterRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterLeft = 0x10,
+        /// <summary>
+        /// K pravému okraji zvenku.
+        /// Pokud bude zadán současně <see cref="OuterLeft"/> i <see cref="OuterRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterRight = 0x20,
+        /// <summary>
+        /// K hornímu okraji zvenku = nad daný prostor
+        /// Pokud bude zadán současně <see cref="OuterTop"/> i <see cref="OuterBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterTop = 0x40,
+        /// <summary>
+        /// K dolnímu okraji zvenku = pod daný prostor.
+        /// Pokud bude zadán současně <see cref="OuterTop"/> i <see cref="OuterBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterBottom = 0x80,
+
+        /// <summary>
+        /// Pouze uvnitř prostoru, i kdyby se dovnitř nevešel
+        /// </summary>
+        OnlyInner = 0x000,
+        /// <summary>
+        /// Nejprve uvnitř prostoru, ale pokud se dovnitř nevejde pak je možno použít vnější umístění podle 
+        /// <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+        /// Pokud ale nebude nic z toho specifikováno, nebude se text umísťovat Outer.
+        /// </summary>
+        PreferInner = 0x100,
+        /// <summary>
+        /// Pouze vně daného prostoru, nikdy ne dovnitř.
+        /// Musí být zadáno něco z <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+        /// Pokud nebude nic z toho specifikováno, bude text umístěn Inner.
+        /// </summary>
+        OnlyOuter = 0x200,
+        /// <summary>
+        /// Neprve vně daného prostoru, podle hodnot <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+        /// Pokud se nevejde vně prostoru (který musí být něčím určen!), teprve pak se umisťuje uvnitř.
+        /// </summary>
+        PreferOuter = 0x400,
+        /// <summary>
+        /// Povolení k přemístění u vnějšího prostoru: pokud bude např. specifikována pozice <see cref="OuterLeft"/> a vnější prostor bude omezen tak, že obsah se nevejde doleva od daného prostoru,
+        /// pak <see cref="CanSwapOuter"/> způsobí, že otestujeme pozici <see cref="OuterRight"/> (tedy místo vlevo od objektu dáme popisek doprava) a případně ji využijeme.
+        /// Pokud ani vpravo nebude místo, pak můžeme přejít dovnitř (pokud bude dáno <see cref="PreferOuter"/> = nejprve vnější, a pak vnitřní pozice).
+        /// </summary>
+        CanSwapOuter = 0x800,
+
+        // POZOR: AŽ BUDEŠ MĚNIT HODNOTY (přidávat nebo upravovat numerické bity), uprav i stejný enum GuiTextPosition v GraphLib\Shared\WorkSchedulerShared.cs !!!
+
+        /// <summary>
+        /// K levému hornímu rohu
+        /// </summary>
+        InnerLeftTop = InnerLeft | InnerTop,
+        /// <summary>
+        /// Vodorovně: vlevo, svisle: uprostřed
+        /// </summary>
+        InnerLeftCenter = InnerLeft,
+        /// <summary>
+        /// K levému dolnímu rohu
+        /// </summary>
+        InnerLeftBottom = InnerLeft | InnerBottom,
+        /// <summary>
+        /// Vodorovně: uprostřed, svisle: nahoře
+        /// </summary>
+        InnerMiddleTop = InnerTop,
+        /// <summary>
+        /// Vodorovně: uprostřed, svisle: uprostřed
+        /// </summary>
+        InnerMiddleCenter = None,
+        /// <summary>
+        /// Vodorovně: uprostřed, svisle: dole
+        /// </summary>
+        InnerMiddleBottom = InnerBottom,
+        /// <summary>
+        /// K pravému hornímu rohu
+        /// </summary>
+        InnerRightTop = InnerRight | InnerTop,
+        /// <summary>
+        /// Vodorovně: vpravo, svisle: uprostřed
+        /// </summary>
+        InnerRightCenter = InnerRight,
+        /// <summary>
+        /// K pravému dolnímu rohu
+        /// </summary>
+        InnerRightBottom = InnerRight | InnerBottom
+
     }
     #endregion
 }

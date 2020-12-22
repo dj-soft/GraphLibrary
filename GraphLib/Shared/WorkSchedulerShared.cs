@@ -2926,8 +2926,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Umístění textu, default = Center.
         /// <para/>
-        /// Pokud bude specifikováno umístění <see cref="GuiTextPosition.Outside"/>, bude text kreslen pokud možno mimo vnitřek prvku.
-        /// Pokud na dané straně (např. <see cref="GuiTextPosition.Right"/> = vpravo od prvku) nebude dost místa, budeme hledat prostor pro text vlevo od prvku.
+        /// Pokud bude specifikováno umístění <see cref="GuiTextPosition.PreferOuter"/>, bude text kreslen pokud možno mimo vnitřek prvku.
+        /// Pokud na dané straně (např. <see cref="GuiTextPosition.InnerRight"/> = vpravo od prvku) nebude dost místa, budeme hledat prostor pro text vlevo od prvku.
         /// Pokud ani vlevo nebude dost místa, dáme text dovnitř prvku.
         /// <para/>
         /// Obdobně platí i pro ostatní směry.
@@ -4880,33 +4880,124 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     [Flags]
     public enum GuiTextPosition
-    {
-        None = 0,
-        Left = 0x01,
-        Right = 0x02,
-        Top = 0x10,
-        Bottom = 0x20,
+    { // POZOR: AŽ BUDEŠ MĚNIT HODNOTY (přidávat nebo upravovat numerické bity), uprav i stejný enum ExtendedContentAlignment v GraphLib\Components\Painter.cs !!!
         /// <summary>
-        /// Vždy mimo vnitřní prostor
+        /// Nezadáno, použije se <see cref="Center"/>
         /// </summary>
-        Outside = 0x100,
-
+        None = 0,
+        /// <summary>
+        /// Doprostřed
+        /// </summary>
         Center = None,
-        LeftTop = Left | Top,
-        LeftCenter = Left,
-        LeftBottom = Left | Bottom,
-        MiddleTop = Top,
-        MiddleCenter = None,
-        MiddleBottom = Bottom,
-        RightTop = Right | Top,
-        RightCenter = Right,
-        RightBottom = Right | Bottom,
 
-        OutsideLeft = Outside | Left,
-        OutsideRight = Outside | Right,
-        OutsideTop = Outside | Top,
-        OutsideBottom = Outside | Bottom
+        /// <summary>
+        /// K levému vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerLeft"/> i <see cref="InnerRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerLeft = 0x01,
+        /// <summary>
+        /// K pravému vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerLeft"/> i <see cref="InnerRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerRight = 0x02,
+        /// <summary>
+        /// K hornímu vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerTop"/> i <see cref="InnerBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerTop = 0x04,
+        /// <summary>
+        /// K dolnímu vnitřnímu okraji.
+        /// Pokud bude zadán současně <see cref="InnerTop"/> i <see cref="InnerBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        InnerBottom = 0x08,
 
+        /// <summary>
+        /// K levému okraji zvenku.
+        /// Pokud bude zadán současně <see cref="OuterLeft"/> i <see cref="OuterRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterLeft = 0x10,
+        /// <summary>
+        /// K pravému okraji zvenku.
+        /// Pokud bude zadán současně <see cref="OuterLeft"/> i <see cref="OuterRight"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterRight = 0x20,
+        /// <summary>
+        /// K hornímu okraji zvenku = nad daný prostor
+        /// Pokud bude zadán současně <see cref="OuterTop"/> i <see cref="OuterBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterTop = 0x40,
+        /// <summary>
+        /// K dolnímu okraji zvenku = pod daný prostor.
+        /// Pokud bude zadán současně <see cref="OuterTop"/> i <see cref="OuterBottom"/>, pak bude výsledek <see cref="Center"/>.
+        /// </summary>
+        OuterBottom = 0x80,
+
+        /// <summary>
+        /// Pouze uvnitř prostoru, i kdyby se dovnitř nevešel
+        /// </summary>
+        OnlyInner = 0x000,
+        /// <summary>
+        /// Nejprve uvnitř prostoru, ale pokud se dovnitř nevejde pak je možno použít vnější umístění podle 
+        /// <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+        /// Pokud ale nebude nic z toho specifikováno, nebude se text umísťovat Outer.
+        /// </summary>
+        PreferInner = 0x100,
+        /// <summary>
+        /// Pouze vně daného prostoru, nikdy ne dovnitř.
+        /// Musí být zadáno něco z <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+        /// Pokud nebude nic z toho specifikováno, bude text umístěn Inner.
+        /// </summary>
+        OnlyOuter = 0x200,
+        /// <summary>
+        /// Neprve vně daného prostoru, podle hodnot <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.
+        /// Pokud se nevejde vně prostoru (který musí být něčím určen!), teprve pak se umisťuje uvnitř.
+        /// </summary>
+        PreferOuter = 0x400,
+        /// <summary>
+        /// Povolení k přemístění u vnějšího prostoru: pokud bude např. specifikována pozice <see cref="OuterLeft"/> a vnější prostor bude omezen tak, že obsah se nevejde doleva od daného prostoru,
+        /// pak <see cref="CanSwapOuter"/> způsobí, že otestujeme pozici <see cref="OuterRight"/> (tedy místo vlevo od objektu dáme popisek doprava) a případně ji využijeme.
+        /// Pokud ani vpravo nebude místo, pak můžeme přejít dovnitř (pokud bude dáno <see cref="PreferOuter"/> = nejprve vnější, a pak vnitřní pozice).
+        /// </summary>
+        CanSwapOuter = 0x800,
+
+        // POZOR: AŽ BUDEŠ MĚNIT HODNOTY (přidávat nebo upravovat numerické bity), uprav i stejný enum ExtendedContentAlignment v GraphLib\Components\Painter.cs !!!
+
+        /// <summary>
+        /// K levému hornímu rohu
+        /// </summary>
+        InnerLeftTop = InnerLeft | InnerTop,
+        /// <summary>
+        /// Vodorovně: vlevo, svisle: uprostřed
+        /// </summary>
+        InnerLeftCenter = InnerLeft,
+        /// <summary>
+        /// K levému dolnímu rohu
+        /// </summary>
+        InnerLeftBottom = InnerLeft | InnerBottom,
+        /// <summary>
+        /// Vodorovně: uprostřed, svisle: nahoře
+        /// </summary>
+        InnerMiddleTop = InnerTop,
+        /// <summary>
+        /// Vodorovně: uprostřed, svisle: uprostřed
+        /// </summary>
+        InnerMiddleCenter = None,
+        /// <summary>
+        /// Vodorovně: uprostřed, svisle: dole
+        /// </summary>
+        InnerMiddleBottom = InnerBottom,
+        /// <summary>
+        /// K pravému hornímu rohu
+        /// </summary>
+        InnerRightTop = InnerRight | InnerTop,
+        /// <summary>
+        /// Vodorovně: vpravo, svisle: uprostřed
+        /// </summary>
+        InnerRightCenter = InnerRight,
+        /// <summary>
+        /// K pravému dolnímu rohu
+        /// </summary>
+        InnerRightBottom = InnerRight | InnerBottom
     }
     #endregion
     #region GuiIdText : třída pro předání odkazu na záznam (GuiId) plus vizuální text

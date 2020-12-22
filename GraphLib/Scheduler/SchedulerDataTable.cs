@@ -5132,7 +5132,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._Time = guiGraphItem.Time;                // Existuje implicitní konverze mezi typy TimeRange a GuiTimeRange.
             item._RatioStyle = GetRatioStyle(guiGraphItem.RatioStyle);
             item._BehaviorMode = guiGraphItem.BehaviorMode;
-
+            item._TextPosition = GPainter.ConvertGuiAlignment(guiGraphItem.TextPosition);
+           
             // ID pro grafickou vrstvu: vygenerujeme Int32 klíč pro daný GId, za pomoci indexu uloženého v hlavní tabulce (iGraphTable):
             item._ItemId = iGraphTable.GetId(item.ItemGId);
             item._GroupId = iGraphTable.GetId(item.GroupGId);
@@ -5347,6 +5348,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private GraphItemBehaviorMode _BehaviorMode;
         /// <summary>
+        /// Zarovnání textu v prvku grafu
+        /// </summary>
+        private ExtendedContentAlignment _TextPosition;
+        /// <summary>
         /// Vizuální control
         /// </summary>
         private GTimeGraphItem _GControl;
@@ -5422,6 +5427,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Režim chování položky grafu (editovatelnost, texty, atd).
         /// </summary>
         public GraphItemBehaviorMode BehaviorMode { get { return this._BehaviorMode; } set { this._BehaviorMode = value; } }
+        /// <summary>
+        /// Zarovnání textu v prvku grafu
+        /// </summary>
+        public ExtendedContentAlignment TextPosition { get { return this._TextPosition; } set { this._TextPosition = value; } }
         #endregion
         #region Variabilní čtení identifikátoru
         /// <summary>
@@ -5584,6 +5593,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
         TimeGraphElementRatioStyle ITimeGraphItem.RatioStyle { get { return this.RatioStyle; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.GetBackEffectEditable(); } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.GetBackEffectNonEditable(); } }
         GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }

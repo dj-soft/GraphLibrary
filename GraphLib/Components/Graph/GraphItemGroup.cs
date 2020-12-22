@@ -369,6 +369,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
+        /// Zarovnání textu v prvku grafu
+        /// </summary>
+        internal ExtendedContentAlignment TextPosition { get { return this._FirstItem.TextPosition; } }
+        /// <summary>
         /// Vrací true, pokud pro daný prvek mohou být vyhledávány a zobrazovány Linky, podle jeho <see cref="BehaviorMode"/>.
         /// Rozhoduje o tom Group, protože jednotlivé Items nemají svoje privátní Linky.
         /// </summary>
@@ -414,10 +418,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 boundsVisibleAbsolute = e.GetClip(boundsAbsolute);
 
             FontInfo fontInfo = FontInfo.CaptionBold;
-            string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo);
+            ExtendedContentAlignment textPosition = this.TextPosition;
+            string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo, textPosition);
 
             if (String.IsNullOrEmpty(text)) return;
-            this.GControl.DrawText(e, boundsVisibleAbsolute, text, fontInfo);
+            this.GControl.DrawText(e, boundsVisibleAbsolute, text, fontInfo, textPosition);
         }
         /// <summary>
         /// Metoda vrátí text, který má být zobrazen v grafickém prvku
@@ -426,8 +431,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="boundsAbsolute"></param>
         /// <param name="boundsVisibleAbsolute"></param>
         /// <param name="fontInfo"></param>
+        /// <param name="textPosition"></param>
         /// <returns></returns>
-        protected string GetCaption(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute, FontInfo fontInfo)
+        protected string GetCaption(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute, FontInfo fontInfo, ExtendedContentAlignment textPosition)
         {
             // 1. Pokud je text v prvku uveden explicitně, pak jej použijeme:
             string text = this._FirstItem.Text;
@@ -808,7 +814,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._FirstItem.BackStyle; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
         float? ITimeGraphItem.RatioEnd { get { return null; } }
-        Graph.TimeGraphElementRatioStyle ITimeGraphItem.RatioStyle { get { return TimeGraphElementRatioStyle.None; } }
+        TimeGraphElementRatioStyle ITimeGraphItem.RatioStyle { get { return TimeGraphElementRatioStyle.None; } }
         Color? ITimeGraphItem.RatioBeginBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }
@@ -816,6 +822,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         Image ITimeGraphItem.ImageBegin { get { return this.ImageBegin; } }
         Image ITimeGraphItem.ImageEnd { get { return this.ImageEnd; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.BackEffectEditable; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.BackEffectNonEditable; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
