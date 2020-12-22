@@ -3810,12 +3810,13 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                         if (this.Operation != null && !this.Operation.IsFixed)
                             guiGraphItem.BehaviorMode |= 
                                 GraphItemBehaviorMode.MoveToAnotherRow;
-                        guiGraphItem.TextPosition = GuiTextPosition.Right | GuiTextPosition.Outside;
+                        guiGraphItem.TextPosition = GuiTextPosition.Center;
                         break;
                     case PlanUnitType.Person:
                     case PlanUnitType.Source:
                         guiGraphItem.BehaviorMode |=
                             GraphItemBehaviorMode.CanSelect;
+                        guiGraphItem.TextPosition = GuiTextPosition.Center | GuiTextPosition.PreferInner | GuiTextPosition.OuterRight;
                         break;
                 }
             }

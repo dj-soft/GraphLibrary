@@ -696,6 +696,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         public GraphItemBehaviorMode BehaviorMode { get; set; }
         /// <summary>
+        /// Umístění textu v prvku grafu
+        /// </summary>
+        public ExtendedContentAlignment TextPosition { get; set; }
+        /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
         /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
@@ -730,6 +734,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Image ITimeGraphItem.ImageBegin { get { return null; } }
         Image ITimeGraphItem.ImageEnd { get { return null; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
         WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
