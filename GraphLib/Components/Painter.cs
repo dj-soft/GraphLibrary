@@ -549,8 +549,6 @@ namespace Asol.Tools.WorkScheduler.Components
             if (fontInfo == null || String.IsNullOrEmpty(text)) return textArea;
             if (bounds.Width <= 0 || bounds.Height <= 0) return textArea;
 
-            bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
-            int boundsLength = (isVertical ? bounds.Height : bounds.Width);
 
             if (stringFormat == null)
             {
@@ -567,11 +565,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 //  nic moc   :  AntiAlias, SystemDefault
                 //  hrozný    :  SingleBitPerPixel, SingleBitPerPixelGridFit
 
+
+                bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
+                ExtendedContentAlignmentState alignState = new ExtendedContentAlignmentState(extAlignment);
+                int boundsLength = _GetMaximalAlignLength(bounds, alignState, 1, outerBounds, isVertical);
+
                 Font font = fontInfo.Font;
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, stringFormat);
                 if (isVertical) textSize = textSize.Swap();               // Pro vertikální text převedu prostor textu "na výšku"
 
-                textArea = AlignContentToBounds(textSize, extAlignment, bounds, 1, true, outerBounds);
+                textArea = _AlignContentToBounds(textSize, alignState, bounds, 1, true, outerBounds);
 
                 // textArea = textSize.AlignTo(bounds, extAlignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
 
@@ -771,11 +774,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
         /// <param name="outerBounds">Vnější prostor pro umísťování obsahu vně daného prostoru</param>
         /// <returns></returns>
+        private static Rectangle _AlignContentToBounds(SizeF size, ExtendedContentAlignmentState alignState, Rectangle bounds, int margins, bool cropSize, Rectangle? outerBounds)
+        {
+            return _AlignContentToBounds(Size.Ceiling(size), alignState, bounds, margins, cropSize, outerBounds);
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru o dané velikosti <paramref name="size"/>, zarovnané dovnitř ve stylu <paramref name="alignState"/> do daného prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="size">Velikost obsahu</param>
+        /// <param name="alignState">Definice zarovnání obsahu</param>
+        /// <param name="bounds">Souřadnice prostoru</param>
+        /// <param name="margins">Okraj, počet pixelů, 0 nebo kladné číslo</param>
+        /// <param name="cropSize">Zmenšit velikost do disponibilního prostoru</param>
+        /// <param name="outerBounds">Vnější prostor pro umísťování obsahu vně daného prostoru</param>
+        /// <returns></returns>
         private static Rectangle _AlignContentToBounds(Size size, ExtendedContentAlignmentState alignState, Rectangle bounds, int margins, bool cropSize, Rectangle? outerBounds)
         {
             if (margins < 0) margins = 0;
             int margins2 = 2 * margins;
-            bool fitInside = (size.Width <= (bounds.Width - margins2) && size.Height <= (bounds.Height - margins2));
+
+            // Vejde se daný obsah do daného prostoru?
+            bool fitInside = (alignState.OnlyInner ? true :
+                             (alignState.OuterHorizontal ? (size.Width <= (bounds.Width - margins2)) :
+                             (alignState.OuterVertical ? (size.Height <= (bounds.Height - margins2)) : true)));
 
             // Pokud MUSÍME dát obsah dovnitř, anebo pokud jej MŮŽEME dát dovnitř a aktuálně je to možné, anebo pokud NENÍ definované žádné umístění venku, pak umístíme obsah DOVNITŘ:
             if (alignState.OnlyInner || (alignState.PreferInner && fitInside) || !alignState.OuterAny)
@@ -937,6 +958,79 @@ namespace Asol.Tools.WorkScheduler.Components
             return new Rectangle(cx, cy, cw, ch);
         }
         /// <summary>
+        /// Metoda se zorientuje v daných souřadnicích (daný prostor <paramref name="bounds"/> a režim zarovnání <paramref name="alignState"/> plus vnější prostor <paramref name="outerBounds"/>),
+        /// najde a vrátí největší počet pixelů, na které je možno umístit text.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="alignState"></param>
+        /// <param name="margins"></param>
+        /// <param name="outerBounds"></param>
+        /// <param name="isVertical"></param>
+        /// <returns></returns>
+        private static int _GetMaximalAlignLength(Rectangle bounds, ExtendedContentAlignmentState alignState, int margins, Rectangle? outerBounds, bool isVertical)
+        {
+            if (margins < 0) margins = 0;
+            int margins2 = 2 * margins;
+
+            int wi = bounds.Width - margins2;
+            int hi = bounds.Height - margins2;
+
+            // Pokud musím být uvnitř, anebo není kam jít ven, pak je to snadné = velikost určím jen podle bounds (šířka/výška) mínus okraje:
+            if (alignState.OnlyInner || !alignState.OuterAny) return (!isVertical ? wi : hi);
+
+            // Pokud tedy smím jít ven, a venkovní prostor je neomezený, pak je to Max:
+            if (!outerBounds.HasValue) return 10240;
+
+            // Tedy smím jít i ven z bounds, a vnější souřadnice jsou dány:
+            if (alignState.OuterHorizontal)
+            {   // Umístění i vně bounds vlevo nebo vpravo
+                if (isVertical) return hi;                                               // Svislý text, ale umístěný i vně souřadnic vlevo/vpravo
+
+                int wl = bounds.Left - outerBounds.Value.Left - margins2;                // Prostor vlevo
+                int wr = outerBounds.Value.Right - bounds.Right - margins2;              // Prostor vpravo
+                int wo = (wl > wr ? wl : wr);                                            // Vnější, větší
+
+                if (alignState.OnlyOuter)
+                {   // Pouze vnější prostor:
+                    if (alignState.CanSwapOuter) return wo;
+                    if (alignState.OuterLeft) return wl;
+                    if (alignState.OuterRight) return wr;
+                }
+                // Mohu si vybrat vnitřní nebo vnější (protože OnlyInner bylo vyřízeno na začátku):
+                if (alignState.CanSwapOuter) return (wo > wi ? wo : wi);
+                if (alignState.OuterLeft) return (wl > wi ? wl : wi);
+                if (alignState.OuterRight) return (wr > wi ? wr : wi);
+
+                return wi;
+            }
+            if (alignState.OuterVertical && !isVertical)
+            {   // Umístění i vně bounds nahoru nebo dolů, text normální v řádku:
+                int wo = outerBounds.Value.Width - margins2;
+                return (wi > wo ? wi : wo);
+            }
+            if (alignState.OuterVertical && isVertical)
+            {   // Umístění i vně bounds nahoru nebo dolů, text svislý:
+                int ht = bounds.Top - outerBounds.Value.Top - margins2;                  // Prostor nahoře
+                int hb = outerBounds.Value.Bottom - bounds.Bottom - margins2;            // Prostor dole
+                int ho = (ht > hb ? ht : hb);                                            // Vnější, větší
+
+                if (alignState.OnlyOuter)
+                {   // Pouze vnější prostor:
+                    if (alignState.CanSwapOuter) return ho;
+                    if (alignState.OuterTop) return ht;
+                    if (alignState.OuterBottom) return hb;
+                }
+                // Mohu si vybrat vnitřní nebo vnější (protože OnlyInner bylo vyřízeno na začátku):
+                if (alignState.CanSwapOuter) return (ho > hi ? ho : hi);
+                if (alignState.OuterTop) return (ht > hi ? ht : hi);
+                if (alignState.OuterBottom) return (hb > hi ? hb : hi);
+
+                return hi;
+            }
+
+            return (!isVertical ? wi : hi);
+        }
+        /// <summary>
         /// Rozpad enumu <see cref="ExtendedContentAlignment"/>, aby se provedl pouze 1x
         /// </summary>
         private class ExtendedContentAlignmentState
@@ -953,10 +1047,12 @@ namespace Asol.Tools.WorkScheduler.Components
                 OuterTop = ((alignment & ExtendedContentAlignment.OuterTop) != 0);
                 OuterBottom = ((alignment & ExtendedContentAlignment.OuterBottom) != 0);
 
-                OnlyInner = ((alignment & (ExtendedContentAlignment.PreferInner | ExtendedContentAlignment.OnlyOuter | ExtendedContentAlignment.PreferOuter)) == 0);
-                PreferInner = ((alignment & ExtendedContentAlignment.PreferInner) != 0);
-                OnlyOuter = ((alignment & ExtendedContentAlignment.OnlyOuter) != 0);
-                PreferOuter = ((alignment & ExtendedContentAlignment.PreferOuter) != 0);
+                bool outerDefined = OuterAny;
+
+                PreferInner = (outerDefined && (alignment & ExtendedContentAlignment.PreferInner) != 0);
+                OnlyOuter = (outerDefined && (alignment & ExtendedContentAlignment.OnlyOuter) != 0);
+                PreferOuter = (outerDefined && (alignment & ExtendedContentAlignment.PreferOuter) != 0);
+                AllowedOuter = (PreferInner || OnlyOuter || PreferOuter);
 
                 CanSwapOuter = ((alignment & ExtendedContentAlignment.CanSwapOuter) != 0);
             }
@@ -1002,14 +1098,20 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public bool OuterVertical { get { return OuterTop || OuterBottom; } }
             /// <summary>
-            /// Vnější okraj kdekoli
+            /// Vnější okraj kdekoli.
+            /// True, pokud je zadán, pak má význam vůbec začít řešit umístění "vně"
             /// </summary>
             public bool OuterAny { get { return OuterLeft || OuterRight || OuterTop || OuterBottom; } }
 
             /// <summary>
-            /// Pouze uvnitř prostoru, i kdyby se dovnitř nevešel
+            /// Pouze uvnitř prostoru, i kdyby se dovnitř nevešel.
+            /// Tedy true, když <see cref="AllowedOuter"/> je false.
             /// </summary>
-            public bool OnlyInner;
+            public bool OnlyInner { get { return !AllowedOuter; } }
+            /// <summary>
+            /// Je možno nebo nutno jít vně daného prostoru (tzn. některá z hodnot <see cref="PreferInner"/> nebo <see cref="PreferOuter"/> nebo <see cref="OnlyOuter"/> je true)
+            /// </summary>
+            public bool AllowedOuter;
             /// <summary>
             /// Nejprve uvnitř prostoru, ale pokud se dovnitř nevejde pak je možno použít vnější umístění podle 
             /// <see cref="OuterLeft"/>, <see cref="OuterRight"/>, <see cref="OuterTop"/>, <see cref="OuterBottom"/>.

@@ -1628,11 +1628,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (sourceRows == null) return;
 
             // Pro naše Root řádky budu hledat jejich Child řádky v sourceTable a sourceRows:
-            Row[] rootRows = this.TableRow.TreeNodeRootRows;
-            foreach (Row rootRow in rootRows)
-                this.PrepareDynamicChildsOne(rootRow, searchInfo, timeFrame, sourceTable, sourceRows);
-            
-            this._ChildRowsLastTimeRange = timeFrame;
+            lock (this.TableRow)
+            {
+                Row[] rootRows = this.TableRow.TreeNodeRootRows;
+                foreach (Row rootRow in rootRows)
+                    this.PrepareDynamicChildsOne(rootRow, searchInfo, timeFrame, sourceTable, sourceRows);
+
+                this._ChildRowsLastTimeRange = timeFrame;
+            }
         }
         /// <summary>
         /// Vrátí true, pokud je nutno za daných okolností znovu vyhodnotit vztahy Parent - Child a určit Child prvky do parentRow.TreeNodeChilds

@@ -833,7 +833,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="textPosition"></param>
         internal void DrawText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, string text, FontInfo fontInfo, ExtendedContentAlignment textPosition)
         {
-            if (boundsAbsolute.Width < 10 || String.IsNullOrEmpty(text)) return;
+            bool canOuter = textPosition.HasAnyFlag(ExtendedContentAlignment.PreferInner | ExtendedContentAlignment.PreferOuter | ExtendedContentAlignment.OnlyOuter);
+            if (String.IsNullOrEmpty(text) || (boundsAbsolute.Width < 10 && !canOuter )) return;
 
             Color textColor = this.TextColorCurrent;
             StringFormatFlags stringFormat = Graph.CurrentGraphProperties.TextStringFormat;

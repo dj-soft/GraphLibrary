@@ -437,7 +437,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             // 1. Pokud je text v prvku uveden explicitně, pak jej použijeme:
             string text = this._FirstItem.Text;
-            if (!String.IsNullOrEmpty(text)) return text;
+            if (text != null) return text;
 
             // 2. Text pro aktuální velikost je pravděpodobně uložený v paměti (od posledně):
             Size size = boundsAbsolute.Size;
