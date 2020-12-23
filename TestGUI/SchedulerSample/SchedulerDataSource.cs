@@ -3789,7 +3789,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 TextColor = this.TextColor,
                 BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn,
                 Height = this.Height,
-                Text = this.Text,
+                Text = (this.Text ?? ""),
                 ToolTip = this.ToolTip,
                 Time = this.Time
             };
@@ -3931,7 +3931,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 BehaviorMode = GraphItemBehaviorMode.DefaultText,
                 Height = this.Height,
                 DataId = this.RecordGid,
-                Text = this.Text,
+                Text = (this.Text ?? ""),
                 ToolTip = this.ToolTip,
                 Time = this.Time
             };
