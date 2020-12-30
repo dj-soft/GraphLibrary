@@ -1254,7 +1254,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region DrawGridHeader
         /// <summary>
-        /// Draw button base (background and border, by state)
+        /// Vykreslí záhlaví GridHeader = hlavička sloupce
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
@@ -1271,7 +1271,7 @@ namespace Asol.Tools.WorkScheduler.Components
             _DrawGridHeader(graphics, bounds, side, backColor, draw3D, lineColor, state, orientation, relativePoint, opacity);
         }
         /// <summary>
-        /// Draw button base (background and border, by state)
+        /// Vykreslí záhlaví GridHeader = hlavička sloupce
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>

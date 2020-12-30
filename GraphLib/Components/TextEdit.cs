@@ -603,6 +603,30 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public vlastnosti definující vzhled (Color, Border, Font)
         /// <summary>
+        /// Styl tohoto konkrétního textboxu. 
+        /// Zahrnuje veškeré vizuální vlastnosti.
+        /// Výchozí je null, pak se styl přebírá z <see cref="StyleParent"/>, anebo společný z <see cref="Styles.TextBox"/>.
+        /// <para/>
+        /// Do této property se typicky vkládá new instance, která řeší vzhled jednoho konkrétního prvku.
+        /// </summary>
+        public TextBoxStyle Style { get; set; }
+        /// <summary>
+        /// Společný styl, deklarovaný pro více textboxů. 
+        /// Zde je reference na tuto instanci. 
+        /// Modifikace hodnot v této instanci se projeví ve všech ostatních textboxech, které ji sdílejí.
+        /// Výchozí je null, pak se styl přebírá společný z <see cref="Styles.TextBox"/>.
+        /// <para/>
+        /// Do této property se typicky vkládá odkaz na instanci, která je primárně uložena jinde, a řeší vzhled ucelené skupiny prvků.
+        /// </summary>
+        public TextBoxStyle StyleParent { get; set; }
+        /// <summary>
+        /// Aktuální styl, nikdy není null. 
+        /// Obsahuje <see cref="Style"/> ?? <see cref="StyleParent"/> ?? <see cref="Styles.TextBox"/>.
+        /// </summary>
+        protected TextBoxStyle StyleCurrent { get { return (this.Style ?? this.StyleParent ?? Styles.TextBox); } }
+
+
+        /// <summary>
         /// Defaultní barva pozadí.
         /// </summary>
         protected override Color BackColorDefault { get { return Skin.TextBox.BackColorEnabled; } }

@@ -160,6 +160,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Color Morph(this Color root, Color other, float morph)
         {
+            if (morph == 0f) return root;
             float a = root.A;
             float r = GetMorph(root.R, other.R, morph);
             float g = GetMorph(root.G, other.G, morph);
@@ -182,6 +183,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Color Morph(this Color root, Color other)
         {
+            if (other.A == 0) return root;
             float morph = ((float)other.A) / 255f;
             float a = root.A;
             float r = GetMorph(root.R, other.R, morph);
