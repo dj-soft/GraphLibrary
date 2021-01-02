@@ -147,6 +147,190 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Vrátí šířku linky borderu daného typu.
+        /// Vrací hodnotu 0, 1, nebo 2
+        /// </summary>
+        /// <param name="borderType"></param>
+        /// <returns></returns>
+        internal static int GetBorderWidth(TextBoxBorderType borderType)
+        {
+            if (borderType.HasFlag(TextBoxBorderType.Single)) return 1;
+            if (borderType.HasFlag(TextBoxBorderType.Double)) return 2;
+            return 0;
+        }
+        /// <summary>
+        /// Vykreslí Border podle parametrů
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="borderColor"></param>
+        /// <param name="borderType"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="drawSides"></param>
+        /// <param name="dashStyle"></param>
+        internal static void DrawBorder(Graphics graphics, Rectangle bounds, Color borderColor, TextBoxBorderType borderType = TextBoxBorderType.Single, GInteractiveState interactiveState = GInteractiveState.Enabled, RectangleSide drawSides = RectangleSide.All, DashStyle dashStyle = DashStyle.Solid)
+        {
+            if (drawSides == RectangleSide.None) return;
+
+            // Malé rozměry nekreslíme:
+            int w = bounds.Width;
+            int h = bounds.Height;
+            if (w <= 2 || h <= 2) return;
+
+            int t = GetBorderWidth(borderType);
+            if (t <= 0) return;
+
+            // Pokud je zadána vazba barvy na interaktivní stav, vyřešíme ji podle stavu interaktivity: pro neinteraktivní stav buď skončíme, anebo dáme poloviční průhlednost):
+            if (!ModifyBorderColorByState(ref borderColor, borderType, interactiveState)) return;
+
+            // Pokud je dán 3D efekt, pak získáme barvu pro LT levý a horní okraj, a barvu RB pro pravý a dolní okraj:
+            Color borderColorLT = borderColor;
+            Color borderColorRB = borderColor;
+            if (!ModifyBorderColorBy3DEffect(borderColor, borderType, interactiveState, out borderColorLT, out borderColorRB)) return;
+
+            // Budeme tedy kreslit:
+            int x0 = bounds.X;
+            int y0 = bounds.Y;
+            int x9 = x0 + w - 1;
+            int y9 = y0 + h - 1;
+            int x1 = x0 + 1;
+            int x8 = x9 - 1;
+            int x7 = x8 - 1;
+            int y1 = y0 + 1;
+            int y8 = y9 - 1;
+            int y7 = y8 - 1;
+            int w2 = w - 2;
+            int h2 = h - 2;
+            bool isDouble = (t > 1 && w >= 4 && h >= 4);
+            if (!isDouble) t = 1;
+
+            // Ostré okraje!
+            using (GraphicsUseSharp(graphics))
+            {
+                if (dashStyle != DashStyle.Solid)
+                {   // Nějaké tečkování:
+                    if (drawSides.HasFlag(RectangleSide.Left) && h > 0)
+                        graphics.DrawLine(Skin.Pen(borderColorLT, dashStyle: dashStyle), x0, y0, x0, y9);
+
+                    if (drawSides.HasFlag(RectangleSide.Top) && w > 0)
+                        graphics.DrawLine(Skin.Pen(borderColorLT, dashStyle: dashStyle), x0, y0, x9, y0);
+
+                    if (drawSides.HasFlag(RectangleSide.Right) && h > 0)
+                        graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x9, y0, x9, y9);
+
+                    if (drawSides.HasFlag(RectangleSide.Bottom) && w > 0)
+                        graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x0, y9, x9, y9);
+                }
+                else if (borderType.HasFlag(TextBoxBorderType.Soft))
+                {   // Měkký okraj = vynecháme kreslení do rohových pixelů:
+                    if (drawSides.HasFlag(RectangleSide.Left) && h > 2)
+                        graphics.FillRectangle(Skin.Brush(borderColorLT), x0, y1, t, h2);
+
+                    if (drawSides.HasFlag(RectangleSide.Top) && w > 2)
+                        graphics.FillRectangle(Skin.Brush(borderColorLT), x1, y0, w2, t);
+
+                    if (drawSides.HasFlag(RectangleSide.Right) && h > 2)
+                        graphics.FillRectangle(Skin.Brush(borderColorRB), x9 - t, y1, t, h2);
+
+                    if (drawSides.HasFlag(RectangleSide.Bottom) && w > 2)
+                        graphics.FillRectangle(Skin.Brush(borderColorRB), x1, y9 - t, w2, t);
+                }
+                else
+                {   // Ostrý okraj = kreslíme i rohové pixely:
+                    if (drawSides.HasFlag(RectangleSide.Left))
+                    {
+                        graphics.FillRectangle(Skin.Brush(borderColorLT), x0, y0, 1, h);
+                        if (isDouble) graphics.FillRectangle(Skin.Brush(borderColorLT), x1, y1, 1, h2);
+                    }
+
+                    if (drawSides.HasFlag(RectangleSide.Top) && w > 2)
+                    {
+                        graphics.FillRectangle(Skin.Brush(borderColorLT), x0, y0, w, 1);
+                        if (isDouble) graphics.FillRectangle(Skin.Brush(borderColorLT), x1, y1, w2, 1);
+                    }
+
+                    if (drawSides.HasFlag(RectangleSide.Right) && h > 2)
+                    {
+                        graphics.FillRectangle(Skin.Brush(borderColorRB), x8, y0, 1, h);
+                        if (isDouble) graphics.FillRectangle(Skin.Brush(borderColorRB), x7, y1, 1, h2);
+                    }
+
+                    if (drawSides.HasFlag(RectangleSide.Bottom) && w > 2)
+                    {
+                        graphics.FillRectangle(Skin.Brush(borderColorRB), x0, y8, w, 1);
+                        if (isDouble) graphics.FillRectangle(Skin.Brush(borderColorRB), x1, y7, w2, 1);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Modifikuje barvu okraje podle typu okraje a interaktivity, vrací false když se nemá kreslit.
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <param name="borderType"></param>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        private static bool ModifyBorderColorByState(ref Color borderColor, TextBoxBorderType borderType, GInteractiveState interactiveState)
+        {
+            bool isInteractiveHalf = borderType.HasFlag(TextBoxBorderType.InteractiveHalf);
+            bool isInteractiveOnly = borderType.HasFlag(TextBoxBorderType.InteractiveOnly);
+            if (isInteractiveHalf || isInteractiveOnly)
+            {
+                bool isActive = (!interactiveState.HasFlag(GInteractiveState.Disabled) &&
+                    (interactiveState.HasFlag(GInteractiveState.Focused) || interactiveState.HasFlag(GInteractiveState.MouseOver) ||
+                     interactiveState.HasFlag(GInteractiveState.FlagDown) || interactiveState.HasFlag(GInteractiveState.FlagDrag)));
+                if (!isActive)
+                {
+                    if (isInteractiveOnly) return false;
+                    borderColor = borderColor.ApplyOpacity(0.5f);
+                }
+            }
+            return true;
+        }
+        /// <summary>
+        /// Vytvoří barvu <paramref name="borderColorLT"/> pro levý a horní okraj, a barvu <paramref name="borderColorRB"/> pro pravý a dolní okraj, podle výchozí barvy a podle typu borderu a stavu interaktivity.
+        /// </summary>
+        /// <param name="borderColor"></param>
+        /// <param name="borderType"></param>
+        /// <param name="interactiveState"></param>
+        /// <param name="borderColorLT"></param>
+        /// <param name="borderColorRB"></param>
+        /// <returns></returns>
+        private static bool ModifyBorderColorBy3DEffect(Color borderColor, TextBoxBorderType borderType, GInteractiveState interactiveState, out Color borderColorLT, out Color borderColorRB)
+        {
+            borderColorLT = borderColor;
+            borderColorRB = borderColor;
+
+            bool is3DDown = borderType.HasFlag(TextBoxBorderType.Effect3DDown);
+            bool is3DUp = borderType.HasFlag(TextBoxBorderType.Effect3DUp);
+            bool is3DInteractive = borderType.HasFlag(TextBoxBorderType.Effect3DInteractive);
+
+            if (is3DDown || is3DUp || is3DInteractive)
+            {
+                bool isDown = is3DDown || !is3DUp;                   // Výchozí stav "Dolů" je tehdy, když je explicitně zadáno Down (Effect3DDown), anebo když není zadáno ani Up (Effect3DUp)
+                if (is3DInteractive)                                 // Pokud je stav Interaktivně závislý:
+                {
+                    bool interactiveDown = (!interactiveState.HasFlag(GInteractiveState.Disabled) &&
+                            (interactiveState.HasFlag(GInteractiveState.Focused) || /* tady pouhý stav MouseOver nereprezentuje "Down": interactiveState.HasFlag(GInteractiveState.MouseOver) || */
+                             interactiveState.HasFlag(GInteractiveState.FlagDown) || interactiveState.HasFlag(GInteractiveState.FlagDrag)));
+                    if (interactiveDown) isDown = !isDown;           // Pokud je Interaktivní stav Aktivní ("Zmáčknutý") => pak otočíme aktuální příznak
+                }
+
+                IModifierStyle modifier = Styles.Modifier;
+                if (isDown)
+                {   // Dolů: Levý a Horní je tmavší:
+                    borderColorLT = borderColor.Morph(modifier.Border3DColorDark);
+                    borderColorRB = borderColor.Morph(modifier.Border3DColorLight);
+                }
+                else
+                {   // Nahoru: Levý a Horní je světlejší:
+                    borderColorLT = borderColor.Morph(modifier.Border3DColorLight);
+                    borderColorRB = borderColor.Morph(modifier.Border3DColorDark);
+                }
+            }
+            return true;
+        }
         #endregion
         #region DrawAreaBase
         /// <summary>

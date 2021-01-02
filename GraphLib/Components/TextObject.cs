@@ -70,63 +70,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslovaný text.
         /// Pokud bude vložena hodnota null, bude se číst jako prázdný string.
         /// </summary>
-        public virtual string Text { get { return _Text ?? ""; } set { _Text = value; Invalidate(); } }
-        private string _Text = "";
+        public virtual string Text { get { return _Text ?? ""; } set { _Text = value; Invalidate(); } } private string _Text = "";
         /// <summary>
-        /// Barva písma základní.
-        /// Při čtení má vždy hodnotu (nikdy není null). Lze setovat požadovanou hodnotu. Lze setovat hodnotu null, tím se nastaví defaultní hodnota podle aktuálního skinu (výchozí stav).
+        /// Zde potomek deklaruje barvu písma
         /// </summary>
-        public Color? TextColor { get { return __TextColor ?? TextColorDefault; } set { __TextColor = value; Invalidate(); } }
-        private Color? __TextColor = null;
+        protected abstract Color TextColorCurrent { get; }
         /// <summary>
-        /// Defaultní barva písma.
+        /// Zde potomek deklaruje typ písma
         /// </summary>
-        protected virtual Color TextColorDefault { get { return Skin.Control.ControlTextColor; } }
-        /// <summary>
-        /// Aktuální barva písma.
-        /// Ve třídě <see cref="GTextObject"/> vrací hodnotu barvy <see cref="GTextObject.TextColor"/>. Potomek může přepsat.
-        /// </summary>
-        protected virtual Color CurrentTextColor
-        {
-            get
-            {
-                return TextColor.Value;
-            }
-        }
-        /// <summary>
-        /// Aktuálně platný typ písma. Při čtení má vždy hodnotu (nikdy není null).
-        /// Dokud není explicitně nastavena hodnota, vrací se hodnota <see cref="FontDefault"/>.
-        /// Lze setovat konkrétní explicitní hodnotu, anebo hodnotu null = tím se resetuje na barvu defaultní <see cref="FontDefault"/>.
-        /// </summary>
-        public FontInfo Font { get { return __Font ?? FontDefault; } set { __Font = value; Invalidate(); } }
-        private FontInfo __Font;
-        /// <summary>
-        /// Defaultní písmo
-        /// </summary>
-        protected virtual FontInfo FontDefault { get { return FontInfo.Default; } }
-        /// <summary>
-        /// Obsahuje aktuální font = daný základem <see cref="Font"/> plus modifikátor <see cref="FontModifier"/>.
-        /// </summary>
-        protected virtual FontInfo CurrentFont
-        {
-            get
-            {
-                FontInfo font = Font;
-                if (HasFontModifier)
-                    font = font.GetModifiedFont(__FontModifier);
-                return font;
-            }
-        }
-        /// <summary>
-        /// Změny fontu proti defaultnímu.
-        /// Autoinicializační property - lze rovnou napsat: TextObject.FontModifier.Bold = true;
-        /// </summary>
-        public FontModifierInfo FontModifier { get { if (__FontModifier == null) __FontModifier = FontModifierInfo.Empty; return __FontModifier; } set { __FontModifier = value; Invalidate(); } }
-        private FontModifierInfo __FontModifier = null;
-        /// <summary>
-        /// Obsahuje true, pokud v this instanci máme použitý modifikátor fontu
-        /// </summary>
-        protected bool HasFontModifier { get { return (__FontModifier != null && !__FontModifier.IsEmpty); } }
+        protected abstract FontInfo FontCurrent { get; }
         /// <summary>
         /// Je tento prvek Visible?
         /// </summary>
@@ -144,6 +96,4 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool ReadOnly { get { return this.Is.ReadOnly; } set { this.Is.ReadOnly = value; } }
     }
     #endregion
-
-    
 }

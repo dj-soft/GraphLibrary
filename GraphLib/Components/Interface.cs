@@ -387,7 +387,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hold mouse?
         /// </summary>
         public bool HoldMouse { get { return this.GetBitValue((uint)Bit.HoldMouse); } set { this.SetBitValue((uint)Bit.HoldMouse, value); } }
-     
+        /// <summary>
+        /// Prvek má myš
+        /// </summary>
+        public bool HasMouse { get { return this.GetBitValue((uint)Bit.HasMouse); } set { this.SetBitValue((uint)Bit.HasMouse, value); } }
+        /// <summary>
+        /// Prvek má focus
+        /// </summary>
+        public bool HasFocus { get { return this.GetBitValue((uint)Bit.HasFocus); } set { this.SetBitValue((uint)Bit.HasFocus, value); } }
         /// <summary>
         /// Suppressed events?
         /// </summary>
@@ -513,10 +520,10 @@ namespace Asol.Tools.WorkScheduler.Components
             Checked = 0x00000100,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HoldMouse"/></summary>
             HoldMouse = 0x00000200,
-            /// <summary>nevyužito</summary>
-            Void1 = 0x00000400,
-            /// <summary>nevyužito</summary>
-            Void2 = 0x00000800,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HasMouse"/></summary>
+            HasMouse = 0x00000400,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="HasFocus"/></summary>
+            HasFocus = 0x00000800,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseActive"/></summary>
             MouseActive = 0x00001000,
             /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="MouseMoveOver"/></summary>
@@ -1530,6 +1537,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Disabled, bez aktivity myši
         /// </summary>
         Disabled = 0x0002,
+        /// <summary>
+        /// S Focusem, bez ohledu na stav myši
+        /// </summary>
+        Focused = 0x0004,
         /// <summary>
         /// Pohyb myši nad prvkem
         /// </summary>

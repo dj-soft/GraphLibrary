@@ -241,11 +241,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje true, pokud this prvek má nad sebou myš (nebo některý jeho Child)
         /// </summary>
-        public virtual bool HasMouse { get { return this._HasMouse; } set { this._HasMouse = value; } } private bool _HasMouse;
+        public virtual bool HasMouse { get { return this.Is.HasMouse; } set { this.Is.HasMouse = value; } }
         /// <summary>
         /// Obsahuje true, pokud this prvek má klávesový focus.
         /// </summary>
-        public virtual bool HasFocus { get { return this._HasFocus; } set { this._HasFocus = value; } } private bool _HasFocus;
+        public virtual bool HasFocus { get { return this.Is.HasFocus; } set { this.Is.HasFocus = value; } }
         #endregion
         #region Bounds support
         /// <summary>
@@ -561,7 +561,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case GInteractiveChangeState.KeyboardFocusEnter:
                     this.ResetFocusChanges();
-                    this._HasFocus = true;
+                    this.HasFocus = true;
                     this.AfterStateChangedFocusEnter(e);
                     this.SetAutoScrollContainerToThisItem(e);
                     this.Repaint();
@@ -583,15 +583,15 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.AfterStateChangedKeyUp(e);
                     break;
                 case GInteractiveChangeState.KeyboardFocusLeave:
-                    if (this._HasFocus) this.Validate(e);
-                    this._HasFocus = false;
+                    if (this.HasFocus) this.Validate(e);
+                    this.HasFocus = false;
                     this.AfterStateChangedFocusLeave(e);
                     this.ResetFocusChanges();
                     this.Repaint();
                     break;
 
                 case GInteractiveChangeState.MouseEnter:
-                    this._HasMouse = true;
+                    this.HasMouse = true;
                     this.AfterStateChangedMouseEnter(e);
                     this._CallPrepareToolTip(e);
                     this.PrepareToolTip(e);
@@ -609,7 +609,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.MouseLeave:
-                    this._HasMouse = false;
+                    this.HasMouse = false;
                     this.AfterStateChangedMouseLeave(e);
                     this.Repaint();
                     break;
@@ -1284,9 +1284,12 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Interaktivní vlastnosti
         /// <summary>
-        /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním)
+        /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním).
+        /// Pokud objekt není Enabled, pak vždy obsahuje jen hodnotu <see cref="GInteractiveState.Disabled"/>.
+        /// Jinak obsahuje hodnotu platnou v aktuálním stavu.
+        /// Pokud objekt má focus (<see cref="HasFocus"/>), pak je přidán bit <see cref="GInteractiveState.Focused"/>.
         /// </summary>
-        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? this._InteractiveState : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } }
+        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? (this.HasFocus ? (this._InteractiveState | GInteractiveState.Focused) : this._InteractiveState) : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } }
         private GInteractiveState _InteractiveState;
         /// <summary>
         /// Vyvolá háček OnInteractiveStateChanged a event InteractiveStateChanged

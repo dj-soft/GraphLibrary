@@ -215,10 +215,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode"></param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            Rectangle innerBounds = this.GetInnerBounds(absoluteBounds);
-            Rectangle textBounds = innerBounds.Enlarge(-TextMargin.Value);
-            int textLineHeight = TextLineHeight;
-            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, textLineHeight, drawMode, this.HasFocus, this.InteractiveState, this);
+            ITextBoxStyle style = this.StyleCurrent;
+            TextBoxBorderType borderType = style.BorderType;
+            int borderWidth = GPainter.GetBorderWidth(borderType);
+            Rectangle innerBounds = absoluteBounds.Enlarge(-borderWidth);
+            int textMargin = style.TextMargin;
+            Rectangle textBounds = innerBounds.Enlarge(-textMargin);
+            FontInfo font = style.Font;
+            int textLineHeight = FontManagerInfo.GetFontHeight(font);
+
+            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, 
+                style, font, borderType, borderWidth, textMargin, textLineHeight, 
+                drawMode, this.HasFocus, this.InteractiveState, this);
+
             this.DetectRightIconBounds(drawArgs);               // Nastaví RightIconBounds a modifikuje TextBounds
             this.DetectOverlayBounds(drawArgs, OverlayText);    // Nastaví OverlayBounds a modifikuje TextBounds
             this.DrawBackground(drawArgs);                      // Background
@@ -229,39 +238,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DrawBorder(drawArgs);                          // Rámeček
         }
         /// <summary>
-        /// Vrací souřadnice vnitřního prostoru po odečtení prostoru pro Border (0-1-2 pixely)
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        protected Rectangle GetInnerBounds(Rectangle bounds)
-        {
-            int width = BorderWidth;
-            return (width <= 0 ? bounds : bounds.Enlarge(-width));
-        }
-        /// <summary>
-        /// Šířka jednoho okraje Border podle stylu <see cref="BorderStyle"/>
-        /// </summary>
-        protected int BorderWidth
-        {
-            get
-            {
-                switch (this.BorderStyle.Value)
-                {
-                    case BorderStyleType.None: return 0;
-                    case BorderStyleType.Flat:
-                    case BorderStyleType.Effect3D: return 1;
-                    case BorderStyleType.Soft: return 2;
-                }
-                return 0;
-            }
-        }
-        /// <summary>
         /// Vykreslí pozadí
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
         protected virtual void DrawBackground(GTextEditDrawArgs drawArgs)
         {
-            this.DrawBackground(drawArgs.DrawArgs, drawArgs.InnerBounds, drawArgs.AbsoluteVisibleBounds, drawArgs.DrawMode, this.CurrentBackColor);
+            Color backColor = drawArgs.Style.GetBackColor(drawArgs.InteractiveState);
+            this.DrawBackground(drawArgs.DrawArgs, drawArgs.InnerBounds, drawArgs.AbsoluteVisibleBounds, drawArgs.DrawMode, backColor);
         }
         /// <summary>
         /// Vykreslí border
@@ -269,18 +252,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawArgs">Argumenty</param>
         protected virtual void DrawBorder(GTextEditDrawArgs drawArgs)
         {
-            switch (this.BorderStyle.Value)
-            {
-                case BorderStyleType.Flat:
-                    GPainter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, 0f);
-                    break;
-                case BorderStyleType.Effect3D:
-                    GPainter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, RectangleSide.All, null, this.CurrentBorderColor, this.CurrentBorder3DEffect);
-                    break;
-                case BorderStyleType.Soft:
-                    GPainter.DrawSoftBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, RectangleSide.All, this.CurrentBorderColor);
-                    break;
-            }
+            if (drawArgs.BorderWidth == 0) return;
+            Color borderColor = drawArgs.Style.GetBorderColor(drawArgs.InteractiveState);
+            GPainter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, borderColor, drawArgs.BorderType, drawArgs.InteractiveState);
         }
         #endregion
         #region Vykreslení textu a kurzoru, na základě stavu editace
@@ -311,12 +285,12 @@ namespace Asol.Tools.WorkScheduler.Components
 
             string text = this.Text;
             Graphics graphics = drawArgs.Graphics;
-            FontInfo fontInfo = this.CurrentFont;
+            FontInfo fontInfo = this.FontCurrent;
             Point textShift = this.TextShift;
             Color? backColorStd = null;
-            Color? backColorSel = BackColorSelectedText;
-            Color? fontColorStd = CurrentTextColor;
-            Color? fontColorSel = TextColorSelectedText;
+            Color? fontColorStd = drawArgs.Style.GetTextColor(drawArgs.InteractiveState);
+            Color? backColorSel = drawArgs.Style.BackColorSelectedText;
+            Color? fontColorSel = drawArgs.Style.TextColorSelectedText;
             HorizontalAlignment alignment = this.Alignment;
             if (HasFocus && HasEditorState)
             {   // S Focusem a editorem: 
@@ -409,7 +383,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return;
             }
 
-            int iconSize = drawArgs.TextLineHeight + 2 * TextMargin.Value;
+            int iconSize = drawArgs.TextLineHeight + 2 * drawArgs.TextMargin;
             Rectangle innerBounds = drawArgs.InnerBounds;
             if (iconSize > innerBounds.Height) iconSize = innerBounds.Height;
             Rectangle rightIconBounds = new Rectangle(innerBounds.Right - iconSize, innerBounds.Y, iconSize, iconSize);
@@ -481,16 +455,65 @@ namespace Asol.Tools.WorkScheduler.Components
             return OverlayTextBounds.Value.Contains(e.MouseAbsolutePoint.Value);
         }
         #endregion
-        #region Analýza textu a fontu na pozice znaků
+        #region Výška řádku a výška textboxu: defaultní, aktuální. Abstract overrides.
         /// <summary>
         /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextMargin"/> a bez borderu <see cref="BorderStyle"/>
         /// </summary>
-        public int TextLineHeight { get { return FontManagerInfo.GetFontHeight(this.CurrentFont); } }
+        public int OneTextLineHeightCurrent
+        {
+            get
+            {
+                ITextBoxStyle style = this.StyleCurrent;
+                FontInfo font = style.Font;
+                return FontManagerInfo.GetFontHeight(font);
+            }
+        }
         /// <summary>
         /// Optimální výška textboxu pro správné zobrazení jednořádkového textu.
-        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextMargin"/> plus výšku řádku text <see cref="TextLineHeight"/>.
+        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextMargin"/> plus výšku řádku text <see cref="OneTextLineHeightCurrent"/>.
         /// </summary>
-        public int OptimalHeightSingleLine { get { return (TextLineHeight + 2 * TextMargin.Value + 2 * BorderWidth); } }
+        public int SingleLineOptimalHeightCurrent
+        {
+            get
+            {
+                ITextBoxStyle style = this.StyleCurrent;
+                TextBoxBorderType borderType = style.BorderType;
+                int borderWidth = GPainter.GetBorderWidth(borderType);
+                int textMargin = style.TextMargin;
+                FontInfo font = style.Font;
+                int fontHeight = FontManagerInfo.GetFontHeight(font);
+                return (fontHeight + 2 * (textMargin + borderWidth));
+            }
+        }
+        /// <summary>
+        /// Aktuální typ rámečku. Změnit lze přes styl: <see cref="Style"/> nebo <see cref="StyleParent"/> nebo <see cref="Styles.TextBox"/>.
+        /// </summary>
+        public TextBoxBorderType BorderTypeCurrent { get { return this.StyleCurrent.BorderType; } }
+        /// <summary>
+        /// Zde potomek deklaruje barvu písma
+        /// </summary>
+        protected override Color TextColorCurrent
+        {
+            get
+            {
+                ITextBoxStyle style = this.StyleCurrent;
+                Color fontColorStd = style.GetTextColor(this.InteractiveState);
+                return style.TextColor;
+            }
+        }
+        /// <summary>
+        /// Zde potomek deklaruje typ písma
+        /// </summary>
+        protected override FontInfo FontCurrent
+        {
+            get
+            {
+                ITextBoxStyle style = this.StyleCurrent;
+                return style.Font;
+            }
+        }
+        #endregion
+        #region Analýza textu a fontu na pozice znaků
         /// <summary>
         /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
         /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
@@ -511,7 +534,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void AnalyseCharPositions(GTextEditDrawArgs drawArgs, bool forEditing)
         {
             string text = Text;
-            FontInfo currentFont = CurrentFont;
+            FontInfo currentFont = FontCurrent;
             bool isPasswordActive = IsPasswordActive;
             bool multiline = Multiline;
             bool wordWrap = WordWrap;
@@ -541,7 +564,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return (CharPositions != null &&
                    String.Equals(Text, _AnalysedText, StringComparison.InvariantCulture) &&
-                   String.Equals(CurrentFont.Key, _AnalysedFontKey, StringComparison.InvariantCulture) &&
+                   String.Equals(FontCurrent.Key, _AnalysedFontKey, StringComparison.InvariantCulture) &&
                    forEditing == _AnalysedForEditing &&
                    IsPasswordActive == _AnalysedIsPasswordActive &&
                    Multiline == _AnalysedMultiline &&
@@ -601,7 +624,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _AnalysedForEditing { get { return Properties.GetBitValue(BitAnalysedForEditing); } set { Properties.SetBitValue(BitAnalysedForEditing, value); } }
         #endregion
-        #region Public vlastnosti definující vzhled (Color, Border, Font)
+        #region Vzhled objektu
         /// <summary>
         /// Styl tohoto konkrétního textboxu. 
         /// Zahrnuje veškeré vizuální vlastnosti.
@@ -623,8 +646,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Aktuální styl, nikdy není null. 
         /// Obsahuje <see cref="Style"/> ?? <see cref="StyleParent"/> ?? <see cref="Styles.TextBox"/>.
         /// </summary>
-        protected TextBoxStyle StyleCurrent { get { return (this.Style ?? this.StyleParent ?? Styles.TextBox); } }
-
+        protected ITextBoxStyle StyleCurrent { get { return (this.Style ?? this.StyleParent ?? Styles.TextBox); } }
+        #endregion
+        #region Zastaralé
+        /*
 
         /// <summary>
         /// Defaultní barva pozadí.
@@ -889,6 +914,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return -0.15f;
             }
         }
+        */
         #endregion
         #region Public vlastnosti definující chování (TabStop, ...)
         /// <summary>
@@ -976,7 +1002,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Poznámka: souřadnice v <see cref="TextShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
         /// </summary>
         Point ITextEditInternal.TextShift { get { return TextShift; } set { TextShift = value; } }
-
         /// <summary>
         /// Přídavné vykreslení přes Background, pod text
         /// </summary>
@@ -1036,8 +1061,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 Properties.SetBitValue(BitSelectAllText, (value ?? false));    //   .. pokud není dodaná hodnota, nastavíme Explicit = false, a hodnota (SelectAllText) taky false
             }
         }
-
-
         #endregion
         #region BitStorage Properties a hodnoty bitů
         /// <summary>Bit pro hodnotu Multiline</summary>
@@ -1052,7 +1075,6 @@ namespace Asol.Tools.WorkScheduler.Components
         protected const UInt32 BitAlignmentRight = 0x00000020;
         /// <summary>Bit pro hodnotu IsPasswordVisible</summary>
         protected const UInt32 BitIsPasswordVisible = 0x00000100;
-
         /// <summary>Bit pro hodnotu _AnalysedIsPasswordActive</summary>
         protected const UInt32 BitAnalysedIsPasswordActive = 0x00010000;
         /// <summary>Bit pro hodnotu _AnalysedMultiline</summary>
@@ -1061,13 +1083,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected const UInt32 BitAnalysedWordWrap = 0x00040000;
         /// <summary>Bit pro hodnotu _AnalysedForEditing</summary>
         protected const UInt32 BitAnalysedForEditing = 0x00080000;
-
         /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllText"/></summary>
         protected const UInt32 BitSelectAllText = 0x02000000;
         /// <summary>Konkrétní jeden bit pro odpovídající vlastnost <see cref="SelectAllTextExplicit"/></summary>
         protected const UInt32 SelectAllTextExplicit = 0x04000000;
-
-
         /// <summary>
         /// Úložiště bitových hodnot
         /// </summary>
@@ -1242,12 +1261,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds"></param>
         /// <param name="innerBounds"></param>
         /// <param name="textBounds"></param>
+        /// <param name="style"></param>
+        /// <param name="font"></param>
+        /// <param name="borderType"></param>
+        /// <param name="borderWidth"></param>
+        /// <param name="textMargin"></param>
         /// <param name="textLineHeight"></param>
         /// <param name="drawMode"></param>
         /// <param name="hasFocus"></param>
         /// <param name="interactiveState"></param>
         /// <param name="textEdit"></param>
-        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds, int textLineHeight, DrawItemMode drawMode, 
+        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds,
+            ITextBoxStyle style, FontInfo font, TextBoxBorderType borderType, int borderWidth, int textMargin, int textLineHeight, 
+            DrawItemMode drawMode, 
             bool hasFocus, GInteractiveState interactiveState, GTextEdit textEdit)
         {
             this.DrawArgs = drawArgs;
@@ -1255,6 +1281,11 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AbsoluteVisibleBounds = absoluteVisibleBounds;
             this.InnerBounds = innerBounds;
             this.TextBounds = textBounds;
+            this.Style = style;
+            this.Font = font;
+            this.BorderType = borderType;
+            this.BorderWidth = borderWidth;
+            this.TextMargin = textMargin;
             this.TextLineHeight = textLineHeight;
             this.DrawMode = drawMode;
             this.HasFocus = hasFocus;
@@ -1287,7 +1318,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Rectangle TextBounds { get; set; }
         /// <summary>
-        /// Výška jednoho textového řádku
+        /// Kompletní styl pro kreslení
+        /// </summary>
+        public ITextBoxStyle Style { get; set; }
+        /// <summary>
+        /// Informace o fontu, již vyhodnocený ze stylu
+        /// </summary>
+        public FontInfo Font { get; set; }
+        /// <summary>
+        /// Typ rámečku, již vyhodnocený ze stylu
+        /// </summary>
+        public TextBoxBorderType BorderType { get; set; }
+        /// <summary>
+        /// Počet pixelů rámečku, již vyhodnocený ze stylu
+        /// </summary>
+        public int BorderWidth { get; set; }
+        /// <summary>
+        /// Počet pixelů okraje mezi rámečkem a textem, již vyhodnocený ze stylu
+        /// </summary>
+        public int TextMargin { get; set; }
+        /// <summary>
+        /// Výška jednoho textového řádku = výška písma
         /// </summary>
         public int TextLineHeight { get; private set; }
         /// <summary>

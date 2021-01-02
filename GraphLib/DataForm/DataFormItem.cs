@@ -69,9 +69,9 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public InteractiveIcon RightActiveIcon { get { return this.Text1.RightActiveIcon; } set { this.Text1.RightActiveIcon = value; this.Text2.RightActiveIcon = value; } }
         /// <summary>
-        /// Typ borderu
+        /// Kompletní styl textboxu
         /// </summary>
-        public BorderStyleType BorderStyle { get { return this.Text1.BorderStyle.Value; } set { this.Text1.BorderStyle = value; this.Text2.BorderStyle = value; } }
+        public TextBoxStyle Style { get { return this.Text1.Style; } set { this.Text1.Style = value; this.Text2.Style = value; } }
         /// <summary>
         /// Je tento prvek Visible
         /// </summary>

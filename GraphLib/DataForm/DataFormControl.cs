@@ -68,6 +68,9 @@ namespace Asol.Tools.WorkScheduler.DataForm
             Color? titleColorOnFocus = Color.DarkBlue;
             FontModifierInfo labelFont = new FontModifierInfo() { SizeRatio = 1.10f };
             FontModifierInfo labelFontOnFocus = new FontModifierInfo() { Bold = true, SizeRatio = 1.08f };
+            FontModifierInfo bold = new FontModifierInfo() { Bold = true };
+            FontModifierInfo smallItalic = new FontModifierInfo() { Italic = true, SizeRatio = 0.85f };
+
             Color? labelColorOnFocus = Skin.Control.ControlTextFocusColor;
             #endregion
             #region Pozice, mezery, okraje tabů a itemů
@@ -86,6 +89,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
 
             int[] textWidths = new int[] { 120, 120, 180, 140, 220, 120, 160, 100, 80, 200 };
             #endregion
+
+            Styles.TextBox.BorderType = TextBoxBorderType.Soft;
 
             this.ItemsList.Clear();
             InteractiveLabeledContainer tab = null;
@@ -113,7 +118,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
                     tab.TitleLine.LineColor = Color.FromArgb(192, 48, 80, 48);
                     tab.TitleLine.LineColorEnd = Color.FromArgb(8, 48, 80, 48);
                     tab.TitleLine.Border3D = 0;
-                    tab.TitleLabel.FontModifier = labelFont;
+                    // tab.TitleLabel.StyleParent.FontModifier = labelFont;
                     tab.TitleFontModifierOnFocus = titleFontOnFocus;
                     tab.TitleTextColorOnFocus = titleColorOnFocus;
 
@@ -147,10 +152,8 @@ Pozice prvku: {nx}/{ny}
 Souřadnice prvku: {itemX}/{itemY}";
 
                     bool r2 = ((ny % countTabY) == (countTabY - 1));
-                    item.BorderStyle = BorderStyleType.Soft;
-                    if (nx == 1) item.TitleLabel.FontModifier.Bold = true;
-                    if (nx == 2) item.TitleLabel.FontModifier.Italic = true;
-                    if (nx == 2) item.TitleLabel.FontModifier.SizeRatio = 0.85f;
+                    if (nx == 1) item.TitleLabel.Style.FontModifier = bold;
+                    if (nx == 2) item.TitleLabel.Style.FontModifier = smallItalic;
                     if (rand.Next(16) <= 2) item.ReadOnly = true;
                     if (nx == 3) item.RightActiveIcon = InteractiveIcon.RelationRecord;
                     if (nx == 3) item.Text1.IsRequiredValue = true;

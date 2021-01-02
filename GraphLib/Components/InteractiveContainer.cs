@@ -11,7 +11,7 @@ using Asol.Tools.WorkScheduler.Data;
 namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
-    /// Abstract ancestor for interactive item, which contain collection of IInteractiveItem
+    /// Obecný předek pro všechny prvky, které obsahují kolekci svých Child prvků.
     /// </summary>
     public class InteractiveContainer : InteractiveObject, IInteractiveItem, IInteractiveParent
     {
@@ -247,6 +247,38 @@ namespace Asol.Tools.WorkScheduler.Components
         public InteractiveLabeledContainer()
         {
         }
+
+        #region Vzhled objektu
+        /// <summary>
+        /// Styl tohoto konkrétního panelu. 
+        /// Zahrnuje veškeré vizuální vlastnosti.
+        /// Výchozí je null, pak se styl přebírá z <see cref="StyleParent"/>, anebo společný z <see cref="Styles.Panel"/>.
+        /// Prvním čtením této property se vytvoří new instance. Lze ji tedy kdykoliv přímo použít.
+        /// <para/>
+        /// Do této property se typicky vkládá new instance, která řeší vzhled jednoho konkrétního prvku.
+        /// </summary>
+        public PanelStyle Style { get { if (_Style == null) _Style = new PanelStyle(); return _Style; } set { _Style = null; } } private PanelStyle _Style;
+        /// <summary>
+        /// Obsahuje true tehdy, když <see cref="Style"/> je pro tento objekt deklarován.
+        /// </summary>
+        public bool HasStyle { get { return (_Style != null && !_Style.IsEmpty); } }
+        /// <summary>
+        /// Společný styl, deklarovaný pro více panelů. 
+        /// Zde je reference na tuto instanci. 
+        /// Modifikace hodnot v této instanci se projeví ve všech ostatních textboxech, které ji sdílejí.
+        /// Výchozí je null, pak se styl přebírá společný z <see cref="Styles.Panel"/>.
+        /// <para/>
+        /// Do této property se typicky vkládá odkaz na instanci, která je primárně uložena jinde, a řeší vzhled ucelené skupiny prvků.
+        /// </summary>
+        public PanelStyle StyleParent { get; set; }
+        /// <summary>
+        /// Aktuální styl, nikdy není null. 
+        /// Obsahuje <see cref="Style"/> ?? <see cref="StyleParent"/> ?? <see cref="Styles.Panel"/>.
+        /// </summary>
+        protected IPanelStyle StyleCurrent { get { return (this._Style ?? this.StyleParent ?? Styles.Panel); } }
+        #endregion
+
+
         #region Vizuální vlastnosti containeru
         /// <summary>
         /// Barva pozadí this containeru v době, kdy má Focus.
@@ -364,7 +396,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     _TitleLine = new GLine3D()
                     {
-                        Bounds = new Rectangle(4, 4, 180, 20),
+                        Bounds = new Rectangle(9, 26, 200, 2),
                         PrepareToolTipInParent = true
                     };
                     _TitleLine.Visible = false;
@@ -384,9 +416,11 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusEnter(e);
-            TitleLabel.FontDynamicModifier = TitleFontModifierOnFocus;
-            TitleLabel.TextColorDynamic = TitleTextColorOnFocus;
-            TitleLabel.Invalidate();
+            if (TitleLabelVisible)
+            {
+                TitleLabel.StyleParent = TitleLabelStyleFocused;
+                TitleLabel.Invalidate();
+            }
         }
         /// <summary>
         /// Po odchodu Focusu z Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
@@ -396,10 +430,53 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusLeave(e);
-            TitleLabel.FontDynamicModifier = null;
-            TitleLabel.TextColorDynamic = null;
+            if (TitleLabelVisible)
+            {
+                TitleLabel.StyleParent = TitleLabelStyle;
+                TitleLabel.Invalidate();
+            }
             TitleLabel.Invalidate();
         }
+        /// <summary>
+        /// Obsahuje aktualizovaný styl pro titulek panelu ve stavu bez focusu
+        /// </summary>
+        protected LabelStyle TitleLabelStyle
+        {
+            get
+            {
+                var labelStyle = _TitleLabelStyle;
+                if (labelStyle == null)
+                {
+                    labelStyle = new LabelStyle();
+                    _TitleLabelStyle = labelStyle;
+                }
+                var panelStyle = this.StyleCurrent;
+                labelStyle.FontModifier = panelStyle.TitleFontModifier;
+                labelStyle.TextColor = panelStyle.TitleTextColor;
+                return labelStyle;
+            }
+        }
+        private static LabelStyle _TitleLabelStyle;
+        /// <summary>
+        /// Obsahuje aktualizovaný styl pro titulek panelu s focusem
+        /// </summary>
+        protected LabelStyle TitleLabelStyleFocused
+        {
+            get
+            {
+                var labelStyle = _TitleLabelStyleFocused;
+                if (labelStyle == null)
+                {
+                    labelStyle = new LabelStyle();
+                    _TitleLabelStyleFocused = labelStyle;
+                }
+                var panelStyle = this.StyleCurrent;
+                labelStyle.FontModifier = panelStyle.TitleFontModifierFocused;
+                labelStyle.TextColor = panelStyle.TitleTextColorFocused;
+                return labelStyle;
+            }
+        }
+        private static LabelStyle _TitleLabelStyleFocused;
         #endregion
     }
     #endregion
