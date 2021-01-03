@@ -1082,17 +1082,16 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultTextColorSelectedText { get { return SystemColors.HighlightText; } }
         /// <summary>Defaultní barva rámečku, pro textbox ve stavu Warning.</summary>
         protected virtual Color DefaultBorderColorWarning { get { return Color.FromArgb(128, 0, 0); } }
-
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColor"/></summary>
-        protected override Color DefaultBackColor { get { return SystemColors.ControlLight; } }
+        protected override Color DefaultBackColor { get { return SystemColors.ControlLightLight; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColorDisabled"/></summary>
-        protected override Color DefaultBackColorDisabled { get { return SystemColors.ControlDark; } }
+        protected override Color DefaultBackColorDisabled { get { return SystemColors.ControlLight; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColorMouseOn"/></summary>
-        protected override Color DefaultBackColorMouseOn { get { return SystemColors.HotTrack; } }
+        protected override Color DefaultBackColorMouseOn { get { return SystemColors.Info; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColorMouseDown"/></summary>
-        protected override Color DefaultBackColorMouseDown { get { return SystemColors.ControlLight; } }
+        protected override Color DefaultBackColorMouseDown { get { return SystemColors.ControlLightLight; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextColorDisabled"/></summary>
-        protected override Color DefaultTextColorDisabled { get { return SystemColors.GrayText; } }
+        protected override Color DefaultTextColorDisabled { get { return SystemColors.ControlDarkDark; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextColorMouseOn"/></summary>
         protected override Color DefaultTextColorMouseOn { get { return SystemColors.ControlText; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextColorMouseDown"/></summary>

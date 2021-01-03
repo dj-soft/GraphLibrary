@@ -91,6 +91,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             #endregion
 
             Styles.TextBox.BorderType = TextBoxBorderType.SoftDoublePlain;
+            Styles.TextBox.BorderType = TextBoxBorderType.Single | TextBoxBorderType.InteractiveHalf;
 
             this.ItemsList.Clear();
             InteractiveLabeledContainer tab = null;
