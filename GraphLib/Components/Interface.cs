@@ -1498,6 +1498,26 @@ namespace Asol.Tools.WorkScheduler.Components
     public enum GInteractiveState
     {
         /// <summary>
+        /// Neurčeno, běžně se nevyskytuje
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Povoleno, bez přítomnosti myši, připraveno k akci
+        /// </summary>
+        Enabled = 0x0001,
+        /// <summary>
+        /// Disabled, bez aktivity myši. Disabled nemůže dostat kurzor.
+        /// </summary>
+        Disabled = 0x0002,
+        /// <summary>
+        /// ReadOnly, bez aktivity myši. ReadOnly může dostat kurzor, ale nemůže změnit hodnotu.
+        /// </summary>
+        ReadOnly = 0x0004,
+        /// <summary>
+        /// S Focusem, bez ohledu na stav myši
+        /// </summary>
+        Focused = 0x0008,
+        /// <summary>
         /// Příznak pohybu myši nad prvkem
         /// </summary>
         FlagOver = 0x0010,
@@ -1525,22 +1545,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Příznak pravého (kontextového) tlačítka myši, bez rozlišení akce myši
         /// </summary>
         FlagRightMouse = 0x4000,
-        /// <summary>
-        /// Neurčeno, běžně se nevyskytuje
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Povoleno, bez přítomnosti myši, připraveno k akci
-        /// </summary>
-        Enabled = 0x0001,
-        /// <summary>
-        /// Disabled, bez aktivity myši
-        /// </summary>
-        Disabled = 0x0002,
-        /// <summary>
-        /// S Focusem, bez ohledu na stav myši
-        /// </summary>
-        Focused = 0x0004,
         /// <summary>
         /// Pohyb myši nad prvkem
         /// </summary>

@@ -192,14 +192,16 @@ namespace Asol.Tools.WorkScheduler.Components
             // Budeme tedy kreslit:
             int x0 = bounds.X;
             int y0 = bounds.Y;
-            int x9 = x0 + w - 1;
-            int y9 = y0 + h - 1;
+            int x9 = x0 + w;
+            int x8 = x0 + w - 1;
+            int y9 = y0 + h;
+            int y8 = y0 + h - 1;
             int x1 = x0 + 1;
-            int x8 = x9 - 1;
             int x7 = x8 - 1;
+            int x6 = x7 - 1;
             int y1 = y0 + 1;
-            int y8 = y9 - 1;
             int y7 = y8 - 1;
+            int y6 = y7 - 1;
             int w2 = w - 2;
             int h2 = h - 2;
             bool isDouble = (t > 1 && w >= 4 && h >= 4);
@@ -211,16 +213,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (dashStyle != DashStyle.Solid)
                 {   // Nějaké tečkování:
                     if (drawSides.HasFlag(RectangleSide.Left) && h > 0)
-                        graphics.DrawLine(Skin.Pen(borderColorLT, dashStyle: dashStyle), x0, y0, x0, y9);
+                        graphics.DrawLine(Skin.Pen(borderColorLT, dashStyle: dashStyle), x0, y0, x0, y8);
 
                     if (drawSides.HasFlag(RectangleSide.Top) && w > 0)
-                        graphics.DrawLine(Skin.Pen(borderColorLT, dashStyle: dashStyle), x0, y0, x9, y0);
+                        graphics.DrawLine(Skin.Pen(borderColorLT, dashStyle: dashStyle), x0, y0, x8, y0);
 
                     if (drawSides.HasFlag(RectangleSide.Right) && h > 0)
-                        graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x9, y0, x9, y9);
+                        graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x8, y0, x8, y8);
 
                     if (drawSides.HasFlag(RectangleSide.Bottom) && w > 0)
-                        graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x0, y9, x9, y9);
+                        graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x0, y8, x8, y8);
                 }
                 else if (borderType.HasFlag(TextBoxBorderType.Soft))
                 {   // Měkký okraj = vynecháme kreslení do rohových pixelů:

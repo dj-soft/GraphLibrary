@@ -218,14 +218,15 @@ namespace Asol.Tools.WorkScheduler.Components
             ITextBoxStyle style = this.StyleCurrent;
             TextBoxBorderType borderType = style.BorderType;
             int borderWidth = GPainter.GetBorderWidth(borderType);
-            Rectangle innerBounds = absoluteBounds.Enlarge(-borderWidth);
             int textMargin = style.TextMargin;
-            Rectangle textBounds = innerBounds.Enlarge(-textMargin);
             FontInfo font = style.Font;
-            int textLineHeight = FontManagerInfo.GetFontHeight(font);
+            int fontHeight = FontManagerInfo.GetFontHeight(font);
+            DrawCheckHeight(ref absoluteBounds, ref absoluteVisibleBounds, fontHeight, textMargin, borderWidth);
+            Rectangle innerBounds = absoluteBounds.Enlarge(-borderWidth);
+            Rectangle textBounds = innerBounds.Enlarge(-textMargin);
 
             GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, 
-                style, font, borderType, borderWidth, textMargin, textLineHeight, 
+                style, font, borderType, borderWidth, textMargin, fontHeight, 
                 drawMode, this.HasFocus, this.InteractiveState, this);
 
             this.DetectRightIconBounds(drawArgs);               // Nastaví RightIconBounds a modifikuje TextBounds
@@ -236,6 +237,26 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DrawRightIcon(drawArgs);                       // Ikona vpravo
             this.DrawOverlay(drawArgs, OverlayText);            // Grafika nad Textem
             this.DrawBorder(drawArgs);                          // Rámeček
+        }
+        /// <summary>
+        /// Zajistí, že this objekt bude mít výšku odpovídající aktuálnímu stylu
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="fontHeight"></param>
+        /// <param name="textMargin"></param>
+        /// <param name="borderWidth"></param>
+        protected virtual void DrawCheckHeight(ref Rectangle absoluteBounds, ref Rectangle absoluteVisibleBounds, int fontHeight, int textMargin, int borderWidth)
+        {
+            if (this.Multiline) return;
+            int height = (fontHeight + 2 * (textMargin + borderWidth));
+            if (absoluteBounds.Height == height) return;
+
+            Rectangle bounds = this.Bounds;
+            bounds.Height = height;
+            this.SetBounds(bounds, ProcessAction.None, EventSourceType.ApplicationCode);
+
+            absoluteBounds.Height = height;
         }
         /// <summary>
         /// Vykreslí pozadí
@@ -383,7 +404,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return;
             }
 
-            int iconSize = drawArgs.TextLineHeight + 2 * drawArgs.TextMargin;
+            int iconSize = drawArgs.FontHeight + 2 * drawArgs.TextMargin;
             Rectangle innerBounds = drawArgs.InnerBounds;
             if (iconSize > innerBounds.Height) iconSize = innerBounds.Height;
             Rectangle rightIconBounds = new Rectangle(innerBounds.Right - iconSize, innerBounds.Y, iconSize, iconSize);
@@ -455,9 +476,9 @@ namespace Asol.Tools.WorkScheduler.Components
             return OverlayTextBounds.Value.Contains(e.MouseAbsolutePoint.Value);
         }
         #endregion
-        #region Výška řádku a výška textboxu: defaultní, aktuální. Abstract overrides.
+        #region Výška řádku a výška textboxu: defaultní, aktuální. Abstract overrides. Zajištění správné výšky objektu.
         /// <summary>
-        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextMargin"/> a bez borderu <see cref="BorderStyle"/>
+        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
         /// </summary>
         public int OneTextLineHeightCurrent
         {
@@ -470,7 +491,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Optimální výška textboxu pro správné zobrazení jednořádkového textu.
-        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextMargin"/> plus výšku řádku text <see cref="OneTextLineHeightCurrent"/>.
+        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku řádku text <see cref="OneTextLineHeightCurrent"/>.
         /// </summary>
         public int SingleLineOptimalHeightCurrent
         {
@@ -484,6 +505,21 @@ namespace Asol.Tools.WorkScheduler.Components
                 int fontHeight = FontManagerInfo.GetFontHeight(font);
                 return (fontHeight + 2 * (textMargin + borderWidth));
             }
+        }
+        /// <summary>
+        /// V této metodě může potomek změnit (ref) souřadnice, na které je objekt právě umisťován.
+        /// Tato metoda je volána při Bounds.set().
+        /// Tato metoda typicky koriguje velikost vkládaného prostoru podle vlastností potomka.
+        /// Typickým příkladem je <see cref="GTextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="GTextEdit.Multiline"/> a parametrů stylu.
+        /// Bázová třída <see cref="InteractiveObject"/> nedělá nic.
+        /// </summary>
+        /// <param name="bounds"></param>
+        protected override void ValidateBounds(ref Rectangle bounds)
+        {
+            if (this.Multiline) return;
+            int height = SingleLineOptimalHeightCurrent;
+            if (bounds.Height != height)
+                bounds.Height = height;
         }
         /// <summary>
         /// Aktuální typ rámečku. Změnit lze přes styl: <see cref="Style"/> nebo <see cref="StyleParent"/> nebo <see cref="Styles.TextBox"/>.
@@ -1266,13 +1302,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="borderType"></param>
         /// <param name="borderWidth"></param>
         /// <param name="textMargin"></param>
-        /// <param name="textLineHeight"></param>
+        /// <param name="fontHeight"></param>
         /// <param name="drawMode"></param>
         /// <param name="hasFocus"></param>
         /// <param name="interactiveState"></param>
         /// <param name="textEdit"></param>
         public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds,
-            ITextBoxStyle style, FontInfo font, TextBoxBorderType borderType, int borderWidth, int textMargin, int textLineHeight, 
+            ITextBoxStyle style, FontInfo font, TextBoxBorderType borderType, int borderWidth, int textMargin, int fontHeight, 
             DrawItemMode drawMode, 
             bool hasFocus, GInteractiveState interactiveState, GTextEdit textEdit)
         {
@@ -1286,7 +1322,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.BorderType = borderType;
             this.BorderWidth = borderWidth;
             this.TextMargin = textMargin;
-            this.TextLineHeight = textLineHeight;
+            this.FontHeight = fontHeight;
             this.DrawMode = drawMode;
             this.HasFocus = hasFocus;
             this.InteractiveState = interactiveState;
@@ -1340,7 +1376,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Výška jednoho textového řádku = výška písma
         /// </summary>
-        public int TextLineHeight { get; private set; }
+        public int FontHeight { get; private set; }
         /// <summary>
         /// Prostor pro výhradní kreslení RightIcon. Výchozí hodnota je null. Nastavuje <see cref="GTextEdit"/> v části pro ikonu, zmenšuje přitom prostor <see cref="TextBounds"/>.
         /// </summary>

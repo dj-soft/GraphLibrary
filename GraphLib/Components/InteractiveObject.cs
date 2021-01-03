@@ -239,6 +239,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Rectangle? BoundsInteractive { get { return this._BoundsInteractive; } set { this._BoundsInteractive = value; } } private Rectangle? _BoundsInteractive;
         /// <summary>
+        /// Je tento prvek Visible?
+        /// </summary>
+        public virtual bool Visible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
+        /// <summary>
         /// Obsahuje true, pokud this prvek má nad sebou myš (nebo některý jeho Child)
         /// </summary>
         public virtual bool HasMouse { get { return this.Is.HasMouse; } set { this.Is.HasMouse = value; } }
@@ -246,6 +250,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true, pokud this prvek má klávesový focus.
         /// </summary>
         public virtual bool HasFocus { get { return this.Is.HasFocus; } set { this.Is.HasFocus = value; } }
+        /// <summary>
+        /// Je tento prvek Enabled?
+        /// Do prvku, který NENÍ Enabled, nelze vstoupit Focusem (ani provést DoubleClick ani na ikoně / overlay).
+        /// </summary>
+        public virtual bool Enabled { get { return this.Is.Enabled; } set { this.Is.Enabled = value; } }
+        /// <summary>
+        /// Je tento prvek ReadOnly?
+        /// Do prvku, který JE ReadOnly, lze vstoupit Focusem, lze provést DoubleClick včetně ikony / overlay.
+        /// Ale nelze prvek editovat, a má vzhled prvku který není Enabled (=typicky má šedou barvu a nereaguje vizuálně na myš).
+        /// </summary>
+        public virtual bool ReadOnly { get { return this.Is.ReadOnly; } set { this.Is.ReadOnly = value; } }
         #endregion
         #region Bounds support
         /// <summary>
@@ -261,17 +276,28 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle oldBounds = this._Bounds;
             Rectangle newBounds = bounds;
-            bool isChange = (oldBounds != newBounds);
+            bool isChange = false;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "SetBounds", "", "OldBounds: " + oldBounds, "NewBounds: " + newBounds))
             {
+                ValidateBounds(ref newBounds);
+                isChange = (oldBounds != newBounds);
                 if (isChange)
                 {
-                    this._Bounds = bounds;
+                    this._Bounds = newBounds;
                     this.CallActionsAfterBoundsChanged(oldBounds, newBounds, ref actions, eventSource);
                 }
             }
             return isChange;
         }
+        /// <summary>
+        /// V této metodě může potomek změnit (ref) souřadnice, na které je objekt právě umisťován.
+        /// Tato metoda je volána při Bounds.set().
+        /// Tato metoda typicky koriguje velikost vkládaného prostoru podle vlastností potomka.
+        /// Typickým příkladem je <see cref="GTextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="GTextEdit.Multiline"/> a parametrů stylu.
+        /// Bázová třída <see cref="InteractiveObject"/> nedělá nic.
+        /// </summary>
+        /// <param name="bounds"></param>
+        protected virtual void ValidateBounds(ref Rectangle bounds) { }
         /// <summary>
         /// Vyvolá patřičné akce po změně <see cref="Bounds"/>.
         /// Vždy zavolá: <see cref="SetBoundsAfterChange(Rectangle, Rectangle, ref ProcessAction, EventSourceType)"/>; 
@@ -1285,12 +1311,33 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Interaktivní vlastnosti
         /// <summary>
         /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním).
-        /// Pokud objekt není Enabled, pak vždy obsahuje jen hodnotu <see cref="GInteractiveState.Disabled"/>.
+        /// Pokud objekt není <see cref="Enabled"/>, pak vždy obsahuje jen hodnotu <see cref="GInteractiveState.Disabled"/>.
         /// Jinak obsahuje hodnotu platnou v aktuálním stavu.
         /// Pokud objekt má focus (<see cref="HasFocus"/>), pak je přidán bit <see cref="GInteractiveState.Focused"/>.
+        /// Pokud objekt má příznak <see cref="ReadOnly"/>), pak je přidán bit <see cref="GInteractiveState.ReadOnly"/>.
         /// </summary>
-        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? (this.HasFocus ? (this._InteractiveState | GInteractiveState.Focused) : this._InteractiveState) : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } }
+        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? (this._InteractiveState | this.InteractiveStateModifiers) : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } }
         private GInteractiveState _InteractiveState;
+        /// <summary>
+        /// Modifikátory interaktivního stavu: hodnoty, které vyjadřují "statický stav" objektu (<see cref="GInteractiveState.Enabled"/>, <see cref="GInteractiveState.Disabled"/>, <see cref="GInteractiveState.ReadOnly"/>, <see cref="GInteractiveState.Focused"/>).
+        /// Tyto hodnoty se vždy přičítají k aktuálnímu stavu <see cref="_InteractiveState"/>.
+        /// </summary>
+        protected GInteractiveState InteractiveStateModifiers
+        {
+            get
+            {
+                GInteractiveState state = GInteractiveState.None;
+                if (this.Is.Enabled)
+                {
+                    state |= GInteractiveState.Enabled;
+                    if (this.Is.HasFocus) state |= GInteractiveState.Focused;
+                    if (this.Is.ReadOnly) state |= GInteractiveState.ReadOnly;
+                }
+                else
+                    state |= GInteractiveState.Disabled;
+                return state;
+            }
+        }
         /// <summary>
         /// Vyvolá háček OnInteractiveStateChanged a event InteractiveStateChanged
         /// </summary>

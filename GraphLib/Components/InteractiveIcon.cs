@@ -50,8 +50,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 ImageDynamic?.Invoke(interactiveState, size);
             if (image == null)
                 image = (interactiveState.HasFlag(GInteractiveState.Disabled) ? ImageDisabled :
+                        (interactiveState.HasFlag(GInteractiveState.ReadOnly) ? ImageDisabled :
                         (interactiveState.HasFlag(GInteractiveState.FlagOver) ? ImageMouseOver :
-                        (interactiveState.HasFlag(GInteractiveState.FlagDown) ? ImageMouseDown : null)));
+                        (interactiveState.HasFlag(GInteractiveState.FlagDown) ? ImageMouseDown : null))));
             if (image == null)
                 image = ImageStandard;
 

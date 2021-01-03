@@ -79,21 +79,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zde potomek deklaruje typ písma
         /// </summary>
         protected abstract FontInfo FontCurrent { get; }
-        /// <summary>
-        /// Je tento prvek Visible?
-        /// </summary>
-        public bool Visible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
-        /// <summary>
-        /// Je tento prvek Enabled?
-        /// Do prvku, který NENÍ Enabled, nelze vstoupit Focusem (ani provést DoubleClick ani na ikoně / overlay).
-        /// </summary>
-        public bool Enabled { get { return this.Is.Enabled; } set { this.Is.Enabled = value; } }
-        /// <summary>
-        /// Je tento prvek ReadOnly?
-        /// Do prvku, který JE ReadOnly, lze vstoupit Focusem, lze provést DoubleClick včetně ikony / overlay.
-        /// Ale nelze prvek editovat, a má vzhled prvku který není Enabled (=typicky má šedou barvu a nereaguje vizuálně na myš).
-        /// </summary>
-        public bool ReadOnly { get { return this.Is.ReadOnly; } set { this.Is.ReadOnly = value; } }
     }
     #endregion
 }

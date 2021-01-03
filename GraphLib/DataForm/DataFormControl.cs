@@ -90,7 +90,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int[] textWidths = new int[] { 120, 120, 180, 140, 220, 120, 160, 100, 80, 200 };
             #endregion
 
-            Styles.TextBox.BorderType = TextBoxBorderType.Soft;
+            Styles.TextBox.BorderType = TextBoxBorderType.SoftDoublePlain;
 
             this.ItemsList.Clear();
             InteractiveLabeledContainer tab = null;

@@ -232,6 +232,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected T GetByState<T>(GInteractiveState interactiveState, Func<T> enabledFunc, Func<T> disabledFunc, Func<T> mouseOnFunc, Func<T> mouseDownFunc, Func<T> focusedFunc = null, Func<T> mouseDragFunc = null)
         {   // Pořadí řádků odpovídá logice očekávání uživatele, a prioritě stavů mezi sebou:
             if (interactiveState.HasFlag(GInteractiveState.Disabled)) return disabledFunc();
+            if (interactiveState.HasFlag(GInteractiveState.ReadOnly)) return disabledFunc();
             if (interactiveState.HasFlag(GInteractiveState.Focused)) return (focusedFunc != null ? focusedFunc() : mouseDownFunc());
             if (interactiveState.HasFlag(GInteractiveState.FlagDrag)) return (mouseDragFunc != null ? mouseDragFunc() : mouseDownFunc());
             if (interactiveState.HasFlag(GInteractiveState.FlagDown)) return mouseDownFunc();
@@ -1097,7 +1098,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextColorMouseDown"/></summary>
         protected override Color DefaultTextColorMouseDown { get { return SystemColors.ControlText; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderColor"/></summary>
-        protected override Color DefaultBorderColor { get { return SystemColors.ControlDarkDark; } }
+        protected override Color DefaultBorderColor { get { return SystemColors.ControlDark; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderColorDisabled"/></summary>
         protected override Color DefaultBorderColorDisabled { get { return SystemColors.ControlDarkDark; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderColorMouseOn"/></summary>
@@ -1105,7 +1106,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderColorMouseDown"/></summary>
         protected override Color DefaultBorderColorMouseDown { get { return SystemColors.ControlDarkDark; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderType"/></summary>
-        protected override TextBoxBorderType DefaultBorderType { get { return TextBoxBorderType.Single; } }
+        protected override TextBoxBorderType DefaultBorderType { get { return TextBoxBorderType.SoftSinglePlain; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextMargin"/></summary>
         protected override int DefaultTextMargin { get { return 1; } }
 
@@ -2017,7 +2018,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zvýrazněný interaktivní (bez myši je vykreslen s 50% průhledností proti normálu, při aktivaci myší je vykreslen naplno)
         /// </summary>
-        InteractiveHalf = 0x0200
+        InteractiveHalf = 0x0200,
+
+        /// <summary>
+        /// Jednopixelový měkký
+        /// </summary>
+        SoftSinglePlain = Single | Soft,
+        /// <summary>
+        /// Dvojpixelový měkký
+        /// </summary>
+        SoftDoublePlain = Double | Soft
+
     }
     /// <summary>
     /// Vlastnosti ScrollBaru
