@@ -328,6 +328,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Titulkový label. Pokud je čtena hodnota, která by dosud byla null (tzn. <see cref="TitleLabelVisible"/> je false), pak bude nejprve vytvořena new instance a ta vrácena,
         /// ale její vlastní Visible bude false.
+        /// <para/>
+        /// Důsledek: dokud nebude použit titulek (nastaven jeho text atd), nebude vytvořena jeho instance (úspora paměti).
         /// </summary>
         public GLabel TitleLabel
         {

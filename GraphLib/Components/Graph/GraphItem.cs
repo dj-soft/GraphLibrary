@@ -210,8 +210,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Child prvky: přidávání, kolekce
         /// <summary>
-        /// Child prvky, může být null (pro <see cref="GControl"/> v roli controlu jednotlivého <see cref="ITimeGraphItem"/>), 
-        /// nebo může obsahovat vnořené prvky (pro <see cref="GControl"/> v roli controlu skupiny <see cref="GTimeGraphGroup"/>).
+        /// Child prvky, může být null (pro <see cref="ControlBuffered"/> v roli controlu jednotlivého <see cref="ITimeGraphItem"/>), 
+        /// nebo může obsahovat vnořené prvky (pro <see cref="ControlBuffered"/> v roli controlu skupiny <see cref="GTimeGraphGroup"/>).
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._Childs; } }
         /// <summary>
@@ -295,7 +295,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Prvek na pozici Group lze Selectovat, ten si to zařizuje sám (má Is.Selectable = true, takže pro něj se IsSelected řeší systémově).
             // Ale prvek na pozici Item nelze Selectovat, namísto toho budeme selectovat jeho Group prvek:
             if (this.Position == GGraphControlPosition.Item)
-                this.Group.GControl.IsSelectedTryToggle();
+                this.Group.ControlBuffered.IsSelectedTryToggle();
             
             base.AfterStateChangedLeftClick(e);
         }
@@ -355,13 +355,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             get
             {
                 if (this._Position == GGraphControlPosition.Group && this._GroupState.HasValue) return this._GroupState.Value;
-                if (this._Group != null && this._Group.GControl._GroupState.HasValue) return this._Group.GControl._GroupState.Value;
+                if (this._Group != null && this._Group.ControlBuffered._GroupState.HasValue) return this._Group.ControlBuffered._GroupState.Value;
                 return this.InteractiveState;
             }
             set
             {
                 if (this._Position == GGraphControlPosition.Group) this._GroupState = value;
-                else if (this._Position == GGraphControlPosition.Item && this._Group != null) this._Group.GControl._GroupState = value;
+                else if (this._Position == GGraphControlPosition.Item && this._Group != null) this._Group.ControlBuffered._GroupState = value;
             }
         }
         /// <summary>
@@ -402,12 +402,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     case GGraphControlPosition.Group:
                         // Provádíme Leave z takového prvku, který reprezentuje Grupu:
                         //  pak zjistíme, zda cílový prvek (targetItem) není grafickým prvkem některého z mých Items:
-                        isLeave = !this.Group.Items.Any(i => Object.ReferenceEquals(i.GControl, targetItem));
+                        isLeave = !this.Group.Items.Any(i => Object.ReferenceEquals(i.VisualControl, targetItem));
                         break;
                     case GGraphControlPosition.Item:
                         // Provádíme Leave z prvku, který je na pozici Item:
                         //  pak zjistíme, zda cílový prvek (targetItem) není grafickým prvkem patřící me vlastní grupě:
-                        isLeave = !Object.ReferenceEquals(this.Group.GControl, targetItem);
+                        isLeave = !Object.ReferenceEquals(this.Group.ControlBuffered, targetItem);
                         break;
                 }
             }
@@ -720,7 +720,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>;
+        /// Implementátor může bez nejmenších obav převolat <see cref="ControlBuffered"/>.<see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>;
         /// a to jak pro typ prvku <see cref="GGraphControlPosition.Group"/>, tak pro <see cref="GGraphControlPosition.Item"/>.
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
@@ -884,7 +884,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             // Stav IsSelected a IsFramed budeme vždy přebírat z GUI prvku Grupy, protože Select a Framed a Activated se řeší na úrovni Grupy:
             GTimeGraphItem groupItem = (this._Position == GGraphControlPosition.Group ? this :
-                                        this._Position == GGraphControlPosition.Item ? this._Group.GControl : null);
+                                        this._Position == GGraphControlPosition.Item ? this._Group.ControlBuffered : null);
             if (groupItem != null)
             {
                 graphItemArgs.IsSelected = groupItem.IsSelected;
@@ -1027,7 +1027,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!this.Group.IsShowLinks) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksForMouseOver != null) return;
+            if (this.Position == GGraphControlPosition.Item && this.Group.ControlBuffered.LinksForMouseOver != null) return;
 
             GTimeGraphItem item = this;
             CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
@@ -1066,7 +1066,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!this.Group.IsShowLinks) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksForMouseOver != null) return;
+            if (this.Position == GGraphControlPosition.Item && this.Group.ControlBuffered.LinksForMouseOver != null) return;
 
             if (this.LinksSelect != null)
             {   // Pokud něco máme z dřívějška, tak to odebereme:

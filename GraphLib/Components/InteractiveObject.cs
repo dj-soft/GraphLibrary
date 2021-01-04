@@ -37,17 +37,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual string Name { get; set; }
         /// <summary>
-        /// Grafický prvek GInteractiveControl, který je hostitelem tohoto prvku nebo jeho Parenta.
+        /// Grafický prvek InteractiveControl, který je hostitelem tohoto prvku nebo jeho Parenta.
         /// Může být null, pokud prvek this ještě není nikam přidán.
         /// </summary>
-        protected GInteractiveControl Host
+        protected InteractiveControl Host
         {
             get
             {
                 IInteractiveParent item = this;
                 for (int t = 0; t < 200; t++)
                 {
-                    if (item is GInteractiveControl) return item as GInteractiveControl;
+                    if (item is InteractiveControl) return item as InteractiveControl;
                     if (item.Parent == null) return null;
                     item = item.Parent;
                 }
@@ -66,11 +66,11 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Vizuální hostitel, typicky <see cref="GInteractiveControl"/> přetypovaný na <see cref="IInteractiveHost"/> pro přístup k interním členům
+        /// Vizuální hostitel, typicky <see cref="InteractiveControl"/> přetypovaný na <see cref="IInteractiveHost"/> pro přístup k interním členům
         /// </summary>
         protected IInteractiveHost IHost { get { return this.Host as IInteractiveHost; } }
         /// <summary>
-        /// Parent tohoto objektu. Parentem je buď jiný prvek IInteractiveItem (jako Container), anebo přímo GInteractiveControl.
+        /// Parent tohoto objektu. Parentem je buď jiný prvek IInteractiveItem (jako Container), anebo přímo InteractiveControl.
         /// Může být null, v době kdy prvek ještě není přidán do parent containeru.
         /// </summary>
         protected IInteractiveParent Parent { get; set; }
@@ -204,12 +204,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int? TabOrder { get { return this.__TabOrder; } set { this.__TabOrder = value; } } private int? __TabOrder = null;
         /// <summary>
-        /// Zajistí vykreslení this prvku <see cref="Repaint()"/>, včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
+        /// Zajistí vykreslení this prvku <see cref="Repaint()"/>, včetně překreslení Host controlu <see cref="InteractiveControl"/>.
         /// </summary>
         public virtual void Refresh()
         {
             this.Repaint();
-            GInteractiveControl host = this.Host;
+            InteractiveControl host = this.Host;
             if (host != null) host.Refresh();
         }
         /// <summary>
@@ -1365,7 +1365,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Tato hodnota vyjadřuje výběr prvků ze strany hostitele, k další editaci / Copy and Paste / atd.
         /// Hostitel tuto hodnotu nastavuje tehdy, když <see cref="InteractiveProperties.Selectable"/> je true, jinak ne.
-        /// Hodnota je evidována centrálně v instanci <see cref="GInteractiveControl.Selector"/>.
+        /// Hodnota je evidována centrálně v instanci <see cref="InteractiveControl.Selector"/>.
         /// Nastavením této hodnoty se nemění hodnota <see cref="IsSelected"/> jiných prvků, ty se ponechávají beze změny.
         /// Pokud volající chce, může ostatní prvky odselectovat použitím objektu Host.Selector a jeho metody <see cref="Selector.ClearSelected()"/>.
         /// <para/>
@@ -1552,7 +1552,7 @@ namespace Asol.Tools.WorkScheduler.Components
         void IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { this.DrawOverChilds(e, absoluteBounds, absoluteVisibleBounds); }
 
         UInt32 IInteractiveParent.Id { get { return this._Id; } }
-        GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
+        InteractiveControl IInteractiveParent.Host { get { return this.Host; } }
         IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
         IEnumerable<IInteractiveItem> IInteractiveParent.Childs { get { return this.Childs; } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }

@@ -14,7 +14,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
     /// <summary>
     /// GameControl
     /// </summary>
-    public class GameControl : GControlLayered
+    public class GameControl : ControlLayered
     {
         #region Inicializace
         /// <summary>

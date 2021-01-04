@@ -478,47 +478,36 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Výška řádku a výška textboxu: defaultní, aktuální. Abstract overrides. Zajištění správné výšky objektu.
         /// <summary>
-        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
+        /// Optimální výška textboxu pro správné zobrazení jednořádkového textu.
+        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku jednoho řádku textu (<see cref="OneTextLineHeightCurrent"/>).
+        /// Pro aktuální instanci = pro její aktuální styl.
         /// </summary>
-        public int OneTextLineHeightCurrent
-        {
-            get
-            {
-                ITextBoxStyle style = this.StyleCurrent;
-                FontInfo font = style.Font;
-                return FontManagerInfo.GetFontHeight(font);
-            }
-        }
+        public int SingleLineOptimalHeightCurrent { get { return GPainter.GetSingleLineOptimalHeight(this.StyleCurrent); } }
         /// <summary>
         /// Optimální výška textboxu pro správné zobrazení jednořádkového textu.
-        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku řádku text <see cref="OneTextLineHeightCurrent"/>.
+        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku jednoho řádku textu (<see cref="OneTextLineHeightCurrent"/>).
+        /// Pro defaultní instanci = pro výchozí styl.
         /// </summary>
-        public int SingleLineOptimalHeightCurrent
-        {
-            get
-            {
-                ITextBoxStyle style = this.StyleCurrent;
-                TextBoxBorderType borderType = style.BorderType;
-                int borderWidth = GPainter.GetBorderWidth(borderType);
-                int textMargin = style.TextMargin;
-                FontInfo font = style.Font;
-                int fontHeight = FontManagerInfo.GetFontHeight(font);
-                return (fontHeight + 2 * (textMargin + borderWidth));
-            }
-        }
+        public static int SingleLineOptimalHeightDefault { get { return GPainter.GetSingleLineOptimalHeight(Styles.TextBox); } }
+        /// <summary>
+        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
+        /// Pro defaultní instanci = pro výchozí styl.
+        /// </summary>
+        public static int OneTextLineHeightDefault { get { return GPainter.GetOneTextLineHeight(Styles.TextBox); } }
         /// <summary>
         /// V této metodě může potomek změnit (ref) souřadnice, na které je objekt právě umisťován.
         /// Tato metoda je volána při Bounds.set().
         /// Tato metoda typicky koriguje velikost vkládaného prostoru podle vlastností potomka.
         /// Typickým příkladem je <see cref="GTextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="GTextEdit.Multiline"/> a parametrů stylu.
-        /// Bázová třída <see cref="InteractiveObject"/> nedělá nic.
+        /// Třída <see cref="GTextEdit"/> hlídá výšku, pokud je textbox jednořádkový.
         /// </summary>
         /// <param name="bounds"></param>
         protected override void ValidateBounds(ref Rectangle bounds)
         {
-            if (this.Multiline) return;
-            int height = SingleLineOptimalHeightCurrent;
-            if (bounds.Height != height)
+            if (bounds.Height == this.Bounds.Height) return;         // Změna Bounds se často provádí kvůli změně Location, a ne Size. My hlídáme jen Height. Tenhle řádek urychlí všechny změny pozice i změny jen šířky.
+            int height = SingleLineOptimalHeightCurrent;             // Zde proběhne kompletní výpočet stylu (včetně dědičností stylu) a vyhodnocení výšky.
+            bool multiline = this.Multiline;                         // Pro Multiline zajistím, že Height nebude menší než jeden řádek, pro Singleline musí být výška přesně rovna výšce jednoho řádku:
+            if ((multiline && bounds.Height < height) || (!multiline && bounds.Height != height))
                 bounds.Height = height;
         }
         /// <summary>

@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
     /// DataFormControl
     /// </summary>
     /// <remarks>David Janáček, počátek 1.12.2019</remarks>
-    public class GDataFormControl : GInteractiveControl
+    public class GDataFormControl : InteractiveControl
     {
         /// <summary>
         /// Konstruktor

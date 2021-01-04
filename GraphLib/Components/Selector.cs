@@ -10,7 +10,7 @@ namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
     /// Selector : správce interaktivních objektů, které jsou selectované.
-    /// Pomáhá v rámci <see cref="GInteractiveControl"/> provádět vyběr / rušení výběru u interaktivních prvků.
+    /// Pomáhá v rámci <see cref="InteractiveControl"/> provádět vyběr / rušení výběru u interaktivních prvků.
     /// Každý prvek se k instanci <see cref="Selector"/> dostane přes <see cref="IInteractiveParent.Host"/>.Selector
     /// Nejde o samostatnou grafickou komponentu.
     /// </summary>

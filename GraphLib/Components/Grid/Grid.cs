@@ -1269,7 +1269,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
-        /// Zajistí invalidaci dat this prvku, a jeho vykreslení včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
+        /// Zajistí invalidaci dat this prvku, a jeho vykreslení včetně překreslení Host controlu <see cref="InteractiveControl"/>.
         /// </summary>
         public override void Refresh()
         {

@@ -4143,6 +4143,33 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             return colorMatrix;
         }
         #endregion
+        #region Práce se styly
+        /// <summary>
+        /// Vrátí výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>, pro daný styl.
+        /// </summary>
+        /// <param name="style">Styl textboxu, buď konkrétní z <see cref="GTextEdit.Style"/>, nebo základní <see cref="Styles.TextBox"/>.</param>
+        /// <returns></returns>
+        public static int GetOneTextLineHeight(ILabelStyle style)
+        {
+            FontInfo font = style.Font;
+            return FontManagerInfo.GetFontHeight(font);
+        }
+        /// <summary>
+        /// Optimální výška textboxu pro správné zobrazení jednořádkového textu, pro daný styl.
+        /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku jednoho řádku textu.
+        /// </summary>
+        /// <param name="style">Styl textboxu, buď konkrétní z <see cref="GTextEdit.Style"/>, nebo základní <see cref="Styles.TextBox"/>.</param>
+        /// <returns></returns>
+        public static int GetSingleLineOptimalHeight(ITextBoxStyle style)
+        {
+            TextBoxBorderType borderType = style.BorderType;
+            int borderWidth = GPainter.GetBorderWidth(borderType);
+            int textMargin = style.TextMargin;
+            FontInfo font = style.Font;
+            int fontHeight = FontManagerInfo.GetFontHeight(font);
+            return (fontHeight + 2 * (textMargin + borderWidth));
+        }
+        #endregion
         #region CreatePath
         #region RoundRectangle
         /// <summary>

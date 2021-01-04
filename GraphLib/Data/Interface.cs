@@ -19,13 +19,13 @@ namespace Asol.Tools.WorkScheduler.Data
     #endregion
     #region delegate GPropertyChangedHandler, class GPropertyChangeArgs, enum EventSourceType
     /// <summary>
-    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na GInteractiveControl
+    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na InteractiveControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void GPropertyChangedHandler<T>(object sender, GPropertyChangeArgs<T> e);
     /// <summary>
-    /// Data pro eventhandler navázaný na změnu nějaké hodnoty v GInteractiveControl
+    /// Data pro eventhandler navázaný na změnu nějaké hodnoty v InteractiveControl
     /// </summary>
     public class GPropertyChangeArgs<T> : EventArgs
     {
@@ -140,7 +140,7 @@ namespace Asol.Tools.WorkScheduler.Data
     #endregion
     #region delegate GPropertyChangedHandler, class GPropertyChangeArgs, enum EventSourceType
     /// <summary>
-    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na GInteractiveControl
+    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na InteractiveControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>

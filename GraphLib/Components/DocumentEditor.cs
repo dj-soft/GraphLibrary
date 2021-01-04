@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Editor dokumentu
     /// </summary>
-    public class GDocumentEditor : GInteractiveControl
+    public class GDocumentEditor : InteractiveControl
     {
         /// <summary>
         /// Konstruktor

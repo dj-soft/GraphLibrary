@@ -52,6 +52,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected ILabelStyle StyleCurrent { get { return (this._Style ?? this.StyleParent ?? Styles.Label); } }
         #endregion
+        #region Výška řádku textu: defaultní, aktuální. Abstract overrides. Zajištění správné výšky objektu.
+        /// <summary>
+        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
+        /// Pro aktuální instanci = pro její aktuální styl.
+        /// </summary>
+        public virtual int OneTextLineHeightCurrent { get { return GPainter.GetOneTextLineHeight(this.StyleCurrent); } }
+        /// <summary>
+        /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
+        /// Pro defaultní instanci = pro výchozí styl.
+        /// </summary>
+        public static int OneTextLineHeightDefault { get { return GPainter.GetOneTextLineHeight(Styles.Label); } }
+        #endregion
         #region Public vlastnosti
         /// <summary>
         /// Obsahuje výšku řádku textu, optimální pro výšku jednořádkového labelu

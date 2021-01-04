@@ -11,17 +11,17 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region GControl : Control with buffered graphic
+    #region ControlBuffered : Control with buffered graphic
     /// <summary>
-    /// GControl: Control with buffered graphic
+    /// ControlBuffered: Control with buffered graphic
     /// </summary>
-    public class GControl : Control, IDisposable
+    public class ControlBuffered : Control, IDisposable
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GControl()
+        public ControlBuffered()
         {
             this._GraphBufferInit();
         }
@@ -234,18 +234,18 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region GControlLayered : Třída určená ke kreslení grafiky na plochu. Varianta pro složitější interaktivní motivy.
+    #region ControlLayered : Třída určená ke kreslení grafiky na plochu. Varianta pro složitější interaktivní motivy.
     /// <summary>
     /// Třída určená ke kreslení grafiky na plochu - absolutně bez blikání.
     /// Varianta pro složitější interaktivní motivy: nabízí více vrstev pro kreslení.
     /// </summary>
-    public class GControlLayered : Control, IAutoScrollContainer, IDisposable
+    public class ControlLayered : Control, IAutoScrollContainer, IDisposable
     {
         #region Konstruktor, private event handlers
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GControlLayered()
+        public ControlLayered()
         {
             this.PrepareLayers("Standard");
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
@@ -729,7 +729,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region virtual ChildItems a interface IAutoScrollContainer
         /// <summary>
         /// Zde potomek deklaruje souhrn svých prvků, z nichž se bude vypočítávat obsazená velikost v metodě <see cref="AutoScrollDetect()"/>.
-        /// Tuto property musí řešit potomek this třídy <see cref="GControlLayered"/>, protože this třída nemá Child prvky.
+        /// Tuto property musí řešit potomek this třídy <see cref="ControlLayered"/>, protože this třída nemá Child prvky.
         /// Tuto property využívá člen interface <see cref="IAutoScrollContainer.ChildItems"/>, kudy předává Child prvky do <see cref="AutoScrollSupport"/>.
         /// </summary>
         protected virtual IEnumerable<IInteractiveItem> ChildItems { get { return null; } }

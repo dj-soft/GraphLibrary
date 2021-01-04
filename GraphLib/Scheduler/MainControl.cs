@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// Hlavní control Dílenské tabule: obsahuje <see cref="GToolBar"/> + <see cref="SchedulerPanel"/>.
     /// </summary>
-    public class MainControl : GInteractiveControl
+    public class MainControl : InteractiveControl
     {
         #region Konstruktor, inicializace, privátní proměnné grafiky
         /// <summary>

@@ -15,7 +15,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="host"></param>
-        public ProgressItem(GInteractiveControl host)
+        public ProgressItem(InteractiveControl host)
         {
             this._ProgressData = new ProgressData();
             this.Parent = host;
@@ -98,7 +98,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         internal void SetPosition()
         {
-            GInteractiveControl host = this.Host;
+            InteractiveControl host = this.Host;
             if (host == null) return;
 
             Rectangle hostBounds = host.ClientItemsRectangle;
@@ -125,7 +125,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool NeedDraw { get { return this.Is.Visible; } }
         internal void Draw(System.Drawing.Graphics graphics)
         {
-            GInteractiveControl host = this.Host;
+            InteractiveControl host = this.Host;
             if (host == null) return;
 
             Rectangle bounds = this.BoundsAbsolute;

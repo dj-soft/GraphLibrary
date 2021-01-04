@@ -18,7 +18,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Třída se používá ve dvou režimech:
     /// <para/>
     /// a) Parent to Child = zdola nahoru: při kompletním procházení stromu prvků od vizuálního Controlu, přes jednotlivé prvky typu Container k jejich Childs prvkům (z hlediska sumárního výkonu optimálnější):
-    /// Je vytvořena instance <see cref="BoundsInfo"/> pro vizuální control <see cref="GInteractiveControl"/>, tato instance nabízí metody pro získání souřadnic konkrétního prvku v jedné úrovni,
+    /// Je vytvořena instance <see cref="BoundsInfo"/> pro vizuální control <see cref="InteractiveControl"/>, tato instance nabízí metody pro získání souřadnic konkrétního prvku v jedné úrovni,
     /// anebo umožňuje získání nové instance <see cref="BoundsInfo"/> pro jeden konkrétní z <see cref="IInteractiveParent.Childs"/>, kde tato instance bude vracet souřadnice pro jeho <see cref="IInteractiveParent.Childs"/>.
     /// <para/>
     /// b) Child to Parent = odshora dolů: pro zjištění potřebných údajů pro jeden Child prvek (pro jeden prvek kdekoli v hierarchii):
@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /*
         1. ÚČEL
            POZICE
-        Kreslící systém ve třídách GControl a GControlLayered (a následně interaktivní control GInteractiveControl) 
+        Kreslící systém ve třídách ControlBuffered a ControlLayered (a následně interaktivní control InteractiveControl) 
         je postaven na vykreslování jednotlivých prvků (child itemů) do globální grafiky celého WinForm Controlu.
         K tomu vykreslování je třeba znát absolutní pozici konkrétního child itemu vzhledem k WinForm Controlu.
         Přitom samozřejmě pozicování child itemů (=jejich Bounds) je relativní výhradně k jejich Parentu, 
@@ -755,7 +755,7 @@ namespace Asol.Tools.WorkScheduler.Components.Old
     /// Třída se používá ve dvou režimech:
     /// <para/>
     /// a) Parent to Child = zdola nahoru: při kompletním procházení stromu prvků od vizuálního Controlu, přes jednotlivé prvky typu Container k jejich Childs prvkům (z hlediska sumárního výkonu optimálnější):
-    /// Je vytvořena instance <see cref="BoundsInfo"/> pro vizuální control <see cref="GInteractiveControl"/>, tato instance nabízí metody pro získání souřadnic konkrétního prvku v jedné úrovni,
+    /// Je vytvořena instance <see cref="BoundsInfo"/> pro vizuální control <see cref="InteractiveControl"/>, tato instance nabízí metody pro získání souřadnic konkrétního prvku v jedné úrovni,
     /// anebo umožňuje získání nové instance <see cref="BoundsInfo"/> pro jeden konkrétní z <see cref="IInteractiveParent.Childs"/>, kde tato instance bude vracet souřadnice pro jeho <see cref="IInteractiveParent.Childs"/>.
     /// <para/>
     /// b) Child to Parent = odshora dolů: pro zjištění potřebných údajů pro jeden Child prvek (pro jeden prvek kdekoli v hierarchii):

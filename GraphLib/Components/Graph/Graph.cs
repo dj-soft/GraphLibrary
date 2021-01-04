@@ -19,7 +19,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     // Tyto prvky mají určenou svoji souřadnici na ose Y v rámci grafu GTimeGraph.
     // A prvky GTimeGraphGroup reprezentují jednu skupinu vstupních prvků ITimeGraphItem (skupinu, která mí shodné GraphId).
     // A aby jednotlivé vstupní datové prvky grafu (=implementující ITimeGraphItem) nemusely samy být grafické prvky, 
-    //  pak v nich je vložen jeden standardní Grafický prvek typu GTimeGraphItem (v property ITimeGraphItem.GControl).
+    //  pak v nich je vložen jeden standardní Grafický prvek typu GTimeGraphItem (v property ITimeGraphItem.ControlBuffered).
 
     /*     Chování s ohledem na prostor grafu (Bounds.Size):
 
@@ -1533,7 +1533,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._Childs = new List<IInteractiveItem>();
             foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
-                this._Childs.Add(groupItem.GControl);
+                this._Childs.Add(groupItem.ControlBuffered);
             if (this.GraphLinkArrayIsOnGraph)
                 this._Childs.Add(this._GraphLinkArray);
         }
@@ -1554,9 +1554,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 // e.GraphicsClipWith(absoluteBounds);
                 this.DrawTicks(e, absoluteBounds);
                 // Vykreslení jednotlivých položek grafu neřídí graf, ale systém. 
-                // Bude postupně volat kreslení všech mých Child items, což jsou GTimeGraphGroup.GControl, bude volat jejich metodu Draw(GInteractiveDrawArgs).
+                // Bude postupně volat kreslení všech mých Child items, což jsou GTimeGraphGroup.ControlBuffered, bude volat jejich metodu Draw(GInteractiveDrawArgs).
                 // Tato metoda (v třídě GTimeGraphItem) vyvolá kreslící metodu svého Ownera: ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute).
-                // Owner může kreslit podle svého uvážení, anebo může vyvolat metodu this.GControl.Draw(GInteractiveDrawArgs, Rectangle), která vykreslí prvek standardně.
+                // Owner může kreslit podle svého uvážení, anebo může vyvolat metodu this.ControlBuffered.Draw(GInteractiveDrawArgs, Rectangle), která vykreslí prvek standardně.
             }
         }
         /// <summary>
@@ -1796,7 +1796,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
         /// <summary>
-        /// Zajistí vykreslení this prvku Repaint(), včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
+        /// Zajistí vykreslení this prvku Repaint(), včetně překreslení Host controlu <see cref="InteractiveControl"/>.
         /// </summary>
         public override void Refresh()
         {
@@ -2664,10 +2664,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        GTimeGraphItem GControl { get; set; }
+        GTimeGraphItem VisualControl { get; set; }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="VisualControl"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku</param>
@@ -3581,7 +3581,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Vizuální control grupy, reprezentuje spojovací linii mezi fyzickými prvky grafu.
         /// Nikdy není null.
         /// </summary>
-        public GTimeGraphItem GroupControl { get { return this.Group?.GControl; } }
+        public GTimeGraphItem GroupControl { get { return this.Group?.ControlBuffered; } }
         /// <summary>
         /// Přímo ten prvek, jehož se týká akce (na který bylo kliknuto).
         /// Může být null, pokud se akce týká výhradně spojovacího prvku mezi fyzickými prvky grafu = když bylo kliknuto na "spojovací linii mezi prvky".
@@ -3591,7 +3591,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vizuální control prvku <see cref="Item"/>, může být null.
         /// </summary>
-        public GTimeGraphItem ItemControl { get { return this.Item?.GControl; } }
+        public GTimeGraphItem ItemControl { get { return this.Item?.VisualControl; } }
         /// <summary>
         /// Skupina prvků, jejíhož člena se akce týká, nebo jejíž spojovací linie se akce týká.
         /// Nikdy není null, vždy obsahuje alespoň jeden prvek.

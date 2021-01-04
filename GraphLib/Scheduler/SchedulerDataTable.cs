@@ -1397,13 +1397,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private GTimeGraphItem _SearchGraphItemsForLink(ITimeGraphItem iGraphItem, GGraphControlPosition position)
         {
-            if (iGraphItem == null || iGraphItem.GControl == null) return null;
-            switch (iGraphItem.GControl.Position)
+            if (iGraphItem == null || iGraphItem.VisualControl == null) return null;
+            switch (iGraphItem.VisualControl.Position)
             {
                 case GGraphControlPosition.Group:
-                    return iGraphItem.GControl;
+                    return iGraphItem.VisualControl;
                 case GGraphControlPosition.Item:
-                    return (position == GGraphControlPosition.Item ? iGraphItem.GControl : iGraphItem.GControl.Group.GControl);
+                    return (position == GGraphControlPosition.Item ? iGraphItem.VisualControl : iGraphItem.VisualControl.Group.ControlBuffered);
             }
             return null;
         }
@@ -2620,7 +2620,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 DataGraphItem item;
                 if (!this.TimeGraphItemDict.TryGetValue(gId, out item)) continue;
                 if (groupDict.ContainsKey(item.GroupGId)) continue;
-                GTimeGraphGroup value = (item as ITimeGraphItem).GControl.Group;
+                GTimeGraphGroup value = (item as ITimeGraphItem).VisualControl.Group;
                 if (value != null)
                     groupDict.Add(item.GroupGId, value);
             }
@@ -2638,7 +2638,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (groupDict.ContainsKey(gId)) continue;            // V cílové dictionary už máme grupu pro daný GID, už ji znovu hledat nemusíme
                 DataGraphItem[] group;
                 if (!this.TimeGraphGroupDict.TryGetValue(gId, out group)) continue;
-                GTimeGraphGroup value = (group[0] as ITimeGraphItem).GControl.Group;
+                GTimeGraphGroup value = (group[0] as ITimeGraphItem).VisualControl.Group;
                 if (value != null)
                     groupDict.Add(gId, value);
             }
@@ -2658,7 +2658,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 //  a pokud jejich DataId je zadané a je obsaženo ve zdrojových datech (sourceGIds), pak grupu daného prvku dávám do výstupu:
                 if (item.DataGId != null && sourceGIds.ContainsKey(item.DataGId) && item.GroupGId != null && !groupDict.ContainsKey(item.GroupGId))
                 {
-                    GTimeGraphGroup value = (item as ITimeGraphItem).GControl.Group;
+                    GTimeGraphGroup value = (item as ITimeGraphItem).VisualControl.Group;
                     if (value != null)
                         groupDict.Add(item.GroupGId, value);
                 }
@@ -2708,8 +2708,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 foreach (GTimeGraphGroup targetGroup in targetGroups)
                 {
-                    if (isSelect) targetGroup.GControl.IsSelected = true;
-                    if (isActivate) targetGroup.GControl.IsActivated = true;
+                    if (isSelect) targetGroup.ControlBuffered.IsSelected = true;
+                    if (isActivate) targetGroup.ControlBuffered.IsActivated = true;
                     if (isFilterRow) this.InteractionThisRowFilterAdd(targetGroup);
                 }
             }
@@ -2742,7 +2742,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void InteractionThisRowFilterAdd(GTimeGraphGroup targetGroup)
         {
             if (this.InteractionRowFilterDict == null || targetGroup == null) return;
-            this.InteractionThisRowFilterAdd(targetGroup.GControl.SearchForParent(typeof(GRow)) as GRow);
+            this.InteractionThisRowFilterAdd(targetGroup.ControlBuffered.SearchForParent(typeof(GRow)) as GRow);
         }
         /// <summary>
         /// Metoda přidá daný řádek do připravovaného řádkového filtru
@@ -5364,7 +5364,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _CheckGControl()
         {
             if (this._GControl == null)
-            {   // Prvek grafu ještě nemá vytvořen GControl = jde o řádek, který ještě nebyl kreslen.
+            {   // Prvek grafu ještě nemá vytvořen ControlBuffered = jde o řádek, který ještě nebyl kreslen.
                 // Požádáme tedy jeho graf, aby si prověřil platnost svých dat:
                 GTimeGraph graph = this._OwnerGraph as GTimeGraph;
                 if (graph != null)
@@ -5529,7 +5529,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="ControlBuffered"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
@@ -5599,7 +5599,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.GetBackEffectEditable(); } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.GetBackEffectNonEditable(); } }
-        GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
+        GTimeGraphItem ITimeGraphItem.VisualControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
         // Následující properties se načítají i ze Skinu:
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
         Color? ITimeGraphItem.TextColor { get { return this._GuiGraphItem.TextColor; } }

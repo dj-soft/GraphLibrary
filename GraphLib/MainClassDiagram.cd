@@ -332,19 +332,19 @@
       <FileName>Components\FormMoveSupport.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="Asol.Tools.WorkScheduler.Components.GControl" BaseTypeListCollapsed="true">
+  <Class Name="Asol.Tools.WorkScheduler.Components.ControlBuffered" BaseTypeListCollapsed="true">
     <Position X="115.5" Y="2.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>xACAAAAAAAIBYgAEAAAAAAAAAAAIAAAAACAjQAABAFA=</HashCode>
-      <FileName>Components\GControl.cs</FileName>
+      <FileName>Components\ControlBuffered.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
-  <Class Name="Asol.Tools.WorkScheduler.Components.GControlLayered">
+  <Class Name="Asol.Tools.WorkScheduler.Components.ControlLayered">
     <Position X="4.75" Y="21.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AACAAAAAAABZYlAEARAAgIAAAABIAUBBIAABgAABAAI=</HashCode>
-      <FileName>Components\GControl.cs</FileName>
+      <FileName>Components\ControlBuffered.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
@@ -352,7 +352,7 @@
     <Position X="106.75" Y="3.5" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAgAIEAAAAAgQAICAgAgAIAAACAAAAAAAEBCBAAhAA=</HashCode>
-      <FileName>Components\GControl.cs</FileName>
+      <FileName>Components\ControlBuffered.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
@@ -360,14 +360,14 @@
     <Position X="108.5" Y="6.5" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAACAAAAAAAAAQAAAAAACAAAAAAAIBQAAQgACaAAA=</HashCode>
-      <FileName>Components\GControl.cs</FileName>
+      <FileName>Components\ControlBuffered.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="Asol.Tools.WorkScheduler.Components.oldLayeredPaintEventArgs">
     <Position X="99.75" Y="7.5" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAEEEAAAAAEAAACAABAACAAAEAAAAAAAAAgBAIAAA=</HashCode>
-      <FileName>Components\GControl.cs</FileName>
+      <FileName>Components\ControlBuffered.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="Asol.Tools.WorkScheduler.Components.GGrid">
@@ -455,30 +455,30 @@
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl">
+  <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveControl">
     <Position X="4.75" Y="23" Width="1.75" />
     <NestedTypes>
-      <Enum Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.InteractiveDrawState" Collapsed="true">
+      <Enum Name="Asol.Tools.WorkScheduler.Components.InteractiveControl.InteractiveDrawState" Collapsed="true">
         <TypeIdentifier>
           <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
         </TypeIdentifier>
       </Enum>
-      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.DrawRequest" Collapsed="true">
+      <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveControl.DrawRequest" Collapsed="true">
         <TypeIdentifier>
           <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
         </TypeIdentifier>
       </Class>
-      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.DrawRequestItem" Collapsed="true">
+      <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveControl.DrawRequestItem" Collapsed="true">
         <TypeIdentifier>
           <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
         </TypeIdentifier>
       </Class>
-      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.BlockedGuiTextInfo" Collapsed="true">
+      <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveControl.BlockedGuiTextInfo" Collapsed="true">
         <TypeIdentifier>
           <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
         </TypeIdentifier>
       </Class>
-      <Class Name="Asol.Tools.WorkScheduler.Components.GInteractiveControl.InteractiveProcessingScope" Collapsed="true">
+      <Class Name="Asol.Tools.WorkScheduler.Components.InteractiveControl.InteractiveProcessingScope" Collapsed="true">
         <TypeIdentifier>
           <NewMemberFileName>Components\InteractiveControl.cs</NewMemberFileName>
         </TypeIdentifier>
@@ -4228,7 +4228,7 @@
     <Position X="105" Y="25.25" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAA=</HashCode>
-      <FileName>Components\GControl.cs</FileName>
+      <FileName>Components\ControlBuffered.cs</FileName>
     </TypeIdentifier>
   </Delegate>
   <Delegate Name="Asol.Tools.WorkScheduler.Components.GInteractiveChangeStateHandler">

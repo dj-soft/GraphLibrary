@@ -147,10 +147,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Reference na Hosta, což je GrandParent všech prvků.
         /// </summary>
-        GInteractiveControl Host { get; }
+        InteractiveControl Host { get; }
         /// <summary>
-        /// Parent tohoto prvku. Může to být i přímo control GInteractiveControl.
-        /// Pouze v případě, kdy this je <see cref="GInteractiveControl"/>, pak <see cref="Parent"/> je null.
+        /// Parent tohoto prvku. Může to být i přímo control InteractiveControl.
+        /// Pouze v případě, kdy this je <see cref="InteractiveControl"/>, pak <see cref="Parent"/> je null.
         /// </summary>
         IInteractiveParent Parent { get; set; }
         /// <summary>
@@ -173,7 +173,7 @@ namespace Asol.Tools.WorkScheduler.Components
         void Repaint(GInteractiveDrawLayer repaintLayers);
     }
     /// <summary>
-    /// Interface definuje specifické prvky hostitelského Controlu, k nimž není přímý přístup přes třídu GInteractiveControl
+    /// Interface definuje specifické prvky hostitelského Controlu, k nimž není přímý přístup přes třídu InteractiveControl
     /// </summary>
     public interface IInteractiveHost
     {
@@ -485,7 +485,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
         /// <summary>
         /// Tento prvek je aktuálně cílem v procesu Drag and Move.
-        /// Hodnotu do této property do konkrétního prvku <see cref="IInteractiveItem"/> vkládá control <see cref="GInteractiveControl"/> v průběhu akce Drag and Move.
+        /// Hodnotu do této property do konkrétního prvku <see cref="IInteractiveItem"/> vkládá control <see cref="InteractiveControl"/> v průběhu akce Drag and Move.
         /// Prvek na tuto hodnotu může reagovat zvýrazněním vykreslení.
         /// </summary>
         public bool ActiveTarget { get { return this.GetBitValue((uint)Bit.ActiveTarget); } set { this.SetBitValue((uint)Bit.ActiveTarget, value); } }
@@ -587,19 +587,19 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region Delegates and EventArgs
     /// <summary>
-    /// Delegate for handlers of interactive event in GInteractiveControl
+    /// Delegate for handlers of interactive event in InteractiveControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void GInteractiveChangeStateHandler(object sender, GInteractiveChangeStateArgs e);
     /// <summary>
-    /// Delegate for handlers of drawing event in GInteractiveControl
+    /// Delegate for handlers of drawing event in InteractiveControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void GInteractiveDrawHandler(object sender, GInteractiveDrawArgs e);
     /// <summary>
-    /// Delegát pro handlery události, kdy došlo k nějaké akci na určitém objektu v GInteractiveControl
+    /// Delegát pro handlery události, kdy došlo k nějaké akci na určitém objektu v InteractiveControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
@@ -611,7 +611,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <param name="e"></param>
     public delegate void GUserDrawHandler(object sender, GUserDrawArgs e);
     /// <summary>
-    /// Data pro eventhandler navázaný na událost na určitém objektu v GInteractiveControl
+    /// Data pro eventhandler navázaný na událost na určitém objektu v InteractiveControl
     /// </summary>
     public class GPropertyEventArgs<T> : EventArgs
     {
@@ -657,7 +657,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool Cancel { get; set; }
     }
     /// <summary>
-    /// Data pro handlery interaktivních událostí v GInteractiveControl
+    /// Data pro handlery interaktivních událostí v InteractiveControl
     /// </summary>
     public class GInteractiveChangeStateArgs : EventArgs
     {
@@ -676,7 +676,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="targetPosition">Target prvek při Drag and Move operacích</param>
         internal GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
             Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
-            Rectangle? dragOriginBounds, Rectangle? dragToBounds, GActivePosition targetPosition)
+            Rectangle? dragOriginBounds, Rectangle? dragToBounds, ActivePosition targetPosition)
               : this()
         {
             this.BoundsInfo = boundsInfo;
@@ -806,11 +806,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Prvek, nad kterým se nyní pohybuje myš v procesu Drag and Move (při akci DragStep).
         /// </summary>
-        internal GActivePosition DragMoveToTarget { get; private set; }
+        internal ActivePosition DragMoveToTarget { get; private set; }
         /// <summary>
         /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
         /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
-        /// Control <see cref="GInteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
+        /// Control <see cref="InteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
         /// Je nastavena hodnota <see cref="IInteractiveItem.Is"/>.ActiveTarget = true / false a je zajištěn Repaint() prvku.
         /// </summary>
         public IInteractiveItem DragMoveActiveItem { get; set; }
@@ -907,7 +907,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// User defined point during Drag operation.
         /// User (an IInteractiveItem) can set any point in event LeftDragBegin / RightDragBegin;
-        /// then GInteractiveControl will be calculated appropriate moved point during Drag, 
+        /// then InteractiveControl will be calculated appropriate moved point during Drag, 
         /// and this "dragged" point coordinates are stored to this property (UserDragPoint) before call event LeftDragMove / RightDragMove.
         /// When user in event DragBegin does not set any location (null value), then in event DragMove will be in this property null value.
         /// For other events this property does not have any meaning.
@@ -1055,7 +1055,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
         /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
-        /// Control <see cref="GInteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
+        /// Control <see cref="InteractiveControl"/> následně pro tento prvek nastaví jeho hodnotu Active, a prvek by se pak měl zobrazit zvýrazněný.
         /// Je nastavena hodnota <see cref="IInteractiveItem.Is"/>.ActiveTarget = true / false a je zajištěn Repaint() prvku.
         /// </summary>
         public IInteractiveItem DragActiveItem { get { return this._ChangeArgs.DragMoveActiveItem; } set { this._ChangeArgs.DragMoveActiveItem = value; } }
@@ -1096,7 +1096,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     /// <summary>
-    /// Data pro obsluhu kreslení prvků ve třídě GInteractiveControl
+    /// Data pro obsluhu kreslení prvků ve třídě InteractiveControl
     /// </summary>
     public class GInteractiveDrawArgs : EventArgs
     {
@@ -1224,7 +1224,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics">An Graphics object to draw on</param>
         /// <param name="drawLayer">Layer, currently drawed</param>
-        /// <param name="userAbsoluteBounds">Area to draw (VisibleAbsoluteBounds), where item is drawed, in coordinates absolute to Host control (GInteractiveControl)</param>
+        /// <param name="userAbsoluteBounds">Area to draw (VisibleAbsoluteBounds), where item is drawed, in coordinates absolute to Host control (InteractiveControl)</param>
         public GUserDrawArgs(Graphics graphics, GInteractiveDrawLayer drawLayer, Rectangle userAbsoluteBounds)
         {
             this.Graphics = graphics;
@@ -1241,7 +1241,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GInteractiveDrawLayer DrawLayer { get; private set; }
         /// <summary>
-        /// Area to draw (VisibleAbsoluteBounds), where item is drawed, in coordinates absolute to Host control (GInteractiveControl).
+        /// Area to draw (VisibleAbsoluteBounds), where item is drawed, in coordinates absolute to Host control (InteractiveControl).
         /// Graphics is clipped to this.UserAbsoluteBounds, thus cannot draw outside this area.
         /// </summary>
         public Rectangle UserAbsoluteBounds { get; private set; }
@@ -1265,7 +1265,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="startActiveItem"></param>
         /// <param name="mousePaintInfo"></param>
         /// <param name="toolTipData"></param>
-        internal GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, GActivePosition currentActiveItem, GActivePosition startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
+        internal GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, ActivePosition currentActiveItem, ActivePosition startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
         {
             this._InteractiveChange = interactiveChange;
             this._CurrentActiveItem = currentActiveItem;
@@ -1279,8 +1279,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolTipData = toolTipData;
         }
         private GInteractiveChangeState _InteractiveChange;
-        private GActivePosition _CurrentActiveItem;
-        private GActivePosition _StartActiveItem;
+        private ActivePosition _CurrentActiveItem;
+        private ActivePosition _StartActiveItem;
         private MousePaintInfo _MousePaintInfo;
         private ToolTipData _ToolTipData;
         /// <summary>
@@ -1411,7 +1411,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
     }
     /// <summary>
-    /// Druh kresleného objektu v controlu, <see cref="GInteractiveControl.MousePaintEnabled"/>
+    /// Druh kresleného objektu v controlu, <see cref="InteractiveControl.MousePaintEnabled"/>
     /// </summary>
     public enum MousePaintObjectType
     {

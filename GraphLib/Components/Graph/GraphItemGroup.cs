@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public GTimeGraphGroup(GTimeGraph parent, bool acceptZeroTime, ITimeGraphItem item)
             : this(parent)
         {
-            this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.GControl)
+            this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.ControlBuffered)
             this._FirstItem = item;
             this._Items = new ITimeGraphItem[] { item };
             bool canResize = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime);
@@ -63,7 +63,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool canResize = false;
             foreach (ITimeGraphItem item in this.Items)
             {
-                this._PrepareGControlItem(item);                          // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.GControl)
+                this._PrepareGControlItem(item);                          // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.ControlBuffered)
                 if (this._FirstItem == null) this._FirstItem = item;
                 if (item.Height.HasValue && (!height.HasValue || item.Height.Value > height.Value)) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
@@ -75,22 +75,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._Store(begin, end, acceptZeroTime, height, canResize);
         }
         /// <summary>
-        /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.GControl"/>) pro this grupu.
+        /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.VisualControl"/>) pro this grupu.
         /// </summary>
         /// <param name="parent">Parent prvku, graf (neboť this je <see cref="GTimeGraphGroup"/>, pak jeho přímý Parent je <see cref="GTimeGraph"/>).</param>
         private void _PrepareGControlGroup(GTimeGraph parent)
         {
-            if (this.GControl != null) return;
-            this.GControl = new GTimeGraphItem(this, parent, this, GGraphControlPosition.Group);          // GUI prvek (GTimeGraphItem) dostává data (=this) a dostává vizuálního parenta (parent)
+            if (this.ControlBuffered != null) return;
+            this.ControlBuffered = new GTimeGraphItem(this, parent, this, GGraphControlPosition.Group);          // GUI prvek (GTimeGraphItem) dostává data (=this) a dostává vizuálního parenta (parent)
         }
         /// <summary>
-        /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.GControl"/>) pro daný datový grafický prvek (item).
+        /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.VisualControl"/>) pro daný datový grafický prvek (item).
         /// </summary>
         /// <param name="item">Datový prvek grafu</param>
         private void _PrepareGControlItem(ITimeGraphItem item)
         {
-            item.GControl = new GTimeGraphItem(item, this.GControl, this, GGraphControlPosition.Item);    // GUI prvek (GTimeGraphItem) dostává data (=item) a dostává vizuálního parenta (this.GControl)
-            this.GControl.AddGraphItem(item.GControl);                         // Náš hlavní GUI prvek (ten od grupy) si přidá další svůj Child prvek
+            item.VisualControl = new GTimeGraphItem(item, this.ControlBuffered, this, GGraphControlPosition.Item);    // GUI prvek (GTimeGraphItem) dostává data (=item) a dostává vizuálního parenta (this.ControlBuffered)
+            this.ControlBuffered.AddGraphItem(item.VisualControl);                         // Náš hlavní GUI prvek (ten od grupy) si přidá další svůj Child prvek
         }
         /// <summary>
         /// Zadané údaje vloží do <see cref="Time"/> a <see cref="Height"/>, vypočte hodnotu <see cref="IsValidRealTime"/>.
@@ -105,7 +105,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._Time = new TimeRange(begin, end);
             this._Height = height;
             this._IsValidRealTime = ((!height.HasValue || (height.HasValue && height.Value > 0f)) && (begin.HasValue && end.HasValue && (acceptZeroTime ? end.Value >= begin.Value : end.Value > begin.Value)));
-            this.GControl.CanResize = canResize;
+            this.ControlBuffered.CanResize = canResize;
         }
         /// <summary>
         /// Vizualizace
@@ -150,13 +150,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             coordX = ResizeRangeToMinWidth(groupX, minWidth);        // Zaokrouhlím Begin i End
             int groupB = coordX.Begin;                               // Offset z absolutní do relativní souřadnice pro jednotlivé prvky
             if (offsetX != 0d) coordX = coordX.ShiftBy(offsetX);     // Posun celé grupy vlivem offsetu grafu vůči časové ose
-            this.GControl.CoordinateX = coordX;                      // Relativní souřadnice grupy v rámci grafu
+            this.ControlBuffered.CoordinateX = coordX;                      // Relativní souřadnice grupy v rámci grafu
             foreach (ITimeGraphItem item in this.Items)
             {
                 itemsCount++;
                 DoubleRange itemX = timeConvert(item.Time);          // Vrací souřadnici X v koordinátech grafu
                 coordX = ResizeRangeToMinWidth(itemX, minWidth);     // Zaokrouhlím Begin i End
-                item.GControl.CoordinateX = coordX.ShiftBy(-groupB); // Posunu prvek na relativní souřadnici vzhledem ke grupě
+                item.VisualControl.CoordinateX = coordX.ShiftBy(-groupB); // Posunu prvek na relativní souřadnici vzhledem ke grupě
             }
             this.InvalidateBounds();
         }
@@ -188,17 +188,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void CalculateBounds()
         {
             Int32Range groupY = this.CoordinateYVisual;
-            if (this.GControl.CoordinateX == null)
+            if (this.ControlBuffered.CoordinateX == null)
             {
                 this.Graph.CheckValidCoordinateX();
                 return;
             }
-            this.GControl.Bounds = Int32Range.GetRectangle(this.GControl.CoordinateX, groupY);
+            this.ControlBuffered.Bounds = Int32Range.GetRectangle(this.ControlBuffered.CoordinateX, groupY);
 
             // Child prvky mají svoje souřadnice (Bounds) relativní k this prvku (který je jejich parentem), proto mají Y souřadnici { 0 až this.Y.Size }:
             Int32Range itemY = new Int32Range(0, groupY.Size);
             foreach (ITimeGraphItem item in this.Items)
-                item.GControl.Bounds = Int32Range.GetRectangle(item.GControl.CoordinateX, itemY);
+                item.VisualControl.Bounds = Int32Range.GetRectangle(item.VisualControl.CoordinateX, itemY);
 
             this._IsValidBounds = true;
         }
@@ -226,9 +226,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._IsValidBounds = false;
 
-            this.GControl.InvalidateBounds();
+            this.ControlBuffered.InvalidateBounds();
             foreach (ITimeGraphItem item in this.Items)
-                item.GControl.InvalidateBounds();
+                item.VisualControl.InvalidateBounds();
         }
         /// <summary>
         /// true pokud Bounds tohoto prvku i vnořených prvků jsou platné.
@@ -331,7 +331,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public TimeGraphElementBackEffectStyle BackEffectNonEditable { get { return this._FirstItem.BackEffectNonEditable; } }
         /// <summary>
         /// true pokud this grupu je možno resizovat.
-        /// Hodnota je platná až po doběhnutí konstruktoru, nikoli v době tvorby controlu <see cref="GControl"/>.
+        /// Hodnota je platná až po doběhnutí konstruktoru, nikoli v době tvorby controlu <see cref="ControlBuffered"/>.
         /// </summary>
         public bool CanResize { get { return this.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime); } }
         /// <summary>
@@ -383,7 +383,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Aplikační kód (respektive implementační objekt <see cref="ITimeGraphItem"/>) se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        public GTimeGraphItem GControl { get; set; }
+        public GTimeGraphItem ControlBuffered { get; set; }
         #endregion
         #region Childs, Interaktivita, Draw()
         /// <summary>
@@ -396,7 +396,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.IsValidRealTime || this.Layer < 0 || this.ItemCount <= 1) return;
-            this.GControl.DrawItem(e, boundsAbsolute, drawMode);
+            this.ControlBuffered.DrawItem(e, boundsAbsolute, drawMode);
         }
         /// <summary>
         /// Metoda volaná pro vykreslování obsahu "Přes Child prvky".
@@ -410,7 +410,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
                 boundsVisibleAbsolute = e.GetClip(boundsAbsolute);
 
-            this.GControl.DrawImages(e, ref boundsAbsolute, boundsVisibleAbsolute, drawMode);
+            this.ControlBuffered.DrawImages(e, ref boundsAbsolute, boundsVisibleAbsolute, drawMode);
 
             if (!this.DrawTextInCurrentState) return;
 
@@ -422,7 +422,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo, textPosition);
 
             if (String.IsNullOrEmpty(text)) return;
-            this.GControl.DrawText(e, boundsVisibleAbsolute, text, fontInfo, textPosition);
+            this.ControlBuffered.DrawText(e, boundsVisibleAbsolute, text, fontInfo, textPosition);
         }
         /// <summary>
         /// Metoda vrátí text, který má být zobrazen v grafickém prvku
@@ -542,8 +542,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             get
             {
                 GraphItemBehaviorMode mode = this.BehaviorMode;
-                GInteractiveState state = this.GControl.InteractiveState;
-                bool isActive = this.GControl.IsSelected || this.GControl.IsFramed || this.GControl.IsActivated || this.IsDragged;
+                GInteractiveState state = this.ControlBuffered.InteractiveState;
+                bool isActive = this.ControlBuffered.IsSelected || this.ControlBuffered.IsFramed || this.ControlBuffered.IsActivated || this.IsDragged;
                 return GTimeGraph.IsCaptionVisible(mode, state, isActive);
             }
         }
@@ -604,11 +604,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Obsahuje true, pokud this grupa je nyní přemisťována akcí DragMove.
         /// </summary>
-        internal bool IsDragged { get { return this.GControl.InteractiveState.HasFlag(GInteractiveState.FlagDrag); } }
+        internal bool IsDragged { get { return this.ControlBuffered.InteractiveState.HasFlag(GInteractiveState.FlagDrag); } }
         /// <summary>
         /// Obsahuje true, pokud kterýkoli z mých prvků nebo já jsme ActiveTarget
         /// </summary>
-        internal bool AnyItemIsActiveTarget { get { return this.GControl.Is.ActiveTarget || this._Items.Any(i => i.GControl.Is.ActiveTarget); } }
+        internal bool AnyItemIsActiveTarget { get { return this.ControlBuffered.Is.ActiveTarget || this._Items.Any(i => i.VisualControl.Is.ActiveTarget); } }
         /// <summary>
         /// Metoda do sebe vloží nově zadaný čas.
         /// Musí jej vložit i do konkrétních Items, proto aby po jakékoli vizuální invalidaci tento čas byl zachován.
@@ -825,7 +825,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.BackEffectEditable; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.BackEffectNonEditable; } }
-        GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
+        GTimeGraphItem ITimeGraphItem.VisualControl { get { return this.ControlBuffered; } set { this.ControlBuffered = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }
