@@ -293,7 +293,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// V této metodě může potomek změnit (ref) souřadnice, na které je objekt právě umisťován.
         /// Tato metoda je volána při Bounds.set().
         /// Tato metoda typicky koriguje velikost vkládaného prostoru podle vlastností potomka.
-        /// Typickým příkladem je <see cref="GTextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="GTextEdit.Multiline"/> a parametrů stylu.
+        /// Typickým příkladem je <see cref="TextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="TextEdit.Multiline"/> a parametrů stylu.
         /// Bázová třída <see cref="InteractiveObject"/> nedělá nic.
         /// </summary>
         /// <param name="bounds"></param>

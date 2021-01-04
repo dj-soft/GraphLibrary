@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region class GTextObject : obecný předek prvků, které zobrazují jeden text
+    #region class TextObject : obecný předek prvků, které zobrazují jeden text
     /// <summary>
     /// Bázová třída pro Label, Textbox atd = jeden rámeček s jedním prvkem textu, fontem a barvou textu
     /// </summary>

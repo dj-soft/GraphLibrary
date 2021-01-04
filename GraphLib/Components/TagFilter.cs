@@ -11,17 +11,17 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Control, který zobrazuje sadu "štítků", z nichž uživatel kliknutím sestavuje sadu pro filtrování.
     /// </summary>
-    public class GTagFilter : InteractiveObject, ITagFilter
+    public class TagFilter : InteractiveObject, ITagFilter
     {
         #region Public data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTagFilter()
+        public TagFilter()
         {
             this.BackColor = Skin.TagFilter.BackColor;
             this._DrawItemBorder = true;
-            this._SelectionMode = GTagFilterSelectionMode.AnyItemsCount;
+            this._SelectionMode = TagFilterSelectionMode.AnyItemsCount;
             this._SelectAllVisible = true;
             this._CurrentCheckedImage = null;
             this._CurrentRoundPercent = 0;
@@ -33,12 +33,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// V daném pořadí budou zobrazovány.
         /// Po nasetování hodnoty bude vyvolán event <see cref="FilterChanged"/>.
         /// </summary>
-        public TagItem[] TagItems { get { return this._TagItems; } set { this._TagItems = value; this._TagItemsChanged(); this.CallFilterChanged(); } } private TagItem[] _TagItems;
+        public TagInfo[] TagItems { get { return this._TagItems; } set { this._TagItems = value; this._TagItemsChanged(); this.CallFilterChanged(); } } private TagInfo[] _TagItems;
         /// <summary>
         /// Režim výběru položek
         /// </summary>
-        public GTagFilterSelectionMode SelectionMode { get { return this._SelectionMode; } set { this._SelectionMode = value; this._SelectionModeApply(); } }
-        private GTagFilterSelectionMode _SelectionMode;
+        public TagFilterSelectionMode SelectionMode { get { return this._SelectionMode; } set { this._SelectionMode = value; this._SelectionModeApply(); } }
+        private TagFilterSelectionMode _SelectionMode;
         /// <summary>
         /// Hodnota true: jako první položka je tlačítko "Vše", která zruší výběr ostatních položek a tím zruší i filtr (true je default).
         /// Hodnota false: toto tlačítku nebude zobrazeno.
@@ -51,7 +51,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color? SelectAllItemBackColor { get { return this._SelectAllItemBackColor; } set { this._SelectAllItemBackColor = value; this._TagItemsRepaint(); } }
         private Color? _SelectAllItemBackColor;
         /// <summary>
-        /// Barva pozadí tlačítka "Vše", pokud jeho <see cref="TagItem.Checked"/> = true
+        /// Barva pozadí tlačítka "Vše", pokud jeho <see cref="TagInfo.Checked"/> = true
         /// </summary>
         public Color? SelectAllItemCheckedBackColor { get { return this._SelectAllItemCheckedBackColor; } set { this._SelectAllItemCheckedBackColor = value; this._TagItemsRepaint(); } }
         private Color? _SelectAllItemCheckedBackColor;
@@ -61,7 +61,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color? ItemBackColor { get { return this._ItemBackColor; } set { this._ItemBackColor = value; this._TagItemsRepaint(); } }
         private Color? _ItemBackColor;
         /// <summary>
-        /// Barva pozadí prvků, které jsou <see cref="TagItem.Checked"/> = true
+        /// Barva pozadí prvků, které jsou <see cref="TagInfo.Checked"/> = true
         /// </summary>
         public Color? ItemCheckedBackColor { get { return this._ItemCheckedBackColor; } set { this._ItemCheckedBackColor = value; this._TagItemsRepaint(); } }
         private Color? _ItemCheckedBackColor;
@@ -119,17 +119,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="selector">Filtr, který pro danou položku filtru vrací příznak, že má být Checked</param>
         /// <param name="callRefresh">Nastaví se na true při požadavku na změnu</param>
-        public bool TagFilterSet(Func<TagItem, bool> selector, ref bool callRefresh)
+        public bool TagFilterSet(Func<TagInfo, bool> selector, ref bool callRefresh)
         {
             bool isChange = false;
             var dataItems = this._DataItemList;
-            foreach (GTagItem gTagItem in dataItems)
+            foreach (TagItem gTagItem in dataItems)
             {
-                bool oldValue = gTagItem.TagItem.CheckedSilent;
-                bool newValue = (selector != null ? selector(gTagItem.TagItem) : false);
+                bool oldValue = gTagItem.TagInfo.CheckedSilent;
+                bool newValue = (selector != null ? selector(gTagItem.TagInfo) : false);
                 if (newValue != oldValue)
                 {
-                    gTagItem.TagItem.CheckedSilent = newValue;
+                    gTagItem.TagInfo.CheckedSilent = newValue;
                     isChange = true;
                     callRefresh = true;
                 }
@@ -142,18 +142,18 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Vnitřní prvky
         /// <summary>
-        /// Grafické prvky <see cref="GTagItem"/>, pole obsahuje pouze viditelné prvky z pole <see cref="TagItems"/>.
+        /// Grafické prvky <see cref="TagItem"/>, pole obsahuje pouze viditelné prvky z pole <see cref="TagItems"/>.
         /// </summary>
-        private List<GTagItem> _DataItemList;
+        private List<TagItem> _DataItemList;
         /// <summary>
         /// Veškeré child prvky = prvek "All" + prvky z <see cref="_DataItemList"/>
         /// </summary>
-        private List<GTagItem> _GItemList;
+        private List<TagItem> _GItemList;
         /// <summary>
         /// Prvek "All" = zapíná zobrazení všech záznamů.
-        /// Do všech prvků v <see cref="_DataItemList"/> vloží <see cref="GTagItem.CheckedSilent"/> = false.
+        /// Do všech prvků v <see cref="_DataItemList"/> vloží <see cref="TagItem.CheckedSilent"/> = false.
         /// </summary>
-        private GTagItem _SelectAllItem;
+        private TagItem _SelectAllItem;
         /// <summary>
         /// Interaktivní child prvky
         /// </summary>
@@ -181,7 +181,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._DataItemList = this._CreateGTagItemList(this._TagItems);
 
-            this._GItemList = new List<GTagItem>();
+            this._GItemList = new List<TagItem>();
 
             if (this.SelectAllVisible)
             {
@@ -200,35 +200,35 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vytvoří a vrátí grafický objekt pro tlačítko "All"
         /// </summary>
         /// <returns></returns>
-        private GTagItem _CreateGTagItemAll()
+        private TagItem _CreateGTagItemAll()
         {
-            TagItem item = new TagItem() { Text = "Vše" };
+            TagInfo item = new TagInfo() { Text = "Vše" };
             return this._CreateGTagItem(item, true);
         }
         /// <summary>
-        /// Z dodaných datových prvků <see cref="TagItem"/> vybere ty, které jsou Visible, vytvoří z nich pole grafických prvků a to vrátí.
+        /// Z dodaných datových prvků <see cref="TagInfo"/> vybere ty, které jsou Visible, vytvoří z nich pole grafických prvků a to vrátí.
         /// </summary>
         /// <param name="tagItems"></param>
         /// <returns></returns>
-        private List<GTagItem> _CreateGTagItemList(TagItem[] tagItems)
+        private List<TagItem> _CreateGTagItemList(TagInfo[] tagItems)
         {
-            List<GTagItem> gItemList = new List<GTagItem>();
+            List<TagItem> gItemList = new List<TagItem>();
             if (tagItems != null)
                 gItemList.AddRange(tagItems.Where(i => i.Visible).Select(i => this._CreateGTagItem(i, false)));
             return gItemList;
         }
         /// <summary>
-        /// Do daného datového <see cref="TagItem"/> prvku vloží jeho vlastníka <see cref="IOwnerProperty{GTagFilter}.Owner"/> = this;
-        /// z datového prvku vytvoří grafický prvek <see cref="GTagItem"/>;
+        /// Do daného datového <see cref="TagInfo"/> prvku vloží jeho vlastníka <see cref="IOwnerProperty{GTagFilter}.Owner"/> = this;
+        /// z datového prvku vytvoří grafický prvek <see cref="TagItem"/>;
         /// a ten vrátí.
         /// </summary>
         /// <param name="item"></param>
         /// <param name="isSelectAll"></param>
         /// <returns></returns>
-        private GTagItem _CreateGTagItem(TagItem item, bool isSelectAll)
+        private TagItem _CreateGTagItem(TagInfo item, bool isSelectAll)
         {
-            ((IOwnerProperty<GTagFilter>)item).Owner = this;
-            GTagItem gItem = new GTagItem(isSelectAll) { TagItem = item };
+            ((IOwnerProperty<TagFilter>)item).Owner = this;
+            TagItem gItem = new TagItem(isSelectAll) { TagInfo = item };
             return gItem;
         }
         /// <summary>
@@ -248,12 +248,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="gItemList"></param>
         /// <param name="clientSize"></param>
-        private void _TagItemsPrepareLayout(Graphics graphics, List<GTagItem> gItemList, Size clientSize)
+        private void _TagItemsPrepareLayout(Graphics graphics, List<TagItem> gItemList, Size clientSize)
         {
             Size spacing = this._CurrentItemSpacing;
             Point point = new Point(spacing.Width, spacing.Height);
-            List<GTagItem> oneRowList = new List<GTagItem>();
-            foreach (GTagItem gTagItem in gItemList)
+            List<TagItem> oneRowList = new List<TagItem>();
+            foreach (TagItem gTagItem in gItemList)
                 gTagItem.PrepareBlockLayout(graphics, clientSize, oneRowList, ref point);
 
             this._DetectOptimalHeight(gItemList);
@@ -262,7 +262,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vypočte optimální výšky <see cref="OptimalHeightOneRow"/> a <see cref="OptimalHeightAllRows"/>.
         /// </summary>
         /// <param name="gItemList"></param>
-        private void _DetectOptimalHeight(List<GTagItem> gItemList)
+        private void _DetectOptimalHeight(List<TagItem> gItemList)
         {
             int spacingY = this._CurrentItemSpacing.Height;
             int heightOne = 0;
@@ -288,7 +288,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle bounds = this.Bounds;
                 bounds.Height = this.OptimalHeightOneRow;
                 this.Bounds = bounds;
-                this._CurrentHeightState = GTagFilterHeightState.OneRow;
+                this._CurrentHeightState = TagFilterHeightState.OneRow;
             }
         }
         /// <summary>
@@ -391,15 +391,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Souhrn položek filtru, které jsou aktuálně vybrané.
         /// Pokud je zde počet položek = 0, mívá to význam "Zobrazit vše".
         /// </summary>
-        public TagItem[] FilteredItems { get { return this._DataItemList.Where(g => g.CheckedSilent).Select(g => g.TagItem).ToArray(); } }
+        public TagInfo[] FilteredItems { get { return this._DataItemList.Where(g => g.CheckedSilent).Select(g => g.TagInfo).ToArray(); } }
         /// <summary>
         /// Uživatel kliknul na prvek
         /// </summary>
         /// <param name="clickedItem"></param>
-        private void _OnItemClick(GTagItem clickedItem)
+        private void _OnItemClick(TagItem clickedItem)
         {
             var dataItems = this._DataItemList;
-            List<GTagItem> checkedItems = dataItems.Where(g => g.CheckedSilent).ToList();
+            List<TagItem> checkedItems = dataItems.Where(g => g.CheckedSilent).ToList();
             int checkedCount = checkedItems.Count;
             bool isChange = false;
 
@@ -411,18 +411,18 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {   // Uživatel klikl na některý DATOVÝ prvek:
-                GTagItem selectAllItem = this._SelectAllItem;
+                TagItem selectAllItem = this._SelectAllItem;
                 bool enabledAll = (this.SelectAllVisible && selectAllItem != null);
                 switch (this._SelectionMode)
                 {
-                    case GTagFilterSelectionMode.AnyItemsCount:
+                    case TagFilterSelectionMode.AnyItemsCount:
                         // Lze vybrat jakýkoli počet položek: nula, jedna i třeba všechny položky.
                         isChange = true;
                         clickedItem.CheckedSilent = !clickedItem.CheckedSilent;
                         this._SelectAllItemCheckByData();
                         break;
 
-                    case GTagFilterSelectionMode.OnlyOneItem:
+                    case TagFilterSelectionMode.OnlyOneItem:
                         // Lze vybrat pouze jednu položku, nebo žádnou (odznačením vybrané položky): nula nebo jedna položka.
                         if (clickedItem.CheckedSilent)
                         {   //  a) Pokud clickedItem byla dosud označená, 
@@ -440,7 +440,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         this._SelectAllItemCheckByData();
                         break;
 
-                    case GTagFilterSelectionMode.ExactOneItem:
+                    case TagFilterSelectionMode.ExactOneItem:
                         // Lze vybrat právě jen jednu položku, nikoli žádnou (položku nelze odznačit): právě jedna položka.
                         if (!clickedItem.CheckedSilent)
                         {   //  Pokud clickedItem byla dosud neoznačená, a máme nějaké jiné datové označené položky, 
@@ -459,25 +459,25 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Repaint();
         }
         /// <summary>
-        /// Po změně režimu: zajistí platnost výběru položek (<see cref="GTagItem.CheckedSilent"/>).
+        /// Po změně režimu: zajistí platnost výběru položek (<see cref="TagItem.CheckedSilent"/>).
         /// Tato metoda neřeší překreslení obsahu prvku.
         /// </summary>
         private void _SelectionModeApply()
         {
-            List<GTagItem> dataItems = this._DataItemList;
-            List<GTagItem> checkedItems = dataItems.Where(g => g.CheckedSilent).ToList();
+            List<TagItem> dataItems = this._DataItemList;
+            List<TagItem> checkedItems = dataItems.Where(g => g.CheckedSilent).ToList();
             int checkedCount = checkedItems.Count;
-            GTagItem selectAllItem = this._SelectAllItem;
+            TagItem selectAllItem = this._SelectAllItem;
             bool enabledAll = (this.SelectAllVisible && selectAllItem != null);
 
             switch (this._SelectionMode)
             {
-                case GTagFilterSelectionMode.AnyItemsCount:
+                case TagFilterSelectionMode.AnyItemsCount:
                     // Lze vybrat jakýkoli počet položek: nula, jedna i třeba všechny položky.
                     this._SelectAllItemCheckByData();
                     break;
 
-                case GTagFilterSelectionMode.OnlyOneItem:
+                case TagFilterSelectionMode.OnlyOneItem:
                     // Lze vybrat pouze jednu položku, nebo žádnou (odznačením vybrané položky): nula nebo jedna položka.
                     if (checkedCount > 1)
                     {   // Nyní je označeno více než jedna datová položka => ponecháme označenou jen první, a ostatní odznačíme:
@@ -487,7 +487,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._SelectAllItemCheckByData();
                     break;
 
-                case GTagFilterSelectionMode.ExactOneItem:
+                case TagFilterSelectionMode.ExactOneItem:
                     // Lze vybrat právě jen jednu položku, nikoli žádnou (položku nelze odznačit): právě jedna položka.
                     if (checkedCount > 1)
                     {   // Nyní je označeno více než jedna datová položka => ponecháme označenou jen první, a ostatní odznačíme:
@@ -509,7 +509,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _SelectAllItemCheckByData()
         {
             if (!(this.SelectAllVisible && this._SelectAllItem != null)) return;
-            List<GTagItem> checkedItems = this._DataItemList.Where(g => g.CheckedSilent).ToList();
+            List<TagItem> checkedItems = this._DataItemList.Where(g => g.CheckedSilent).ToList();
             this._SelectAllItem.CheckedSilent = (checkedItems.Count == 0);
         }
         #endregion
@@ -539,7 +539,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     this._HeightOnMouseEnter = heightOld;
                     if (this._HeightAnimation)
-                        this._HeightAnimationStart(heightOld, heightNew, 6, GTagFilterHeightState.Expanding, GTagFilterHeightState.FullHeight);
+                        this._HeightAnimationStart(heightOld, heightNew, 6, TagFilterHeightState.Expanding, TagFilterHeightState.FullHeight);
                     else
                         this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
                 }
@@ -562,7 +562,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int heightOld = bounds.Height;
                 int heightNew = this._HeightOnMouseEnter.Value;
                 if (this._HeightAnimation)
-                    this._HeightAnimationStart(heightOld, heightNew, 6, GTagFilterHeightState.Collapsing, GTagFilterHeightState.OneRow);
+                    this._HeightAnimationStart(heightOld, heightNew, 6, TagFilterHeightState.Collapsing, TagFilterHeightState.OneRow);
                 else
                 {
                     this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
@@ -576,15 +576,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktuální stav výšky objektu
         /// </summary>
-        public GTagFilterHeightState CurrentHeightState
+        public TagFilterHeightState CurrentHeightState
         {
             get { return this._CurrentHeightState; }
         }
-        private GTagFilterHeightState _CurrentHeightState;
+        private TagFilterHeightState _CurrentHeightState;
         /// <summary>
         /// Cílový stav výšky objektu
         /// </summary>
-        private GTagFilterHeightState _TargetHeightState;
+        private TagFilterHeightState _TargetHeightState;
         /// <summary>
         /// Zahájí animaci změny výšky
         /// </summary>
@@ -593,7 +593,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="stepCount"></param>
         /// <param name="animatedHeightState"></param>
         /// <param name="targetHeightState"></param>
-        private void _HeightAnimationStart(int valueBegin, int valueEnd, int stepCount, GTagFilterHeightState animatedHeightState, GTagFilterHeightState targetHeightState)
+        private void _HeightAnimationStart(int valueBegin, int valueEnd, int stepCount, TagFilterHeightState animatedHeightState, TagFilterHeightState targetHeightState)
         {
             if (this._HeightAnimationRunning)
             {
@@ -635,7 +635,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="value"></param>
         /// <param name="heightState"></param>
-        private void _HeightAnimationAbort(int value, GTagFilterHeightState heightState)
+        private void _HeightAnimationAbort(int value, TagFilterHeightState heightState)
         {
             this._HeightAnimationSteps = null;
             this._HeightAnimationStepIndex = -1;
@@ -716,7 +716,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Size ITagFilter.CurrentCheckedImageSize { get { return this._CurrentCheckedImageSize; } }
         void ITagFilter.TagItemsChanged() { this._TagItemsChanged(); }
         void ITagFilter.TagItemsRepaint() { this._TagItemsRepaint(); }
-        void ITagFilter.OnItemClick(GTagItem clickedItem) { this._OnItemClick(clickedItem); }
+        void ITagFilter.OnItemClick(TagItem clickedItem) { this._OnItemClick(clickedItem); }
         #endregion
     }
     #region interface ITagFilter : pro interní práci s GTagFilter
@@ -757,14 +757,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Po kliknutí na tlačítko
         /// </summary>
         /// <param name="clickedItem"></param>
-        void OnItemClick(GTagItem clickedItem);
+        void OnItemClick(TagItem clickedItem);
     }
     #endregion
     #region enum GTagFilterSelectionMode, GTagFilterHeightState
     /// <summary>
-    /// Režim výběru položek v <see cref="GTagFilter"/>
+    /// Režim výběru položek v <see cref="TagFilter"/>
     /// </summary>
-    public enum GTagFilterSelectionMode
+    public enum TagFilterSelectionMode
     {
         /// <summary>
         /// Lze vybrat jakýkoli počet položek: nula, jedna i třeba všechny položky.
@@ -782,7 +782,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Stav výšky objektu v procesu její animace
     /// </summary>
-    public enum GTagFilterHeightState
+    public enum TagFilterHeightState
     {
         /// <summary>
         /// Neurčeno
@@ -806,22 +806,22 @@ namespace Asol.Tools.WorkScheduler.Components
         Collapsing
     }
     #endregion
-    #region class GTagItem : Vizuální reprezentace jednoho prvku TagFilteru
+    #region class TagItem : Vizuální reprezentace jednoho prvku TagFilteru
     /// <summary>
-    /// GTagItem : Vizuální reprezentace jednoho prvku TagFilteru
+    /// <see cref="TagItem"/> : Vizuální reprezentace jednoho prvku TagFilteru
     /// </summary>
-    public class GTagItem : InteractiveObject
+    public class TagItem : InteractiveObject
     {
         #region Konstrukce
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTagItem() { }
+        public TagItem() { }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="isSelectAll"></param>
-        public GTagItem(bool isSelectAll) : this()
+        public TagItem(bool isSelectAll) : this()
         {
             this.IsSelectAll = isSelectAll;
         }
@@ -838,42 +838,42 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zobrazovaný text
         /// </summary>
-        public string Text { get { return this._TagItem.Text; } }
+        public string Text { get { return this._TagInfo.Text; } }
         /// <summary>
         /// Explicitně definovaná barva pozadí
         /// </summary>
-        public Color? ItemBackColor { get { return this._TagItem.BackColor; } }
+        public Color? ItemBackColor { get { return this._TagInfo.BackColor; } }
         /// <summary>
         /// Explicitně definovaná barva pozadí ve stavu <see cref="CheckedSilent"/> = true
         /// </summary>
-        public Color? ItemCheckedBackColor { get { return this._TagItem.CheckedBackColor; } }
+        public Color? ItemCheckedBackColor { get { return this._TagInfo.CheckedBackColor; } }
         /// <summary>
         /// Explicitně definovaná barva rámečku
         /// </summary>
-        public Color? ItemBorderColor { get { return this._TagItem.BorderColor; } }
+        public Color? ItemBorderColor { get { return this._TagInfo.BorderColor; } }
         /// <summary>
         /// Explicitně definovaná barva textu
         /// </summary>
-        public Color? ItemTextColor { get { return this._TagItem.TextColor; } }
+        public Color? ItemTextColor { get { return this._TagInfo.TextColor; } }
         /// <summary>
         /// Relativní velikost proti ostatním prvkům
         /// </summary>
-        public float? RelativeSize { get { return this._TagItem.RelativeSize; } }
+        public float? RelativeSize { get { return this._TagInfo.RelativeSize; } }
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>
-        public bool Visible { get { return this._TagItem.Visible; } }
+        public bool Visible { get { return this._TagInfo.Visible; } }
         /// <summary>
         /// Prvek je vybrán?
         /// Jde o Silent hodnotu: její setování nezpůsobí překreslení vizuálního controlu.
         /// V podstatě tuto hodnotu má nastavovat pouze vizuální control sám - jako důsledek interakce uživatele.
         /// </summary>
-        public bool CheckedSilent { get { return this._TagItem.CheckedSilent; } set { this._TagItem.CheckedSilent = value; } }
+        public bool CheckedSilent { get { return this._TagInfo.CheckedSilent; } set { this._TagInfo.CheckedSilent = value; } }
         /// <summary>
         /// Vlastní datový prvek
         /// </summary>
-        public TagItem TagItem { get { return this._TagItem; } set { this._TagItem = value; } }
-        private TagItem _TagItem;
+        public TagInfo TagInfo { get { return this._TagInfo; } set { this._TagInfo = value; } }
+        private TagInfo _TagInfo;
         #endregion
         #region Layout
         /// <summary>
@@ -883,7 +883,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="clientSize"></param>
         /// <param name="oneRowList"></param>
         /// <param name="point"></param>
-        internal void PrepareBlockLayout(Graphics graphics, Size clientSize, List<GTagItem> oneRowList, ref Point point)
+        internal void PrepareBlockLayout(Graphics graphics, Size clientSize, List<TagItem> oneRowList, ref Point point)
         {
             // int height, int round, Size iconSize, int spacing,
             Size spacing = this.CurrentItemSpacing;
@@ -928,7 +928,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="oneRowList"></param>
         /// <param name="spacingX"></param>
         /// <param name="clientWidth"></param>
-        protected static void AlignLayoutToWidth(List<GTagItem> oneRowList, int spacingX, int clientWidth)
+        protected static void AlignLayoutToWidth(List<TagItem> oneRowList, int spacingX, int clientWidth)
         {
             int count = oneRowList.Count;
             int itemsWidth = oneRowList.Sum(i => i.Bounds.Width);              // Tolik pixelů je součet šířky prvků aktuálně
@@ -938,7 +938,7 @@ namespace Asol.Tools.WorkScheduler.Components
             float fX = (float)iX;
             for (int i = 0; i < count; i++)
             {
-                GTagItem item = oneRowList[i];
+                TagItem item = oneRowList[i];
                 Rectangle bounds = item.Bounds;
                 float fWidth = ratio * (float)bounds.Width;
                 if (i < (count - 1))
@@ -958,20 +958,20 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Vlastník grafického prvku = <see cref="GTagFilter"/>
+        /// Vlastník grafického prvku = <see cref="TagFilter"/>
         /// </summary>
-        protected GTagFilter Owner
+        protected TagFilter Owner
         {
             get
             {
-                GTagFilter owner = ((IOwnerProperty<GTagFilter>)this.TagItem).Owner;
+                TagFilter owner = ((IOwnerProperty<TagFilter>)this.TagInfo).Owner;
                 if (owner == null)
-                    owner = this.SearchForParent(typeof(GTagFilter)) as GTagFilter;
+                    owner = this.SearchForParent(typeof(TagFilter)) as TagFilter;
                 return owner;
             }
         }
         /// <summary>
-        /// Vlastník <see cref="GTagFilter"/> přetypovaný na interface <see cref="ITagFilter"/>, kvůli přístupu k vnitřním prvkům Ownera
+        /// Vlastník <see cref="TagFilter"/> přetypovaný na interface <see cref="ITagFilter"/>, kvůli přístupu k vnitřním prvkům Ownera
         /// </summary>
         private ITagFilter IOwner { get { return this.Owner as ITagFilter; } }
         #endregion
@@ -1004,7 +1004,7 @@ namespace Asol.Tools.WorkScheduler.Components
             // Nebudu volat Base, protože tam by se vyplnil celý Rectangle - ale GTagItem nemá tvar Rectangle, ale má kulaté okraje (a kolem okrajů je vidět podklad):
             //       base.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);
 
-            GTagFilter gOwner = this.Owner;
+            TagFilter gOwner = this.Owner;
             bool drawBorder = (gOwner != null ? gOwner.DrawItemBorder : false);
             Rectangle iconBounds, textBounds;
             using (var path = this.CreatePath(absoluteBounds, out iconBounds, out textBounds))
@@ -1115,11 +1115,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje aktuálně platnou barvu pro vykreslení pozadí.
         /// </summary>
-        protected Color CurrentBackColor
+        protected override Color CurrentBackColor
         {
             get
             {
-                GTagFilter owner = this.Owner;
+                TagFilter owner = this.Owner;
 
                 if (this.IsSelectAll)
                 {   // Prvek "vyber vše" má jiné barevné schema:
@@ -1140,7 +1140,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                GTagFilter owner = this.Owner;
+                TagFilter owner = this.Owner;
                 return GetFirstColor(this.ItemBorderColor, owner?.ItemBorderColor, Skin.TagFilter.ItemBorderColor);
             }
         }
@@ -1151,7 +1151,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                GTagFilter owner = this.Owner;
+                TagFilter owner = this.Owner;
                 return GetFirstColor(this.ItemTextColor, owner?.ItemTextColor, Skin.TagFilter.ItemTextColor);
             }
         }

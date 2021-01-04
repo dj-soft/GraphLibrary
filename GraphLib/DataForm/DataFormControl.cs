@@ -200,7 +200,7 @@ Souřadnice prvku: {itemX}/{itemY}";
         }
         private void _TextRightIconClick(object sender, GInteractiveChangeStateArgs e)
         {
-            GTextEdit textEdit = sender as GTextEdit;
+            TextEdit textEdit = sender as TextEdit;
             string text = textEdit?.Tag as string;
             text = $"RightIcon.Click na prvku:{Environment.NewLine}{text}Aktuální hodnota: \"{textEdit.Text}\"; ";
             System.Windows.Forms.MessageBox.Show(text, "RightIconClick", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -208,7 +208,7 @@ Souřadnice prvku: {itemX}/{itemY}";
 
         private void _TextDoubleClick(object sender, GInteractiveChangeStateArgs e)
         {
-            GTextEdit textEdit = sender as GTextEdit;
+            TextEdit textEdit = sender as TextEdit;
             string text = textEdit?.Tag as string;
             text = $"Text.DoubleClick na prvku:{Environment.NewLine}{text}Aktuální hodnota: \"{textEdit.Text}\"; ";
             System.Windows.Forms.MessageBox.Show(text, "TextDoubleClick", MessageBoxButtons.OK, MessageBoxIcon.Information);

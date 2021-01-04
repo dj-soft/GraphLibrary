@@ -581,7 +581,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu.
         /// Může být null, pokud this.UseTimeAxis je false.
         /// </summary>
-        public GTimeAxis TimeAxis
+        public TimeAxis TimeAxis
         {
             get
             {
@@ -602,7 +602,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             // Zkontroluji objekt časové osy:
             if (this._TimeAxis == null)
             {
-                this._TimeAxis = new GTimeAxis();
+                this._TimeAxis = new TimeAxis();
                 Components.Graphs.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
 
                 // Maximální hodnota na časové ose dosažitelná:
@@ -684,7 +684,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Časová osa, fyzické úložiště
         /// </summary>
-        private GTimeAxis _TimeAxis;
+        private TimeAxis _TimeAxis;
         #endregion
         #region Childs items : záhlaví sloupce může obsahovat TimeAxis
         /// <summary>
@@ -698,7 +698,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             {
                 if (this._ChildList == null)
                 {
-                    GTimeAxis timeAxis = this.TimeAxis;
+                    TimeAxis timeAxis = this.TimeAxis;
                     this._ChildList = new List<IInteractiveItem>();
                     this._ChildList.Add(timeAxis);
                 }

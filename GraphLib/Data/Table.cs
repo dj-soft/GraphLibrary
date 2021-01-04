@@ -888,12 +888,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Soupis štítků ze všech řádků.
         /// Hodnota Key = text Tagu; hodnota Value = počet výskytů v řádcích. Počet může mít vliv na velikost štítku.
         /// </summary>
-        public TagItem[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
+        public TagInfo[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="filterTagItems"></param>
-        public void TagItemsSetFilter(TagItem[] filterTagItems)
+        public void TagItemsSetFilter(TagInfo[] filterTagItems)
         {
             if (filterTagItems == null || filterTagItems.Length == 0)
                 this.RemoveFilter(TagItemFilterName);
@@ -915,7 +915,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Položky filtru TagItems
         /// </summary>
-        protected TagItem[] TagItemFilterItems { get; private set; }
+        protected TagInfo[] TagItemFilterItems { get; private set; }
         /// <summary>
         /// Název filtru podle TagItems
         /// </summary>
@@ -932,11 +932,11 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (this._TagItems != null) return;
 
-            Dictionary<string, TagItem> tagDict = new Dictionary<string, TagItem>();
+            Dictionary<string, TagInfo> tagDict = new Dictionary<string, TagInfo>();
             foreach (Row row in this.Rows)
                 ((ITagItemOwner)row).PrepareSummaryDict(tagDict);
 
-            List<KeyValuePair<string, TagItem>> tagList = tagDict.ToList();
+            List<KeyValuePair<string, TagInfo>> tagList = tagDict.ToList();
             if (tagList.Count > 1)
                 tagList.Sort((a, b) => String.Compare(a.Key, b.Key));
 
@@ -977,7 +977,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Soupis všech štítků ze všech řádků.
         /// </summary>
-        private TagItem[] _TagItems;
+        private TagInfo[] _TagItems;
         #endregion
         #region GUI vlastnosti
         /// <summary>
@@ -2547,7 +2547,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
             target._TagItemDict = null;
             if (cloneArgs != null && cloneArgs.CloneRowTagItems && source._TagItemDict != null)
-                target._TagItemDict = source._TagItemDict.GetDictionary(kvp => kvp.Key, kvp => new TagItem(kvp.Value), true);
+                target._TagItemDict = source._TagItemDict.GetDictionary(kvp => kvp.Key, kvp => new TagInfo(kvp.Value), true);
         }
         /// <summary>
         /// Metoda vrací klon z dodané hodnoty
@@ -2707,12 +2707,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Štítky - pokud budou u některých řádků v tabulce zadány, budou sumarizovány ze všech řádků tabulky, a budou vypsány pod záhlavím tabulky.
         /// Ty pak slouží jako rychlý filtr řádků.
         /// </summary>
-        public IEnumerable<TagItem> TagItems { get { return (this._TagItemDict != null ? this._TagItemDict.Values : null); } set { this._SetTagItems(value); } }
+        public IEnumerable<TagInfo> TagItems { get { return (this._TagItemDict != null ? this._TagItemDict.Values : null); } set { this._SetTagItems(value); } }
         /// <summary>
         /// Prvek přidá svoje Tagy do společné Dictionary
         /// </summary>
         /// <param name="tagDict"></param>
-        void ITagItemOwner.PrepareSummaryDict(Dictionary<string, TagItem> tagDict)
+        void ITagItemOwner.PrepareSummaryDict(Dictionary<string, TagInfo> tagDict)
         {
             if (this._TagItemDict == null) return;
             _AddTagItemsToDict(this._TagItemDict.Values, tagDict);
@@ -2721,7 +2721,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
         /// </summary>
         /// <param name="tagFilter"></param>
-        bool ITagItemOwner.FilterByTagValues(TagItem[] tagFilter)
+        bool ITagItemOwner.FilterByTagValues(TagInfo[] tagFilter)
         {
             if (tagFilter == null || tagFilter.Length == 0) return true;
             if (this._TagItemDict == null) return false;
@@ -2731,9 +2731,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Z dodaných položek vygeneruje data do <see cref="_TagItemDict"/>
         /// </summary>
         /// <param name="tagItems"></param>
-        private void _SetTagItems(IEnumerable<TagItem> tagItems)
+        private void _SetTagItems(IEnumerable<TagInfo> tagItems)
         {
-            Dictionary<string, TagItem> tagDict = new Dictionary<string, TagItem>();
+            Dictionary<string, TagInfo> tagDict = new Dictionary<string, TagInfo>();
             _AddTagItemsToDict(tagItems, tagDict);
             this._TagItemDict = tagDict;
             if (this.HasTable)
@@ -2744,14 +2744,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="tagItems"></param>
         /// <param name="tagDict"></param>
-        private static void _AddTagItemsToDict(IEnumerable<TagItem> tagItems, Dictionary<string, TagItem> tagDict)
+        private static void _AddTagItemsToDict(IEnumerable<TagInfo> tagItems, Dictionary<string, TagInfo> tagDict)
         {
             if (tagItems == null || tagDict == null) return;
-            foreach (TagItem tagItem in tagItems)
+            foreach (TagInfo tagItem in tagItems)
             {
                 string key = tagItem.Text;
                 if (String.IsNullOrEmpty(key)) continue;
-                TagItem value;
+                TagInfo value;
                 if (!tagDict.TryGetValue(key, out value))
                     tagDict.Add(key, tagItem);
             }
@@ -2759,7 +2759,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Úložiště Tagů tohoto řádku
         /// </summary>
-        private Dictionary<string, TagItem> _TagItemDict;
+        private Dictionary<string, TagInfo> _TagItemDict;
         #endregion
         #region BackgroundValue
         /// <summary>
@@ -3370,7 +3370,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 List<GuiTagItem> guiTagItems;
                 if (!groups.TryGetValue(rowGId, out guiTagItems)) continue;    // Pro tento řádek tabulky nejsou zadané žádné Tagy
 
-                var addItems = TagItem.CreateFrom(guiTagItems);
+                var addItems = TagInfo.CreateFrom(guiTagItems);
                 row.TagItems = DataExtensions.MergeByKey(t => t.Text, row.TagItems, addItems);
             }
         }
@@ -3378,9 +3378,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
         /// </summary>
         /// <param name="dataTable">Data tabulky (sloupce, jejich properties, řádky)</param>
-        /// <param name="tagItems">Data štítků <see cref="TagItem"/> ke všem řádkům</param>
+        /// <param name="tagItems">Data štítků <see cref="TagInfo"/> ke všem řádkům</param>
         /// <returns></returns>
-        public static Table CreateFrom(System.Data.DataTable dataTable, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null)
+        public static Table CreateFrom(System.Data.DataTable dataTable, IEnumerable<KeyValuePair<GId, TagInfo>> tagItems = null)
         {
             Table table = null;
             using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "Table", "CreateFrom", "(DataTable)"))
@@ -3693,7 +3693,7 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (guiRow.RowGuiId != null) this.RecordGId = guiRow.RowGuiId;
             if (guiRow.ParentRowGuiId != null) this.ParentRecordGId = guiRow.ParentRowGuiId;
-            this.TagItems = TagItem.CreateFrom(guiRow.TagItems);
+            this.TagItems = TagInfo.CreateFrom(guiRow.TagItems);
             this.Style = guiRow.Style;
             this.StyleName = guiRow.StyleName;
             this.RowCheckedImage = guiRow.RowCheckedImage;
@@ -3705,14 +3705,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vytvoří soupis řádků <see cref="Row"/> na základě dat o řádcích z tabulky <see cref="System.Data.DataRowCollection"/>.
         /// </summary>
         /// <param name="dataRows">Kolekce řádků, vstup</param>
-        /// <param name="tagItems">Data štítků <see cref="TagItem"/> ke všem řádkům</param>
+        /// <param name="tagItems">Data štítků <see cref="TagInfo"/> ke všem řádkům</param>
         /// <param name="rowClassId">Číslo třídy tabulky (pochází z <see cref="Data.Table.ClassId"/>)</param>
         /// <returns></returns>
-        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, int? rowClassId = null, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null)
+        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, int? rowClassId = null, IEnumerable<KeyValuePair<GId, TagInfo>> tagItems = null)
         {
             if (dataRows == null) return null;
             bool addTags = (tagItems != null);
-            DictionaryList<GId, TagItem> tagDict = (addTags ? new DictionaryList<GId, TagItem>(tagItems) : null);
+            DictionaryList<GId, TagInfo> tagDict = (addTags ? new DictionaryList<GId, TagInfo>(tagItems) : null);
             List<Row> rowList = new List<Row>();
             foreach (System.Data.DataRow dataRow in dataRows)
             {
@@ -3744,12 +3744,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="rowClassId"></param>
         /// <param name="tagDict"></param>
         /// <returns></returns>
-        protected static TagItem[] GetTagItemsForRow(Row row, int? rowClassId, DictionaryList<GId, TagItem> tagDict)
+        protected static TagInfo[] GetTagItemsForRow(Row row, int? rowClassId, DictionaryList<GId, TagInfo> tagDict)
         {
             int recordId;
             if (!row[0].TryGetValue<int>(out recordId)) return null;
             GId recordGId = new GId(rowClassId.HasValue ? rowClassId.Value : 0, recordId);
-            TagItem[] tagItems;
+            TagInfo[] tagItems;
             tagDict.TryGetValue(recordGId, out tagItems);
             return tagItems;
         }
@@ -4446,23 +4446,23 @@ namespace Asol.Tools.WorkScheduler.Data
         LineLast
     }
     #endregion
-    #region TagItem : Data pro jeden vizuální tag
+    #region TagInfo : Data pro jeden vizuální tag
     /// <summary>
-    /// TagItem : Data pro jeden vizuální tag.
-    /// Prvek má implicitní konverzi s datovým typem String; konvertuje se property <see cref="TagItem.Text"/>.
+    /// <see cref="TagInfo"/> : Data pro jeden vizuální tag.
+    /// Prvek má implicitní konverzi s datovým typem String; konvertuje se property <see cref="TagInfo.Text"/>.
     /// </summary>
-    public class TagItem : IOwnerProperty<GTagFilter>
+    public class TagInfo : IOwnerProperty<TagFilter>
     {
         #region Konstrukce, vztah na Ownera
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public TagItem()
+        public TagInfo()
         { }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public TagItem(string text)
+        public TagInfo(string text)
         {
             this._Text = text;
         }
@@ -4471,7 +4471,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Neklonuje se Owner.
         /// </summary>
         /// <param name="source"></param>
-        public TagItem(TagItem source)
+        public TagInfo(TagInfo source)
         {
             if (source != null)
             {
@@ -4487,9 +4487,9 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Konstruktor pro vytvoření <see cref="TagItem"/> z instance <see cref="GuiTagItem"/>
+        /// Konstruktor pro vytvoření <see cref="TagInfo"/> z instance <see cref="GuiTagItem"/>
         /// </summary>
-        public TagItem(GuiTagItem guiTagItem)
+        public TagInfo(GuiTagItem guiTagItem)
         {
             if (guiTagItem != null)
             {
@@ -4505,18 +4505,18 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Vrátí pole <see cref="TagItem"/> z dodané kolekce <see cref="GuiTagItem"/>
+        /// Vrátí pole <see cref="TagInfo"/> z dodané kolekce <see cref="GuiTagItem"/>
         /// </summary>
         /// <param name="guiTagItems"></param>
         /// <returns></returns>
-        public static TagItem[] CreateFrom(IEnumerable<GuiTagItem> guiTagItems)
+        public static TagInfo[] CreateFrom(IEnumerable<GuiTagItem> guiTagItems)
         {
             if (guiTagItems == null) return null;
-            List<TagItem> tagItems = new List<TagItem>();
+            List<TagInfo> tagItems = new List<TagInfo>();
             foreach (GuiTagItem guiTagItem in guiTagItems)
             {
                 if (guiTagItem != null)
-                    tagItems.Add(new TagItem(guiTagItem));
+                    tagItems.Add(new TagInfo(guiTagItem));
             }
             return tagItems.ToArray();
         }
@@ -4529,12 +4529,12 @@ namespace Asol.Tools.WorkScheduler.Data
             return this.Text;
         }
         /// <summary>
-        /// Vlastník = <see cref="GTagFilter"/>
+        /// Vlastník = <see cref="TagFilter"/>
         /// </summary>
-        GTagFilter IOwnerProperty<GTagFilter>.Owner { get { return this._Owner; } set { this._Owner = value; } }
-        private GTagFilter _Owner;
+        TagFilter IOwnerProperty<TagFilter>.Owner { get { return this._Owner; } set { this._Owner = value; } }
+        private TagFilter _Owner;
         /// <summary>
-        /// Zavolá Ownera, jeho metodu <see cref="GTagFilter._TagItemsChanged()"/>, 
+        /// Zavolá Ownera, jeho metodu <see cref="TagFilter._TagItemsChanged()"/>, 
         /// tím mu sdělí, že je třeba znovu přepočítat všechny prvky.
         /// </summary>
         private void _CallOwnerChange()
@@ -4543,7 +4543,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 ((ITagFilter)this._Owner).TagItemsChanged();
         }
         /// <summary>
-        /// Zavolá Ownera, jeho metodu <see cref="GTagFilter._TagItemsRepaint()"/>,
+        /// Zavolá Ownera, jeho metodu <see cref="TagFilter._TagItemsRepaint()"/>,
         /// tím mu sdělí, že je třeba pouze překreslit control, beze změny přepočtů.
         /// </summary>
         private void _CallOwnerRepaint()
@@ -4606,17 +4606,17 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Implicitní konverze z/na String
         /// <summary>
-        /// Implicitní konverze z <see cref="String"/> na <see cref="TagItem"/>.
-        /// Pokud je na vstupu <see cref="String"/> = null, pak na výstupu je <see cref="TagItem"/> == null.
+        /// Implicitní konverze z <see cref="String"/> na <see cref="TagInfo"/>.
+        /// Pokud je na vstupu <see cref="String"/> = null, pak na výstupu je <see cref="TagInfo"/> == null.
         /// </summary>
         /// <param name="text"></param>
-        public static implicit operator TagItem(String text) { return (text != null ? new TagItem(text) : null); }
+        public static implicit operator TagInfo(String text) { return (text != null ? new TagInfo(text) : null); }
         /// <summary>
-        /// Implicitní konverze z <see cref="TagItem"/> na <see cref="String"/>.
-        /// Pokud je na vstupu <see cref="TagItem"/> = null, pak na výstupu je <see cref="String"/> == null.
+        /// Implicitní konverze z <see cref="TagInfo"/> na <see cref="String"/>.
+        /// Pokud je na vstupu <see cref="TagInfo"/> = null, pak na výstupu je <see cref="String"/> == null.
         /// </summary>
         /// <param name="tagItem"></param>
-        public static implicit operator String(TagItem tagItem) { return (tagItem != null ? tagItem.Text : null); }
+        public static implicit operator String(TagInfo tagItem) { return (tagItem != null ? tagItem.Text : null); }
         #endregion
     }
     #endregion
@@ -4889,12 +4889,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Prvek přidá svoje Tagy do společné Dictionary
         /// </summary>
         /// <param name="tagDict"></param>
-        void PrepareSummaryDict(Dictionary<string, TagItem> tagDict);
+        void PrepareSummaryDict(Dictionary<string, TagInfo> tagDict);
         /// <summary>
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
         /// </summary>
         /// <param name="tagFilter"></param>
-        bool FilterByTagValues(TagItem[] tagFilter);
+        bool FilterByTagValues(TagInfo[] tagFilter);
     }
     /// <summary>
     /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku

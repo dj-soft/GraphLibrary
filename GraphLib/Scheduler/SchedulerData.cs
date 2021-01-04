@@ -1327,9 +1327,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 mainDataPanel.GTabPage.TabHeader.ActivePage = mainDataPanel.GTabPage;
                 callRefresh = true;
             }
-            else if (control is GTabContainer)
+            else if (control is TabContainer)
             {
-                GTabContainer tabContainer = control as GTabContainer;
+                TabContainer tabContainer = control as TabContainer;
                 tabContainer.IsCollapsed = !isVisible;
                 callRefresh = true;
             }
@@ -3794,7 +3794,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="tabPageIndex"></param>
         /// <param name="gTabPage"></param>
         /// <param name="schedulerPanel"></param>
-        public MainDataPanel(GuiPage guiPage, int tabPageIndex, GTabPage gTabPage, SchedulerPanel schedulerPanel)
+        public MainDataPanel(GuiPage guiPage, int tabPageIndex, TabPageObject gTabPage, SchedulerPanel schedulerPanel)
         {
             this.GuiPage = guiPage;
             this.TabPageIndex = tabPageIndex;
@@ -3812,7 +3812,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Objekt záložky obsahující panel
         /// </summary>
-        public GTabPage GTabPage { get; private set; }
+        public TabPageObject GTabPage { get; private set; }
         /// <summary>
         /// Data panelu
         /// </summary>
@@ -3820,7 +3820,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Levý panel záložek
         /// </summary>
-        public GTabContainer LeftPanelTabs { get { return this.SchedulerPanel.LeftPanelTabs; } }
+        public TabContainer LeftPanelTabs { get { return this.SchedulerPanel.LeftPanelTabs; } }
         /// <summary>
         /// Hlavní Grid
         /// </summary>
@@ -3828,11 +3828,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Pravý panel záložek
         /// </summary>
-        public GTabContainer RightPanelTabs { get { return this.SchedulerPanel.RightPanelTabs; } }
+        public TabContainer RightPanelTabs { get { return this.SchedulerPanel.RightPanelTabs; } }
         /// <summary>
         /// Dolní panel záložek
         /// </summary>
-        public GTabContainer BottomPanelTabs { get { return this.SchedulerPanel.BottomPanelTabs; } }
+        public TabContainer BottomPanelTabs { get { return this.SchedulerPanel.BottomPanelTabs; } }
 
     }
     #endregion

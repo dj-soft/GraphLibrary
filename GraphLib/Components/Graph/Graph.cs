@@ -2420,8 +2420,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// <summary>
         /// Segmenty časové osy, které mají jinou barvu pozadí než je základní barva, a mohou obsahovat přídavný ToolTip
         /// </summary>
-        public GTimeAxis.Segment[] TimeAxisSegments { get { return this._TimeAxisSegments; } set { this._TimeAxisSegments = value; } }
-        private GTimeAxis.Segment[] _TimeAxisSegments;
+        public TimeAxis.Segment[] TimeAxisSegments { get { return this._TimeAxisSegments; } set { this._TimeAxisSegments = value; } }
+        private TimeAxis.Segment[] _TimeAxisSegments;
         /// <summary>
         /// Pravidla pro vykreslování textu v prvcích grafu
         /// </summary>

@@ -1559,7 +1559,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// </summary>
         public bool TagFilterVisible { get { return (this.TagFilterEnabled && this.TagFilterExists); } }
         /// <summary>
-        /// Vlastnost <see cref="GTagFilter.RoundItemPercent"/> pro filtr TagFilter:
+        /// Vlastnost <see cref="TagFilter.RoundItemPercent"/> pro filtr TagFilter:
         /// Procento kulatých krajů jednotlivých prvků.
         /// 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
         /// </summary>
@@ -1578,7 +1578,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         private void InitTagFilter()
         {
             this._TagHeaderL = new GTagLine(this._DataTable, TableAreaType.TagFilterHeaderLeft);
-            this._TagFilter = new GTagFilter() { ExpandHeightOnMouse = true, RoundItemPercent = 0 };
+            this._TagFilter = new TagFilter() { ExpandHeightOnMouse = true, RoundItemPercent = 0 };
             this._TagHeaderR = new GTagLine(this._DataTable, TableAreaType.TagFilterHeaderRight);
             this._TagFilterEnabled = true;
             this._TagFilter.FilterChanged += _TagFilter_FilterChanged;
@@ -1608,14 +1608,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Výška oblasti TagFilter.
         /// Pokud aktuální tabulka nemá žádné TagItems, pak <see cref="TagFilterHeight"/> = 0.
-        /// Pokud nějaké TagItems má, pak <see cref="TagFilterHeight"/> odpovídá výšce <see cref="GTagFilter.OptimalHeightOneRow"/>.
+        /// Pokud nějaké TagItems má, pak <see cref="TagFilterHeight"/> odpovídá výšce <see cref="TagFilter.OptimalHeightOneRow"/>.
         /// </summary>
         protected int TagFilterHeight { get { this._TagFilterHeightCheck(); return this._TagFilterHeight.Value; } }
         /// <summary>
         /// Zajistí, že proměnná <see cref="_TagFilterHeight"/> bude obsahovat platnou hodnotu: 
         /// buď 0px (pokud <see cref="TagFilterVisible"/> = false),
-        /// anebo hodnotu z <see cref="GTagFilter.OptimalHeightOneRow"/>, 
-        /// vypočtenou pro výšku jednoho prvku <see cref="GTagFilter.ItemHeight"/> načtenou z <see cref="Table.TagItemsRowHeight"/>.
+        /// anebo hodnotu z <see cref="TagFilter.OptimalHeightOneRow"/>, 
+        /// vypočtenou pro výšku jednoho prvku <see cref="TagFilter.ItemHeight"/> načtenou z <see cref="Table.TagItemsRowHeight"/>.
         /// </summary>
         private void _TagFilterHeightCheck()
         {
@@ -1666,7 +1666,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Instance prvku <see cref="TagFilter"/>. Vždy má správné souřadnice.
         /// </summary>
-        protected GTagFilter TagFilter { get { if (this._TagFilter.CurrentHeightState == GTagFilterHeightState.OneRow) this._TagFilter.Bounds = this.TagFilterBounds; return this._TagFilter; } }
+        protected TagFilter TagFilter { get { if (this._TagFilter.CurrentHeightState == TagFilterHeightState.OneRow) this._TagFilter.Bounds = this.TagFilterBounds; return this._TagFilter; } }
         /// <summary>
         /// Instance prvku <see cref="GRowHeader"/>. Vždy má správné souřadnice.
         /// </summary>
@@ -1678,7 +1678,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Instance prvku GTagFilter = filtr řádků na základě TagItems
         /// </summary>
-        private GTagFilter _TagFilter;
+        private TagFilter _TagFilter;
         /// <summary>
         /// Instance prvku <see cref="GRowHeader"/>, který je zobrazován před objektem <see cref="TagFilter"/>
         /// </summary>

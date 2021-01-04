@@ -20,15 +20,15 @@ namespace Asol.Tools.WorkScheduler.Components
 
 
     /// <summary>
-    /// GTextEdit (=TextBox)
+    /// <see cref="TextEdit"/> (=TextBox)
     /// </summary>
-    public class GTextEdit : TextObject, ITextEditInternal
+    public class TextEdit : TextObject, ITextEditInternal
     {
         #region Konstruktor, privátní život
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTextEdit()
+        public TextEdit()
         {
             this.BackgroundMode = DrawBackgroundMode.Solid;
             this.Is.Set(InteractiveProperties.Bit.DefaultMouseOverProperties
@@ -197,7 +197,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Speciální klávesy
         /// <summary>
-        /// Metoda detekuje speciální klávesy typické pro <see cref="GTextEdit"/> a zpracuje je.
+        /// Metoda detekuje speciální klávesy typické pro <see cref="TextEdit"/> a zpracuje je.
         /// Vyvolá odpovídající eventhandler.
         /// Vrací true = klávesa byla zpracována.
         /// </summary>
@@ -225,7 +225,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle innerBounds = absoluteBounds.Enlarge(-borderWidth);
             Rectangle textBounds = innerBounds.Enlarge(-textMargin);
 
-            GTextEditDrawArgs drawArgs = new GTextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, 
+            TextEditDrawArgs drawArgs = new TextEditDrawArgs(e, absoluteBounds, absoluteVisibleBounds, innerBounds, textBounds, 
                 style, font, borderType, borderWidth, textMargin, fontHeight, 
                 drawMode, this.HasFocus, this.InteractiveState, this);
 
@@ -262,7 +262,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí pozadí
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
-        protected virtual void DrawBackground(GTextEditDrawArgs drawArgs)
+        protected virtual void DrawBackground(TextEditDrawArgs drawArgs)
         {
             Color backColor = drawArgs.Style.GetBackColor(drawArgs.InteractiveState);
             this.DrawBackground(drawArgs.DrawArgs, drawArgs.InnerBounds, drawArgs.AbsoluteVisibleBounds, drawArgs.DrawMode, backColor);
@@ -271,7 +271,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí border
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
-        protected virtual void DrawBorder(GTextEditDrawArgs drawArgs)
+        protected virtual void DrawBorder(TextEditDrawArgs drawArgs)
         {
             if (drawArgs.BorderWidth == 0) return;
             Color borderColor = drawArgs.Style.GetBorderColor(drawArgs.InteractiveState);
@@ -298,7 +298,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí obsah (text)
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
-        protected virtual void DrawText(GTextEditDrawArgs drawArgs)
+        protected virtual void DrawText(TextEditDrawArgs drawArgs)
         {
             Rectangle textBounds = drawArgs.TextBounds;
             this.TextBounds = textBounds;
@@ -345,7 +345,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí Kurzor. Volá se výhradně v době, kdy máme Focus a Editor.
         /// </summary>
         /// <param name="drawArgs"></param>
-        protected virtual void DrawCursor(GTextEditDrawArgs drawArgs)
+        protected virtual void DrawCursor(TextEditDrawArgs drawArgs)
         {
             CursorBounds = EditorState.GetCursorBounds();
             if (!CursorBounds.HasValue) return;
@@ -393,10 +393,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public InteractiveIcon RightActiveIcon { get { return _RightActiveIcon; } set { _RightActiveIcon = value; Invalidate(); } } private InteractiveIcon _RightActiveIcon;
         /// <summary>
-        /// Nastaví <see cref="RightIconBounds"/> a modifikuje <see cref="GTextEditDrawArgs.TextBounds"/>
+        /// Nastaví <see cref="RightIconBounds"/> a modifikuje <see cref="TextEditDrawArgs.TextBounds"/>
         /// </summary>
         /// <param name="drawArgs"></param>
-        protected void DetectRightIconBounds(GTextEditDrawArgs drawArgs)
+        protected void DetectRightIconBounds(TextEditDrawArgs drawArgs)
         {
             if (RightActiveIcon == null)
             {
@@ -418,7 +418,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí ikonu
         /// </summary>
         /// <param name="drawArgs"></param>
-        protected void DrawRightIcon(GTextEditDrawArgs drawArgs)
+        protected void DrawRightIcon(TextEditDrawArgs drawArgs)
         {
             if (RightActiveIcon == null || !drawArgs.RightIconBounds.HasValue) return;
             bool asShadow = !(drawArgs.HasFocus || drawArgs.InteractiveState.HasFlag(GInteractiveState.FlagOver));
@@ -448,7 +448,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawArgs">Argumenty</param>
         /// <param name="overlay">Objekt Overlay (prakticky pouze <see cref="OverlayText"/>)</param>
         /// <returns></returns>
-        protected void DetectOverlayBounds(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
+        protected void DetectOverlayBounds(TextEditDrawArgs drawArgs, ITextEditOverlay overlay)
         {
             if (overlay == null) return;
             overlay.DetectOverlayBounds(drawArgs);
@@ -459,7 +459,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="drawArgs">Argumenty</param>
         /// <param name="overlay">Objekt Overlay (<see cref="OverlayBackground"/> nebo <see cref="OverlayText"/>)</param>
-        protected virtual void DrawOverlay(GTextEditDrawArgs drawArgs, ITextEditOverlay overlay)
+        protected virtual void DrawOverlay(TextEditDrawArgs drawArgs, ITextEditOverlay overlay)
         {
             overlay?.DrawOverlay(drawArgs);
         }
@@ -498,8 +498,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// V této metodě může potomek změnit (ref) souřadnice, na které je objekt právě umisťován.
         /// Tato metoda je volána při Bounds.set().
         /// Tato metoda typicky koriguje velikost vkládaného prostoru podle vlastností potomka.
-        /// Typickým příkladem je <see cref="GTextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="GTextEdit.Multiline"/> a parametrů stylu.
-        /// Třída <see cref="GTextEdit"/> hlídá výšku, pokud je textbox jednořádkový.
+        /// Typickým příkladem je <see cref="TextEdit"/>, který upravuje výšku objektu podle nastavení <see cref="TextEdit.Multiline"/> a parametrů stylu.
+        /// Třída <see cref="TextEdit"/> hlídá výšku, pokud je textbox jednořádkový.
         /// </summary>
         /// <param name="bounds"></param>
         protected override void ValidateBounds(ref Rectangle bounds)
@@ -541,11 +541,11 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Analýza textu a fontu na pozice znaků
         /// <summary>
         /// Metoda zajistí, že v poli <see cref="CharPositions"/> budou platná data pro vykreslení aktuálního textu v aktuálním fontu.
-        /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="GTextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
+        /// Pozor, souřadnice jsou relativní k počátku prostoru <see cref="TextEditDrawArgs.TextBounds"/>, případné posuny (při posunu obsahu TextBoxu) je nutno dopočítat následně.
         /// </summary>
         /// <param name="drawArgs">Data pro kreslení</param>
         /// <param name="forEditing">true = pro editaci / false = pouze pro vykreslení</param>
-        protected void CheckCharPositions(GTextEditDrawArgs drawArgs, bool forEditing)
+        protected void CheckCharPositions(TextEditDrawArgs drawArgs, bool forEditing)
         {
             if (!IsCharPositionsValid(drawArgs, forEditing))
                 // Něco se liší od poslední analýzy => provedeme analýzu novou:
@@ -556,7 +556,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="drawArgs">Data pro kreslení</param>
         /// <param name="forEditing">true = pro editaci / false = pouze pro vykreslení</param>
-        protected void AnalyseCharPositions(GTextEditDrawArgs drawArgs, bool forEditing)
+        protected void AnalyseCharPositions(TextEditDrawArgs drawArgs, bool forEditing)
         {
             string text = Text;
             FontInfo currentFont = FontCurrent;
@@ -585,7 +585,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vrátí true, pokud aktuální pozice znaků v poli <see cref="CharPositions"/> jsou platné pro aktuální stav.
         /// </summary>
-        protected bool IsCharPositionsValid(GTextEditDrawArgs drawArgs, bool forEditing)
+        protected bool IsCharPositionsValid(TextEditDrawArgs drawArgs, bool forEditing)
         {
             return (CharPositions != null &&
                    String.Equals(Text, _AnalysedText, StringComparison.InvariantCulture) &&
@@ -629,7 +629,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private Rectangle _AnalysedVisibleBounds;
         /// <summary>
-        /// Hodnota <see cref="GTextEditDrawArgs.TextBounds"/>.Width, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
+        /// Hodnota <see cref="TextEditDrawArgs.TextBounds"/>.Width, pro kterou byl analyzován text v poli <see cref="CharPositions"/>
         /// </summary>
         private int _AnalysedTextWidth;
         /// <summary>
@@ -1272,11 +1272,11 @@ namespace Asol.Tools.WorkScheduler.Components
         Point TextShift { get; set; }
     }
     #endregion
-    #region class GTextEditDrawArgs : Argumenty pro kreslení
+    #region class TextEditDrawArgs : Argumenty pro kreslení
     /// <summary>
     /// Argumenty pro kreslení
     /// </summary>
-    public class GTextEditDrawArgs
+    public class TextEditDrawArgs
     {
         /// <summary>
         /// Konstruktor
@@ -1296,10 +1296,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="hasFocus"></param>
         /// <param name="interactiveState"></param>
         /// <param name="textEdit"></param>
-        public GTextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds,
+        public TextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds,
             ITextBoxStyle style, FontInfo font, TextBoxBorderType borderType, int borderWidth, int textMargin, int fontHeight, 
             DrawItemMode drawMode, 
-            bool hasFocus, GInteractiveState interactiveState, GTextEdit textEdit)
+            bool hasFocus, GInteractiveState interactiveState, TextEdit textEdit)
         {
             this.DrawArgs = drawArgs;
             this.AbsoluteBounds = absoluteBounds;
@@ -1339,7 +1339,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Rectangle InnerBounds { get; private set; }
         /// <summary>
         /// Vnitřní souřadnice pro kreslení textu, bez rámečku.
-        /// Pokud overlay typu <see cref="GTextEdit.OverlayText"/> potřebuje, může tento prostor modifikovat = zmenšit tak, aby text nezasahoval např. do ikony Overlay.
+        /// Pokud overlay typu <see cref="TextEdit.OverlayText"/> potřebuje, může tento prostor modifikovat = zmenšit tak, aby text nezasahoval např. do ikony Overlay.
         /// </summary>
         public Rectangle TextBounds { get; set; }
         /// <summary>
@@ -1367,11 +1367,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int FontHeight { get; private set; }
         /// <summary>
-        /// Prostor pro výhradní kreslení RightIcon. Výchozí hodnota je null. Nastavuje <see cref="GTextEdit"/> v části pro ikonu, zmenšuje přitom prostor <see cref="TextBounds"/>.
+        /// Prostor pro výhradní kreslení RightIcon. Výchozí hodnota je null. Nastavuje <see cref="Components.TextEdit"/> v části pro ikonu, zmenšuje přitom prostor <see cref="TextBounds"/>.
         /// </summary>
         public Rectangle? RightIconBounds { get; set; }
         /// <summary>
-        /// Prostor pro výhradní kreslení Overlay. Výchozí hodnota je null. Je plně ve správě objektu <see cref="GTextEdit.OverlayText"/>.
+        /// Prostor pro výhradní kreslení Overlay. Výchozí hodnota je null. Je plně ve správě objektu <see cref="TextEdit.OverlayText"/>.
         /// </summary>
         public Rectangle? OverlayBounds { get; set; }
         /// <summary>
@@ -1389,14 +1389,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Textový objekt
         /// </summary>
-        public GTextEdit TextEdit { get; private set; }
+        public TextEdit TextEdit { get; private set; }
     }
     #endregion
     #region class TextEditorController : proměnné a funkce pro editaci platné pouze při přítomnosti Focusu
     /// <summary>
     /// <see cref="TextEditorController"/> : proměnné a funkce pro editaci TextBoxu.
-    /// V jednom čase existuje nejvýše jedna intance, navázaná na ten <see cref="GTextEdit"/>, který má zrovna Focus.
-    /// Může existovat tisíc vizuálních <see cref="GTextEdit"/>, ale nelze jich současně editovat víc než jeden.
+    /// V jednom čase existuje nejvýše jedna intance, navázaná na ten <see cref="TextEdit"/>, který má zrovna Focus.
+    /// Může existovat tisíc vizuálních <see cref="TextEdit"/>, ale nelze jich současně editovat víc než jeden.
     /// Controller <see cref="TextEditorController"/> obsahuje řadu proměnných, a je zbytečné je mít v paměti všechny i v době, kdy neprobíhá editace.
     /// </summary>
     public class TextEditorController : IDisposable
@@ -1407,7 +1407,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="owner"></param>
         /// <param name="data"></param>
-        public TextEditorController(GTextEdit owner, string data)
+        public TextEditorController(TextEdit owner, string data)
         {
             _Owner = owner;
             Data = data;
@@ -1423,13 +1423,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vlastník = TextBox
         /// </summary>
-        private GTextEdit _Owner;
+        private TextEdit _Owner;
         #endregion
         #region Editační property, reference na TextBox, výběr, pozice kurzoru, text z TextBoxu
         /// <summary>
         /// Vlastník = TextBox
         /// </summary>
-        protected GTextEdit Owner { get { return _Owner; } }
+        protected TextEdit Owner { get { return _Owner; } }
         /// <summary>
         /// Vlastník = TextBox, přetypovaný na <see cref="ITextEditInternal"/> pro přístup do interních dat
         /// </summary>
@@ -1472,7 +1472,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected string Text { get { return this._Owner.Text; } set { this._Owner.Text = value; } }
         /// <summary>
-        /// Hodnota <see cref="GTextEdit.SelectAllText"/>.Value
+        /// Hodnota <see cref="TextEdit.SelectAllText"/>.Value
         /// </summary>
         protected bool SelectAllText { get { return this._Owner.SelectAllText.Value; } }
         /// <summary>
@@ -1960,7 +1960,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Metoda je volána po myším kliknutí, připraví data pro určení pozice kurzorum, SelectedRange a následné vykreslení.
-        /// Po myším kliknutí následuje nové vykreslení TextBoxu, tedy jeho metoda <see cref="GTextEdit.DrawText(GTextEditDrawArgs)"/>, 
+        /// Po myším kliknutí následuje nové vykreslení TextBoxu, tedy jeho metoda <see cref="TextEdit.DrawText(TextEditDrawArgs)"/>, 
         /// z které se provede nová analýza pozic znaků v <see cref="ITextEditInternal.CharPositions"/>.
         /// Následně se pak volá zdejší metoda <see cref="MouseDownDataProcess()"/>, která na základě dat MouseDown určí pozici kurzoru a SelectedRange.
         /// Pokud je ale TextBox vykreslován bez předchozí události MouseDown, pak metoda <see cref="MouseDownDataProcess()"/> nebude nic zpracovávat...

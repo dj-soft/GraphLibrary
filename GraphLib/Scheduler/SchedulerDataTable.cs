@@ -5769,14 +5769,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="guiAxisSegments"></param>
         /// <returns></returns>
-        private GTimeAxis.Segment[] ConvertSegments(IEnumerable<GuiTimeAxisSegment> guiAxisSegments)
+        private TimeAxis.Segment[] ConvertSegments(IEnumerable<GuiTimeAxisSegment> guiAxisSegments)
         {
             if (guiAxisSegments == null) return null;
-            List<GTimeAxis.Segment> segments = new List<BaseAxis<DateTime?, TimeSpan?, TimeRange>.Segment>();
+            List<TimeAxis.Segment> segments = new List<BaseAxis<DateTime?, TimeSpan?, TimeRange>.Segment>();
             foreach (GuiTimeAxisSegment guiAxisSegment in guiAxisSegments)
             {
                 if (guiAxisSegment != null)
-                    segments.Add(new GTimeAxis.Segment()
+                    segments.Add(new TimeAxis.Segment()
                     {
                         ValueRange = guiAxisSegment.TimeRange,
                         BackColor = guiAxisSegment.BackColor,

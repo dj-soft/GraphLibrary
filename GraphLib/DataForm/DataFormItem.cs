@@ -24,7 +24,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.TitleLabel.PrepareToolTipInParent = true;
             this.TitleLabel.Visible = true;
 
-            this.Text1 = new GTextEdit()
+            this.Text1 = new TextEdit()
             {
                 Bounds = new Rectangle(104, 4, 120, 20),
                 Alignment = System.Windows.Forms.HorizontalAlignment.Left,
@@ -32,7 +32,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             };
             this.AddItem(this.Text1);
 
-            this.Text2 = new GTextEdit()
+            this.Text2 = new TextEdit()
             {
                 Bounds = new Rectangle(228, 4, 250, 20),
                 Alignment = System.Windows.Forms.HorizontalAlignment.Left,
@@ -108,11 +108,11 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// <summary>
         /// První Textbox / Reference / Číslo
         /// </summary>
-        public GTextEdit Text1 { get; private set; }
+        public TextEdit Text1 { get; private set; }
         /// <summary>
         /// Druhý Textbox / Název
         /// </summary>
-        public GTextEdit Text2 { get; private set; }
+        public TextEdit Text2 { get; private set; }
 
         #region Interaktivita
         /// <summary>

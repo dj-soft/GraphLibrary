@@ -8,24 +8,24 @@ using System.Threading.Tasks;
 namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
-    /// Rozhraní pro třídy, které do <see cref="GTextEdit"/> vykreslí Overlay
+    /// Rozhraní pro třídy, které do <see cref="TextEdit"/> vykreslí Overlay
     /// </summary>
     public interface ITextEditOverlay
     {
         /// <summary>
-        /// Instance overlay zde může modifikovat vnitřní prostor pro text (=zmenšit <see cref="GTextEditDrawArgs.TextBounds"/>) 
-        /// a deklarovat výhradní prostor pro overlay (do <see cref="GTextEditDrawArgs.OverlayBounds"/>).
+        /// Instance overlay zde může modifikovat vnitřní prostor pro text (=zmenšit <see cref="TextEditDrawArgs.TextBounds"/>) 
+        /// a deklarovat výhradní prostor pro overlay (do <see cref="TextEditDrawArgs.OverlayBounds"/>).
         /// </summary>
         /// <param name="drawArgs"></param>
-        void DetectOverlayBounds(GTextEditDrawArgs drawArgs);
+        void DetectOverlayBounds(TextEditDrawArgs drawArgs);
         /// <summary>
         /// Vykreslí Overlay
         /// </summary>
         /// <param name="drawArgs"></param>
-        void DrawOverlay(GTextEditDrawArgs drawArgs);
+        void DrawOverlay(TextEditDrawArgs drawArgs);
     }
     /// <summary>
-    /// Přídavné vykreslení k <see cref="GTextEdit"/>, vykresluje linku podtržení
+    /// Přídavné vykreslení k <see cref="TextEdit"/>, vykresluje linku podtržení
     /// </summary>
     public class TextEditOverlayUnderline : ITextEditOverlay
     {
@@ -61,18 +61,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Detekce prostoru Overlay
         /// </summary>
         /// <param name="drawArgs"></param>
-        void ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs drawArgs) { }
+        void ITextEditOverlay.DetectOverlayBounds(TextEditDrawArgs drawArgs) { }
         /// <summary>
         /// Vykreslení
         /// </summary>
         /// <param name="drawArgs"></param>
-        void ITextEditOverlay.DrawOverlay(GTextEditDrawArgs drawArgs)
+        void ITextEditOverlay.DrawOverlay(TextEditDrawArgs drawArgs)
         {
             GPainter.DrawRelationLine(drawArgs.Graphics, drawArgs.InnerBounds, this.IsRelationToDocument, this.IsRelationInGrid, color: LineColor);
         }
     }
     /// <summary>
-    /// Přídavné vykreslení k <see cref="GTextEdit"/>, vykresluje ikonku v pravé části textboxu
+    /// Přídavné vykreslení k <see cref="TextEdit"/>, vykresluje ikonku v pravé části textboxu
     /// </summary>
     public class TextEditOverlayRightSideIcon : ITextEditOverlay
     {
@@ -108,7 +108,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Detekce prostoru Overlay
         /// </summary>
         /// <param name="drawArgs"></param>
-        void ITextEditOverlay.DetectOverlayBounds(GTextEditDrawArgs drawArgs)
+        void ITextEditOverlay.DetectOverlayBounds(TextEditDrawArgs drawArgs)
         {
             int size = drawArgs.InnerBounds.Height - 2;
             if (size > 24) size = 24;
@@ -122,7 +122,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslení
         /// </summary>
         /// <param name="drawArgs"></param>
-        void ITextEditOverlay.DrawOverlay(GTextEditDrawArgs drawArgs)
+        void ITextEditOverlay.DrawOverlay(TextEditDrawArgs drawArgs)
         {
             if (!drawArgs.OverlayBounds.HasValue) return;
             Rectangle overlayBounds = drawArgs.OverlayBounds.Value;

@@ -8,11 +8,11 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region class GTimeAxis : Interactive object for TimeAxis control
+    #region class TimeAxis : Interactive object for TimeAxis control
     /// <summary>
-    /// GTimeAxis : Interactive object for TimeAxis control
+    /// <see cref="TimeAxis"/> : Interactive object for TimeAxis control
     /// </summary>
-    public class GTimeAxis
+    public class TimeAxis
         : BaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeAxisConvertor
     {
         #region Konstruktory, Obecné overrides osy
@@ -20,11 +20,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GTimeAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public TimeAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeAxis() : base()
+        public TimeAxis() : base()
         {
             this.TimeAxisConvertor = new TimeAxisConvertor(this);
             this.ScaleLimit = new DecimalNRange(1m, 7200m);                    // ScaleLimit for TimeAxis: = number of seconds per one visual pixel (Min - Max), default for 1 pixel: 1 sec to 2 hours.
@@ -390,7 +390,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor pro konvertor provázaný s TimeAxis
         /// </summary>
         /// <param name="timeAxis"></param>
-        public TimeAxisConvertor(GTimeAxis timeAxis)
+        public TimeAxisConvertor(TimeAxis timeAxis)
         {
             this._TimeAxis = timeAxis;
         }
@@ -421,7 +421,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Časová osa
         /// </summary>
-        private GTimeAxis _TimeAxis;
+        private TimeAxis _TimeAxis;
         /// <summary>
         /// Synchronizer hodnoty
         /// </summary>

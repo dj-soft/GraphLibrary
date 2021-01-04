@@ -4147,7 +4147,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <summary>
         /// Vrátí výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>, pro daný styl.
         /// </summary>
-        /// <param name="style">Styl textboxu, buď konkrétní z <see cref="GTextEdit.Style"/>, nebo základní <see cref="Styles.TextBox"/>.</param>
+        /// <param name="style">Styl textboxu, buď konkrétní z <see cref="TextEdit.Style"/>, nebo základní <see cref="Styles.TextBox"/>.</param>
         /// <returns></returns>
         public static int GetOneTextLineHeight(ILabelStyle style)
         {
@@ -4158,7 +4158,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// Optimální výška textboxu pro správné zobrazení jednořádkového textu, pro daný styl.
         /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku jednoho řádku textu.
         /// </summary>
-        /// <param name="style">Styl textboxu, buď konkrétní z <see cref="GTextEdit.Style"/>, nebo základní <see cref="Styles.TextBox"/>.</param>
+        /// <param name="style">Styl textboxu, buď konkrétní z <see cref="TextEdit.Style"/>, nebo základní <see cref="Styles.TextBox"/>.</param>
         /// <returns></returns>
         public static int GetSingleLineOptimalHeight(ITextBoxStyle style)
         {

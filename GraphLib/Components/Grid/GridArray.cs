@@ -30,12 +30,12 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _Initialise()
         {
             this._TabHeaderHeight = Application.App.Zoom.ZoomDistance(Skin.TabHeader.HeaderHeight);
-            this._TabHeader = new GTabHeader(this) { Position = RectangleSide.Top };
+            this._TabHeader = new TabHeader(this) { Position = RectangleSide.Top };
 
             this._GridList = new List<GGrid>();
         }
         private int _TabHeaderHeight;
-        private GTabHeader _TabHeader;
+        private TabHeader _TabHeader;
         private List<GGrid> _GridList;
         private int GridCount { get { return this._GridList.Count; } }
 

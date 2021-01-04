@@ -818,7 +818,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public string Text { get; private set; }
         /// <summary>
         /// Text znaku zobrazovaný. 
-        /// Od <see cref="Text"/> se liší tehdy, když se zobrazuje <see cref="GTextEdit.PasswordChar"/>.
+        /// Od <see cref="Text"/> se liší tehdy, když se zobrazuje <see cref="TextEdit.PasswordChar"/>.
         /// </summary>
         public string TextVisible { get; private set; }
         /// <summary>

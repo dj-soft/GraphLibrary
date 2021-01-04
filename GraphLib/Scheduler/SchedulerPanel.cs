@@ -14,8 +14,8 @@ using Asol.Tools.WorkScheduler.Application;
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     /// <summary>
-    /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="GTabContainer"/>, <see cref="GGrid"/>, <see cref="GSplitter"/>), ale neobsahuje <see cref="ToolBar"/>.
-    /// Hlavní control <see cref="MainControl"/> se skládá z jednoho prvku <see cref="ToolBar"/> a z jednoho <see cref="GTabContainer"/>, 
+    /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="TabContainer"/>, <see cref="GGrid"/>, <see cref="GSplitter"/>), ale neobsahuje <see cref="ToolBar"/>.
+    /// Hlavní control <see cref="MainControl"/> se skládá z jednoho prvku <see cref="ToolBar"/> a z jednoho <see cref="TabContainer"/>, 
     /// který v sobě hostuje controly <see cref="SchedulerPanel"/>, jeden pro každou jednu zadanou verzi plánu (DataId).
     /// </summary>
     public class SchedulerPanel : InteractiveContainer, IInteractiveItem
@@ -43,13 +43,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._PanelLayout = new SchedulerPanelLayout();
                 this._PanelLayout.CurrentControlSize = this.ClientSize;
 
-                this._LeftPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+                this._LeftPanelTabs = new TabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
                 this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.LeftSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
                 this._MainPanelGrid = new GGrid(this);
                 this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.RightSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
-                this._RightPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+                this._RightPanelTabs = new TabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
                 this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = this._PanelLayout.BottomSplitterValue, BoundsNonActive = new Int32NRange(0, 600) };
-                this._BottomPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+                this._BottomPanelTabs = new TabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
                 this.AddItem(this._LeftPanelTabs);
                 this.AddItem(this._LeftPanelSplitter);
@@ -203,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="tabContainer">TabContainer</param>
         /// <param name="orientation">Orientace TABu pro situaci IsCollapsed</param>
         /// <returns></returns>
-        private static int? _GetTabFixedSize(bool isEnabled, GTabContainer tabContainer, Orientation orientation)
+        private static int? _GetTabFixedSize(bool isEnabled, TabContainer tabContainer, Orientation orientation)
         {
             if (!isEnabled) return 0;                      // Pokud TAB není Enabled = není dostatek prostoru => Size = 0 = neviditelný
             if (tabContainer.TabCount == 0) return 0;      // Pokud TAB nemá co nabídnout = je prázdný => Size = 0 = neviditelný
@@ -282,13 +282,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private SchedulerPanelLayout _PanelLayout;
 
-        private GTabContainer _LeftPanelTabs;
+        private TabContainer _LeftPanelTabs;
         private GSplitter _LeftPanelSplitter;
         private GGrid _MainPanelGrid;
         private GSplitter _RightPanelSplitter;
-        private GTabContainer _RightPanelTabs;
+        private TabContainer _RightPanelTabs;
         private GSplitter _BottomPanelSplitter;
-        private GTabContainer _BottomPanelTabs;
+        private TabContainer _BottomPanelTabs;
 
         private MainControl _MainControl;
         private GuiPage _GuiPage;
@@ -398,13 +398,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return true;
         }
         /// <summary>
-        /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je jako nové Taby do dodaného vizuálního objektu <see cref="GTabContainer"/>.
+        /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je jako nové Taby do dodaného vizuálního objektu <see cref="TabContainer"/>.
         /// Současně je ukládá do <see cref="_DataTableList"/>.
         /// </summary>
         /// <param name="guiPanel"></param>
         /// <param name="tabs"></param>
         /// <returns></returns>
-        private bool _LoadDataToTabs(GuiPanel guiPanel, GTabContainer tabs)
+        private bool _LoadDataToTabs(GuiPanel guiPanel, TabContainer tabs)
         {
             if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
 
@@ -556,7 +556,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Levý panel záložek
         /// </summary>
-        public GTabContainer LeftPanelTabs { get { return this._LeftPanelTabs; } }
+        public TabContainer LeftPanelTabs { get { return this._LeftPanelTabs; } }
         /// <summary>
         /// Hlavní Grid
         /// </summary>
@@ -564,11 +564,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Pravý panel záložek
         /// </summary>
-        public GTabContainer RightPanelTabs { get { return this._RightPanelTabs; } }
+        public TabContainer RightPanelTabs { get { return this._RightPanelTabs; } }
         /// <summary>
         /// Dolní panel záložek
         /// </summary>
-        public GTabContainer BottomPanelTabs { get { return this._BottomPanelTabs; } }
+        public TabContainer BottomPanelTabs { get { return this._BottomPanelTabs; } }
         /// <summary>
         /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
