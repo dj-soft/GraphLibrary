@@ -517,7 +517,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
                 if (gridColumn.UseTimeAxis) continue;                          // Časovou osu nedovolíme skrýt
                 Column masterColumn = gridColumn.MasterColumn;
                 bool isCurrent = (currentColumn != null && currentColumn.ColumnId == masterColumn.ColumnId);
-                FontStyle? fontStyle = (isCurrent ? (FontStyle?)FontStyle.Bold : (FontStyle?)null);
+                System.Drawing.FontStyle? fontStyle = (isCurrent ? (System.Drawing.FontStyle?)System.Drawing.FontStyle.Bold : (System.Drawing.FontStyle?)null);
                 WinForm.ToolStripMenuItem item = Painter.CreateDropDownItem(masterColumn.Title, toolTip: masterColumn.ToolTip, isCheckable: true, isChecked: gridColumn.IsVisible, fontStyle: fontStyle, tag: gridColumn);
                 item.CheckedChanged += ColumnContextMenuItemCheckedChanged;
                 menu.Items.Add(item);

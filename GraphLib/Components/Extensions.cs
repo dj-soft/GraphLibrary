@@ -2662,7 +2662,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="font">Source font</param>
         /// <param name="fontStyle">Style for new font</param>
         /// <returns></returns>
-        public static Font Modify(this Font font, FontStyle fontStyle)
+        public static Font Modify(this Font font, System.Drawing.FontStyle fontStyle)
         {
             return new Font(font, fontStyle);
         }
@@ -2685,7 +2685,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="sizeChange">Ratio of change fontsize: new font size = sizeChange * old font size</param>
         /// <param name="fontStyle">Style for new font</param>
         /// <returns></returns>
-        public static Font Modify(this Font font, double sizeChange, FontStyle fontStyle)
+        public static Font Modify(this Font font, double sizeChange, System.Drawing.FontStyle fontStyle)
         {
             return new Font(font.Name, (float)(sizeChange * (double)font.Size), fontStyle, font.Unit, font.GdiCharSet);
         }
@@ -2709,7 +2709,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="fontEmSize">The em-size, in points, of the new font.</param>
         /// <param name="fontStyle">Style for new font</param>
         /// <returns></returns>
-        public static Font Modify(this Font font, float fontEmSize, FontStyle fontStyle)
+        public static Font Modify(this Font font, float fontEmSize, System.Drawing.FontStyle fontStyle)
         {
             return new Font(font.Name, fontEmSize, fontStyle, font.Unit, font.GdiCharSet);
         }

@@ -26,7 +26,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     lock (__Lock)
                     {
                         if (__Instance == null)
+                        {
                             __Instance = new Styles();
+                            __Instance._Init();                      // Musí se provést po konstruktoru a po uložení instance do __Instance, protože v Initu se již používají data z Instance!!!
+                        }
                     }
                 }
                 return __Instance;
@@ -39,13 +42,16 @@ namespace Asol.Tools.WorkScheduler.Components
             _Styles = new List<IStyleMember>();
 
             _Modifier = new ModifierStyle(); _Styles.Add(_Modifier);
+            _Font = new FontStyle(); _Styles.Add(_Font);
             _ToolTip = new ToolTipStyle(); _Styles.Add(_ToolTip);
             _Label = new LabelStyle(); _Styles.Add(_Label);
             _TextBox = new TextBoxStyle(); _Styles.Add(_TextBox);
             _Button = new ButtonStyle(); _Styles.Add(_Button);
             _Panel = new PanelStyle(); _Styles.Add(_Panel);
             _ScrollBar = new ScrollBarStyle(); _Styles.Add(_ScrollBar);
-
+        }
+        private void _Init()
+        {
             _Styles.ForEach(s => s.IsStyleInstance = true);
             _CurrentType = StyleType.System;
         }
@@ -56,6 +62,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výchozí styl pro kreslení modifikátorů (interaktivita) a 3D efektů a stínů
         /// </summary>
         public static ModifierStyle Modifier { get { return Instance._Modifier; } } private ModifierStyle _Modifier;
+        /// <summary>
+        /// Výchozí styl obsahující fonty
+        /// </summary>
+        public static FontStyle Font { get { return Instance._Font; } } private FontStyle _Font;
         /// <summary>
         /// Výchozí styl pro kreslení ToolTipu
         /// </summary>
@@ -76,12 +86,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výchozí styl pro Panel
         /// </summary>
         public static PanelStyle Panel { get { return Instance._Panel; } } private PanelStyle _Panel;
-
         /// <summary>
         /// Výchozí styl pro ScrollBar
         /// </summary>
         public static ScrollBarStyle ScrollBar { get { return Instance._ScrollBar; } } private ScrollBarStyle _ScrollBar;
-
         #endregion
         #region Předdefinované styly
         /// <summary>
@@ -325,7 +333,7 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         /// <summary>
         /// Obsahuje true v té instanci, které reprezentuje základní Styl = je umístěna v třídě <see cref="Styles"/>.
-        /// Tato instance při vyhodnocování Current hodnoty v metodách <see cref="ItemStyle.GetValue{T}(Func{T?}, Func{T?}, Func{T?}, T)"/> 
+        /// Tato instance při vyhodnocování Current hodnoty v metodách <see cref="ItemStyle.GetValue{T}(Func{T?}, Func{T?}, Func{T?}, Func{T})"/> 
         /// neřeší hodnoty z instance Parent ani z instance Style, řeší pouze dodanou explicitní hodnotu a defaultní hodnotu.
         /// </summary>
         bool IsStyleInstance { get; set; }
@@ -589,6 +597,111 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
+    #region FontStyle
+    /// <summary>
+    /// Styl obsahující výchozí typy písma pro různé další styly.
+    /// </summary>
+    public class FontStyle : ItemStyle, IFontStyle
+    {
+        #region Základní public property
+        /// <summary>
+        /// Parent styl. Pokud není zadán, používá se odpovídající styl z knihovny <see cref="Styles"/>.
+        /// </summary>
+        public FontStyle Parent { get; set; }
+        /// <summary>
+        /// Obsahuje true tehdy, když this instance obsahuje alespoň jednu nenulovou hodnotu. Tedy typicky: return (this.Color.HasValue || ...);
+        /// </summary>
+        protected override bool HasValue { get { return (FontLabel != null || FontTextEdit != null || FontTextEditCode != null || FontTitle != null || FontToolTipTitle != null || FontToolTipText != null); } }
+        /// <summary>
+        /// Písmo pro obyčejné labely
+        /// </summary>
+        public FontInfo FontLabel { get; set; }
+        /// <summary>
+        /// Písmo pro editor textu obyčejný, proporcionální písmo
+        /// </summary>
+        public FontInfo FontTextEdit { get; set; }
+        /// <summary>
+        /// Písmo pro editor textu typu FixedSize
+        /// </summary>
+        public FontInfo FontTextEditCode { get; set; }
+        /// <summary>
+        /// Písmo pro běžná tlačítka
+        /// </summary>
+        public FontInfo FontButton { get; set; }
+        /// <summary>
+        /// Písmo pro titulky kapitol / skupin
+        /// </summary>
+        public FontInfo FontTitle { get; set; }
+        /// <summary>
+        /// Písmo pro titulek tooltipu
+        /// </summary>
+        public FontInfo FontToolTipTitle { get; set; }
+        /// <summary>
+        /// Písmo pro obsah tooltipu
+        /// </summary>
+        public FontInfo FontToolTipText { get; set; }
+
+        // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
+
+        #endregion
+        #region Předdefinované styly
+        /// <summary>
+        /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
+        /// Metoda je volána pouze v základní instanci (kde <see cref="ItemStyle.IsStyleInstance"/> je true).
+        /// </summary>
+        /// <param name="styleType"></param>
+        protected override void ActivateStyle(StyleType styleType)
+        {
+            FontLabel = DefaultFontLabel;
+            FontTextEdit = DefaultFontTextEdit;
+            FontTextEditCode = DefaultFontTextEditCode;
+            FontButton = DefaultFontButton;
+            FontTitle = DefaultFontTitle;
+            FontToolTipTitle = DefaultFontToolTipTitle;
+            FontToolTipText = DefaultFontToolTipText;
+        }
+        #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="FontStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="FontStyle"/> používá pro svoje vlastní property (například <see cref="FontStyle.FontLabel"/>) instanci uloženou v <see cref="Styles.Label"/>.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="LabelStyle"/>),
+        /// tedy například <see cref="FontStyle.FontLabel"/>, byly načtený z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// </summary>
+        protected virtual FontStyle StyleFont { get { return Styles.Font; } }
+        #endregion
+        #region Defaultní hodnoty
+        /// <summary>Defaultní instance pro <see cref="FontLabel"/></summary>
+        protected virtual FontInfo DefaultFontLabel { get { return GetDefault<FontInfo>(ref _DefaultFontLabel, () => FontInfo.Default); } } private static FontInfo _DefaultFontLabel;
+        /// <summary>Defaultní instance pro <see cref="FontTextEdit"/></summary>
+        protected virtual FontInfo DefaultFontTextEdit { get { return GetDefault<FontInfo>(ref _DefaultFontTextEdit, () => FontInfo.Default); } } private static FontInfo _DefaultFontTextEdit;
+        /// <summary>Defaultní instance pro <see cref="FontTextEditCode "/></summary>
+        protected virtual FontInfo DefaultFontTextEditCode { get { return GetDefault<FontInfo>(ref _DefaultFontTextEditCode, () => FontInfo.Default); } } private static FontInfo _DefaultFontTextEditCode;
+        /// <summary>Defaultní instance pro <see cref="FontButton "/></summary>
+        protected virtual FontInfo DefaultFontButton { get { return GetDefault<FontInfo>(ref _DefaultFontButton, () => FontInfo.Default); } } private static FontInfo _DefaultFontButton;
+        /// <summary>Defaultní instance pro <see cref="FontTitle "/></summary>
+        protected virtual FontInfo DefaultFontTitle { get { return GetDefault<FontInfo>(ref _DefaultFontTitle, () => FontInfo.Default); } } private static FontInfo _DefaultFontTitle;
+        /// <summary>Defaultní instance pro <see cref="FontToolTipTitle "/></summary>
+        protected virtual FontInfo DefaultFontToolTipTitle { get { return GetDefault<FontInfo>(ref _DefaultFontToolTipTitle, () => FontInfo.Default); } } private static FontInfo _DefaultFontToolTipTitle;
+        /// <summary>Defaultní instance pro <see cref="FontToolTipText "/></summary>
+        protected virtual FontInfo DefaultFontToolTipText { get { return GetDefault<FontInfo>(ref _DefaultFontToolTipText, () => FontInfo.Default); } } private static FontInfo _DefaultFontToolTipText;
+        #endregion
+        #region Implementace interface
+        FontInfo IFontStyle.FontLabel { get { return GetInstance<FontInfo>(() => FontLabel, () => Parent?.FontLabel, () => StyleFont.FontLabel, () => DefaultFontLabel); } }
+        FontInfo IFontStyle.FontTextEdit { get { return GetInstance<FontInfo>(() => FontTextEdit, () => Parent?.FontTextEdit, () => StyleFont.FontTextEdit, () => DefaultFontTextEdit); } }
+        FontInfo IFontStyle.FontTextEditCode { get { return GetInstance<FontInfo>(() => FontTextEditCode, () => Parent?.FontTextEditCode, () => StyleFont.FontTextEditCode, () => DefaultFontTextEditCode); } }
+        FontInfo IFontStyle.FontButton { get { return GetInstance<FontInfo>(() => FontButton, () => Parent?.FontButton, () => StyleFont.FontButton, () => DefaultFontButton); } }
+        FontInfo IFontStyle.FontTitle { get { return GetInstance<FontInfo>(() => FontTitle, () => Parent?.FontTitle, () => StyleFont.FontTitle, () => DefaultFontTitle); } }
+        FontInfo IFontStyle.FontToolTipTitle { get { return GetInstance<FontInfo>(() => FontToolTipTitle, () => Parent?.FontToolTipTitle, () => StyleFont.FontToolTipTitle, () => DefaultFontToolTipTitle); } }
+        FontInfo IFontStyle.FontToolTipText { get { return GetInstance<FontInfo>(() => FontToolTipText, () => Parent?.FontToolTipText, () => StyleFont.FontToolTipText, () => DefaultFontToolTipText); } }
+        #endregion
+    }
+    #endregion
     #region ToolTipStyle
     /// <summary>
     /// Styl pro kreslení ToolTipu
@@ -724,23 +837,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="styleType"></param>
         protected override void ActivateStyle(StyleType styleType)
         {
+            Font = DefaultFont;
+            FontModifier = DefaultFontModifier;
             switch (styleType)
             {
                 case StyleType.System:
-                    Font = DefaultFont;
-                    FontModifier = DefaultFontModifier;
                     TextColor = DefaultTextColor;
                     break;
                 case StyleType.Light3D:
                 case StyleType.LightFlat:
-                    Font = DefaultFont;
-                    FontModifier = DefaultFontModifier;
                     TextColor = Color.Black;
                     break;
                 case StyleType.Dark3D:
                 case StyleType.DarkFlat:
-                    Font = DefaultFont;
-                    FontModifier = DefaultFontModifier;
                     TextColor = Color.White;
                     break;
             }
@@ -762,7 +871,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Defaultní hodnoty
         /// <summary>Defaultní hodnota pro <see cref="Font"/></summary>
-        protected virtual FontInfo DefaultFont { get { return GetDefault<FontInfo>(ref _DefaultFont, () => FontInfo.Default); } } private static FontInfo _DefaultFont;
+        protected virtual FontInfo DefaultFont { get { return ((IFontStyle)Styles.Font).FontLabel; } }
         /// <summary>Defaultní barva pro <see cref="FontModifier"/></summary>
         protected virtual FontModifierInfo DefaultFontModifier { get { return null; } }
         /// <summary>Defaultní hodnota pro <see cref="TextColor"/></summary>
@@ -864,6 +973,8 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             base.ActivateStyle(styleType);
 
+            BorderType = DefaultBorderType;
+            TextMargin = DefaultTextMargin;
             switch (styleType)
             {
                 case StyleType.System:
@@ -878,8 +989,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     BorderColorDisabled = DefaultBorderColorDisabled;
                     BorderColorMouseOn = DefaultBorderColorMouseOn;
                     BorderColorMouseDown = DefaultBorderColorMouseDown;
-                    BorderType = DefaultBorderType;
-                    TextMargin = DefaultTextMargin;
                     break;
                 case StyleType.Light3D:
                     break;
@@ -1116,9 +1225,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní barva pro <see cref="CursorColor"/>.</summary>
         protected virtual Color DefaultCursorColor { get { return Color.FromArgb(0, 0, 0); } }
         /// <summary>Defaultní barva pro <see cref="CursorBlinkingCycle"/>.</summary>
-        protected virtual int DefaultCursorBlinkingCycle { get { return 12; } }
+        protected virtual int DefaultCursorBlinkingCycle { get { return 14; } }
         /// <summary>Defaultní barva pro <see cref="CursorBlinkingOn"/>.</summary>
-        protected virtual int DefaultCursorBlinkingOn { get { return 7; } }
+        protected virtual int DefaultCursorBlinkingOn { get { return 10; } }
+        /// <summary>Defaultní hodnota pro <see cref="LabelStyle.Font"/>: třída <see cref="TextEdit"/> používá jiný font než třída <see cref="Label"/>.</summary>
+        protected override FontInfo DefaultFont { get { return ((IFontStyle)Styles.Font).FontTextEdit; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColor"/></summary>
         protected override Color DefaultBackColor { get { return SystemColors.ControlLightLight; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColorDisabled"/></summary>
@@ -1262,6 +1373,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní hodnota pro Počet pixelů zaobleného rohu.</summary>
         protected virtual int DefaultRoundCorner { get { return 0; } }
 
+        /// <summary>Defaultní hodnota pro <see cref="LabelStyle.Font"/>: třída <see cref="Button"/> používá jiný font než třída <see cref="Label"/>.</summary>
+        protected override FontInfo DefaultFont { get { return ((IFontStyle)Styles.Font).FontButton; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColor"/></summary>
         protected override Color DefaultBackColor { get { return SystemColors.ControlLight; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColorDisabled"/></summary>
@@ -1382,18 +1495,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="styleType"></param>
         protected override void ActivateStyle(StyleType styleType)
         {
+            TitleLocation = DefaultTitleLocation;
+            TitleFont = DefaultTitleFont;
+            TitleFontModifier = DefaultTitleFontModifier;
+            TitleFontModifierFocused = DefaultTitleFontModifierFocused;
+            TitleLineSize = DefaultTitleLineSize;
             switch (styleType)
             {
                 case StyleType.System:
                     BackColor = DefaultBackColor;
                     BackColorFocused = DefaultBackColorFocused;
-                    TitleLocation = DefaultTitleLocation;
-                    TitleFont = DefaultTitleFont;
-                    TitleFontModifier = DefaultTitleFontModifier;
-                    TitleFontModifierFocused = DefaultTitleFontModifierFocused;
                     TitleTextColor = DefaultTitleTextColor;
                     TitleTextColorFocused = DefaultTitleTextColorFocused;
-                    TitleLineSize = DefaultTitleLineSize;
                     TitleLineColorBegin = DefaultTitleLineColorBegin;
                     TitleLineColorEnd = DefaultTitleLineColorEnd;
                     TitleLineColorBeginFocused = DefaultTitleLineColorBeginFocused;
@@ -1403,13 +1516,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 case StyleType.LightFlat:
                     BackColor = Color.FromArgb(250, 250, 250);
                     BackColorFocused = Color.FromArgb(250, 250, 250);
-                    TitleLocation = DefaultTitleLocation;
-                    TitleFont = DefaultTitleFont;
-                    TitleFontModifier = new FontModifierInfo() { SizeRatio = 1.08f };
-                    TitleFontModifierFocused = new FontModifierInfo() { SizeRatio = 1.08f, Bold = true };
                     TitleTextColor = Color.Black;
                     TitleTextColorFocused = Color.Black;
-                    TitleLineSize = 2;
                     TitleLineColorBegin = Color.FromArgb(180, 208, 224);
                     TitleLineColorEnd = Color.Transparent;
                     TitleLineColorBeginFocused = Color.FromArgb(128, 189, 221);
@@ -1417,15 +1525,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
                 case StyleType.Dark3D:
                 case StyleType.DarkFlat:
-                    BackColor = Color.FromArgb(12, 12, 12);
-                    BackColorFocused = Color.FromArgb(12, 12, 12);
-                    TitleLocation = DefaultTitleLocation;
-                    TitleFont = DefaultTitleFont;
-                    TitleFontModifier = new FontModifierInfo() { SizeRatio = 1.08f };
-                    TitleFontModifierFocused = new FontModifierInfo() { SizeRatio = 1.08f, Bold = true };
+                    BackColor = Color.FromArgb(24, 24, 28);
+                    BackColorFocused = Color.FromArgb(26, 26, 32);
                     TitleTextColor = Color.White;
-                    TitleTextColorFocused = Color.Black;
-                    TitleLineSize = 2;
+                    TitleTextColorFocused = Color.White;
                     TitleLineColorBegin = Color.FromArgb(221, 194, 179);
                     TitleLineColorEnd = Color.Transparent;
                     TitleLineColorBeginFocused = Color.FromArgb(221, 165, 135);
@@ -1490,9 +1593,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Color IPanelStyle.TitleLineColorEnd { get { return GetValue<Color>(() => TitleLineColorEnd, () => Parent?.TitleLineColorEnd, () => StylePanel.TitleLineColorEnd, () => DefaultTitleLineColorEnd); } }
         Color IPanelStyle.TitleLineColorBeginFocused { get { return GetValue<Color>(() => TitleLineColorBeginFocused, () => Parent?.TitleLineColorBeginFocused, () => StylePanel.TitleLineColorBeginFocused, () => DefaultTitleLineColorBeginFocused); } }
         Color IPanelStyle.TitleLineColorEndFocused { get { return GetValue<Color>(() => TitleLineColorEndFocused, () => Parent?.TitleLineColorEndFocused, () => StylePanel.TitleLineColorEndFocused, () => DefaultTitleLineColorEndFocused); } }
-
-        Color IPanelStyle.GetBackColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((ITextBorderStyle)this).BackColor, () => ((ITextBorderStyle)this).BackColorDisabled, () => ((ITextBorderStyle)this).BackColorMouseOn, () => ((ITextBorderStyle)this).BackColorMouseDown); }
-
+        Color IPanelStyle.GetBackColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((IPanelStyle)this).BackColor, () => ((IPanelStyle)this).BackColor, () => ((IPanelStyle)this).BackColor, () => ((IPanelStyle)this).BackColor, () => ((IPanelStyle)this).BackColorFocused); }
         #endregion
     }
     #endregion
@@ -1772,6 +1873,41 @@ namespace Asol.Tools.WorkScheduler.Components
         Color Border3DColorDark { get; }
 
     }
+    /// <summary>
+    /// Deklarace stylu obsahujícího základní fonty
+    /// </summary>
+    public interface IFontStyle
+    {
+        /// <summary>
+        /// Písmo pro obyčejné labely
+        /// </summary>
+        FontInfo FontLabel { get; }
+        /// <summary>
+        /// Písmo pro editor textu obyčejný, proporcionální písmo
+        /// </summary>
+        FontInfo FontTextEdit { get; }
+        /// <summary>
+        /// Písmo pro editor textu typu FixedSize
+        /// </summary>
+        FontInfo FontTextEditCode { get; }
+        /// <summary>
+        /// Písmo pro běžná tlačítka
+        /// </summary>
+        FontInfo FontButton { get; }
+        /// <summary>
+        /// Písmo pro titulky kapitol / skupin
+        /// </summary>
+        FontInfo FontTitle { get; }
+        /// <summary>
+        /// Písmo pro titulek tooltipu
+        /// </summary>
+        FontInfo FontToolTipTitle { get; }
+        /// <summary>
+        /// Písmo pro obsah tooltipu
+        /// </summary>
+        FontInfo FontToolTipText { get; }
+    }
+
     /// <summary>
     /// Deklarace stylu pro kreslení ToolTipu
     /// </summary>

@@ -288,10 +288,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public Font CreateNewFont()
         {
-            FontStyle fontStyle =
-                (this.Bold ? FontStyle.Bold : FontStyle.Regular) |
-                (this.Italic ? FontStyle.Italic : FontStyle.Regular) |
-                (this.Underline ? FontStyle.Underline : FontStyle.Regular);
+            System.Drawing.FontStyle fontStyle =
+                (this.Bold ? System.Drawing.FontStyle.Bold : System.Drawing.FontStyle.Regular) |
+                (this.Italic ? System.Drawing.FontStyle.Italic : System.Drawing.FontStyle.Regular) |
+                (this.Underline ? System.Drawing.FontStyle.Underline : System.Drawing.FontStyle.Regular);
             float emSize;
 
             if (this.FontFamilyName != null)

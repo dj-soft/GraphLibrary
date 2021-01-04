@@ -12,6 +12,7 @@ namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
     /// Obecný předek pro všechny prvky, které obsahují kolekci svých Child prvků.
+    /// Tato třída neobsahuje vizuální styl, protože je určena k implementaci konkrétních potomků a ti si budou definovat svůj konkrétní vizuální styl. Například <see cref="InteractiveLabeledContainer"/>.
     /// </summary>
     public class InteractiveContainer : InteractiveObject, IInteractiveItem, IInteractiveParent
     {
@@ -248,7 +249,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
         }
 
-        #region Vzhled objektu
+        #region Vizuální styl objektu
         /// <summary>
         /// Styl tohoto konkrétního panelu. 
         /// Zahrnuje veškeré vizuální vlastnosti.
@@ -277,27 +278,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected IPanelStyle StyleCurrent { get { return (this._Style ?? this.StyleParent ?? Styles.Panel); } }
         #endregion
-
-
         #region Vizuální vlastnosti containeru
-        /// <summary>
-        /// Barva pozadí this containeru v době, kdy má Focus.
-        /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
-        /// Při čtení má vždy hodnotu (nikdy není null).
-        /// </summary>
-        public virtual Color? BackColorFocus { get { return this.__BackColorFocus ?? this.BackColorFocusDefault; } set { this.__BackColorFocus = value; this.Invalidate(); } }
-        private Color? __BackColorFocus = null;
-        /// <summary>
-        /// Defaultní barva pozadí.
-        /// Hodnota Alpha vyjadřuje Morph koeficient z barvy ControlBackColor / BackColor.
-        /// </summary>
-        protected virtual Color BackColorFocusDefault { get { return Skin.Control.ControlFocusBackColor; } }
         /// <summary>
         /// Aktuální barva pozadí, používá se při kreslení. Potomek může přepsat...
         /// </summary>
-        protected override Color CurrentBackColor { get { return (this.HasFocus ? base.CurrentBackColor.Morph(this.BackColorFocus.Value) : base.CurrentBackColor); } }
+        protected override Color CurrentBackColor
+        {
+            get
+            {
+                var style = this.StyleCurrent;
+                var backColor = style.GetBackColor(this.InteractiveState);
+                return backColor;
+            }
+        }
         #endregion
-        #region TitleLabel a TitleLine
+        #region TitleLabel a TitleLine, a vizuální styly pro TitleLabel
         /// <summary>
         /// Obsahuje true, pokud je viditelný label <see cref="TitleLabel"/>.
         /// Pokud objekt není viditelný (<see cref="TitleLabelVisible"/> je false), pak objekt <see cref="TitleLabel"/> je null.
@@ -408,37 +403,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         private Line3D _TitleLine;
-        #endregion
-        #region Interaktivita
-        /// <summary>
-        /// Po vstupu Focusu do Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
-        /// (vložením <see cref="TitleFontModifierOnFocus"/> a <see cref="TitleTextColorOnFocus"/> do objektu <see cref="TitleLabel"/>).
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChangedFocusEnter(e);
-            if (TitleLabelVisible)
-            {
-                TitleLabel.StyleParent = TitleLabelStyleFocused;
-                TitleLabel.Invalidate();
-            }
-        }
-        /// <summary>
-        /// Po odchodu Focusu z Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
-        /// (odebráním <see cref="TitleFontModifierOnFocus"/> a <see cref="TitleTextColorOnFocus"/> z objektu <see cref="TitleLabel"/>).
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChangedFocusLeave(e);
-            if (TitleLabelVisible)
-            {
-                TitleLabel.StyleParent = TitleLabelStyle;
-                TitleLabel.Invalidate();
-            }
-            TitleLabel.Invalidate();
-        }
         /// <summary>
         /// Obsahuje aktualizovaný styl pro titulek panelu ve stavu bez focusu
         /// </summary>
@@ -479,6 +443,37 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         private static LabelStyle _TitleLabelStyleFocused;
+        #endregion
+        #region Interaktivita
+        /// <summary>
+        /// Po vstupu Focusu do Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
+        /// (vložením <see cref="TitleFontModifierOnFocus"/> a <see cref="TitleTextColorOnFocus"/> do objektu <see cref="TitleLabel"/>).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusEnter(e);
+            if (TitleLabelVisible)
+            {
+                TitleLabel.StyleParent = TitleLabelStyleFocused;
+                TitleLabel.Invalidate();
+            }
+        }
+        /// <summary>
+        /// Po odchodu Focusu z Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
+        /// (odebráním <see cref="TitleFontModifierOnFocus"/> a <see cref="TitleTextColorOnFocus"/> z objektu <see cref="TitleLabel"/>).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusLeave(e);
+            if (TitleLabelVisible)
+            {
+                TitleLabel.StyleParent = TitleLabelStyle;
+                TitleLabel.Invalidate();
+            }
+            TitleLabel.Invalidate();
+        }
         #endregion
     }
     #endregion

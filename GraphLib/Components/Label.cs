@@ -23,7 +23,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Alignment = ContentAlignment.MiddleLeft;
         }
         #endregion
-        #region Vzhled objektu
+        #region Vizuální styl objektu
         /// <summary>
         /// Styl tohoto konkrétního textboxu. 
         /// Zahrnuje veškeré vizuální vlastnosti.

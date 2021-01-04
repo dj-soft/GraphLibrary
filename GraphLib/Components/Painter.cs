@@ -5180,7 +5180,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 titleItem.ToolTipText = titleToolTip;
                 if (imageScalingSize.HasValue)
                     titleItem.Size = new Size(100, imageScalingSize.Value.Height + 4);
-                titleItem.Font = new Font(titleItem.Font, FontStyle.Bold);
+                titleItem.Font = new Font(titleItem.Font, System.Drawing.FontStyle.Bold);
                 titleItem.TextAlign = ContentAlignment.MiddleCenter;
                 menu.Items.Add(titleItem);
 
@@ -5211,7 +5211,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             bool isCheckable = false,
             bool isChecked = false,
             Color? backColor = null,
-            FontStyle? fontStyle = null,
+            System.Drawing.FontStyle? fontStyle = null,
             string name = null,
             object tag = null
             )

@@ -2455,7 +2455,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 title.ToolTipText = cmSet.ToolTip;
                 if (cmSet.ImageScalingSize.HasValue)
                     title.Size = new Size(100, cmSet.ImageScalingSize.Value.Height + 4);
-                title.Font = new Font(title.Font, FontStyle.Bold);
+                title.Font = new Font(title.Font, System.Drawing.FontStyle.Bold);
                 title.TextAlign = ContentAlignment.MiddleCenter;
                 menu.Items.Add(title);
 
