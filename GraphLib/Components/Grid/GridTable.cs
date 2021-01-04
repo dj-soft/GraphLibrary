@@ -7,7 +7,7 @@ using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
 using WinForm = System.Windows.Forms;
 
-namespace Asol.Tools.WorkScheduler.Components.Grid
+namespace Asol.Tools.WorkScheduler.Components.Grids
 {
     // Filosofický základ pro obsluhu různých událostí: Tabulka gridu je líná jako veš! 
     // Ta je tak líná, že když se dojde ke změně něčeho (třeba výšky některé tabulky), tak ta změna (v property Table.Height) zavolá "nahoru" že došlo k dané změně,
@@ -1686,16 +1686,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Linky grafu : koordinační objekt GTimeGraphLinkArray
         /// <summary>
-        /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="Graph.GTimeGraphLinkItem"/>.
+        /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="Graphs.TimeGraphLinkItem"/>.
         /// Tento prvek slouží jednotlivým grafům.
         /// </summary>
-        public Graph.GTimeGraphLinkArray GraphLinkArray
+        public Graphs.TimeGraphLinkArray GraphLinkArray
         {
             get
             {
                 if (this._GraphLinkArray == null)
                 {   // Dosud nemáme referenci na GTimeGraphLinkArray, vytvoříme ji a zajistíme, že bude součástí našich Childs prvků:
-                    this._GraphLinkArray = new Graph.GTimeGraphLinkArray(this);
+                    this._GraphLinkArray = new Graphs.TimeGraphLinkArray(this);
                     this.GraphLinkArrayIsOnTable = true;
                     this.InvalidateData(InvalidateItem.TableItems);
                 }
@@ -1709,9 +1709,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected bool GraphLinkArrayIsOnTable { get; private set; }
         /// <summary>
-        /// Instance prvku <see cref="Graph.GTimeGraphLinkArray"/>, ať už je naše nebo cizí
+        /// Instance prvku <see cref="Graphs.TimeGraphLinkArray"/>, ať už je naše nebo cizí
         /// </summary>
-        private Graph.GTimeGraphLinkArray _GraphLinkArray;
+        private Graphs.TimeGraphLinkArray _GraphLinkArray;
         #endregion
         #region TableSplitter :  splitter umístěný dole pod tabulkou, je součástí Parenta
         /// <summary>
@@ -2733,7 +2733,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Draw : podpora pro kreslení obsahu řádků (styl, pozadí, gridlines, hodnota)
         /// <summary>
         /// Metoda zajistí vykreslení pasivního obsahu dané buňky nebo řádku daného typu.
-        /// Aktivní obsah (v současné době <see cref="Graph.ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
+        /// Aktivní obsah (v současné době <see cref="Graphs.ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
         /// Zdejší metoda pro něj pouze vykreslí pozadí řádku pod grafem.
         /// </summary>
         /// <param name="e"></param>
@@ -2755,10 +2755,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     this.DrawIDrawItem(e, boundsAbsolute, row, cell, value as IDrawItem);
                     break;
                 case TableValueType.ITimeInteractiveGraph:
-                    this.DrawContentInteractiveTimeGraph(e, boundsAbsolute, row, cell, value as Components.Graph.ITimeInteractiveGraph);
+                    this.DrawContentInteractiveTimeGraph(e, boundsAbsolute, row, cell, value as Components.Graphs.ITimeInteractiveGraph);
                     break;
                 case TableValueType.ITimeGraph:
-                    this.DrawContentTimeGraph(e, boundsAbsolute, row, cell, value as Components.Graph.ITimeGraph);
+                    this.DrawContentTimeGraph(e, boundsAbsolute, row, cell, value as Components.Graphs.ITimeGraph);
                     break;
                 case TableValueType.Image:
                     this.DrawContentImage(e, boundsAbsolute, row, cell, value as Image);
@@ -2887,7 +2887,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="row"></param>
         /// <param name="cell"></param>
         /// <param name="graph"></param>
-        private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graph.ITimeInteractiveGraph graph)
+        private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graphs.ITimeInteractiveGraph graph)
         {
             this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
@@ -2906,7 +2906,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="row"></param>
         /// <param name="cell"></param>
         /// <param name="graph"></param>
-        private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graph.ITimeGraph graph)
+        private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graphs.ITimeGraph graph)
         {
             this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 

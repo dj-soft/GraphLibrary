@@ -3367,23 +3367,23 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             if (!args.BackColor.HasValue) return;
             switch (args.BackEffectStyle)
             {
-                case Graph.TimeGraphElementBackEffectStyle.Pipe:
+                case Graphs.TimeGraphElementBackEffectStyle.Pipe:
                     GPainter.GraphItemDrawBackPipe(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
-                case Graph.TimeGraphElementBackEffectStyle.Flat:
+                case Graphs.TimeGraphElementBackEffectStyle.Flat:
                     GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
-                case Graph.TimeGraphElementBackEffectStyle.Simple:
+                case Graphs.TimeGraphElementBackEffectStyle.Simple:
                     GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
-                case Graph.TimeGraphElementBackEffectStyle.Default:
+                case Graphs.TimeGraphElementBackEffectStyle.Default:
                 default:
                     GPainter.DrawEffect3D(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.Effect3D, null);
                     break;
             }
         }
         /// <summary>
-        /// Vykreslí pozadí prvku v režimu <see cref="Graph.TimeGraphElementBackEffectStyle.Pipe"/>
+        /// Vykreslí pozadí prvku v režimu <see cref="Graphs.TimeGraphElementBackEffectStyle.Pipe"/>
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
@@ -3456,7 +3456,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         }
         private static Dictionary<string, ColorBlend> _ColorBlendPipe;
         /// <summary>
-        /// Vykreslí pozadí prvku v režimu <see cref="Graph.TimeGraphElementBackEffectStyle.Flat"/>
+        /// Vykreslí pozadí prvku v režimu <see cref="Graphs.TimeGraphElementBackEffectStyle.Flat"/>
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
@@ -3496,13 +3496,13 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             if (!args.HasRatio) return;
             switch (args.RatioStyle)
             {
-                case Graph.TimeGraphElementRatioStyle.VerticalFill:
+                case Graphs.TimeGraphElementRatioStyle.VerticalFill:
                     GraphItemDrawRatioVertical(args, boundsParts, 0);
                     break;
-                case Graph.TimeGraphElementRatioStyle.HorizontalFill:
+                case Graphs.TimeGraphElementRatioStyle.HorizontalFill:
                     GraphItemDrawRatioHorizontal(args, boundsParts, 0);
                     break;
-                case Graph.TimeGraphElementRatioStyle.HorizontalInner:
+                case Graphs.TimeGraphElementRatioStyle.HorizontalInner:
                     GraphItemDrawRatioHorizontal(args, boundsParts, 3);
                     break;
             }
@@ -3670,7 +3670,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             Color? borderColor = GraphItemGetBorderColor(args);
             if (borderColor.HasValue)
             {
-                bool apply3DEffect = (args.BackEffectStyle != Graph.TimeGraphElementBackEffectStyle.Simple);   // Styl Simple potlačuje 3D efekt
+                bool apply3DEffect = (args.BackEffectStyle != Graphs.TimeGraphElementBackEffectStyle.Simple);   // Styl Simple potlačuje 3D efekt
                 Color colorTop = (apply3DEffect ? Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f) : borderColor.Value);
                 Color colorBottom = (apply3DEffect ? Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f) : borderColor.Value);
                 args.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
@@ -3694,7 +3694,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <summary>
         /// Vrátí barvu pro kreslení linky okolo prvku.
         /// Akceptuje příznaky <see cref="GraphItemArgs.IsSelected"/> a <see cref="GraphItemArgs.IsFramed"/>.
-        /// Pro tvar prvku <see cref="GraphItemArgs.BackEffectStyle"/> == <see cref="Graph.TimeGraphElementBackEffectStyle.Simple"/> vrací null = linka se nekreslí.
+        /// Pro tvar prvku <see cref="GraphItemArgs.BackEffectStyle"/> == <see cref="Graphs.TimeGraphElementBackEffectStyle.Simple"/> vrací null = linka se nekreslí.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -3702,7 +3702,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         {
             if (args.IsSelected) return Skin.Graph.ElementSelectedLineColor;
             if (args.IsFramed) return Skin.Graph.ElementFramedLineColor;
-            if (args.BackEffectStyle == Graph.TimeGraphElementBackEffectStyle.Simple)
+            if (args.BackEffectStyle == Graphs.TimeGraphElementBackEffectStyle.Simple)
             {   // Simple prvek má barvu okraje pouze tehdy, když je explicitn definována v LineColor:
                 if (args.LineColor.HasValue) return (args.LineColor.Value.IsEmpty ? (Color?)null : args.LineColor);    // Pokud LineColor = Empty, pak se nekreslí.
                 // Pokud Simple prvek nemá definovánu barvu LineColor, pak se jeho okraj nekreslí:
@@ -3820,7 +3820,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             /// <summary>
             /// Styl efektu pozadí prvku
             /// </summary>
-            public Components.Graph.TimeGraphElementBackEffectStyle BackEffectStyle { get; set; }
+            public Components.Graphs.TimeGraphElementBackEffectStyle BackEffectStyle { get; set; }
             /// <summary>
             /// 3D effekt
             /// </summary>
@@ -3884,7 +3884,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             /// <summary>
             /// Styl kreslení Ratio: Vertical = odspodu nahoru, Horizontal = Zleva doprava
             /// </summary>
-            public Components.Graph.TimeGraphElementRatioStyle RatioStyle { get; set; }
+            public Components.Graphs.TimeGraphElementRatioStyle RatioStyle { get; set; }
             /// <summary>
             /// Barva linky, kreslená v úrovni Ratio.
             /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.

@@ -10,8 +10,8 @@ using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
-using Asol.Tools.WorkScheduler.Components.Graph;
-using Asol.Tools.WorkScheduler.Components.Grid;
+using Asol.Tools.WorkScheduler.Components.Graphs;
+using Asol.Tools.WorkScheduler.Components.Grids;
 using Noris.LCS.Base.WorkScheduler;
 using R = Noris.LCS.Base.WorkScheduler.Resources;
 
@@ -1345,10 +1345,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 toolBarItem.IsVisible = isVisible;
                 callRefresh = true;
             }
-            else if (control is GTimeGraphLinkArray)
+            else if (control is TimeGraphLinkArray)
             {
-                GTimeGraphLinkArray graphLinkArray = control as GTimeGraphLinkArray;
-                graphLinkArray.CurrentLinksMode = (isVisible ? GTimeGraphLinkMode.All : graphLinkArray.DefaultLinksMode);
+                TimeGraphLinkArray graphLinkArray = control as TimeGraphLinkArray;
+                graphLinkArray.CurrentLinksMode = (isVisible ? TimeGraphLinkMode.All : graphLinkArray.DefaultLinksMode);
                 callRefresh = true;
             }
         }
@@ -1881,7 +1881,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private DateTime? _AdjustSearchNearItemTimeSide(GraphItemChangeInfo moveInfo, SearchNearItemMode searchLevel, int distance, RangeSide nearSide)
         {
-            GTimeGraph targetGraph = moveInfo.TargetGraph;
+            TimeGraph targetGraph = moveInfo.TargetGraph;
             if (targetGraph == null) return null;
 
             DateTime timePoint = (nearSide == RangeSide.Begin ? moveInfo.TimeRangeFinal.Begin.Value : moveInfo.TimeRangeFinal.End.Value);
@@ -1890,7 +1890,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DateTime? end = moveInfo.GetTimeForPosition(xc + distance);
             TimeRange timeWindow = new TimeRange(begin, end);
 
-            GTimeGraphGroup nearGroup;
+            TimeGraphGroup nearGroup;
             DateTime? nearTime = null;
 
             switch (searchLevel)
@@ -1913,7 +1913,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="nearSide">Strana našeho přesouvaného prvku</param>
         /// <param name="searchMode">Režim hledání</param>
         /// <returns></returns>
-        private DateTime? _AdjustSearchTimeSelector(GTimeGraphGroup group, GraphItemChangeInfo moveInfo, RangeSide nearSide, SearchNearItemMode searchMode)
+        private DateTime? _AdjustSearchTimeSelector(TimeGraphGroup group, GraphItemChangeInfo moveInfo, RangeSide nearSide, SearchNearItemMode searchMode)
         {
             int groupId = moveInfo.DragGroupId;
             int itemId = moveInfo.DragItemId;
@@ -1941,7 +1941,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return null;
         }
         /// <summary>
-        /// Režim hledání vhodné grupy a jejího času v rámci metody <see cref="_AdjustSearchTimeSelector(GTimeGraphGroup, GraphItemChangeInfo, RangeSide, SearchNearItemMode)"/>
+        /// Režim hledání vhodné grupy a jejího času v rámci metody <see cref="_AdjustSearchTimeSelector(TimeGraphGroup, GraphItemChangeInfo, RangeSide, SearchNearItemMode)"/>
         /// </summary>
         private enum SearchNearItemMode
         {
@@ -3182,7 +3182,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ProcessResponseData(GuiResponse guiResponse)
         {
             Dictionary<string, MainDataTable> mainTableDict = this.DataTables.Where(t => t.TableName != null).GetDictionary(t => t.TableName, true);
-            Dictionary<uint, GTimeGraph> repaintGraphDict = new Dictionary<uint, GTimeGraph>();
+            Dictionary<uint, TimeGraph> repaintGraphDict = new Dictionary<uint, TimeGraph>();
             this._ProcessResponseCommon(guiResponse.Common, mainTableDict);
             this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
             this._ProcessResponseTime(guiResponse.TimeAxisValue);
@@ -3208,7 +3208,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {   // Odebrat Linky ze všech tabulek:
                 mainTableDict.Values.ForEachItem(table =>
                 {
-                    GTimeGraphLinkArray graphLink = table.GraphLinkArray;
+                    TimeGraphLinkArray graphLink = table.GraphLinkArray;
                     if (graphLink != null)
                         graphLink.Clear();
                 });
@@ -3223,7 +3223,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {   // Najít prvky, které jsou Selected, a obnovit jejich Linky:
                 foreach (var item in this._MainControl.Selector.SelectedItems)
                 {
-                    GTimeGraphItem graphItem = item as GTimeGraphItem;
+                    TimeGraphItem graphItem = item as TimeGraphItem;
                     if (graphItem != null)
                         graphItem.ActivateLink(false, true);
                 }
@@ -3258,7 +3258,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="refreshRows"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseRefreshRows(IEnumerable<GuiRefreshRow> refreshRows, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseRefreshRows(IEnumerable<GuiRefreshRow> refreshRows, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (refreshRows == null) return;
             foreach (GuiRefreshRow refreshRow in refreshRows)
@@ -3275,7 +3275,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="refreshGraphs"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseRefreshGraphs(IEnumerable<GuiRefreshGraph> refreshGraphs, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseRefreshGraphs(IEnumerable<GuiRefreshGraph> refreshGraphs, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (refreshGraphs == null) return;
             foreach (GuiRefreshGraph refreshGraph in refreshGraphs)
@@ -3292,7 +3292,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="refreshGraphItems"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseRefreshGraphItems(IEnumerable<GuiRefreshGraphItem> refreshGraphItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseRefreshGraphItems(IEnumerable<GuiRefreshGraphItem> refreshGraphItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (refreshGraphItems == null) return;
             foreach (GuiRefreshGraphItem refreshGraphItem in refreshGraphItems)
@@ -3309,7 +3309,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="changeLinks">Změněné vztahy</param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseUpdateLinks(IEnumerable<GuiGraphLink> changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseUpdateLinks(IEnumerable<GuiGraphLink> changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (changeLinks == null) return;
             var changeGroups = changeLinks.Where(l => l.TableName != null).GroupBy(l => l.TableName);
@@ -3326,7 +3326,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="expandRows">Řádky, které mají být Expanded</param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseExpandRows(IEnumerable<GuiGridRowId> expandRows, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseExpandRows(IEnumerable<GuiGridRowId> expandRows, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (expandRows == null) return;
             foreach (GuiGridRowId expandRow in expandRows)
@@ -3343,7 +3343,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="refreshProperties">Řádky, které mají být Expanded</param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="repaintGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseRefreshProperties(IEnumerable<GuiRefreshProperty> refreshProperties, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private void _ProcessResponseRefreshProperties(IEnumerable<GuiRefreshProperty> refreshProperties, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (refreshProperties == null) return;
             foreach (GuiRefreshProperty refreshProperty in refreshProperties)
@@ -3358,7 +3358,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda provede Refresh na všech grafech, které se nacházejí v parametru refreshGraphDict.
         /// </summary>
         /// <param name="repaintGraphs"></param>
-        private void _ProcessResponseRepaintGraphs(IEnumerable<GTimeGraph> repaintGraphs)
+        private void _ProcessResponseRepaintGraphs(IEnumerable<TimeGraph> repaintGraphs)
         {
             repaintGraphs.ForEachItem(g => g.Refresh());
         }
@@ -3366,7 +3366,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zajistí nové vyhodnocení vztahů Parent - Child v těch tabulkách, kde došlo ke změně v grafech
         /// </summary>
         /// <param name="repaintGraphs"></param>
-        private void _ProcessResponseRepaintParentChilds(IEnumerable<GTimeGraph> repaintGraphs)
+        private void _ProcessResponseRepaintParentChilds(IEnumerable<TimeGraph> repaintGraphs)
         {
             this.DataTables.ForEachItem(t => t.PrepareDynamicChilds(true));
 
@@ -3389,7 +3389,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Provede fyzický Refresh celého Controlu
         /// </summary>
         /// <param name="repaintGraphs"></param>
-        private void _ProcessResponseRepaintControl(IEnumerable<GTimeGraph> repaintGraphs)
+        private void _ProcessResponseRepaintControl(IEnumerable<TimeGraph> repaintGraphs)
         {
             this._MainControl.Refresh();
         }
@@ -3901,7 +3901,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Graf, v němž byl umístěn prvek na začátku.
         /// Může být tentýž, jako cílový (<see cref="TargetGraph"/>).
         /// </summary>
-        public GTimeGraph SourceGraph { get; set; }
+        public TimeGraph SourceGraph { get; set; }
         /// <summary>
         /// Řádek, na němž byl umístěn prvek na začátku.
         /// Může být tentýž, jako cílový (<see cref="TargetRow"/>).
@@ -3925,7 +3925,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Graf, kam má být prvek přemístěn.
         /// Pozor, může být null - když přesun prvku se provádí na místo, kde žádný graf není!
         /// </summary>
-        public GTimeGraph TargetGraph { get; set; }
+        public TimeGraph TargetGraph { get; set; }
         /// <summary>
         /// Cílový řádek, kam má být prvek přemístěn.
         /// Pozor, může být null - když přesun prvku se provádí na místo, kde žádný graf není!

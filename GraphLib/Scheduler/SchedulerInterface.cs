@@ -8,7 +8,7 @@ using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
-using Asol.Tools.WorkScheduler.Components.Graph;
+using Asol.Tools.WorkScheduler.Components.Graphs;
 using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler

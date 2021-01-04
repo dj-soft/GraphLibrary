@@ -7,26 +7,26 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asol.Tools.WorkScheduler.Components.Graph
+namespace Asol.Tools.WorkScheduler.Components.Graphs
 {
     #region GTimeGraphLinkArray : Vizuální pole, obsahující prvky GTimeGraphLinkItem
     /// <summary>
-    /// GTimeGraphLinkArray : Vizuální pole, obsahující prvky <see cref="GTimeGraphLinkItem"/>. Jde o <see cref="InteractiveObject"/>, 
-    /// který nemá implementovanou interaktivitu, ale je součástí tabulky <see cref="Grid.GTable"/> 
+    /// <see cref="TimeGraphLinkArray"/> : Vizuální pole, obsahující prvky <see cref="TimeGraphLinkItem"/>. Jde o <see cref="InteractiveObject"/>, 
+    /// který nemá implementovanou interaktivitu, ale je součástí tabulky <see cref="Grids.GTable"/> 
     /// (anebo je členem vizuálních prvků hlavního controlu Host), 
     /// a je vykreslován do vrstvy Dynamic.
     /// Graf samotný obsahuje referenci na tento objekt, referenci dohledává on-demand a případně ji vytváří a umisťuje tak, 
     /// aby objekt byl dostupný i dalším grafům.
     /// Toto jedno pole je společné všem grafům jedné tabulky (nebo jednoho hostitele).
     /// </summary>
-    public class GTimeGraphLinkArray : InteractiveObject
+    public class TimeGraphLinkArray : InteractiveObject
     {
         #region Konstrukce, úložiště linků, reference na ownera (tabulka / graf)
         /// <summary>
         /// Konstruktor pro graf
         /// </summary>
         /// <param name="ownerGraph"></param>
-        public GTimeGraphLinkArray(GTimeGraph ownerGraph)
+        public TimeGraphLinkArray(TimeGraph ownerGraph)
             : this()
         {
             this._OwnerGraph = ownerGraph;
@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Konstruktor pro tabulku
         /// </summary>
         /// <param name="ownerGTable"></param>
-        public GTimeGraphLinkArray(Grid.GTable ownerGTable)
+        public TimeGraphLinkArray(Grids.GTable ownerGTable)
             : this()
         {
             this._OwnerGTable = ownerGTable;
@@ -43,7 +43,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeGraphLinkArray()
+        public TimeGraphLinkArray()
         {
             this._LinkDict = new Dictionary<UInt64, LinkInfo>();
         }
@@ -66,7 +66,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Graf, jehož jsme koordinátorem (může být null?)
         /// </summary>
-        private GTimeGraph _OwnerGraph;
+        private TimeGraph _OwnerGraph;
         /// <summary>
         /// true pokud this objekt je platný pro celou GTable
         /// </summary>
@@ -74,13 +74,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Tabulka, jíž jsme koordinátorem (může být null?)
         /// </summary>
-        private Grid.GTable _OwnerGTable;
+        private Grids.GTable _OwnerGTable;
         #endregion
         #region Aktivní role = získání linků z datového zdroje
         /// <summary>
         /// Určuje aktuálně platný režim zobrazení spojovacích čar mezi prvky.
         /// </summary>
-        public GTimeGraphLinkMode CurrentLinksMode
+        public TimeGraphLinkMode CurrentLinksMode
         {
             get { return this._CurrentLinksMode; }
             set
@@ -89,12 +89,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this._CurrentLinksMode = value;
             }
         }
-        private GTimeGraphLinkMode _CurrentLinksMode;
+        private TimeGraphLinkMode _CurrentLinksMode;
         /// <summary>
         /// Určuje výchozí režim zobrazení spojovacích čar mezi prvky.
         /// Jeho setování vede k setování i do <see cref="CurrentLinksMode"/>, a to provede načtení linků podle zadaného režimu.
         /// </summary>
-        public GTimeGraphLinkMode DefaultLinksMode
+        public TimeGraphLinkMode DefaultLinksMode
         {
             get { return this._DefaultLinksMode; }
             set
@@ -103,7 +103,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.CurrentLinksMode = value;
             }
         }
-        private GTimeGraphLinkMode _DefaultLinksMode;
+        private TimeGraphLinkMode _DefaultLinksMode;
         /// <summary>
         /// Zajistí aktuální načtení linků pro režim <see cref="CurrentLinksMode"/>
         /// </summary>
@@ -117,7 +117,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="clear">Nulovat aktuální soupis linků?</param>
         /// <param name="linksMode">Režim pro zobrazení nových linků</param>
-        protected void ReadLinksForMode(bool clear, GTimeGraphLinkMode linksMode)
+        protected void ReadLinksForMode(bool clear, TimeGraphLinkMode linksMode)
         {
             if (clear)
                 this.Clear();
@@ -125,8 +125,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             ITimeGraphLinkDataSource linkDataSource = this.LinkDataSource;
             if (linkDataSource == null) return;
 
-            GTimeGraphLinkMode itemMode = linksMode;
-            if (linksMode.HasFlag(GTimeGraphLinkMode.Allways)) itemMode = GTimeGraphLinkMode.Allways;
+            TimeGraphLinkMode itemMode = linksMode;
+            if (linksMode.HasFlag(TimeGraphLinkMode.Allways)) itemMode = TimeGraphLinkMode.Allways;
 
             CreateAllLinksArgs args = null;
 
@@ -134,16 +134,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             {
                 // Tato varianta nemusí řešit režim Linků GTimeGraphLinkMode.MouseOver, protože linky MouseOver naskočí samy při pohybu myši :-).
                 // Primárně jde o rozlišení Allways / Selected / None:
-                if (linksMode.HasFlag(GTimeGraphLinkMode.Allways))
+                if (linksMode.HasFlag(TimeGraphLinkMode.Allways))
                 {
-                    args = new CreateAllLinksArgs(GTimeGraphLinkMode.Allways);
+                    args = new CreateAllLinksArgs(TimeGraphLinkMode.Allways);
                     linkDataSource.CreateLinks(args);
                 }
-                else if (linksMode.HasFlag(GTimeGraphLinkMode.Selected))
+                else if (linksMode.HasFlag(TimeGraphLinkMode.Selected))
                 {
                     if (this.Host != null && this.Host.Selector != null)
                     {
-                        args = new CreateAllLinksArgs(GTimeGraphLinkMode.Selected, this.Host.Selector.SelectedItems);
+                        args = new CreateAllLinksArgs(TimeGraphLinkMode.Selected, this.Host.Selector.SelectedItems);
                         linkDataSource.CreateLinks(args);
                     }
                 }
@@ -163,12 +163,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="links">Souhrn linků k přidání</param>
         /// <param name="mode">Důvod zobrazení</param>
-        public void AddLinks(IEnumerable<GTimeGraphLinkItem> links, GTimeGraphLinkMode mode)
+        public void AddLinks(IEnumerable<TimeGraphLinkItem> links, TimeGraphLinkMode mode)
         {
             if (links == null) return;
-            if (mode == GTimeGraphLinkMode.None) return;
+            if (mode == TimeGraphLinkMode.None) return;
             Dictionary<UInt64, LinkInfo> linkDict = this._LinkDict;
-            foreach (GTimeGraphLinkItem link in links)
+            foreach (TimeGraphLinkItem link in links)
             {
                 if (link == null) continue;
                 UInt64 key = link.Key;
@@ -189,20 +189,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Odebere dané linky z paměti, pokud v ní jsou a pokud již neexistuje důvod pro jejich zobrazování.
-        /// Důvod zobrazení: každý link v sobě eviduje souhrn důvodů, pro které byl zobrazen (metoda <see cref="AddLinks(IEnumerable{GTimeGraphLinkItem}, GTimeGraphLinkMode)"/>),
+        /// Důvod zobrazení: každý link v sobě eviduje souhrn důvodů, pro které byl zobrazen (metoda <see cref="AddLinks(IEnumerable{TimeGraphLinkItem}, TimeGraphLinkMode)"/>),
         /// důvody z opakovaných volání této metody se průběžně sčítají, a při odebírání se odečítají.
         /// A až tam nezbyde žádný, bude link ze seznamu odebrán.
         /// </summary>
         /// <param name="links">Souhrn linků k odebrání</param>
         /// <param name="mode">Důvod, pro který byl link zobrazen</param>
-        public void RemoveLinks(IEnumerable<GTimeGraphLinkItem> links, GTimeGraphLinkMode mode)
+        public void RemoveLinks(IEnumerable<TimeGraphLinkItem> links, TimeGraphLinkMode mode)
         {
             if (links == null) return;
-            if (mode == GTimeGraphLinkMode.None) return;
+            if (mode == TimeGraphLinkMode.None) return;
             bool repaint = false;
-            GTimeGraphLinkMode reMode = GTimeGraphLinkMode.All ^ mode;         // reMode nyní obsahuje XOR požadovanou hodnotu, použije se pro AND nulování
+            TimeGraphLinkMode reMode = TimeGraphLinkMode.All ^ mode;         // reMode nyní obsahuje XOR požadovanou hodnotu, použije se pro AND nulování
             Dictionary<UInt64, LinkInfo> linkDict = this._LinkDict;
-            foreach (GTimeGraphLinkItem link in links)
+            foreach (TimeGraphLinkItem link in links)
             {
                 if (link == null) continue;
                 UInt64 key = link.Key;
@@ -212,7 +212,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
                 // Z Důvodu zobrazení odebereme zadaný režim, a pokud zůstane None pak odebereme celý prvek Linku:
                 linkInfo.Mode &= reMode;                                       // Vstupní hodnota (mode) bude z hodnoty linkInfo.Mode vynulována
-                if (linkInfo.Mode == GTimeGraphLinkMode.None)                  // A pokud v Mode nezbyla žádná hodnota, link odebereme.
+                if (linkInfo.Mode == TimeGraphLinkMode.None)                  // A pokud v Mode nezbyla žádná hodnota, link odebereme.
                 {
                     linkDict.Remove(key);
                     repaint = true;
@@ -237,7 +237,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Souhrn všech aktuálních linků, bez dalších informací
         /// </summary>
-        public IEnumerable<GTimeGraphLinkItem> Links { get { return this._LinkDict.Values.Select(l => l.Link); } }
+        public IEnumerable<TimeGraphLinkItem> Links { get { return this._LinkDict.Values.Select(l => l.Link); } }
         /// <summary>
         /// Metoda vrací poměr průhlednosti pro daný režim linku.
         /// Průhlednost Linku = hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva).
@@ -245,18 +245,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="itemLinkMode"></param>
         /// <returns></returns>
-        internal float GetVisibleRatioForMode(GTimeGraphLinkMode itemLinkMode)
+        internal float GetVisibleRatioForMode(TimeGraphLinkMode itemLinkMode)
         {
-            bool isMouseOver = itemLinkMode.HasFlag(GTimeGraphLinkMode.MouseOver);
+            bool isMouseOver = itemLinkMode.HasFlag(TimeGraphLinkMode.MouseOver);
 
-            GTimeGraphLinkMode currentMode = this.CurrentLinksMode;
-            if (currentMode.HasFlag(GTimeGraphLinkMode.Allways))
+            TimeGraphLinkMode currentMode = this.CurrentLinksMode;
+            if (currentMode.HasFlag(TimeGraphLinkMode.Allways))
             {   // Pokud aktuálně vidím všechny Linky, tak budu ignorovat bit Selected, a použiju dvě úrovně průhlednosti - podle přítomnosti myši nad prvkem:
                 return (isMouseOver ? LinkVisibleRatioAllwaysWithMouse : LinkVisibleRatioAllwaysStandard);
             }
 
             // Nejsou zapnuty všechny linky dle režimu, tedy zobrazuji jen Linky pro prvky Selected + MouseOver:
-            bool isSelected = itemLinkMode.HasFlag(GTimeGraphLinkMode.Selected);
+            bool isSelected = itemLinkMode.HasFlag(TimeGraphLinkMode.Selected);
             return (isSelected ?
                      (isMouseOver ? LinkVisibleRatioSelectedWithMouse : LinkVisibleRatioSelectedStandard) :
                      (isMouseOver ? LinkVisibleRatioOnlyWithMouse : LinkVisibleRatioNone));
@@ -298,23 +298,23 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// </summary>
             /// <param name="owner">Vlastník grafického linku</param>
             /// <param name="link">Data o linku</param>
-            public LinkInfo(GTimeGraphLinkArray owner, GTimeGraphLinkItem link)
+            public LinkInfo(TimeGraphLinkArray owner, TimeGraphLinkItem link)
             {
                 this._Owner = owner;
                 this._Link = link;
-                this._Mode = GTimeGraphLinkMode.None;
+                this._Mode = TimeGraphLinkMode.None;
             }
-            private GTimeGraphLinkArray _Owner;
-            private GTimeGraphLinkItem _Link;
-            private GTimeGraphLinkMode _Mode;
+            private TimeGraphLinkArray _Owner;
+            private TimeGraphLinkItem _Link;
+            private TimeGraphLinkMode _Mode;
             /// <summary>
             /// Objekt vztahu
             /// </summary>
-            public GTimeGraphLinkItem Link { get { return this._Link; } }
+            public TimeGraphLinkItem Link { get { return this._Link; } }
             /// <summary>
             /// Důvod zobrazení: zadává ten, kdo si přeje zobrazit
             /// </summary>
-            public GTimeGraphLinkMode Mode { get { return this._Mode; } set { this._Mode = value; } }
+            public TimeGraphLinkMode Mode { get { return this._Mode; } set { this._Mode = value; } }
             /// <summary>
             /// Průhlednost Linku:
             /// hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva).
@@ -400,7 +400,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             if (this._OwnerGTable != null)
             {   // Prostor pro data v rámci tabulky:
-                Rectangle dataBounds = this._OwnerGTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+                Rectangle dataBounds = this._OwnerGTable.GetAbsoluteBoundsForArea(Grids.TableAreaType.RowData);
                 clip = Rectangle.Intersect(clip, dataBounds);
 
                 // Pokud v tabulce najdu alespoň jeden sloupec typu Graf (používá časovou osu)...
@@ -431,7 +431,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// Důvod zobrazení Linku
     /// </summary>
     [Flags]
-    public enum GTimeGraphLinkMode
+    public enum TimeGraphLinkMode
     {
         /// <summary>
         /// Není důvod
@@ -459,8 +459,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         All = MouseOver | Selected | Allways
     }
     /// <summary>
-    /// Deklarace zdroje dat pro linky v situaci, kdy sám prvek <see cref="GTimeGraphLinkArray"/> si potřebuje vyžádat soupis vztahů = tedy když je aktivní on.
-    /// Typicky to nastává po nasetování hodnoty do <see cref="GTimeGraphLinkArray.CurrentLinksMode"/>.
+    /// Deklarace zdroje dat pro linky v situaci, kdy sám prvek <see cref="TimeGraphLinkArray"/> si potřebuje vyžádat soupis vztahů = tedy když je aktivní on.
+    /// Typicky to nastává po nasetování hodnoty do <see cref="TimeGraphLinkArray.CurrentLinksMode"/>.
     /// </summary>
     public interface ITimeGraphLinkDataSource
     {
@@ -480,16 +480,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="linksMode"></param>
         /// <param name="selectedItems"></param>
-        public CreateAllLinksArgs(GTimeGraphLinkMode linksMode, IInteractiveItem[] selectedItems = null)
+        public CreateAllLinksArgs(TimeGraphLinkMode linksMode, IInteractiveItem[] selectedItems = null)
         {
             this.LinksMode = linksMode;
             this.SelectedItems = selectedItems;
-            this.Links = new List<GTimeGraphLinkItem>();
+            this.Links = new List<TimeGraphLinkItem>();
         }
         /// <summary>
         /// Požadovaný režim linků
         /// </summary>
-        public GTimeGraphLinkMode LinksMode { get; private set; }
+        public TimeGraphLinkMode LinksMode { get; private set; }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně selectovaných prvků (=nejen pro daný graf)
         /// </summary>
@@ -497,21 +497,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Pole linků. Je inicializováno na prázdný List = lze do něj vkládat i odebírat prvky, ale nelze vložit novou instanci.
         /// </summary>
-        public List<GTimeGraphLinkItem> Links { get; private set; }
+        public List<TimeGraphLinkItem> Links { get; private set; }
     }
     #endregion
     #region class GTimeGraphLink : Datová třída, reprezentující spojení dvou prvků grafu.
     /// <summary>
-    /// GTimeGraphLink : Datová třída, reprezentující spojení dvou prvků grafu.
+    /// <see cref="TimeGraphLinkItem"/> : Datová třída, reprezentující spojení dvou prvků grafu.
     /// Nejde v pravém smyslu o interaktivní objekt.
     /// </summary>
-    public class GTimeGraphLinkItem
+    public class TimeGraphLinkItem
     {
         #region Konstrukce a základní data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeGraphLinkItem()
+        public TimeGraphLinkItem()
         { }
         /// <summary>
         /// Vizualizace
@@ -528,7 +528,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vizuální data prvku předchozího
         /// </summary>
-        public GTimeGraphItem ItemPrev { get; set; }
+        public TimeGraphItem ItemPrev { get; set; }
         /// <summary>
         /// ID prvku následujícího
         /// </summary>
@@ -536,7 +536,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vizuální data prvku následujícího
         /// </summary>
-        public GTimeGraphItem ItemNext { get; set; }
+        public TimeGraphItem ItemNext { get; set; }
         /// <summary>
         /// Druh spojení prvků: false = spojí se konec Prev a začátek Next (odpovídá <see cref="GuiGraphItemLinkType.PrevEndToNextBegin"/>),
         /// true = spojí se středy prvků (odpovídá <see cref="GuiGraphItemLinkType.PrevCenterToNextCenter"/>).
@@ -602,7 +602,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="side">Strana: Negative = Prev; Positive = Next</param>
         /// <returns></returns>
-        internal GTimeGraphItem GetItem(Direction side)
+        internal TimeGraphItem GetItem(Direction side)
         {
             switch (side)
             {
@@ -617,7 +617,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="side">Strana: Negative = Prev; Positive = Next</param>
         /// <param name="item">Prvek</param>
         /// <returns></returns>
-        internal void SetItem(Direction side, GTimeGraphItem item)
+        internal void SetItem(Direction side, TimeGraphItem item)
         {
             switch (side)
             {
@@ -640,17 +640,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Klíč linku
         /// <summary>
-        /// UInt64 klíč tohoto prvku, obsahuje klíče <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
+        /// UInt64 klíč tohoto prvku, obsahuje klíče <see cref="TimeGraphLinkItem.ItemIdPrev"/> a <see cref="TimeGraphLinkItem.ItemIdNext"/>
         /// </summary>
         public UInt64 Key { get { return GetLinkKey(this); } }
         /// <summary>
         /// Vrací složené číslo UInt64 obsahující klíče:
-        /// v horních čtyřech bytech = <see cref="GTimeGraphLinkItem.ItemIdPrev"/>;
-        /// v dolních čtyřech bytech = <see cref="GTimeGraphLinkItem.ItemIdNext"/>;
+        /// v horních čtyřech bytech = <see cref="TimeGraphLinkItem.ItemIdPrev"/>;
+        /// v dolních čtyřech bytech = <see cref="TimeGraphLinkItem.ItemIdNext"/>;
         /// </summary>
         /// <param name="link"></param>
         /// <returns></returns>
-        protected static UInt64 GetLinkKey(GTimeGraphLinkItem link)
+        protected static UInt64 GetLinkKey(TimeGraphLinkItem link)
         {
             return (link != null ? GetKey(link.ItemIdPrev, link.ItemIdNext) : 0);
         }
@@ -683,7 +683,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
-        internal void Draw(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
+        internal void Draw(GInteractiveDrawArgs e, TimeGraphLinkMode mode, float ratio)
         {
             if (this.IsLinkTypeVisible)
             {
@@ -699,9 +699,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
-        protected void DrawCenter(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
+        protected void DrawCenter(GInteractiveDrawArgs e, TimeGraphLinkMode mode, float ratio)
         {
-            GTimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
+            TimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
             Color color1 = this.GetColorForState(relationState, graph);
 
@@ -717,9 +717,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
-        protected void DrawPrevNext(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
+        protected void DrawPrevNext(GInteractiveDrawArgs e, TimeGraphLinkMode mode, float ratio)
         {
-            GTimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
+            TimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
             Color color1 = this.GetColorForState(relationState, graph);
 
@@ -772,7 +772,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="itemPrev"></param>
         /// <param name="itemNext"></param>
         /// <returns></returns>
-        protected static RelationState GetRelationState(GTimeGraphItem itemPrev, GTimeGraphItem itemNext)
+        protected static RelationState GetRelationState(TimeGraphItem itemPrev, TimeGraphItem itemNext)
         {
             if (itemPrev == null || itemNext == null) return RelationState.Standard;
             TimeRange timePrev = itemPrev.Item.Time;
@@ -787,7 +787,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="state"></param>
         /// <param name="graph"></param>
         /// <returns></returns>
-        protected Color GetColorForState(RelationState state, GTimeGraph graph = null)
+        protected Color GetColorForState(RelationState state, TimeGraph graph = null)
         {
             switch (state)
             {

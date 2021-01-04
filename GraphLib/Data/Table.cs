@@ -5,7 +5,7 @@ using System.Text;
 using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Asol.Tools.WorkScheduler.Components;
-using Asol.Tools.WorkScheduler.Components.Grid;
+using Asol.Tools.WorkScheduler.Components.Grids;
 using Asol.Tools.WorkScheduler.Application;
 using Noris.LCS.Base.WorkScheduler;
 
@@ -1205,14 +1205,14 @@ namespace Asol.Tools.WorkScheduler.Data
         public GuiImage RowNonCheckedImage { get { return this._RowNonCheckedImage; } set { this._RowNonCheckedImage = value; } } private GuiImage _RowNonCheckedImage = null;
         /// <summary>
         /// Defaultní parametry pro grafy na pozadí této tabulky, anebo defaultní parametry pro grafy ve sloupci.
-        /// Tato property nikdy není null (ve výchozím stavu má hodnotu <see cref="Components.Graph.TimeGraphProperties.Default"/>).
+        /// Tato property nikdy není null (ve výchozím stavu má hodnotu <see cref="Components.Graphs.TimeGraphProperties.Default"/>).
         /// </summary>
-        public Components.Graph.TimeGraphProperties GraphParameters
+        public Components.Graphs.TimeGraphProperties GraphParameters
         {
             get
             {
                 if (this._GraphParameters == null)
-                    this._GraphParameters = Components.Graph.TimeGraphProperties.Default;
+                    this._GraphParameters = Components.Graphs.TimeGraphProperties.Default;
                 return this._GraphParameters;
             }
             set
@@ -1220,7 +1220,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._GraphParameters = value;
             }
         }
-        private Components.Graph.TimeGraphProperties _GraphParameters;
+        private Components.Graphs.TimeGraphProperties _GraphParameters;
         /// <summary>
         /// Přepočítávat vždy souřadnice VŠECH řádků, i když nejsou ve viditelné oblasti?
         /// Nastavení na true je nutné tehdy, kdyý tabulka obsahuje grafy, a grafy mohou zobrazovat Linky. 
@@ -2006,8 +2006,8 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (value == null) return TableValueType.Null;
             if (value is IDrawItem) return TableValueType.IDrawItem;
-            if (value is Components.Graph.ITimeInteractiveGraph) return TableValueType.ITimeInteractiveGraph;
-            if (value is Components.Graph.ITimeGraph) return TableValueType.ITimeGraph;
+            if (value is Components.Graphs.ITimeInteractiveGraph) return TableValueType.ITimeInteractiveGraph;
+            if (value is Components.Graphs.ITimeGraph) return TableValueType.ITimeGraph;
             if (value is Image) return TableValueType.Image;
             if (value is GuiIdText) return TableValueType.TextRelation;
             return TableValueType.Text;
@@ -2329,12 +2329,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Defaultní parametry pro grafy v tomto sloupci.
         /// Tato property může být null.
         /// </summary>
-        public Components.Graph.TimeGraphProperties GraphParameters
+        public Components.Graphs.TimeGraphProperties GraphParameters
         {
             get { return this._GraphParameters; }
             set { this._GraphParameters = value; }
         }
-        private Components.Graph.TimeGraphProperties _GraphParameters;
+        private Components.Graphs.TimeGraphProperties _GraphParameters;
         /// <summary>
         /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
         /// </summary>
@@ -2558,7 +2558,7 @@ namespace Asol.Tools.WorkScheduler.Data
         private static object CloneValue(object source, TableRowCloneArgs cloneArgs = null)
         {
             if (source == null) return null;
-            if (source is Components.Graph.ITimeInteractiveGraph) return (source as Components.Graph.ITimeInteractiveGraph).GetGraphClone(cloneArgs);
+            if (source is Components.Graphs.ITimeInteractiveGraph) return (source as Components.Graphs.ITimeInteractiveGraph).GetGraphClone(cloneArgs);
             if (source is ICloneable) return (source as ICloneable).Clone();
             return source;
         }
@@ -4681,7 +4681,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Filtr pro klonování prvů grafu
         /// </summary>
-        public Func<Components.Graph.ITimeGraphItem, bool> CloneGraphsFilter { get; set; }
+        public Func<Components.Graphs.ITimeGraphItem, bool> CloneGraphsFilter { get; set; }
 
     }
     #endregion

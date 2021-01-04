@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// GTimeAxis : Interactive object for TimeAxis control
     /// </summary>
     public class GTimeAxis
-        : GBaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeAxisConvertor
+        : BaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeAxisConvertor
     {
         #region Konstruktory, Obecné overrides osy
         /// <summary>
@@ -342,7 +342,7 @@ namespace Asol.Tools.WorkScheduler.Components
         DoubleRange ITimeAxisConvertor.GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio) { return this.TimeAxisConvertor.GetLogarithmicPixelRange(timeRange, targetSize, proportionalRatio); }
         DateTime? ITimeAxisConvertor.GetLogarithmicTime(int pixel, int targetSize, float proportionalRatio) { return this.TimeAxisConvertor.GetLogarithmicTime(pixel, targetSize, proportionalRatio); }
         /// <summary>
-        /// Je voláno v průběhu změny hodnoty <see cref="GBaseAxis{TTick, TSize, TValue}.Value"/>
+        /// Je voláno v průběhu změny hodnoty <see cref="BaseAxis{TTick, TSize, TValue}.Value"/>
         /// </summary>
         /// <param name="args"></param>
         protected override void OnValueChanging(GPropertyChangeArgs<TimeRange> args)
@@ -351,7 +351,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.CallVisibleTimeChanged(args);
         }
         /// <summary>
-        /// Je voláno po změně hodnoty <see cref="GBaseAxis{TTick, TSize, TValue}.Value"/>
+        /// Je voláno po změně hodnoty <see cref="BaseAxis{TTick, TSize, TValue}.Value"/>
         /// </summary>
         /// <param name="args"></param>
         protected override void OnValueChanged(GPropertyChangeArgs<TimeRange> args)

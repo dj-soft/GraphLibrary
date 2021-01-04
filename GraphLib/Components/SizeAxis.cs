@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// GSizeAxis : 
     /// </summary>
     public class GSizeAxis 
-        : GBaseAxis<Decimal?, Decimal?, DecimalNRange>
+        : BaseAxis<Decimal?, Decimal?, DecimalNRange>
     {
         /// <summary>
         /// Konstruktor s parentem

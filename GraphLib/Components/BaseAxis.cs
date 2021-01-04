@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <typeparam name="TTick">Datový typ údaje Pozice na ose (DateTime, Decimal, Int32)</typeparam>
     /// <typeparam name="TSize">Datový typ údaje Vzdálenost mezi dvěma pozicemi na ose (TimeSpan, Decimal, Int32)</typeparam>
     /// <typeparam name="TValue">Datový typ intervalu, který zahrnuje oba typy TTick, TSize</typeparam>
-    public abstract class GBaseAxis<TTick, TSize, TValue> : InteractiveObject, IInteractiveItem
+    public abstract class BaseAxis<TTick, TSize, TValue> : InteractiveObject, IInteractiveItem
         where TValue : BaseRange<TTick, TSize>
     {
         #region Konstruktory
@@ -24,11 +24,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GBaseAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public BaseAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GBaseAxis()
+        public BaseAxis()
         {
             this.Is.MouseDragMove = true;
             this.Is.MouseMoveOver = true;
@@ -1488,7 +1488,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Konstruktor
             /// </summary>
             /// <param name="axis"></param>
-            public ArrangementSet(GBaseAxis<TTick, TSize, TValue> axis)
+            public ArrangementSet(BaseAxis<TTick, TSize, TValue> axis)
             {
                 this.Axis = axis;
                 this._List = null;
@@ -1538,7 +1538,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Main axis
             /// </summary>
-            public GBaseAxis<TTick, TSize, TValue> Axis { get; private set; }
+            public BaseAxis<TTick, TSize, TValue> Axis { get; private set; }
             /// <summary>
             /// List of individual arrangements
             /// </summary>
@@ -1591,7 +1591,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="bigLabelFormat">Format string for formatting Value on big label Tick.</param>
             /// <param name="outerLabelFormat">Format string for formatting Value on outer labels (Begin and End of Axis).</param>
             /// <param name="axis">Owner Axis</param>
-            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, GBaseAxis<TTick, TSize, TValue> axis)
+            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, BaseAxis<TTick, TSize, TValue> axis)
             {
                 this.OrderId = 0;
                 this.Axis = axis;
@@ -1617,7 +1617,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="outerLabelFormat">Format string for formatting Value on outer labels (Begin and End of Axis).</param>
             /// <param name="axisCycle">Any string information for this arrangement (special fo Time axis: Month, Week, and so on).</param>
             /// <param name="axis">Owner Axis</param>
-            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, string axisCycle, GBaseAxis<TTick, TSize, TValue> axis)
+            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, string axisCycle, BaseAxis<TTick, TSize, TValue> axis)
                 : this(pixelSize, stdTickSize, bigTickSize, stdLabelSize, stdLabelFormat, bigLabelSize, bigLabelFormat, outerLabelFormat, axis)
             {
                 this.AxisCycle = axisCycle;
@@ -1635,7 +1635,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="outerLabelFormat">Format string for formatting Value on outer labels (Begin and End of Axis).</param>
             /// <param name="axis">Owner Axis</param>
             /// <param name="selectDistanceRatio">Koeficient vyjadřující velikost popisku StdLabel oproti normálu. Normál = 1, kratší popisky mají hodnotu menší než 1.</param>
-            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, GBaseAxis<TTick, TSize, TValue> axis, decimal selectDistanceRatio)
+            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, BaseAxis<TTick, TSize, TValue> axis, decimal selectDistanceRatio)
                 : this(pixelSize, stdTickSize, bigTickSize, stdLabelSize, stdLabelFormat, bigLabelSize, bigLabelFormat, outerLabelFormat, axis)
             {
                 this.SelectDistanceRatio = selectDistanceRatio;
@@ -1654,7 +1654,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="axisCycle">Any string information for this arrangement (special fo Time axis: Month, Week, and so on).</param>
             /// <param name="axis">Owner Axis</param>
             /// <param name="selectDistanceRatio">Koeficient vyjadřující velikost popisku StdLabel oproti normálu. Normál = 1, kratší popisky mají hodnotu menší než 1.</param>
-            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, string axisCycle, GBaseAxis<TTick, TSize, TValue> axis, decimal selectDistanceRatio)
+            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, string axisCycle, BaseAxis<TTick, TSize, TValue> axis, decimal selectDistanceRatio)
                 : this(pixelSize, stdTickSize, bigTickSize, stdLabelSize, stdLabelFormat, bigLabelSize, bigLabelFormat, outerLabelFormat, axis)
             {
                 this.AxisCycle = axisCycle;
@@ -1688,7 +1688,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Main axis
             /// </summary>
-            public GBaseAxis<TTick, TSize, TValue> Axis { get; private set; }
+            public BaseAxis<TTick, TSize, TValue> Axis { get; private set; }
             /// <summary>
             /// Nonvisible ticks, exists only for round time to "pixel" coordinates.
             /// </summary>
@@ -1854,7 +1854,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Main axis
             /// </summary>
-            public GBaseAxis<TTick, TSize, TValue> Axis { get { return this.Owner.Axis; } }
+            public BaseAxis<TTick, TSize, TValue> Axis { get { return this.Owner.Axis; } }
             /// <summary>
             /// Owner of this one set = ArrangementSet, set of arrangements of four TickType
             /// </summary>
@@ -2440,7 +2440,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.TickList == null) return;
 
-            using (GBaseAxisTickPainter tickPainter = new GBaseAxisTickPainter(absoluteBounds, this.Orientation, false))
+            using (BaseAxisTickPainter tickPainter = new BaseAxisTickPainter(absoluteBounds, this.Orientation, false))
             {
                 foreach (BaseTick<TTick> tick in this.TickList)
                     tickPainter.DrawTick(graphics, tick);
@@ -2885,7 +2885,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             /// <param name="axis"></param>
             /// <returns></returns>
-            bool ISegment.PrepareForAxis(GBaseAxis<TTick, TSize, TValue> axis)
+            bool ISegment.PrepareForAxis(BaseAxis<TTick, TSize, TValue> axis)
             {
                 bool result = false;
                 this._PixelRange = null;
@@ -2957,7 +2957,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             /// <param name="axis"></param>
             /// <returns></returns>
-            bool PrepareForAxis(GBaseAxis<TTick, TSize, TValue> axis);
+            bool PrepareForAxis(BaseAxis<TTick, TSize, TValue> axis);
         }
         #endregion
         /// <summary>
@@ -3045,7 +3045,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GBaseAxisTickPainter : Axis Tick Painter
     /// </summary>
-    public class GBaseAxisTickPainter : IDisposable
+    public class BaseAxisTickPainter : IDisposable
     {
         #region Konstrukce, property, Dispose
         /// <summary>
@@ -3054,7 +3054,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="verticalText"></param>
-        public GBaseAxisTickPainter(Rectangle bounds, AxisOrientation orientation, bool verticalText)
+        public BaseAxisTickPainter(Rectangle bounds, AxisOrientation orientation, bool verticalText)
         {
             this.Bounds = bounds;
             this.Orientation = orientation;

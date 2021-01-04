@@ -175,9 +175,6 @@
     <Compile Include="Components\DrawingD.cs" />
     <Compile Include="Components\Extensions.cs" />
     <Compile Include="Components\FormMoveSupport.cs" />
-    <Compile Include="Components\GControl.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Components\StandardIcons.cs" />
     <Compile Include="Components\InteractiveContainer.cs" />
     <Compile Include="Components\InteractiveControl.cs">

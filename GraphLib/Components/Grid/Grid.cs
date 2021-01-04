@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Asol.Tools.WorkScheduler.Data;
-using Asol.Tools.WorkScheduler.Components.Grid;
+using Asol.Tools.WorkScheduler.Components.Grids;
 
 namespace Asol.Tools.WorkScheduler.Components
 {

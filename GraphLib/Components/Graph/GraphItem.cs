@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asol.Tools.WorkScheduler.Components.Graph
+namespace Asol.Tools.WorkScheduler.Components.Graphs
 {
     /// <summary>
-    /// GTimeGraphItem : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem.
+    /// <see cref="TimeGraphItem"/> : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem.
     /// Tento prvek je zobrazován ve dvou režimech: buď jako přímý child prvek vizuálního grafu, pak reprezentuje grupu prvků (i kdyby grupa měla jen jeden prvek),
     /// anebo jako child prvek této grupy, pak reprezentuje jeden konkrétní prvek grafu (GraphItem).
     /// </summary>
-    public class GTimeGraphItem : InteractiveDragObject, IResizeObject, IOwnerProperty<ITimeGraphItem>
+    public class TimeGraphItem : InteractiveDragObject, IResizeObject, IOwnerProperty<ITimeGraphItem>
     {
         #region Konstruktor, privátní proměnné
         /// <summary>
@@ -24,7 +24,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="interactiveParent">Interaktivní vizuální parent prvku, GUI container (buď graf pro grupu, nebo grupa pro item)</param>
         /// <param name="group">Data grupy, do níž vytvářený prvek bude patřit (přímo nebo nepřímo)</param>
         /// <param name="position">Pozice vytvářeného prvku</param>
-        public GTimeGraphItem(ITimeGraphItem data, IInteractiveParent interactiveParent, GTimeGraphGroup group, GGraphControlPosition position)
+        public TimeGraphItem(ITimeGraphItem data, IInteractiveParent interactiveParent, TimeGraphGroup group, GraphControlPosition position)
             : base()
         {
             this._Owner = data;
@@ -41,7 +41,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public override string ToString()
         {
             return "Position: " + this._Position.ToString() + "; GroupId: " + this.Group.GroupId + 
-                ((this.Position == GGraphControlPosition.Item) ? ("; ItemId: " + this.Item.ItemId.ToString()) : "") +
+                ((this.Position == GraphControlPosition.Item) ? ("; ItemId: " + this.Item.ItemId.ToString()) : "") +
                 "; " + base.ToString();
         }
         /// <summary>
@@ -52,11 +52,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Grupa, která slouží jako vazba na globální data
         /// </summary>
-        private GTimeGraphGroup _Group;
+        private TimeGraphGroup _Group;
         /// <summary>
         /// Pozice tohoto prvku
         /// </summary>
-        private GGraphControlPosition _Position;
+        private GraphControlPosition _Position;
         #endregion
         #region Souřadnice
         /// <summary>
@@ -100,11 +100,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Může se lišit od našeho vizuálního parenta, protože this prvek může být Child prvkem Grupy, a ta je Child prvkem Grafu.
         /// Nicméně přes zdejší Grupu je vždy možno najít Graf, v němž je this prvek zobrazován.
         /// </summary>
-        internal GTimeGraph Graph { get { return this._Group.Graph; } }
+        internal TimeGraph Graph { get { return this._Group.Graph; } }
         /// <summary>
         /// Skupina, do které tento vizuální interaktivní prvek patří.
         /// </summary>
-        internal GTimeGraphGroup Group { get { return this._Group; } }
+        internal TimeGraphGroup Group { get { return this._Group; } }
         /// <summary>
         /// Vlastní datový prvek grafu, pro který je vytvořen this grafický prvek
         /// </summary>
@@ -118,8 +118,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             {
                 switch (this.Position)
                 {
-                    case GGraphControlPosition.Group: return this.Group.Time;
-                    case GGraphControlPosition.Item: return this.Item.Time;
+                    case GraphControlPosition.Group: return this.Group.Time;
+                    case GraphControlPosition.Item: return this.Item.Time;
                 }
                 return null;
             }
@@ -127,10 +127,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             {
                 switch (this.Position)
                 {
-                    case GGraphControlPosition.Group:
+                    case GraphControlPosition.Group:
                         this.Group.SetTime(value);
                         break;
-                    case GGraphControlPosition.Item:
+                    case GraphControlPosition.Item:
                         break;
                 }
             }
@@ -149,11 +149,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Pozice tohoto prvku (Group / Item)
         /// </summary>
-        public GGraphControlPosition Position { get { return this._Position; } }
+        public GraphControlPosition Position { get { return this._Position; } }
         /// <summary>
         /// Metoda vrátí datové prvky, pro které je vytvořen tento vizuální prvek.
-        /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GGraphControlPosition.Group"/>, pak vrátí datové prvky ze všech svých prvků.
-        /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GGraphControlPosition.Item"/>, pak se řídí parametrem wholeGroup:
+        /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GraphControlPosition.Group"/>, pak vrátí datové prvky ze všech svých prvků.
+        /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GraphControlPosition.Item"/>, pak se řídí parametrem wholeGroup:
         /// a) true = najde všechny prvky své skupiny; b) false = vrátí jen svůj datový prvek.
         /// </summary>
         /// <param name="wholeGroup">Vrátit všechny prvky i tehdy, když daný prvek reprezentuje jednu položku?</param>
@@ -162,9 +162,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             switch (this.Position)
             {
-                case GGraphControlPosition.Group:
+                case GraphControlPosition.Group:
                     return this.Group.Items;
-                case GGraphControlPosition.Item:
+                case GraphControlPosition.Item:
                     if (wholeGroup)
                         return this.Group.Items;
                     return new ITimeGraphItem[] { this._Owner };
@@ -211,7 +211,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Child prvky: přidávání, kolekce
         /// <summary>
         /// Child prvky, může být null (pro <see cref="ControlBuffered"/> v roli controlu jednotlivého <see cref="ITimeGraphItem"/>), 
-        /// nebo může obsahovat vnořené prvky (pro <see cref="ControlBuffered"/> v roli controlu skupiny <see cref="GTimeGraphGroup"/>).
+        /// nebo může obsahovat vnořené prvky (pro <see cref="ControlBuffered"/> v roli controlu skupiny <see cref="TimeGraphGroup"/>).
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._Childs; } }
         /// <summary>
@@ -246,14 +246,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Přidá vnořený objekt
         /// </summary>
         /// <param name="graphItem"></param>
-        public void AddGraphItem(GTimeGraphItem graphItem)
+        public void AddGraphItem(TimeGraphItem graphItem)
         {
             if (this._GraphItems == null)
-                this._GraphItems = new List<GTimeGraphItem>();
+                this._GraphItems = new List<TimeGraphItem>();
             this._GraphItems.Add(graphItem);
             this._InvalidateChilds();
         }
-        private List<GTimeGraphItem> _GraphItems;
+        private List<TimeGraphItem> _GraphItems;
         #endregion
         #region Interaktivita
         /// <summary>
@@ -294,7 +294,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Zdejší třída GTimeGraphItem slouží jak pro práci s Group, tak pro Item (rozlišuje se to dle this.Position).
             // Prvek na pozici Group lze Selectovat, ten si to zařizuje sám (má Is.Selectable = true, takže pro něj se IsSelected řeší systémově).
             // Ale prvek na pozici Item nelze Selectovat, namísto toho budeme selectovat jeho Group prvek:
-            if (this.Position == GGraphControlPosition.Item)
+            if (this.Position == GraphControlPosition.Item)
                 this.Group.ControlBuffered.IsSelectedTryToggle();
             
             base.AfterStateChangedLeftClick(e);
@@ -354,14 +354,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             get
             {
-                if (this._Position == GGraphControlPosition.Group && this._GroupState.HasValue) return this._GroupState.Value;
+                if (this._Position == GraphControlPosition.Group && this._GroupState.HasValue) return this._GroupState.Value;
                 if (this._Group != null && this._Group.ControlBuffered._GroupState.HasValue) return this._Group.ControlBuffered._GroupState.Value;
                 return this.InteractiveState;
             }
             set
             {
-                if (this._Position == GGraphControlPosition.Group) this._GroupState = value;
-                else if (this._Position == GGraphControlPosition.Item && this._Group != null) this._Group.ControlBuffered._GroupState = value;
+                if (this._Position == GraphControlPosition.Group) this._GroupState = value;
+                else if (this._Position == GraphControlPosition.Item && this._Group != null) this._Group.ControlBuffered._GroupState = value;
             }
         }
         /// <summary>
@@ -380,7 +380,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         private bool _GetSelectable(bool value)
         {
-            return (this._Position == GGraphControlPosition.Group && this._Group.IsSelectable);
+            return (this._Position == GraphControlPosition.Group && this._Group.IsSelectable);
         }
         /// <summary>
         /// Metoda vrátí true, pokud událost MouseLeave opouští skutečně datovou skupinu grafu.
@@ -394,17 +394,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (e.ChangeState != GInteractiveChangeState.MouseLeave) return false;       // Pokud událost NENÍ MouseLeave, pak nejde o opuštění čehokoli
             bool isLeave = true;
-            if (e.EnterItem != null && e.EnterItem is GTimeGraphItem)
+            if (e.EnterItem != null && e.EnterItem is TimeGraphItem)
             {
-                GTimeGraphItem targetItem = e.EnterItem as GTimeGraphItem;     // Do tohoto objektu vstupujeme. Je to objekt patřící k nějakému grafu.
+                TimeGraphItem targetItem = e.EnterItem as TimeGraphItem;     // Do tohoto objektu vstupujeme. Je to objekt patřící k nějakému grafu.
                 switch (this.Position)
                 {
-                    case GGraphControlPosition.Group:
+                    case GraphControlPosition.Group:
                         // Provádíme Leave z takového prvku, který reprezentuje Grupu:
                         //  pak zjistíme, zda cílový prvek (targetItem) není grafickým prvkem některého z mých Items:
                         isLeave = !this.Group.Items.Any(i => Object.ReferenceEquals(i.VisualControl, targetItem));
                         break;
-                    case GGraphControlPosition.Item:
+                    case GraphControlPosition.Item:
                         // Provádíme Leave z prvku, který je na pozici Item:
                         //  pak zjistíme, zda cílový prvek (targetItem) není grafickým prvkem patřící me vlastní grupě:
                         isLeave = !Object.ReferenceEquals(this.Group.ControlBuffered, targetItem);
@@ -421,7 +421,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         private bool _GetMouseDragMove(bool value)
         {
-            return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled);
+            return (this._Position == GraphControlPosition.Group && this._Group.IsDragEnabled);
         }
         /// <summary>
         /// Volá se na začátku procesu přesouvání, pro aktivní objekt.
@@ -540,7 +540,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsoluteBounds(targetRelativeBounds);
             ItemDragDropArgs args = new ItemDragDropArgs(e, this.Graph, this._Group, this._Owner, this._Position, targetAbsoluteBounds);
             args.ParentGraph = this.Graph;
-            args.ParentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            args.ParentTable = this.SearchForParent(typeof(Grids.GTable)) as Grids.GTable;
             args.SearchForTargets(targetAbsolutePoint);
 
             args.IsFinalised = true;
@@ -653,7 +653,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 // Vložit nový čas do grupy: při ukončení (DragThisDrop) povinně, při pohybu (DragThisMove) jen pro grupu s 1 prvkem:
                 bool setTime =
                     ((e.ResizeAction == DragActionType.DragThisDrop) ||
-                     (e.ResizeAction == DragActionType.DragThisMove && this.Position == GGraphControlPosition.Group && this.Group.ItemCount == 1));
+                     (e.ResizeAction == DragActionType.DragThisMove && this.Position == GraphControlPosition.Group && this.Group.ItemCount == 1));
                 if (setTime)
                     this.Time = args.TimeRangeFinal;       // Změna času u prvku typu Group provede vhodné rozmístění vnitřních prvků typu Item!
                 this.Parent.Repaint();
@@ -706,7 +706,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vykreslování "Přes Child prvky": pokud this prvek vykresluje Grupu, pak ano!
         /// </summary>
-        protected override bool NeedDrawOverChilds { get { return (this._Position == GGraphControlPosition.Group); } set { } }
+        protected override bool NeedDrawOverChilds { get { return (this._Position == GraphControlPosition.Group); } set { } }
         /// <summary>
         /// Metoda volaná pro vykreslování "Přes Child prvky": převolá se grupa.
         /// </summary>
@@ -715,13 +715,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         protected override void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            if (this._Position == GGraphControlPosition.Group)
+            if (this._Position == GraphControlPosition.Group)
                 this._Group.DrawOverChilds(e, boundsAbsolute, drawMode);
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="ControlBuffered"/>.<see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>;
-        /// a to jak pro typ prvku <see cref="GGraphControlPosition.Group"/>, tak pro <see cref="GGraphControlPosition.Item"/>.
+        /// Implementátor může bez nejmenších obav převolat <see cref="ControlBuffered"/>.<see cref="TimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>;
+        /// a to jak pro typ prvku <see cref="GraphControlPosition.Group"/>, tak pro <see cref="GraphControlPosition.Item"/>.
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
@@ -734,10 +734,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             switch (this._Position)
             {
-                case GGraphControlPosition.Group:
+                case GraphControlPosition.Group:
                     this.DrawItemGroup(e, boundsAbsolute, drawMode);
                     break;
-                case GGraphControlPosition.Item:
+                case GraphControlPosition.Item:
                     this.DrawItemItem(e, boundsAbsolute, drawMode);
                     break;
             }
@@ -749,7 +749,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Fyzické kreslení grupy (= spojovací linie a text)
         /// <summary>
-        /// Vykreslí prvek typu <see cref="GGraphControlPosition.Group"/> = podklad pod konkrétními prvky = spojovací čára
+        /// Vykreslí prvek typu <see cref="GraphControlPosition.Group"/> = podklad pod konkrétními prvky = spojovací čára
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
@@ -855,7 +855,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Fyzické kreslení konkrétního prvku
         /// <summary>
-        /// Vykreslí prvek typu <see cref="GGraphControlPosition.Item"/> = vlastní grafický prvek
+        /// Vykreslí prvek typu <see cref="GraphControlPosition.Item"/> = vlastní grafický prvek
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
@@ -883,8 +883,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             graphItemArgs.BackEffectStyle = (this.IsEditable ? this._Owner.BackEffectEditable : this._Owner.BackEffectNonEditable);
 
             // Stav IsSelected a IsFramed budeme vždy přebírat z GUI prvku Grupy, protože Select a Framed a Activated se řeší na úrovni Grupy:
-            GTimeGraphItem groupItem = (this._Position == GGraphControlPosition.Group ? this :
-                                        this._Position == GGraphControlPosition.Item ? this._Group.ControlBuffered : null);
+            TimeGraphItem groupItem = (this._Position == GraphControlPosition.Group ? this :
+                                        this._Position == GraphControlPosition.Item ? this._Group.ControlBuffered : null);
             if (groupItem != null)
             {
                 graphItemArgs.IsSelected = groupItem.IsSelected;
@@ -903,18 +903,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="isFirst">Prvek je prvním v grupě?</param>
         /// <param name="isLast">Prvek je posledním v grupě?</param>
         /// <param name="hasBorder">Prvek je Selected nebo Framed?</param>
-        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GGraphControlPosition position, bool isFirst, bool isLast, bool hasBorder)
+        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GraphControlPosition position, bool isFirst, bool isLast, bool hasBorder)
         {
             int x = boundsAbsolute.X;
             int y = boundsAbsolute.Y;
             int w = boundsAbsolute.Width;
             int h = boundsAbsolute.Height;
             int wb = (w <= 2 ? 0 : ((w < 5) ? 1 : (hasBorder ? 2 : 1)));
-            int hb = (h <= 2 ? 0 : ((h < 10 || position == GGraphControlPosition.Group) ? 1 : (hasBorder ? 3 : 2)));    // Výška proužku "horní a dolní okraj"
+            int hb = (h <= 2 ? 0 : ((h < 10 || position == GraphControlPosition.Group) ? 1 : (hasBorder ? 3 : 2)));    // Výška proužku "horní a dolní okraj"
             int hc = h - 2 * hb;
 
             Rectangle[] boundsParts = new Rectangle[5];
-            if (position == GGraphControlPosition.Group)
+            if (position == GraphControlPosition.Group)
                 boundsParts[0] = new Rectangle(x, y + hb, w, hc);              // Střední prostor pro Group
             else
                 boundsParts[0] = new Rectangle(x, y, w, h);                    // Střední prostor pro Item
@@ -977,7 +977,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             get
             {
-                if (this._Position != GGraphControlPosition.Item) return false;
+                if (this._Position != GraphControlPosition.Item) return false;
                 ITimeGraphItem dataItem = this._Owner;
                 ITimeGraphItem firstItem = this._Group.Items[0];
                 return (Object.ReferenceEquals(dataItem, firstItem));
@@ -990,7 +990,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             get
             {
-                if (this._Position != GGraphControlPosition.Item) return false;
+                if (this._Position != GraphControlPosition.Item) return false;
                 ITimeGraphItem dataItem = this._Owner;
                 ITimeGraphItem lastItem = this._Group.Items[this._Group.ItemCount - 1];
                 return (Object.ReferenceEquals(dataItem, lastItem));
@@ -1014,45 +1014,45 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Zajistí zobrazení vztahů (Linky) z this prvku na jeho sousedy, v situaci kdy na this prvek najela myš (MouseEnter).
         /// Metoda vyhledá linky pomocí metody <see cref="ITimeGraphDataSource.CreateLinks(CreateLinksArgs)"/>, 
-        /// poté je přidá do globálního controlu pro zobrazování Linků <see cref="GTimeGraph.GraphLinkArray"/> (v <see cref="Graph"/>), 
+        /// poté je přidá do globálního controlu pro zobrazování Linků <see cref="TimeGraph.GraphLinkArray"/> (v <see cref="Graph"/>), 
         /// a vloží je do <see cref="LinksForMouseOver"/> - protože po odjetí myši bude volaná metoda <see cref="RemoveLinksForMouseOver()"/>,
         /// která tyto vztahy ze zobrazení odebere.
         /// </summary>
         protected void PrepareLinksForMouseOver()
         {
             // Pokud aktuální graf NENÍ nebo NEMÁ zobrazovat linky v MouseOver, pak skončíme:
-            if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.MouseOver)) return;
+            if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(TimeGraphLinkMode.MouseOver)) return;
 
             // Pokud aktuální PRVEK nemá zobrazovat linky:
             if (!this.Group.IsShowLinks) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.ControlBuffered.LinksForMouseOver != null) return;
+            if (this.Position == GraphControlPosition.Item && this.Group.ControlBuffered.LinksForMouseOver != null) return;
 
-            GTimeGraphItem item = this;
+            TimeGraphItem item = this;
             CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
             item.Graph.DataSource.CreateLinks(args);
-            GTimeGraphLinkItem[] linksOne = args.Links;
+            TimeGraphLinkItem[] linksOne = args.Links;
             if (linksOne == null || linksOne.Length == 0) return;
 
-            this.Graph.GraphLinkArray.AddLinks(linksOne, GTimeGraphLinkMode.MouseOver);
+            this.Graph.GraphLinkArray.AddLinks(linksOne, TimeGraphLinkMode.MouseOver);
             this.LinksForMouseOver = linksOne;
         }
         /// <summary>
         /// Zajistí konec zobrazování těch vztahů (Linky) z this prvku na sousedy, které byly přidány při MouseEnter (v metodě <see cref="PrepareLinksForMouseOver()"/>).
-        /// Vztahy má uloženy v <see cref="LinksForMouseOver"/>, odebere je z globálního controlu pro zobrazování Linků <see cref="GTimeGraph.GraphLinkArray"/> (v <see cref="Graph"/>), 
+        /// Vztahy má uloženy v <see cref="LinksForMouseOver"/>, odebere je z globálního controlu pro zobrazování Linků <see cref="TimeGraph.GraphLinkArray"/> (v <see cref="Graph"/>), 
         /// a na závěr nulluje <see cref="LinksForMouseOver"/>.
         /// </summary>
         protected void RemoveLinksForMouseOver()
         {
             if (this.LinksForMouseOver != null)
-                this.Graph.GraphLinkArray.RemoveLinks(this.LinksForMouseOver, GTimeGraphLinkMode.MouseOver);
+                this.Graph.GraphLinkArray.RemoveLinks(this.LinksForMouseOver, TimeGraphLinkMode.MouseOver);
             this.LinksForMouseOver = null;
         }
         /// <summary>
         /// Pole vztahů, které jsou získány při MouseEnter a odebrány při MouseLeave
         /// </summary>
-        protected GTimeGraphLinkItem[] LinksForMouseOver;
+        protected TimeGraphLinkItem[] LinksForMouseOver;
         /// <summary>
         /// Zajistí zobrazení /zhasnutí vztahů (Linků) z this prvku na sousedy, jako reaklci na změnu hodnoty <see cref="InteractiveObject.IsSelected"/>.
         /// </summary>
@@ -1060,29 +1060,29 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected void PrepareLinksForSelect(bool isSelected)
         {
             // Pokud aktuální graf NEMÁ zobrazovat linky v IsSelected stavu, pak skončíme:
-            if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(GTimeGraphLinkMode.Selected)) return;
+            if (this.Graph == null || this.Graph.DataSource == null || !this.Graph.GraphLinkArray.CurrentLinksMode.HasAnyFlag(TimeGraphLinkMode.Selected)) return;
 
             // Pokud aktuální PRVEK nemá zobrazovat linky:
             if (!this.Group.IsShowLinks) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.ControlBuffered.LinksForMouseOver != null) return;
+            if (this.Position == GraphControlPosition.Item && this.Group.ControlBuffered.LinksForMouseOver != null) return;
 
             if (this.LinksSelect != null)
             {   // Pokud něco máme z dřívějška, tak to odebereme:
-                this.Graph.GraphLinkArray.RemoveLinks(this.LinksSelect, GTimeGraphLinkMode.Selected);
+                this.Graph.GraphLinkArray.RemoveLinks(this.LinksSelect, TimeGraphLinkMode.Selected);
                 this.LinksSelect = null;
             }
 
             if (isSelected)
             {   // Prvek je vybrán, a má se Selectovat:
-                GTimeGraphItem item = this;
+                TimeGraphItem item = this;
                 CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.ItemSelected);
                 item.Graph.DataSource.CreateLinks(args);
-                GTimeGraphLinkItem[] links = args.Links;
+                TimeGraphLinkItem[] links = args.Links;
                 if (links != null && links.Length > 0)
                 {
-                    this.Graph.GraphLinkArray.AddLinks(links, GTimeGraphLinkMode.Selected);
+                    this.Graph.GraphLinkArray.AddLinks(links, TimeGraphLinkMode.Selected);
                     this.LinksSelect = links;
                 }
             }
@@ -1090,14 +1090,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Pole vztahů, které jsou získány při Select = true a odebrány při Select = false
         /// </summary>
-        protected GTimeGraphLinkItem[] LinksSelect;
+        protected TimeGraphLinkItem[] LinksSelect;
         #endregion
     }
-    #region enum GGraphControlPosition
+    #region enum GraphControlPosition
     /// <summary>
     /// Pozice GUI controlu pro prvek grafu (Group / Item)
     /// </summary>
-    public enum GGraphControlPosition
+    public enum GraphControlPosition
     {
         /// <summary>
         /// Neurčeno

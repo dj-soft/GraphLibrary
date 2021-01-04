@@ -7,19 +7,19 @@ using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Noris.LCS.Base.WorkScheduler;
 
-namespace Asol.Tools.WorkScheduler.Components.Graph
+namespace Asol.Tools.WorkScheduler.Components.Graphs
 {
     /// <summary>
-    /// GTimeGraphGroup : skupina jednoho nebo více prvků ITimeGraphItem, obsahující sumární čas Time a Max(Height) z položek
+    /// <see cref="TimeGraphGroup"/> : skupina jednoho nebo více prvků ITimeGraphItem, obsahující sumární čas Time a Max(Height) z položek
     /// </summary>
-    public class GTimeGraphGroup : ITimeGraphItem
+    public class TimeGraphGroup : ITimeGraphItem
     {
         #region Konstruktory; řízená tvorba GTimeGraphItem pro GTimeGraphGroup i pro jednotlivé položky ITimeGraphItem
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="parent"></param>
-        private GTimeGraphGroup(GTimeGraph parent)
+        private TimeGraphGroup(TimeGraph parent)
         {
             this._ParentGraph = parent;
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
@@ -32,7 +32,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="parent"></param>
         /// <param name="acceptZeroTime">Požadavek true = jako platný prvek lze akceptovat i prvek, jehož čas End == čas Begin; false = čas End musí být větší než Begin.</param>
         /// <param name="item"></param>
-        public GTimeGraphGroup(GTimeGraph parent, bool acceptZeroTime, ITimeGraphItem item)
+        public TimeGraphGroup(TimeGraph parent, bool acceptZeroTime, ITimeGraphItem item)
             : this(parent)
         {
             this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu za item, jeho parentem bude grafický prvek této grupy (=this.ControlBuffered)
@@ -48,7 +48,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="parent"></param>
         /// <param name="acceptZeroTime">Požadavek true = jako platný prvek lze akceptovat i prvek, jehož čas End == čas Begin; false = čas End musí být větší než Begin.</param>
         /// <param name="items"></param>
-        public GTimeGraphGroup(GTimeGraph parent, bool acceptZeroTime, IEnumerable<ITimeGraphItem> items)
+        public TimeGraphGroup(TimeGraph parent, bool acceptZeroTime, IEnumerable<ITimeGraphItem> items)
             : this(parent)
         {
             // Vstupní prvky (items) mohou být (ze vstupních dat) nesetříděné podle jejich času, 
@@ -75,21 +75,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._Store(begin, end, acceptZeroTime, height, canResize);
         }
         /// <summary>
-        /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.VisualControl"/>) pro this grupu.
+        /// Metoda vytvoří grafický control třídy <see cref="TimeGraphItem"/> (<see cref="ITimeGraphItem.VisualControl"/>) pro this grupu.
         /// </summary>
-        /// <param name="parent">Parent prvku, graf (neboť this je <see cref="GTimeGraphGroup"/>, pak jeho přímý Parent je <see cref="GTimeGraph"/>).</param>
-        private void _PrepareGControlGroup(GTimeGraph parent)
+        /// <param name="parent">Parent prvku, graf (neboť this je <see cref="TimeGraphGroup"/>, pak jeho přímý Parent je <see cref="TimeGraph"/>).</param>
+        private void _PrepareGControlGroup(TimeGraph parent)
         {
             if (this.ControlBuffered != null) return;
-            this.ControlBuffered = new GTimeGraphItem(this, parent, this, GGraphControlPosition.Group);          // GUI prvek (GTimeGraphItem) dostává data (=this) a dostává vizuálního parenta (parent)
+            this.ControlBuffered = new TimeGraphItem(this, parent, this, GraphControlPosition.Group);          // GUI prvek (GTimeGraphItem) dostává data (=this) a dostává vizuálního parenta (parent)
         }
         /// <summary>
-        /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.VisualControl"/>) pro daný datový grafický prvek (item).
+        /// Metoda vytvoří grafický control třídy <see cref="TimeGraphItem"/> (<see cref="ITimeGraphItem.VisualControl"/>) pro daný datový grafický prvek (item).
         /// </summary>
         /// <param name="item">Datový prvek grafu</param>
         private void _PrepareGControlItem(ITimeGraphItem item)
         {
-            item.VisualControl = new GTimeGraphItem(item, this.ControlBuffered, this, GGraphControlPosition.Item);    // GUI prvek (GTimeGraphItem) dostává data (=item) a dostává vizuálního parenta (this.ControlBuffered)
+            item.VisualControl = new TimeGraphItem(item, this.ControlBuffered, this, GraphControlPosition.Item);    // GUI prvek (GTimeGraphItem) dostává data (=item) a dostává vizuálního parenta (this.ControlBuffered)
             this.ControlBuffered.AddGraphItem(item.VisualControl);                         // Náš hlavní GUI prvek (ten od grupy) si přidá další svůj Child prvek
         }
         /// <summary>
@@ -124,7 +124,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Parent této grupy položek = graf
         /// </summary>
-        private GTimeGraph _ParentGraph;
+        private TimeGraph _ParentGraph;
         #endregion
         #region Privátní proměnné
         private ITimeInteractiveGraph _OwnerGraph;
@@ -259,7 +259,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Graf, do něhož tento prvek (grupa) patří
         /// </summary>
-        public GTimeGraph Graph { get { return this._ParentGraph; } }
+        public TimeGraph Graph { get { return this._ParentGraph; } }
         /// <summary>
         /// Prvek je viditelný?
         /// </summary>
@@ -281,7 +281,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public TimeRange Time { get { return this._Time; } private set { this._Time = value; } }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// <see cref="Height"/> * <see cref="TimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
@@ -341,7 +341,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         internal bool IsValidRealTime { get { return this._IsValidRealTime; } }
         /// <summary>
         /// Obsahuje průhlednost pro vykreslení tohoto prvku do vrstvy Interactive.
-        /// Vkládá se sem v procesu Drag and Drop, čte se v procesu Draw na prvku třídy <see cref="GTimeGraphItem"/>
+        /// Vkládá se sem v procesu Drag and Drop, čte se v procesu Draw na prvku třídy <see cref="TimeGraphItem"/>
         /// </summary>
         internal int? DragDropDrawInteractiveOpacity { get; set; }
         /// <summary>
@@ -383,7 +383,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Aplikační kód (respektive implementační objekt <see cref="ITimeGraphItem"/>) se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        public GTimeGraphItem ControlBuffered { get; set; }
+        public TimeGraphItem ControlBuffered { get; set; }
         #endregion
         #region Childs, Interaktivita, Draw()
         /// <summary>
@@ -445,7 +445,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (text != null) return text;
 
             // 3. Pro danou velikost ještě text není zapamatován => Získáme text Caption z datového zdroje grafu a zapamatujeme si ho:
-            CreateTextArgs args = new CreateTextArgs(this._ParentGraph, e, fontInfo, this, this._FirstItem, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+            CreateTextArgs args = new CreateTextArgs(this._ParentGraph, e, fontInfo, this, this._FirstItem, GraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
             text = this._ParentGraph.GraphItemGetCaptionText(args);
             this.SetCaptionForSize(size, text);
 
@@ -453,7 +453,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Vrátí danou barvu, s modifikovanou průhledností Opacity (<see cref="Color.A"/>).
-        /// Zadaná Opacity je respektována, ale pokud celý graf má deklarovaou svoji průhlednost v <see cref="GTimeGraph.GraphOpacity"/>, pak je akceptována rovněž.
+        /// Zadaná Opacity je respektována, ale pokud celý graf má deklarovaou svoji průhlednost v <see cref="TimeGraph.GraphOpacity"/>, pak je akceptována rovněž.
         /// A dále, pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>, pak je akceptována i hodnota <see cref="DragDropDrawInteractiveOpacity"/>.
         /// </summary>
         /// <param name="baseColor">Výchozí barva, typicky BackColor nebo ForeColor prvku grafu.</param>
@@ -469,7 +469,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Vrátí danou barvu, s modifikovanou průhledností Opacity (<see cref="Color.A"/>).
-        /// Zadaná Opacity je respektována, ale pokud celý graf má deklarovaou svoji průhlednost v <see cref="GTimeGraph.GraphOpacity"/>, pak je akceptována rovněž.
+        /// Zadaná Opacity je respektována, ale pokud celý graf má deklarovaou svoji průhlednost v <see cref="TimeGraph.GraphOpacity"/>, pak je akceptována rovněž.
         /// A dále, pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>, pak je akceptována i hodnota <see cref="DragDropDrawInteractiveOpacity"/>.
         /// </summary>
         /// <param name="baseColor">Výchozí barva, typicky BackColor nebo ForeColor prvku grafu.</param>
@@ -544,7 +544,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 GraphItemBehaviorMode mode = this.BehaviorMode;
                 GInteractiveState state = this.ControlBuffered.InteractiveState;
                 bool isActive = this.ControlBuffered.IsSelected || this.ControlBuffered.IsFramed || this.ControlBuffered.IsActivated || this.IsDragged;
-                return GTimeGraph.IsCaptionVisible(mode, state, isActive);
+                return TimeGraph.IsCaptionVisible(mode, state, isActive);
             }
         }
         /// <summary>
@@ -577,12 +577,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         private string _CaptionForSizeText;
         /// <summary>
-        /// Porovná dvě instance <see cref="GTimeGraphGroup"/> podle <see cref="ITimeGraphItem.Order"/> ASC, <see cref="ITimeGraphItem.Time"/> ASC
+        /// Porovná dvě instance <see cref="TimeGraphGroup"/> podle <see cref="ITimeGraphItem.Order"/> ASC, <see cref="ITimeGraphItem.Time"/> ASC
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
         /// <returns></returns>
-        public static int CompareOrderTimeAsc(GTimeGraphGroup a, GTimeGraphGroup b)
+        public static int CompareOrderTimeAsc(TimeGraphGroup a, TimeGraphGroup b)
         {
             int cmp = a._FirstItem.Order.CompareTo(b._FirstItem.Order);
             if (cmp == 0)
@@ -655,7 +655,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
             }
             this._Time = timeNew;
-            this.Graph.Invalidate(GTimeGraph.InvalidateItems.AllGroups);
+            this.Graph.Invalidate(TimeGraph.InvalidateItems.AllGroups);
         }
         /// <summary>
         /// Změna intervalu: posun času všech prvků o stejnou vzdálenost
@@ -787,7 +787,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region ICloneable members
         object ICloneable.Clone()
         {
-            GTimeGraphGroup gTimeGroup = new GTimeGraphGroup(this._ParentGraph);
+            TimeGraphGroup gTimeGroup = new TimeGraphGroup(this._ParentGraph);
 
             return gTimeGroup;
 
@@ -825,7 +825,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.BackEffectEditable; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.BackEffectNonEditable; } }
-        GTimeGraphItem ITimeGraphItem.VisualControl { get { return this.ControlBuffered; } set { this.ControlBuffered = value; } }
+        TimeGraphItem ITimeGraphItem.VisualControl { get { return this.ControlBuffered; } set { this.ControlBuffered = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }

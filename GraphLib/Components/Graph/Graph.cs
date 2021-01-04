@@ -7,7 +7,7 @@ using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Noris.LCS.Base.WorkScheduler;
 
-namespace Asol.Tools.WorkScheduler.Components.Graph
+namespace Asol.Tools.WorkScheduler.Components.Graphs
 {
     // Prvek GTimeGraph je tak líný, jako by to odkoukal od GGridu a GTable.
     // Na veškeré vstupní změny reaguje líně, jenom si poznamená: "tohle nebo tamto je od teď neplatné"
@@ -33,18 +33,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// <summary>
     /// Graf na časové ose
     /// </summary>
-    public class GTimeGraph : InteractiveContainer, ITimeInteractiveGraph, ICloneable
+    public class TimeGraph : InteractiveContainer, ITimeInteractiveGraph, ICloneable
     {
         #region Konstrukce, pole položek Items
         /// <summary>
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GTimeGraph(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public TimeGraph(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeGraph()
+        public TimeGraph()
             : base()
         {
             this._Init(null);
@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeGraph(GuiGraph guiGraph)
+        public TimeGraph(GuiGraph guiGraph)
             : base()
         {
             this._Init(guiGraph);
@@ -116,9 +116,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             IInteractiveParent parent = this.Parent;
             if (parent != null)
             {
-                if (parent is Grid.GCell)
+                if (parent is Grids.GCell)
                 {   // Graf je umístěn v buňce => hledáme GraphParameters v sloupci a poté v tabulce:
-                    Grid.GCell gCell = parent as Grid.GCell;
+                    Grids.GCell gCell = parent as Grids.GCell;
                     Column column = gCell.OwnerColumn;
                     if (column != null)
                     {
@@ -127,9 +127,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                             gp = column.Table.GraphParameters;
                     }
                 }
-                else if (parent is Grid.GRow)
+                else if (parent is Grids.GRow)
                 {   // Graf je umístěn v řádku => hledáme GraphParameters v tabulce:
-                    Grid.GRow gRow = parent as Grid.GRow;
+                    Grids.GRow gRow = parent as Grids.GRow;
                     Table table = gRow.OwnerTable;
                     if (table != null)
                         gp = table.GraphParameters;
@@ -152,7 +152,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Data samotného grafu, napojená na GuiGraph
         /// <summary>
-        /// Metoda do this grafu <see cref="GTimeGraph"/> vloží nová GUI definiční data grafu.
+        /// Metoda do this grafu <see cref="TimeGraph"/> vloží nová GUI definiční data grafu.
         /// Tato metoda nenačítá prvky grafu z <see cref="GuiGraph.GraphItems"/>!
         /// </summary>
         /// <param name="guiGraph"></param>
@@ -395,7 +395,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální logické souřadnice Y.
         /// Pokud jsou neplatné, znovu vytvoří pole <see cref="AllGroupList"/> a vypočítá logické souřadnice Y.
-        /// Naplní hodnoty: <see cref="GTimeGraphGroup.CoordinateYLogical"/> a <see cref="GTimeGraphGroup.CoordinateYVirtual"/>, 
+        /// Naplní hodnoty: <see cref="TimeGraphGroup.CoordinateYLogical"/> a <see cref="TimeGraphGroup.CoordinateYVirtual"/>, 
         /// připraví kalkulátor <see cref="CalculatorY"/>.
         /// </summary>
         protected void CheckValidAllGroupList()
@@ -405,7 +405,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="VisibleGraphItems"/>.
-        /// Naplní hodnoty: <see cref="GTimeGraphGroup.CoordinateYLogical"/> a <see cref="GTimeGraphGroup.CoordinateYVirtual"/>, 
+        /// Naplní hodnoty: <see cref="TimeGraphGroup.CoordinateYLogical"/> a <see cref="TimeGraphGroup.CoordinateYVirtual"/>, 
         /// připraví kalkulátor <see cref="CalculatorY"/>.
         /// </summary>
         protected void RecalculateAllGroupList()
@@ -432,7 +432,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                         layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
 
                     // Připravím si finální pole, obsahující jednotlivé vrstvy elementů grafu:
-                    GTimeGraphGroup[][] allGroups = new GTimeGraphGroup[layers][];
+                    TimeGraphGroup[][] allGroups = new TimeGraphGroup[layers][];
 
                     int l = 0;
                     foreach (IGrouping<int, ITimeGraphItem> layerGroup in layerGroups)
@@ -465,7 +465,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                             // Nyní zpracuji grafické prvky dané vrstvy (layerGroup) po jednotlivých skupinách za hladiny Level (levelGroups),
                             // vypočtu jejich logické souřadnice Y a přidám je do ItemGroupList:
                             Interval<float> layerUsedLogicalY = new Interval<float>(0f, 0f, true); // Pole použitých souřadnic na ose Y pro celou VRSTVU
-                            List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();    // Sumární pole elementů za jednu vrstvu
+                            List<TimeGraphGroup> layerGroupList = new List<TimeGraphGroup>();    // Sumární pole elementů za jednu vrstvu
                             foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
                             {
                                 layerUsing.Clear();
@@ -488,7 +488,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                             int layer = layerDependendGroup.Item1;
                             l = layerDependendGroup.Item2;
                             ITimeGraphItem[] layerList = layerDependendGroup.Item3;
-                            List<GTimeGraphGroup> layerGroupList = this.RecalculateDependentElements(layerList, topY, layer);
+                            List<TimeGraphGroup> layerGroupList = this.RecalculateDependentElements(layerList, topY, layer);
                             allGroups[l] = layerGroupList.ToArray();
                         }
                     }
@@ -509,7 +509,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
-        /// Zpracuje grafické prvky jedné vrstvy a jedné hladiny (z prvků <see cref="ITimeGraphItem"/> z pole items, do prvků <see cref="GTimeGraphGroup"/> do pole layerGroupList.
+        /// Zpracuje grafické prvky jedné vrstvy a jedné hladiny (z prvků <see cref="ITimeGraphItem"/> z pole items, do prvků <see cref="TimeGraphGroup"/> do pole layerGroupList.
         /// Vstupní prvky seskupí podle hodnoty <see cref="ITimeGraphItem.GroupId"/> do skupin, pro každou skupinu najde její pozici na ose X (její datum počátku a konce), 
         /// určí její výšku na ose Y, a v objektu layerUsing najde vhodnou logickou pozici na ose Y, kde nová skupina nebude v konfliktu s jinou již zadanou skupinou.
         /// <para/>
@@ -518,13 +518,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="items">Jednotlivé grafické prvky, které budeme zpracovávat</param>
         /// <param name="layerUsing">Objekt, který řeší využití 2D plochy, kde ve směru X je hodnota typu DateTime, a ve směru Y je pole intervalů typu float</param>
         /// <param name="isDownward">Směr využití na ose Y: true = hledáme volé místo směrem dolů, false = nahoru</param>
-        /// <param name="layerGroupList">Výstupní pole, do něhož se ukládají prvky typu <see cref="GTimeGraphGroup"/>, které v sobě zahrnují jeden nebo více prvků <see cref="ITimeGraphItem"/> se shodnou hodnotou <see cref="ITimeGraphItem.GroupId"/></param>
+        /// <param name="layerGroupList">Výstupní pole, do něhož se ukládají prvky typu <see cref="TimeGraphGroup"/>, které v sobě zahrnují jeden nebo více prvků <see cref="ITimeGraphItem"/> se shodnou hodnotou <see cref="ITimeGraphItem.GroupId"/></param>
         /// <param name="layerUsedLogicalY">Sumární interval využití osy Y</param>
         /// <param name="minimalFragmentHeight">Nejmenší logická výška zlomku prvku, počítáno z prvků jejichž výška je kladná, z desetinné části (například z výšky 2.25 se akceptuje 0.25).</param>
         /// <param name="groups">Počet skupin, průběžné počitadlo</param>
-        protected void RecalculateElementsInLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref float minimalFragmentHeight, ref int groups)
+        protected void RecalculateElementsInLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<TimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref float minimalFragmentHeight, ref int groups)
         {
-            List<GTimeGraphGroup> groupList = CreateTimeGroupList(items);
+            List<TimeGraphGroup> groupList = CreateTimeGroupList(items);
             groups += groupList.Count;
 
             // Hlavním úkolem nyní je určit logické souřadnice Y pro každou skupinu prvků GTimeGraphGroup,
@@ -532,7 +532,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // a tuto skupinu zařazujeme do volného prostoru v instanci layerUsing:
             float searchFrom = (isDownward ? layerUsedLogicalY.Begin : layerUsedLogicalY.End);
             float nextSearch = searchFrom;
-            foreach (GTimeGraphGroup group in groupList)
+            foreach (TimeGraphGroup group in groupList)
             {
                 if (group.IsValidRealTime)
                 {   // Grupa je reálná (výška je kladná, a čas je buďto kladný, anebo nulový a obsahuje ikonu zobrazovanou v daném čase):
@@ -592,19 +592,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 layerUsedLogicalY.End = RoundLogicalY(nextSearch, isDownward);
         }
         /// <summary>
-        /// Metoda vygeneruje a vrátí pole <see cref="GTimeGraphGroup"/>, do logické výšky všech prvků vepíše rozsah 0 až <paramref name="topY"/>.
+        /// Metoda vygeneruje a vrátí pole <see cref="TimeGraphGroup"/>, do logické výšky všech prvků vepíše rozsah 0 až <paramref name="topY"/>.
         /// </summary>
         /// <param name="layerList">Prvky</param>
         /// <param name="topY">Souřadnice Y Top logická</param>
         /// <param name="layer">Číslo vrstvy</param>
         /// <returns></returns>
-        private List<GTimeGraphGroup> RecalculateDependentElements(ITimeGraphItem[] layerList, float topY, int layer)
+        private List<TimeGraphGroup> RecalculateDependentElements(ITimeGraphItem[] layerList, float topY, int layer)
         {
             // Vstupní prvky sgrupujeme podle GroupID:
-            List<GTimeGraphGroup> groupList = CreateTimeGroupList(layerList);
+            List<TimeGraphGroup> groupList = CreateTimeGroupList(layerList);
 
             // Do každé grupy vepíšu její logické souřadnice Y:
-            foreach (GTimeGraphGroup group in groupList)
+            foreach (TimeGraphGroup group in groupList)
             {
                 if (group.Height.HasValue)
                     throw new GraphLibDataException("GraphItem.Height disagreement: on Layer " + layer.ToString() + ", a combination of NULL and NOT NULL Height elements is not permitted.");
@@ -614,25 +614,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return groupList;
         }
         /// <summary>
-        /// Z dodaných prvků <see cref="ITimeGraphItem"/> vytvoří a vrátí pole prvků <see cref="GTimeGraphGroup"/> podle pravidel pro prvky grafu.
-        /// Klíčem pro tvorbu <see cref="GTimeGraphGroup"/> je <see cref="ITimeGraphItem.GroupId"/>.
+        /// Z dodaných prvků <see cref="ITimeGraphItem"/> vytvoří a vrátí pole prvků <see cref="TimeGraphGroup"/> podle pravidel pro prvky grafu.
+        /// Klíčem pro tvorbu <see cref="TimeGraphGroup"/> je <see cref="ITimeGraphItem.GroupId"/>.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        private List<GTimeGraphGroup> CreateTimeGroupList(IEnumerable<ITimeGraphItem> items)
+        private List<TimeGraphGroup> CreateTimeGroupList(IEnumerable<ITimeGraphItem> items)
         {
             // Grafické prvky seskupíme podle ITimeGraphItem.GroupId:
             //  více prvků se shodným GroupId tvoří jeden logický celek, tyto prvky jsou vykresleny ve společné linii, nemíchají se s prvky s jiným GroupId.
             // Jedna GroupId reprezentuje například jednu výrobní operaci (nebo přesněji její paralelní průchod), například dva týdny práce;
             //  kdežto jednotlivé položky ITimeGraphItem reprezentují jednotlivé pracovní časy, například jednotlivé směny.
-            List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();     // Výsledné pole prvků GTimeGraphGroup
+            List<TimeGraphGroup> groupList = new List<TimeGraphGroup>();     // Výsledné pole prvků GTimeGraphGroup
             List<ITimeGraphItem> groupsItems = new List<ITimeGraphItem>();     // Sem vložíme prvky ITimeGraphItem, které mají GroupId nenulové, odsud budeme generovat grupy...
             bool acceptZeroTime = (this.GraphItemMinPixelWidth > 0);
             // a) Položky bez GroupId:
             foreach (ITimeGraphItem item in items)
             {
                 if (item.GroupId == 0)
-                    groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, item));      // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
+                    groupList.Add(new TimeGraphGroup(this, acceptZeroTime, item));      // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
                 else
                     groupsItems.Add(item);
             }
@@ -640,11 +640,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // b) Položky, které mají GroupId nenulové, podle něj seskupíme:
             IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = groupsItems.GroupBy(i => (i.GroupId != 0 ? i.GroupId : i.ItemId));
             foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
-                groupList.Add(new GTimeGraphGroup(this, acceptZeroTime, group));         // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
+                groupList.Add(new TimeGraphGroup(this, acceptZeroTime, group));         // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
 
             // Setřídíme prvky GTimeGraphGroup podle jejich Order a podle času jejich počátku:
             if (groupList.Count > 1)
-                groupList.Sort((a, b) => GTimeGraphGroup.CompareOrderTimeAsc(a, b));
+                groupList.Sort((a, b) => TimeGraphGroup.CompareOrderTimeAsc(a, b));
             return groupList;
         }
         /// <summary>
@@ -685,21 +685,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected int CurrentLineLogicalHeight { get; set; }
         /// <summary>
-        /// Metoda projde všechny prvky <see cref="GTimeGraphGroup"/> v poli <see cref="AllGroupList"/>, a pro každý prvek provede danou akci.
+        /// Metoda projde všechny prvky <see cref="TimeGraphGroup"/> v poli <see cref="AllGroupList"/>, a pro každý prvek provede danou akci.
         /// </summary>
         /// <param name="action"></param>
-        protected void AllGroupScan(Action<GTimeGraphGroup> action)
+        protected void AllGroupScan(Action<TimeGraphGroup> action)
         {
-            foreach (GTimeGraphGroup[] layer in this.AllGroupList)
-                foreach (GTimeGraphGroup group in layer)
+            foreach (TimeGraphGroup[] layer in this.AllGroupList)
+                foreach (TimeGraphGroup group in layer)
                     action(group);
         }
         /// <summary>
         /// Seznam všech skupin prvků k zobrazení v grafu.
         /// Seznam má dvojitou úroveň: v první úrovni jsou vizuální vrstvy (od spodní po vrchní), 
-        /// v druhé úrovni jsou pak jednotlivé prvky <see cref="GTimeGraphGroup"/> k vykreslení.
+        /// v druhé úrovni jsou pak jednotlivé prvky <see cref="TimeGraphGroup"/> k vykreslení.
         /// </summary>
-        protected GTimeGraphGroup[][] AllGroupList { get { this.CheckValidAllGroupList(); return this._AllGroupList; } } private GTimeGraphGroup[][] _AllGroupList;
+        protected TimeGraphGroup[][] AllGroupList { get { this.CheckValidAllGroupList(); return this._AllGroupList; } } private TimeGraphGroup[][] _AllGroupList;
         #endregion
         #region CalculatorY = Kalkulátor souřadnic Y : výška grafu a přepočty souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
         /// <summary>
@@ -733,7 +733,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// Konstuktor
             /// </summary>
             /// <param name="owner"></param>
-            public PositionCalculatorInfo(GTimeGraph owner)
+            public PositionCalculatorInfo(TimeGraph owner)
             {
                 this._Owner = owner;
             }
@@ -868,7 +868,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <summary>
             /// Majitel = graf
             /// </summary>
-            private GTimeGraph _Owner;
+            private TimeGraph _Owner;
             /// <summary>
             /// Vlastnosti grafu
             /// </summary>
@@ -916,11 +916,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.RecalculateCoordinateYVirtual();
         }
         /// <summary>
-        /// Metoda do všech položek v poli <see cref="AllGroupList"/> vypočítá VirtualY souřadnici a vloží ji do <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
-        /// Tato metoda musí proběhnout až po kompletním zmapování souřadnic LogicalY <see cref="GTimeGraphGroup.CoordinateYLogical"/>
+        /// Metoda do všech položek v poli <see cref="AllGroupList"/> vypočítá VirtualY souřadnici a vloží ji do <see cref="TimeGraphGroup.CoordinateYVirtual"/>.
+        /// Tato metoda musí proběhnout až po kompletním zmapování souřadnic LogicalY <see cref="TimeGraphGroup.CoordinateYLogical"/>
         /// a po provedení přípravy kalkulátoru Y (<see cref="PositionCalculatorInfo.Prepare(Interval{float}, int)"/>, 
         /// protože teprve po této přípravě může být kalkulátor použit pro výpočty <see cref="PositionCalculatorInfo.GetVirtualRange(Interval{float})"/>.
-        /// Není tedy možno vypočítat současně <see cref="GTimeGraphGroup.CoordinateYLogical"/> a hned poté <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
+        /// Není tedy možno vypočítat současně <see cref="TimeGraphGroup.CoordinateYLogical"/> a hned poté <see cref="TimeGraphGroup.CoordinateYVirtual"/>.
         /// </summary>
         protected void RecalculateCoordinateYVirtual()
         {
@@ -944,7 +944,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.RecalculateCoordinateYReal();
         }
         /// <summary>
-        /// Provede přepočet souřadnic Y Real = <see cref="GTimeGraphGroup.CoordinateYReal"/> ve všech grupách <see cref="AllGroupList"/>
+        /// Provede přepočet souřadnic Y Real = <see cref="TimeGraphGroup.CoordinateYReal"/> ve všech grupách <see cref="AllGroupList"/>
         /// </summary>
         protected void RecalculateCoordinateYReal()
         {
@@ -1034,28 +1034,28 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             lock (this._ValidityLock)
             {
-                List<GTimeGraphGroup> visibleGroupList = new List<GTimeGraphGroup>();
+                List<TimeGraphGroup> visibleGroupList = new List<TimeGraphGroup>();
 
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
                 {
                     int offsetX = this._TimeConvertor.FirstPixel;
                     int[] counters = new int[3];
-                    foreach (GTimeGraphGroup[] layerList in this.AllGroupList)
+                    foreach (TimeGraphGroup[] layerList in this.AllGroupList)
                     {   // Jedna vizuální vrstva za druhou:
                         counters[0]++;
                         switch (timeAxisMode)
                         {
                             case TimeGraphTimeAxisMode.ProportionalScale:
-                                foreach (GTimeGraphGroup groupItem in layerList)
+                                foreach (TimeGraphGroup groupItem in layerList)
                                     this.RecalculateCoordinateXProportional(visibleGroupList, groupItem, offsetX, counters);
                                 break;
                             case TimeGraphTimeAxisMode.LogarithmicScale:
-                                foreach (GTimeGraphGroup groupItem in layerList)
+                                foreach (TimeGraphGroup groupItem in layerList)
                                     this.RecalculateCoordinateXLogarithmic(visibleGroupList, groupItem, offsetX, counters);
                                 break;
                             case TimeGraphTimeAxisMode.Standard:
                             default:
-                                foreach (GTimeGraphGroup groupItem in layerList)
+                                foreach (TimeGraphGroup groupItem in layerList)
                                     this.RecalculateCoordinateXStandard(visibleGroupList, groupItem, offsetX, counters);
                                 break;
                         }
@@ -1087,14 +1087,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         } private bool _IsValidCoordinateX;
         /// <summary>
-        /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
+        /// Metoda připraví data pro jeden grafický prvek typu <see cref="TimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.Standard"/>
         /// </summary>
         /// <param name="visibleGroupList">Seznam viditelných prvků</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXStandard(List<GTimeGraphGroup> visibleGroupList, GTimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXStandard(List<TimeGraphGroup> visibleGroupList, TimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
@@ -1108,14 +1108,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
-        /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
+        /// Metoda připraví data pro jeden grafický prvek typu <see cref="TimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.ProportionalScale"/>
         /// </summary>
         /// <param name="visibleGroupList">Seznam viditelných prvků</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXProportional(List<GTimeGraphGroup> visibleGroupList, GTimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXProportional(List<TimeGraphGroup> visibleGroupList, TimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
@@ -1129,14 +1129,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
-        /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
+        /// Metoda připraví data pro jeden grafický prvek typu <see cref="TimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/>
         /// </summary>
         /// <param name="visibleGroupList">Seznam viditelných prvků</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXLogarithmic(List<GTimeGraphGroup> visibleGroupList, GTimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXLogarithmic(List<TimeGraphGroup> visibleGroupList, TimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
@@ -1168,7 +1168,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Seznam má jednoduchou úroveň (na rozdíl od <see cref="AllGroupList"/>), ale prvky obsahuje ve správném pořadí = odspodu nahoru.
         /// Tento seznam lze použít jako přímý zdroj pro pole <see cref="_Childs"/>.
         /// </summary>
-        protected List<GTimeGraphGroup> VisibleGroupList { get { this.CheckValidCoordinateX(); return this._VisibleGroupList; } } private List<GTimeGraphGroup> _VisibleGroupList;
+        protected List<TimeGraphGroup> VisibleGroupList { get { this.CheckValidCoordinateX(); return this._VisibleGroupList; } } private List<TimeGraphGroup> _VisibleGroupList;
         /// <summary>
         /// Hodnota Bounds.Width, pro kterou byly naposledy přepočítávány prvky pole <see cref="VisibleGroupList"/>.
         /// Po změně souřadnic se provádí invalidace.
@@ -1194,7 +1194,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected void RecalculateBounds()
         {
-            foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
+            foreach (TimeGraphGroup groupItem in this.VisibleGroupList)
                 groupItem.PrepareBounds();
             this._IsValidBounds = true;
         }
@@ -1277,7 +1277,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
                 else if (isFadeIn)
                 {
-                    bool hasMouseLinks = this.GraphLinkArray.CurrentLinksMode.HasFlag(GTimeGraphLinkMode.MouseOver);   // Linky: odložíme o malý okamžik rozsvícení okna ToolTipu, aby nejdříve byly na chvilku vidět jen Linky
+                    bool hasMouseLinks = this.GraphLinkArray.CurrentLinksMode.HasFlag(TimeGraphLinkMode.MouseOver);   // Linky: odložíme o malý okamžik rozsvícení okna ToolTipu, aby nejdříve byly na chvilku vidět jen Linky
                     infoText = args.InteractiveArgs.ToolTipData.InfoText;
                     toolTipData.AnimationWaitBeforeTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 650 : 150);
                     toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 350 : 250);
@@ -1389,7 +1389,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GGraphControlPosition.None);
+            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GraphControlPosition.None);
             this.DataSource.GraphRightClick(args);
             if (args.ContextMenu != null)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
@@ -1402,7 +1402,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GGraphControlPosition.None);
+            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GraphControlPosition.None);
             this.DataSource.GraphDoubleClick(args);
             if (args.ContextMenu != null)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
@@ -1415,7 +1415,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GGraphControlPosition.None);
+            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GraphControlPosition.None);
             this.DataSource.GraphLongClick(args);
             if (args.ContextMenu != null)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
@@ -1439,39 +1439,39 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="dragFrameWorkArea"></param>
         protected void DragFrameWorkAreaModifyByTable(GInteractiveChangeStateArgs e, ref Rectangle dragFrameWorkArea)
         {
-            Grid.GTable table = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            Grids.GTable table = this.SearchForParent(typeof(Grids.GTable)) as Grids.GTable;
             if (table == null) return;
-            Rectangle tableRowArea = table.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+            Rectangle tableRowArea = table.GetAbsoluteBoundsForArea(Grids.TableAreaType.RowData);
             dragFrameWorkArea = new Rectangle(dragFrameWorkArea.X, tableRowArea.Y, dragFrameWorkArea.Width, tableRowArea.Height);
         }
         #endregion
         #region Linky grafu : koordinační objekt GTimeGraphLinkArray
         /// <summary>
-        /// Reference na koordinační objekt pro kreslení linek grafu, třída: <see cref="GTimeGraphLinkItem"/>.
+        /// Reference na koordinační objekt pro kreslení linek grafu, třída: <see cref="TimeGraphLinkItem"/>.
         /// Jednotlivé prvky grafu si mohou získávat svoje linky ke kreslení (podle svého stavu MouseOver, IsSelected atd).
-        /// Vykreslování linek grafu ale není řízeno z jednotlivého prvku grafu <see cref="GTimeGraphItem"/>, 
+        /// Vykreslování linek grafu ale není řízeno z jednotlivého prvku grafu <see cref="TimeGraphItem"/>, 
         /// ale centrálně - právě z této instance <see cref="GraphLinkArray"/>.
         /// Tento koordinační objekt je jeden buď pro jeden graf (=všechny prvky grafu), anebo je jeden pro více grafů v jedné tabulce.
-        /// Vytváření instance <see cref="GTimeGraphLinkArray"/> (a tedy i dohledání režimu) je řízeno právě v této property <see cref="GraphLinkArray"/>.
+        /// Vytváření instance <see cref="TimeGraphLinkArray"/> (a tedy i dohledání režimu) je řízeno právě v této property <see cref="GraphLinkArray"/>.
         /// <para/>
         /// Jednotlivé prvky grafu tedy mohou kdykoliv do této property vkládat nebo odebírat linky, ale nemají si své linky vykreslovat.
-        /// Instance třídy <see cref="GTimeGraphLinkArray"/> do této property je nalezena / vytvořena OnDemand.
+        /// Instance třídy <see cref="TimeGraphLinkArray"/> do této property je nalezena / vytvořena OnDemand.
         /// </summary>
-        public GTimeGraphLinkArray GraphLinkArray
+        public TimeGraphLinkArray GraphLinkArray
         {
             get
             {
                 if (this._GraphLinkArray == null)
                 {   // Dosud nemáme referenci na GTimeGraphLinkArray:
                     // Podíváme se, zda máme tabulku Grid.GTable, a převezmeme její objekt:
-                    Grid.GTable gTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+                    Grids.GTable gTable = this.SearchForParent(typeof(Grids.GTable)) as Grids.GTable;
                     if (gTable != null)
                     {   // Použijeme sdílenou instanci. Objekt GTable si ji sám vytvoří a zařadí do svých Childs:
                         this._GraphLinkArray = gTable.GraphLinkArray;
                     }
                     else
                     {   // Nemáme k dispozici GTable: musíme si instanci GTimeGraphLinkArray vytvořit sami pro sebe:
-                        this._GraphLinkArray = new GTimeGraphLinkArray(this);
+                        this._GraphLinkArray = new TimeGraphLinkArray(this);
                         this.GraphLinkArrayIsOnGraph = true;
                         this.Invalidate(InvalidateItems.Childs);
                     }
@@ -1486,13 +1486,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected bool GraphLinkArrayIsOnGraph { get; private set; }
         /// <summary>
-        /// Instance prvku <see cref="Graph.GTimeGraphLinkArray"/>, ať už je naše nebo cizí
+        /// Instance prvku <see cref="Graphs.TimeGraphLinkArray"/>, ať už je naše nebo cizí
         /// </summary>
-        private GTimeGraphLinkArray _GraphLinkArray;
+        private TimeGraphLinkArray _GraphLinkArray;
         #endregion
         #region Child items a kompletní validace
         /// <summary>
-        /// Child prvky grafu = položky grafu, výhradně typu <see cref="GTimeGraphGroup"/>.
+        /// Child prvky grafu = položky grafu, výhradně typu <see cref="TimeGraphGroup"/>.
         /// Před vrácením soupisu proběhne jeho validace.
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValid(); return this._Childs; } }
@@ -1532,7 +1532,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected void RecalculateChildList()
         {
             this._Childs = new List<IInteractiveItem>();
-            foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
+            foreach (TimeGraphGroup groupItem in this.VisibleGroupList)
                 this._Childs.Add(groupItem.ControlBuffered);
             if (this.GraphLinkArrayIsOnGraph)
                 this._Childs.Add(this._GraphLinkArray);
@@ -1993,7 +1993,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda najde a vrátí čas nejbližší danému časovému bodu ze všech svých skupin prvků.
         /// Metoda prochází svoje grupy prvků, a každý prvek předá danému timeSelectoru.
         /// Ten může danou grupu prověřit, a pokud nevyhovuje pak vrátí null. 
-        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
+        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="TimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
         /// Tato metoda následně prověří, zda vrácené datum spadá do časového okna timeWindow (pokud není zadáno, pak akceptuje všechna data).
         /// Vyhovující datum si poznamená, včetně jeho vzdálenosti od časového bodu timePoint.
         /// Nakonec z vyhovujících časů vrátí ten, který je nejblíže bodu timePoint.
@@ -2003,7 +2003,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="timePoint">Časový okamžik, ke kterému měříme vzdálenost</param>
         /// <param name="timeWindow">Volitelně časové okno, v němž musí být obsažen čas prvku vrácený z metody timeSelector, aby byl akceptován. Hodnota null = akceptujeme vše.</param>
         /// <returns></returns>
-        public DateTime? SearchNearTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow = null)
+        public DateTime? SearchNearTime(Func<TimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow = null)
         {
             _SearchNearItem nearItem = this._SearchNearGroupTime(timeSelector, timePoint, timeWindow);
             return (nearItem != null ? (DateTime?)nearItem.DateTime : (DateTime?)null);
@@ -2012,7 +2012,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda najde a vrátí čas nejbližší danému časovému bodu ze všech svých skupin prvků.
         /// Metoda prochází svoje grupy prvků, a každý prvek předá danému timeSelectoru.
         /// Ten může danou grupu prověřit, a pokud nevyhovuje pak vrátí null. 
-        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
+        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="TimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
         /// Tato metoda následně prověří, zda vrácené datum spadá do časového okna timeWindow (pokud není zadáno, pak akceptuje všechna data).
         /// Vyhovující datum si poznamená, včetně jeho vzdálenosti od časového bodu timePoint.
         /// Nakonec z vyhovujících časů vrátí ten, který je nejblíže bodu timePoint.
@@ -2023,7 +2023,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="nearGroup">Výstupní proměnná pro uložení grupy, která má ten nejbližší čas</param>
         /// <param name="timeWindow">Volitelně časové okno, v němž musí být obsažen čas prvku vrácený z metody timeSelector, aby byl akceptován. Hodnota null = akceptujeme vše.</param>
         /// <returns></returns>
-        public DateTime? SearchNearTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, out GTimeGraphGroup nearGroup, TimeRange timeWindow = null)
+        public DateTime? SearchNearTime(Func<TimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, out TimeGraphGroup nearGroup, TimeRange timeWindow = null)
         {
             nearGroup = null;
             _SearchNearItem nearItem = this._SearchNearGroupTime(timeSelector, timePoint, timeWindow);
@@ -2035,7 +2035,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda najde a vrátí nejbližší grupu a její čas pro dané zadáníze všech svých skupin prvků.
         /// Metoda prochází svoje grupy prvků, a každý prvek předá danému timeSelectoru.
         /// Ten může danou grupu prověřit, a pokud nevyhovuje pak vrátí null. 
-        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
+        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="TimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
         /// Tato metoda následně prověří, zda vrácené datum spadá do časového okna timeWindow (pokud není zadáno, pak akceptuje všechna data).
         /// Vyhovující datum si poznamená, včetně jeho vzdálenosti od časového bodu timePoint.
         /// Nakonec z vyhovujících časů vrátí ten, který je nejblíže bodu timePoint.
@@ -2045,7 +2045,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="timePoint">Časový okamžik, ke kterému měříme vzdálenost</param>
         /// <param name="timeWindow">Volitelně časové okno, v němž musí být obsažen čas prvku vrácený z metody timeSelector, aby byl akceptován. Hodnota null = akceptujeme vše.</param>
         /// <returns></returns>
-        private _SearchNearItem _SearchNearGroupTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow)
+        private _SearchNearItem _SearchNearGroupTime(Func<TimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow)
         {
             List<_SearchNearItem> timeList = new List<_SearchNearItem>();
             bool hasWindow = (timeWindow != null);
@@ -2069,7 +2069,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return timeList[0];
         }
         /// <summary>
-        /// Třída pro uchování mezivýsledků v metodě <see cref="_SearchNearGroupTime(Func{GTimeGraphGroup, DateTime?}, DateTime, TimeRange)"/>
+        /// Třída pro uchování mezivýsledků v metodě <see cref="_SearchNearGroupTime(Func{TimeGraphGroup, DateTime?}, DateTime, TimeRange)"/>
         /// </summary>
         private class _SearchNearItem
         {
@@ -2079,7 +2079,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <param name="group"></param>
             /// <param name="dateTime"></param>
             /// <param name="timeSpan"></param>
-            public _SearchNearItem(GTimeGraphGroup group, DateTime dateTime, TimeSpan timeSpan)
+            public _SearchNearItem(TimeGraphGroup group, DateTime dateTime, TimeSpan timeSpan)
             {
                 this.Group = group;
                 this.DateTime = dateTime;
@@ -2088,9 +2088,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <summary>
             /// Grupa
             /// </summary>
-            public GTimeGraphGroup Group { get; private set; }
+            public TimeGraphGroup Group { get; private set; }
             /// <summary>
-            /// Její určený čas (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End)
+            /// Její určený čas (typicky <see cref="TimeGraphGroup.Time"/>.Begin nebo End)
             /// </summary>
             public DateTime DateTime { get; private set; }
             /// <summary>
@@ -2138,9 +2138,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="cloneArgs">Data pro klonování</param>
         /// <returns></returns>
-        protected GTimeGraph GetGraphClone(TableRowCloneArgs cloneArgs)
+        protected TimeGraph GetGraphClone(TableRowCloneArgs cloneArgs)
         {
-            GTimeGraph gTimeGraph = new GTimeGraph(this._GuiGraph);
+            TimeGraph gTimeGraph = new TimeGraph(this._GuiGraph);
 
             bool isAdded = false;
             if (cloneArgs == null || cloneArgs.CloneGraphItems)
@@ -2162,7 +2162,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region ITimeInteractiveGraph members
         ITimeAxisConvertor ITimeInteractiveGraph.TimeAxisConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
         IVisualParent ITimeInteractiveGraph.VisualParent { get { return this.VisualParent; } set { this.VisualParent = value; } }
-        GTimeGraph ITimeInteractiveGraph.GetGraphClone(TableRowCloneArgs cloneArgs) { return this.GetGraphClone(cloneArgs); }
+        TimeGraph ITimeInteractiveGraph.GetGraphClone(TableRowCloneArgs cloneArgs) { return this.GetGraphClone(cloneArgs); }
         #endregion
     }
     #region class TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
@@ -2451,7 +2451,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="cloneArgs">Data pro klonování</param>
         /// <returns></returns>
-        GTimeGraph GetGraphClone(TableRowCloneArgs cloneArgs);
+        TimeGraph GetGraphClone(TableRowCloneArgs cloneArgs);
     }
     /// <summary>
     /// Deklarace grafu, který má časovou osu a není interaktivní
@@ -2521,7 +2521,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         Int32 Order { get; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// <see cref="Height"/> * <see cref="TimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// <para/>
@@ -2664,10 +2664,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        GTimeGraphItem VisualControl { get; set; }
+        TimeGraphItem VisualControl { get; set; }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="VisualControl"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="VisualControl"/> : <see cref="TimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku</param>
@@ -2822,7 +2822,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="position"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="boundsVisibleAbsolute"></param>
-        public CreateTextArgs(GTimeGraph graph, GInteractiveDrawArgs e, FontInfo fontInfo, GTimeGraphGroup group, ITimeGraphItem dataItem, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
+        public CreateTextArgs(TimeGraph graph, GInteractiveDrawArgs e, FontInfo fontInfo, TimeGraphGroup group, ITimeGraphItem dataItem, GraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
             : base(graph, group, dataItem, position)
         {
             this._DrawArgs = e;
@@ -2878,7 +2878,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public CreateToolTipArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, string timeText, ITimeGraphItem data, GGraphControlPosition position)
+        public CreateToolTipArgs(GInteractiveChangeStateArgs e, TimeGraph graph, TimeGraphGroup group, string timeText, ITimeGraphItem data, GraphControlPosition position)
             : base(e, graph, group, data, position)
         {
             this.TimeText = timeText;
@@ -2908,7 +2908,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="data"></param>
         /// <param name="position"></param>
         /// <param name="itemEvent">Druh události, pro který se Linky hledají</param>
-        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, CreateLinksItemEventType itemEvent)
+        public CreateLinksArgs(TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position, CreateLinksItemEventType itemEvent)
             : base(graph, group, data, position)
         {
             this.SearchSidePrev = true;
@@ -2925,7 +2925,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="itemEvent">Druh události, pro který se Linky hledají</param>
         /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
         /// <param name="searchSideNext">Hledej linky na straně Next;</param>
-        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, CreateLinksItemEventType itemEvent,
+        public CreateLinksArgs(TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position, CreateLinksItemEventType itemEvent,
             bool searchSidePrev, bool searchSideNext)
             : base(graph, group, data, position)
         {
@@ -2950,7 +2950,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Seznam vztahů pro daný prvek
         /// </summary>
-        public GTimeGraphLinkItem[] Links { get; set; }
+        public TimeGraphLinkItem[] Links { get; set; }
     }
     /// <summary>
     /// Typ události, pro kterou se mají vytvářet Linky
@@ -2987,7 +2987,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="data"></param>
         /// <param name="position"></param>
         /// <param name="targetAbsoluteBounds"></param>
-        public ItemDragDropArgs(GDragActionArgs dragArgs, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle? targetAbsoluteBounds)
+        public ItemDragDropArgs(GDragActionArgs dragArgs, TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position, Rectangle? targetAbsoluteBounds)
             : base(dragArgs.ChangeArgs, graph, group, data, position)
         {
             this._DragArgs = dragArgs;
@@ -3102,12 +3102,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Graf, v němž je nyní aktuální prvek grafu uložen (=Parent) (nikoli ten, nad kterým se zrovna přemisťuje).
         /// "WriteInit" property.
         /// </summary>
-        public GTimeGraph ParentGraph { get { return this._ParentGraph; } set { this._CheckSet(); this._ParentGraph = value; } } private GTimeGraph _ParentGraph;
+        public TimeGraph ParentGraph { get { return this._ParentGraph; } set { this._CheckSet(); this._ParentGraph = value; } } private TimeGraph _ParentGraph;
         /// <summary>
         /// Tabulka, v které je nyní aktuální prvek grafu uložen (=Parent) (nikoli ten, nad kterým se zrovna přemisťuje).
         /// "WriteInit" property.
         /// </summary>
-        public Grid.GTable ParentTable { get { return this._ParentTable; } set { this._CheckSet(); this._ParentTable = value; } } private Grid.GTable _ParentTable;
+        public Grids.GTable ParentTable { get { return this._ParentTable; } set { this._CheckSet(); this._ParentTable = value; } } private Grids.GTable _ParentTable;
         /// <summary>
         /// Interaktivní cílový prvek, nad nímž se nyní nachází ukazatel myši = na tento prvek "by se aktuální prvek grafu přemístil".
         /// </summary>
@@ -3115,11 +3115,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Cílový graf, nad nímž se nyní nachází ukazatel myši = do tohoto grafu "by se aktuální prvek grafu přemístil".
         /// </summary>
-        public GTimeGraph TargetGraph { get { return this._TargetGraph; } set { this._TargetGraph = value; } } private GTimeGraph _TargetGraph;
+        public TimeGraph TargetGraph { get { return this._TargetGraph; } set { this._TargetGraph = value; } } private TimeGraph _TargetGraph;
         /// <summary>
         /// Cílová tabulka, nad níž se nyní nachází ukazatel myši = do této tabulky "by se aktuální prvek grafu přemístil".
         /// </summary>
-        public Grid.GTable TargetTable { get { return this._TargetTable; } set { this._TargetTable = value; } } private Grid.GTable _TargetTable;
+        public Grids.GTable TargetTable { get { return this._TargetTable; } set { this._TargetTable = value; } } private Grids.GTable _TargetTable;
         #endregion
         #region Dopočítané vstupní proměnné
         /// <summary>
@@ -3162,7 +3162,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 Rectangle? homeBounds = null;
 
                 if (this.TargetTable != null)
-                    homeBounds = this.TargetTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+                    homeBounds = this.TargetTable.GetAbsoluteBoundsForArea(Grids.TableAreaType.RowData);
 
                 if (this.TargetGraph != null)
                 {
@@ -3198,8 +3198,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             IInteractiveItem item = this._DragArgs.FindItemAtPoint(targetAbsolutePoint);
             this.TargetItem = item;
-            this.TargetGraph = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
-            this.TargetTable = InteractiveObject.SearchForItem(item, true, typeof(Grid.GTable)) as Grid.GTable;
+            this.TargetGraph = InteractiveObject.SearchForItem(item, true, typeof(TimeGraph)) as TimeGraph;
+            this.TargetTable = InteractiveObject.SearchForItem(item, true, typeof(Grids.GTable)) as Grids.GTable;
         }
         /// <summary>
         /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
@@ -3317,7 +3317,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="position"></param>
         /// <param name="itemBoundsInfo"></param>
         /// <param name="timeRangeTarget"></param>
-        public ItemResizeArgs(ResizeObjectArgs resizeArgs, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, BoundsInfo itemBoundsInfo, TimeRange timeRangeTarget)
+        public ItemResizeArgs(ResizeObjectArgs resizeArgs, TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position, BoundsInfo itemBoundsInfo, TimeRange timeRangeTarget)
             : base(resizeArgs.ChangeArgs, graph, group, data, position)
         {
             this._ResizeArgs = resizeArgs;
@@ -3492,7 +3492,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public ItemActionArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        public ItemActionArgs(GInteractiveChangeStateArgs e, TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position)
             : base(e, graph, group, data, position)
         { }
         /// <summary>
@@ -3524,7 +3524,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public ItemInteractiveArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        public ItemInteractiveArgs(GInteractiveChangeStateArgs e, TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position)
             : base(graph, group, data, position)
         {
             this.InteractiveArgs = e;
@@ -3560,28 +3560,28 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public ItemArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        public ItemArgs(TimeGraph graph, TimeGraphGroup group, ITimeGraphItem data, GraphControlPosition position)
         {
             this.Graph = graph;
             this.Group = group;
-            this.Item = (position == GGraphControlPosition.Item ? data :
-                        (position == GGraphControlPosition.Group ? group.Items[0] : null));
+            this.Item = (position == GraphControlPosition.Item ? data :
+                        (position == GraphControlPosition.Group ? group.Items[0] : null));
             this.Position = position;
         }
         /// <summary>
         /// Graf, v němž došlo k události
         /// </summary>
-        public GTimeGraph Graph { get; protected set; }
+        public TimeGraph Graph { get; protected set; }
         /// <summary>
         /// Grupa položek.
         /// Nikdy není null, každá událost se týká grupy nebo prvku (a každý prvek patří do grupy).
         /// </summary>
-        public GTimeGraphGroup Group { get; protected set; }
+        public TimeGraphGroup Group { get; protected set; }
         /// <summary>
         /// Vizuální control grupy, reprezentuje spojovací linii mezi fyzickými prvky grafu.
         /// Nikdy není null.
         /// </summary>
-        public GTimeGraphItem GroupControl { get { return this.Group?.ControlBuffered; } }
+        public TimeGraphItem GroupControl { get { return this.Group?.ControlBuffered; } }
         /// <summary>
         /// Přímo ten prvek, jehož se týká akce (na který bylo kliknuto).
         /// Může být null, pokud se akce týká výhradně spojovacího prvku mezi fyzickými prvky grafu = když bylo kliknuto na "spojovací linii mezi prvky".
@@ -3591,7 +3591,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vizuální control prvku <see cref="Item"/>, může být null.
         /// </summary>
-        public GTimeGraphItem ItemControl { get { return this.Item?.VisualControl; } }
+        public TimeGraphItem ItemControl { get { return this.Item?.VisualControl; } }
         /// <summary>
         /// Skupina prvků, jejíhož člena se akce týká, nebo jejíž spojovací linie se akce týká.
         /// Nikdy není null, vždy obsahuje alespoň jeden prvek.
@@ -3600,7 +3600,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Typ prvku, kterého se akce týká (Item / Group).
         /// </summary>
-        public GGraphControlPosition Position { get; protected set; }
+        public GraphControlPosition Position { get; protected set; }
     }
     #endregion
     #endregion

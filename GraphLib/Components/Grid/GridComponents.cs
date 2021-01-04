@@ -8,7 +8,7 @@ using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
 
-namespace Asol.Tools.WorkScheduler.Components.Grid
+namespace Asol.Tools.WorkScheduler.Components.Grids
 {
     #region Třída GComponent : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
     /// <summary>
@@ -603,7 +603,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (this._TimeAxis == null)
             {
                 this._TimeAxis = new GTimeAxis();
-                Components.Graph.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
+                Components.Graphs.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
 
                 // Maximální hodnota na časové ose dosažitelná:
                 if (graphParameters != null)
@@ -632,7 +632,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         /// <summary>
-        /// Výchozí hodnota pro zobrazený úsek na časové ose, pokud nebude specifikováno jinak (v <see cref="Components.Graph.TimeGraphProperties.InitialValue"/>)
+        /// Výchozí hodnota pro zobrazený úsek na časové ose, pokud nebude specifikováno jinak (v <see cref="Components.Graphs.TimeGraphProperties.InitialValue"/>)
         /// </summary>
         private static TimeRange _TimeAxisInitialValue
         {
@@ -1788,7 +1788,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             switch (this.OwnerCell.ValueType)
             {
                 case TableValueType.ITimeInteractiveGraph:
-                    (this.OwnerCell.Value as Components.Graph.ITimeInteractiveGraph).Bounds = this.ChildBounds;
+                    (this.OwnerCell.Value as Components.Graphs.ITimeInteractiveGraph).Bounds = this.ChildBounds;
                     break;
             }
         }
@@ -2075,13 +2075,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Childs
         /// <summary>
-        /// Child prvky buňky: typicky null nebo pole obsahující jediný prvek typu <see cref="Graph.ITimeInteractiveGraph"/>
+        /// Child prvky buňky: typicky null nebo pole obsahující jediný prvek typu <see cref="Graphs.ITimeInteractiveGraph"/>
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValidChilds(); return this._Childs; } } private IInteractiveItem[] _Childs;
         /// <summary>
         /// Zajistí platnost obsahu pole <see cref="_Childs"/>.
         /// Pole může být null (běžná situace) 
-        /// nebo může obsahovat jeden prvek typu <see cref="Graph.ITimeInteractiveGraph"/> v případě, kdy <see cref="OwnerCell"/> obsahuej hodnotu typu <see cref="TableValueType.ITimeInteractiveGraph"/>.
+        /// nebo může obsahovat jeden prvek typu <see cref="Graphs.ITimeInteractiveGraph"/> v případě, kdy <see cref="OwnerCell"/> obsahuej hodnotu typu <see cref="TableValueType.ITimeInteractiveGraph"/>.
         /// </summary>
         protected void CheckValidChilds()
         {
@@ -2094,12 +2094,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Metoda vrátí pole Child v případě, kdy typ hodnoty v buňce je <see cref="TableValueType.ITimeInteractiveGraph"/>.
         /// Metoda zajistí, že graf, uložený jako Value v buňce <see cref="OwnerCell"/> bude korektně naplněn,
-        /// tzn. bude mít navázaný konvertor časové osy <see cref="Graph.ITimeInteractiveGraph.TimeAxisConvertor"/> a bude mít nastavenho parenta <see cref="IInteractiveParent.Parent"/> = this.
+        /// tzn. bude mít navázaný konvertor časové osy <see cref="Graphs.ITimeInteractiveGraph.TimeAxisConvertor"/> a bude mít nastavenho parenta <see cref="IInteractiveParent.Parent"/> = this.
         /// </summary>
         /// <returns></returns>
         protected IInteractiveItem[] GetChildsITimeInteractiveGraph()
         {
-            Components.Graph.ITimeInteractiveGraph graph = this.OwnerCell.Value as Components.Graph.ITimeInteractiveGraph;
+            Components.Graphs.ITimeInteractiveGraph graph = this.OwnerCell.Value as Components.Graphs.ITimeInteractiveGraph;
             if (graph.TimeAxisConvertor == null)
                 graph.TimeAxisConvertor = this.OwnerGTable.GetTimeAxisConvertor(this.OwnerCell);
             if (graph.Parent == null)

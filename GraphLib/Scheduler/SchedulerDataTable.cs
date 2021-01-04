@@ -10,9 +10,9 @@ using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
-using Asol.Tools.WorkScheduler.Components.Graph;
+using Asol.Tools.WorkScheduler.Components.Graphs;
 using Noris.LCS.Base.WorkScheduler;
-using Asol.Tools.WorkScheduler.Components.Grid;
+using Asol.Tools.WorkScheduler.Components.Grids;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -308,7 +308,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadGraphs()
         {
-            this.TimeGraphDict = new Dictionary<GId, GTimeGraph>();
+            this.TimeGraphDict = new Dictionary<GId, TimeGraph>();
             this.TimeGraphItemDict = new Dictionary<GId, DataGraphItem>();
             this.TimeGraphGroupDict = new DictionaryList<GId, DataGraphItem>(g => g.GroupGId);
             this.TimeIdIndex = new Index<GId>();
@@ -382,7 +382,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GId rowGid = row.RecordGId;
             if (rowGid == null) return;
 
-            GTimeGraph gTimeGraph = this.CreateGraphForRow(row);
+            TimeGraph gTimeGraph = this.CreateGraphForRow(row);
             this.TimeGraphDict.AddRefresh(rowGid, gTimeGraph);
         }
         /// <summary>
@@ -396,7 +396,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GId rowGid = row.RecordGId;
             if (rowGid == null) return;
 
-            GTimeGraph gTimeGraph;
+            TimeGraph gTimeGraph;
             if (this.TimeGraphDict.TryGetValue(rowGid, out gTimeGraph))
             {
                 this.StoreGraphToRow(gTimeGraph, row);
@@ -409,13 +409,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Metoda vytvoří nový <see cref="GTimeGraph"/> pro daný řádek a pozici, umístí jej do řádku, a graf vrátí.
+        /// Metoda vytvoří nový <see cref="TimeGraph"/> pro daný řádek a pozici, umístí jej do řádku, a graf vrátí.
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        protected GTimeGraph CreateGraphForRow(Row row)
+        protected TimeGraph CreateGraphForRow(Row row)
         {
-            GTimeGraph gTimeGraph = new GTimeGraph();
+            TimeGraph gTimeGraph = new TimeGraph();
             gTimeGraph.GraphId = this.GetId(row.RecordGId);
             gTimeGraph.DataSource = this;
 
@@ -429,7 +429,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="gTimeGraph"></param>
         /// <param name="row"></param>
-        protected void StoreGraphToRow(GTimeGraph gTimeGraph, Row row)
+        protected void StoreGraphToRow(TimeGraph gTimeGraph, Row row)
         {
             gTimeGraph.UserData = row;
 
@@ -451,7 +451,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="gTimeGraph"></param>
         /// <param name="row"></param>
-        protected void RefreshGraphFromGui(GTimeGraph gTimeGraph, Row row)
+        protected void RefreshGraphFromGui(TimeGraph gTimeGraph, Row row)
         {
             if (row != null && row.UserData != null && row.UserData is GuiDataRow)
                 this.RefreshGraphFromGui(gTimeGraph, row.UserData as GuiDataRow);
@@ -461,7 +461,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="gTimeGraph"></param>
         /// <param name="dataRow"></param>
-        protected void RefreshGraphFromGui(GTimeGraph gTimeGraph, GuiDataRow dataRow)
+        protected void RefreshGraphFromGui(TimeGraph gTimeGraph, GuiDataRow dataRow)
         {
             if (dataRow != null && dataRow.Graph != null)
                 this.RefreshGraphFromGui(gTimeGraph, dataRow.Graph);
@@ -471,7 +471,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="gTimeGraph"></param>
         /// <param name="guiGraph"></param>
-        protected void RefreshGraphFromGui(GTimeGraph gTimeGraph, GuiGraph guiGraph)
+        protected void RefreshGraphFromGui(TimeGraph gTimeGraph, GuiGraph guiGraph)
         {
             if (guiGraph != null)
             {
@@ -507,7 +507,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="graph"></param>
         /// <returns></returns>
-        protected GId GetGraphRowGid(GTimeGraph graph)
+        protected GId GetGraphRowGid(TimeGraph graph)
         {
             if (graph == null) return null;
             GRow gRow = graph.SearchForParent(typeof(GRow)) as GRow;
@@ -515,7 +515,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return gRow.OwnerRow.RecordGId;
         }
         /// <summary>
-        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu <see cref="GTimeGraphItem"/>. Pokud ne, pak vrací null.
+        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu <see cref="TimeGraphItem"/>. Pokud ne, pak vrací null.
         /// Pokud ano, pak z vizuálního prvku grafu načte všechny datové prvky grafu = kolekce <see cref="ITimeGraphItem"/>.
         /// Najde odpovídající Schedulerovou tabulku, do které patří daný prvek grafu <see cref="MainDataTable"/>.
         /// Z tabulky <see cref="MainDataTable"/> si nechá určit identifikátory <see cref="GuiGridItemId"/> nalezených prvků grafů, a ty vrátí.
@@ -526,7 +526,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public static GuiGridItemId[] GetGuiGridItems(IInteractiveItem item, bool wholeGroup)
         {
             if (item == null) return null;
-            GTimeGraphItem graphItem = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+            TimeGraphItem graphItem = InteractiveObject.SearchForItem(item, true, typeof(TimeGraphItem)) as TimeGraphItem;
             if (graphItem == null) return null;
             ITimeGraphItem[] dataItems = graphItem.GetDataItems(wholeGroup);             // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
             if (dataItems == null || dataItems.Length == 0) return null;
@@ -619,7 +619,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Dictionary všech instancí grafů, které jsou vytvořeny do řádků zdejší tabulky <see cref="TableRow"/>.
         /// Klíčem je GId řádku. Zde jsou grafy jak "plné", umístěné v samostatném sloupci, tak i grafy "na pozadí".
         /// </summary>
-        protected Dictionary<GId, GTimeGraph> TimeGraphDict { get; private set; }
+        protected Dictionary<GId, TimeGraph> TimeGraphDict { get; private set; }
         /// <summary>
         /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
         /// Klíčem je GId grafického prvku <see cref="DataGraphItem.ItemGId"/>.
@@ -669,9 +669,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshRow"></param>
         /// <param name="repaintGraphDict"></param>
-        public void RefreshRow(GuiRefreshRow refreshRow, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        public void RefreshRow(GuiRefreshRow refreshRow, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
-            GTimeGraph modifiedGraph = this._UpdateRow(refreshRow);
+            TimeGraph modifiedGraph = this._UpdateRow(refreshRow);
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
         /// <summary>
@@ -679,11 +679,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshRow"></param>
         /// <returns></returns>
-        private GTimeGraph _UpdateRow(GuiRefreshRow refreshRow)
+        private TimeGraph _UpdateRow(GuiRefreshRow refreshRow)
         {
             if (refreshRow == null || (refreshRow.GridRowId == null && refreshRow.RowData == null)) return null;
 
-            GTimeGraph modifiedGraph = null;
+            TimeGraph modifiedGraph = null;
             GId rowGId;
             Row row;
             if (refreshRow.RowData != null)
@@ -718,9 +718,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="expandRow"></param>
         /// <param name="repaintGraphDict"></param>
-        public void ExpandRow(GuiGridRowId expandRow, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        public void ExpandRow(GuiGridRowId expandRow, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
-            GTimeGraph modifiedGraph = this._ExpandRow(expandRow);
+            TimeGraph modifiedGraph = this._ExpandRow(expandRow);
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
         /// <summary>
@@ -728,11 +728,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="expandRow"></param>
         /// <returns></returns>
-        private GTimeGraph _ExpandRow(GuiGridRowId expandRow)
+        private TimeGraph _ExpandRow(GuiGridRowId expandRow)
         {
             if (expandRow == null || expandRow.RowId == null) return null;
 
-            GTimeGraph modifiedGraph = null;
+            TimeGraph modifiedGraph = null;
             GId rowGId = expandRow.RowId;
             Row row;
             if (this.TryGetRow(rowGId, out row))
@@ -747,23 +747,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshGraph"></param>
         /// <param name="repaintGraphDict"></param>
-        public void RefreshGraph(GuiRefreshGraph refreshGraph, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        public void RefreshGraph(GuiRefreshGraph refreshGraph, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
-            GTimeGraph modifiedGraph = this._RefreshGraph(refreshGraph);
+            TimeGraph modifiedGraph = this._RefreshGraph(refreshGraph);
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
         /// <summary>
-        /// Metoda z dodaného prvku <see cref="GuiRefreshGraph"/> aktualizuje data odpovídajícího grafu <see cref="GTimeGraph"/>.
+        /// Metoda z dodaného prvku <see cref="GuiRefreshGraph"/> aktualizuje data odpovídajícího grafu <see cref="TimeGraph"/>.
         /// Vrací referenci na zmíněný modifikovaný graf.
         /// </summary>
         /// <param name="refreshGraph"></param>
         /// <returns></returns>
-        private GTimeGraph _RefreshGraph(GuiRefreshGraph refreshGraph)
+        private TimeGraph _RefreshGraph(GuiRefreshGraph refreshGraph)
         {
             if (refreshGraph == null || (refreshGraph.GridRowId == null && refreshGraph.GraphData == null)) return null;
 
-            GTimeGraph modifiedGraph = null;
-            GTimeGraph gTimeGraph;
+            TimeGraph modifiedGraph = null;
+            TimeGraph gTimeGraph;
             GId rowGId;
             if (refreshGraph.GraphData != null)
             {   // Máme zadaná data grafu - půjde o Insert nebo Update:
@@ -818,7 +818,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="gTimeGraph"></param>
         /// <returns></returns>
-        protected Dictionary<GuiId, DataGraphItem> GetGraphItemDict(GTimeGraph gTimeGraph)
+        protected Dictionary<GuiId, DataGraphItem> GetGraphItemDict(TimeGraph gTimeGraph)
         {
             Dictionary<GuiId, DataGraphItem> result = new Dictionary<GuiId, DataGraphItem>();
             if (gTimeGraph != null)
@@ -839,7 +839,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshGraphItem"></param>
         /// <param name="repaintGraphDict"></param>
-        public void RefreshGraphItem(GuiRefreshGraphItem refreshGraphItem, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        public void RefreshGraphItem(GuiRefreshGraphItem refreshGraphItem, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
             if (refreshGraphItem == null) return;
             this.RefreshGraphItem(refreshGraphItem.GridItemId, refreshGraphItem.ItemData, repaintGraphDict);
@@ -850,9 +850,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiGridItemId">ID prvku, smí být null - pak se jedná o Insert/Update a ID se odvodí z prvku grafu</param>
         /// <param name="guiGraphItem">Data prvku grafu, smí být null - pak se jedná o Delete</param>
         /// <param name="repaintGraphDict"></param>
-        public void RefreshGraphItem(GuiGridItemId guiGridItemId, GuiGraphItem guiGraphItem, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        public void RefreshGraphItem(GuiGridItemId guiGridItemId, GuiGraphItem guiGraphItem, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
-            GTimeGraph modifiedGraph = this._RefreshGraphItem(guiGridItemId, guiGraphItem);
+            TimeGraph modifiedGraph = this._RefreshGraphItem(guiGridItemId, guiGraphItem);
             _AddRepaintModifiedGraph(modifiedGraph, repaintGraphDict);
         }
         /// <summary>
@@ -867,12 +867,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiGraphItem">Data prvku grafu, smí být null - pak se jedná o Delete</param>
         /// <param name="disableUpdate">Zákaz provedení akce Update: pokud prvek s určitím ItemId existuje v grafu i v dodaných datech, provádí se Update stávajícho prvku. Tento parametr může hodnotou true zakázat Update. Slouží při refreshi Grafu.</param>
         /// <returns></returns>
-        private GTimeGraph _RefreshGraphItem(GuiGridItemId guiGridItemId, GuiGraphItem guiGraphItem, bool disableUpdate = false)
+        private TimeGraph _RefreshGraphItem(GuiGridItemId guiGridItemId, GuiGraphItem guiGraphItem, bool disableUpdate = false)
         {
             if (guiGridItemId == null && guiGraphItem == null) return null;
 
-            GTimeGraph modifiedGraph = null;
-            GTimeGraph gTimeGraph;
+            TimeGraph modifiedGraph = null;
+            TimeGraph gTimeGraph;
             if (this.TryGetGraph(guiGraphItem?.RowId ?? guiGridItemId?.RowId, out gTimeGraph))
             {
                 if (this._RefreshGraphItem(gTimeGraph, guiGridItemId, guiGraphItem, disableUpdate, true))
@@ -890,7 +890,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiGraphItems">Prkvy do grafu</param>
         /// <param name="disableUpdate">Zákaz provedení akce Update: pokud prvek s určitím ItemId existuje v grafu i v dodaných datech, provádí se Update stávajícho prvku. Tento parametr může hodnotou true zakázat Update. Slouží při refreshi Grafu.</param>
         /// <returns></returns>
-        private bool _RefreshGraphItems(GTimeGraph gTimeGraph, IEnumerable<GuiGraphItem> guiGraphItems, bool disableUpdate = false)
+        private bool _RefreshGraphItems(TimeGraph gTimeGraph, IEnumerable<GuiGraphItem> guiGraphItems, bool disableUpdate = false)
         {
             if (gTimeGraph == null || guiGraphItems == null) return false;
 
@@ -911,7 +911,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="gTimeGraph"></param>
         /// <param name="removeItems"></param>
         /// <returns></returns>
-        private bool _RemoveItemsFromGraph(GTimeGraph gTimeGraph, IEnumerable<GuiGridItemId> removeItems)
+        private bool _RemoveItemsFromGraph(TimeGraph gTimeGraph, IEnumerable<GuiGridItemId> removeItems)
         {
             if (gTimeGraph == null || removeItems == null) return false;
 
@@ -937,7 +937,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="disableUpdate">Zákaz provedení akce Update: pokud prvek s určitím ItemId existuje v grafu i v dodaných datech, provádí se Update stávajícho prvku. Tento parametr může hodnotou true zakázat Update. Slouží při refreshi Grafu.</param>
         /// <param name="forceRemove">Pokud se provádí smazání prvku: Požadavek true = odebrat prvek z místních Dictionary i tehdy, když prvek není obsažen v grafu (nebo když graf je null)</param>
         /// <returns></returns>
-        private bool _RefreshGraphItem(GTimeGraph gTimeGraph, GuiGridItemId guiGridItemId, GuiGraphItem guiGraphItem, bool disableUpdate, bool forceRemove)
+        private bool _RefreshGraphItem(TimeGraph gTimeGraph, GuiGridItemId guiGridItemId, GuiGraphItem guiGraphItem, bool disableUpdate, bool forceRemove)
         {
             if (gTimeGraph == null || (guiGridItemId == null && guiGraphItem == null)) return false;
 
@@ -1011,7 +1011,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="rowId"></param>
         /// <param name="gTimeGraph"></param>
         /// <returns></returns>
-        protected bool TryGetGraph(GuiId rowId, out GTimeGraph gTimeGraph)
+        protected bool TryGetGraph(GuiId rowId, out TimeGraph gTimeGraph)
         {
             gTimeGraph = null;
             if (rowId == null) return false;
@@ -1024,7 +1024,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshProperty"></param>
         /// <param name="repaintGraphDict"></param>
-        internal void RefreshProperty(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        internal void RefreshProperty(GuiRefreshProperty refreshProperty, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
             if (refreshProperty == null || refreshProperty.GridItemId == null || refreshProperty.PropertyName == null) return;
 
@@ -1040,7 +1040,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshProperty"></param>
         /// <param name="repaintGraphDict"></param>
-        private void RefreshPropertyTable(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        private void RefreshPropertyTable(GuiRefreshProperty refreshProperty, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
             if (refreshProperty.PropertyName == nameof(GuiGridProperties.Visible) && refreshProperty.Value != null && refreshProperty.Value is bool)
                 this.TableRow.Visible = (bool)refreshProperty.Value;
@@ -1050,7 +1050,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshProperty"></param>
         /// <param name="repaintGraphDict"></param>
-        private void RefreshPropertyRow(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        private void RefreshPropertyRow(GuiRefreshProperty refreshProperty, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
             Row row;
             if (!this.TryGetRow(refreshProperty.GridItemId.RowId, out row)) return;
@@ -1062,7 +1062,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="refreshProperty"></param>
         /// <param name="repaintGraphDict"></param>
-        private void RefreshPropertyGraphItem(GuiRefreshProperty refreshProperty, Dictionary<uint, GTimeGraph> repaintGraphDict = null)
+        private void RefreshPropertyGraphItem(GuiRefreshProperty refreshProperty, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         { }
         #endregion
         /// <summary>
@@ -1073,7 +1073,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="modifiedGraph"></param>
         /// <param name="repaintGraphDict"></param>
-        private static void _AddRepaintModifiedGraph(GTimeGraph modifiedGraph, Dictionary<uint, GTimeGraph> repaintGraphDict)
+        private static void _AddRepaintModifiedGraph(TimeGraph modifiedGraph, Dictionary<uint, TimeGraph> repaintGraphDict)
         {
             if (modifiedGraph != null)
             {
@@ -1091,17 +1091,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Linky mezi položkami grafů
         /// <summary>
-        /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="GTimeGraphLinkItem"/>.
+        /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="TimeGraphLinkItem"/>.
         /// Tento prvek slouží jednotlivým grafům. Před dokončením incializace je null.
         /// </summary>
-        public GTimeGraphLinkArray GraphLinkArray { get { return this.GTableRow?.GraphLinkArray; } }
+        public TimeGraphLinkArray GraphLinkArray { get { return this.GTableRow?.GraphLinkArray; } }
         /// <summary>
         /// Metoda načte a předzpracuje informace o vztazích mezi prvky grafů (Linky)
         /// </summary>
         protected void LoadLinks()
         {
-            this.GraphLinkPrevDict = new DictionaryList<int, GTimeGraphLinkItem>();
-            this.GraphLinkNextDict = new DictionaryList<int, GTimeGraphLinkItem>();
+            this.GraphLinkPrevDict = new DictionaryList<int, TimeGraphLinkItem>();
+            this.GraphLinkNextDict = new DictionaryList<int, TimeGraphLinkItem>();
             List<GuiGraphLink> graphLinks = this.GuiGrid.RowTable?.GraphLinks;
             if (graphLinks != null && graphLinks.Count > 0)
                 this.AddGraphLinks(graphLinks);
@@ -1132,7 +1132,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (guiLinks == null) return;
 
             // Z instancí třídy GuiGraphLink vytvořím instance třídy GTimeGraphLink:
-            GTimeGraphLinkItem[] links = guiLinks
+            TimeGraphLinkItem[] links = guiLinks
                 .Where(g => (g.LinkType.HasValue && g.LinkType.Value != GuiGraphItemLinkType.None && g.ItemIdPrev != null && g.ItemIdNext != null && g.ItemIdPrev != g.ItemIdNext))
                 .Select(g => this.CreateGraphLink(g))
                 .ToArray();
@@ -1149,7 +1149,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.GraphLinkNextDict.AddRange(links, g => g.ItemIdNext);
         }
         /// <summary>
-        /// Metoda odebere všechny záznamy z <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/>, jejichž hodnoty <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
+        /// Metoda odebere všechny záznamy z <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/>, jejichž hodnoty <see cref="TimeGraphLinkItem.ItemIdPrev"/> a <see cref="TimeGraphLinkItem.ItemIdNext"/>
         /// se shodují s hodnotami dodaných záznamů.
         /// Pokud ale <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
         /// </summary>
@@ -1169,7 +1169,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.RemoveGraphLinks(twoKeys);
         }
         /// <summary>
-        /// Metoda odebere všechny záznamy z <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/>, jejichž hodnoty <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
+        /// Metoda odebere všechny záznamy z <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/>, jejichž hodnoty <see cref="TimeGraphLinkItem.ItemIdPrev"/> a <see cref="TimeGraphLinkItem.ItemIdNext"/>
         /// se shodují s hodnotami Item1 a Item2 z dodaných prvků.
         /// Pokud ale <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
         /// </summary>
@@ -1190,11 +1190,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         void ITimeGraphLinkDataSource.CreateLinks(CreateAllLinksArgs args)
         {
-            GTimeGraphLinkItem[] links = null;
+            TimeGraphLinkItem[] links = null;
             // Máme dvě Dictionary obsahující Linky: GraphLinkNextDict a GraphLinkPrevDict: mají stejný počet vět, 
             //  a liší se jen tím, že v jedné je klíčem hodnota Next a v druhé je klíčem Prev.
             // Projdu tedy GraphLinkNextDict.Values a všechny vhodné hodnoty dám do výsledku:
-            if (args.LinksMode.HasFlag(GTimeGraphLinkMode.Allways))
+            if (args.LinksMode.HasFlag(TimeGraphLinkMode.Allways))
             {
                 links = this.GraphLinkNextDict.Values;
             }
@@ -1204,9 +1204,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
                 LinkLineType defaultLineType = (asSCurve ? LinkLineType.SCurveHorizontal : LinkLineType.StraightLine);
 
-                foreach (GTimeGraphLinkItem link in links)
+                foreach (TimeGraphLinkItem link in links)
                 {
-                    if (this._SearchLinkItemPrepareData(link, Direction.Positive, GGraphControlPosition.Group, defaultLineType))
+                    if (this._SearchLinkItemPrepareData(link, Direction.Positive, GraphControlPosition.Group, defaultLineType))
                         args.Links.Add(link);
                 }
             }
@@ -1222,10 +1222,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
         /// <param name="defaultLineType">Výchozí tvar křivky dle konfigurace</param>
         /// <returns></returns>
-        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem currentItem, bool searchSidePrev, bool searchSideNext, bool wholeTask, LinkLineType defaultLineType)
+        protected TimeGraphLinkItem[] SearchForGraphLink(TimeGraphItem currentItem, bool searchSidePrev, bool searchSideNext, bool wholeTask, LinkLineType defaultLineType)
         {
-            Dictionary<uint, GTimeGraphItem> itemDict = new Dictionary<uint, GTimeGraphItem>();
-            Dictionary<ulong, GTimeGraphLinkItem> linkDict = new Dictionary<ulong, GTimeGraphLinkItem>();
+            Dictionary<uint, TimeGraphItem> itemDict = new Dictionary<uint, TimeGraphItem>();
+            Dictionary<ulong, TimeGraphLinkItem> linkDict = new Dictionary<ulong, TimeGraphLinkItem>();
             if (currentItem != null)
             {
                 if (searchSidePrev && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask, defaultLineType);
@@ -1244,37 +1244,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphLinkDict">Dictionary obsahující vztahy v potřebném směru</param>
         /// <param name="targetSide">Směr vztahu</param>
         /// <param name="scanItemDict">Sem se průběžně ukládají scanované prvky, aby nedošlo k zacyklení - vyjma prvního (ten se scanuje dvakrát, jednou Prev a podruhé Next)</param>
-        /// <param name="resultLinkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="GTimeGraphLinkItem.Key"/>; jde o průběžný výstup</param>
+        /// <param name="resultLinkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="TimeGraphLinkItem.Key"/>; jde o průběžný výstup</param>
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
         /// <param name="defaultLineType">Výchozí tvar křivky dle konfigurace</param>
         /// <returns></returns>
-        private void _SearchForGraphLink(GTimeGraphItem currentItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, Direction targetSide,
-            Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask, LinkLineType defaultLineType)
+        private void _SearchForGraphLink(TimeGraphItem currentItem, DictionaryList<int, TimeGraphLinkItem> graphLinkDict, Direction targetSide,
+            Dictionary<uint, TimeGraphItem> scanItemDict, Dictionary<ulong, TimeGraphLinkItem> resultLinkDict, bool wholeTask, LinkLineType defaultLineType)
         {
             if (currentItem == null || !currentItem.Group.IsShowLinks) return;           // Pokud daný prvek NPOVOLUJE práci s Linky, skončíme...
 
             Direction sourceSide = targetSide.Reverse();
-            Queue<GTimeGraphItem> searchQueue = new Queue<GTimeGraphItem>();
+            Queue<TimeGraphItem> searchQueue = new Queue<TimeGraphItem>();
             searchQueue.Enqueue(currentItem);
             bool testDuplicity = false;
             while (searchQueue.Count > 0)
             {
-                GTimeGraphItem searchItem = searchQueue.Dequeue();
+                TimeGraphItem searchItem = searchQueue.Dequeue();
                 if (testDuplicity && scanItemDict.ContainsKey(searchItem.Id)) continue;
 
                 // Najdu vztahy z daného prvku (z jeho Group nebo z Item), v dodané Dictionary (která je pro směr Prev nebo Next):
-                GGraphControlPosition position = GGraphControlPosition.None;
-                GTimeGraphLinkItem[] linkList = _SearchForGraphLinkOne(searchItem, graphLinkDict, out position);
+                GraphControlPosition position = GraphControlPosition.None;
+                TimeGraphLinkItem[] linkList = _SearchForGraphLinkOne(searchItem, graphLinkDict, out position);
                 if (linkList == null || linkList.Length == 0) continue;
 
                 // Nějaké vztahy jsme našli, tak pokud ještě nejsou ve výsledné Dictionary (linkDict):
                 //  tak do nich doplníme výchozí prvek (baseItem) a cílový prvek (do strany side), přidáme do linkDict, a možná cílový prvek zařadíme do fronty:
-                foreach (GTimeGraphLinkItem link in linkList)
+                foreach (TimeGraphLinkItem link in linkList)
                 {
                     if (resultLinkDict.ContainsKey(link.Key)) continue;    // Tenhle vztah už ve výstupní dictionary máme; ten přeskočíme.
 
                     // Do linku doplníme zdrojový i cílový prvek vztahu a tvar křivky:
-                    GTimeGraphItem targetItem;
+                    TimeGraphItem targetItem;
                     if (this._SearchLinkItemPrepareData(link, targetSide, position, defaultLineType, out targetItem))
                     {   // Pokud jsme našli target:
                         resultLinkDict.Add(link.Key, link);
@@ -1302,25 +1302,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphLinkDict"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        private GTimeGraphLinkItem[] _SearchForGraphLinkOne(GTimeGraphItem baseItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, out GGraphControlPosition position)
+        private TimeGraphLinkItem[] _SearchForGraphLinkOne(TimeGraphItem baseItem, DictionaryList<int, TimeGraphLinkItem> graphLinkDict, out GraphControlPosition position)
         {
-            position = GGraphControlPosition.None;
+            position = GraphControlPosition.None;
             if (baseItem == null || graphLinkDict == null || graphLinkDict.CountKeys == 0) return null;
             if (!baseItem.Group.IsShowLinks) return null;
 
-            GTimeGraphLinkItem[] links;
+            TimeGraphLinkItem[] links;
 
             links = graphLinkDict[baseItem.Group.GroupId];
             if (links != null)
             {
-                position = GGraphControlPosition.Group;
+                position = GraphControlPosition.Group;
                 return links;
             }
 
             links = graphLinkDict[baseItem.Item.ItemId];
             if (links != null)
             {
-                position = GGraphControlPosition.Item;
+                position = GraphControlPosition.Item;
                 return links;
             }
 
@@ -1334,9 +1334,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="position"></param>
         /// <param name="defaultLineType"></param>
         /// <returns></returns>
-        private bool _SearchLinkItemPrepareData(GTimeGraphLinkItem link, Direction targetSide, GGraphControlPosition position, LinkLineType defaultLineType)
+        private bool _SearchLinkItemPrepareData(TimeGraphLinkItem link, Direction targetSide, GraphControlPosition position, LinkLineType defaultLineType)
         {
-            GTimeGraphItem targetItem;
+            TimeGraphItem targetItem;
             return this._SearchLinkItemPrepareData(link, targetSide, position, defaultLineType, out targetItem);
         }
         /// <summary>
@@ -1348,7 +1348,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="defaultLineType"></param>
         /// <param name="targetItem"></param>
         /// <returns></returns>
-        private bool _SearchLinkItemPrepareData(GTimeGraphLinkItem link, Direction targetSide, GGraphControlPosition position, LinkLineType defaultLineType, out GTimeGraphItem targetItem)
+        private bool _SearchLinkItemPrepareData(TimeGraphLinkItem link, Direction targetSide, GraphControlPosition position, LinkLineType defaultLineType, out TimeGraphItem targetItem)
         {
             Direction sourceSide = targetSide.Reverse();
 
@@ -1356,7 +1356,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             targetItem = this._SearchGraphItemsForLink(targetId, position);
             if (targetItem == null) return false;            // Vztah nemá nalezen prvek na cílové straně vztahu; vztah přeskočíme.
             int sourceId = link.GetId(sourceSide);           // Na source straně vztahu nemusí být nutně prvek, který jsme hledali - může tam být jeho grupa! (anebo naopak)
-            GTimeGraphItem sourceItem = this._SearchGraphItemsForLink(sourceId, position);
+            TimeGraphItem sourceItem = this._SearchGraphItemsForLink(sourceId, position);
             link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu (buď ten, kde hledání začalo, anebo odpovídající prvek = jeho Grupa, pro kterou máme vztahy!
             link.SetItem(targetSide, targetItem);            // Prvek na cílové straně vztahu
             link.PrepareCurrentLine(defaultLineType);        // Aplikuje defaultní tvar z konfigurace
@@ -1364,12 +1364,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return true;
         }
         /// <summary>
-        /// Metoda najde a vrátí grafický prvek grafu <see cref="GTimeGraphItem"/> pro dané ID prvku a danou prioritu pozice.
+        /// Metoda najde a vrátí grafický prvek grafu <see cref="TimeGraphItem"/> pro dané ID prvku a danou prioritu pozice.
         /// </summary>
         /// <param name="id"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        private GTimeGraphItem _SearchGraphItemsForLink(int id, GGraphControlPosition position)
+        private TimeGraphItem _SearchGraphItemsForLink(int id, GraphControlPosition position)
         {
             GId key = this.GetGId(id);
             if (key == null) return null;
@@ -1389,35 +1389,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Metoda vrátí grafický prvek grafu z daného datového prvku grafu.
-        /// Pokud datovým prvkem (iGraphItem) je jednotlivý prvek (tedy nikoli Grupa), a jako parametr "position" je dáno <see cref="GGraphControlPosition.Item"/>, 
-        /// pak výstupem bude <see cref="GTimeGraphItem"/> danho prvku. Jinak výstupem bude prvek pro grupu.
+        /// Pokud datovým prvkem (iGraphItem) je jednotlivý prvek (tedy nikoli Grupa), a jako parametr "position" je dáno <see cref="GraphControlPosition.Item"/>, 
+        /// pak výstupem bude <see cref="TimeGraphItem"/> danho prvku. Jinak výstupem bude prvek pro grupu.
         /// </summary>
         /// <param name="iGraphItem"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        private GTimeGraphItem _SearchGraphItemsForLink(ITimeGraphItem iGraphItem, GGraphControlPosition position)
+        private TimeGraphItem _SearchGraphItemsForLink(ITimeGraphItem iGraphItem, GraphControlPosition position)
         {
             if (iGraphItem == null || iGraphItem.VisualControl == null) return null;
             switch (iGraphItem.VisualControl.Position)
             {
-                case GGraphControlPosition.Group:
+                case GraphControlPosition.Group:
                     return iGraphItem.VisualControl;
-                case GGraphControlPosition.Item:
-                    return (position == GGraphControlPosition.Item ? iGraphItem.VisualControl : iGraphItem.VisualControl.Group.ControlBuffered);
+                case GraphControlPosition.Item:
+                    return (position == GraphControlPosition.Item ? iGraphItem.VisualControl : iGraphItem.VisualControl.Group.ControlBuffered);
             }
             return null;
         }
         /// <summary>
-        /// Vytvoří a vrátí new instanci <see cref="GTimeGraphLinkItem"/> na základě dat <see cref="GuiGraphLink"/>.
+        /// Vytvoří a vrátí new instanci <see cref="TimeGraphLinkItem"/> na základě dat <see cref="GuiGraphLink"/>.
         /// </summary>
         /// <param name="guiGraphLink"></param>
         /// <returns></returns>
-        protected GTimeGraphLinkItem CreateGraphLink(GuiGraphLink guiGraphLink)
+        protected TimeGraphLinkItem CreateGraphLink(GuiGraphLink guiGraphLink)
         {
             if (!guiGraphLink.LinkType.HasValue || guiGraphLink.LinkType.Value == GuiGraphItemLinkType.None || guiGraphLink.LinkType.Value == GuiGraphItemLinkType.Invisible) return null;
             bool linkCenter = (guiGraphLink.LinkType.Value == GuiGraphItemLinkType.PrevCenterToNextCenter);
             LinkLineType? lineShape = CreateLinkShape(guiGraphLink.LineShape, linkCenter);
-            GTimeGraphLinkItem graphLink = new GTimeGraphLinkItem()
+            TimeGraphLinkItem graphLink = new TimeGraphLinkItem()
             {
                 ItemIdPrev = this.GetId(guiGraphLink.ItemIdPrev),
                 ItemIdNext = this.GetId(guiGraphLink.ItemIdNext),
@@ -1464,13 +1464,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Klíč (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> ze vztahu.
         /// Hodnota pak reprezentuje všechny vztahy, které vedou z prvku [klíč] na prvky na straně Next.
         /// </summary>
-        protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkPrevDict;
+        protected DictionaryList<int, TimeGraphLinkItem> GraphLinkPrevDict;
         /// <summary>
         /// Soupis linků mezi prvky grafů v této tabulce, ze strany Next.
         /// Klíč (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> ze vztahu.
         /// Hodnota pak reprezentuje všechny vztahy, které vedou z prvku [klíč] na prvky na straně Next.
         /// </summary>
-        protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkNextDict;
+        protected DictionaryList<int, TimeGraphLinkItem> GraphLinkNextDict;
         #endregion
         #region Textové údaje (popisky grafů) a ToolTipy
         /// <summary>
@@ -1751,7 +1751,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected Dictionary<GId, TimeRange> GetSearchPairDataFromRow(Row row, MainDataTable dataTable, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame)
         {
             if (row == null || row.RecordGId == null || idType == DataGraphItem.IdType.None) return null;
-            GTimeGraph graph;
+            TimeGraph graph;
             if (!dataTable.TimeGraphDict.TryGetValue(row.RecordGId, out graph)) return null;
 
             Dictionary<GId, TimeRange> resultDict = new Dictionary<GId, TimeRange>();
@@ -1863,7 +1863,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row cloneRow = new Row(sourceRow, cloneArgs);                 // V rámci klonování řádku se u jeho grafu nebude provádět přenos položek grafů, ani TagItems
             cloneRow.Control = null;
             cloneRow.ParentRecordGId = GId.Empty;                         // Dynamické Child řádky mají ParentRecordGId = Empty
-            GTimeGraph cloneGraph = SearchGraphInRow(cloneRow);
+            TimeGraph cloneGraph = SearchGraphInRow(cloneRow);
             if (cloneGraph != null) cloneGraph.DataSource = sourceTable;  // Zdrojem dat v klonovaném grafu je původní zdrojová tabulka (obsahuje texty, tooltipy...)
             this.TableRow.AddRow(cloneRow);
             return cloneRow;
@@ -1879,9 +1879,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="targetChild"></param>
         protected void SynchronizeChildGraphItems(Dictionary<GId, TimeRange> parentDataDict, SearchChildInfo searchInfo, TimeRange timeFrame, Row sourceChild, Row targetChild)
         {
-            GTimeGraph sourceGraph = SearchGraphInRow(sourceChild);
+            TimeGraph sourceGraph = SearchGraphInRow(sourceChild);
             if (sourceGraph == null) return;
-            GTimeGraph targetGraph = SearchGraphInRow(targetChild);
+            TimeGraph targetGraph = SearchGraphInRow(targetChild);
             if (targetGraph == null) return;
 
             // V cílovém grafu (targetGraph) může už být několik prvků grafu od posledního zobrazení; všechny skryjeme:
@@ -1899,16 +1899,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Metoda najde a vrátí graf <see cref="GTimeGraph"/> z dodaného řádku tabulky.
+        /// Metoda najde a vrátí graf <see cref="TimeGraph"/> z dodaného řádku tabulky.
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        protected static GTimeGraph SearchGraphInRow(Row row)
+        protected static TimeGraph SearchGraphInRow(Row row)
         {
             if (row == null) return null;
-            if (row.BackgroundValueType == TableValueType.ITimeInteractiveGraph) return row.BackgroundValue as GTimeGraph;
+            if (row.BackgroundValueType == TableValueType.ITimeInteractiveGraph) return row.BackgroundValue as TimeGraph;
             Cell cell = row.Cells.FirstOrDefault(c => c.ValueType == TableValueType.ITimeInteractiveGraph);
-            return (cell != null ? cell.Value as GTimeGraph : null);
+            return (cell != null ? cell.Value as TimeGraph : null);
         }
         /// <summary>
         /// Metoda slouží jako filtr položek grafu v Child řádku, při klonování obsahu grafu z původního Child řádku do nově vytvářeného klonu tohoto grafu.
@@ -1965,7 +1965,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="targetGraph"></param>
         /// <param name="targetRow"></param>
         /// <returns></returns>
-        protected ITimeGraphItem OtherChildSyncGraphItem(ITimeGraphItem sourceItem, GTimeGraph targetGraph, Row targetRow)
+        protected ITimeGraphItem OtherChildSyncGraphItem(ITimeGraphItem sourceItem, TimeGraph targetGraph, Row targetRow)
         {
             DataGraphItem sourceData = sourceItem as DataGraphItem;
             if (sourceData == null) return null;
@@ -2371,7 +2371,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="checkedRows">Aktuálně označené řádky v tabulce (Checked)</param>
         /// <param name="activeGraph">Aktivní graf</param>
         /// <param name="graphItems">Aktivní prvky grafů v této tabulce</param>
-        private void InteractionThisSource(GridInteractionRunInfo[] runInteractions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
+        private void InteractionThisSource(GridInteractionRunInfo[] runInteractions, Row activeRow, Row[] checkedRows, TimeGraph activeGraph, DataGraphItem[] graphItems)
         {
             this.InteractionSelectorClear(runInteractions);
             this.InteractionRowFiltersPrepare(runInteractions);
@@ -2491,7 +2491,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             
             foreach (Row row in rows)
             {
-                GTimeGraph gTimeGraph = this.InteractionGetGraphFromRow(row);
+                TimeGraph gTimeGraph = this.InteractionGetGraphFromRow(row);
                 if (gTimeGraph == null) continue;
                 foreach (ITimeGraphItem iItem in gTimeGraph.VisibleGraphItems)
                 {
@@ -2510,13 +2510,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        private GTimeGraph InteractionGetGraphFromRow(Row row)
+        private TimeGraph InteractionGetGraphFromRow(Row row)
         {
             if (row == null) return null;
-            if (row.BackgroundValueType == TableValueType.ITimeInteractiveGraph) return row.BackgroundValue as GTimeGraph;
+            if (row.BackgroundValueType == TableValueType.ITimeInteractiveGraph) return row.BackgroundValue as TimeGraph;
             Cell cell = row.Cells.FirstOrDefault(c => c.ValueType == TableValueType.ITimeInteractiveGraph);
             if (cell == null) return null;
-            return cell.Value as GTimeGraph;
+            return cell.Value as TimeGraph;
         }
         #endregion
         #region Interakce, algoritmy na straně Target
@@ -2568,7 +2568,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             Dictionary<GId, DataGraphItem> sourceGIds = args.SourceGraphItems.GetDictionary(keySelector, true);   // Klíče (GId) ze zdrojových prvků, podle selectoru, distinct
             GRow[] targetRows = this.InteractionThisSearchRowBy(args, sourceGIds);                 // Najde řádky podle dodaných klíčů
-            GTimeGraphGroup[] targetGroups = this.InteractionThisSearchGroupBy(args, sourceGIds);  // Najde grupy grafických prvků podle dodaných klíčů
+            TimeGraphGroup[] targetGroups = this.InteractionThisSearchGroupBy(args, sourceGIds);  // Najde grupy grafických prvků podle dodaných klíčů
             this.InteractionThisProcessAction(args, targetRows, targetGroups);
         }
         /// <summary>
@@ -2588,14 +2588,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return rowDict.Values.ToArray();
         }
         /// <summary>
-        /// Metoda vrátí pole skupin grafických prvků <see cref="GTimeGraphGroup"/>, které odpovídají vstupním datům.
+        /// Metoda vrátí pole skupin grafických prvků <see cref="TimeGraphGroup"/>, které odpovídají vstupním datům.
         /// </summary>
         /// <param name="args">Data aktuální interakce</param>
         /// <param name="sourceGIds">Klíče (GId) ze zdrojových prvků</param>
         /// <returns></returns>
-        protected GTimeGraphGroup[] InteractionThisSearchGroupBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
+        protected TimeGraphGroup[] InteractionThisSearchGroupBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
         {
-            Dictionary<GId, GTimeGraphGroup> groupDict = new Dictionary<GId, GTimeGraphGroup>();
+            Dictionary<GId, TimeGraphGroup> groupDict = new Dictionary<GId, TimeGraphGroup>();
 
             TargetActionType action = args.Interaction.TargetAction;
             if ((action & TargetActionType.SearchTargetItemId) != 0)
@@ -2612,7 +2612,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sourceGIds"></param>
         /// <param name="groupDict"></param>
-        protected void InteractionThisSearchGroupInItems(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GTimeGraphGroup> groupDict)
+        protected void InteractionThisSearchGroupInItems(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, TimeGraphGroup> groupDict)
         {
             foreach (GId gId in sourceGIds.Keys)
             {   // Na vstupu mám klíče ze zdrojového grafu, zde hledám grafické prvky shodného klíče,
@@ -2620,7 +2620,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 DataGraphItem item;
                 if (!this.TimeGraphItemDict.TryGetValue(gId, out item)) continue;
                 if (groupDict.ContainsKey(item.GroupGId)) continue;
-                GTimeGraphGroup value = (item as ITimeGraphItem).VisualControl.Group;
+                TimeGraphGroup value = (item as ITimeGraphItem).VisualControl.Group;
                 if (value != null)
                     groupDict.Add(item.GroupGId, value);
             }
@@ -2630,7 +2630,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sourceGIds"></param>
         /// <param name="groupDict"></param>
-        protected void InteractionThisSearchGroupInGroups(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GTimeGraphGroup> groupDict)
+        protected void InteractionThisSearchGroupInGroups(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, TimeGraphGroup> groupDict)
         {
             foreach (GId gId in sourceGIds.Keys)
             {   // Na vstupu mám klíče ze zdrojového grafu, zde hledám grupy (grafických prvků) shodného klíče,
@@ -2638,7 +2638,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (groupDict.ContainsKey(gId)) continue;            // V cílové dictionary už máme grupu pro daný GID, už ji znovu hledat nemusíme
                 DataGraphItem[] group;
                 if (!this.TimeGraphGroupDict.TryGetValue(gId, out group)) continue;
-                GTimeGraphGroup value = (group[0] as ITimeGraphItem).VisualControl.Group;
+                TimeGraphGroup value = (group[0] as ITimeGraphItem).VisualControl.Group;
                 if (value != null)
                     groupDict.Add(gId, value);
             }
@@ -2648,7 +2648,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sourceGIds"></param>
         /// <param name="groupDict"></param>
-        protected void InteractionThisSearchGroupInData(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GTimeGraphGroup> groupDict)
+        protected void InteractionThisSearchGroupInData(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, TimeGraphGroup> groupDict)
         {
             foreach (DataGraphItem item in this.TimeGraphItemDict.Values)
             {   // Pro hledání podle DataId zde nemám vhodnou Dictionary. 
@@ -2658,7 +2658,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 //  a pokud jejich DataId je zadané a je obsaženo ve zdrojových datech (sourceGIds), pak grupu daného prvku dávám do výstupu:
                 if (item.DataGId != null && sourceGIds.ContainsKey(item.DataGId) && item.GroupGId != null && !groupDict.ContainsKey(item.GroupGId))
                 {
-                    GTimeGraphGroup value = (item as ITimeGraphItem).VisualControl.Group;
+                    TimeGraphGroup value = (item as ITimeGraphItem).VisualControl.Group;
                     if (value != null)
                         groupDict.Add(item.GroupGId, value);
                 }
@@ -2685,7 +2685,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         /// <param name="targetRows"></param>
         /// <param name="targetGroups"></param>
-        protected void InteractionThisProcessAction(InteractionArgs args, GRow[] targetRows, GTimeGraphGroup[] targetGroups)
+        protected void InteractionThisProcessAction(InteractionArgs args, GRow[] targetRows, TimeGraphGroup[] targetGroups)
         {
             bool hasRows = (targetRows != null && targetRows.Length > 0);
             bool hasGroups = (targetGroups != null && targetGroups.Length > 0);
@@ -2706,7 +2706,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             if (hasGroups)
             {
-                foreach (GTimeGraphGroup targetGroup in targetGroups)
+                foreach (TimeGraphGroup targetGroup in targetGroups)
                 {
                     if (isSelect) targetGroup.ControlBuffered.IsSelected = true;
                     if (isActivate) targetGroup.ControlBuffered.IsActivated = true;
@@ -2739,7 +2739,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda přidá řádek, do něhož patří daná grupa grafu, do připravovaného řádkového filtru
         /// </summary>
         /// <param name="targetGroup"></param>
-        protected void InteractionThisRowFilterAdd(GTimeGraphGroup targetGroup)
+        protected void InteractionThisRowFilterAdd(TimeGraphGroup targetGroup)
         {
             if (this.InteractionRowFilterDict == null || targetGroup == null) return;
             this.InteractionThisRowFilterAdd(targetGroup.ControlBuffered.SearchForParent(typeof(GRow)) as GRow);
@@ -2840,7 +2840,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <param name="sourceCheckedRows">Označené řádky ve zdrojové tabulce</param>
             /// <param name="activeGraph">Aktivní graf</param>
             /// <param name="sourceGraphItems">Aktivní prky grafů ve zdrojové tabulce (podle typu interakce jde o všechny prvky aktivních řádků, nebo o aktivní prvky v určitém grafu)</param>
-            internal InteractionArgs(GridInteractionRunInfo runInteraction, Row sourceActiveRow, Row[] sourceCheckedRows, GTimeGraph activeGraph, DataGraphItem[] sourceGraphItems)
+            internal InteractionArgs(GridInteractionRunInfo runInteraction, Row sourceActiveRow, Row[] sourceCheckedRows, TimeGraph activeGraph, DataGraphItem[] sourceGraphItems)
             {
                 this.RunInteraction = runInteraction;
                 this.SourceActiveRow = sourceActiveRow;
@@ -2867,7 +2867,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Aktivní graf
             /// </summary>
-            public GTimeGraph ActiveGraph { get; private set; }
+            public TimeGraph ActiveGraph { get; private set; }
             /// <summary>
             /// Aktivní prky grafů ve zdrojové tabulce (podle typu interakce jde o všechny prvky aktivních řádků, nebo o aktivní prvky v určitém grafu)
             /// </summary>
@@ -3778,7 +3778,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
 
                 // Pokud target je graf, pak testuji zda je povolen graf:
-                GTimeGraph testGraph = targetData.GTimeGraph;
+                TimeGraph testGraph = targetData.GTimeGraph;
                 if (this.TestDataGraph(testGraph))
                 {
                     targetData.ActiveItem = testGraph;
@@ -3828,7 +3828,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             /// <param name="testGraph"></param>
             /// <returns></returns>
-            protected bool TestDataGraph(GTimeGraph testGraph)
+            protected bool TestDataGraph(TimeGraph testGraph)
             {
                 if (testGraph == null) return false;
                 return this.TargetObjectGraph;
@@ -3878,7 +3878,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 data.Row = (data.GRowHeader != null ? data.GRowHeader.OwnerRow : (data.GCell != null ? data.GCell.OwnerRow : null));
 
                 // Najdeme graf:
-                data.GTimeGraph = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraph)) as GTimeGraph;
+                data.GTimeGraph = InteractiveObject.SearchForItem(targetItem, true, typeof(TimeGraph)) as TimeGraph;
                 if (data.GTimeGraph != null && mouseAbsolutePoint.HasValue && withTime)
                 {
                     Rectangle graphBounds = data.GTimeGraph.BoundsAbsolute;
@@ -3888,18 +3888,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
 
                 // Najdeme prvek grafu:
-                data.GTimeGraphItem = InteractiveObject.SearchForItem(targetItem, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+                data.GTimeGraphItem = InteractiveObject.SearchForItem(targetItem, true, typeof(TimeGraphItem)) as TimeGraphItem;
                 if (data.GTimeGraphItem != null)
                 {
-                    GGraphControlPosition position = data.GTimeGraphItem.Position;
+                    GraphControlPosition position = data.GTimeGraphItem.Position;
                     data.GraphItemPosition = position;
                     switch (position)
                     {
-                        case GGraphControlPosition.Item:
+                        case GraphControlPosition.Item:
                             data.DataGraphItem = data.GTimeGraphItem.Item as DataGraphItem;
                             break;
-                        case GGraphControlPosition.Group:
-                            GTimeGraphGroup group = data.GTimeGraphItem.Item as GTimeGraphGroup;
+                        case GraphControlPosition.Group:
+                            TimeGraphGroup group = data.GTimeGraphItem.Item as TimeGraphGroup;
                             if (group != null)
                                 data.DataGraphGroupItems = group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
                             break;
@@ -3951,7 +3951,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Časový graf, pokud je myš nad grafem
             /// </summary>
-            public GTimeGraph GTimeGraph { get; private set; }
+            public TimeGraph GTimeGraph { get; private set; }
             /// <summary>
             /// Konkrétní čas na časovém grafu, nebo null
             /// </summary>
@@ -3964,20 +3964,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Grafická komponenta prvku grafu, kam ukazuje myš.
             /// Toto může být grafický prvek konkrétní položky grafu (pozice <see cref="GraphItemPosition"/> = Item) anebo grafický prvek reprezentujcí celou grupu (pozice = Group).
             /// </summary>
-            public GTimeGraphItem GTimeGraphItem { get; private set; }
+            public TimeGraphItem GTimeGraphItem { get; private set; }
             /// <summary>
             /// Pozice grafické komponenty = zda myš ukazuje na konkrétní prvek grafu, nebo na prostor grupy = spojnice mezi dvěma prvky grafu 
             /// </summary>
-            public GGraphControlPosition? GraphItemPosition { get; private set; }
+            public GraphControlPosition? GraphItemPosition { get; private set; }
             /// <summary>
             /// Datový prvek grafu odpovídající cílovému prvku, na který je přímo ukázáno 
-            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Item"/>).
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GraphControlPosition.Item"/>).
             /// Pokud je cílem skupina, pak je zde null.
             /// </summary>
             public DataGraphItem DataGraphItem { get; private set; }
             /// <summary>
             /// Prvky cílové skupiny, pokud je ukázáno na skupinu = na prostor mezi prvky
-            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Group"/>).
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GraphControlPosition.Group"/>).
             /// </summary>
             public DataGraphItem[] DataGraphGroupItems { get; private set; }
             /// <summary>
@@ -4006,7 +4006,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             /// <summary>
             /// Ukazatel (Pointer) na cílový prvek grafu <see cref="DataGraphItem"/>, na který je přímo ukázáno 
-            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Item"/>).
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GraphControlPosition.Item"/>).
             /// Pokud je cílem skupina, pak je zde null.
             /// <para/>
             /// Pozor, tato hodnota se dohledává On-Demand, je vhodno ji vyhodnotit jedenkrát a uchovat výsledek.
@@ -4021,7 +4021,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             /// <summary>
             /// ID všech prvků cílové skupiny, pokud je ukázáno na skupinu = na prostor mezi prvky
-            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GGraphControlPosition.Group"/>).
+            /// (tj. když <see cref="GraphItemPosition"/> == <see cref="GraphControlPosition.Group"/>).
             /// <para/>
             /// Pozor, tato hodnota se dohledává On-Demand, je vhodno ji vyhodnotit jedenkrát a uchovat výsledek.
             /// </summary>
@@ -4585,7 +4585,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private Rectangle? GetGraphGroupAbsBounds(IInteractiveItem item)
         {
-            GTimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+            TimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(item, true, typeof(TimeGraphItem)) as TimeGraphItem;
             if (timeGraphItem == null) return null;
             return timeGraphItem.BoundsAbsolute;
         }
@@ -4599,7 +4599,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             DateTime? time = null;
             // Najdeme graf:
-            GTimeGraph graph = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
+            TimeGraph graph = InteractiveObject.SearchForItem(item, true, typeof(TimeGraph)) as TimeGraph;
             if (graph != null && absolutePoint.HasValue)
             {
                 Rectangle graphBounds = graph.BoundsAbsolute;
@@ -4778,7 +4778,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
             LinkLineType defaultLineType = (asSCurve ? LinkLineType.SCurveHorizontal : LinkLineType.StraightLine);
 
-            GTimeGraphItem currentItem = args.ItemControl ?? args.GroupControl;     // Na tomto prvku začne hledání. Může to být prvek konkrétní, anebo prvek grupy.
+            TimeGraphItem currentItem = args.ItemControl ?? args.GroupControl;     // Na tomto prvku začne hledání. Může to být prvek konkrétní, anebo prvek grupy.
             args.Links = this.SearchForGraphLink(currentItem, args.SearchSidePrev, args.SearchSideNext, wholeTask, defaultLineType);
         }
         /// <summary>
@@ -4886,7 +4886,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiGridItemId GetGridItemId(IInteractiveItem item)
         {
             if (item == null) return null;
-            GTimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraphItem)) as GTimeGraphItem;
+            TimeGraphItem timeGraphItem = InteractiveObject.SearchForItem(item, true, typeof(TimeGraphItem)) as TimeGraphItem;
             if (timeGraphItem == null) return null;
             GTable gTable = timeGraphItem.SearchForParent(typeof(GTable)) as GTable;     // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
             if (gTable == null) return null;
@@ -4897,12 +4897,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Metoda vrátí <see cref="GuiGridItemId"/> pro daný prvek grafu.
-        /// Pokud bylo kliknuto na grupu do prostoru mezi prvky, tedy na <see cref="GTimeGraphItem"/> typu Group, pak vrácený <see cref="GuiGridItemId"/> bude mít nevyplněné <see cref="GuiGridItemId.ItemId"/>.
+        /// Pokud bylo kliknuto na grupu do prostoru mezi prvky, tedy na <see cref="TimeGraphItem"/> typu Group, pak vrácený <see cref="GuiGridItemId"/> bude mít nevyplněné <see cref="GuiGridItemId.ItemId"/>.
         /// </summary>
         /// <param name="timeGraphItem"></param>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        private GuiGridItemId GetGridItemId(GTimeGraphItem timeGraphItem, string tableName)
+        private GuiGridItemId GetGridItemId(TimeGraphItem timeGraphItem, string tableName)
         {
             if (timeGraphItem == null || String.IsNullOrEmpty(tableName)) return null;
             var items = timeGraphItem.GetDataItems(false);
@@ -5357,7 +5357,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vizuální control
         /// </summary>
-        private GTimeGraphItem _GControl;
+        private TimeGraphItem _GControl;
         /// <summary>
         /// Metoda se pokusí zajistit, aby existoval vizuální prvek <see cref="_GControl"/> (pokud dosud neexistuje), a aby měl napočtené korektní hodnoty.
         /// </summary>
@@ -5366,7 +5366,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this._GControl == null)
             {   // Prvek grafu ještě nemá vytvořen ControlBuffered = jde o řádek, který ještě nebyl kreslen.
                 // Požádáme tedy jeho graf, aby si prověřil platnost svých dat:
-                GTimeGraph graph = this._OwnerGraph as GTimeGraph;
+                TimeGraph graph = this._OwnerGraph as TimeGraph;
                 if (graph != null)
                     graph.CheckValid();
             }
@@ -5529,7 +5529,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="ControlBuffered"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="ControlBuffered"/> : <see cref="TimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
@@ -5599,7 +5599,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return this.GetBackEffectEditable(); } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return this.GetBackEffectNonEditable(); } }
-        GTimeGraphItem ITimeGraphItem.VisualControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
+        TimeGraphItem ITimeGraphItem.VisualControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
         // Následující properties se načítají i ze Skinu:
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
         Color? ITimeGraphItem.TextColor { get { return this._GuiGraphItem.TextColor; } }
@@ -5621,7 +5621,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// DataGraphProperties : vlastnosti tabulky, popis chování atd - načteno z dodaných dat <see cref="Noris.LCS.Base.WorkScheduler.GuiGraphProperties"/>.
     /// Jedná se pouze o adapter: do sebe uloží referenci na <see cref="Noris.LCS.Base.WorkScheduler.GuiGraphProperties"/>, 
-    /// a následně vygeneruje instanci <see cref="Asol.Tools.WorkScheduler.Components.Graph.TimeGraphProperties"/>, do které opíše data dodaná ze vstupního objektu.
+    /// a následně vygeneruje instanci <see cref="Asol.Tools.WorkScheduler.Components.Graphs.TimeGraphProperties"/>, do které opíše data dodaná ze vstupního objektu.
     /// </summary>
     public class DataGraphProperties
     {
@@ -5713,18 +5713,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Určuje výchozí režim zobrazení spojovacích čar mezi prvky.
         /// </summary>
-        public GTimeGraphLinkMode DefaultLinksMode { get { return (this.GuiGraphProperties != null ? ConvertTo(this.GuiGraphProperties.LinkMode) : GTimeGraphLinkMode.Default); } }
+        public TimeGraphLinkMode DefaultLinksMode { get { return (this.GuiGraphProperties != null ? ConvertTo(this.GuiGraphProperties.LinkMode) : TimeGraphLinkMode.Default); } }
         /// <summary>
-        /// Metoda vrátí <see cref="GTimeGraphLinkMode"/> pro daný <see cref="GuiGraphLinkMode"/>
+        /// Metoda vrátí <see cref="TimeGraphLinkMode"/> pro daný <see cref="GuiGraphLinkMode"/>
         /// </summary>
         /// <param name="linkMode"></param>
         /// <returns></returns>
-        protected static GTimeGraphLinkMode ConvertTo(GuiGraphLinkMode linkMode)
+        protected static TimeGraphLinkMode ConvertTo(GuiGraphLinkMode linkMode)
         {
-            GTimeGraphLinkMode mode = GTimeGraphLinkMode.None;
-            if (linkMode.HasFlag(GuiGraphLinkMode.MouseOver)) mode |= GTimeGraphLinkMode.MouseOver;
-            if (linkMode.HasFlag(GuiGraphLinkMode.Selected)) mode |= GTimeGraphLinkMode.Selected;
-            if (linkMode.HasFlag(GuiGraphLinkMode.Allways)) mode |= GTimeGraphLinkMode.Allways;
+            TimeGraphLinkMode mode = TimeGraphLinkMode.None;
+            if (linkMode.HasFlag(GuiGraphLinkMode.MouseOver)) mode |= TimeGraphLinkMode.MouseOver;
+            if (linkMode.HasFlag(GuiGraphLinkMode.Selected)) mode |= TimeGraphLinkMode.Selected;
+            if (linkMode.HasFlag(GuiGraphLinkMode.Allways)) mode |= TimeGraphLinkMode.Allways;
             return mode;
         }
         #endregion
@@ -5765,14 +5765,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return timeProperties;
         }
         /// <summary>
-        /// Převede pole <see cref="GuiTimeAxisSegment"/> na pole <see cref="GBaseAxis{TTick, TSize, TValue}.Segment"/>
+        /// Převede pole <see cref="GuiTimeAxisSegment"/> na pole <see cref="BaseAxis{TTick, TSize, TValue}.Segment"/>
         /// </summary>
         /// <param name="guiAxisSegments"></param>
         /// <returns></returns>
         private GTimeAxis.Segment[] ConvertSegments(IEnumerable<GuiTimeAxisSegment> guiAxisSegments)
         {
             if (guiAxisSegments == null) return null;
-            List<GTimeAxis.Segment> segments = new List<GBaseAxis<DateTime?, TimeSpan?, TimeRange>.Segment>();
+            List<GTimeAxis.Segment> segments = new List<BaseAxis<DateTime?, TimeSpan?, TimeRange>.Segment>();
             foreach (GuiTimeAxisSegment guiAxisSegment in guiAxisSegments)
             {
                 if (guiAxisSegment != null)
