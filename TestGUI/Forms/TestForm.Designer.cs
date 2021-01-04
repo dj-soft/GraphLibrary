@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this._GInteractiveControl = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
+            this._GInteractiveControl = new Asol.Tools.WorkScheduler.Components.InteractiveControl();
             this.button1 = new System.Windows.Forms.Button();
             this._AxisEnabledCheck = new System.Windows.Forms.CheckBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -140,7 +140,7 @@
 
         #endregion
 
-        private Components.GInteractiveControl _GInteractiveControl;
+        private Components.InteractiveControl _GInteractiveControl;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.CheckBox _AxisEnabledCheck;
         private System.Windows.Forms.TabControl tabControl1;

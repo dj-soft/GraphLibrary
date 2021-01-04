@@ -30,7 +30,7 @@
         {
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
-            this.gInteractiveControl1 = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
+            this.gInteractiveControl1 = new Asol.Tools.WorkScheduler.Components.InteractiveControl();
             this.SuspendLayout();
             // 
             // toolStrip1
@@ -79,6 +79,6 @@
 
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.StatusStrip statusStrip1;
-        private Components.GInteractiveControl gInteractiveControl1;
+        private Components.InteractiveControl gInteractiveControl1;
     }
 }

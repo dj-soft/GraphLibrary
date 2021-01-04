@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.GControl = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
+            this.GControl = new Asol.Tools.WorkScheduler.Components.InteractiveControl();
             this.SuspendLayout();
             // 
             // GControl
@@ -56,7 +56,7 @@
 
         #endregion
 
-        private Components.GInteractiveControl GControl;
+        private Components.InteractiveControl GControl;
 
     }
 }

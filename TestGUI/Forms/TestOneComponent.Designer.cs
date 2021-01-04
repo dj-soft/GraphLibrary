@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this._CloseButton = new System.Windows.Forms.Button();
-            this._Control = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
+            this._Control = new Asol.Tools.WorkScheduler.Components.InteractiveControl();
             this._Text1 = new System.Windows.Forms.TextBox();
             this._Text2 = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
@@ -96,7 +96,7 @@
         #endregion
 
         private System.Windows.Forms.Button _CloseButton;
-        private Components.GInteractiveControl _Control;
+        private Components.InteractiveControl _Control;
         private System.Windows.Forms.TextBox _Text1;
         private System.Windows.Forms.TextBox _Text2;
     }

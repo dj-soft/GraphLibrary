@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.CloseButton = new System.Windows.Forms.Button();
-            this.GControl = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
+            this.GControl = new Asol.Tools.WorkScheduler.Components.InteractiveControl();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.checkBox3 = new System.Windows.Forms.CheckBox();
@@ -110,7 +110,7 @@
         #endregion
 
         private System.Windows.Forms.Button CloseButton;
-        private Components.GInteractiveControl GControl;
+        private Components.InteractiveControl GControl;
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.CheckBox checkBox2;
         private System.Windows.Forms.CheckBox checkBox3;

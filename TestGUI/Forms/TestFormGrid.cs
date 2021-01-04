@@ -705,7 +705,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        public WorkScheduler.Components.Graph.GTimeGraphItem GControl { get; set; }
+        public WorkScheduler.Components.Graph.GTimeGraphItem VisualControl { get; set; }
         #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
@@ -737,8 +737,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
-        WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
-        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
+        WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.VisualControl { get { return this.VisualControl; } set { this.VisualControl = value; } }
+        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.VisualControl.DrawItem(e, boundsAbsolute, drawMode); }
         object ICloneable.Clone() { return this.MemberwiseClone(); }
         #endregion
     }
