@@ -869,7 +869,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Font font = fontInfo.Font;
             SizeF sizeF = graphics.MeasureString(text, font);
-            Size size = sizeF.Enlarge(1f, 3f).ToSize();
+            Size size = sizeF.Enlarge(4f, 3f).ToSize();
             return size;
         }
         #endregion

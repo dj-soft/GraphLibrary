@@ -554,7 +554,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected bool IsInInteractiveState(params GInteractiveState[] states)
         {
             if (states == null || states.Length == 0) return false;
-            GInteractiveState currentState = this.InteractiveState;
+            GInteractiveState currentState = this._InteractiveState;           // Používám privátní hodnotu, která nemá nastavené stavové bity (Enabled, ReadOnly).
             return states.Any(state => (state == currentState));
         }
         /// <summary>
