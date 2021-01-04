@@ -3371,11 +3371,17 @@ namespace Asol.Tools.WorkScheduler.Components
                     // Jakákoli jiná animace:
                     if (this._AnimationNeedTick)
                     {
-                        AnimationArgs args = this._AnimatorTick();
-                        if (args.RedrawAll)
-                            animationRequest.NeedDrawAllItems = true;
-                        if (args.RedrawItemsCount > 0)
-                            animationRequest.ReDrawItems = args.RedrawItems;
+                        lock (_AnimatorTickList)
+                        {
+                            if (this._AnimationNeedTick)
+                            {
+                                AnimationArgs args = this._AnimatorTick();
+                                if (args.RedrawAll)
+                                    animationRequest.NeedDrawAllItems = true;
+                                if (args.RedrawItemsCount > 0)
+                                    animationRequest.ReDrawItems = args.RedrawItems;
+                            }
+                        }
                     }
                 }
                 catch (Exception) { }
@@ -3476,13 +3482,32 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda přidá danou funkci do seznamu animátorů.
         /// Daná funkce bude volána 1x za 40 milisekund (25x za sekundu).
         /// Funkce má zařídit svoji animaci a vrátit informaci, co dál.
+        /// Tato metoda vrací ID animační akce, pomocí kterého je možno tuto animaci externě odvolat, metodou <see cref="AnimationStop(int)"/>.
         /// </summary>
         /// <param name="animatorAction"></param>
-        public void AnimationStart(Func<AnimationArgs, AnimationResult> animatorAction)
+        public int AnimationStart(Func<AnimationArgs, AnimationResult> animatorAction)
         {
-            if (animatorAction == null) return;
-            this._AnimatorTickList.Add(new AnimatorInfo(animatorAction));
+            if (animatorAction == null) return 0;
+            AnimatorInfo animatorInfo = new AnimatorInfo(animatorAction);
+            lock (this._AnimatorTickList)
+            {
+                this._AnimatorTickList.Add(animatorInfo);
+            }
             this._BackThreadResume();
+            return animatorInfo.Id;
+        }
+        /// <summary>
+        /// Zastaví animaci podle jejího ID. 
+        /// ID je přiděleno v <see cref="AnimationStart(Func{AnimationArgs, AnimationResult})"/> a vráceno tam.
+        /// </summary>
+        /// <param name="animationId"></param>
+        public void AnimationStop(int animationId)
+        {
+            if (animationId <= 0 && this._AnimatorTickList.Count == 0) return;
+            lock (this._AnimatorTickList)
+            {
+                this._AnimatorTickList.RemoveAll(i => i.Id == animationId);
+            }
         }
         /// <summary>
         /// Vrací true, pokud animátor má běhat; false pokud není důvod provádět animaci
@@ -3490,7 +3515,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _AnimationNeedTick { get { return (this._AnimatorTickList.Count > 0); } }
         /// <summary>
         /// Metoda provede všechny zaregistrované animační procedury. 
-        /// Vrátí true = je třeba provést překreslení.
+        /// Vrátí výsledek animace = zda je třeba provést překreslení a kterých objektů.
         /// </summary>
         /// <returns></returns>
         private AnimationArgs _AnimatorTick()
@@ -3534,14 +3559,26 @@ namespace Asol.Tools.WorkScheduler.Components
             public AnimatorInfo(Func<AnimationArgs, AnimationResult> animatorAction)
             {
                 this.Action = animatorAction;
+                this.Id = ++_LastId;
                 this.TickCount = 0L;
             }
+            /// <summary>
+            /// ID animační akce
+            /// </summary>
+            public int Id { get; private set; }
+            /// <summary>
+            /// ID nedávné akce
+            /// </summary>
+            private static int _LastId = 0;
             /// <summary>
             /// Akce animátora
             /// </summary>
             public Func<AnimationArgs, AnimationResult> Action { get; private set; }
             /// <summary>
-            /// Počet dosud odeslaných Ticků, před vyvoláním <see cref="Action"/> se navýší o 1
+            /// Počet dosud odeslaných Ticků, před vyvoláním <see cref="Action"/> se navýší o 1.
+            /// Aplikační kód může ve své výkonné animační metodě tuto hodnotu změnit, při příštím vyvolání animační metody dostane hodnotu (+1).
+            /// Příklad: animační metoda při jejím vyvolání dostane <see cref="TickCount"/> = 50, a změní ji na 0.
+            /// Při příštím volání animační metody bude <see cref="TickCount"/> = 1 (= 0 + 1).
             /// </summary>
             public long TickCount { get; set; }
             /// <summary>
@@ -4067,7 +4104,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Počet uplynulých ticků v rámci jednoho aktuálního animátoru.
         /// Systém tuto hodnotu udržuje platnou (tj. před odesláním ticku tuto hodnotu navýší), a do každého animátoru posílá odpovídající hodnotu.
-        /// Pokud animátor hodnotu změní, bude uložena do příštího ticku, před ním bude zase inkremetnovaná a odeslaná do animátoru.
+        /// Pokud animátor hodnotu změní, bude uložena do příštího ticku, před ním bude zase inkrementovaná a odeslaná do animátoru.
         /// </summary>
         public long TickCount { get; set; }
         /// <summary>

@@ -39,12 +39,12 @@ namespace Asol.Tools.WorkScheduler.Components
             _Styles = new List<IStyleMember>();
 
             _Modifier = new ModifierStyle(); _Styles.Add(_Modifier);
-            _ToolTip = new ToolTipStyle(); _Styles.Add(_Modifier);
-            _Label = new LabelStyle(); _Styles.Add(_Modifier);
-            _TextBox = new TextBoxStyle(); _Styles.Add(_Modifier);
-            _Button = new ButtonStyle(); _Styles.Add(_Modifier);
-            _Panel = new PanelStyle(); _Styles.Add(_Modifier);
-            _ScrollBar = new ScrollBarStyle(); _Styles.Add(_Modifier);
+            _ToolTip = new ToolTipStyle(); _Styles.Add(_ToolTip);
+            _Label = new LabelStyle(); _Styles.Add(_Label);
+            _TextBox = new TextBoxStyle(); _Styles.Add(_TextBox);
+            _Button = new ButtonStyle(); _Styles.Add(_Button);
+            _Panel = new PanelStyle(); _Styles.Add(_Panel);
+            _ScrollBar = new ScrollBarStyle(); _Styles.Add(_ScrollBar);
 
             _Styles.ForEach(s => s.IsStyleInstance = true);
             _CurrentType = StyleType.System;
@@ -86,6 +86,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Předdefinované styly
         /// <summary>
         /// Aktuálně platný výchozí styl.
+        /// Nastavením určitého stylu dojde k nastavení všech vlastností výchozích stylů (například <see cref="Styles.TextBox"/>) na hodnoty odpovídající danému typu.
+        /// Pokud ale konkrétní objekt (například <see cref="TextEdit"/>) má deklarován svůj vlastní styl (<see cref="TextEdit.Style"/>), pak jeho explicitní hodnoty nebudou změněny.
+        /// <para/>
+        /// Po nastavení typu stylu do této property je možno vepsat libovolné hodnoty do výchozích stylů, a styl tak modifikovat.
         /// </summary>
         public static StyleType CurrentType { get { return Instance._CurrentType; } set { Instance._CurrentType = value; } }
         /// <summary>
@@ -98,7 +102,7 @@ namespace Asol.Tools.WorkScheduler.Components
             set
             {
                 __CurrentType = value;
-                _Styles.ForEach(s => s.IsStyleInstance = true);
+                _Styles.ForEach(s => s.CurrentType = value);
             }
         }
         private StyleType __CurrentType;
@@ -984,6 +988,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color? BackColorWarning { get; set; }
         /// <summary>
+        /// Explicitně zadaná barva rámečku, pro textbox ve stavu Warning
+        /// </summary>
+        public Color? BorderColorWarning { get; set; }
+        /// <summary>
         /// Explicitně zadaná barva pozadí, pro znaky, které jsou Selected.
         /// </summary>
         public Color? BackColorSelectedText { get; set; }
@@ -992,9 +1000,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color? TextColorSelectedText { get; set; }
         /// <summary>
-        /// Explicitně zadaná barva rámečku, pro textbox ve stavu Warning
+        /// Barva kurzoru, má být kontrastní proti <see cref="ITextBorderStyle.BackColorMouseOn"/>
         /// </summary>
-        public Color? BorderColorWarning { get; set; }
+        public Color? CursorColor { get; set; }
+        /// <summary>
+        /// Délka cyklu blikání kurzoru v jednotkách = 40 milisekund; 0 = kurzor svítí bez blikání
+        /// </summary>
+        public int? CursorBlinkingCycle { get; set; }
+        /// <summary>
+        /// Délka doby svícení kurzoru v jednotkách = 40 milisekund; musí být větší než 0 a menší než <see cref="CursorBlinkingCycle"/>
+        /// </summary>
+        public int? CursorBlinkingOn { get; set; }
 
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
@@ -1013,13 +1029,20 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case StyleType.System:
                     BackColorWarning = DefaultBackColorWarning;
+                    BorderColorWarning = DefaultBorderColorWarning;
                     BackColorSelectedText = DefaultBackColorSelectedText;
                     TextColorSelectedText = DefaultTextColorSelectedText;
-                    BorderColorWarning = DefaultBorderColorWarning;
-                    // Další property již nastavila base metoda ze zdejších override defaultů...
+                    CursorColor = DefaultCursorColor;
+                    // Další property již nastavila base metoda pro style == System ze zdejších override defaultů...
                     break;
                 case StyleType.Light3D:
                 case StyleType.LightFlat:
+                    // Bázová třída TextBorderStyle nenastavuje pro aktuálně zadaný styl žádné hodnoty, všechny musíme nastavit explicitně v potomkovi:
+                    BackColorWarning = Color.FromArgb(255, 216, 216);
+                    BorderColorWarning = Color.FromArgb(192, 64, 64);
+                    BackColorSelectedText = Color.FromArgb(128, 128, 224);
+                    TextColorSelectedText = Color.Black;
+                    CursorColor = Color.Black;
                     BackColor = Color.FromArgb(248, 248, 248);
                     BackColorDisabled = Color.FromArgb(192, 192, 192);
                     BackColorMouseOn = Color.FromArgb(255, 248, 248);
@@ -1037,6 +1060,12 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
                 case StyleType.Dark3D:
                 case StyleType.DarkFlat:
+                    // Bázová třída TextBorderStyle nenastavuje pro aktuálně zadaný styl žádné hodnoty, všechny musíme nastavit explicitně v potomkovi:
+                    BackColorWarning = Color.FromArgb(96, 32, 32);
+                    BorderColorWarning = Color.FromArgb(192, 64, 64);
+                    BackColorSelectedText = Color.FromArgb(196, 196, 224);
+                    TextColorSelectedText = Color.White;
+                    CursorColor = Color.White;
                     BackColor = Color.FromArgb(24, 24, 24);
                     BackColorDisabled = Color.FromArgb(48, 48, 48);
                     BackColorMouseOn = Color.FromArgb(32, 32, 32);
@@ -1053,6 +1082,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     TextMargin = 1;
                     break;
             }
+            CursorBlinkingCycle = DefaultCursorBlinkingCycle;
+            CursorBlinkingOn = DefaultCursorBlinkingOn;
         }
         #endregion
         #region Protected: Přechody stylů mezi předkem a potomkem
@@ -1076,12 +1107,18 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Defaultní hodnoty: vlastní i overrides
         /// <summary>Defaultní barva pozadí, pro textbox ve stavu Warning.</summary>
         protected virtual Color DefaultBackColorWarning { get { return Color.FromArgb(255, 192, 192); } }
+        /// <summary>Defaultní barva rámečku, pro textbox ve stavu Warning.</summary>
+        protected virtual Color DefaultBorderColorWarning { get { return Color.FromArgb(128, 0, 0); } }
         /// <summary>Defaultní barva pozadí, pro znaky, které jsou Selected.</summary>
         protected virtual Color DefaultBackColorSelectedText { get { return SystemColors.Highlight; } }
         /// <summary>Defaultní barva písma, pro znaky, které jsou Selected.</summary>
         protected virtual Color DefaultTextColorSelectedText { get { return SystemColors.HighlightText; } }
-        /// <summary>Defaultní barva rámečku, pro textbox ve stavu Warning.</summary>
-        protected virtual Color DefaultBorderColorWarning { get { return Color.FromArgb(128, 0, 0); } }
+        /// <summary>Defaultní barva pro <see cref="CursorColor"/>.</summary>
+        protected virtual Color DefaultCursorColor { get { return Color.FromArgb(0, 0, 0); } }
+        /// <summary>Defaultní barva pro <see cref="CursorBlinkingCycle"/>.</summary>
+        protected virtual int DefaultCursorBlinkingCycle { get { return 12; } }
+        /// <summary>Defaultní barva pro <see cref="CursorBlinkingOn"/>.</summary>
+        protected virtual int DefaultCursorBlinkingOn { get { return 7; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColor"/></summary>
         protected override Color DefaultBackColor { get { return SystemColors.ControlLightLight; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BackColorDisabled"/></summary>
@@ -1115,9 +1152,12 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Implementace interface
         Color ITextBoxStyle.BackColorWarning { get { return GetValue<Color>(() => BackColorWarning, () => Parent?.BackColorWarning, () => StyleTextBox.BackColorWarning, () => DefaultBackColorWarning); } }
+        Color ITextBoxStyle.BorderColorWarning { get { return GetValue<Color>(() => BorderColorWarning, () => Parent?.BorderColorWarning, () => StyleTextBox.BorderColorWarning, () => DefaultBorderColorWarning); } }
         Color ITextBoxStyle.BackColorSelectedText { get { return GetValue<Color>(() => BackColorSelectedText, () => Parent?.BackColorSelectedText, () => StyleTextBox.BackColorSelectedText, () => DefaultBackColorSelectedText); } }
         Color ITextBoxStyle.TextColorSelectedText { get { return GetValue<Color>(() => TextColorSelectedText, () => Parent?.TextColorSelectedText, () => StyleTextBox.TextColorSelectedText, () => DefaultTextColorSelectedText); } }
-        Color ITextBoxStyle.BorderColorWarning { get { return GetValue<Color>(() => BorderColorWarning, () => Parent?.BorderColorWarning, () => StyleTextBox.BorderColorWarning, () => DefaultBorderColorWarning); } }
+        Color ITextBoxStyle.CursorColor { get { return GetValue<Color>(() => CursorColor, () => Parent?.CursorColor, () => StyleTextBox.CursorColor, () => DefaultCursorColor); } }
+        int ITextBoxStyle.CursorBlinkingCycle { get { return GetValue<int>(() => CursorBlinkingCycle, () => Parent?.CursorBlinkingCycle, () => StyleTextBox.CursorBlinkingCycle, () => DefaultCursorBlinkingCycle); } }
+        int ITextBoxStyle.CursorBlinkingOn { get { return GetValue<int>(() => CursorBlinkingOn, () => Parent?.CursorBlinkingOn, () => StyleTextBox.CursorBlinkingOn, () => DefaultCursorBlinkingOn); } }
         #endregion
     }
     #endregion
@@ -1283,17 +1323,33 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
-        /// Modifikátor textu titulku běžný
+        /// Barva pozadí s focusem
+        /// </summary>
+        public Color? BackColorFocused { get; set; }
+        /// <summary>
+        /// Umístění počátku titulku (definuje tedy okraje zleva a shora)
+        /// </summary>
+        public Point? TitleLocation { get; set; }
+        /// <summary>
+        /// Font titulku běžný i s focusem
+        /// </summary>
+        public FontInfo TitleFont { get; set; }
+        /// <summary>
+        /// Modifikátor písma titulku běžný
         /// </summary>
         public FontModifierInfo TitleFontModifier { get; set; }
+        /// <summary>
+        /// Modifikátor písma titulku s focusem
+        /// </summary>
+        public FontModifierInfo TitleFontModifierFocused { get; set; }
         /// <summary>
         /// Barva textu titulku s focusem
         /// </summary>
         public Color? TitleTextColor { get; set; }
         /// <summary>
-        /// Umístění počátku titulku (definuje tedy okraje zleva a shora)
+        /// Barva textu titulku s focusem
         /// </summary>
-        public Point? TitleLocation { get; set; }
+        public Color? TitleTextColorFocused { get; set; }
         /// <summary>
         /// Šířka linky podtržení (reálně jde o výšku), počet pixelů. 0 (a záporné) = bez linky.
         /// </summary>
@@ -1306,18 +1362,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Barva linky podtržení, koncová (vpravo), běžná
         /// </summary>
         public Color? TitleLineColorEnd { get; set; }
-        /// <summary>
-        /// Barva pozadí s focusem
-        /// </summary>
-        public Color? BackColorFocused { get; set; }
-        /// <summary>
-        /// Modifikátor textu titulku s focusem
-        /// </summary>
-        public FontModifierInfo TitleFontModifierFocused { get; set; }
-        /// <summary>
-        /// Barva textu titulku s focusem
-        /// </summary>
-        public Color? TitleTextColorFocused { get; set; }
         /// <summary>
         /// Barva linky podtržení, počáteční (vlevo), s focusem
         /// </summary>
@@ -1342,45 +1386,48 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case StyleType.System:
                     BackColor = DefaultBackColor;
-                    TitleFontModifier = DefaultTitleFontModifier;
-                    TitleTextColor = DefaultTitleTextColor;
+                    BackColorFocused = DefaultBackColorFocused;
                     TitleLocation = DefaultTitleLocation;
+                    TitleFont = DefaultTitleFont;
+                    TitleFontModifier = DefaultTitleFontModifier;
+                    TitleFontModifierFocused = DefaultTitleFontModifierFocused;
+                    TitleTextColor = DefaultTitleTextColor;
+                    TitleTextColorFocused = DefaultTitleTextColorFocused;
                     TitleLineSize = DefaultTitleLineSize;
                     TitleLineColorBegin = DefaultTitleLineColorBegin;
                     TitleLineColorEnd = DefaultTitleLineColorEnd;
-                    BackColorFocused = DefaultBackColorFocused;
-                    TitleFontModifierFocused = DefaultTitleFontModifierFocused;
-                    TitleTextColorFocused = DefaultTitleTextColorFocused;
                     TitleLineColorBeginFocused = DefaultTitleLineColorBeginFocused;
                     TitleLineColorEndFocused = DefaultTitleLineColorEndFocused;
                     break;
                 case StyleType.Light3D:
                 case StyleType.LightFlat:
                     BackColor = Color.FromArgb(250, 250, 250);
-                    TitleFontModifier = new FontModifierInfo() { SizeRatio = 1.08f };
-                    TitleTextColor = Color.Black;
+                    BackColorFocused = Color.FromArgb(250, 250, 250);
                     TitleLocation = DefaultTitleLocation;
+                    TitleFont = DefaultTitleFont;
+                    TitleFontModifier = new FontModifierInfo() { SizeRatio = 1.08f };
+                    TitleFontModifierFocused = new FontModifierInfo() { SizeRatio = 1.08f, Bold = true };
+                    TitleTextColor = Color.Black;
+                    TitleTextColorFocused = Color.Black;
                     TitleLineSize = 2;
                     TitleLineColorBegin = Color.FromArgb(180, 208, 224);
                     TitleLineColorEnd = Color.Transparent;
-                    BackColorFocused = Color.FromArgb(250, 250, 250);
-                    TitleFontModifierFocused = new FontModifierInfo() { SizeRatio = 1.08f, Bold = true };
-                    TitleTextColorFocused = Color.Black;
                     TitleLineColorBeginFocused = Color.FromArgb(128, 189, 221);
                     TitleLineColorEndFocused = Color.Transparent;
                     break;
                 case StyleType.Dark3D:
                 case StyleType.DarkFlat:
                     BackColor = Color.FromArgb(12, 12, 12);
-                    TitleFontModifier = new FontModifierInfo() { SizeRatio = 1.08f };
-                    TitleTextColor = Color.White;
+                    BackColorFocused = Color.FromArgb(12, 12, 12);
                     TitleLocation = DefaultTitleLocation;
+                    TitleFont = DefaultTitleFont;
+                    TitleFontModifier = new FontModifierInfo() { SizeRatio = 1.08f };
+                    TitleFontModifierFocused = new FontModifierInfo() { SizeRatio = 1.08f, Bold = true };
+                    TitleTextColor = Color.White;
+                    TitleTextColorFocused = Color.Black;
                     TitleLineSize = 2;
                     TitleLineColorBegin = Color.FromArgb(221, 194, 179);
                     TitleLineColorEnd = Color.Transparent;
-                    BackColorFocused = Color.FromArgb(12, 12, 12);
-                    TitleFontModifierFocused = new FontModifierInfo() { SizeRatio = 1.08f, Bold = true };
-                    TitleTextColorFocused = Color.Black;
                     TitleLineColorBeginFocused = Color.FromArgb(221, 165, 135);
                     TitleLineColorEndFocused = Color.Transparent;
                     break;
@@ -1404,24 +1451,26 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Defaultní hodnoty: vlastní i overrides
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.BackColor"/></summary>
         protected virtual Color DefaultBackColor { get { return SystemColors.ControlLight; } }
-        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleFontModifier"/></summary>
-        protected virtual FontModifierInfo DefaultTitleFontModifier { get { return GetDefault<FontModifierInfo>(ref _DefaultTitleFontModifier, () => new FontModifierInfo() { SizeRatio = 1.07f }); } } private static FontModifierInfo _DefaultTitleFontModifier;
-        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleTextColor"/></summary>
-        protected virtual Color DefaultTitleTextColor { get { return SystemColors.ControlText; } }
+        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.BackColorFocused"/></summary>
+        protected virtual Color DefaultBackColorFocused { get { return SystemColors.ControlLight; } }
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleLocation"/></summary>
         protected virtual Point DefaultTitleLocation { get { return GetDefault<Point>(ref _DefaultTitleLocation, () => new Point(9, 6)); } } private static Point? _DefaultTitleLocation;
+        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleFont"/></summary>
+        protected virtual FontInfo DefaultTitleFont { get { return GetDefault<FontInfo>(ref _DefaultTitleFont, () => FontInfo.Caption); } } private static FontInfo _DefaultTitleFont;
+        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleFontModifier"/></summary>
+        protected virtual FontModifierInfo DefaultTitleFontModifier { get { return GetDefault<FontModifierInfo>(ref _DefaultTitleFontModifier, () => new FontModifierInfo() { SizeRatio = 1.07f }); } } private static FontModifierInfo _DefaultTitleFontModifier;
+        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleFontModifierFocused"/></summary>
+        protected virtual FontModifierInfo DefaultTitleFontModifierFocused { get { return GetDefault<FontModifierInfo>(ref _DefaultTitleFontModifierFocused, () => new FontModifierInfo() { SizeRatio = 1.07f, Bold = true }); } } private static FontModifierInfo _DefaultTitleFontModifierFocused;
+        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleTextColor"/></summary>
+        protected virtual Color DefaultTitleTextColor { get { return SystemColors.ControlText; } }
+        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleTextColorFocused"/></summary>
+        protected virtual Color DefaultTitleTextColorFocused { get { return SystemColors.ControlText; } }
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleLineSize"/></summary>
         protected virtual int DefaultTitleLineSize { get { return 2; } }
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleLineColorBegin"/></summary>
         protected virtual Color DefaultTitleLineColorBegin { get { return SystemColors.ButtonShadow; } }
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleLineColorEnd"/></summary>
         protected virtual Color DefaultTitleLineColorEnd { get { return Color.Transparent; } }
-        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.BackColorFocused"/></summary>
-        protected virtual Color DefaultBackColorFocused { get { return SystemColors.ControlLight; } }
-        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleFontModifierFocused"/></summary>
-        protected virtual FontModifierInfo DefaultTitleFontModifierFocused { get { return GetDefault<FontModifierInfo>(ref _DefaultTitleFontModifierFocused, () => new FontModifierInfo() { SizeRatio = 1.07f, Bold = true }); } } private static FontModifierInfo _DefaultTitleFontModifierFocused;
-        /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleTextColorFocused"/></summary>
-        protected virtual Color DefaultTitleTextColorFocused { get { return SystemColors.ControlText; } }
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleLineColorBeginFocused"/></summary>
         protected virtual Color DefaultTitleLineColorBeginFocused { get { return SystemColors.ControlLight; } }
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.TitleLineColorEndFocused"/></summary>
@@ -1429,15 +1478,16 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Implementace interface
         Color IPanelStyle.BackColor { get { return GetValue<Color>(() => BackColor, () => Parent?.BackColor, () => StylePanel.BackColor, () => DefaultBackColor); } }
-        FontModifierInfo IPanelStyle.TitleFontModifier { get { return GetInstance<FontModifierInfo>(() => TitleFontModifier, () => Parent?.TitleFontModifier, () => StylePanel?.TitleFontModifier, () => DefaultTitleFontModifier); } }
-        Color IPanelStyle.TitleTextColor { get { return GetValue<Color>(() => TitleTextColor, () => Parent?.TitleTextColor, () => StylePanel.TitleTextColor, () => DefaultTitleTextColor); } }
+        Color IPanelStyle.BackColorFocused { get { return GetValue<Color>(() => BackColorFocused, () => Parent?.BackColorFocused, () => StylePanel.BackColorFocused, () => DefaultBackColorFocused); } }
         Point IPanelStyle.TitleLocation { get { return GetValue<Point>(() => TitleLocation, () => Parent?.TitleLocation, () => StylePanel.TitleLocation, () => DefaultTitleLocation); } }
+        FontInfo IPanelStyle.TitleFont { get { return GetInstance<FontInfo>(() => TitleFont, () => Parent?.TitleFont, () => StylePanel?.TitleFont, () => DefaultTitleFont); } }
+        FontModifierInfo IPanelStyle.TitleFontModifier { get { return GetInstance<FontModifierInfo>(() => TitleFontModifier, () => Parent?.TitleFontModifier, () => StylePanel?.TitleFontModifier, () => DefaultTitleFontModifier); } }
+        FontModifierInfo IPanelStyle.TitleFontModifierFocused { get { return GetInstance<FontModifierInfo>(() => TitleFontModifierFocused, () => Parent?.TitleFontModifierFocused, () => StylePanel?.TitleFontModifierFocused, () => DefaultTitleFontModifierFocused); } }
+        Color IPanelStyle.TitleTextColor { get { return GetValue<Color>(() => TitleTextColor, () => Parent?.TitleTextColor, () => StylePanel.TitleTextColor, () => DefaultTitleTextColor); } }
+        Color IPanelStyle.TitleTextColorFocused { get { return GetValue<Color>(() => TitleTextColorFocused, () => Parent?.TitleTextColorFocused, () => StylePanel.TitleTextColorFocused, () => DefaultTitleTextColorFocused); } }
         int IPanelStyle.TitleLineSize { get { return GetValue<int>(() => TitleLineSize, () => Parent?.TitleLineSize, () => StylePanel.TitleLineSize, () => DefaultTitleLineSize); } }
         Color IPanelStyle.TitleLineColorBegin { get { return GetValue<Color>(() => TitleLineColorBegin, () => Parent?.TitleLineColorBegin, () => StylePanel.TitleLineColorBegin, () => DefaultTitleLineColorBegin); } }
         Color IPanelStyle.TitleLineColorEnd { get { return GetValue<Color>(() => TitleLineColorEnd, () => Parent?.TitleLineColorEnd, () => StylePanel.TitleLineColorEnd, () => DefaultTitleLineColorEnd); } }
-        Color IPanelStyle.BackColorFocused { get { return GetValue<Color>(() => BackColorFocused, () => Parent?.BackColorFocused, () => StylePanel.BackColorFocused, () => DefaultBackColorFocused); } }
-        FontModifierInfo IPanelStyle.TitleFontModifierFocused { get { return GetInstance<FontModifierInfo>(() => TitleFontModifierFocused, () => Parent?.TitleFontModifierFocused, () => StylePanel?.TitleFontModifierFocused, () => DefaultTitleFontModifierFocused); } }
-        Color IPanelStyle.TitleTextColorFocused { get { return GetValue<Color>(() => TitleTextColorFocused, () => Parent?.TitleTextColorFocused, () => StylePanel.TitleTextColorFocused, () => DefaultTitleTextColorFocused); } }
         Color IPanelStyle.TitleLineColorBeginFocused { get { return GetValue<Color>(() => TitleLineColorBeginFocused, () => Parent?.TitleLineColorBeginFocused, () => StylePanel.TitleLineColorBeginFocused, () => DefaultTitleLineColorBeginFocused); } }
         Color IPanelStyle.TitleLineColorEndFocused { get { return GetValue<Color>(() => TitleLineColorEndFocused, () => Parent?.TitleLineColorEndFocused, () => StylePanel.TitleLineColorEndFocused, () => DefaultTitleLineColorEndFocused); } }
 
@@ -1834,6 +1884,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Color BackColorWarning { get; }
         /// <summary>
+        /// Reálná barva rámečku, pro textbox ve stavu Warning
+        /// </summary>
+        Color BorderColorWarning { get; }
+        /// <summary>
         /// Reálná barva pozadí, pro znaky, které jsou Selected.
         /// </summary>
         Color BackColorSelectedText { get; }
@@ -1842,9 +1896,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Color TextColorSelectedText { get; }
         /// <summary>
-        /// Reálná barva rámečku, pro textbox ve stavu Warning
+        /// Barva kurzoru, má být kontrastní proti <see cref="ITextBorderStyle.BackColorMouseOn"/>
         /// </summary>
-        Color BorderColorWarning { get; }
+        Color CursorColor { get; }
+        /// <summary>
+        /// Délka cyklu blikání kurzoru v jednotkách = 40 milisekund; 0 = kurzor svítí bez blikání
+        /// </summary>
+        int CursorBlinkingCycle { get; }
+        /// <summary>
+        /// Délka doby svícení kurzoru v jednotkách = 40 milisekund; musí být větší než 0 a menší než <see cref="CursorBlinkingCycle"/>
+        /// </summary>
+        int CursorBlinkingOn { get; }
     }
     /// <summary>
     /// Deklarace stylu pro kreslení Buttonů
@@ -1866,17 +1928,34 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Color BackColor { get; }
         /// <summary>
-        /// Modifikátor textu titulku běžný
+        /// Barva pozadí s focusem
+        /// </summary>
+        Color BackColorFocused { get; }
+
+        /// <summary>
+        /// Umístění počátku titulku (definuje tedy okraje zleva a shora)
+        /// </summary>
+        Point TitleLocation { get; }
+        /// <summary>
+        /// Font titulku běžný i s focusem
+        /// </summary>
+        FontInfo TitleFont { get; }
+        /// <summary>
+        /// Modifikátor písma titulku běžný
         /// </summary>
         FontModifierInfo TitleFontModifier { get; }
+        /// <summary>
+        /// Modifikátor písma titulku s focusem
+        /// </summary>
+        FontModifierInfo TitleFontModifierFocused { get; }
         /// <summary>
         /// Barva textu titulku s focusem
         /// </summary>
         Color TitleTextColor { get; }
         /// <summary>
-        /// Umístění počátku titulku (definuje tedy okraje zleva a shora)
+        /// Barva textu titulku s focusem
         /// </summary>
-        Point TitleLocation { get; }
+        Color TitleTextColorFocused { get; }
         /// <summary>
         /// Šířka linky podtržení (reálně jde o výšku), počet pixelů. 0 (a záporné) = bez linky.
         /// </summary>
@@ -1889,18 +1968,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Barva linky podtržení, koncová (vpravo), běžná
         /// </summary>
         Color TitleLineColorEnd { get; }
-        /// <summary>
-        /// Barva pozadí s focusem
-        /// </summary>
-        Color BackColorFocused { get; }
-        /// <summary>
-        /// Modifikátor textu titulku s focusem
-        /// </summary>
-        FontModifierInfo TitleFontModifierFocused { get; }
-        /// <summary>
-        /// Barva textu titulku s focusem
-        /// </summary>
-        Color TitleTextColorFocused { get; }
         /// <summary>
         /// Barva linky podtržení, počáteční (vlevo), s focusem
         /// </summary>
@@ -2026,7 +2093,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Dvojpixelový měkký
         /// </summary>
-        SoftDoublePlain = Double | Soft
+        SoftDoublePlain = Double | Soft,
+
+        /// <summary>
+        /// Jednopixelový tvrdý, polo interaktivní = v neaktivním stavu je poloprůhledný
+        /// </summary>
+        SingleInteractiveHalf = Single | InteractiveHalf
 
     }
     /// <summary>

@@ -1984,11 +1984,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Je třeba vykreslit prvek
         /// </summary>
-        DrawAll = 1,
+        DrawItem = 1,
+        /// <summary>
+        /// Je třeba vykreslit všechny prvky
+        /// </summary>
+        DrawAll = 2,
         /// <summary>
         /// Aktuální animační funkci je možno ukončit (vyřadit z animačního vlákna)
         /// </summary>
-        Stop = 2
+        Stop = 4
     }
     #endregion
     #region Vizuální styly : interface IVisualMember, class VisualStyle, enum BorderLinesType

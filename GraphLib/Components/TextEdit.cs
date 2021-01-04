@@ -46,6 +46,7 @@ namespace Asol.Tools.WorkScheduler.Components
             base.AfterStateChangedFocusEnter(e);
             OnCreateEditor();
             EditorState.EventFocusEnter(e);
+            ShowCursorStart();
         }
         /// <summary>
         /// Při odchodu focusu z prvku
@@ -54,6 +55,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusLeave(e);
+            ShowCursorStop();
             EditorState.EventFocusLeave(e);
             OnReleaseEditor();
             OnEditorEnds();
@@ -349,9 +351,10 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             CursorBounds = EditorState.GetCursorBounds();
             if (!CursorBounds.HasValue) return;
+            if (!CursorAnimatedVisible) return;
 
             Painter.GraphicsSetSharp(drawArgs.Graphics);                      // Ostré okraje, aby byl kurzor správný
-            drawArgs.Graphics.FillRectangle(Skin.Brush(Color.Black), CursorBounds.Value);
+            drawArgs.Graphics.FillRectangle(Skin.Brush(drawArgs.Style.CursorColor), CursorBounds.Value);
         }
         /// <summary>
         /// Souřadnice okénka pro vypisování textu, absolutní koordináty
@@ -369,9 +372,44 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected Point TextShift { get; set; }
         /// <summary>
-        /// Souřadnice kurzoru. Jsou určeny při jeho vykreslení v procesu kreslení celého textu. Lze je použít pro animaci blikání kurzoru.
+        /// Souřadnice kurzoru. Jsou určeny při jeho vykreslení v procesu kreslení celého textu. Lze je použít pro navazující animaci pro blikání kurzoru.
         /// </summary>
         protected Rectangle? CursorBounds { get; set; }
+        /// <summary>
+        /// Zahájí blikání kurzoru. 
+        /// Volá se při GotFocus, provede se jen když je Enabled.
+        /// </summary>
+        protected void ShowCursorStart()
+        {
+            ShowCursorStop();
+            if (this.Is.Enabled)
+            {
+                CursorAnimatedVisible = true;
+                var style = this.StyleCurrent;
+                CursorAnimationTimeCycle = style.CursorBlinkingCycle;
+                CursorAnimationTimeOn = style.CursorBlinkingOn;
+                if (CursorAnimationTimeCycle > 0 && CursorAnimationTimeOn > 0 && CursorAnimationTimeOn < CursorAnimationTimeCycle)
+                    CursorAnimationId = this.Host.AnimationStart(ShowCursorTick);
+            }
+        }
+        /// <summary>
+        /// Ukončí blikání kurzoru. 
+        /// Volá se při LostFocus.
+        /// </summary>
+        protected void ShowCursorStop()
+        {
+            var id = CursorAnimationId;
+            if (id.HasValue)
+            {
+                this.Host.AnimationStop(id.Value);
+                CursorAnimationId = null;
+            }
+            CursorAnimatedVisible = false;
+        }
+        /// <summary>
+        /// ID animační akce kurzoru
+        /// </summary>
+        protected int? CursorAnimationId { get; set; }
         /// <summary>
         /// Vykreslí blikání kurzoru
         /// </summary>
@@ -379,10 +417,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected AnimationResult ShowCursorTick(AnimationArgs args)
         {
+            bool cursorVisible = (args.TickCount < CursorAnimationTimeOn);
+            if (cursorVisible != CursorAnimatedVisible)
+            {
+                args.AddRedrawItem(this);
+                CursorAnimatedVisible = cursorVisible;
+            }
+            if (args.TickCount >= CursorAnimationTimeCycle)
+                args.TickCount = 0;
 
-
-            return AnimationResult.Stop;
+            return AnimationResult.None;
         }
+        /// <summary>
+        /// Počet ticků animátoru (40 milisekund), po které kurzor svítí. Pak zhasne, a po celkové době cyklu <see cref="CursorAnimationTimeCycle"/> se zase rozsvítí.
+        /// </summary>
+        protected int CursorAnimationTimeOn { get; set; }
+        /// <summary>
+        /// Počet ticků animátoru (40 milisekund) jednoho cyklu bliknutí kurzoru. Po uplynutí tohoto počtu ticků se nuluje TickCounter, a kurzor se rozsvítí.
+        /// </summary>
+        protected int CursorAnimationTimeCycle { get; set; }
+        /// <summary>
+        /// Aktuální stav viditelnosti kurzoru v rámci blikání
+        /// </summary>
+        protected bool CursorAnimatedVisible { get; set; }
         #endregion
         #region Funkční prostor vpravo (ikona, dropdown)
         /// <summary>
