@@ -57,12 +57,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
         /// Pro aktuální instanci = pro její aktuální styl.
         /// </summary>
-        public virtual int OneTextLineHeightCurrent { get { return GPainter.GetOneTextLineHeight(this.StyleCurrent); } }
+        public virtual int OneTextLineHeightCurrent { get { return Painter.GetOneTextLineHeight(this.StyleCurrent); } }
         /// <summary>
         /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
         /// Pro defaultní instanci = pro výchozí styl.
         /// </summary>
-        public static int OneTextLineHeightDefault { get { return GPainter.GetOneTextLineHeight(Styles.Label); } }
+        public static int OneTextLineHeightDefault { get { return Painter.GetOneTextLineHeight(Styles.Label); } }
         #endregion
         #region Public vlastnosti
         /// <summary>
@@ -86,7 +86,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             string text = this.Text;
             if (!String.IsNullOrEmpty(text))
-                GPainter.DrawString(e.Graphics, text, this.FontCurrent, absoluteBounds, this.Alignment, color: this.TextColorCurrent);
+                Painter.DrawString(e.Graphics, text, this.FontCurrent, absoluteBounds, this.Alignment, color: this.TextColorCurrent);
         }
         /// <summary>
         /// Obsahuje aktuální barvu písma (získanou z kombinace stylů)

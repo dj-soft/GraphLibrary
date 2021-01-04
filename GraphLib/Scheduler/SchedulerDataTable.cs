@@ -5135,7 +5135,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._Time = guiGraphItem.Time;                // Existuje implicitní konverze mezi typy TimeRange a GuiTimeRange.
             item._RatioStyle = GetRatioStyle(guiGraphItem.RatioStyle);
             item._BehaviorMode = guiGraphItem.BehaviorMode;
-            item._TextPosition = GPainter.ConvertGuiAlignment(guiGraphItem.TextPosition);
+            item._TextPosition = Painter.ConvertGuiAlignment(guiGraphItem.TextPosition);
            
             // ID pro grafickou vrstvu: vygenerujeme Int32 klíč pro daný GId, za pomoci indexu uloženého v hlavní tabulce (iGraphTable):
             item._ItemId = iGraphTable.GetId(item.ItemGId);

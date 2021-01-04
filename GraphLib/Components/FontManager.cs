@@ -932,7 +932,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (backColor.HasValue || backBrush != null)
             {
                 var brush = (backBrush != null ? backBrush : Skin.Brush(backColor.Value));
-                using (GPainter.GraphicsUseSharp(graphics))
+                using (Painter.GraphicsUseSharp(graphics))
                     graphics.FillRectangle(brush, backBounds);
             }
 

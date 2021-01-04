@@ -611,7 +611,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <returns></returns>
         public static System.Windows.Forms.ToolStripDropDownMenu CreateDropDownMenuFrom(IEnumerable<FunctionItem> functionItems, Action<System.Windows.Forms.ToolStripDropDownMenu> modifyMenu = null)
         {
-            System.Windows.Forms.ToolStripDropDownMenu menu = GPainter.CreateDropDownMenu();
+            System.Windows.Forms.ToolStripDropDownMenu menu = Painter.CreateDropDownMenu();
 
             if (modifyMenu != null)
                 modifyMenu(menu);
@@ -641,7 +641,7 @@ namespace Asol.Tools.WorkScheduler.Services
             else
             {
                 // Systémová tvorba položky menu:
-                System.Windows.Forms.ToolStripMenuItem item = GPainter.CreateDropDownItem(text, image: this.Image,
+                System.Windows.Forms.ToolStripMenuItem item = Painter.CreateDropDownItem(text, image: this.Image,
                     toolTip: this.ToolTipText, isEnabled: this.IsEnabled, isCheckable: this.IsCheckable, isChecked: this.IsChecked,
                     backColor: this.BackColor, name: this.Name);
 

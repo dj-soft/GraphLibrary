@@ -12,7 +12,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Nástroj pro kreslení
     /// </summary>
-    public class GPainter
+    public class Painter
     {
         #region DrawRectangle
         /// <summary>
@@ -612,7 +612,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int roundX = args.RoundCorner;
             int roundY = args.RoundCorner;
 
-            using (GPainter.GraphicsUseSmooth(graphics))
+            using (Painter.GraphicsUseSmooth(graphics))
             {
                 if (args.DrawBackground)
                 {
@@ -1337,7 +1337,7 @@ namespace Asol.Tools.WorkScheduler.Components
             using (GraphicsClip(graphics, boundsAbsolute))
             {
                 Color backColor = tableBackColor ?? tableText.BackColor ?? Skin.Control.ControlBackColor;
-                GPainter.DrawAreaBase(graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled);
+                Painter.DrawAreaBase(graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled);
 
                 if (tableText != null && tableText.Rows.Count > 0)
                 {
@@ -2238,13 +2238,13 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (true)
             {
-                using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.FilledArea, out graphicSetting))
+                using (GraphicsPath path = Painter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.FilledArea, out graphicSetting))
                 {
                     if (path != null)
                     {
                         Rectangle bounds = center.CreateRectangleFromCenter(size);
                         using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, Skin.TrackBar.BackColorButton))
-                        using (GPainter.GraphicsUse(graphics, graphicSetting))
+                        using (Painter.GraphicsUse(graphics, graphicSetting))
                         {
                             graphics.FillPath(brush, path);
                         }
@@ -2253,10 +2253,10 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             if (true)
             {
-                using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.LightBorder, out graphicSetting))
+                using (GraphicsPath path = Painter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.LightBorder, out graphicSetting))
                 {
                     Color lightBorder = Skin.Modifiers.GetColor3DBorderLight(Skin.TrackBar.LineColorButton);
-                    using (GPainter.GraphicsUse(graphics, graphicSetting))
+                    using (Painter.GraphicsUse(graphics, graphicSetting))
                     {
                         graphics.DrawPath(Skin.Pen(lightBorder), path);
                     }
@@ -2264,10 +2264,10 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             if (true)
             {
-                using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.DarkBorder, out graphicSetting))
+                using (GraphicsPath path = Painter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.DarkBorder, out graphicSetting))
                 {
                     Color darkBorder = Skin.Modifiers.GetColor3DBorderDark(Skin.TrackBar.LineColorButton);
-                    using (GPainter.GraphicsUse(graphics, graphicSetting))
+                    using (Painter.GraphicsUse(graphics, graphicSetting))
                     {
                         graphics.DrawPath(Skin.Pen(darkBorder), path);
                     }
@@ -2671,7 +2671,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
                 state = GInteractiveState.Disabled;
             else if (state == GInteractiveState.LeftDrag)
                 state = GInteractiveState.LeftDown;
-            GPainter.DrawAreaBase(graphics, bounds, color, orientation, state, null, null, 0);
+            Painter.DrawAreaBase(graphics, bounds, color, orientation, state, null, null, 0);
         }
         /// <summary>
         /// Zajistí vykreslení jednoho daného ticku
@@ -2972,7 +2972,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="itemState"></param>
         private static void _DrawScrollBarActiveArea(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, bool isScrollBarActive, GInteractiveState itemState)
         {
-            GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, orientation, itemState, null, 96);
+            Painter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, orientation, itemState, null, 96);
         }
         /// <summary>
         /// Vykreslí button pro ScrollBar a do něj jeho grafiku
@@ -2993,7 +2993,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             if (isEnabled && (drawAlways || isItemActive))
             {   // Buttony kreslím jen pokud ScrollBar je Enabled, a (mám kreslit vždy = Thumb, anebo button je myšoaktivní = Min/Max):
                 Color backColor = (isScrollBarActive ? Skin.ScrollBar.BackColorButtonActive : Skin.ScrollBar.BackColorButtonPassive);
-                GPainter.DrawAreaBase(graphics, bounds, backColor, orientation, itemState, null, null);
+                Painter.DrawAreaBase(graphics, bounds, backColor, orientation, itemState, null, null);
                 // GPainter.DrawButtonBase(graphics, bounds, Skin.ScrollBar.BackColorButton, itemState, orientation, 0, null, null);
             }
 
@@ -3004,12 +3004,12 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             if (itemState.IsMouseDown())
                 shapeBounds = shapeBounds.Add(1, 1);
             GraphicSetting graphicSetting;
-            GraphicsPath imagePath = GPainter.CreatePathLinearShape(shape, shapeBounds, 2, out graphicSetting);
+            GraphicsPath imagePath = Painter.CreatePathLinearShape(shape, shapeBounds, 2, out graphicSetting);
             if (imagePath != null)
             {
                 GInteractiveState state = (isEnabled ? itemState : GInteractiveState.Disabled);
                 Color foreColor = Skin.GetForeColor(Skin.ScrollBar.TextColorButton, state);
-                using (GPainter.GraphicsUse(graphics, graphicSetting))
+                using (Painter.GraphicsUse(graphics, graphicSetting))
                 {
                     graphics.DrawPath(Skin.Pen(foreColor), imagePath);
                 }
@@ -3174,7 +3174,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             Rectangle textBounds = tabHeader.TextBounds.Add(absoluteBounds.Location);
             bool isActive = tabHeader.IsActive;
             Color textColor = (isActive ? Skin.TabHeader.TextColorActive : Skin.TabHeader.TextColor);
-            GPainter.DrawString(graphics, tabHeader.Text, tabHeader.Font, textBounds, ContentAlignment.MiddleCenter, color: textColor, transformation: transformation);
+            Painter.DrawString(graphics, tabHeader.Text, tabHeader.Font, textBounds, ContentAlignment.MiddleCenter, color: textColor, transformation: transformation);
         }
         /// <summary>
         /// Vykreslí CloseButton, pokud má být viditelný
@@ -3368,17 +3368,17 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             switch (args.BackEffectStyle)
             {
                 case Graphs.TimeGraphElementBackEffectStyle.Pipe:
-                    GPainter.GraphItemDrawBackPipe(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
+                    Painter.GraphItemDrawBackPipe(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
                 case Graphs.TimeGraphElementBackEffectStyle.Flat:
-                    GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
+                    Painter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
                 case Graphs.TimeGraphElementBackEffectStyle.Simple:
-                    GPainter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
+                    Painter.GraphItemDrawBackFlat(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.InteractiveState, args.Effect3D, null);
                     break;
                 case Graphs.TimeGraphElementBackEffectStyle.Default:
                 default:
-                    GPainter.DrawEffect3D(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.Effect3D, null);
+                    Painter.DrawEffect3D(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.Effect3D, null);
                     break;
             }
         }
@@ -4163,7 +4163,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         public static int GetSingleLineOptimalHeight(ITextBoxStyle style)
         {
             TextBoxBorderType borderType = style.BorderType;
-            int borderWidth = GPainter.GetBorderWidth(borderType);
+            int borderWidth = Painter.GetBorderWidth(borderType);
             int textMargin = style.TextMargin;
             FontInfo font = style.Font;
             int fontHeight = FontManagerInfo.GetFontHeight(font);
@@ -5095,7 +5095,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             if (graphicsPath == null) return;
 
             GraphicSetting? setting = (setSmoothGraphics ? (GraphicSetting?)GraphicSetting.Smooth : null);
-            using (GPainter.GraphicsUse(graphics, setting))
+            using (Painter.GraphicsUse(graphics, setting))
             {
                 Pen pen;
                 Color colorOut = (colorBack.HasValue ? colorBack.Value : (colorLine.HasValue ? colorLine.Value.Morph(Color.Black, 0.80f) : Color.Empty));
@@ -6095,7 +6095,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         AllLeft     = LeftBottom | Left | LeftTop
     }
     /// <summary>
-    /// Tvary, které generuje metoda <see cref="GPainter.CreatePathLinearShape(LinearShapeType, Rectangle, int)"/>
+    /// Tvary, které generuje metoda <see cref="Painter.CreatePathLinearShape(LinearShapeType, Rectangle, int)"/>
     /// </summary>
     public enum LinearShapeType
     {
@@ -6209,7 +6209,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
     }
     /// <summary>
     /// Umístění jednoho prostoru (typicky písmena) v rámci jiného prostoru (typicky control) včetně možnosti umístit obsah vně controlu (podle potřeby a podle definice).
-    /// Pro konverzi existují metody <see cref="GPainter.ConvertAlignment"/>.
+    /// Pro konverzi existují metody <see cref="Painter.ConvertAlignment"/>.
     /// </summary>
     public enum ExtendedContentAlignment
     { // POZOR: AŽ BUDEŠ MĚNIT HODNOTY (přidávat nebo upravovat numerické bity), uprav i stejný enum GuiTextPosition v GraphLib\Shared\WorkSchedulerShared.cs !!!

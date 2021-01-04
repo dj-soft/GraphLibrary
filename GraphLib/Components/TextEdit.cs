@@ -217,7 +217,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             ITextBoxStyle style = this.StyleCurrent;
             TextBoxBorderType borderType = style.BorderType;
-            int borderWidth = GPainter.GetBorderWidth(borderType);
+            int borderWidth = Painter.GetBorderWidth(borderType);
             int textMargin = style.TextMargin;
             FontInfo font = style.Font;
             int fontHeight = FontManagerInfo.GetFontHeight(font);
@@ -275,7 +275,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (drawArgs.BorderWidth == 0) return;
             Color borderColor = drawArgs.Style.GetBorderColor(drawArgs.InteractiveState);
-            GPainter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, borderColor, drawArgs.BorderType, drawArgs.InteractiveState);
+            Painter.DrawBorder(drawArgs.Graphics, drawArgs.AbsoluteBounds, borderColor, drawArgs.BorderType, drawArgs.InteractiveState);
         }
         #endregion
         #region Vykreslení textu a kurzoru, na základě stavu editace
@@ -319,7 +319,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 EditorState.MouseDownDataProcess();                            // Provedu před kreslením, může se zde určit oblast SelectionRange
                 Int32Range selectionRange = this.SelectionRangeNormalised;
                 bool hasSelectionRange = (selectionRange != null && selectionRange.Size != 0);
-                using (GPainter.GraphicsUseText(drawArgs.Graphics, textBounds))
+                using (Painter.GraphicsUseText(drawArgs.Graphics, textBounds))
                 {
                     foreach (var charPosition in CharPositions)
                     {
@@ -332,7 +332,7 @@ namespace Asol.Tools.WorkScheduler.Components
             else
             {   // Bez Focusu nebo bez editoru = jen vypíšu text:
                 CheckCharPositions(drawArgs, false);                           // Provedu před GraphicsClip(), aby měření fontu nebylo omezeno
-                using (GPainter.GraphicsUseText(drawArgs.Graphics, textBounds))
+                using (Painter.GraphicsUseText(drawArgs.Graphics, textBounds))
                 {
                     foreach (var charPosition in CharPositions)
                     {
@@ -350,7 +350,7 @@ namespace Asol.Tools.WorkScheduler.Components
             CursorBounds = EditorState.GetCursorBounds();
             if (!CursorBounds.HasValue) return;
 
-            GPainter.GraphicsSetSharp(drawArgs.Graphics);                      // Ostré okraje, aby byl kurzor správný
+            Painter.GraphicsSetSharp(drawArgs.Graphics);                      // Ostré okraje, aby byl kurzor správný
             drawArgs.Graphics.FillRectangle(Skin.Brush(Color.Black), CursorBounds.Value);
         }
         /// <summary>
@@ -482,18 +482,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku jednoho řádku textu (<see cref="OneTextLineHeightCurrent"/>).
         /// Pro aktuální instanci = pro její aktuální styl.
         /// </summary>
-        public int SingleLineOptimalHeightCurrent { get { return GPainter.GetSingleLineOptimalHeight(this.StyleCurrent); } }
+        public int SingleLineOptimalHeightCurrent { get { return Painter.GetSingleLineOptimalHeight(this.StyleCurrent); } }
         /// <summary>
         /// Optimální výška textboxu pro správné zobrazení jednořádkového textu.
         /// Výška zahrnuje aktuální velikost okrajů dle <see cref="BorderStyle"/> plus vnitřní okraj <see cref="TextBorderStyle.TextMargin"/> plus výšku jednoho řádku textu (<see cref="OneTextLineHeightCurrent"/>).
         /// Pro defaultní instanci = pro výchozí styl.
         /// </summary>
-        public static int SingleLineOptimalHeightDefault { get { return GPainter.GetSingleLineOptimalHeight(Styles.TextBox); } }
+        public static int SingleLineOptimalHeightDefault { get { return Painter.GetSingleLineOptimalHeight(Styles.TextBox); } }
         /// <summary>
         /// Obsahuje výšku řádku textu, bez okrajů <see cref="TextBorderStyle.TextMargin"/> a bez borderu <see cref="TextBorderStyle.BorderType"/>.
         /// Pro defaultní instanci = pro výchozí styl.
         /// </summary>
-        public static int OneTextLineHeightDefault { get { return GPainter.GetOneTextLineHeight(Styles.TextBox); } }
+        public static int OneTextLineHeightDefault { get { return Painter.GetOneTextLineHeight(Styles.TextBox); } }
         /// <summary>
         /// V této metodě může potomek změnit (ref) souřadnice, na které je objekt právě umisťován.
         /// Tato metoda je volána při Bounds.set().

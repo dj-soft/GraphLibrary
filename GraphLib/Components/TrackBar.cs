@@ -799,7 +799,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode"></param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            GPainter.DrawTrackBar(e.Graphics, absoluteBounds, this.Layout);
+            Painter.DrawTrackBar(e.Graphics, absoluteBounds, this.Layout);
         }
         /// <summary>
         /// Metoda je volána v procesu kreslení TrackBaru. Umožní vykreslit text nebo ikonky.

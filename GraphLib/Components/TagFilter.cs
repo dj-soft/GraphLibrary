@@ -919,7 +919,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int r = h * this.CurrentRoundPercent / 100;         // šířka kulatého rohu = výška krát procento
             int s = this.CurrentCheckedImageSize.Width + 2;     // šířka ikony + prostor za ní
             int i = (h > s ? s : h);                            // šířka prostoru pro ikonu
-            int w = r + i + GPainter.MeasureString(graphics, this.Text, FontInfo.Caption).Width + 8;
+            int w = r + i + Painter.MeasureString(graphics, this.Text, FontInfo.Caption).Width + 8;
             return new System.Drawing.Size(w, h);
         }
         /// <summary>
@@ -1009,7 +1009,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle iconBounds, textBounds;
             using (var path = this.CreatePath(absoluteBounds, out iconBounds, out textBounds))
             {
-                using (GPainter.GraphicsUseSmooth(e.Graphics))
+                using (Painter.GraphicsUseSmooth(e.Graphics))
                 {
                     Color backColor = this.CurrentBackColor;
                     using (Brush brush = Skin.CreateBrushForBackground(absoluteBounds, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState, backColor))
@@ -1028,10 +1028,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     Image image = this.CurrentCheckedImage;
                     e.Graphics.DrawImage(image, iconBounds);
                 }
-                using (GPainter.GraphicsUseText(e.Graphics))
+                using (Painter.GraphicsUseText(e.Graphics))
                 {
                     Color textColor = this.CurrentTextColor;
-                    GPainter.DrawString(e.Graphics, this.Text, FontInfo.Caption, textBounds, ContentAlignment.MiddleCenter, textColor);
+                    Painter.DrawString(e.Graphics, this.Text, FontInfo.Caption, textBounds, ContentAlignment.MiddleCenter, textColor);
                 }
             }
         }

@@ -135,18 +135,18 @@ namespace Asol.Tools.WorkScheduler.Components
             int h = bounds.Height;
             int b = bounds.Bottom - 1;
 
-            GPainter.DrawWindow(graphics, bounds, this.DataBackColor, System.Windows.Forms.Orientation.Vertical, this.DataOpacity, 2, 4);
+            Painter.DrawWindow(graphics, bounds, this.DataBackColor, System.Windows.Forms.Orientation.Vertical, this.DataOpacity, 2, 4);
 
             int progressHeight = Application.App.Zoom.ZoomDistance(21);
             Rectangle progBounds = new Rectangle(x + 15, b - progressHeight - 10, w - 30, progressHeight);
-            GPainter.DrawButtonBase(graphics, progBounds, new DrawButtonArgs() { BackColor = this.DataProgressBackColor });
+            Painter.DrawButtonBase(graphics, progBounds, new DrawButtonArgs() { BackColor = this.DataProgressBackColor });
 
             int progressWidth = this.GetDataProgressWidth(progBounds.Width - 4);
             Rectangle dataBounds = new Rectangle(progBounds.X + 2, progBounds.Y + 2, progressWidth, progBounds.Height - 4);
-            GPainter.DrawRectangle(graphics, dataBounds, this.DataProgressForeColor);
+            Painter.DrawRectangle(graphics, dataBounds, this.DataProgressForeColor);
 
             string progressText = this.GetDataProgressText();
-            GPainter.DrawString(graphics, progressText, FontInfo.Caption, progBounds, ContentAlignment.MiddleCenter, color: Color.Black);
+            Painter.DrawString(graphics, progressText, FontInfo.Caption, progBounds, ContentAlignment.MiddleCenter, color: Color.Black);
 
             string infoCurrent = this.DataInfoCurrent;
             if (!String.IsNullOrEmpty(infoCurrent))
@@ -156,7 +156,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 fontInfo.Bold = true;
                 fontInfo.SizeRatio = 1.20f;
                 Rectangle realBounds;
-                realBounds = GPainter.DrawString(graphics, infoCurrent, fontInfo, infoBounds, ContentAlignment.TopLeft, color: this.DataForeColor);
+                realBounds = Painter.DrawString(graphics, infoCurrent, fontInfo, infoBounds, ContentAlignment.TopLeft, color: this.DataForeColor);
             }
         }
         /// <summary>

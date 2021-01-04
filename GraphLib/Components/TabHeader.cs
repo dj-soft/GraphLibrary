@@ -1218,7 +1218,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 FontInfo fontInfo = this.GetCurrentFont(true, false);
                 string text = this.Text;
-                Size textSize = GPainter.MeasureString(graphics, text, fontInfo);
+                Size textSize = Painter.MeasureString(graphics, text, fontInfo);
                 int width = textSize.Width + 6;
                 if (textLengthRange != null)
                     width = textLengthRange.Align(width);
@@ -1317,7 +1317,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)  
         {
             this._DrawLayer = e.DrawLayer;
-            GPainter.DrawTabHeaderItem(e.Graphics, absoluteBounds, this);
+            Painter.DrawTabHeaderItem(e.Graphics, absoluteBounds, this);
         }
         /// <summary>
         /// Zajistí vyvolání háčku <see cref="OnTabItemPaintBackGround(object, GUserDrawArgs)"/> a eventu <see cref="TabPagePaintBackGround"/>.

@@ -1749,7 +1749,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
                     if (((int)tick.TickType) < tickLevelN) continue;
 
                     x = x0 + tick.RelativePixel;
-                    GPainter.DrawAxisTick(e.Graphics, tick.TickType, x, y1, x, y2, Skin.Graph.TimeAxisTickMain, Skin.Graph.TimeAxisTickSmall, true);
+                    Painter.DrawAxisTick(e.Graphics, tick.TickType, x, y1, x, y2, Skin.Graph.TimeAxisTickMain, Skin.Graph.TimeAxisTickSmall, true);
                 }
             }
         }
@@ -2854,7 +2854,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// <returns></returns>
         public Size MeasureString(string text)
         {
-            return GPainter.MeasureString(this._DrawArgs.Graphics, text, this.Font);
+            return Painter.MeasureString(this._DrawArgs.Graphics, text, this.Font);
         }
         /// <summary>
         /// Text, který se bude zobrazovat. Datový zdroj sem vloží vhodný text.

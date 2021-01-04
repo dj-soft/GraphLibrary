@@ -840,7 +840,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 toolbarBounds.X = boundsDraw.Value.X;
                 toolbarBounds.Width = boundsDraw.Value.Width;
             }
-            GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState /* GInteractiveState.Enabled : MouseOver */, null, null);
+            Painter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState /* GInteractiveState.Enabled : MouseOver */, null, null);
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsChecked"/>, úkolem je vyvolat event <see cref="ToolBar.ItemCheckedChange"/>.
@@ -1152,10 +1152,10 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle titleAbsoluteBounds = new Rectangle(absoluteBounds.X + 1, dy + tb.Y, absoluteBounds.Width - 3, tb.Height);
 
             if (this.IsMouseActive)
-                GPainter.DrawAreaBase(e.Graphics, titleAbsoluteBounds, Skin.ToolBar.TitleBackColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled, null, null);
+                Painter.DrawAreaBase(e.Graphics, titleAbsoluteBounds, Skin.ToolBar.TitleBackColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled, null, null);
 
             if (!String.IsNullOrEmpty(this.DataTitle))
-                GPainter.DrawString(e.Graphics, this.DataTitle, tBarSetting.TitleFont, titleAbsoluteBounds, ContentAlignment.MiddleCenter, Skin.ToolBar.TextColor);
+                Painter.DrawString(e.Graphics, this.DataTitle, tBarSetting.TitleFont, titleAbsoluteBounds, ContentAlignment.MiddleCenter, Skin.ToolBar.TextColor);
         }
         /// <summary>
         /// Metoda vrací všechny členy selectovací skupiny (<see cref="FunctionItem.CheckedGroupName"/>) daného jména.
@@ -1929,8 +1929,8 @@ namespace Asol.Tools.WorkScheduler.Components
             if (String.IsNullOrEmpty(text)) return new Size(0, 0);
             FontInfo fontInfo = this.CurrentItemFont;
             Size textSize = (graphics != null
-                ? GPainter.MeasureString(graphics, text, fontInfo)
-                : GPainter.MeasureString(text, fontInfo));
+                ? Painter.MeasureString(graphics, text, fontInfo)
+                : Painter.MeasureString(text, fontInfo));
             return textSize;
         }
         /// <summary>
@@ -2007,7 +2007,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (drawBackground || drawBorders)
             {
                 Color backColor = (!isSelected ? Skin.ToolBar.ItemBackColor : Skin.ToolBar.ItemSelectedBackColor);
-                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, new DrawButtonArgs() { BackColor = backColor, InteractiveState = this.InteractiveState, RoundCorner = roundCorner, DrawBackground = drawBackground, DrawBorders = drawBorders, BorderColor = Skin.ToolBar.ItemBorderColor });
+                Painter.DrawButtonBase(e.Graphics, boundsAbsolute, new DrawButtonArgs() { BackColor = backColor, InteractiveState = this.InteractiveState, RoundCorner = roundCorner, DrawBackground = drawBackground, DrawBorders = drawBorders, BorderColor = Skin.ToolBar.ItemBorderColor });
             }
         }
         /// <summary>
@@ -2036,7 +2036,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle boundsImageAbsolute = this.GetAbsoluteBoundsForPart(boundsAbsolute, this.BoundsImage); // this.BoundsImage.ShiftBy(boundsAbsolute.Location);
                 if (this.InteractiveState.IsMouseActive())
                     imageHot = this._DataItem.ImageHot;
-                GPainter.DrawImage(e.Graphics, boundsImageAbsolute, (imageHot ?? image), activeItem.IsEnabled, ContentAlignment.MiddleCenter);
+                Painter.DrawImage(e.Graphics, boundsImageAbsolute, (imageHot ?? image), activeItem.IsEnabled, ContentAlignment.MiddleCenter);
             }
         }
         /// <summary>
@@ -2064,7 +2064,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle boundsTextAbsolute = this.GetAbsoluteBoundsForPart(boundsAbsolute, this.BoundsText); // this.BoundsText.ShiftBy(boundsAbsolute.Location);
                 FontInfo fontInfo = this.CurrentItemFont;
                 Color textColor = Skin.ModifyForeColorByState(Skin.ToolBar.TextColor, this.InteractiveState);
-                GPainter.DrawString(e.Graphics, text, fontInfo, boundsTextAbsolute, ContentAlignment.MiddleCenter, textColor);
+                Painter.DrawString(e.Graphics, text, fontInfo, boundsTextAbsolute, ContentAlignment.MiddleCenter, textColor);
             }
         }
         /// <summary>

@@ -932,7 +932,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 e.Graphics.FillRectangle(lgb, bounds);
 
             bounds = new Rectangle(2, 1, titleWidth - 4, this.TextLineHeight - 2);
-            GPainter.DrawString(e.Graphics, this._Caption, this._FontInfo, bounds, ContentAlignment.MiddleLeft, color: this._TextColor);
+            Painter.DrawString(e.Graphics, this._Caption, this._FontInfo, bounds, ContentAlignment.MiddleLeft, color: this._TextColor);
         }
         /// <summary>
         /// Určí optimální výšku prvku pro zobrazení v režimu <see cref="OnlyOneLine"/> 
@@ -941,7 +941,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void DetectLineHeight()
         {
             FontInfo fi = this.FontInfo;
-            Size size = GPainter.MeasureString("ŽÁČKŮM vydejte", fi);     // Měřím hlavně výšku textu, proto jsou tam písmena "Ž" a "y". O šířku zde nejde.
+            Size size = Painter.MeasureString("ŽÁČKŮM vydejte", fi);     // Měřím hlavně výšku textu, proto jsou tam písmena "Ž" a "y". O šířku zde nejde.
             int h = size.Height + 4;
             this.TextLineHeight = h;
             h = h + 3;

@@ -817,7 +817,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int round = 2;
             // pathBounds.Width++;
             // pathBounds.Height++;
-            this._TotalPath = GPainter.CreatePathRoundRectangle(pathBounds, round, round);
+            this._TotalPath = Painter.CreatePathRoundRectangle(pathBounds, round, round);
             
             this._TitlePath = new GraphicsPath();
             if (this._LineBounds.HasValue)
@@ -832,7 +832,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         private void DrawRectangle(Graphics graphics)
         {
-            using (GPainter.GraphicsUseSmooth(graphics))
+            using (Painter.GraphicsUseSmooth(graphics))
             {
                 Rectangle totalBackBounds = this._TotalBounds.Value; //  Rectangle.Truncate(this._TotalPath.GetBounds());
                 using (Brush brush = Skin.CreateBrushForBackground(totalBackBounds, Orientation.Horizontal, GInteractiveState.Enabled /* .MouseOver*/, true, this.InfoBackColor, this.InfoBackOpacity))
@@ -873,7 +873,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle pathBounds = this._TotalBounds.Value;
             int round = 5;
             // pathBounds.Inflate(round, round);
-            this._TotalPath = GPainter.CreatePathRoundRectangle(pathBounds, round, round);
+            this._TotalPath = Painter.CreatePathRoundRectangle(pathBounds, round, round);
 
             this._TitlePath = new GraphicsPath();
             if (this._LineBounds.HasValue)
@@ -888,7 +888,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         private void DrawRoundRectangle(Graphics graphics)
         {
-            using (GPainter.GraphicsUseSmooth(graphics))
+            using (Painter.GraphicsUseSmooth(graphics))
             {
                 Rectangle totalBackBounds = Rectangle.Ceiling(this._TotalPath.GetBounds());
                 using (Brush brush = Skin.CreateBrushForBackground(totalBackBounds, Orientation.Horizontal, GInteractiveState.MouseOver, true, this.InfoBackColor, this.InfoBackOpacity))
@@ -1220,7 +1220,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.InfoTextTable == null)
             {   // Nouzová cesta:
-                GPainter.DrawString(graphics, this.InfoText, font, bounds, ContentAlignment.TopLeft, color);
+                Painter.DrawString(graphics, this.InfoText, font, bounds, ContentAlignment.TopLeft, color);
             }
             else
             {
@@ -1302,7 +1302,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (this.IsEmpty) return;
 
                 Rectangle absoluteBounds = this.Bounds.Add(bounds.Location);
-                GPainter.DrawString(graphics, this.Text, font, absoluteBounds, this.Alignment, color);
+                Painter.DrawString(graphics, this.Text, font, absoluteBounds, this.Alignment, color);
             }
         }
         #endregion
@@ -1627,7 +1627,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (shadowSize <= 0) return;
 
             Rectangle bounds = this._TotalBounds.Value;
-            GPainter.DrawShadow(imgGraphics, bounds, shadowSize, false);
+            Painter.DrawShadow(imgGraphics, bounds, shadowSize, false);
         }
         /// <summary>
         /// Obraz tooltipu

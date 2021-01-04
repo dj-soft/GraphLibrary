@@ -68,7 +68,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawArgs"></param>
         void ITextEditOverlay.DrawOverlay(TextEditDrawArgs drawArgs)
         {
-            GPainter.DrawRelationLine(drawArgs.Graphics, drawArgs.InnerBounds, this.IsRelationToDocument, this.IsRelationInGrid, color: LineColor);
+            Painter.DrawRelationLine(drawArgs.Graphics, drawArgs.InnerBounds, this.IsRelationToDocument, this.IsRelationInGrid, color: LineColor);
         }
     }
     /// <summary>
@@ -129,9 +129,9 @@ namespace Asol.Tools.WorkScheduler.Components
             Image image = this.Image;
             if (image == null) image = (!IsRelationToDocument ? Skin.TextBox.IconRelationRecord : Skin.TextBox.IconRelationDocument);
             if (drawArgs.HasFocus || drawArgs.InteractiveState.HasFlag(GInteractiveState.FlagOver))
-                GPainter.DrawImage(drawArgs.Graphics, overlayBounds, image, drawArgs.InteractiveState);
+                Painter.DrawImage(drawArgs.Graphics, overlayBounds, image, drawArgs.InteractiveState);
             else
-                GPainter.DrawImage(drawArgs.Graphics, overlayBounds, image, 0.45f);
+                Painter.DrawImage(drawArgs.Graphics, overlayBounds, image, 0.45f);
         }
     }
 }

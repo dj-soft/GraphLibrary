@@ -88,7 +88,7 @@ namespace Asol.Tools.WorkScheduler.GameComponents
         public IDisposable PrepareGraphics(Graphics graphics)
         {
             this.Graphics = graphics;
-            return GPainter.GraphicsUseSmooth(this.Graphics);
+            return Painter.GraphicsUseSmooth(this.Graphics);
         }
         #endregion
         #region Konverze 3D souřadnic z reálného světa do oka kamery

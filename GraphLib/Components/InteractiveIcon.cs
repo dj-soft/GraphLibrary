@@ -72,9 +72,9 @@ namespace Asol.Tools.WorkScheduler.Components
             Image image = GetImage(interactiveState, absoluteBounds.Height);
             if (image == null) return;
             if (drawAsShadow)
-                GPainter.DrawImage(graphics, absoluteBounds, image, 0.45f);
+                Painter.DrawImage(graphics, absoluteBounds, image, 0.45f);
             else
-                GPainter.DrawImage(graphics, absoluteBounds, image, interactiveState);
+                Painter.DrawImage(graphics, absoluteBounds, image, interactiveState);
         }
         #endregion
         #region Statické instance pro standardní ikony: existuje jen jedna instance pro jeden typ standardní ikony, tato instance se navazuje do všech potřebných míst

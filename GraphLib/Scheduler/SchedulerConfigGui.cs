@@ -228,11 +228,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             Color nodeColor = (e.Node.IsSelected ? Color.LightBlue : this.ConfigTree.BackColor);
             Rectangle rowBounds = new Rectangle(nodeBounds.X, nodeBounds.Y + 1, treeSize.Width - nodeBounds.X, nodeBounds.Height - 2);
-            GPainter.DrawAreaBase(e.Graphics, rowBounds, nodeColor, Orientation.Horizontal, GInteractiveState.Enabled);
+            Painter.DrawAreaBase(e.Graphics, rowBounds, nodeColor, Orientation.Horizontal, GInteractiveState.Enabled);
 
             Rectangle textBounds = new Rectangle(nodeBounds.X + 3, nodeBounds.Y + 1, treeSize.Width - nodeBounds.X - 6, nodeBounds.Height - 2);
             FontInfo fontInfo = this.NodeFontInfoStandard;
-            GPainter.DrawString(e.Graphics, e.Node.Text, fontInfo, textBounds, ContentAlignment.MiddleLeft, color: this.ConfigTree.ForeColor);
+            Painter.DrawString(e.Graphics, e.Node.Text, fontInfo, textBounds, ContentAlignment.MiddleLeft, color: this.ConfigTree.ForeColor);
 
             e.DrawDefault = false;
         }
@@ -973,11 +973,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Fixní prvek:
             color = this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
+            Painter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
 
             // Pohyblivý prvek, vpravo do fixního prvku:
             color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
+            Painter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
         }
         /// <summary>
         /// Vykreslí sample typu: InnerItem
@@ -1004,7 +1004,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Fixní prvek, tvoří pozadí:
             color = this.SampleOuterColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
+            Painter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
 
             // Magnet:
             if (this.SnapActive)
@@ -1012,7 +1012,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Pohyblivý prvek, nad fixním prvek:
             color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
+            Painter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
         }
         /// <summary>
         /// Vykreslí sample typu: OriginalTimeNear (v témže grafu)
@@ -1042,11 +1042,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Řádek horní:
             Rectangle boundsA = new Rectangle(2, yA, OptimalWidth - 4, hR);
-            GPainter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.Enabled);
+            Painter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.Enabled);
 
             // Řádek dolní:
             Rectangle boundsB = new Rectangle(2, yB, OptimalWidth - 4, hR);
-            GPainter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.MouseOver);
+            Painter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.MouseOver);
 
             // Linka originálního času:
             Pen pen = Skin.Pen(this.SampleOriginalTimeColor);
@@ -1058,11 +1058,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Pohyblivý prvek, nad fixním prvek, ve stejném řádku B:
             color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
+            Painter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
 
             // Fixní prvek, dole v řádku B:
             color = this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
+            Painter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
         }
         /// <summary>
         /// Vykreslí sample typu: OriginalTimeLong (v jiném grafu)
@@ -1092,11 +1092,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Řádek horní:
             Rectangle boundsA = new Rectangle(2, yA, OptimalWidth - 4, hR);
-            GPainter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.MouseOver);
+            Painter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.MouseOver);
 
             // Řádek dolní:
             Rectangle boundsB = new Rectangle(2, yB, OptimalWidth - 4, hR);
-            GPainter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.Enabled);
+            Painter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.Enabled);
 
             // Linka originálního času:
             Pen pen = Skin.Pen(this.SampleOriginalTimeColor);
@@ -1108,11 +1108,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Pohyblivý prvek, nad fixním prvek, v řádku A:
             color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
+            Painter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
 
             // Fixní prvek, dole v řádku B:
             color = this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
+            Painter.DrawButtonBase(e.Graphics, boundsF, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.Enabled });
         }
         /// <summary>
         /// Vykreslí sample typu: GridTick
@@ -1164,7 +1164,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Pohyblivý prvek, nad fixním prvek, v řádku A:
             color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
-            GPainter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
+            Painter.DrawButtonBase(e.Graphics, boundsM, new DrawButtonArgs() { BackColor = color, InteractiveState = GInteractiveState.MouseOver });
         }
         /// <summary>
         /// Vykreslí spojovací magnetovou linku
@@ -1177,7 +1177,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (source.X == target.X) return;
             if (sameY) target.Y = source.Y;
-            using (GPainter.GraphicsUseSmooth(e.Graphics))
+            using (Painter.GraphicsUseSmooth(e.Graphics))
             {
                 Pen pen = Skin.Pen(this.SampleMagnetLinkColor, width: 3, endCap: LineCap.ArrowAnchor);
                 e.Graphics.DrawLine(pen, source, target);
@@ -1738,7 +1738,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 Color color = (i == activeItem ? this.SampleMovedColor : this.SampleFixedColor);
                 GInteractiveState state = (i == activeItem ? GInteractiveState.MouseOver : GInteractiveState.Enabled);
-                GPainter.DrawButtonBase(e.Graphics, items[i], new DrawButtonArgs() { BackColor = color, InteractiveState = state });
+                Painter.DrawButtonBase(e.Graphics, items[i], new DrawButtonArgs() { BackColor = color, InteractiveState = state });
             }
 
             // Linky:
@@ -1749,15 +1749,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Color lineColor = this.LineColor;
             int width = this.LineWidth;
             // Na grafiku nasadíme hladkou kresbu:
-            using (GPainter.GraphicsUse(e.Graphics, GraphicSetting.Smooth))
+            using (Painter.GraphicsUse(e.Graphics, GraphicSetting.Smooth))
             {
                 for (int l = linkFrom; l < linkTo; l++)
                 {
                     Point? prevPoint = items[l].GetPoint(ContentAlignment.MiddleRight);
                     Point? nextPoint = items[l + 1].GetPoint(ContentAlignment.MiddleLeft);
-                    using (GraphicsPath graphicsPath = GPainter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
+                    using (GraphicsPath graphicsPath = Painter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
                     {
-                        GPainter.DrawLinkPath(e.Graphics, graphicsPath, lineColor, null, width);
+                        Painter.DrawLinkPath(e.Graphics, graphicsPath, lineColor, null, width);
                     }
                 }
             }

@@ -381,7 +381,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
             Rectangle clip = this.GetClip(e.GraphicsBounds);
 
             // Na grafiku nasadíme clip a hladkou kresbu:
-            using (GPainter.GraphicsUse(e.Graphics, clip, GraphicSetting.Smooth))
+            using (Painter.GraphicsUse(e.Graphics, clip, GraphicSetting.Smooth))
             {
                 // Vykreslíme prvky:
                 LinkInfo[] linkInfos = this._LinkDict.Values.ToArray();        // Zhmotníme kolekci kvůli enumeraci
@@ -709,7 +709,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
             Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.CenterX | RectangleSide.CenterY, true, false);
             if (!(prevPoint.HasValue && nextPoint.HasValue)) return;
 
-            GPainter.DrawLinkLine(e.Graphics, prevPoint.Value, nextPoint.Value, color1, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
+            Painter.DrawLinkLine(e.Graphics, prevPoint.Value, nextPoint.Value, color1, this.LinkWidth, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, ratio);
         }
         /// <summary>
         /// Vykreslí přímou linku nebo S křivku { Prev.End to Next.Begin }
@@ -728,12 +728,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
 
             LinkLineType lineType = this.CurrentLineShape;
             float? treshold = 4f * (float)(this.LinkWidth.HasValue ? this.LinkWidth.Value : 3);
-            using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = GPainter.CreatePathLink(lineType, prevPoint, nextPoint, treshold))
+            using (System.Drawing.Drawing2D.GraphicsPath graphicsPath = Painter.CreatePathLink(lineType, prevPoint, nextPoint, treshold))
             {
                 bool useRoundAnchor = (lineType == LinkLineType.ZigZagHorizontal || lineType == LinkLineType.ZigZagVertical || lineType == LinkLineType.ZigZagOptimal);
                 System.Drawing.Drawing2D.LineCap startCap = (useRoundAnchor ? System.Drawing.Drawing2D.LineCap.RoundAnchor : System.Drawing.Drawing2D.LineCap.Round);
                 System.Drawing.Drawing2D.LineCap endCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
-                GPainter.DrawLinkPath(e.Graphics, graphicsPath, color1, null, this.LinkWidth, startCap, endCap, ratio);
+                Painter.DrawLinkPath(e.Graphics, graphicsPath, color1, null, this.LinkWidth, startCap, endCap, ratio);
             }
         }
         /// <summary>

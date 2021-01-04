@@ -995,7 +995,7 @@ namespace Asol.Tools.WorkScheduler.Components
     #region GLine3D + ILine3D : neinteraktivní objekt, pouze definice dat pro vykreslení čáry
     /// <summary>
     /// <see cref="Line3D"/> : neinteraktivní objekt, pouze definice dat pro vykreslení čáry.
-    /// Čára je kreslena metodou <see cref="GPainter.DrawGLine(Graphics, ILine3D, Rectangle)"/>
+    /// Čára je kreslena metodou <see cref="Painter.DrawGLine(Graphics, ILine3D, Rectangle)"/>
     /// </summary>
     public class Line3D : InteractiveObject, ILine3D
     {
@@ -1056,7 +1056,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             base.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);
             if (!this.Visible) return;
-            GPainter.DrawGLine(e.Graphics, this, absoluteBounds);
+            Painter.DrawGLine(e.Graphics, this, absoluteBounds);
         }
         #endregion
     }

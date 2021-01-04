@@ -1934,7 +1934,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual IDisposable PrepareGraphicsOpacity(GInteractiveDrawArgs e, int? drawOpacity)
         {
             if (!drawOpacity.HasValue) return null;
-            return GPainter.GraphicsUseOpacity(e.Graphics, drawOpacity.Value);
+            return Painter.GraphicsUseOpacity(e.Graphics, drawOpacity.Value);
         }
         #endregion
     }

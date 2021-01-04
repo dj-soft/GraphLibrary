@@ -476,7 +476,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private static System.Drawing.Brush _CreateBrushForBackgroundPoint(Rectangle bounds, Orientation orientation, Color color1, Color color2, Point relativePoint)
         {
             GraphicsPath gp = new GraphicsPath();
-            gp.AddEllipse(GPainter.CreateEllipseAroundRectangle(bounds, 4));
+            gp.AddEllipse(Painter.CreateEllipseAroundRectangle(bounds, 4));
             PathGradientBrush gb = new PathGradientBrush(gp);
             gb.CenterColor = color1;
             gb.CenterPoint = bounds.Location.Add(relativePoint);

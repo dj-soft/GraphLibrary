@@ -506,10 +506,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <returns></returns>
         private WinForm.ToolStripDropDownMenu ColumnContextMenuCreate(Column currentColumn)
         {
-            WinForm.ToolStripDropDownMenu menu = GPainter.CreateDropDownMenu(showImageMargin: false, showCheckMargin: true, title: "Zobrazit sloupce");
+            WinForm.ToolStripDropDownMenu menu = Painter.CreateDropDownMenu(showImageMargin: false, showCheckMargin: true, title: "Zobrazit sloupce");
 
-            menu.Items.Add(GPainter.CreateDropDownItem("Všechny sloupce", tag: "A"));
-            menu.Items.Add(GPainter.CreateDropDownSeparator());
+            menu.Items.Add(Painter.CreateDropDownItem("Všechny sloupce", tag: "A"));
+            menu.Items.Add(Painter.CreateDropDownSeparator());
 
             foreach (GridColumn gridColumn in this.Grid.AllColumns)
             {
@@ -518,12 +518,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
                 Column masterColumn = gridColumn.MasterColumn;
                 bool isCurrent = (currentColumn != null && currentColumn.ColumnId == masterColumn.ColumnId);
                 FontStyle? fontStyle = (isCurrent ? (FontStyle?)FontStyle.Bold : (FontStyle?)null);
-                WinForm.ToolStripMenuItem item = GPainter.CreateDropDownItem(masterColumn.Title, toolTip: masterColumn.ToolTip, isCheckable: true, isChecked: gridColumn.IsVisible, fontStyle: fontStyle, tag: gridColumn);
+                WinForm.ToolStripMenuItem item = Painter.CreateDropDownItem(masterColumn.Title, toolTip: masterColumn.ToolTip, isCheckable: true, isChecked: gridColumn.IsVisible, fontStyle: fontStyle, tag: gridColumn);
                 item.CheckedChanged += ColumnContextMenuItemCheckedChanged;
                 menu.Items.Add(item);
             }
-            menu.Items.Add(GPainter.CreateDropDownSeparator());
-            menu.Items.Add(GPainter.CreateDropDownItem("Zavřít", tag: "C"));
+            menu.Items.Add(Painter.CreateDropDownSeparator());
+            menu.Items.Add(Painter.CreateDropDownItem("Zavřít", tag: "C"));
 
             return menu;
         }
@@ -2120,7 +2120,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
                         Rectangle cellBounds = drawArgs.CellValueBounds;
                         Rectangle outerBounds = new Rectangle(cellBounds.X, cellBounds.Bottom - 2 - 20, 20, 26);
                         Rectangle imageBounds = new Rectangle(cellBounds.X + 2, outerBounds.Y + 2, 16, 16);
-                        GPainter.DrawImage(e.Graphics, imageBounds, image, opacityRatio);
+                        Painter.DrawImage(e.Graphics, imageBounds, image, opacityRatio);
                         drawArgs.IconActiveBounds = outerBounds;
                         drawArgs.IconImageBounds = imageBounds;
                     }
@@ -2520,7 +2520,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             tableText.Rows[0].BackEffect3D = (targetEnabled ? 0.25f : 0.10f);
             tableText.BorderColor = borderColor;
 
-            GPainter.DrawTableText(e.Graphics, bounds, tableText, backColor);
+            Painter.DrawTableText(e.Graphics, bounds, tableText, backColor);
         }
         /// <summary>
         /// Řádky, jichž se týká aktuální Drag and Move řádků
@@ -2795,7 +2795,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         {
             float? effect3d = null;
             Color backColor = this._GetBackColor(row, cell, ref effect3d);
-            GPainter.DrawEffect3D(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, effect3d);
+            Painter.DrawEffect3D(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, effect3d);
         }
         /// <summary>
         /// Vykreslí prázdnou buňku / řádek (jen pozadí)
@@ -2836,7 +2836,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             Color textColor = this._GetTextColor(row, cell);
 
             Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
-            GPainter.DrawString(e.Graphics, text, font, boundsContent, alignment, textColor);
+            Painter.DrawString(e.Graphics, text, font, boundsContent, alignment, textColor);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako Image
@@ -2877,7 +2877,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <param name="value"></param>
         private void DrawContentRelation(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
-            GPainter.DrawRelationLine(e.Graphics, boundsAbsolute, forGrid: true);
+            Painter.DrawRelationLine(e.Graphics, boundsAbsolute, forGrid: true);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako interaktivní časový graf
@@ -3009,13 +3009,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             RectangleSide side = GetSidesFromLines(this.GVisualStyle.GridLines);
             Color horizontalColor = this.GVisualStyle.HorizontalLineColor;
             Color verticalColor = this.GVisualStyle.VerticalLineColor;
-            GPainter.DrawBorder(e.Graphics, boundsAbsolute, side, null, null, verticalColor, horizontalColor, null);
+            Painter.DrawBorder(e.Graphics, boundsAbsolute, side, null, null, verticalColor, horizontalColor, null);
             if (cell.Row.IsActive)
             {
                 Rectangle boundsActive = boundsAbsolute.Enlarge(0, 0, 0, -1);
                 Color topColor = Skin.Modifiers.GetColor3DBorderDark(horizontalColor);
                 Color bottomColor = Skin.Modifiers.GetColor3DBorderLight(horizontalColor);
-                GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, topColor, null, bottomColor, null);
+                Painter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, topColor, null, bottomColor, null);
             }
         }
         /// <summary>

@@ -492,7 +492,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ParentRow = parentRow;
             this.CellIndex = cellIndex;
             // Velikost textu + Padding + 1px (linky):
-            Size currentSize = GPainter.MeasureString(graphics, this.Text, this.CurrentFont)
+            Size currentSize = Painter.MeasureString(graphics, this.Text, this.CurrentFont)
                 .Add(this.CurrentContentPadding)
                 .Add(1, 1);
 

@@ -2072,7 +2072,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MousePaintDrawLink(Graphics graphics, MousePaintInfo mousePaintInfo, LinkLineType lineType)
         {
             float? treshold = _MousePaintGetTreshold(mousePaintInfo, lineType);
-            using (var line = GPainter.CreatePathLink(lineType, mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value, treshold))
+            using (var line = Painter.CreatePathLink(lineType, mousePaintInfo.StartPoint.Value, mousePaintInfo.EndPoint.Value, treshold))
                 _MousePaintDrawPath(graphics, line, mousePaintInfo);
         }
         /// <summary>
@@ -2173,7 +2173,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="mousePaintInfo"></param>
         private void _MousePaintDrawPath(Graphics graphics, GraphicsPath path, MousePaintInfo mousePaintInfo)
         {
-            GPainter.DrawLinkPath(graphics, path, mousePaintInfo.LineColor, mousePaintInfo.FillColor, mousePaintInfo.LineWidth, mousePaintInfo.StartCap, mousePaintInfo.EndCap, setSmoothGraphics: true);
+            Painter.DrawLinkPath(graphics, path, mousePaintInfo.LineColor, mousePaintInfo.FillColor, mousePaintInfo.LineWidth, mousePaintInfo.StartCap, mousePaintInfo.EndCap, setSmoothGraphics: true);
         }
         /// <summary>
         /// Vrací souřadnice prostoru bezi body <see cref="MousePaintInfo.StartPoint"/> a <see cref="MousePaintInfo.EndPoint"/>
@@ -2559,7 +2559,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _PaintFrameBounds(Graphics graphics, GInteractiveDrawLayer layer)
         {
             if (!this._MouseDragFrameActive) return;
-            GPainter.DrawFrameSelect(graphics, this._MouseDragFrameCurrentBounds.Value);
+            Painter.DrawFrameSelect(graphics, this._MouseDragFrameCurrentBounds.Value);
         }
         /// <summary>
         /// Aktivita procesu Drag and Frame: true po startu (<see cref="_MouseDragFrameBegin(MouseEventArgs, ref object)"/>), 
@@ -3248,9 +3248,9 @@ namespace Asol.Tools.WorkScheduler.Components
             Graphics graphics = e.GetGraphicsCurrent();
             Color backColor = Color.FromArgb(160, Color.LightSkyBlue);
             Color foreColor = Color.FromArgb(210, Color.Black);
-            GraphicsPath gp = GPainter.CreatePathRoundRectangle(bounds, 2, 2);
+            GraphicsPath gp = Painter.CreatePathRoundRectangle(bounds, 2, 2);
 
-            using (GPainter.GraphicsUseSmooth(graphics))
+            using (Painter.GraphicsUseSmooth(graphics))
             {
                 using (Brush b = Skin.CreateBrushForBackground(bounds, Orientation.Horizontal, GInteractiveState.Enabled, backColor))
                 using (Pen p = new Pen(foreColor))
@@ -3259,7 +3259,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     graphics.DrawPath(p, gp);
                 }
 
-                GPainter.DrawString(graphics, info, FontInfo.Status, bounds, ContentAlignment.MiddleCenter, foreColor);
+                Painter.DrawString(graphics, info, FontInfo.Status, bounds, ContentAlignment.MiddleCenter, foreColor);
             }
         }
         /// <summary>
@@ -3754,7 +3754,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 FontInfo font = (i == 0 ? FontInfo.CaptionBoldBig : FontInfo.DefaultBoldBig);
                 font.SizeRatio = (i == 0 ? 1.75f : 1.45f);
                 BlockedGuiTextInfo textInfo = new BlockedGuiTextInfo(text, font);
-                textInfo.TextSize = GPainter.MeasureString(graphics, text, font);
+                textInfo.TextSize = Painter.MeasureString(graphics, text, font);
                 lines.Add(textInfo);
                 if (textInfo.TextSize.Width > maxW) maxW = textInfo.TextSize.Width;
                 sumH += textInfo.TextSize.Height;
@@ -3818,12 +3818,12 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Vykreslit pozadí:
                 Rectangle bounds = this.BlockedGuiMsgBackgroundBounds.Value;
                 Color backColor = Skin.BlockedGui.TextBackColor.ApplyOpacity(opacityRatio);
-                GPainter.DrawAreaBase(graphics, bounds, backColor, Orientation.Horizontal, GInteractiveState.MouseOver);
+                Painter.DrawAreaBase(graphics, bounds, backColor, Orientation.Horizontal, GInteractiveState.MouseOver);
 
                 // Vykreslit texty jednotlivých řádků:
                 Color textColor = Skin.BlockedGui.TextInfoForeColor.ApplyOpacity(opacityRatio);
                 foreach (BlockedGuiTextInfo text in this.BlockedGuiMsgTextInfos)
-                    GPainter.DrawString(graphics, text.Text, text.Font, text.TextBounds, ContentAlignment.MiddleCenter, textColor);
+                    Painter.DrawString(graphics, text.Text, text.Font, text.TextBounds, ContentAlignment.MiddleCenter, textColor);
             }
         }
         /// <summary>

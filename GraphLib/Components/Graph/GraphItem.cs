@@ -763,9 +763,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
                 // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
                 Color color = this._Group.GetColorWithOpacity(itemBackColor.Value, e.DrawLayer, drawMode, true, true);
 
-                Rectangle[] boundsParts = GPainter.GraphItemCreateBounds(boundsAbsolute, true, false, false, false);
+                Rectangle[] boundsParts = Painter.GraphItemCreateBounds(boundsAbsolute, true, false, false, false);
                 float? effect3D = this.CurrentEffect3DGroup;
-                GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
+                Painter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
             }
         }
         /// <summary>
@@ -838,7 +838,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
 
             Color textColor = this.TextColorCurrent;
             StringFormatFlags stringFormat = Graph.CurrentGraphProperties.TextStringFormat;
-            GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, textPosition, outerBounds: this.Graph.BoundsAbsoluteDrawed, color: textColor, stringFormatFlags: stringFormat);
+            Painter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, textPosition, outerBounds: this.Graph.BoundsAbsoluteDrawed, color: textColor, stringFormatFlags: stringFormat);
         }
         /// <summary>
         /// Barva textu (písma) získaná dle pravidel z prvku
@@ -862,7 +862,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// <param name="drawMode"></param>
         protected void DrawItemItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            GPainter.GraphItemArgs graphItemArgs = new GPainter.GraphItemArgs(e.Graphics, boundsAbsolute);
+            Painter.GraphItemArgs graphItemArgs = new Painter.GraphItemArgs(e.Graphics, boundsAbsolute);
             graphItemArgs.IsGroup = false;
             graphItemArgs.BackColor = this._Group.GetColorWithOpacity(this.ItemBackColor, e.DrawLayer, drawMode, false, true);
             graphItemArgs.LineColor = this._Group.GetColorWithOpacity(this.ItemLineColor, e.DrawLayer, drawMode, false, true);
@@ -892,7 +892,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
                 graphItemArgs.IsActivated = groupItem.IsActivated;
             }
 
-            GPainter.GraphItemDraw(graphItemArgs);
+            Painter.GraphItemDraw(graphItemArgs);
         }
         /// <summary>
         /// Vytvoří pole souřadnic, které obsahuje pět prvků:
@@ -934,7 +934,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         {
             get
             {
-                float? effect3D = (IsInteractive ? GPainter.GetEffect3D(GroupInteractiveState) : (float?)-0.10f);
+                float? effect3D = (IsInteractive ? Painter.GetEffect3D(GroupInteractiveState) : (float?)-0.10f);
                 return ((effect3D.HasValue && effect3D.Value != 0f) ? (float?)effect3D.Value * 1.25f : (float?)null);
             }
         }
@@ -945,7 +945,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         {
             get
             {
-                float? effect3D = (IsInteractive ? GPainter.GetEffect3D(GroupInteractiveState) : (float?)-0.10f);
+                float? effect3D = (IsInteractive ? Painter.GetEffect3D(GroupInteractiveState) : (float?)-0.10f);
                 return ((effect3D.HasValue && effect3D.Value != 0f) ? (float?)effect3D.Value * 0.90f : (float?)null);
             }
         }

@@ -2383,7 +2383,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.CalculateRequiredEntities();
                 Rectangle clip = e.GetClip(absoluteVisibleBounds);
-                using (GPainter.GraphicsUseText(e.Graphics, clip))
+                using (Painter.GraphicsUseText(e.Graphics, clip))
                 {
                     this.DrawBackground(e.Graphics, absoluteBounds);
                     this.DrawMousePoint(e.Graphics, absoluteBounds);
@@ -2411,7 +2411,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="backColor"></param>
         protected void DrawBackground(Graphics graphics, Rectangle absoluteBounds, Color backColor)
         {
-            GPainter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.Is.Enabled, this.InteractiveState, backColor, this.BackColor3DEffect);
+            Painter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.Is.Enabled, this.InteractiveState, backColor, this.BackColor3DEffect);
         }
         /// <summary>
         /// Draw Mouse point (a glare ellipse), when point location is stored in MouseOverRelativePoint or MouseDownRelativePoint (when HasValue)
@@ -2423,12 +2423,12 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.MouseOverRelativePoint.HasValue)
             {
                 Point mousePoint = absoluteBounds.Location.Add(this.MouseOverRelativePoint.Value);
-                GPainter.DrawRadiance(graphics, mousePoint, absoluteBounds, Skin.Modifiers.MouseMoveTracking);
+                Painter.DrawRadiance(graphics, mousePoint, absoluteBounds, Skin.Modifiers.MouseMoveTracking);
             }
             else if (this.MouseDownRelativePoint.HasValue)
             {
                 Point mousePoint = absoluteBounds.Location.Add(this.MouseDownRelativePoint.Value);
-                GPainter.DrawRadiance(graphics, mousePoint, absoluteBounds, Skin.Modifiers.MouseDragTracking);
+                Painter.DrawRadiance(graphics, mousePoint, absoluteBounds, Skin.Modifiers.MouseDragTracking);
             }
         }
         /// <summary>

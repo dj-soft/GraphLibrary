@@ -1285,9 +1285,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.CurrentDrawLayer = e.DrawLayer;
             if (this.ChildItemsCalculate(false))
-                GPainter.DrawScrollBar(e.Graphics, absoluteBounds, this as IScrollBarPaintData);
+                Painter.DrawScrollBar(e.Graphics, absoluteBounds, this as IScrollBarPaintData);
             else
-                GPainter.DrawAreaBase(e.Graphics, absoluteBounds, Skin.ScrollBar.BackColorArea, this.Orientation);
+                Painter.DrawAreaBase(e.Graphics, absoluteBounds, Skin.ScrollBar.BackColorArea, this.Orientation);
         }
         /// <summary>
         /// Defaultní barva BackColor
@@ -1302,7 +1302,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.UserDraw != null)
             {
-                using (GPainter.GraphicsClip(graphics, bounds))
+                using (Painter.GraphicsClip(graphics, bounds))
                 {
                     try
                     {

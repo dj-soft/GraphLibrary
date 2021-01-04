@@ -403,7 +403,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            Painter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
             this.DrawFunctionIcon(e, boundsAbsolute, drawAsGhost, opacity);
         }
         /// <summary>
@@ -417,7 +417,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         {
             Image image = GetImageForFunction(this.OwnerITable.TableHeaderFunction);
             if (image == null) return;
-            GPainter.DrawImage(e.Graphics, boundsAbsolute, image, true, alignment: ContentAlignment.MiddleCenter);
+            Painter.DrawImage(e.Graphics, boundsAbsolute, image, true, alignment: ContentAlignment.MiddleCenter);
         }
         /// <summary>
         /// Vrátí funkční ikonu TableHeader (=UnCheck All, Expand / Collapse All TreeNode)
@@ -985,7 +985,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            Painter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu třídění a titulkový text
@@ -1003,7 +1003,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
                 FontInfo fontInfo = FontInfo.Caption;
                 fontInfo.Bold = (column.SortCurrent == ItemSortType.Ascending || column.SortCurrent == ItemSortType.Descending);
                 Color textColor = Skin.Grid.HeaderTextColor.SetOpacity(opacity);
-                textArea = GPainter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, color: textColor);
+                textArea = Painter.DrawString(e.Graphics, text, fontInfo, boundsAbsolute, ContentAlignment.MiddleCenter, color: textColor);
 
                 // Obrázek odpovídající aktuálnímu třídění sloupce:
                 Image sortImage = this.SortCurrentImage;
@@ -1032,7 +1032,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
                 int m = (mark <= 100 ? mark : 100);
                 int w = boundsAbsolute.Width * m / 300;
                 Rectangle boundsMark = new Rectangle(boundsAbsolute.X + 1, boundsAbsolute.Y, w, boundsAbsolute.Height);
-                GPainter.DrawInsertMark(e.Graphics, boundsMark, Skin.Modifiers.MouseDragTracking, System.Drawing.ContentAlignment.MiddleLeft);
+                Painter.DrawInsertMark(e.Graphics, boundsMark, Skin.Modifiers.MouseDragTracking, System.Drawing.ContentAlignment.MiddleLeft);
             }
 
             mark = this.DrawInsertMarkAtEnd;
@@ -1041,7 +1041,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
                 int m = (mark <= 100 ? mark : 100);
                 int w = boundsAbsolute.Width * m / 300;
                 Rectangle boundsMark = new Rectangle(boundsAbsolute.Right - w - 1, boundsAbsolute.Y, w, boundsAbsolute.Height);
-                GPainter.DrawInsertMark(e.Graphics, boundsMark, Skin.Modifiers.MouseDragTracking, System.Drawing.ContentAlignment.MiddleRight);
+                Painter.DrawInsertMark(e.Graphics, boundsMark, Skin.Modifiers.MouseDragTracking, System.Drawing.ContentAlignment.MiddleRight);
             }
         }
         /// <summary>
@@ -1141,7 +1141,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, GInteractiveState.Enabled, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            Painter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, GInteractiveState.Enabled, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         #endregion
     }
@@ -1686,7 +1686,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Left, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            Painter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Left, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví vykreslí podbarvení v situaci, kdy tento řádek je MouseHot
@@ -1699,7 +1699,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             if (!this.OwnerRow.IsMouseHot) return;
 
             Rectangle bounds = new Rectangle(boundsAbsolute.Right - 7, boundsAbsolute.Y + 1, 7, boundsAbsolute.Height - 2);
-            GPainter.DrawInsertMark(e.Graphics, bounds, Skin.Modifiers.MouseHotColor, ContentAlignment.MiddleRight, false, 255);
+            Painter.DrawInsertMark(e.Graphics, bounds, Skin.Modifiers.MouseHotColor, ContentAlignment.MiddleRight, false, 255);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu, pokud ji řádek má
