@@ -9,15 +9,15 @@ using System.Windows.Forms;
 namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
-    /// TrackBar : dovoluje nastavit hodnotu pomocí jezdce nebo jiného gripu, umístěného na ploše controlu
+    /// <see cref="TrackBar"/> : dovoluje nastavit hodnotu pomocí jezdce nebo jiného gripu, umístěného na ploše controlu
     /// </summary>
-    public class GTrackBar : InteractiveObject
+    public class TrackBar : InteractiveObject
     {
         #region Konstruktor a privátní proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTrackBar() : base()
+        public TrackBar() : base()
         {
             this._Layout = new PaintData(this);
             this._Value = 0m;
@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="parent"></param>
-        public GTrackBar(IInteractiveParent parent) : this()
+        public TrackBar(IInteractiveParent parent) : this()
         {
             this.Parent = parent;
         }
@@ -704,7 +704,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Relativní souřadnice vnitřního aktivního prostoru, relativní = vzhledem k TrackBaru.
-        /// Pokud tedy TrackBar má souřadnice { 100, 20, 200, 40 } a má <see cref="GTrackBar.InactiveFrame"/> = 4, 
+        /// Pokud tedy TrackBar má souřadnice { 100, 20, 200, 40 } a má <see cref="TrackBar.InactiveFrame"/> = 4, 
         /// pak <see cref="ActiveBounds"/> = { 4, 4, 192, 32 }.
         /// </summary>
         protected Rectangle ActiveBounds
@@ -820,12 +820,12 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Konstruktor
             /// </summary>
             /// <param name="trackBar"></param>
-            internal PaintData(GTrackBar trackBar)
+            internal PaintData(TrackBar trackBar)
             {
                 this._TrackBar = trackBar;
                 this.SetDefaults();
             }
-            private GTrackBar _TrackBar;
+            private TrackBar _TrackBar;
             #endregion
             #region Layout data
             /// <summary>

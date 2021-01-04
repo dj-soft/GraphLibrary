@@ -684,13 +684,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ToolBarRefreshFromResponse(IEnumerable<GuiToolbarItem> toolbarItems)
         {
             if (toolbarItems == null) return;
-            GToolBarRefreshMode refreshMode = GToolBarRefreshMode.None;
+            ToolBarRefreshMode refreshMode = ToolBarRefreshMode.None;
             foreach (GuiToolbarItem guiToolbarItem in toolbarItems)
             {
                 ToolBarItem toolBarItem = _ToolBarGuiItems.FirstOrDefault(t => String.Equals(t.Name, guiToolbarItem.Name, StringComparison.InvariantCulture));
                 if (toolBarItem == null) continue;
-                GToolBarRefreshMode itemMode = toolBarItem.RefreshFrom(guiToolbarItem);
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)itemMode);
+                ToolBarRefreshMode itemMode = toolBarItem.RefreshFrom(guiToolbarItem);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)itemMode);
             }
             this._MainControl.RefreshToolBar(refreshMode);
         }
@@ -750,121 +750,121 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             /// <param name="guiToolbarItem"></param>
             /// <returns></returns>
-            public GToolBarRefreshMode RefreshFrom(GuiToolbarItem guiToolbarItem)
+            public ToolBarRefreshMode RefreshFrom(GuiToolbarItem guiToolbarItem)
             {
-                GToolBarRefreshMode refreshMode = GToolBarRefreshMode.None;
+                ToolBarRefreshMode refreshMode = ToolBarRefreshMode.None;
                 GuiToolbarItem refrData = guiToolbarItem;
                 if (refrData == null) return refreshMode;
                 GuiToolbarItem currData = this._GuiToolBarItem;
                 if (currData == null) return refreshMode;
 
-                if (_Changed(currData.Title, refrData.Title, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.Title, refrData.Title, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.Title = refrData.Title;
-                if (_Changed(currData.ToolTip, refrData.ToolTip, GToolBarRefreshMode.None, ref refreshMode))
+                if (_Changed(currData.ToolTip, refrData.ToolTip, ToolBarRefreshMode.None, ref refreshMode))
                     currData.ToolTip = refrData.ToolTip;
-                if (_Changed(currData.Image, refrData.Image, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.Image, refrData.Image, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.Image = refrData.Image;
-                if (_Changed(currData.ImageHot, refrData.ImageHot, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.ImageHot, refrData.ImageHot, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.ImageHot = refrData.ImageHot;
-                if (_Changed(currData.Visible, refrData.Visible, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.Visible, refrData.Visible, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.Visible = refrData.Visible;
-                if (_Changed(currData.Enable, refrData.Enable, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.Enable, refrData.Enable, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.Enable = refrData.Enable;
-                if (_Changed(currData.IsCheckable, refrData.IsCheckable, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.IsCheckable, refrData.IsCheckable, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.IsCheckable = refrData.IsCheckable;
-                if (_Changed(currData.IsChecked, refrData.IsChecked, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.IsChecked, refrData.IsChecked, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.IsChecked = refrData.IsChecked;
-                if (_Changed(currData.CheckedGroupName, refrData.CheckedGroupName, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.CheckedGroupName, refrData.CheckedGroupName, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.CheckedGroupName = refrData.CheckedGroupName;
-                if (_Changed(currData.ImageChecked, refrData.ImageChecked, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.ImageChecked, refrData.ImageChecked, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.ImageChecked = refrData.ImageChecked;
-                if (_Changed(currData.Size, refrData.Size, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.Size, refrData.Size, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.Size = refrData.Size;
-                if (_Changed(currData.ModuleWidth, refrData.ModuleWidth, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.ModuleWidth, refrData.ModuleWidth, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.ModuleWidth = refrData.ModuleWidth;
-                if (_Changed(currData.LayoutHint, refrData.LayoutHint, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                if (_Changed(currData.LayoutHint, refrData.LayoutHint, ToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.LayoutHint = refrData.LayoutHint;
-                if (_Changed(currData.StoreValueToConfig, refrData.StoreValueToConfig, GToolBarRefreshMode.None, ref refreshMode))
+                if (_Changed(currData.StoreValueToConfig, refrData.StoreValueToConfig, ToolBarRefreshMode.None, ref refreshMode))
                     currData.StoreValueToConfig = refrData.StoreValueToConfig;
-                if (_Changed(currData.BlockGuiTime, refrData.BlockGuiTime, GToolBarRefreshMode.None, ref refreshMode))
+                if (_Changed(currData.BlockGuiTime, refrData.BlockGuiTime, ToolBarRefreshMode.None, ref refreshMode))
                     currData.BlockGuiTime = refrData.BlockGuiTime;
-                if (_Changed(currData.BlockGuiMessage, refrData.BlockGuiMessage, GToolBarRefreshMode.None, ref refreshMode))
+                if (_Changed(currData.BlockGuiMessage, refrData.BlockGuiMessage, ToolBarRefreshMode.None, ref refreshMode))
                     currData.BlockGuiMessage = refrData.BlockGuiMessage;
-                if (_Changed(currData.GuiActions, refrData.GuiActions, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.GuiActions, refrData.GuiActions, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.GuiActions = refrData.GuiActions;
-                if (_Changed(currData.RunInteractionNames, refrData.RunInteractionNames, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.RunInteractionNames, refrData.RunInteractionNames, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.RunInteractionNames = refrData.RunInteractionNames;
-                if (_Changed(currData.RunInteractionSource, refrData.RunInteractionSource, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                if (_Changed(currData.RunInteractionSource, refrData.RunInteractionSource, ToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.RunInteractionSource = refrData.RunInteractionSource;
 
                 return refreshMode;
             }
-            private static bool _Changed(int? oldValue, int? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(int? oldValue, int? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(string oldValue, string newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(string oldValue, string newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (newValue == null) return false;                  // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (String.Equals(oldValue, newValue, StringComparison.InvariantCulture)) return false;
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(bool? oldValue, bool? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(bool? oldValue, bool? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 if (oldValue == newValue) return false;
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(FunctionGlobalItemSize? oldValue, FunctionGlobalItemSize? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(FunctionGlobalItemSize? oldValue, FunctionGlobalItemSize? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 if (oldValue == newValue) return false;
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(LayoutHint? oldValue, LayoutHint? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(LayoutHint? oldValue, LayoutHint? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(GuiActionType? oldValue, GuiActionType? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(GuiActionType? oldValue, GuiActionType? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(SourceActionType? oldValue, SourceActionType? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(SourceActionType? oldValue, SourceActionType? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(TimeSpan? oldValue, TimeSpan? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(TimeSpan? oldValue, TimeSpan? newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(GuiImage oldValue, GuiImage newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(GuiImage oldValue, GuiImage newValue, ToolBarRefreshMode result, ref ToolBarRefreshMode refreshMode)
             {
                 if (newValue == null) return false;                  // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 bool on = (oldValue == null);
@@ -874,7 +874,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     return false;
                 if (on)
                 {   // Pouze oldValue je null => to je změna (protože newValue není null):
-                    refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                    refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                     return true;
                 }
                 // Oba nejsou null, podíváme se dovnitř:
@@ -883,7 +883,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     return _Changed(oldValue.ImageFile, newValue.ImageFile, result, ref refreshMode);
                 }
                 // Dál do hloubky nejdeme, vrátíme true = jde o změnu:
-                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                refreshMode = (ToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
             #endregion
@@ -3017,7 +3017,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     .ForEachItem(t => t.Item1.IsChecked = false);
                 this._MousePaintLinkLineActive = false;
                 this._MainControl.MousePaintEnabled = false;
-                this._MainControl.RefreshToolBar(GToolBarRefreshMode.RefreshControl);
+                this._MainControl.RefreshToolBar(ToolBarRefreshMode.RefreshControl);
             }
         }
         /// <summary>
@@ -3035,7 +3035,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     .ForEachItem(t => t.Item1.IsChecked = false);
                 this._MousePaintRectangleActive = false;
                 this._MainControl.MousePaintEnabled = false;
-                this._MainControl.RefreshToolBar(GToolBarRefreshMode.RefreshControl);
+                this._MainControl.RefreshToolBar(ToolBarRefreshMode.RefreshControl);
             }
         }
         private bool _MousePaintLinkLineActive;

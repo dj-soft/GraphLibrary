@@ -14,7 +14,7 @@ using Asol.Tools.WorkScheduler.Application;
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     /// <summary>
-    /// Hlavní control Dílenské tabule: obsahuje <see cref="GToolBar"/> + <see cref="SchedulerPanel"/>.
+    /// Hlavní control Dílenské tabule: obsahuje <see cref="ToolBar"/> + <see cref="SchedulerPanel"/>.
     /// </summary>
     public class MainControl : InteractiveControl
     {
@@ -227,11 +227,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Souhrn všech grafických grup v toolbaru (vizuální objekty)
         /// </summary>
-        internal GToolBarGroup[] ToolBarGFunctionGroups { get { return this._ToolBar.GFunctionGroups; } }
+        internal ToolBarGroup[] ToolBarGFunctionGroups { get { return this._ToolBar.GFunctionGroups; } }
         /// <summary>
         /// Souhrn všech grafických prvků v toolbaru (vizuální objekty) = tlačítka, labely, images...
         /// </summary>
-        internal GToolBarItem[] ToolBarGFunctionItems { get { return this._ToolBar.GFunctionItems; } }
+        internal ToolBarItem[] ToolBarGFunctionItems { get { return this._ToolBar.GFunctionItems; } }
         /// <summary>
         /// Vymaže všechny prvky Toolbaru
         /// </summary>
@@ -243,7 +243,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Provede řízený refresh Toolbaru
         /// </summary>
         /// <param name="refreshMode">Co je třeba refreshovat</param>
-        public void RefreshToolBar(GToolBarRefreshMode refreshMode)
+        public void RefreshToolBar(ToolBarRefreshMode refreshMode)
         {
             this._ToolBar.Refresh(refreshMode);
         }
@@ -252,7 +252,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _ToolBarInit()
         {
-            this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
+            this._ToolBar = new Components.ToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
             this._ToolBar.ToolbarSize = this._ControlLayout.ToolbarSize;
             this._ToolBar.ToolbarSizeChanged += _ToolBarSizeChanged;
             this.AddItem(this._ToolBar);
@@ -261,7 +261,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolBar.CurrentStatusChanged += _ToolBar_CurrentStatusChanged;
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po změně IsSelected na některém jeho prvku.
+        /// Tuto metodu volá interaktivní prvek (<see cref="ToolBar"/>) po změně IsSelected na některém jeho prvku.
         /// Úkolem je vyvolat event <see cref="MainControl.ToolBarItemSelectedChange"/>.
         /// </summary>
         /// <param name="sender"></param>
@@ -272,7 +272,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.ToolBarItemSelectedChange(this, args);
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na některý z jeho prvků.
+        /// Tuto metodu volá interaktivní prvek (<see cref="ToolBar"/>) po kliknutí na některý z jeho prvků.
         /// Úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
         /// </summary>
         /// <param name="sender"></param>
@@ -283,7 +283,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.ToolBarItemClicked(this, args);
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po změně stavu některého z jeho prvků, která má být persistována.
+        /// Tuto metodu volá interaktivní prvek (<see cref="ToolBar"/>) po změně stavu některého z jeho prvků, která má být persistována.
         /// Úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
         /// </summary>
         /// <param name="sender"></param>
@@ -319,7 +319,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Instance toolbaru
         /// </summary>
-        private GToolBar _ToolBar;
+        private Components.ToolBar _ToolBar;
         #endregion
         #region Jednotlivé panely SchedulerPanel + TabContainer
         /// <summary>

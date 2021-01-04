@@ -11,22 +11,22 @@ using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region class GToolBar : Toolbar kreslený jako panel
+    #region class ToolBar : Toolbar kreslený jako panel
     /// <summary>
-    /// GToolBar : Toolbar kreslený jako panel
+    /// <see cref="ToolBar"/> : Kompletní nabídka menu
     /// </summary>
-    public class GToolBar : InteractiveContainer
+    public class ToolBar : InteractiveContainer
     {
         #region Vytvoření Toolbaru bez načítání obsahu, public prvky
         /// <summary>
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GToolBar(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public ToolBar(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GToolBar()
+        public ToolBar()
         {
             this.InitToolbar();
         }
@@ -37,7 +37,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._TitleFont = FontInfo.CaptionSmallBold;
             this._ItemFont = FontInfo.Menu;
-            this._ToolbarGroupList = new List<GToolBarGroup>();
+            this._ToolbarGroupList = new List<ToolBarGroup>();
             this._CreateSettings();
             this._CreateSplitter();
         }
@@ -238,7 +238,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="group"></param>
         public void AddGroup(FunctionGlobalGroup group)
         {
-            this._AddGToolbarGroup(GToolBarGroup.CreateFrom(this, group));
+            this._AddGToolbarGroup(ToolBarGroup.CreateFrom(this, group));
         }
         /// <summary>
         /// Metoda do this ToolBaru přidá dodanou grupu funkcí
@@ -259,11 +259,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Souhrn všech grafických grup v toolbaru (vizuální objekty)
         /// </summary>
-        internal GToolBarGroup[] GFunctionGroups { get { return this._ToolbarGroupList.ToArray(); } }
+        internal ToolBarGroup[] GFunctionGroups { get { return this._ToolbarGroupList.ToArray(); } }
         /// <summary>
         /// Souhrn všech grafických prvků v toolbaru (vizuální objekty) = tlačítka, labely, images...
         /// </summary>
-        internal GToolBarItem[] GFunctionItems { get { return this._ToolbarGroupList.SelectMany(g => g.FunctionGItems).ToArray(); } }
+        internal ToolBarItem[] GFunctionItems { get { return this._ToolbarGroupList.SelectMany(g => g.FunctionGItems).ToArray(); } }
         /// <summary>
         /// Vymaže všechny prvky Toolbaru
         /// </summary>
@@ -278,18 +278,18 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _AddGuiGroups(IEnumerable<FunctionGlobalGroup> groups)
         {
             foreach (FunctionGlobalGroup group in groups)
-                this._AddGToolbarGroup(GToolBarGroup.CreateFrom(this, group));
+                this._AddGToolbarGroup(ToolBarGroup.CreateFrom(this, group));
         }
         /// <summary>
         /// Add one GToolbarGroup into Childs and into _ToolbarItemList.
         /// </summary>
         /// <param name="group"></param>
-        private void _AddGToolbarGroup(GToolBarGroup group)
+        private void _AddGToolbarGroup(ToolBarGroup group)
         {
             this.AddItem(group);
             this._ToolbarGroupList.Add(group);
         }
-        private List<GToolBarGroup> _ToolbarGroupList;
+        private List<ToolBarGroup> _ToolbarGroupList;
         #endregion
         #region Layout of toolbar - Check, Invalidate, Prepare
         /// <summary>
@@ -345,7 +345,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._Splitter.SplitterVisibleWidth = this.TBarSetting.SplitterHeight;
             int x = this.TBarSetting.ContentBounds.X;                // Prepare this.TBarSetting for current ToolbarSize, when current item is null or has not valid Size
-            foreach (GToolBarGroup group in this._ToolbarGroupList)
+            foreach (ToolBarGroup group in this._ToolbarGroupList)
                 group.PrepareLayout(graphics, ref x);
         }
         #endregion
@@ -799,16 +799,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Provede řízený refresh layoutu a controlu, podle požadavku
         /// </summary>
         /// <param name="refreshMode">Co je třeba refreshovat</param>
-        public void Refresh(GToolBarRefreshMode refreshMode)
+        public void Refresh(ToolBarRefreshMode refreshMode)
         {
             bool needRefresh = false;
-            if (refreshMode.HasFlag(GToolBarRefreshMode.RefreshLayout))
+            if (refreshMode.HasFlag(ToolBarRefreshMode.RefreshLayout))
             {
                 this.InvalidateLayout();
                 needRefresh = true;
             }
 
-            if (needRefresh || refreshMode.HasFlag(GToolBarRefreshMode.RefreshControl))
+            if (needRefresh || refreshMode.HasFlag(ToolBarRefreshMode.RefreshControl))
             {
                 base.Refresh();
             }
@@ -843,7 +843,7 @@ namespace Asol.Tools.WorkScheduler.Components
             GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState /* GInteractiveState.Enabled : MouseOver */, null, null);
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsChecked"/>, úkolem je vyvolat event <see cref="GToolBar.ItemCheckedChange"/>.
+        /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsChecked"/>, úkolem je vyvolat event <see cref="ToolBar.ItemCheckedChange"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="activeItem"></param>
@@ -854,7 +854,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.TestCurrentStatusChanged();
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek po kliknutí na něj, úkolem je vyvolat event <see cref="GToolBar.ItemClicked"/>.
+        /// Tuto metodu volá interaktivní prvek po kliknutí na něj, úkolem je vyvolat event <see cref="ToolBar.ItemClicked"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="activeItem"></param>
@@ -865,7 +865,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.TestCurrentStatusChanged();
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek před načtením SubItems do itemu, úkolem je vyvolat event <see cref="GToolBar.ItemSubItemsEnumerateBefore"/>.
+        /// Tuto metodu volá interaktivní prvek před načtením SubItems do itemu, úkolem je vyvolat event <see cref="ToolBar.ItemSubItemsEnumerateBefore"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="activeItem"></param>
@@ -889,31 +889,31 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class GToolBarGroup : Jedna vizuální skupina prvků v toolbaru
+    #region class ToolBarGroup : Jedna vizuální skupina prvků v toolbaru
     /// <summary>
-    /// GToolBarGroup : Jedna vizuální skupina prvků v toolbaru
+    /// <see cref="ToolBarGroup"/> : Jedna vizuální skupina prvků v toolbaru
     /// </summary>
-    internal class GToolBarGroup : InteractiveContainer
+    internal class ToolBarGroup : InteractiveContainer
     {
         #region Constructor, basic properties
-        internal static GToolBarGroup CreateFrom(GToolBar owner, FunctionGlobalGroup dataGroup)
+        internal static ToolBarGroup CreateFrom(ToolBar owner, FunctionGlobalGroup dataGroup)
         {
-            GToolBarGroup group = new GToolBarGroup(owner, dataGroup);
+            ToolBarGroup group = new ToolBarGroup(owner, dataGroup);
             
             if (dataGroup.Items != null)
             {
                 foreach (FunctionGlobalItem item in dataGroup.Items)
-                    group._AddGToolbarItem(GToolBarItem.CreateFrom(group, item));
+                    group._AddGToolbarItem(ToolBarItem.CreateFrom(group, item));
             }
             group._AddFinalSeparator();
 
             return group;
         }
-        private GToolBarGroup(GToolBar toolbar, FunctionGlobalGroup dataGroup)
+        private ToolBarGroup(ToolBar toolbar, FunctionGlobalGroup dataGroup)
         {
             this._Toolbar = toolbar;
             this._DataGroup = dataGroup;
-            this._ToolbarItemList = new List<GToolBarItem>();
+            this._ToolbarItemList = new List<ToolBarItem>();
         }
         /// <summary>
         /// When in this.Items are last item other than Separator, then add new Separator at end.
@@ -921,23 +921,23 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _AddFinalSeparator()
         {
             if (this._ToolbarItemList.Count > 0 && this._ToolbarItemList[this._ToolbarItemList.Count - 1].ItemType != FunctionGlobalItemType.Separator)
-                _AddGToolbarItem(GToolBarItem.CreateSeparator(this));
+                _AddGToolbarItem(ToolBarItem.CreateSeparator(this));
         }
         /// <summary>
         /// Add one GToolbarGroup into Childs and into _ToolbarItemList.
         /// </summary>
         /// <param name="item"></param>
-        private void _AddGToolbarItem(GToolBarItem item)
+        private void _AddGToolbarItem(ToolBarItem item)
         {
             this.AddItem(item);
             this._ToolbarItemList.Add(item);
         }
-        private GToolBar _Toolbar;
+        private ToolBar _Toolbar;
         private FunctionGlobalGroup _DataGroup;
         /// <summary>
         /// All interactive items in this group
         /// </summary>
-        private List<GToolBarItem> _ToolbarItemList;
+        private List<ToolBarItem> _ToolbarItemList;
         /// <summary>
         /// Provider of functions in this group = Service of type IFunctionGlobal.
         /// Může být null!
@@ -954,21 +954,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Pole grafických položek
         /// </summary>
-        internal GToolBarItem[] FunctionGItems { get { return this._ToolbarItemList.ToArray(); } }
+        internal ToolBarItem[] FunctionGItems { get { return this._ToolbarItemList.ToArray(); } }
         /// <summary>
         /// Toolbar in which is this group located.
         /// </summary>
-        internal GToolBar Toolbar { get { return this._Toolbar; } }
+        internal ToolBar Toolbar { get { return this._Toolbar; } }
         /// <summary>
         /// Setting for layout on current toolbar (by ToolbarSize)
         /// </summary>
-        internal GToolBar.LayoutSettingTBarInfo TBarSetting { get { return this._Toolbar.TBarSetting; } }
+        internal ToolBar.LayoutSettingTBarInfo TBarSetting { get { return this._Toolbar.TBarSetting; } }
         /// <summary>
         /// Return index of specified item
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private int _SearchItemIndex(GToolBarItem item)
+        private int _SearchItemIndex(ToolBarItem item)
         {
             if (item == null) return -1;
             return this._ToolbarItemList.IndexOf(item);
@@ -1003,10 +1003,10 @@ namespace Asol.Tools.WorkScheduler.Components
         internal void PrepareLayout(Graphics graphics, ref int x)
         {
             // 1. Only Visible items:
-            GToolBarItem[] items = this._ToolbarItemList.Where(t => t.Is.Visible).ToArray();
+            ToolBarItem[] items = this._ToolbarItemList.Where(t => t.Is.Visible).ToArray();
 
             // 2. prepare ModuleSize and PixelSize:
-            foreach (GToolBarItem item in items)
+            foreach (ToolBarItem item in items)
                 item.PrepareLayout(graphics);
 
             // 3. Arrange items to layout:
@@ -1058,7 +1058,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void PrepareLayoutOne(LayoutEngineArgs layoutArgs, ref int tableX)
         {
             if (layoutArgs.ResultProcessedItemCount <= 0) return;
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            ToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             int itemY = tBarSetting.ContentBounds.Y;
             int nextX = tableX;
             int modulePixel = tBarSetting.PixelPerModule;
@@ -1071,7 +1071,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     decimal ratio = (decimal)modulePixel * (decimal)moduleWidth / (decimal)rowWidth;
                     foreach (var layoutItem in layoutRow.Items)
                     {
-                        GToolBarItem item = layoutItem as GToolBarItem;
+                        ToolBarItem item = layoutItem as ToolBarItem;
                         if (item != null && item.ModuleBounds.HasValue)
                         {
                             Rectangle mb = item.ModuleBounds.Value;
@@ -1089,7 +1089,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {   // This row has items with zero sizes, this is only separator:
                     foreach (var layoutItem in layoutRow.Items)
                     {
-                        GToolBarItem item = layoutItem as GToolBarItem;
+                        ToolBarItem item = layoutItem as ToolBarItem;
                         if (item != null)
                         {
                             bool isLastSeparator = ((layoutArgs.ResultRows.Length == 1 && layoutRow.Items.Count == 1) && (this._SearchItemIndex(item) == (this._ToolbarItemList.Count - 1)));
@@ -1143,7 +1143,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         internal void DrawGroupTitle(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            ToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             Rectangle tb = tBarSetting.TitleBounds;
 
             Rectangle toolb = tBarSetting.ToolbarBounds;
@@ -1183,18 +1183,18 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class GToolBarItem a konkrétní potomci pro konkrétní typy
+    #region class ToolBarItem a konkrétní potomci pro konkrétní typy
     /// <summary>
     /// Konkrétní položka Toolbaru: Separator
     /// </summary>
-    internal class GToolBarSeparator : GToolBarItem
+    internal class ToolBarSeparator : ToolBarItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolBarSeparator(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal ToolBarSeparator(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
         internal override void PrepareLayout(Graphics graphics)
         {
             this.PixelSizeMin = new Size(5, this.TBarSetting.ContentBounds.Height);
@@ -1209,14 +1209,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Konkrétní položka Toolbaru: Label
     /// </summary>
-    internal class GToolBarLabel : GToolBarItem
+    internal class ToolBarLabel : ToolBarItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolBarLabel(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal ToolBarLabel(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
         internal override void PrepareLayout(Graphics graphics)
         {
             this.PrepareBoundsCommon(graphics);
@@ -1249,14 +1249,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Konkrétní položka Toolbaru: Image
     /// </summary>
-    internal class GToolBarImage : GToolBarItem
+    internal class ToolBarImage : ToolBarItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolBarImage(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal ToolBarImage(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
         internal override void PrepareLayout(Graphics graphics)
         {
             this.PrepareBoundsCommon(graphics);
@@ -1285,14 +1285,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Konkrétní položka Toolbaru: Button
     /// </summary>
-    internal class GToolBarButton : GToolBarItem
+    internal class ToolBarButton : ToolBarItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolBarButton(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
+        internal ToolBarButton(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
         {
             this.Is.GetChecked = this._GetChecked;
             this.Is.SetChecked = this._SetChecked;
@@ -1336,7 +1336,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda zajistí změnu stavu <see cref="InteractiveProperties.Checked"/> pro tento prvek, 
         /// a pokud tento prvek je členem nějaké selectovací grupy, pak najde i ostatní členy grupy a vyřeší to i pro ně.
-        /// Metoda je volána před voláním <see cref="GToolBarItem.CallItemClick()"/>, 
+        /// Metoda je volána před voláním <see cref="ToolBarItem.CallItemClick()"/>, 
         /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsChecked"/>.
         /// </summary>
         protected void IsCheckedChange()
@@ -1346,7 +1346,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda zajistí nastavení stavu <see cref="InteractiveProperties.Checked"/> pro tento prvek, 
         /// a pokud tento prvek je členem nějaké selectovací grupy, pak najde i ostatní členy grupy a vyřeší to i pro ně.
-        /// Metoda je volána před voláním <see cref="GToolBarItem.CallItemClick()"/>, 
+        /// Metoda je volána před voláním <see cref="ToolBarItem.CallItemClick()"/>, 
         /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsChecked"/>.
         /// </summary>
         protected void IsCheckedChange(bool newIsChecked)
@@ -1459,14 +1459,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Konkrétní položka Toolbaru: ComboBox
     /// </summary>
-    internal class GToolBarComboBox : GToolBarItem
+    internal class ToolBarComboBox : ToolBarItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolBarComboBox(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal ToolBarComboBox(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
         internal override void PrepareLayout(Graphics graphics)
         {
             EList<FunctionItem> subItems = this.ItemSubItems;
@@ -1522,16 +1522,16 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Konkrétní položka Toolbaru: TrackBar
     /// </summary>
-    internal class GToolBarTrackBar : GToolBarItem
+    internal class ToolBarTrackBar : ToolBarItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolBarTrackBar(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
+        internal ToolBarTrackBar(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
         {
-            this._TrackBar = new GTrackBar(this);
+            this._TrackBar = new TrackBar(this);
             this.ChildList.Add(this._TrackBar);
         }
         /// <summary>
@@ -1543,8 +1543,8 @@ namespace Asol.Tools.WorkScheduler.Components
             // this.PrepareBoundsCommon(graphics);
 
 
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            ToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            ToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
 
             int h = itemSetting.ModulePixel;
             int s = itemSetting.OffsetPixel;
@@ -1570,7 +1570,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DrawItemImage(e, absoluteBounds);
             this.DrawItemText(e, absoluteBounds);
         }
-        private GTrackBar _TrackBar;
+        private TrackBar _TrackBar;
         protected Rectangle ImageBeforeBounds { get; set; }
         protected Rectangle TrackBarBounds { get; set; }
         protected Rectangle ImageAfterBounds { get; set; }
@@ -1579,7 +1579,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Bázová abstraktní třída pro konkrétní položky Toolbaru
     /// </summary>
-    internal abstract class GToolBarItem : InteractiveContainer, ILayoutItem
+    internal abstract class ToolBarItem : InteractiveContainer, ILayoutItem
     {
         #region Konstruktor, základní properties
         /// <summary>
@@ -1587,7 +1587,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        protected GToolBarItem(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base()
+        protected ToolBarItem(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem) : base()
         {
             this._ToolbarGroup = toolbarGroup;
             this._DataItem = dataItem;
@@ -1613,17 +1613,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
         /// <returns></returns>
-        internal static GToolBarItem CreateFrom(GToolBarGroup toolbarGroup, FunctionGlobalItem dataItem)
+        internal static ToolBarItem CreateFrom(ToolBarGroup toolbarGroup, FunctionGlobalItem dataItem)
         {
             switch (dataItem.ItemType)
             {
                 case FunctionGlobalItemType.None: return null;
-                case FunctionGlobalItemType.Separator: return new GToolBarSeparator(toolbarGroup, dataItem);
-                case FunctionGlobalItemType.Label: return new GToolBarLabel(toolbarGroup, dataItem);
-                case FunctionGlobalItemType.Image: return new GToolBarImage(toolbarGroup, dataItem);
-                case FunctionGlobalItemType.Button: return new GToolBarButton(toolbarGroup, dataItem);
-                case FunctionGlobalItemType.ComboBox: return new GToolBarComboBox(toolbarGroup, dataItem);
-                case FunctionGlobalItemType.TrackBar: return new GToolBarTrackBar(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Separator: return new ToolBarSeparator(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Label: return new ToolBarLabel(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Image: return new ToolBarImage(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Button: return new ToolBarButton(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.ComboBox: return new ToolBarComboBox(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.TrackBar: return new ToolBarTrackBar(toolbarGroup, dataItem);
             }
             return null;
         }
@@ -1632,19 +1632,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <returns></returns>
-        internal static GToolBarItem CreateSeparator(GToolBarGroup toolbarGroup)
+        internal static ToolBarItem CreateSeparator(ToolBarGroup toolbarGroup)
         {
             FunctionGlobalItem dataItem = new FunctionGlobalItem(toolbarGroup.Provider)
             {
                 ItemType = FunctionGlobalItemType.Separator,
                 Size = FunctionGlobalItemSize.Whole
             };
-            return new GToolBarSeparator(toolbarGroup, dataItem);
+            return new ToolBarSeparator(toolbarGroup, dataItem);
         }
         /// <summary>
         /// Grupa, do níž patří tento prvek
         /// </summary>
-        protected GToolBarGroup _ToolbarGroup;
+        protected ToolBarGroup _ToolbarGroup;
         /// <summary>
         /// Datový základ tohoto prvku
         /// </summary>
@@ -1660,15 +1660,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Toolbar, do kterého náleží tato grupa
         /// </summary>
-        internal GToolBar Toolbar { get { return this._ToolbarGroup.Toolbar; } }
+        internal ToolBar Toolbar { get { return this._ToolbarGroup.Toolbar; } }
         /// <summary>
         /// Setting pro celý Toolbar
         /// </summary>
-        internal GToolBar.LayoutSettingTBarInfo TBarSetting { get { return this.Toolbar.TBarSetting; } }
+        internal ToolBar.LayoutSettingTBarInfo TBarSetting { get { return this.Toolbar.TBarSetting; } }
         /// <summary>
         /// Setting pro tento prvek
         /// </summary>
-        internal GToolBar.LayoutSettingTItemInfo TItemSetting { get { return this.Toolbar.TBarSetting.GetInfoForSize(this.ItemSize); } }
+        internal ToolBar.LayoutSettingTItemInfo TItemSetting { get { return this.Toolbar.TBarSetting.GetInfoForSize(this.ItemSize); } }
         #endregion
         #region Data from DataItem
         /// <summary>
@@ -1790,8 +1790,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="getTextSize"></param>
         protected void PrepareBoundsCommon(Graphics graphics, Func<Graphics, Size> getImageSize = null, Func<Graphics, Size> getTextSize = null)
         {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            ToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            ToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
 
             Size sizeImage = (getImageSize != null ? getImageSize(graphics) : this.GetImageSize(this.ItemImage));      // Velikost pro prvek: Velká ikona = obrázek tlačítka
             Size sizeText = (getTextSize != null ? getTextSize(graphics) : this.GetTextSize(graphics, this.ItemText)); // Velikost pro prvek: Text tlačítka
@@ -1895,7 +1895,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected Size GetImageSize(Image image)
         {
             if (image == null) return new Size(0, 0);
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            ToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
             return itemSetting.ImageSize;
         }
         /// <summary>
@@ -1906,7 +1906,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Size GetImageSizeFromSubItems(bool withThisImage, EList<FunctionItem> subItems)
         {
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            ToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
             if (withThisImage && this.ItemImage != null)
                 return itemSetting.ImageSize;
 
@@ -2249,7 +2249,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Index obsahující klíče prvků toolbaru a jejich persist hodnotu
         /// </summary>
-        private Dictionary<string, GToolBarItem> KeyValueDict { get; set; }
+        private Dictionary<string, ToolBarItem> KeyValueDict { get; set; }
         #endregion
         #region Snapshot = stringový výraz pro persistenci stavu Toolbaru
         /// <summary>
@@ -2277,7 +2277,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     if (row.Length < 2) continue;
                     string key = row[0];
-                    GToolBarItem item;
+                    ToolBarItem item;
                     if (!String.IsNullOrEmpty(key) && this.KeyValueDict.TryGetValue(key, out item))
                         item.PersistValue = row[1];
                 }
@@ -2290,7 +2290,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="toolBar"></param>
         /// <returns></returns>
-        public static ToolBarStatus CreateFrom(GToolBar toolBar)
+        public static ToolBarStatus CreateFrom(ToolBar toolBar)
         {
             if (toolBar == null) return null;
 
@@ -2302,11 +2302,11 @@ namespace Asol.Tools.WorkScheduler.Components
             return status;
         }
         /// <summary>
-        /// Dodaný stav <see cref="ToolBarStatus"/> aplikuje do dodaného objektu <see cref="GToolBar"/>.
+        /// Dodaný stav <see cref="ToolBarStatus"/> aplikuje do dodaného objektu <see cref="ToolBar"/>.
         /// </summary>
         /// <param name="status"></param>
         /// <param name="toolBar"></param>
-        public static void ApplyTo(ToolBarStatus status, GToolBar toolBar)
+        public static void ApplyTo(ToolBarStatus status, ToolBar toolBar)
         {
             if (status == null || toolBar == null) return;
 
@@ -2323,14 +2323,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="toolBar"></param>
         /// <returns></returns>
-        internal static Dictionary<string, GToolBarItem> CreateItemDict(GToolBar toolBar)
+        internal static Dictionary<string, ToolBarItem> CreateItemDict(ToolBar toolBar)
         {
-            Dictionary<string, GToolBarItem> result = new Dictionary<string, GToolBarItem>();
+            Dictionary<string, ToolBarItem> result = new Dictionary<string, ToolBarItem>();
             if (toolBar == null) return result;
-            foreach (GToolBarGroup gGroup in toolBar.GFunctionGroups)
+            foreach (ToolBarGroup gGroup in toolBar.GFunctionGroups)
             {
                 string groupName = (gGroup.Name ?? "_") + ".";
-                foreach (GToolBarItem gItem in gGroup.FunctionGItems)
+                foreach (ToolBarItem gItem in gGroup.FunctionGItems)
                 {
                     if (!gItem.PersistEnabled) continue;
                     string itemName = gItem.Name;
@@ -2349,7 +2349,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Režim provedení refresh a Invalidate pro ToolBar, poté kdy byla provedena metoda
     /// </summary>
     [Flags]
-    public enum GToolBarRefreshMode
+    public enum ToolBarRefreshMode
     {
         /// <summary>
         /// Netřeba provádět nic

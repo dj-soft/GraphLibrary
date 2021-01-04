@@ -94,14 +94,14 @@ namespace Asol.Tools.WorkScheduler.Services
         /// Konstruktor
         /// </summary>
         /// <param name="toolBar"></param>
-        public FunctionGlobalPrepareGuiRequest(GToolBar toolBar)
+        public FunctionGlobalPrepareGuiRequest(ToolBar toolBar)
         {
             this.ToolBar = toolBar;
         }
         /// <summary>
         /// Reference na GUI ToolBaru
         /// </summary>
-        public GToolBar ToolBar { get; private set; }
+        public ToolBar ToolBar { get; private set; }
     }
     /// <summary>
     /// Požadavek

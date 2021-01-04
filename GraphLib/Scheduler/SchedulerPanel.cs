@@ -14,8 +14,8 @@ using Asol.Tools.WorkScheduler.Application;
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     /// <summary>
-    /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="GTabContainer"/>, <see cref="GGrid"/>, <see cref="GSplitter"/>), ale neobsahuje <see cref="GToolBar"/>.
-    /// Hlavní control <see cref="MainControl"/> se skládá z jednoho prvku <see cref="GToolBar"/> a z jednoho <see cref="GTabContainer"/>, 
+    /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="GTabContainer"/>, <see cref="GGrid"/>, <see cref="GSplitter"/>), ale neobsahuje <see cref="ToolBar"/>.
+    /// Hlavní control <see cref="MainControl"/> se skládá z jednoho prvku <see cref="ToolBar"/> a z jednoho <see cref="GTabContainer"/>, 
     /// který v sobě hostuje controly <see cref="SchedulerPanel"/>, jeden pro každou jednu zadanou verzi plánu (DataId).
     /// </summary>
     public class SchedulerPanel : InteractiveContainer, IInteractiveItem
