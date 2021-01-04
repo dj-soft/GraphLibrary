@@ -82,23 +82,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarPos();
 
 
-            this.MovableArea1 = new GMovableItem() { Bounds = new Rectangle(400, 95, 90, 25), BackColor = Color.CadetBlue };
+            this.MovableArea1 = new MovableItem() { Bounds = new Rectangle(400, 95, 90, 25), BackColor = Color.CadetBlue };
             this._ActiveList.Add(this.MovableArea1);
-            this.MovableArea2 = new GMovableItem() { Bounds = new Rectangle(500, 95, 100, 25), BackColor = Color.LightYellow };
+            this.MovableArea2 = new MovableItem() { Bounds = new Rectangle(500, 95, 100, 25), BackColor = Color.LightYellow };
             this._ActiveList.Add(this.MovableArea2);
-            this.MovableArea3 = new GMovableItem() { Bounds = new Rectangle(400, 125, 90, 30), BackColor = Color.LimeGreen };
+            this.MovableArea3 = new MovableItem() { Bounds = new Rectangle(400, 125, 90, 30), BackColor = Color.LimeGreen };
             this._ActiveList.Add(this.MovableArea3);
-            this.MovableArea4 = new GMovableItem() { Bounds = new Rectangle(500, 125, 100, 30) };
+            this.MovableArea4 = new MovableItem() { Bounds = new Rectangle(500, 125, 100, 30) };
             this._ActiveList.Add(this.MovableArea4);
 
             
             this.ContainerArea1 = new InteractiveContainer() { Bounds = new Rectangle(280, 160, 300, 180), BackColor = Color.Salmon };
             this._ActiveList.Add(this.ContainerArea1);
 
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(5, 5, 70, 20), BackColor = Color.DarkOrange });   // , DragDrawGhost = DragDrawGhostMode.DragOnlyStandard
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(105, 5, 70, 20), BackColor = Color.DarkBlue });   // , DragDrawGhost = DragDrawGhostMode.DragWithGhostAtOriginal 
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(5, 40, 70, 20), BackColor = Color.DarkGreen });   // , DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(105, 40, 70, 20), BackColor = Color.DarkGreen }); // , DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive 
+            this.ContainerArea1.AddItem(new MovableItem() { Bounds = new Rectangle(5, 5, 70, 20), BackColor = Color.DarkOrange });   // , DragDrawGhost = DragDrawGhostMode.DragOnlyStandard
+            this.ContainerArea1.AddItem(new MovableItem() { Bounds = new Rectangle(105, 5, 70, 20), BackColor = Color.DarkBlue });   // , DragDrawGhost = DragDrawGhostMode.DragWithGhostAtOriginal 
+            this.ContainerArea1.AddItem(new MovableItem() { Bounds = new Rectangle(5, 40, 70, 20), BackColor = Color.DarkGreen });   // , DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive
+            this.ContainerArea1.AddItem(new MovableItem() { Bounds = new Rectangle(105, 40, 70, 20), BackColor = Color.DarkGreen }); // , DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive 
 
 
             this._GInteractiveControl.Items = this._ActiveList;
@@ -143,10 +143,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GSizeAxis _SizeAxisH;
         protected GScrollBar _ScrollBarH;
         protected GScrollBar _ScrollBarV;
-        protected GMovableItem MovableArea1;
-        protected GMovableItem MovableArea2;
-        protected GMovableItem MovableArea3;
-        protected GMovableItem MovableArea4;
+        protected MovableItem MovableArea1;
+        protected MovableItem MovableArea2;
+        protected MovableItem MovableArea3;
+        protected MovableItem MovableArea4;
 
         protected InteractiveContainer ContainerArea1;
 
