@@ -96,7 +96,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Splitter
         private void _CreateSplitter()
         {
-            this._Splitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal };
+            this._Splitter = new Splitter() { Orientation = System.Windows.Forms.Orientation.Horizontal };
             int heightMin = this._SettingDict[ComponentSize.Small].ToolbarBounds.Height;
             int heightMax = this._SettingDict[ComponentSize.Large].ToolbarBounds.Height;
             this._Splitter.ValueRange = new Int32NRange(heightMin, heightMax);
@@ -149,7 +149,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (withSplitterValue)
                 this._SplitterCheckValue();
         }
-        private GSplitter _Splitter;
+        private Splitter _Splitter;
         #endregion
         #region Načtení obsahu Toolbaru z dostupných Services (IFunctionGlobal)
         /// <summary>

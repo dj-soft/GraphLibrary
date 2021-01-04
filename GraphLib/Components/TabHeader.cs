@@ -44,10 +44,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _TabHeader_ActiveItemChanged(object sender, GPropertyChangeArgs<TabPageObject> e)
+        private void _TabHeader_ActiveItemChanged(object sender, GPropertyChangeArgs<TabPage> e)
         {
-            TabPageObject oldPage = this._TabItemLastActive;
-            TabPageObject newPage = e.NewValue;
+            TabPage oldPage = this._TabItemLastActive;
+            TabPage newPage = e.NewValue;
             bool isCollapseOld = this._IsCollapsed;
             bool isCollapseNew = (newPage != null && newPage.IsCollapse);
             bool canRepaint = (newPage != null && newPage.DataControl != null);
@@ -82,20 +82,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Záložka reprezentující "Collapse" položku
         /// </summary>
-        private TabPageObject _TabItemCollapse;
+        private TabPage _TabItemCollapse;
         /// <summary>
         /// true pokud má být zobrazen TabItem pro Collapse
         /// </summary>
         private bool _TabItemCollapseIsAvailable { get { return this._TabHeaderMode.HasFlag(ShowTabHeaderMode.CollapseItem); } }
         /// <summary>
-        /// Pomocí této metody si prvek <see cref="TabPageObject"/> reprezentující záložku Collapse (<see cref="_TabItemCollapse"/>) zjišťuje svoji viditelnost.
+        /// Pomocí této metody si prvek <see cref="TabPage"/> reprezentující záložku Collapse (<see cref="_TabItemCollapse"/>) zjišťuje svoji viditelnost.
         /// Získává ji z <see cref="_TabItemCollapseIsAvailable"/>.
         /// </summary>
         /// <param name="isVisible"></param>
         /// <returns></returns>
         private bool _GetCollapseIsVisible(bool isVisible) { return this._TabItemCollapseIsAvailable; }
         /// <summary>
-        /// Prvek <see cref="TabPageObject"/> reprezentující záložku Collapse (<see cref="_TabItemCollapse"/>) zde nastavuje svoji viditelnost.
+        /// Prvek <see cref="TabPage"/> reprezentující záložku Collapse (<see cref="_TabItemCollapse"/>) zde nastavuje svoji viditelnost.
         /// Reálně nedělá nic.
         /// </summary>
         /// <param name="isVisible"></param>
@@ -104,7 +104,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Záložka (TabItem), která byla naposledy aktivní před provedením Collapse.
         /// Pokud bude stav Collapse zrušen prostým nastavením IsCollapsed = false, pak algoritmus provede aktivaci této záložky.
         /// </summary>
-        private TabPageObject _TabItemLastActive;
+        private TabPage _TabItemLastActive;
         /// <summary>
         /// Hodnota TabOrder pro příští vkládaný TabItem pro data
         /// </summary>
@@ -130,12 +130,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Přidá (a vrátí) novou záložku pro daný prvek
         /// </summary>
         /// <returns></returns>
-        public TabPageObject AddTabItem(IInteractiveItem item, Localizable.TextLoc text, Localizable.TextLoc toolTip = null, Image image = null)
+        public TabPage AddTabItem(IInteractiveItem item, Localizable.TextLoc text, Localizable.TextLoc toolTip = null, Image image = null)
         {
             if (item == null) return null;
             item.Parent = this;
             bool setItemAsActive = (this._TabHeader.PageCount <= 1);
-            TabPageObject tabItem = this._TabHeader.AddHeader(null, text, image, linkItem: item);
+            TabPage tabItem = this._TabHeader.AddHeader(null, text, image, linkItem: item);
             tabItem.TabOrder = this._TabOrderData++;
             if (toolTip != null)
                 tabItem.ToolTipText = toolTip;
@@ -311,7 +311,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pole všech položek, které reprezentují datové záložky - v jejich nativním pořadí (=tak jak se přidávaly).
         /// </summary>
         /// <remarks>V těchto záložkách není uvedena záložka "Collapse".</remarks>
-        public TabPageObject[] TabItems { get { return this._TabHeader.Pages.Where(t => (!t.IsCollapse)).ToArray(); } }
+        public TabPage[] TabItems { get { return this._TabHeader.Pages.Where(t => (!t.IsCollapse)).ToArray(); } }
         /// <summary>
         /// Počet TAB prvků, které reprezentují datové záložky
         /// </summary>
@@ -372,7 +372,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                TabPageObject activePage = this.ActivePage;
+                TabPage activePage = this.ActivePage;
                 return (activePage != null ? activePage.DataControl : null);
             }
             set
@@ -381,7 +381,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 IInteractiveItem newValue = value;
                 if (newValue != null && !Object.ReferenceEquals(newValue, oldValue))
                 {   // Pouze pokud je nový objekt zadán, a je odlišný od aktuálního:
-                    TabPageObject tabItem = (newValue != null ? this._TabHeader.Pages.FirstOrDefault(t => Object.ReferenceEquals(t, newValue)) : null);
+                    TabPage tabItem = (newValue != null ? this._TabHeader.Pages.FirstOrDefault(t => Object.ReferenceEquals(t, newValue)) : null);
                     if (tabItem != null)
                     {
                         this.ActivePage = tabItem;         // Vyvolá událost TabHeader.ActiveItemChanged => this._TabHeader_ActiveItemChanged;
@@ -393,7 +393,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktivní záhlaví
         /// </summary>
-        public TabPageObject ActivePage
+        public TabPage ActivePage
         {
             get { return this._TabHeader.ActivePage; }
             set { this._TabHeader.ActivePage = value; /* Vyvolá event TabHeader_ActiveItemChanged => this._TabHeader_ActiveItemChanged  */ }
@@ -412,7 +412,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (newValue == oldValue) return;
 
                 // Setování této property se provádí zvenku (aplikačním kódem), a jejím úkolem je aktivovat záložku Collapse nebo LastActive:
-                TabPageObject tabItem = ((newValue) ? this._TabItemCollapse : this._TabItemLastActive);
+                TabPage tabItem = ((newValue) ? this._TabItemCollapse : this._TabItemLastActive);
                 if (!newValue && tabItem == null)
                     // Pokud je požadováno IsCollapsed = false (tzn. zobrazit data), ale v _TabItemLastActive je null, pak budeme aktivovat první záložku s daty:
                     tabItem = this._TabHeader.Pages.FirstOrDefault(t => !t.IsCollapse);
@@ -496,9 +496,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zavolá metody <see cref="OnActivePageChanged"/> a eventhandler <see cref="ActivePageChanged"/>.
         /// Tato metoda se má volat pouze při reálné změně stránky, nikoli při změně <see cref="IsCollapsed"/>.
         /// </summary>
-        protected TabPageObject CallActivePageChanged(TabPageObject oldValue, TabPageObject newValue, EventSourceType eventSource)
+        protected TabPage CallActivePageChanged(TabPage oldValue, TabPage newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TabPageObject> args = new GPropertyChangeArgs<TabPageObject>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<TabPage> args = new GPropertyChangeArgs<TabPage>(oldValue, newValue, eventSource);
             this.OnActivePageChanged(args);
             if (!this.IsSuppressedEvent && this.ActivePageChanged != null)
                 this.ActivePageChanged(this, args);
@@ -507,11 +507,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda prováděná při změně hodnoty <see cref="IsCollapsed"/>
         /// </summary>
-        protected virtual void OnActivePageChanged(GPropertyChangeArgs<TabPageObject> args) { }
+        protected virtual void OnActivePageChanged(GPropertyChangeArgs<TabPage> args) { }
         /// <summary>
         /// Event provedený po změně hodnoty <see cref="ActivePage"/>
         /// </summary>
-        public event GPropertyChangedHandler<TabPageObject> ActivePageChanged;
+        public event GPropertyChangedHandler<TabPage> ActivePageChanged;
 
         /// <summary>
         /// Zavolá metody <see cref="OnActiveControlChanged"/> a eventhandler <see cref="ActiveControlChanged"/>.
@@ -572,7 +572,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public TabHeader()
         {
-            this._PageList = new List<TabPageObject>();
+            this._PageList = new List<TabPage>();
             this._Position = RectangleSide.Top;
             this._HeaderSizeRange = new Int32Range(50, 600);
             this.__ActiveIndex = -1;
@@ -606,18 +606,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Pole všech položek, v jejich nativním pořadí (=tak jak se přidávaly)
         /// </summary>
-        public TabPageObject[] Pages { get { return this._PageList.ToArray(); } }
+        public TabPage[] Pages { get { return this._PageList.ToArray(); } }
         /// <summary>
         /// Data aktuálně aktivního záhlaví. Může být null.
         /// Setování vyvolá eventy ActiveItemChanged
         /// </summary>
-        public TabPageObject ActivePage
+        public TabPage ActivePage
         {
             get { return this._ActivePage; }
             set
             {
-                TabPageObject oldValue = this._ActivePage;
-                TabPageObject newValue = value;
+                TabPage oldValue = this._ActivePage;
+                TabPage newValue = value;
                 if (newValue == null || Object.ReferenceEquals(newValue, oldValue)) return;        // Není zadáno, nebo Není změna
                 if (!this._PageList.Any(i => Object.ReferenceEquals(i, newValue))) return;         // není to žádná z našich stránek
 
@@ -627,10 +627,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.Repaint();
             }
         }
-        private TabPageObject _ActivePage;
+        private TabPage _ActivePage;
         /// <summary>
         /// Index aktuálního záhlaví. Vrací __ActiveHeaderIndex (bez kontrol). 
-        /// Setování provede kontrolu hodnoty a po změně vyvolá ActiveItemChanged, a nastavení viditelnosti u <see cref="TabPageObject.DataControl"/>.
+        /// Setování provede kontrolu hodnoty a po změně vyvolá ActiveItemChanged, a nastavení viditelnosti u <see cref="TabPage.DataControl"/>.
         /// </summary>
         private int _ActiveIndex
         {
@@ -639,21 +639,21 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 int count = this.PageCount;
                 int oldIndex = this.__ActiveIndex;
-                TabPageObject oldItem = this.ActivePage;
+                TabPage oldItem = this.ActivePage;
 
                 int newIndex = value;
                 if (newIndex >= 0 && newIndex < count && newIndex != oldIndex)
                 {
                     this.__ActiveIndex = newIndex;
                     this._ShowDataItems(this._PageList[newIndex]);
-                    TabPageObject newItem = this.ActivePage;
+                    TabPage newItem = this.ActivePage;
                     this.CallActivePageChanged(oldItem, newItem, EventSourceType.InteractiveChanged);
                 }
             }
         }
         private int __ActiveIndex;
         /// <summary>
-        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabPageObject.DataControl"/> v <see cref="_PageList"/>.
+        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabPage.DataControl"/> v <see cref="_PageList"/>.
         /// Pouze záložka <see cref="ActivePage"/> bude mít LinkItem.IsVisible = true, ostatní budou mít false.
         /// </summary>
         private void _ShowDataItems()
@@ -661,13 +661,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ShowDataItems(this.ActivePage);
         }
         /// <summary>
-        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabPageObject.DataControl"/> v <see cref="_PageList"/>.
+        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabPage.DataControl"/> v <see cref="_PageList"/>.
         /// Pouze záložka odpovídající zadanému záhlaví bude mít LinkItem.IsVisible = true, ostatní budou mít false.
         /// </summary>
         /// <param name="activeItem"></param>
-        private void _ShowDataItems(TabPageObject activeItem)
+        private void _ShowDataItems(TabPage activeItem)
         {
-            foreach (TabPageObject tabItem in this._PageList)
+            foreach (TabPage tabItem in this._PageList)
             {
                 IInteractiveItem linkItem = tabItem.DataControl;
                 if (linkItem != null)
@@ -703,7 +703,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="tabOrder"></param>
         /// <param name="linkItem"></param>
         /// <returns></returns>
-        public TabPageObject AddHeader(Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
+        public TabPage AddHeader(Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
             return this._AddHeader(false, null, text, image, tabOrder, linkItem);
         }
@@ -716,7 +716,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="tabOrder"></param>
         /// <param name="linkItem"></param>
         /// <returns></returns>
-        public TabPageObject AddHeader(string key, Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
+        public TabPage AddHeader(string key, Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
             return this._AddHeader(false, key, text, image, tabOrder, linkItem);
         }
@@ -724,7 +724,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Přidá záložku pro button Collapse
         /// </summary>
         /// <returns></returns>
-        public TabPageObject AddCollapseHeader()
+        public TabPage AddCollapseHeader()
         {
             // TabItemKeyCollapse, "", Components.IconStandard.GoTop, tabOrder: 99999
             return this._AddHeader(true, null, "", Components.StandardIcons.GoTop, 99999, null);
@@ -739,9 +739,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="tabOrder"></param>
         /// <param name="linkItem"></param>
         /// <returns></returns>
-        private TabPageObject _AddHeader(bool isCollapse, string key, Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
+        private TabPage _AddHeader(bool isCollapse, string key, Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
         {
-            TabPageObject tabPage = new TabPageObject(this, isCollapse, key, text, image, linkItem, tabOrder);
+            TabPage tabPage = new TabPage(this, isCollapse, key, text, image, linkItem, tabOrder);
             this._PageList.Add(tabPage);
             tabPage.TabPagePaintBackGround += _TabHeaderItemPaintBackGround;
             if (this.ActivePage == null)
@@ -775,20 +775,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Háček pro uživatelské kreslení pozadí záhlaví
         /// </summary>
-        /// <param name="sender">Objekt kde k události došlo = <see cref="TabPageObject"/></param>
+        /// <param name="sender">Objekt kde k události došlo = <see cref="TabPage"/></param>
         /// <param name="e">Data pro kreslení</param>
         protected virtual void OnTabPagePaintBackGround(object sender, GUserDrawArgs e) { }
         /// <summary>
         /// Event pro uživatelské kreslení pozadí záhlaví.
-        /// Jako parametr sender je předán objekt konkrétního záhlaví <see cref="TabPageObject"/>.
+        /// Jako parametr sender je předán objekt konkrétního záhlaví <see cref="TabPage"/>.
         /// </summary>
         public event GUserDrawHandler TabPagePaintBackGround;
         /// <summary>
         /// Vyvolá háček OnActiveItemChanged a event ActiveItemChanged
         /// </summary>
-        protected TabPageObject CallActivePageChanged(TabPageObject oldValue, TabPageObject newValue, EventSourceType eventSource)
+        protected TabPage CallActivePageChanged(TabPage oldValue, TabPage newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TabPageObject> args = new GPropertyChangeArgs<TabPageObject>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<TabPage> args = new GPropertyChangeArgs<TabPage>(oldValue, newValue, eventSource);
             this.OnActivePageChanged(args);
             if (!this.IsSuppressedEvent && this.ActivePageChanged != null)
                 this.ActivePageChanged(this, args);
@@ -797,11 +797,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Provede se po změně aktivní záložky (<see cref="ActivePage"/>)
         /// </summary>
-        protected virtual void OnActivePageChanged(GPropertyChangeArgs<TabPageObject> args) { }
+        protected virtual void OnActivePageChanged(GPropertyChangeArgs<TabPage> args) { }
         /// <summary>
         /// Event volaný po změně aktivní záložky (<see cref="ActivePage"/>)
         /// </summary>
-        public event GPropertyChangedHandler<TabPageObject> ActivePageChanged;
+        public event GPropertyChangedHandler<TabPage> ActivePageChanged;
         #endregion
         #region Uspořádání jednotlivých záhlaví - výpočty jejich Bounds podle orientace a jejich textu, fontu a zdejších souřadnic
         /// <summary>
@@ -815,7 +815,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        protected TabPageObject[] GetChilds(Graphics graphics)
+        protected TabPage[] GetChilds(Graphics graphics)
         {
             this.CheckContent(graphics);
             return this._SortedItems.ToArray();
@@ -835,7 +835,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void PrepareContent(Graphics graphics)
         {
             // Pole setříděných a viditelných záhlaví:
-            List<TabPageObject> sortedList = new List<TabPageObject>(this._PageList.Where(i => i.Is.Visible));
+            List<TabPage> sortedList = new List<TabPage>(this._PageList.Where(i => i.Is.Visible));
             int count = sortedList.Count;
             if (count > 1) sortedList.Sort(InteractiveObject.CompareByTabOrderAsc);
 
@@ -848,7 +848,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (begin > 0) begin = 0;
 
             // Určit velikost záhlaví a jejich souřadnice:
-            foreach (TabPageObject item in sortedList)
+            foreach (TabPage item in sortedList)
                 item.PrepareBounds(graphics, ref begin);
 
             if (!hasGraphics)
@@ -858,14 +858,14 @@ namespace Asol.Tools.WorkScheduler.Components
             this._SortedItems = sortedList.ToArray();
 
             // Vytvořit pořadí záhlaví pro zobrazování tak, aby aktuální záhlaví bylo navrchu (tj. poslední v seznamu):
-            List<TabPageObject> childList = new List<TabPageObject>();
-            TabPageObject activeItem = this.ActivePage;
+            List<TabPage> childList = new List<TabPage>();
+            TabPage activeItem = this.ActivePage;
 
             // Nejprve přidám prvky vlevo od aktivního prvku, počínaje prvním, s tím že aktivní prvek v tomto chodu již nepřidáme:
             int activeIndex = -1;
             for (int i = 0; i < count; i++)
             {
-                TabPageObject item = sortedList[i];
+                TabPage item = sortedList[i];
                 if (activeItem != null && Object.ReferenceEquals(item, activeItem))
                 {
                     activeIndex = i;
@@ -880,7 +880,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 for (int i = count - 1; i >= activeIndex; i--)
                 {
-                    TabPageObject item = sortedList[i];
+                    TabPage item = sortedList[i];
                     childList.Add(item);
                 }
             }
@@ -920,15 +920,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Pole obsahující všechny prvky TabItem v pořadí, jak byly přidávány
         /// </summary>
-        private List<TabPageObject> _PageList;
+        private List<TabPage> _PageList;
         /// <summary>
         /// Pole obsahující viditelné prvky TabItem v tom pořadí, v jakém jdou za sebou od začátku do konce (podle jejich <see cref="IInteractiveItem.TabOrder"/>)
         /// </summary>
-        private TabPageObject[] _SortedItems;
+        private TabPage[] _SortedItems;
         /// <summary>
         /// Pole obsahující viditelné prvky TabItem v tom pořadí, jak mají být vykresleny (poslední v poli je aktivní záložka = na vrchu)
         /// </summary>
-        private TabPageObject[] _ChildItems;
+        private TabPage[] _ChildItems;
         #endregion
         #region Draw, Interactivity
         /// <summary>
@@ -972,7 +972,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             if (!line.HasPixels()) return;
 
-            TabPageObject activeItem = this.ActivePage;
+            TabPage activeItem = this.ActivePage;
             Color color = ((activeItem != null && activeItem.BackColor.HasValue) ? activeItem.BackColor.Value : Skin.TabHeader.BackColorActive);
 
             e.Graphics.FillRectangle(Skin.Brush(color), line);
@@ -1028,9 +1028,9 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region class TabPage : jedna položka reprezentující jedno záhlaví stránky
     /// <summary>
-    /// <see cref="TabPageObject"/> : Třída reprezentující jedno záhlaví v objektu <see cref="TabHeader"/>.
+    /// <see cref="TabPage"/> : Třída reprezentující jedno záhlaví v objektu <see cref="TabHeader"/>.
     /// </summary>
-    public class TabPageObject : InteractiveContainer, ITabHeaderItemPaintData
+    public class TabPage : InteractiveContainer, ITabHeaderItemPaintData
     {
         #region Konstruktor a public data jednoho záhlaví
         /// <summary>
@@ -1043,7 +1043,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="image"></param>
         /// <param name="dataControl"></param>
         /// <param name="tabOrder"></param>
-        internal TabPageObject(TabHeader tabHeader, bool isCollapse, string key, Localizable.TextLoc text, Image image, IInteractiveItem dataControl, int tabOrder)
+        internal TabPage(TabHeader tabHeader, bool isCollapse, string key, Localizable.TextLoc text, Image image, IInteractiveItem dataControl, int tabOrder)
         {
             this.Parent = tabHeader;
             this.TabHeader = tabHeader;
@@ -1131,7 +1131,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Souřadnice záhlaví a jeho vnitřních položek, jeho výpočty, komparátor podle TabOrder
         /// <summary>
-        /// Metoda připraví souřadnice tohoto prvku (<see cref="TabPageObject"/>) a jeho vnitřní souřadnice (ikona, text, close button).
+        /// Metoda připraví souřadnice tohoto prvku (<see cref="TabPage"/>) a jeho vnitřní souřadnice (ikona, text, close button).
         /// Vychází z pixelu begin, kde má zíhlaví začínat, z orientace headeru a jeho fontu, a z vnitřních dat záhlaví.
         /// </summary>
         /// <param name="graphics"></param>
@@ -1404,7 +1404,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         NoTabHeader = 2,
         /// <summary>
-        /// Přidat jedno záhlaví <see cref="TabPageObject"/> pro funkci Collapse, která po kliknutí zmenší prostor <see cref="TabContainer"/> jen na lištu záhlaví <see cref="TabHeader"/>.
+        /// Přidat jedno záhlaví <see cref="TabPage"/> pro funkci Collapse, která po kliknutí zmenší prostor <see cref="TabContainer"/> jen na lištu záhlaví <see cref="TabHeader"/>.
         /// </summary>
         CollapseItem = 0x10
     }

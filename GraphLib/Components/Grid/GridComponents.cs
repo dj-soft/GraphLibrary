@@ -294,7 +294,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Svislý Splitter za tímto sloupcem (který představuje táhlaví řádků), řídí šířku tohoto sloupce (a tím všech sloupců shodného ColumnId v celém Gridu)
         /// </summary>
-        public GSplitter ColumnSplitter { get { return this._ColumnSplitter; } }
+        public Splitter ColumnSplitter { get { return this._ColumnSplitter; } }
         /// <summary>
         /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowRowHeaderWidthResize)
         /// </summary>
@@ -306,7 +306,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// </summary>
         protected void _ColumnSplitterInit()
         {
-            this._ColumnSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
+            this._ColumnSplitter = new Splitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._ColumnSplitter.ValueSilent = this.Bounds.Right;
             this._ColumnSplitter.ValueChanging += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
             this._ColumnSplitter.ValueChanged += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
@@ -336,7 +336,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// ColumnSplitter
         /// </summary>
-        protected GSplitter _ColumnSplitter;
+        protected Splitter _ColumnSplitter;
         #endregion
         #region Interaktivita
         /// <summary>
@@ -517,7 +517,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Svislý Splitter za tímto sloupcem, řídí šířku tohoto sloupce (a tím všech sloupců shodného ColumnId v celém Gridu)
         /// </summary>
-        public GSplitter ColumnSplitter { get { return this._ColumnSplitter; } }
+        public Splitter ColumnSplitter { get { return this._ColumnSplitter; } }
         /// <summary>
         /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowColumnResize and OwnerColumn.AllowColumnResize)
         /// </summary>
@@ -529,7 +529,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// </summary>
         protected void _ColumnSplitterInit()
         {
-            this._ColumnSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
+            this._ColumnSplitter = new Splitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._ColumnSplitter.ValueSilent = this.Bounds.Right;
             this._ColumnSplitter.ValueChanging += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
             this._ColumnSplitter.ValueChanged += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
@@ -560,7 +560,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// ColumnSplitter
         /// </summary>
-        protected GSplitter _ColumnSplitter;
+        protected Splitter _ColumnSplitter;
         #endregion
         #region TimeAxis
         /// <summary>
@@ -1489,9 +1489,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         #region RowSplitter
         /// <summary>
         /// Vodorovný Splitter pod tímto řádkem, řídí výšku tohoto řádku.
-        /// Jeho Bounds a tedy i <see cref="GSplitter.Value"/> jsou relativní k <see cref="GTable"/>.
+        /// Jeho Bounds a tedy i <see cref="Splitter.Value"/> jsou relativní k <see cref="GTable"/>.
         /// </summary>
-        public GSplitter RowSplitter { get { return this._RowSplitter; } }
+        public Splitter RowSplitter { get { return this._RowSplitter; } }
         /// <summary>
         /// Metoda je volána po nastavení souřadnic řádku, jejím úkolem je nastavit souřadnice splitteru.
         /// Splitter je child prvkem <see cref="GTable"/>, není child prvkem svého řádku <see cref="GRow"/> - to proto, že jeho pohyb a vykreslení má být volné v rámci téměř celé tabulky.
@@ -1520,7 +1520,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// </summary>
         protected void RowSplitterInit()
         {
-            this._RowSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
+            this._RowSplitter = new Splitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._RowSplitter.ValueSilent = this.Bounds.Right;
             this._RowSplitter.ValueChanging += new GPropertyChangedHandler<int>(_RowSplitter_LocationChange);
             this._RowSplitter.ValueChanged += new GPropertyChangedHandler<int>(_RowSplitter_LocationChange);
@@ -1545,7 +1545,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// RowSplitter
         /// </summary>
-        protected GSplitter _RowSplitter;
+        protected Splitter _RowSplitter;
         #endregion
         #region Interaktivita
         /// <summary>

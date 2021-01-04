@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
+using WinForms = System.Windows.Forms;
 using System.Drawing;
 using Asol.Tools.WorkScheduler.Data;
 
@@ -11,18 +11,18 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Splitter (Horizontal, Vertical)
     /// </summary>
-    public class GSplitter : InteractiveObject, IInteractiveItem
+    public class Splitter : InteractiveObject, IInteractiveItem
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GSplitter(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public Splitter(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GSplitter()
+        public Splitter()
         {
             this._SplitterVisibleWidth = 2;
             this._SplitterActiveOverlap = 1;
@@ -40,7 +40,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Private variables
-        private Orientation _Orientation = Orientation.Horizontal;
+        private WinForms.Orientation _Orientation = WinForms.Orientation.Horizontal;
         private int _Location;
         private int? _LocationOriginal;
         private Int32NRange __LocationLimit;
@@ -54,7 +54,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private int? _LinkedItemNextMinSize;
         private bool _SetSplitterInProgress;
 
-        private bool _IsHorizontal { get { return (this._Orientation == System.Windows.Forms.Orientation.Horizontal); } }
+        private bool _IsHorizontal { get { return (this._Orientation == WinForms.Orientation.Horizontal); } }
         #endregion
         #region Public property and events
         /// <summary>
@@ -82,8 +82,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle rb = base.Bounds;
                 switch (this.Orientation)
                 {
-                    case System.Windows.Forms.Orientation.Horizontal: return new Int32NRange(rb.Left, rb.Right);
-                    case System.Windows.Forms.Orientation.Vertical: return new Int32NRange(rb.Top, rb.Bottom);
+                    case WinForms.Orientation.Horizontal: return new Int32NRange(rb.Left, rb.Right);
+                    case WinForms.Orientation.Vertical: return new Int32NRange(rb.Top, rb.Bottom);
                 }
                 return Int32NRange.Empty;
             }
@@ -98,11 +98,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     int b = rb.Bottom;
                     switch (this.Orientation)
                     {
-                        case System.Windows.Forms.Orientation.Horizontal:
+                        case WinForms.Orientation.Horizontal:
                             if (value.HasBegin) l = value.Begin.Value;
                             if (value.HasEnd) r = value.End.Value;
                             break;
-                        case System.Windows.Forms.Orientation.Vertical:
+                        case WinForms.Orientation.Vertical:
                             if (value.HasBegin) t = value.Begin.Value;
                             if (value.HasEnd) b = value.End.Value;
                             break;
@@ -166,7 +166,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Orientation of splitter.
         /// </summary>
-        public Orientation Orientation
+        public WinForms.Orientation Orientation
         {
             get { return this._Orientation; }
             set { this.SetSplitter(null, null, value, null, null, null, null, DragResponseType.AfterDragEnd); }
@@ -362,13 +362,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected static Rectangle CreateSplitetrBoundsFromAnyBounds(Rectangle bounds, Orientation orientation, Int32 value)
+        protected static Rectangle CreateSplitetrBoundsFromAnyBounds(Rectangle bounds, WinForms.Orientation orientation, Int32 value)
         {
             switch (orientation)
             {
-                case Orientation.Horizontal:
+                case WinForms.Orientation.Horizontal:
                     return new Rectangle(bounds.X, value, bounds.Width, 0);
-                case Orientation.Vertical:
+                case WinForms.Orientation.Vertical:
                     return new Rectangle(value, bounds.Y, 0, bounds.Height);
             }
             return bounds;
@@ -382,7 +382,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="splitterActiveOverlap"></param>
         /// <param name="bounds"></param>
         /// <param name="silent"></param>
-        private void _LoadFrom(int? value, Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
+        private void _LoadFrom(int? value, WinForms.Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
         {
             if (silent)
             {
@@ -396,7 +396,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._LoadFromRun(value, orientation, splitterVisibleWidth, splitterActiveOverlap, bounds, silent);
             }
         }
-        private void _LoadFromRun(int? value, Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
+        private void _LoadFromRun(int? value, WinForms.Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
         {
             this.SetSplitter(bounds, value, orientation, splitterVisibleWidth, splitterActiveOverlap, null, null, DragResponseType.None, ProcessAction.ChangeAll, EventSourceType.ApplicationCode);
         }
@@ -437,7 +437,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="locationLimit"></param>
         /// <param name="moveType"></param>
         /// <param name="locationOriginal"></param>
-        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, DragResponseType moveType)
+        internal bool SetSplitter(Rectangle? bounds, Int32? location, WinForms.Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, DragResponseType moveType)
         {
             ProcessAction action = ProcessAction.ChangeAll;            // Contains actions CallChangedEvents and CallChangingEvents. We will now "reset" unappropriated bit:
             if (moveType == DragResponseType.InDragMove)
@@ -463,7 +463,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
         /// <param name="locationOriginal"></param>
-        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, 
+        internal bool SetSplitter(Rectangle? bounds, Int32? location, WinForms.Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, 
             DragResponseType moveType, ProcessAction actions, EventSourceType eventSource)
         {
             bool anyChange = false;
@@ -480,8 +480,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     Int32 locationOld = (locationOriginal.HasValue ? locationOriginal.Value : this.Value);
                     Int32? locationNew = location;
 
-                    Orientation orientationOld = this.Orientation;
-                    Orientation? orientationNew = orientation;
+                    WinForms.Orientation orientationOld = this.Orientation;
+                    WinForms.Orientation? orientationNew = orientation;
 
                     Int32 splitterVisibleWidthOld = this.SplitterVisibleWidth;
                     Int32? splitterVisibleWidthNew = splitterVisibleWidth;
@@ -507,7 +507,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     {   // New bounds: calculate new Orientation and new Location, without Alignment:
                         orientationNew = boundsNew.Value.GetOrientation();
                         Point center = boundsNew.Value.Center();
-                        locationNew = (orientationNew.Value == System.Windows.Forms.Orientation.Horizontal ? center.Y : center.X);
+                        locationNew = (orientationNew.Value == WinForms.Orientation.Horizontal ? center.Y : center.X);
                     }
                     if (!orientationNew.HasValue) orientationNew = orientationOld;
                     locationNew = this._GetValue(((locationNew.HasValue) ? locationNew.Value : locationOld), orientationNew.Value);
@@ -520,7 +520,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                     // ActiveOverhead from splitterActiveOverlap:
                     if (!splitterActiveOverlapNew.HasValue) splitterActiveOverlapNew = splitterActiveOverlapOld;
-                    Padding activeOverheadNew = this._GetActiveOverhead(orientationNew.Value, splitterActiveOverlapNew.Value);
+                    WinForms.Padding activeOverheadNew = this._GetActiveOverhead(orientationNew.Value, splitterActiveOverlapNew.Value);
 
                     // What is really changed?
                     bool boundsChange = (boundsNew.Value != boundsOld);
@@ -592,9 +592,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="point">Location of Splitter</param>
         /// <param name="orientation">Orientation of Splitter</param>
         /// <returns></returns>
-        private int _GetValue(Point point, Orientation orientation)
+        private int _GetValue(Point point, WinForms.Orientation orientation)
         {
-            int location = (orientation == System.Windows.Forms.Orientation.Horizontal ? point.Y : point.X);
+            int location = (orientation == WinForms.Orientation.Horizontal ? point.Y : point.X);
             return this._GetValue(location, orientation);
         }
         /// <summary>
@@ -603,7 +603,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="location">Location of Splitter</param>
         /// <param name="orientation">Orientation of Splitter</param>
         /// <returns></returns>
-        private int _GetValue(int location, Orientation orientation)
+        private int _GetValue(int location, WinForms.Orientation orientation)
         {
             int result = location;
 
@@ -614,12 +614,12 @@ namespace Asol.Tools.WorkScheduler.Components
             // Align by ItemPrevMinSize and ItemNextMinSize:
             if (this.LinkedItemNext != null && this.LinkedItemNextMinSize.HasValue && this.LinkedItemNextMinSize.Value > 0)
             {
-                int maxNextLocation = (this.Orientation == System.Windows.Forms.Orientation.Horizontal ? this.LinkedItemNext.Bounds.Bottom : this.LinkedItemPrev.Bounds.Right) - this.LinkedItemNextMinSize.Value;
+                int maxNextLocation = (this.Orientation == WinForms.Orientation.Horizontal ? this.LinkedItemNext.Bounds.Bottom : this.LinkedItemPrev.Bounds.Right) - this.LinkedItemNextMinSize.Value;
                 if (result > maxNextLocation) result = maxNextLocation;
             }
             if (this.LinkedItemPrev != null && this.LinkedItemPrevMinSize.HasValue && this.LinkedItemPrevMinSize.Value > 0)
             {   // Value of ItemPrevMinSize has greater priority, we accept it after ItemNextMinSize:
-                int minPrevLocation = (this.Orientation == System.Windows.Forms.Orientation.Horizontal ? this.LinkedItemPrev.Bounds.Top : this.LinkedItemPrev.Bounds.Left) + this.LinkedItemPrevMinSize.Value;
+                int minPrevLocation = (this.Orientation == WinForms.Orientation.Horizontal ? this.LinkedItemPrev.Bounds.Top : this.LinkedItemPrev.Bounds.Left) + this.LinkedItemPrevMinSize.Value;
                 if (result < minPrevLocation) result = minPrevLocation;
             }
 
@@ -636,7 +636,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="width"></param>
         /// <returns></returns>
-        private Rectangle _GetBoundsFromLocation(int location, Orientation orientation, Rectangle? bounds, int width)
+        private Rectangle _GetBoundsFromLocation(int location, WinForms.Orientation orientation, Rectangle? bounds, int width)
         {
             Rectangle boundsOld = this.Bounds;
 
@@ -651,10 +651,10 @@ namespace Asol.Tools.WorkScheduler.Components
             Int32NRange active = new Int32NRange(location - (width / 2), width);
             switch (orientation)
             {
-                case System.Windows.Forms.Orientation.Horizontal:
+                case WinForms.Orientation.Horizontal:
                     Int32NRange inactiveX = (linkedSum.HasValue ? new Int32NRange(linkedSum.Value.X, linkedSum.Value.Width) : new Int32NRange(boundsOld.X, boundsOld.Width));
                     return new Rectangle(inactiveX.Begin.Value, active.Begin.Value, inactiveX.End.Value, active.End.Value);
-                case System.Windows.Forms.Orientation.Vertical:
+                case WinForms.Orientation.Vertical:
                     Int32NRange inactiveY = (linkedSum.HasValue ? new Int32NRange(linkedSum.Value.Y, linkedSum.Value.Height) : new Int32NRange(boundsOld.Y, boundsOld.Height));
                     return new Rectangle(active.Begin.Value, inactiveY.Begin.Value, active.End.Value, inactiveY.End.Value);
             }
@@ -667,17 +667,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="splitterActiveOverlap"></param>
         /// <returns></returns>
-        private Padding _GetActiveOverhead(Orientation orientation, int splitterActiveOverlap)
+        private WinForms.Padding _GetActiveOverhead(WinForms.Orientation orientation, int splitterActiveOverlap)
         {
             int activeOverlap = (splitterActiveOverlap < 0 ? 0 : splitterActiveOverlap);
             switch (orientation)
             {
-                case System.Windows.Forms.Orientation.Horizontal:
-                    return new Padding(0, activeOverlap, 0, activeOverlap);
-                case System.Windows.Forms.Orientation.Vertical:
-                    return new Padding(activeOverlap, 0, activeOverlap, 0);
+                case WinForms.Orientation.Horizontal:
+                    return new WinForms.Padding(0, activeOverlap, 0, activeOverlap);
+                case WinForms.Orientation.Vertical:
+                    return new WinForms.Padding(activeOverlap, 0, activeOverlap, 0);
             }
-            return Padding.Empty;
+            return WinForms.Padding.Empty;
         }
         /// <summary>
         /// Set Bounds for _LinkedItemPrev and _LinkedItemNext by this.Orientation and this.Bounds.
@@ -693,7 +693,7 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isChange = false;
             switch (this.Orientation)
             {
-                case System.Windows.Forms.Orientation.Horizontal:
+                case WinForms.Orientation.Horizontal:
                     if (this._LinkedItemPrev != null)
                     {
                         Rectangle oldBounds = this._LinkedItemPrev.Bounds;
@@ -716,7 +716,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                     break;
 
-                case System.Windows.Forms.Orientation.Vertical:
+                case WinForms.Orientation.Vertical:
                     if (this._LinkedItemPrev != null)
                     {
                         Rectangle oldBounds = this._LinkedItemPrev.Bounds;
@@ -790,9 +790,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Call method OnOrientationChanged() and event OrientationChanged
         /// </summary>
-        protected void CallOrientationChanged(Orientation oldValue, Orientation newValue, EventSourceType eventSource)
+        protected void CallOrientationChanged(WinForms.Orientation oldValue, WinForms.Orientation newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<Orientation> args = new GPropertyChangeArgs<Orientation>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<WinForms.Orientation> args = new GPropertyChangeArgs<WinForms.Orientation>(oldValue, newValue, eventSource);
             this.OnOrientationChanged(args);
             if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);
@@ -800,11 +800,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Occured after change Orientation value
         /// </summary>
-        protected virtual void OnOrientationChanged(GPropertyChangeArgs<Orientation> args) { }
+        protected virtual void OnOrientationChanged(GPropertyChangeArgs<WinForms.Orientation> args) { }
         /// <summary>
         /// Event on this.Orientation changes
         /// </summary>
-        public event GPropertyChangedHandler<Orientation> OrientationChanged;
+        public event GPropertyChangedHandler<WinForms.Orientation> OrientationChanged;
 
         /// <summary>
         /// Call method OnLocationRangeChanged() and event LocationRangeChanged
@@ -994,15 +994,15 @@ namespace Asol.Tools.WorkScheduler.Components
     }
     #region GLine3D + ILine3D : neinteraktivní objekt, pouze definice dat pro vykreslení čáry
     /// <summary>
-    /// <see cref="GLine3D"/> : neinteraktivní objekt, pouze definice dat pro vykreslení čáry.
+    /// <see cref="Line3D"/> : neinteraktivní objekt, pouze definice dat pro vykreslení čáry.
     /// Čára je kreslena metodou <see cref="GPainter.DrawGLine(Graphics, ILine3D, Rectangle)"/>
     /// </summary>
-    public class GLine3D : InteractiveObject, ILine3D
+    public class Line3D : InteractiveObject, ILine3D
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GLine3D()
+        public Line3D()
         {
             Bounds = new Rectangle(0, 0, 200, 2);
             Visible = true;

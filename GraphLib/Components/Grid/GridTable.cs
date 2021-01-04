@@ -184,7 +184,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             int x0 = 0;                                              // x0: úplně vlevo
             int x1 = (this.HasGrid ? this.Grid.ColumnsPositions.VisualFirstPixel : 0);   // x1: tady začíná prostor pro datové sloupce
             int x3 = clientSize.Width;                               // x3: úplně vpravo
-            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
+            int x2t = x3 - ScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
             int x2r = (this._RowsScrollBarVisible ? x2t : x3);       // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
             int y0 = 0;                                              // y0: úplně nahoře
             int y1 = this.ColumnHeaderHeight;                        // y1: pod ColumnHeader, zde začíná TagFilter (pokud existuje)
@@ -736,7 +736,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
 
             this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixelRowArea, this._SetVisualFirstPixel);
 
-            this._RowsScrollBar = new GScrollBar(this) { Orientation = System.Windows.Forms.Orientation.Vertical };
+            this._RowsScrollBar = new ScrollBar(this) { Orientation = System.Windows.Forms.Orientation.Vertical };
             this._RowsScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
             this._RowsScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
         }
@@ -813,7 +813,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// RowsScrollBar : svislý posuvník vpravo od řádků
         /// </summary>
-        protected GScrollBar RowsScrollBar { get { this._RowsScrollBarCheck(); return this._RowsScrollBar; } }
+        protected ScrollBar RowsScrollBar { get { this._RowsScrollBarCheck(); return this._RowsScrollBar; } }
         /// <summary>
         /// Ověří a zajistí připravenost dat v objektu RowsScrollBar.
         /// Pokud je nastavena jeho neplatnost, pak provede načtení dat z pozicioneru.
@@ -840,7 +840,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// Scrollbar pro řádky
         /// </summary>
-        private GScrollBar _RowsScrollBar;
+        private ScrollBar _RowsScrollBar;
         /// <summary>
         /// true po naplnění RowsScrollBar platnými daty, false po invalidaci
         /// </summary>
@@ -1437,7 +1437,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// </summary>
         protected void InitHeaderSplitter()
         {
-            this._HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this._HeaderSplitter = new Splitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
             this._HeaderSplitter.ValueSilent = this.Bounds.Bottom;
             this._HeaderSplitter.ValueChanging += new GPropertyChangedHandler<int>(_HeaderSplitter_LocationChange);
             this._HeaderSplitter.ValueChanged += new GPropertyChangedHandler<int>(_HeaderSplitter_LocationChange);
@@ -1461,7 +1461,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// TableSplitter = Splitter mezi ColumnHeader a RowArea
         /// Tento Splitter je součástí this.Childs, protože by neměl odcházet mimo this.GTable (na rozdíl od TableSplitter).
         /// </summary>
-        protected GSplitter HeaderSplitter { get { this._HeaderSplitterCheck(); return this._HeaderSplitter; } }
+        protected Splitter HeaderSplitter { get { this._HeaderSplitterCheck(); return this._HeaderSplitter; } }
         /// <summary>
         /// Zajistí platnost dat v HeaderSplitter
         /// </summary>
@@ -1479,7 +1479,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// HeaderSplitter
         /// </summary>
-        private GSplitter _HeaderSplitter;
+        private Splitter _HeaderSplitter;
         #endregion
         #region Obecný filtr na tabulce
         /// <summary>
@@ -1719,7 +1719,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// </summary>
         protected void InitTableSplitter()
         {
-            this._TableSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = TableSplitterSize, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this._TableSplitter = new Splitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = TableSplitterSize, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
             this._TableSplitter.ValueSilent = this.Bounds.Bottom;
             this._TableSplitter.ValueChanging += new GPropertyChangedHandler<int>(_TableSplitter_LocationChange);
             this._TableSplitter.ValueChanged += new GPropertyChangedHandler<int>(_TableSplitter_LocationChange);
@@ -1777,7 +1777,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// TableSplitter = Splitter dole pod tabulkou.
         /// Tento Splitter není součástí this.Childs (protože pak by byl omezen do this.Bounds), je součástí Childs nadřízeného prvku (GGrid), protože pak se může pohybovat v jeho prostoru.
         /// </summary>
-        internal GSplitter TableSplitter { get { this._TableSplitterCheck(); return this._TableSplitter; } }
+        internal Splitter TableSplitter { get { this._TableSplitterCheck(); return this._TableSplitter; } }
         /// <summary>
         /// Zajistí platnost dat v TableSplitter
         /// </summary>
@@ -1795,7 +1795,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         /// <summary>
         /// TableSplitter
         /// </summary>
-        private GSplitter _TableSplitter;
+        private Splitter _TableSplitter;
         /// <summary>
         /// Vizuální velikost splitteru pod tabulkou = jeho výška v pixelech
         /// </summary>

@@ -694,11 +694,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Horizontální (vodorovný) ScrollBar.
         /// </summary>
-        protected GScrollBar AutoScrollBarH { get { return this._AutoScrollSupport?.ScrollBarH; } }
+        protected ScrollBar AutoScrollBarH { get { return this._AutoScrollSupport?.ScrollBarH; } }
         /// <summary>
         /// Vertikální (svislý) ScrollBar
         /// </summary>
-        protected GScrollBar AutoScrollBarV { get { return this._AutoScrollSupport?.ScrollBarV; } }
+        protected ScrollBar AutoScrollBarV { get { return this._AutoScrollSupport?.ScrollBarV; } }
         /// <summary>
         /// Obsahuje true pokud this control má implementován a povolený AutoScroll,
         /// tedy existuje instance <see cref="_AutoScrollSupport"/> a má <see cref="AutoScrollSupport.AutoScroll"/> = true.
@@ -1174,11 +1174,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Horizontální (vodorovný) ScrollBar, anebo null když není zobrazován a tedy není aktivní
         /// </summary>
-        public GScrollBar ScrollBarH { get { return ((this.AutoScrollActive && this._ScrollVisibleH) ? this._ScrollBarH : null); } }
+        public ScrollBar ScrollBarH { get { return ((this.AutoScrollActive && this._ScrollVisibleH) ? this._ScrollBarH : null); } }
         /// <summary>
         /// Vertikální (svislý) ScrollBar, anebo null když není zobrazován a tedy není aktivní
         /// </summary>
-        public GScrollBar ScrollBarV { get { return ((this.AutoScrollActive && this._ScrollVisibleV) ? this._ScrollBarV : null); } }
+        public ScrollBar ScrollBarV { get { return ((this.AutoScrollActive && this._ScrollVisibleV) ? this._ScrollBarV : null); } }
         /// <summary>
         /// Velikost prostoru pro kreslení prvků, po odečtení prostoru pro Scrollbary
         /// </summary>
@@ -1467,15 +1467,15 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ScrollBarS.BackColor = Skin.ScrollBar.BackColorArea;
         }
         /// <summary>
-        /// Kompletně připraví dodaný <see cref="GScrollBar"/> (tj. existenci, eventhandlery, souřadnice, hodnoty) podle parametrů
+        /// Kompletně připraví dodaný <see cref="ScrollBar"/> (tj. existenci, eventhandlery, souřadnice, hodnoty) podle parametrů
         /// </summary>
-        private void _AutoScrollBarSet(ref GScrollBar scrollBar, bool isVisible, Orientation orientation, int value, int visibleLength, int totalLength)
+        private void _AutoScrollBarSet(ref ScrollBar scrollBar, bool isVisible, Orientation orientation, int value, int visibleLength, int totalLength)
         {
             if (!isVisible) return;
 
             if (scrollBar == null)
             {   // Scrollbary vytvářím až on-demand:
-                scrollBar = new GScrollBar(this._Owner as IInteractiveParent)
+                scrollBar = new ScrollBar(this._Owner as IInteractiveParent)
                 {
                     Orientation = orientation
                 };
@@ -1505,7 +1505,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void ScrollBar_ValueChanges(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
-            GScrollBar scrollBar = sender as GScrollBar;
+            ScrollBar scrollBar = sender as ScrollBar;
             if (scrollBar == null || e.NewValue == null || !e.NewValue.Begin.HasValue) return;
             int value = (int)Math.Round(e.NewValue.Begin.Value, 0);
             this._AutoScrollValueSet(scrollBar.Orientation, value);
@@ -1537,7 +1537,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Objekt horizontálního (vodorovného) Scrollbaru
         /// </summary>
-        private GScrollBar _ScrollBarH;
+        private ScrollBar _ScrollBarH;
         /// <summary>
         /// Obsahuje true pokud je zobrazován vodorovný scrollbar
         /// </summary>
@@ -1545,7 +1545,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Objekt vertikálního (svislého) Scrollbaru
         /// </summary>
-        private GScrollBar _ScrollBarV;
+        private ScrollBar _ScrollBarV;
         /// <summary>
         /// Toto není ScrollBar, ale jen výplň pravého dolního rohu mezi oběma Scrollbary (H + V), pokud jsou oba viditelné.
         /// </summary>

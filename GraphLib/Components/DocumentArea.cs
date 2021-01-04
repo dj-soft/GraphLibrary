@@ -201,11 +201,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Reference to horizontal axis, for Convert values and pixel
         /// </summary>
-        public GSizeAxis SizeAxisHorizontal { get { return this._SizeAxisHorizontal; } set { this._SizeAxisHorizontal = value; } } private GSizeAxis _SizeAxisHorizontal;
+        public SizeAxis SizeAxisHorizontal { get { return this._SizeAxisHorizontal; } set { this._SizeAxisHorizontal = value; } } private SizeAxis _SizeAxisHorizontal;
         /// <summary>
         /// Reference to vertical axis, for Convert values and pixel
         /// </summary>
-        public GSizeAxis SizeAxisVertical { get { return this._SizeAxisVertical; } set { this._SizeAxisVertical = value; } } private GSizeAxis _SizeAxisVertical;
+        public SizeAxis SizeAxisVertical { get { return this._SizeAxisVertical; } set { this._SizeAxisVertical = value; } } private SizeAxis _SizeAxisVertical;
        
         Rectangle? IVirtualConvertor.ConvertToPixelFromLogical(RectangleD logicalBounds) { return this.ConvertToPixelFromLogical(logicalBounds); }
         Point? IVirtualConvertor.ConvertToPixelFromLogical(PointD logicalPoint) { return this.ConvertToPixelFromLogical(logicalPoint); }

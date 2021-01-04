@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Data;
 using System.Drawing;
-using System.Windows.Forms;
+using WinForms = System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
@@ -107,7 +107,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Nastaví vlastnosti dodaného Formu podle dat v <see cref="GuiData.Properties"/>.
         /// </summary>
         /// <returns></returns>
-        public System.Windows.Forms.Control CreateControlToForm(Form mainForm)
+        public System.Windows.Forms.Control CreateControlToForm(WinForms.Form mainForm)
         {
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "ApplyPropertiesToForm", ""))
                 this._ApplyPropertiesToForm(mainForm);     // Nastavíme vlastnosti formu podle GuiProperties
@@ -115,7 +115,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._CreateMainControl();
 
             mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
-            this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
+            this._MainControl.Dock = WinForms.DockStyle.Fill;       // Control MainControl roztáhneme na maximum
 
             this._DataState = DataStateType.Prepared;
             return this._MainControl;                      // hotovo!
@@ -160,7 +160,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Do předaného formu vloží data z nastavení v <see cref="GuiProperties"/>
         /// </summary>
         /// <param name="mainForm"></param>
-        private void _ApplyPropertiesToForm(Form mainForm)
+        private void _ApplyPropertiesToForm(WinForms.Form mainForm)
         {
             GuiProperties guiProperties = this._GuiData.Properties;
             mainForm.FormBorderStyle = _ConvertBorderStyle(guiProperties.PluginFormBorder);
@@ -194,19 +194,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="style"></param>
         /// <returns></returns>
-        private static FormBorderStyle _ConvertBorderStyle(PluginFormBorderStyle style)
+        private static WinForms.FormBorderStyle _ConvertBorderStyle(PluginFormBorderStyle style)
         {
             switch (style)
             {
-                case PluginFormBorderStyle.None: return FormBorderStyle.None;
-                case PluginFormBorderStyle.FixedSingle: return FormBorderStyle.FixedSingle;
-                case PluginFormBorderStyle.Fixed3D: return FormBorderStyle.Fixed3D;
-                case PluginFormBorderStyle.FixedDialog: return FormBorderStyle.FixedDialog;
-                case PluginFormBorderStyle.Sizable: return FormBorderStyle.Sizable;
-                case PluginFormBorderStyle.FixedToolWindow: return FormBorderStyle.FixedToolWindow;
-                case PluginFormBorderStyle.SizableToolWindow: return FormBorderStyle.SizableToolWindow;
+                case PluginFormBorderStyle.None: return WinForms.FormBorderStyle.None;
+                case PluginFormBorderStyle.FixedSingle: return WinForms.FormBorderStyle.FixedSingle;
+                case PluginFormBorderStyle.Fixed3D: return WinForms.FormBorderStyle.Fixed3D;
+                case PluginFormBorderStyle.FixedDialog: return WinForms.FormBorderStyle.FixedDialog;
+                case PluginFormBorderStyle.Sizable: return WinForms.FormBorderStyle.Sizable;
+                case PluginFormBorderStyle.FixedToolWindow: return WinForms.FormBorderStyle.FixedToolWindow;
+                case PluginFormBorderStyle.SizableToolWindow: return WinForms.FormBorderStyle.SizableToolWindow;
             }
-            return FormBorderStyle.Sizable;
+            return WinForms.FormBorderStyle.Sizable;
         }
         /// <summary>
         /// Vrátí WinForm stav okna podle nastavení Pluginu.
@@ -214,9 +214,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="isMaximized"></param>
         /// <returns></returns>
-        private static FormWindowState _ConvertWindowState(bool isMaximized)
+        private static WinForms.FormWindowState _ConvertWindowState(bool isMaximized)
         {
-            return (isMaximized ? FormWindowState.Maximized : FormWindowState.Normal);
+            return (isMaximized ? WinForms.FormWindowState.Maximized : WinForms.FormWindowState.Normal);
         }
         /// <summary>
         /// Z dat dodaných v prvcích GuiItem vytvoří vizuální controly a vloží je do Main WinForm controlu
@@ -236,7 +236,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._InteractiveMousePaintInit();
         }
         /// <summary>
-        /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(Form)"/>
+        /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(WinForms.Form)"/>
         /// </summary>
         protected MainControl _MainControl;
         #endregion
@@ -1968,7 +1968,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (moveInfo.MoveMode == GraphItemMoveMode.ResizeBegin) return RangeSide.Begin;
             if (moveInfo.MoveMode == GraphItemMoveMode.ResizeEnd) return RangeSide.End;
             if (!moveInfo.SourceMousePoint.HasValue) return RangeSide.Begin;
-            Int32Range boundsX = Int32Range.CreateFromRectangle(moveInfo.SourceBounds, Orientation.Horizontal);
+            Int32Range boundsX = Int32Range.CreateFromRectangle(moveInfo.SourceBounds, WinForms.Orientation.Horizontal);
             int mouseX = moveInfo.SourceMousePoint.Value.X;
             decimal w = boundsX.Size;
             decimal z = this.Config.MoveItemDetectSideMinSize;
@@ -2393,7 +2393,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
         /// Souhrn je načten z <see cref="GuiContextMenuSet"/> v metodě <see cref="_LoadGuiContext(GuiContextMenuSet)"/>, 
-        /// z tohoto souhrnu je vytvořeno kontextové menu pro konkrétní situaci, v metodě <see cref="CreateContextMenu(GuiContextMenuRunArgs, ToolStripItemClickedEventHandler)"/>.
+        /// z tohoto souhrnu je vytvořeno kontextové menu pro konkrétní situaci, v metodě <see cref="CreateContextMenu(GuiContextMenuRunArgs, WinForms.ToolStripItemClickedEventHandler)"/>.
         /// </summary>
         protected ContextFunctionItem[] _ContextFunctions;
         /// <summary>
@@ -2403,21 +2403,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Každá jednotlivá položka menu má v MenuItem.Tag uloženu definici kontextového menu, tedy instanci třídy <see cref="ContextFunctionItem"/>,
         /// takže po kliknutí na položku menu jsou k dispozici definiční date dané funkce.
         /// <para/>
-        /// Tato metoda vrací menu, které ma nastavený eventhandler <see cref="ToolStrip.ItemClicked"/> do zdejší metody, která předává požadavek na obsluhu funkce
+        /// Tato metoda vrací menu, které ma nastavený eventhandler <see cref="WinForms.ToolStrip.ItemClicked"/> do zdejší metody, která předává požadavek na obsluhu funkce
         /// do datového zdroje.
-        /// Pokud aplikační kód potřebuje řešit <see cref="ToolStrip.ItemClicked"/> sám, pak předá druhý parametr 
+        /// Pokud aplikační kód potřebuje řešit <see cref="WinForms.ToolStrip.ItemClicked"/> sám, pak předá druhý parametr 
         /// </summary>
         /// <param name="menuRunArgs">Data popisující prvek a čas kliknutí</param>
         /// <param name="itemClickedHandler">Externí handler pro obsluhu kliknutí na položku menu. Default = null, použije se interní. Pokud bude zadán, pak se interní handler nepoužije.</param>
         /// <returns></returns>
-        protected ToolStripDropDownMenu CreateContextMenu(GuiContextMenuRunArgs menuRunArgs, ToolStripItemClickedEventHandler itemClickedHandler)
+        protected WinForms.ToolStripDropDownMenu CreateContextMenu(GuiContextMenuRunArgs menuRunArgs, WinForms.ToolStripItemClickedEventHandler itemClickedHandler)
         {
             if (this._ContextFunctions == null || this._ContextFunctions.Length == 0) return null;              // Nejsou data => není menu.
             ContextFunctionItem[] items = this._ContextFunctions.Where(cfi => cfi.IsValidFor(menuRunArgs.ContextItemId)).ToArray();  // Vybereme jen ty funkce, které jsou vhodné pro daný prvek
             if (items.Length == 0) return null;         // Nic se nehodí => nic se nezobrazí
 
             // Celkové menu:
-            ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m => this.CreateContextMenuSetParams(m, menuRunArgs));
+            WinForms.ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m => this.CreateContextMenuSetParams(m, menuRunArgs));
 
             // Kdo bude řešit kliknutí na položku: externí nebo interní handler?
             if (itemClickedHandler != null)
@@ -2432,7 +2432,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="menu"></param>
         /// <param name="menuRunArgs"></param>
-        protected void CreateContextMenuSetParams(ToolStripDropDownMenu menu, GuiContextMenuRunArgs menuRunArgs)
+        protected void CreateContextMenuSetParams(WinForms.ToolStripDropDownMenu menu, GuiContextMenuRunArgs menuRunArgs)
         {
             // 1. Data:
             menu.Tag = menuRunArgs;
@@ -2451,7 +2451,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // 3. Titulek menu:
             if (!String.IsNullOrEmpty(cmSet.Title))
             {
-                ToolStripLabel title = new ToolStripLabel(cmSet.Title);
+                WinForms.ToolStripLabel title = new WinForms.ToolStripLabel(cmSet.Title);
                 title.ToolTipText = cmSet.ToolTip;
                 if (cmSet.ImageScalingSize.HasValue)
                     title.Size = new Size(100, cmSet.ImageScalingSize.Value.Height + 4);
@@ -2459,7 +2459,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 title.TextAlign = ContentAlignment.MiddleCenter;
                 menu.Items.Add(title);
 
-                menu.Items.Add(new ToolStripSeparator());
+                menu.Items.Add(new WinForms.ToolStripSeparator());
             }
         }
         /// <summary>
@@ -2467,9 +2467,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        private void ContextMenuItemClicked(object sender, WinForms.ToolStripItemClickedEventArgs e)
         {
-            ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
+            WinForms.ToolStripDropDownMenu menu = sender as WinForms.ToolStripDropDownMenu;
             if (menu == null) return;
             menu.Hide();
 
@@ -3436,7 +3436,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _MainFormClosing(object sender, FormClosingEventArgs e)
+        private void _MainFormClosing(object sender, WinForms.FormClosingEventArgs e)
         {
             if (this._MainFormClosingTest(e))
                 this._ClosingProcessStart();
@@ -3447,13 +3447,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="e"></param>
         /// <returns></returns>
-        private bool _MainFormClosingTest(FormClosingEventArgs e)
+        private bool _MainFormClosingTest(WinForms.FormClosingEventArgs e)
         {
             // Některé důvody zavření okna jsou nadřazené, tam zavření okna nebudeme bránit a ani nebudeme provádět uzavírací algoritmus:
             switch (e.CloseReason)
             {
-                case CloseReason.TaskManagerClosing:
-                case CloseReason.WindowsShutDown:
+                case WinForms.CloseReason.TaskManagerClosing:
+                case WinForms.CloseReason.WindowsShutDown:
                     // Nebráníme zavření okna, a vracíme false = neprovádí se uzavírací algoritmus:
                     return false;
             }
@@ -3589,7 +3589,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _MainFormClosed(object sender, FormClosedEventArgs e)
+        private void _MainFormClosed(object sender, WinForms.FormClosedEventArgs e)
         {
             this.CloseSchedulerData();
 
@@ -3671,7 +3671,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="contextMenu">Data popisující prvek a čas kliknutí</param>
         /// <param name="itemClickedHandler">Externí handler pro obsluhu kliknutí na položku menu. Default = null, použije se interní. Pokud bude zadán, pak se interní handler nepoužije.</param>
         /// <returns></returns>
-        ToolStripDropDownMenu IMainDataInternal.CreateContextMenu(GuiContextMenuRunArgs contextMenu, ToolStripItemClickedEventHandler itemClickedHandler) { return this.CreateContextMenu(contextMenu, itemClickedHandler); }
+        WinForms.ToolStripDropDownMenu IMainDataInternal.CreateContextMenu(GuiContextMenuRunArgs contextMenu, WinForms.ToolStripItemClickedEventHandler itemClickedHandler) { return this.CreateContextMenu(contextMenu, itemClickedHandler); }
         /// <summary>
         /// Metoda vrátí aktuální stav celého GUI, pro použití v <see cref="GuiRequest.CurrentState"/>.
         /// </summary>
@@ -3745,7 +3745,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="contextMenu">Data popisující prvek a čas kliknutí</param>
         /// <param name="itemClickedHandler">Externí handler pro obsluhu kliknutí na položku menu. Default = null, použije se interní. Pokud bude zadán, pak se interní handler nepoužije.</param>
         /// <returns></returns>
-        ToolStripDropDownMenu CreateContextMenu(GuiContextMenuRunArgs contextMenu, ToolStripItemClickedEventHandler itemClickedHandler);
+        WinForms.ToolStripDropDownMenu CreateContextMenu(GuiContextMenuRunArgs contextMenu, WinForms.ToolStripItemClickedEventHandler itemClickedHandler);
         /// <summary>
         /// Metoda vrátí aktuální stav celého GUI, pro použití v <see cref="GuiRequest.CurrentState"/>.
         /// </summary>
@@ -3794,7 +3794,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="tabPageIndex"></param>
         /// <param name="gTabPage"></param>
         /// <param name="schedulerPanel"></param>
-        public MainDataPanel(GuiPage guiPage, int tabPageIndex, TabPageObject gTabPage, SchedulerPanel schedulerPanel)
+        public MainDataPanel(GuiPage guiPage, int tabPageIndex, Components.TabPage gTabPage, SchedulerPanel schedulerPanel)
         {
             this.GuiPage = guiPage;
             this.TabPageIndex = tabPageIndex;
@@ -3812,7 +3812,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Objekt záložky obsahující panel
         /// </summary>
-        public TabPageObject GTabPage { get; private set; }
+        public TabPage GTabPage { get; private set; }
         /// <summary>
         /// Data panelu
         /// </summary>

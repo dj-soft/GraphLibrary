@@ -8,22 +8,22 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region class GSizeAxis 
+    #region class SizeAxis : osa reprezentující velikosti
     /// <summary>
-    /// GSizeAxis : 
+    /// <see cref="SizeAxis"/> : osa reprezentující velikosti
     /// </summary>
-    public class GSizeAxis 
+    public class SizeAxis 
         : BaseAxis<Decimal?, Decimal?, DecimalNRange>
     {
         /// <summary>
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GSizeAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public SizeAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GSizeAxis() : base() { }
+        public SizeAxis() : base() { }
         /// <summary>
         /// Initial value for new axis
         /// </summary>

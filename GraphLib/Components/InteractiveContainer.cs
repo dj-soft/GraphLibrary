@@ -390,13 +390,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Titulkový label. Pokud je čtena hodnota, která by dosud byla null (tzn. <see cref="TitleLineVisible"/> je false), pak bude nejprve vytvořena new instance a ta vrácena,
         /// ale její vlastní Visible bude false.
         /// </summary>
-        public GLine3D TitleLine
+        public Line3D TitleLine
         {
             get
             {
                 if (_TitleLine == null)
                 {
-                    _TitleLine = new GLine3D()
+                    _TitleLine = new Line3D()
                     {
                         Bounds = new Rectangle(9, 26, 200, 2),
                         PrepareToolTipInParent = true
@@ -407,7 +407,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _TitleLine;
             }
         }
-        private GLine3D _TitleLine;
+        private Line3D _TitleLine;
         #endregion
         #region Interaktivita
         /// <summary>

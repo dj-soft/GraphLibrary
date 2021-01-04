@@ -133,12 +133,12 @@ namespace Asol.Tools.WorkScheduler.Components
             int x0 = 0;                                              // x0: úplně vlevo
             int x1 = this.ColumnsPositions.VisualFirstPixel;         // x1: zde začíná ColumnsScrollBar (hned za koncem RowHeaderColumn)
             int x3 = clientSize.Width;                               // x3: úplně vpravo
-            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná TablesScrollBar (vpravo, hned za koncem ColumnsScrollBar), tedy pokud by byl zobrazen
+            int x2t = x3 - ScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná TablesScrollBar (vpravo, hned za koncem ColumnsScrollBar), tedy pokud by byl zobrazen
             int x2r = (this._TablesScrollBarVisible ? x2t : x3);     // x2r: zde reálně končí oblast prostoru pro tabulky a končí zde i ColumnsScrollBar, se zohledněním aktuální viditelnosti TablesScrollBaru
             int y0 = 0;                                              // y0: úplně nahoře
             int y1 = y0;                                             // y1: zde začíná prostor pro tabulky i TablesScrollBar 
             int y3 = clientSize.Height;                              // y3: úplně dole
-            int y2 = y3 - GScrollBar.DefaultSystemBarHeight;         // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
+            int y2 = y3 - ScrollBar.DefaultSystemBarHeight;         // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
             int wt = x2r - x1;                                       // wt: šířka prostoru pro datové sloupce tabulek (za RowHeaderem, před TableScrollBarem)
 
             // Určíme, zda bude zobrazen scrollbar dole (to je tehdy, když šířka datových sloupců tabulek je větší než prostor od RowHeaderColumn do pravého Scrollbaru, pokud je zobrazen):
@@ -797,7 +797,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TablesPositions = new GridPosition(0, this._TablesPositionGetVisualSize, this._TablesPositionGetDataSize);
             this._TablesAutoSize = ImplicitAutoSizeType.FirstItem;
 
-            this._TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
+            this._TablesScrollBar = new ScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this._TablesScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(TablesScrollBar_ValueChange);
             this._TablesScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(TablesScrollBar_ValueChange);
         }
@@ -812,7 +812,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private int _TablesPositionGetVisualSize()
         {
-            return this.ClientSize.Height - GScrollBar.DefaultSystemBarHeight;
+            return this.ClientSize.Height - ScrollBar.DefaultSystemBarHeight;
         }
         /// <summary>
         /// Vrací výšku všech zobrazitelných tabulek (z this.TableSequence, z jejího posledního prvku, z jeho property End)
@@ -1021,7 +1021,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Svislý Scrollbar pro posouvání pole tabulek nahoru/dolů (nikoli jejich řádků, na to má každá tabulka svůj vlastní Scrollbar).
         /// </summary>
-        protected GScrollBar TablesScrollBar { get { this._TablesScrollBarCheck(); return this._TablesScrollBar; } }
+        protected ScrollBar TablesScrollBar { get { this._TablesScrollBarCheck(); return this._TablesScrollBar; } }
         /// <summary>
         /// Ověří a zajistí připravenost dat v objektu TablesScrollBar.
         /// Pokud je nastavena jeho neplatnost (_TablesScrollBarDataValid je false), pak provede načtení dat z pozicioneru.
@@ -1044,7 +1044,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Scrollbar pro tabulky
         /// </summary>
-        private GScrollBar _TablesScrollBar;
+        private ScrollBar _TablesScrollBar;
         /// <summary>
         /// true po naplnění RowsScrollBar platnými daty, false po invalidaci
         /// </summary>
@@ -1058,7 +1058,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._ColumnsPositions = new GridPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
 
-            this._ColumnsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
+            this._ColumnsScrollBar = new ScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
             this._ColumnsScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(ColumnsScrollBar_ValueChange);
             this._ColumnsScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(ColumnsScrollBar_ValueChange);
         }
@@ -1072,7 +1072,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private int _ColumnPositionGetVisualSize()
         {
-            return this.ClientSize.Width - this.ColumnsPositions.VisualFirstPixel - (this.TablesScrollBarVisible ? GScrollBar.DefaultSystemBarWidth : 0);
+            return this.ClientSize.Width - this.ColumnsPositions.VisualFirstPixel - (this.TablesScrollBarVisible ? ScrollBar.DefaultSystemBarWidth : 0);
         }
         /// <summary>
         /// Vrací šířku všech zobrazitelných datových sloupců, vyjma sloupec RowHeader (to není datový sloupec).
@@ -1120,7 +1120,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Dolní vodorovný Scrollbar, pro posuny sloupců doleva/doprava
         /// </summary>
-        protected GScrollBar ColumnsScrollBar { get { this._ColumnsScrollBarCheck(); return this._ColumnsScrollBar; } }
+        protected ScrollBar ColumnsScrollBar { get { this._ColumnsScrollBarCheck(); return this._ColumnsScrollBar; } }
         /// <summary>
         /// Ověří a zajistí připravenost dat v objektu ColumnsScrollBar.
         /// Pokud je nastavena jeho neplatnost, pak provede načtení dat z pozicioneru.
@@ -1139,7 +1139,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Defaultní šířka pro zobrazení prostoru sloupců (od prvního pixelu pro vlastní sloupce po prostor svislého scrollbaru)
         /// </summary>
-        protected int DefaultColumnsWidth { get { return this.ClientSize.Width - GScrollBar.DefaultSystemBarWidth - this.ColumnsPositions.VisualFirstPixel; } }
+        protected int DefaultColumnsWidth { get { return this.ClientSize.Width - ScrollBar.DefaultSystemBarWidth - this.ColumnsPositions.VisualFirstPixel; } }
         /// <summary>
         /// Obsahuje true, pokud existuje sloupec s vlastností AutoSize
         /// </summary>
@@ -1151,7 +1151,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// ScrollBar sloupců
         /// </summary>
-        private GScrollBar _ColumnsScrollBar;
+        private ScrollBar _ColumnsScrollBar;
         /// <summary>
         /// true po naplnění ColumnsScrollBar platnými daty, false po invalidaci
         /// </summary>
@@ -1499,9 +1499,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static int DefaultRowHeaderWidth { get { return 32; } }
         /// <summary>
-        /// Výška prostoru pro tabulky určená jako (<see cref="InteractiveObject.ClientSize"/>.Height - <see cref="GScrollBar.DefaultSystemBarHeight"/>)
+        /// Výška prostoru pro tabulky určená jako (<see cref="InteractiveObject.ClientSize"/>.Height - <see cref="ScrollBar.DefaultSystemBarHeight"/>)
         /// </summary>
-        protected int DefaultTablesHeight { get { return (this.ClientSize.Height - GScrollBar.DefaultSystemBarHeight); } }
+        protected int DefaultTablesHeight { get { return (this.ClientSize.Height - ScrollBar.DefaultSystemBarHeight); } }
         #endregion
     }
     #region class GridColumn : Třída popisující jeden sloupec Gridu

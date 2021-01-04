@@ -343,7 +343,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 int tabPageIndex = this._TabContainer.TabCount;
                 SchedulerPanel schedulerPanel = new SchedulerPanel(this, guiPage);
-                TabPageObject tabPage = this._TabContainer.AddTabItem(schedulerPanel, guiPage.Title, toolTip: guiPage.ToolTip, image: null);
+                Components.TabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, guiPage.Title, toolTip: guiPage.ToolTip, image: null);
                 MainDataPanel tspInfo = new MainDataPanel(guiPage, tabPageIndex, tabPage, schedulerPanel);
                 this._DataPanelsList.Add(tspInfo);
                 tabPage.UserData = tspInfo;
@@ -367,7 +367,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _TabContainerActivePageChanged(object sender, GPropertyChangeArgs<TabPageObject> e)
+        private void _TabContainerActivePageChanged(object sender, GPropertyChangeArgs<Components.TabPage> e)
         {
 
         }
@@ -377,7 +377,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private TabContainer _TabContainer;
         /// <summary>
         /// Aktuálně zobrazená stránka s daty.
-        /// Obsahue (vrací) instanci <see cref="MainDataPanel"/> ze seznamu <see cref="_DataPanelsList"/>, která se týká té stránky <see cref="TabPageObject"/>, 
+        /// Obsahue (vrací) instanci <see cref="MainDataPanel"/> ze seznamu <see cref="_DataPanelsList"/>, která se týká té stránky <see cref="TabPage"/>, 
         /// která je aktivní v <see cref="_TabContainer"/>.
         /// </summary>
         protected MainDataPanel SchedulerTabPanelCurrent
@@ -385,7 +385,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             get
             {
                 if (this._TabContainer == null) return null;
-                TabPageObject activePage = this._TabContainer.ActivePage;
+                Components.TabPage activePage = this._TabContainer.ActivePage;
                 if (activePage == null) return null;
                 return this._DataPanelsList.FirstOrDefault(p => Object.ReferenceEquals(p.GTabPage, activePage));
             }

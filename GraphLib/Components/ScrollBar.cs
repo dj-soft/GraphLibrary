@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using System.Windows.Forms;
+using WinForms = System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using Asol.Tools.WorkScheduler.Data;
 
@@ -12,18 +12,18 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Scroll bar
     /// </summary>
-    public class GScrollBar : InteractiveObject, IScrollBarPaintData, IInteractiveItem
+    public class ScrollBar : InteractiveObject, IScrollBarPaintData, IInteractiveItem
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor s parentem
         /// </summary>
         /// <param name="parent"></param>
-        public GScrollBar(IInteractiveParent parent) : this() { this.Parent = parent; }
+        public ScrollBar(IInteractiveParent parent) : this() { this.Parent = parent; }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GScrollBar()
+        public ScrollBar()
         {
             this._ValueRatioSmallChange = Skin.ScrollBar.SmallStepRatio;
             this._ValueRatioBigChange = Skin.ScrollBar.BigStepRatio;
@@ -43,22 +43,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Oriantace scrollbaru
         /// </summary>
-        public Orientation Orientation
+        public WinForms.Orientation Orientation
         {
             get { return this._Orientation; }
             set
             {
                 this.SetOrientation(value, ProcessAction.ChangeAll, EventSourceType.BoundsChange | EventSourceType.ApplicationCode);
             }
-        } private Orientation _Orientation = Orientation.Horizontal;
+        } private WinForms.Orientation _Orientation = WinForms.Orientation.Horizontal;
         /// <summary>
-        /// Výchozí šířka svislého scrollbaru (je rovna <see cref="System.Windows.Forms.SystemInformation.VerticalScrollBarWidth"/>)
+        /// Výchozí šířka svislého scrollbaru (je rovna <see cref="WinForms.SystemInformation.VerticalScrollBarWidth"/>)
         /// </summary>
-        public static int DefaultSystemBarWidth { get { return SystemInformation.VerticalScrollBarWidth; } }
+        public static int DefaultSystemBarWidth { get { return WinForms.SystemInformation.VerticalScrollBarWidth; } }
         /// <summary>
-        /// Výchozí výška vodorovného scrollbaru (je rovna <see cref="System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight"/>)
+        /// Výchozí výška vodorovného scrollbaru (je rovna <see cref="WinForms.SystemInformation.HorizontalScrollBarHeight"/>)
         /// </summary>
-        public static int DefaultSystemBarHeight { get { return SystemInformation.HorizontalScrollBarHeight; } }
+        public static int DefaultSystemBarHeight { get { return WinForms.SystemInformation.HorizontalScrollBarHeight; } }
         #endregion
         #region Value, ValueTotal
         /// <summary>
@@ -232,10 +232,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="actions"></param>
         /// <param name="eventSource"></param>
-        internal void SetOrientation(Orientation orientation, ProcessAction actions, EventSourceType eventSource)
+        internal void SetOrientation(WinForms.Orientation orientation, ProcessAction actions, EventSourceType eventSource)
         {
-            Orientation oldOrientation = this._Orientation;
-            Orientation newOrientation = orientation;
+            WinForms.Orientation oldOrientation = this._Orientation;
+            WinForms.Orientation newOrientation = orientation;
             if (oldOrientation == newOrientation) return;  // No change = no reactions.
 
             this._Orientation = newOrientation;
@@ -255,8 +255,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="eventSource"></param>
         internal void DetectOrientation(ProcessAction actions, EventSourceType eventSource)
         {
-            Orientation oldOrientation = this._Orientation;
-            Orientation newOrientation = this.GetValidOrientation();
+            WinForms.Orientation oldOrientation = this._Orientation;
+            WinForms.Orientation newOrientation = this.GetValidOrientation();
             if (newOrientation == oldOrientation) return;
 
             this._Orientation = newOrientation;
@@ -271,10 +271,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí vhodnou orientaci pro aktuální Bounds.
         /// </summary>
         /// <returns></returns>
-        internal Orientation GetValidOrientation()
+        internal WinForms.Orientation GetValidOrientation()
         {
             Size size = this.Bounds.Size;
-            return (size.Width >= size.Height ? System.Windows.Forms.Orientation.Horizontal : System.Windows.Forms.Orientation.Vertical);       // Autodetect Orientation
+            return (size.Width >= size.Height ? WinForms.Orientation.Horizontal : WinForms.Orientation.Vertical);       // Autodetect Orientation
         }
         /// <summary>
         /// Uloží danou hodnotu do this._Value.
@@ -365,9 +365,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="change"></param>
         /// <param name="modifierKeys"></param>
-        public void DoScrollBy(GInteractiveChangeState change, Keys modifierKeys = Keys.None)
+        public void DoScrollBy(GInteractiveChangeState change, WinForms.Keys modifierKeys = WinForms.Keys.None)
         {
-            bool isBigStep = (modifierKeys == Keys.Shift);
+            bool isBigStep = (modifierKeys == WinForms.Keys.Shift);
             decimal relativeChange = (isBigStep ? this.ValueRatioBigChangeCurrent : this.ValueRatioSmallChangeCurrent);
             if (change == GInteractiveChangeState.WheelUp) relativeChange = -relativeChange;
             this.DoScrollBy(relativeChange, EventSourceType.InteractiveChanged);
@@ -512,9 +512,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Call method OnOrientationChanged() and event OrientationChanged
         /// </summary>
-        protected void CallOrientationChanged(Orientation oldValue, Orientation newValue, EventSourceType eventSource)
+        protected void CallOrientationChanged(WinForms.Orientation oldValue, WinForms.Orientation newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<Orientation> args = new GPropertyChangeArgs<Orientation>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<WinForms.Orientation> args = new GPropertyChangeArgs<WinForms.Orientation>(oldValue, newValue, eventSource);
             this.OnOrientationChanged(args);
             if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);
@@ -522,11 +522,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Occured after change Scale value
         /// </summary>
-        protected virtual void OnOrientationChanged(GPropertyChangeArgs<Orientation> args) { }
+        protected virtual void OnOrientationChanged(GPropertyChangeArgs<WinForms.Orientation> args) { }
         /// <summary>
         /// Event on this.Scale changes
         /// </summary>
-        public event GPropertyChangedHandler<Orientation> OrientationChanged;
+        public event GPropertyChangedHandler<WinForms.Orientation> OrientationChanged;
 
         /// <summary>
         /// Call method OnUserDraw() and event UserDraw
@@ -650,10 +650,10 @@ namespace Asol.Tools.WorkScheduler.Components
 
             switch (this._Orientation)
             {
-                case System.Windows.Forms.Orientation.Horizontal:
+                case WinForms.Orientation.Horizontal:
                     this.ChildItemsCalculateH();
                     break;
-                case System.Windows.Forms.Orientation.Vertical:
+                case WinForms.Orientation.Vertical:
                     this.ChildItemsCalculateV();
                     break;
             }
@@ -964,7 +964,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="owner"></param>
             /// <param name="itemType"></param>
             /// <param name="isEnabled"></param>
-            public ChildItem(GScrollBar owner, ChildItemType itemType, bool isEnabled)
+            public ChildItem(ScrollBar owner, ChildItemType itemType, bool isEnabled)
             {
                 this.Parent = owner;
                 this.ItemType = itemType;
@@ -986,7 +986,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Owner of this SubItem = an ScrollBar
             /// </summary>
-            public GScrollBar Owner { get { return this.Parent as GScrollBar; } }
+            public ScrollBar Owner { get { return this.Parent as ScrollBar; } }
             /// <summary>
             /// Type of SubItem
             /// </summary>
@@ -1173,10 +1173,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         switch (this.Orientation)
                         {
-                            case System.Windows.Forms.Orientation.Horizontal:
+                            case WinForms.Orientation.Horizontal:
                                 this.CalculateBoundsInteractiveDragH(this.ActiveChild, e.UserDragPoint.Value);
                                 break;
-                            case System.Windows.Forms.Orientation.Vertical:
+                            case WinForms.Orientation.Vertical:
                                 this.CalculateBoundsInteractiveDragV(this.ActiveChild, e.UserDragPoint.Value);
                                 break;
                         }
@@ -1318,7 +1318,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected GInteractiveDrawLayer CurrentDrawLayer { get; set; }
         #region Implementace IScrollBarPaintData : podpora pro univerzální vykreslení ScrollBaru
-        Orientation IScrollBarPaintData.Orientation { get { return this.Orientation; } }
+        WinForms.Orientation IScrollBarPaintData.Orientation { get { return this.Orientation; } }
         bool IScrollBarPaintData.IsEnabled { get { return this.Is.Enabled; } }
         Rectangle IScrollBarPaintData.ScrollBarBounds { get { return this.ChildItemAllArea.Bounds; } }
         Color IScrollBarPaintData.ScrollBarBackColor { get { return this.CurrentBackColor; } }

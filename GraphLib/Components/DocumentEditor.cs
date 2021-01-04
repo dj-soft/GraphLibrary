@@ -38,12 +38,12 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void ComponentsInit()
         {
             this.DocumentArea = new DocumentArea() { DocumentSize = new SizeD(149, 210) };
-            this.AxisH = new GSizeAxis() { Orientation = AxisOrientation.Top };
-            this.SplitterH = new GSplitter() { Orientation = Orientation.Horizontal, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(18, 60) };
-            this.ScrollH = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(-25m, 235m), Value = new DecimalNRange(50, 200) };
-            this.AxisV = new GSizeAxis() { Orientation = AxisOrientation.LeftDown };
-            this.SplitterV = new GSplitter() { Orientation = Orientation.Vertical, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(30, 90) };
-            this.ScrollV = new GScrollBar() { Orientation = Orientation.Vertical, ValueTotal = new DecimalNRange(-25m, 315m), Value = new DecimalNRange(50, 250) };
+            this.AxisH = new SizeAxis() { Orientation = AxisOrientation.Top };
+            this.SplitterH = new Splitter() { Orientation = Orientation.Horizontal, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(18, 60) };
+            this.ScrollH = new ScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(-25m, 235m), Value = new DecimalNRange(50, 200) };
+            this.AxisV = new SizeAxis() { Orientation = AxisOrientation.LeftDown };
+            this.SplitterV = new Splitter() { Orientation = Orientation.Vertical, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(30, 90) };
+            this.ScrollV = new ScrollBar() { Orientation = Orientation.Vertical, ValueTotal = new DecimalNRange(-25m, 315m), Value = new DecimalNRange(50, 250) };
 
             this.SplitterHPos = 30;
             this.SplitterVPos = 50;
@@ -205,27 +205,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Osa H
         /// </summary>
-        protected GSizeAxis AxisH { get; set; }
+        protected SizeAxis AxisH { get; set; }
         /// <summary>
         /// Dělítko H
         /// </summary>
-        protected GSplitter SplitterH { get; set; }
+        protected Splitter SplitterH { get; set; }
         /// <summary>
         /// Scrollbar H
         /// </summary>
-        protected GScrollBar ScrollH { get; set; }
+        protected ScrollBar ScrollH { get; set; }
         /// <summary>
         /// Osa V
         /// </summary>
-        protected GSizeAxis AxisV { get; set; }
+        protected SizeAxis AxisV { get; set; }
         /// <summary>
         /// Dělítko V
         /// </summary>
-        protected GSplitter SplitterV { get; set; }
+        protected Splitter SplitterV { get; set; }
         /// <summary>
         /// Scrollbar V
         /// </summary>
-        protected GScrollBar ScrollV { get; set; }
+        protected ScrollBar ScrollV { get; set; }
     /// <summary>
     /// Position of horizontal splitter (under horizontal axis)
     /// </summary>

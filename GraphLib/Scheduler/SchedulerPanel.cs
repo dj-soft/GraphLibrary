@@ -14,7 +14,7 @@ using Asol.Tools.WorkScheduler.Application;
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     /// <summary>
-    /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="TabContainer"/>, <see cref="GGrid"/>, <see cref="GSplitter"/>), ale neobsahuje <see cref="ToolBar"/>.
+    /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="TabContainer"/>, <see cref="GGrid"/>, <see cref="Splitter"/>), ale neobsahuje <see cref="ToolBar"/>.
     /// Hlavní control <see cref="MainControl"/> se skládá z jednoho prvku <see cref="ToolBar"/> a z jednoho <see cref="TabContainer"/>, 
     /// který v sobě hostuje controly <see cref="SchedulerPanel"/>, jeden pro každou jednu zadanou verzi plánu (DataId).
     /// </summary>
@@ -44,11 +44,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._PanelLayout.CurrentControlSize = this.ClientSize;
 
                 this._LeftPanelTabs = new TabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-                this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.LeftSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
+                this._LeftPanelSplitter = new Components.Splitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.LeftSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
                 this._MainPanelGrid = new GGrid(this);
-                this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.RightSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
+                this._RightPanelSplitter = new Components.Splitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.RightSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
                 this._RightPanelTabs = new TabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-                this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = this._PanelLayout.BottomSplitterValue, BoundsNonActive = new Int32NRange(0, 600) };
+                this._BottomPanelSplitter = new Components.Splitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = this._PanelLayout.BottomSplitterValue, BoundsNonActive = new Int32NRange(0, 600) };
                 this._BottomPanelTabs = new TabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
                 this.AddItem(this._LeftPanelTabs);
@@ -248,7 +248,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="value"></param>
         /// <param name="bounds"></param>
         /// <param name="isChanged"></param>
-        private void _SetBounds(GSplitter splitter, int? value, Rectangle? bounds, ref bool isChanged)
+        private void _SetBounds(Components.Splitter splitter, int? value, Rectangle? bounds, ref bool isChanged)
         {
             if (value.HasValue && bounds.HasValue)
             {
@@ -283,11 +283,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private SchedulerPanelLayout _PanelLayout;
 
         private TabContainer _LeftPanelTabs;
-        private GSplitter _LeftPanelSplitter;
+        private Components.Splitter _LeftPanelSplitter;
         private GGrid _MainPanelGrid;
-        private GSplitter _RightPanelSplitter;
+        private Components.Splitter _RightPanelSplitter;
         private TabContainer _RightPanelTabs;
-        private GSplitter _BottomPanelSplitter;
+        private Components.Splitter _BottomPanelSplitter;
         private TabContainer _BottomPanelTabs;
 
         private MainControl _MainControl;
