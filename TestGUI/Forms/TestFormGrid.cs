@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Components;
-using Asol.Tools.WorkScheduler.Components.Graph;
+using Asol.Tools.WorkScheduler.Components.Graphs;
 using Noris.LCS.Base.WorkScheduler;
 using RES = Noris.LCS.Base.WorkScheduler.Resources;
 
@@ -185,7 +185,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     int klic = 10 * (r + 1);
                     DateTime datumOd = now.AddMinutes(15 * r);
                     DateTime datumDo = now.AddMinutes((15 * r) + 5);
-                    GTimeGraph graph1 = this._PrepareGraphW(now);
+                    TimeGraph graph1 = this._PrepareGraphW(now);
                     double price = Math.Round((this.Rand.NextDouble() * 100000d), 2);
                     Image image = images[imgPointer];
                     int height = ((this.Rand.Next(0, 100) > 80) ? 65 : 25);
@@ -351,9 +351,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             images.Add(Asol.Tools.WorkScheduler.Components.StandardIcons.Refresh);
             return images.ToArray();
         }
-        private GTimeGraph _PrepareGraphW(DateTime now)
+        private TimeGraph _PrepareGraphW(DateTime now)
         {
-            GTimeGraph graph = new GTimeGraph();
+            TimeGraph graph = new TimeGraph();
 
             graph.CurrentGraphProperties = TimeGraphProperties.Default;
             graph.CurrentGraphProperties.OneLineHeight = 22;
@@ -480,9 +480,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return graph;
         }
-        private GTimeGraph _PrepareGraphZ(DateTime now, bool withShift, int taskCount)
+        private TimeGraph _PrepareGraphZ(DateTime now, bool withShift, int taskCount)
         {
-            GTimeGraph graph = new GTimeGraph();
+            TimeGraph graph = new TimeGraph();
 
             if (Rand.Next(0, 100) < 10)
             {
@@ -671,7 +671,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public Int32 Order { get; set; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// <see cref="Height"/> * <see cref="TimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
@@ -705,7 +705,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        public WorkScheduler.Components.Graph.GTimeGraphItem VisualControl { get; set; }
+        public WorkScheduler.Components.Graphs.TimeGraphItem VisualControl { get; set; }
         #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
@@ -737,7 +737,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         ExtendedContentAlignment ITimeGraphItem.TextPosition { get { return this.TextPosition; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
         TimeGraphElementBackEffectStyle ITimeGraphItem.BackEffectNonEditable { get { return TimeGraphElementBackEffectStyle.Default; } }
-        WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.VisualControl { get { return this.VisualControl; } set { this.VisualControl = value; } }
+        WorkScheduler.Components.Graphs.TimeGraphItem ITimeGraphItem.VisualControl { get { return this.VisualControl; } set { this.VisualControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.VisualControl.DrawItem(e, boundsAbsolute, drawMode); }
         object ICloneable.Clone() { return this.MemberwiseClone(); }
         #endregion
