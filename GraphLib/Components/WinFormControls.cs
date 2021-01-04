@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.IconBox = new PictureBox();
             FontInfo textFont = FontInfo.DefaultBold;
             textFont.ApplyZoom(1.45f);
-            this.MessageTextLabel = new Label() { BorderStyle = BorderStyle.None, AutoSize = false, Font = textFont.CreateNewFont() };
+            this.MessageTextLabel = new System.Windows.Forms.Label() { BorderStyle = BorderStyle.None, AutoSize = false, Font = textFont.CreateNewFont() };
             this.MessageTextBox = new TextBox() { ReadOnly = true, BorderStyle = BorderStyle.None, ScrollBars = ScrollBars.Both, WordWrap = true, Multiline = true, Font = textFont.CreateNewFont() };
             this.MessageRtfBox = new RichTextBox() { ReadOnly = true, BorderStyle = BorderStyle.None, ScrollBars = RichTextBoxScrollBars.Both, Multiline = true, WordWrap = true };
             this.MessageRtfBox.GotFocus += MessageRtfBox_GotFocus;
@@ -126,7 +126,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Objekt pro zobrazení plain textu
         /// </summary>
-        protected Label MessageTextLabel;
+        protected System.Windows.Forms.Label MessageTextLabel;
         /// <summary>
         /// Objekt pro zobrazení RTF textu
         /// </summary>

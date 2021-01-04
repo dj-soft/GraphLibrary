@@ -331,13 +331,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <para/>
         /// Důsledek: dokud nebude použit titulek (nastaven jeho text atd), nebude vytvořena jeho instance (úspora paměti).
         /// </summary>
-        public GLabel TitleLabel
+        public Label TitleLabel
         {
             get
             {
                 if (_TitleLabel == null)
                 {
-                    _TitleLabel = new GLabel()
+                    _TitleLabel = new Label()
                     {
                         Text = "TitleLabel",
                         Bounds = new Rectangle(4, 4, 180, 20),
@@ -350,7 +350,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _TitleLabel;
             }
         }
-        private GLabel _TitleLabel;
+        private Label _TitleLabel;
         /// <summary>
         /// Modifikátor fontu pro titulkový label <see cref="TitleLabel"/> platný v době, kdy this Container má Focus
         /// </summary>

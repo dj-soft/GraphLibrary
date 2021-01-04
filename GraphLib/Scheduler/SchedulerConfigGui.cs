@@ -641,7 +641,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this.SnapCheck = new CheckBox() { Bounds = new Rectangle(14, 35, 174, 24), Text = "Přichytávat, na vzdálenost:", TabIndex = 0 };
             this.DistTrack = new System.Windows.Forms.TrackBar() { Bounds = new Rectangle(50, 61, 188, 45), Minimum = 0, Maximum = ConfigSnapSamplePanel.SnapMaxDistance, TickFrequency = 2, TickStyle = TickStyle.TopLeft, TabIndex = 1 };
-            this.PixelLabel = new Label() { Bounds = new Rectangle(194, 35, 59, 23), AutoSize = false, Text = "", TextAlign = ContentAlignment.MiddleLeft, TabIndex = 2 };
+            this.PixelLabel = new System.Windows.Forms.Label() { Bounds = new Rectangle(194, 35, 59, 23), AutoSize = false, Text = "", TextAlign = ContentAlignment.MiddleLeft, TabIndex = 2 };
             this.SamplePanel = new ConfigSnapSamplePanel();
 
             this.SuspendLayout();
@@ -694,7 +694,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Label 
         /// </summary>
-        protected Label PixelLabel;
+        protected System.Windows.Forms.Label PixelLabel;
         /// <summary>
         /// ConfigSnapSamplePanel 
         /// </summary>

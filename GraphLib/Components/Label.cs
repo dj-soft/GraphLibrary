@@ -7,17 +7,17 @@ using System.Threading.Tasks;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region class GLabel : běžný label u textů
+    #region class Label : běžný label u textů
     /// <summary>
-    /// Vykreslovaný Label
+    /// <see cref="Label"/> Vykreslovaný Label
     /// </summary>
-    public class GLabel : TextObject
+    public class Label : TextObject
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GLabel()
+        public Label()
         {
             this.BackgroundMode = DrawBackgroundMode.Transparent;
             this._Alignment = ContentAlignment.MiddleLeft;
@@ -66,10 +66,6 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public vlastnosti
         /// <summary>
-        /// Obsahuje výšku řádku textu, optimální pro výšku jednořádkového labelu
-        /// </summary>
-        public int TextLineHeight { get { return FontManagerInfo.GetFontHeight(this.FontCurrent); } }
-        /// <summary>
         /// Umístění obsahu (textu) v rámci prostoru prvku
         /// </summary>
         public ContentAlignment Alignment { get { return _Alignment; } set { _Alignment = value; Invalidate(); } } private ContentAlignment _Alignment;
@@ -97,28 +93,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected override FontInfo FontCurrent { get { return StyleCurrent.Font; } }
         #endregion
-
-
-        /// <summary>
-        /// Barva písma dynamicky zadaná. Default je null: barva se bere ze standardní <see cref="TextObject.TextColor"/>.
-        /// Používá se pro dynamické změny, například při změně Focusu do containeru s tímto Labelem.
-        /// </summary>
-        public Color? TextColorDynamic { get { return __TextColorDynamic; } set { __TextColorDynamic = value; Invalidate(); } }
-        private Color? __TextColorDynamic = null;
-        /// <summary>
-        /// Dynamické změny fontu proti defaultnímu.
-        /// Autoinicializační property - lze rovnou napsat: TextObject.FontModifier.Bold = true;
-        /// Používá se pro dynamické změny, například při změně Focusu do containeru s tímto Labelem.
-        /// </summary>
-        public FontModifierInfo FontDynamicModifier { get { if (__FontDynamicModifier == null) __FontDynamicModifier = FontModifierInfo.Empty; return __FontDynamicModifier; } set { __FontDynamicModifier = value; Invalidate(); } }
-        private FontModifierInfo __FontDynamicModifier = null;
-        /// <summary>
-        /// Obsahuje true, pokud v this instanci máme použitý modifikátor fontu
-        /// </summary>
-        protected bool HasFontDynamicModifier { get { return (__FontDynamicModifier != null && !__FontDynamicModifier.IsEmpty); } }
-     
-        
-
     }
     #endregion
 }
