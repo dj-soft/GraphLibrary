@@ -676,7 +676,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="targetPosition">Target prvek při Drag and Move operacích</param>
         internal GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
             Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
-            Rectangle? dragOriginBounds, Rectangle? dragToBounds, ActivePosition targetPosition)
+            Rectangle? dragOriginBounds, Rectangle? dragToBounds, ActivePositionInfo targetPosition)
               : this()
         {
             this.BoundsInfo = boundsInfo;
@@ -806,7 +806,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Prvek, nad kterým se nyní pohybuje myš v procesu Drag and Move (při akci DragStep).
         /// </summary>
-        internal ActivePosition DragMoveToTarget { get; private set; }
+        internal ActivePositionInfo DragMoveToTarget { get; private set; }
         /// <summary>
         /// Prvek, který má být vysvícen jako Aktivní cíl v procesu Drag and Move.
         /// Výchozí hodnota je null. Aplikační kód může určit potenciální cílový objekt pro Drop akci, a tento objekt vložit do této property.
@@ -1265,7 +1265,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="startActiveItem"></param>
         /// <param name="mousePaintInfo"></param>
         /// <param name="toolTipData"></param>
-        internal GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, ActivePosition currentActiveItem, ActivePosition startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
+        internal GInteractiveMousePaintArgs(GInteractiveChangeState interactiveChange, ActivePositionInfo currentActiveItem, ActivePositionInfo startActiveItem, MousePaintInfo mousePaintInfo, ToolTipData toolTipData)
         {
             this._InteractiveChange = interactiveChange;
             this._CurrentActiveItem = currentActiveItem;
@@ -1279,8 +1279,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolTipData = toolTipData;
         }
         private GInteractiveChangeState _InteractiveChange;
-        private ActivePosition _CurrentActiveItem;
-        private ActivePosition _StartActiveItem;
+        private ActivePositionInfo _CurrentActiveItem;
+        private ActivePositionInfo _StartActiveItem;
         private MousePaintInfo _MousePaintInfo;
         private ToolTipData _ToolTipData;
         /// <summary>

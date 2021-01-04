@@ -22,7 +22,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GTextEdit (=TextBox)
     /// </summary>
-    public class GTextEdit : GTextObject, ITextEditInternal
+    public class GTextEdit : TextObject, ITextEditInternal
     {
         #region Konstruktor, privátní život
         /// <summary>
@@ -1468,7 +1468,7 @@ namespace Asol.Tools.WorkScheduler.Components
             { }
         }
         /// <summary>
-        /// Hodnota <see cref="GTextObject.Text"/>. Tato hodnota nikdy není null.
+        /// Hodnota <see cref="TextObject.Text"/>. Tato hodnota nikdy není null.
         /// </summary>
         protected string Text { get { return this._Owner.Text; } set { this._Owner.Text = value; } }
         /// <summary>

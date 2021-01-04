@@ -11,12 +11,12 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Bázová třída pro Label, Textbox atd = jeden rámeček s jedním prvkem textu, fontem a barvou textu
     /// </summary>
-    public abstract class GTextObject : InteractiveObject
+    public abstract class TextObject : InteractiveObject
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTextObject()
+        public TextObject()
         {
             this.BackgroundMode = DrawBackgroundMode.Transparent;
         }
@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vykreslí pozadí. 
-        /// Bázová metoda <see cref="GTextObject.DrawBackground(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/>
+        /// Bázová metoda <see cref="TextObject.DrawBackground(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/>
         /// vyvolá prosté kreslení pozadí <see cref="InteractiveObject.Draw(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/>.
         /// </summary>
         /// <param name="e"></param>
@@ -57,7 +57,7 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         /// <summary>
         /// Vykreslí rámeček. 
-        /// Bázová metoda <see cref="GTextObject.DrawBorder(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/> nekeslí nic.
+        /// Bázová metoda <see cref="TextObject.DrawBorder(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/> nekeslí nic.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="absoluteBounds"></param>

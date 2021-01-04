@@ -9,19 +9,19 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region GVirtualMovableItem : item with VirtualBounds and IVirtualConvertor, whose position and size can interactively changed by the user (by dragging with area or edge marks).
+    #region VirtualMovableItem : item with VirtualBounds and IVirtualConvertor, whose position and size can interactively changed by the user (by dragging with area or edge marks).
     /// <summary>
-    /// GVirtualMovableItem : editable area, whose position and size can interactively changed by the user (by dragging with area or edge marks).
+    /// <see cref="VirtualMovableItem"/> : editable area, whose position and size can interactively changed by the user (by dragging with area or edge marks).
     /// Is Virtual: has 
     /// </summary>
-    public class GVirtualMovableItem : GMovableItem, IInteractiveItem
+    public class VirtualMovableItem : MovableItem, IInteractiveItem
     {
         #region Constructor + Standard bounds overrides
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="virtualConvertor"></param>
-        public GVirtualMovableItem(IVirtualConvertor virtualConvertor)
+        public VirtualMovableItem(IVirtualConvertor virtualConvertor)
         {
             this._VirtualConvertor = virtualConvertor;
         }
@@ -111,16 +111,16 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region GMovableItem : item, whose position and size can interactively changed by the user (by dragging with area or edge marks).
+    #region MovableItem : item, whose position and size can interactively changed by the user (by dragging with area or edge marks).
     /// <summary>
-    /// GMovableItem : item, whose position and size can interactively changed by the user (by dragging with area or edge marks).
+    /// <see cref="MovableItem"/> : item, whose position and size can interactively changed by the user (by dragging with area or edge marks).
     /// </summary>
-    public class GMovableItem : InteractiveDragObject, IInteractiveItem
+    public class MovableItem : InteractiveDragObject, IInteractiveItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GMovableItem()
+        public MovableItem()
         {
             this.Is.Set(InteractiveProperties.Bit.DefaultMouseOverProperties
                       | InteractiveProperties.Bit.MouseDragResizeX
@@ -334,7 +334,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="overCursorType"></param>
             /// <param name="dragCursorType"></param>
             /// <param name="activeOverhead"></param>
-            public ChildItem(GMovableItem owner, ChildItemType itemType, SysCursorType? overCursorType, SysCursorType? dragCursorType, int activeOverhead)
+            public ChildItem(MovableItem owner, ChildItemType itemType, SysCursorType? overCursorType, SysCursorType? dragCursorType, int activeOverhead)
             {
                 this.Parent = owner;
                 this.ItemType = itemType;
@@ -355,7 +355,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Owner of this Subitem = an EditableArea
             /// </summary>
-            public GMovableItem Owner { get { return this.Parent as GMovableItem; } }
+            public MovableItem Owner { get { return this.Parent as MovableItem; } }
             /// <summary>
             /// Type of SubItem
             /// </summary>

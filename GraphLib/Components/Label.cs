@@ -11,7 +11,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Vykreslovaný Label
     /// </summary>
-    public class GLabel : GTextObject
+    public class GLabel : TextObject
     {
         #region Konstruktor
         /// <summary>
@@ -100,7 +100,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
 
         /// <summary>
-        /// Barva písma dynamicky zadaná. Default je null: barva se bere ze standardní <see cref="GTextObject.TextColor"/>.
+        /// Barva písma dynamicky zadaná. Default je null: barva se bere ze standardní <see cref="TextObject.TextColor"/>.
         /// Používá se pro dynamické změny, například při změně Focusu do containeru s tímto Labelem.
         /// </summary>
         public Color? TextColorDynamic { get { return __TextColorDynamic; } set { __TextColorDynamic = value; Invalidate(); } }

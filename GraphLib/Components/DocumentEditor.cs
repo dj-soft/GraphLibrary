@@ -13,12 +13,12 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Editor dokumentu
     /// </summary>
-    public class GDocumentEditor : InteractiveControl
+    public class DocumentEditor : InteractiveControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GDocumentEditor()
+        public DocumentEditor()
         {
             this.ComponentsInit();
         }
@@ -37,7 +37,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void ComponentsInit()
         {
-            this.DocumentArea = new GDocumentArea() { DocumentSize = new SizeD(149, 210) };
+            this.DocumentArea = new DocumentArea() { DocumentSize = new SizeD(149, 210) };
             this.AxisH = new GSizeAxis() { Orientation = AxisOrientation.Top };
             this.SplitterH = new GSplitter() { Orientation = Orientation.Horizontal, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(18, 60) };
             this.ScrollH = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(-25m, 235m), Value = new DecimalNRange(50, 200) };
@@ -201,7 +201,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Prvek vlastního dokumentu
         /// </summary>
-        protected GDocumentArea DocumentArea { get; set; }
+        protected DocumentArea DocumentArea { get; set; }
         /// <summary>
         /// Osa H
         /// </summary>
@@ -238,17 +238,17 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _SuppressEvents = false;
         private class _SuppressedEvents : IDisposable
         {
-            public static IDisposable Scope(GDocumentEditor editor)
+            public static IDisposable Scope(DocumentEditor editor)
             {
                 return new _SuppressedEvents(editor);
             }
-            private _SuppressedEvents(GDocumentEditor editor)
+            private _SuppressedEvents(DocumentEditor editor)
             {
                 this._Editor = editor;
                 this._SuppressEventsValue = this._Editor._SuppressEvents;
                 this._Editor._SuppressEvents = true;
             }
-            GDocumentEditor _Editor;
+            DocumentEditor _Editor;
             bool _SuppressEventsValue; 
             void IDisposable.Dispose()
             {

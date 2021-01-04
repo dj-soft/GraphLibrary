@@ -13,18 +13,18 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Prostor pro dokument
     /// </summary>
-    public class GDocumentArea : VirtualInteractiveContainer, IInteractiveItem, IVirtualConvertor
+    public class DocumentArea : VirtualInteractiveContainer, IInteractiveItem, IVirtualConvertor
     {
         #region Constructor, public properties and events
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GDocumentArea()
+        public DocumentArea()
         {
             this.DocumentSize = new SizeD(210m, 297m);
             this.Is.Set(InteractiveProperties.Bit.DefaultMouseProperties);
 
-            GVirtualMovableItem gea = new GVirtualMovableItem(this) { VirtualBounds = new Rectangle(0, 0, 100, 50), BackColor = Color.Red };
+            VirtualMovableItem gea = new VirtualMovableItem(this) { VirtualBounds = new Rectangle(0, 0, 100, 50), BackColor = Color.Red };
             this.AddItem(gea);
         }
         #endregion
