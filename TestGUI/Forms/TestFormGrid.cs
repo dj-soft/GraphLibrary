@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             using (var scope = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "Start"))
             {
-                this._Toolbar = new GToolBar();
+                this._Toolbar = new Components.ToolBar();
                 this._Toolbar.FillFunctionGlobals();
                 this._Toolbar.ToolbarSizeChanged += new GPropertyChangedHandler<Services.ComponentSize>(_Toolbar_ToolbarSizeChanged);
 
@@ -578,7 +578,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private Table _Table1;
         private Table _Table2;
         private Table _TableZ;
-        private GToolBar _Toolbar;
+        private Components.ToolBar _Toolbar;
         private GGrid _GridW;
         private GGrid _GridZ;
         private GSplitter _SplitterWZ;

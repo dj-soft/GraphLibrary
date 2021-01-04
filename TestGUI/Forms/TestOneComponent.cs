@@ -28,7 +28,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         #region Testy TrackBar
         protected void InitTrackBar()
         {
-            this._TrackH = new GTrackBar() { Bounds = new Rectangle(50, 20, 96, 25), ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
+            this._TrackH = new Components.TrackBar() { Bounds = new Rectangle(50, 20, 96, 25), ValueTotal = new DecimalRange(0m, 100m), Value = 75m };
             this._TrackH.Layout.Orientation = Orientation.Horizontal;
             this._TrackH.Layout.TickCount = 5;
             this._TrackH.Layout.TickType = TrackBarTickType.None;
@@ -46,7 +46,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this._Control.AddItem(_TrackH);
             PrepareToolTipFor(this._TrackH);
 
-            this._TrackV = new GTrackBar() { Bounds = new Rectangle(320, 20, 47, 250), ValueTotal = new DecimalRange(0m, 100m), Value = 0m };
+            this._TrackV = new Components.TrackBar() { Bounds = new Rectangle(320, 20, 47, 250), ValueTotal = new DecimalRange(0m, 100m), Value = 0m };
             this._TrackV.Layout.Orientation = Orientation.Vertical;
             this._TrackV.Layout.TickCount = 20;
             this._TrackV.Layout.TickType = TrackBarTickType.StandardDouble;
@@ -91,15 +91,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             PrepareToolTipFor(this._TrackV);
         }
         private int _Count2 = 0;
-        private static void PrepareToolTipFor(GTrackBar trackBar)
+        private static void PrepareToolTipFor(Components.TrackBar trackBar)
         {
             decimal value = trackBar.Value;
             string text = Math.Round(value, 2).ToString("0.00");
             trackBar.ToolTipTitle = text + " mm";
             trackBar.ToolTipText = "Aktuální hodnota TrackBaru";
         }
-        protected GTrackBar _TrackH;
-        protected GTrackBar _TrackV;
+        protected Components.TrackBar _TrackH;
+        protected Components.TrackBar _TrackV;
         #endregion
 
         #region Testy GCtrlTest => ResizeControl

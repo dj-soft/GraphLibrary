@@ -57,7 +57,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
-            this._Track = new GTrackBar() { Bounds = new Rectangle(20, 65, 150, 30), Value = 0.333m };
+            this._Track = new Components.TrackBar() { Bounds = new Rectangle(20, 65, 150, 30), Value = 0.333m };
             this._Track.Layout.Orientation = Orientation.Horizontal;
             this.GControl.AddItem(this._Track);
 
@@ -135,7 +135,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GSizeAxis _SizeAxis;
         private GScrollBar _ScrollBarH;
         private GScrollBar _ScrollBarV;
-        private GTrackBar _Track;
+        private Components.TrackBar _Track;
         private GTabContainer _TabContainer;
 
         protected void ControlsPosition()
