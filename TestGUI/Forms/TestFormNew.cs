@@ -34,7 +34,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.ResizeControl += new EventHandler(GControl_ResizeControl);
             this.GControl.DrawStandardLayer += GControl_DrawStandardLayer;
 
-            this._TimeAxis = new GTimeAxis() { Bounds = new Rectangle(60, 30, 950, 45), Orientation = AxisOrientation.Top, Value = new TimeRange(DateTime.Now.Subtract(TimeSpan.FromDays(4)), DateTime.Now) };
+            this._TimeAxis = new TimeAxis() { Bounds = new Rectangle(60, 30, 950, 45), Orientation = AxisOrientation.Top, Value = new TimeRange(DateTime.Now.Subtract(TimeSpan.FromDays(4)), DateTime.Now) };
             this._TimeAxis.BackColor = Color.LightSkyBlue;
             this._TimeAxis.ScaleLimit = new DecimalNRange(0.01m, 50m);
             this.GControl.AddItem(this._TimeAxis);
@@ -61,7 +61,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._Track.Layout.Orientation = Orientation.Horizontal;
             this.GControl.AddItem(this._Track);
 
-            this._TabContainer = new GTabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };
+            this._TabContainer = new TabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };
             GScrollBar dataControl;
             dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(160, 260), BackColor = Color.LightCyan, Tag = "Přepínací ScrollBar na straně 1" };
             this._TabContainer.AddTabItem(dataControl, "První scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletBluePng));
@@ -81,7 +81,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             e.Graphics.DrawImage(App.ResourcesApp.GetImage(RES.Images.Actions.CodeClassPng), e.ClipRectangle);
         }
-        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<GTabPage> e)
+        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<TabPageObject> e)
         {
             if (e.OldValue != null && e.OldValue.Key == "Plan")
                 e.OldValue.Text = "Plan items";
@@ -130,13 +130,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 e.Graphics.DrawLine((is5tick ? Pens.Gray : Pens.LightGray), x, r.Top + (is5tick ? 3 : 6), x, r.Bottom - ( is5tick ? 3 : 6));
             }
         }
-        private GTimeAxis _TimeAxis;
+        private TimeAxis _TimeAxis;
         private GSplitter _Splitter;
         private GSizeAxis _SizeAxis;
         private GScrollBar _ScrollBarH;
         private GScrollBar _ScrollBarV;
         private Components.TrackBar _Track;
-        private GTabContainer _TabContainer;
+        private TabContainer _TabContainer;
 
         protected void ControlsPosition()
         {

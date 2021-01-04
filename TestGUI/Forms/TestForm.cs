@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ActiveList.Add(new TestActiveItem() { Bounds = new Rectangle(160, 295, 60, 30), Color = Color.LightGreen, Angle = 90f });
             this._ActiveList.Add(new TestActiveItem() { Bounds = new Rectangle(200, 210, 60, 30), Color = Color.PaleGoldenrod, Angle = 90f });
 
-            this._TimeAxis = new GTimeAxis();
+            this._TimeAxis = new TimeAxis();
             DateTime now = DateTime.Now;
             DateTime begin = (new DateTime(now.Year, now.Month, now.Day)).AddDays(1 - ((int)now.DayOfWeek));
             DateTime end = begin.AddDays(2);
@@ -138,7 +138,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarV.Bounds = new Rectangle(gic.Right - 15, gic.Y, 15, gic.Height - 15);
         }
         protected List<IInteractiveItem> _ActiveList;
-        protected GTimeAxis _TimeAxis;
+        protected TimeAxis _TimeAxis;
         protected GSizeAxis _SizeAxisV;
         protected GSizeAxis _SizeAxisH;
         protected GScrollBar _ScrollBarH;

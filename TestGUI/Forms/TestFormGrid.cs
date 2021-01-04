@@ -245,7 +245,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 #endregion
                 #region TagFilter
-                List<TagItem> tagItems = new List<TagItem>();
+                List<TagInfo> tagItems = new List<TagInfo>();
                 tagItems.Add("Elektronik");
                 tagItems.Add("Elektromontér");
                 tagItems.Add("Seřizovač");
@@ -309,7 +309,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     nameCell.ToolTipImage = image;
 
                     int tagCnt = (Rand.Next(0, 100) < 85 ? 1 : 2);
-                    TagItem[] tagArr = new TagItem[tagCnt];
+                    TagInfo[] tagArr = new TagInfo[tagCnt];
                     for (int tagUka = 0; tagUka < tagCnt; tagUka++)
                         tagArr[tagUka] = tagItems[Rand.Next(0, tagCount)];
                     row.TagItems = tagArr;
