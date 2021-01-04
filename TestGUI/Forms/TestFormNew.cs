@@ -39,21 +39,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._TimeAxis.ScaleLimit = new DecimalNRange(0.01m, 50m);
             this.GControl.AddItem(this._TimeAxis);
 
-            this._SizeAxis = new GSizeAxis() { Bounds = new Rectangle(60, 100, 950, 45), Orientation = AxisOrientation.Top, Value = new DecimalNRange(0m, 210m), ValueLimit = new DecimalNRange(-210m, 420m) };
+            this._SizeAxis = new SizeAxis() { Bounds = new Rectangle(60, 100, 950, 45), Orientation = AxisOrientation.Top, Value = new DecimalNRange(0m, 210m), ValueLimit = new DecimalNRange(-210m, 420m) };
             this._SizeAxis.BackColor = Color.LightSalmon;
             this._SizeAxis.ScaleLimit = new DecimalNRange(0.05m, 20m);
             this.GControl.AddItem(this._SizeAxis);
 
-            this._Splitter = new GSplitter() { Bounds = new Rectangle(60, 80, 950, 7), Orientation = Orientation.Horizontal, DragResponse = DragResponseType.InDragMove, LinkedItemPrevMinSize = 15, LinkedItemNextMinSize = 15, Value = 80, SplitterVisibleWidth = 2, SplitterActiveOverlap = 3, IsResizeToLinkItems = true };
+            this._Splitter = new Components.Splitter() { Bounds = new Rectangle(60, 80, 950, 7), Orientation = Orientation.Horizontal, DragResponse = DragResponseType.InDragMove, LinkedItemPrevMinSize = 15, LinkedItemNextMinSize = 15, Value = 80, SplitterVisibleWidth = 2, SplitterActiveOverlap = 3, IsResizeToLinkItems = true };
             this._Splitter.LinkedItemPrev = this._TimeAxis;
             this._Splitter.LinkedItemNext = this._SizeAxis;
             this.GControl.AddItem(this._Splitter);
 
-            this._ScrollBarH = new GScrollBar() { Bounds = new Rectangle(0, 200, 950, 28), ValueTotal = new DecimalNRange(0m, 1000m), Value = new DecimalNRange(200m, 400m), BackColor = Color.DimGray, Tag = "Vodorovný ScrollBar dole" };
+            this._ScrollBarH = new Components.ScrollBar() { Bounds = new Rectangle(0, 200, 950, 28), ValueTotal = new DecimalNRange(0m, 1000m), Value = new DecimalNRange(200m, 400m), BackColor = Color.DimGray, Tag = "Vodorovný ScrollBar dole" };
             this._ScrollBarH.UserDraw += new GUserDrawHandler(_ScrollBar_UserDraw);
             this.GControl.AddItem(this._ScrollBarH);
 
-            this._ScrollBarV = new GScrollBar() { Bounds = new Rectangle(960, 0, 28, 300), ValueTotal = new DecimalNRange(0m, 1000m), Value = new DecimalNRange(200m, 400m), Tag = "Svislý ScrollBar vpravo" };
+            this._ScrollBarV = new Components.ScrollBar() { Bounds = new Rectangle(960, 0, 28, 300), ValueTotal = new DecimalNRange(0m, 1000m), Value = new DecimalNRange(200m, 400m), Tag = "Svislý ScrollBar vpravo" };
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
@@ -62,12 +62,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.AddItem(this._Track);
 
             this._TabContainer = new TabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };
-            GScrollBar dataControl;
-            dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(160, 260), BackColor = Color.LightCyan, Tag = "Přepínací ScrollBar na straně 1" };
+            Components.ScrollBar dataControl;
+            dataControl = new Components.ScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(160, 260), BackColor = Color.LightCyan, Tag = "Přepínací ScrollBar na straně 1" };
             this._TabContainer.AddTabItem(dataControl, "První scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletBluePng));
-            dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(840, 860), Tag = "Přepínací ScrollBar na straně 2" };
+            dataControl = new Components.ScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(840, 860), Tag = "Přepínací ScrollBar na straně 2" };
             this._TabContainer.AddTabItem(dataControl, "Druhý scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletGreenPng));
-            dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(450, 850), Tag = "Přepínací ScrollBar na straně 3" };
+            dataControl = new Components.ScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(450, 850), Tag = "Přepínací ScrollBar na straně 3" };
             this._TabContainer.AddTabItem(dataControl, "Třetí scrollbar", image: App.ResourcesApp.GetImage(RES.Images.Small16.BulletOrangePng));
             this.GControl.AddItem(this._TabContainer);
             
@@ -81,7 +81,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             e.Graphics.DrawImage(App.ResourcesApp.GetImage(RES.Images.Actions.CodeClassPng), e.ClipRectangle);
         }
-        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<TabPageObject> e)
+        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<Components.TabPage> e)
         {
             if (e.OldValue != null && e.OldValue.Key == "Plan")
                 e.OldValue.Text = "Plan items";
@@ -131,10 +131,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
         }
         private TimeAxis _TimeAxis;
-        private GSplitter _Splitter;
-        private GSizeAxis _SizeAxis;
-        private GScrollBar _ScrollBarH;
-        private GScrollBar _ScrollBarV;
+        private Components.Splitter _Splitter;
+        private SizeAxis _SizeAxis;
+        private Components.ScrollBar _ScrollBarH;
+        private Components.ScrollBar _ScrollBarV;
         private Components.TrackBar _Track;
         private TabContainer _TabContainer;
 
@@ -166,8 +166,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this._Splitter.Refresh();
             }
 
-            int scrollHeight = GScrollBar.DefaultSystemBarHeight;
-            int scrollWidth = GScrollBar.DefaultSystemBarWidth;
+            int scrollHeight = Components.ScrollBar.DefaultSystemBarHeight;
+            int scrollWidth = Components.ScrollBar.DefaultSystemBarWidth;
 
             this._Track.Bounds = new Rectangle(20, axisBottom + 5, 150, 30);
 

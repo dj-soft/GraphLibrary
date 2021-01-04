@@ -73,7 +73,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                     Cell[] items = this._Table1.Rows[2].Cells;
 
-                    this._SplitterWZ = new GSplitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32NRange(0, 200) };
+                    this._SplitterWZ = new Components.Splitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32NRange(0, 200) };
                     this._SplitterWZ.ValueChanged += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanged);
                     this._SplitterWZ.ValueChanging += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanging);
                     this._SplitterWzRightDist = 250;
@@ -581,7 +581,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private Components.ToolBar _Toolbar;
         private GGrid _GridW;
         private GGrid _GridZ;
-        private GSplitter _SplitterWZ;
+        private Components.Splitter _SplitterWZ;
         private ValueTimeRangeSynchronizer _TimeSynchronizer;
         protected void ControlsPosition()
         {

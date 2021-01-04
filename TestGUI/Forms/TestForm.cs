@@ -43,13 +43,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._TimeAxis.BackColor3DEffect = 0.2f;
             this._ActiveList.Add(this._TimeAxis);
 
-            this._Splitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, Bounds = new Rectangle(5, 20, 200, 5), SplitterActiveOverlap = 3, Value = 60, DragResponse = DragResponseType.InDragMove, LinkedItemPrev = this._TimeAxis };
+            this._Splitter = new Components.Splitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, Bounds = new Rectangle(5, 20, 200, 5), SplitterActiveOverlap = 3, Value = 60, DragResponse = DragResponseType.InDragMove, LinkedItemPrev = this._TimeAxis };
             // this._Splitter.LocationChanging += new EventHandler(_Splitter_LocationChanging);
             this._ActiveList.Add(this._Splitter);
 
             this._TimeAxisPos();
 
-            this._SizeAxisH = new GSizeAxis();
+            this._SizeAxisH = new SizeAxis();
             this._SizeAxisH.ValueLimit = new DecimalNRange(-100m, 1000m);
             this._SizeAxisH.Value = new DecimalNRange(0m, 200m);
             this._SizeAxisH.Bounds = new Rectangle(10, 300, 500, 25);
@@ -58,7 +58,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._SizeAxisH.BackColor3DEffect = 0.2f;
             this._ActiveList.Add(this._SizeAxisH);
 
-            this._SizeAxisV = new GSizeAxis();
+            this._SizeAxisV = new SizeAxis();
             this._SizeAxisV.ValueLimit = new DecimalNRange(-100m, 1000m);
             this._SizeAxisV.Value = new DecimalNRange(0m, 200m);
             this._SizeAxisV.Bounds = new Rectangle(5, 5, 25, 500);
@@ -75,9 +75,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._SizeAxisPos();
 
 
-            this._ScrollBarH = new GScrollBar() { Bounds = new Rectangle(2, 200, 400, 12), ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(400, 600) };
+            this._ScrollBarH = new Components.ScrollBar() { Bounds = new Rectangle(2, 200, 400, 12), ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(400, 600) };
             this._ActiveList.Add(this._ScrollBarH);
-            this._ScrollBarV = new GScrollBar() { Bounds = new Rectangle(400, 2, 12, 400), ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(800, 900) };
+            this._ScrollBarV = new Components.ScrollBar() { Bounds = new Rectangle(400, 2, 12, 400), ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(800, 900) };
             this._ActiveList.Add(this._ScrollBarV);
             this._ScrollBarPos();
 
@@ -139,10 +139,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         protected List<IInteractiveItem> _ActiveList;
         protected TimeAxis _TimeAxis;
-        protected GSizeAxis _SizeAxisV;
-        protected GSizeAxis _SizeAxisH;
-        protected GScrollBar _ScrollBarH;
-        protected GScrollBar _ScrollBarV;
+        protected SizeAxis _SizeAxisV;
+        protected SizeAxis _SizeAxisH;
+        protected Components.ScrollBar _ScrollBarH;
+        protected Components.ScrollBar _ScrollBarV;
         protected MovableItem MovableArea1;
         protected MovableItem MovableArea2;
         protected MovableItem MovableArea3;
@@ -150,7 +150,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
         protected InteractiveContainer ContainerArea1;
 
-        protected Asol.Tools.WorkScheduler.Components.GSplitter _Splitter;
+        protected Asol.Tools.WorkScheduler.Components.Splitter _Splitter;
         private void button1_Click(object sender, EventArgs e)
         {
             this._SizeAxisH.Value = new DecimalNRange(100, 500);
