@@ -744,17 +744,16 @@ namespace Asol.Tools.WorkScheduler.Components
 
             using (GraphicsUseText(graphics))    // Nedávej tady CLIP na grafiku pro bounds: ona grafika už touhle dobou je korektně clipnutá na správný prostor controlu. Clipnutím na bounds se může část textu vykreslit i mimo control !!!
             {
-                // graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-                // graphics.TextContrast = 6;     nemá vliv
-                //  vcelku OK :  AntiAliasGridFit, ClearTypeGridFit
-                //  nic moc   :  AntiAlias, SystemDefault
-                //  hrozný    :  SingleBitPerPixel, SingleBitPerPixelGridFit
-
-
                 bool isVertical = (transformation.HasValue && (transformation.Value == MatrixTransformationType.Rotate90 || transformation.Value == MatrixTransformationType.Rotate270));
                 ExtendedContentAlignmentState alignState = new ExtendedContentAlignmentState(extAlignment);
                 int boundsLength = _GetMaximalAlignLength(bounds, alignState, 1, outerBounds, isVertical);
+
+                // Několik poznámek k měření velikosti textu pomocí Graphics:
+                // 1. graphics.MeasureString() NEREAGUJE na hodnotu graphics.TextRenderingHint: ať nastavím jaký Hint chci, výsledek měření bude vždy stejný
+                // 2. graphics.DrawString() REAGUJE na graphics.TextRenderingHint: 
+                //   a) vzhledově ideální je SystemDefault, ale velikost textu je jiná než bylo změřeno v graphics.MeasureString()
+                //   b) přesnost je správná při AntiAlias, kdy je text vizuálně vykreslen přesně do prostoru, který byl změřen
+                //   c) pokud chci použít ideální vzhled (SystemDefault), pak bych musel rozměr Width získaný v graphics.MeasureString() korigovat konstantou X, závislou na konkrétním fontu.
 
                 Font font = fontInfo.Font;
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, stringFormat);
@@ -851,7 +850,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Font font = fontInfo.Font;
             int height = font.Height;
-            float width = font.Size * (float)text.Length + 6f;
+            float width = font.Size * (float)text.Length + 6f;       // Přidávám 6px na šířku, protože toto měření opravdu není přesné...
             return new Size((int)width, height);
         }
         /// <summary>
@@ -869,7 +868,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Font font = fontInfo.Font;
             SizeF sizeF = graphics.MeasureString(text, font);
-            Size size = sizeF.Enlarge(4f, 3f).ToSize();
+            Size size = sizeF.Enlarge(4f, 3f).ToSize();              // Přidávám 4px na šířku, protože při kreslení (uvnitř metody _DrawString(), když volám _AlignContentToBounds()) přidávám 2 x 1px okraje! A další 2px jsou rezerva.
             return size;
         }
         #endregion
@@ -5472,6 +5471,13 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // SmoothingMode.AntiAlias poskytuje ideální hladké kreslení grafiky
             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;  // Nemá vliv na vykreslování čehokoliv
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias je jediný, který garantuje korektní měření textu, což je nezbytné pro ContentAlignement;
+
+            // graphics.SmoothingMode       nemá vliv na kvalitu písma
+            // graphics.TextContrast = 6    nemá vliv
+            // graphics.TextRenderingHint = Nejhezčí = nejčitelnější je SystemDefault. Ale AntiAlias dává nejpřesnější výsledky v měření fontu, což je klíčem pro správné zarovnání textu ContentAlignement, nejvíce je vidět v zarovnání doprava.
+            //  vcelku OK :  AntiAliasGridFit, ClearTypeGridFit
+            //  nic moc   :  AntiAlias, SystemDefault
+            //  hrozný    :  SingleBitPerPixel, SingleBitPerPixelGridFit
         }
         /// <summary>
         /// Nastaví Graphics tak, aby ideálně kreslil ostré linie
