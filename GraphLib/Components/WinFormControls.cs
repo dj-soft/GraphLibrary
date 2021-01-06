@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Windows.Forms;
+using WinForms = System.Windows.Forms;
 using System.ComponentModel;
 
 using GUI = Noris.LCS.Base.WorkScheduler;
@@ -32,12 +32,12 @@ namespace Asol.Tools.WorkScheduler.Components
             this.MaximizeBox = false;
             this.HelpButton = false;
 
-            this.IconBox = new PictureBox();
+            this.IconBox = new WinForms.PictureBox();
             FontInfo textFont = FontInfo.DefaultBold;
             textFont.ApplyZoom(1.45f);
-            this.MessageTextLabel = new System.Windows.Forms.Label() { BorderStyle = BorderStyle.None, AutoSize = false, Font = textFont.CreateNewFont() };
-            this.MessageTextBox = new TextBox() { ReadOnly = true, BorderStyle = BorderStyle.None, ScrollBars = ScrollBars.Both, WordWrap = true, Multiline = true, Font = textFont.CreateNewFont() };
-            this.MessageRtfBox = new RichTextBox() { ReadOnly = true, BorderStyle = BorderStyle.None, ScrollBars = RichTextBoxScrollBars.Both, Multiline = true, WordWrap = true };
+            this.MessageTextLabel = new System.Windows.Forms.Label() { BorderStyle = WinForms.BorderStyle.None, AutoSize = false, Font = textFont.CreateNewFont() };
+            this.MessageTextBox = new WinForms.TextBox() { ReadOnly = true, BorderStyle = WinForms.BorderStyle.None, ScrollBars = WinForms.ScrollBars.Both, WordWrap = true, Multiline = true, Font = textFont.CreateNewFont() };
+            this.MessageRtfBox = new WinForms.RichTextBox() { ReadOnly = true, BorderStyle = WinForms.BorderStyle.None, ScrollBars = WinForms.RichTextBoxScrollBars.Both, Multiline = true, WordWrap = true };
             this.MessageRtfBox.GotFocus += MessageRtfBox_GotFocus;
             this.DataPanel.Controls.Add(this.IconBox);
             this.DataPanel.Controls.Add(this.MessageTextLabel);
@@ -118,19 +118,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Objekt pro zobrazení ikony
         /// </summary>
-        protected PictureBox IconBox;
+        protected WinForms.PictureBox IconBox;
         /// <summary>
         /// Objekt pro zobrazení plain textu
         /// </summary>
-        protected TextBox MessageTextBox;
+        protected WinForms.TextBox MessageTextBox;
         /// <summary>
         /// Objekt pro zobrazení plain textu
         /// </summary>
-        protected System.Windows.Forms.Label MessageTextLabel;
+        protected WinForms.Label MessageTextLabel;
         /// <summary>
         /// Objekt pro zobrazení RTF textu
         /// </summary>
-        protected RichTextBox MessageRtfBox;
+        protected WinForms.RichTextBox MessageRtfBox;
         /// <summary>
         /// Aktuální režim textu
         /// </summary>
@@ -208,7 +208,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="buttons"></param>
         /// <param name="icon"></param>
         /// <returns></returns>
-        public static GUI.GuiDialogButtons ShowDialog(Form owner, string message, string title, GUI.GuiDialogButtons buttons = GUI.GuiDialogButtons.Ok, GUI.GuiImage icon = null)
+        public static GUI.GuiDialogButtons ShowDialog(WinForms.Form owner, string message, string title, GUI.GuiDialogButtons buttons = GUI.GuiDialogButtons.Ok, GUI.GuiImage icon = null)
         {
             GUI.GuiDialogButtons result = Noris.LCS.Base.WorkScheduler.GuiDialogButtons.None;
             using (WinFormDialog form = new WinFormDialog())
@@ -270,9 +270,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             base.Initialize();
 
-            this.DataPanel = new Panel() { BorderStyle = BorderStyle.None, Dock = DockStyle.Fill };
+            this.DataPanel = new WinForms.Panel() { BorderStyle = WinForms.BorderStyle.None, Dock = WinForms.DockStyle.Fill };
             this.Controls.Add(this.DataPanel);
-            this.ButtonsPanel = new Panel() { Height = ButtonPanelHeight, BorderStyle = BorderStyle.None, Dock = DockStyle.Bottom };
+            this.ButtonsPanel = new WinForms.Panel() { Height = ButtonPanelHeight, BorderStyle = WinForms.BorderStyle.None, Dock = WinForms.DockStyle.Bottom };
             this.Controls.Add(this.ButtonsPanel);
             this._PrepareButtons();
             this._CloseOnClick = true;
@@ -294,11 +294,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Panel, obsahující data
         /// </summary>
-        protected Panel DataPanel;
+        protected WinForms.Panel DataPanel;
         /// <summary>
         /// Panel, obsahující buttony
         /// </summary>
-        protected Panel ButtonsPanel;
+        protected WinForms.Panel ButtonsPanel;
         #endregion
         #region Buttony
         /// <summary>
@@ -378,7 +378,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.CancelButton = this._SearchCancelButton();
         }
         /// <summary>
-        /// Vrací defaultní button pro funkci <see cref="Form.AcceptButton"/>
+        /// Vrací defaultní button pro funkci <see cref="WinForms.Form.AcceptButton"/>
         /// </summary>
         /// <returns></returns>
         private WinButtonBase _SearchAcceptButton()
@@ -391,7 +391,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return null;
         }
         /// <summary>
-        /// Vrací defaultní button pro funkci <see cref="Form.CancelButton"/>
+        /// Vrací defaultní button pro funkci <see cref="WinForms.Form.CancelButton"/>
         /// </summary>
         /// <returns></returns>
         private WinButtonBase _SearchCancelButton()
@@ -633,7 +633,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// WinFormBase : Bázová třída pro formuláře
     /// </summary>
-    public class WinFormBase : Form
+    public class WinFormBase : WinForms.Form
     {
         #region Konstrukce
         /// <summary>
@@ -685,11 +685,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="owner"></param>
         /// <param name="widthRatio"></param>
         /// <param name="heightRatio"></param>
-        protected void SetBounds(Form owner, float widthRatio, float heightRatio)
+        protected void SetBounds(WinForms.Form owner, float widthRatio, float heightRatio)
         {
             if (owner != null)
                 this.Size = owner.ClientSize.ZoomByRatio(widthRatio, heightRatio);
-            this.StartPosition = FormStartPosition.CenterParent;
+            this.StartPosition = WinForms.FormStartPosition.CenterParent;
         }
         /// <summary>
         /// Při zobrazení formuláře
@@ -721,7 +721,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// WinButtonImage : třída pro buttony s více obrázky pro různé stavy
     /// </summary>
-    public class WinButtonImage : Button
+    public class WinButtonImage : WinForms.Button
     {
         #region Konstrukce
         /// <summary>
@@ -764,7 +764,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// MouseDown
         /// </summary>
         /// <param name="mevent"></param>
-        protected override void OnMouseDown(MouseEventArgs mevent)
+        protected override void OnMouseDown(WinForms.MouseEventArgs mevent)
         {
             this._IsDown = true;
             base.OnMouseDown(mevent);
@@ -774,7 +774,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// MouseUp
         /// </summary>
         /// <param name="mevent"></param>
-        protected override void OnMouseUp(MouseEventArgs mevent)
+        protected override void OnMouseUp(WinForms.MouseEventArgs mevent)
         {
             this._IsDown = false;
             base.OnMouseUp(mevent);
@@ -836,7 +836,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// WinButtonBase : bázová třída pro buttony
     /// </summary>
-    public class WinButtonBase : Button
+    public class WinButtonBase : WinForms.Button
     {
         #region Konstrukce
         /// <summary>
@@ -855,7 +855,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AutoSize = false;
             this.ImageAlign = ContentAlignment.MiddleCenter;
             this.TextAlign = ContentAlignment.MiddleRight;
-            this.TextImageRelation = TextImageRelation.ImageBeforeText;
+            this.TextImageRelation = WinForms.TextImageRelation.ImageBeforeText;
             this.UseCompatibleTextRendering = true;
             this.UseMnemonic = true;
             this.UseVisualStyleBackColor = true;
@@ -877,7 +877,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected override void Initialize()
         {
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.SetStyle(WinForms.ControlStyles.OptimizedDoubleBuffer | WinForms.ControlStyles.AllPaintingInWmPaint | WinForms.ControlStyles.UserPaint, true);
 
             base.Initialize();
 
@@ -906,7 +906,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslení
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnPaint(WinForms.PaintEventArgs e)
         {
             Rectangle bounds;
             int clientWidth = this.ClientSize.Width;
@@ -1085,7 +1085,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// WinPanel : bázová třída pro Panely
     /// </summary>
-    public class WinPanel : Panel
+    public class WinPanel : WinForms.Panel
     {
         #region Inicializace
         /// <summary>
@@ -1107,7 +1107,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void Initialize()
         {
             this.IsInitialized = false;
-            this.SetStyle(ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
+            this.SetStyle(WinForms.ControlStyles.ResizeRedraw | WinForms.ControlStyles.OptimizedDoubleBuffer, true);
         }
         /// <summary>
         /// Obsahuje true poté, kdy proběhl konstruktor a v něm kompletní inicializace.

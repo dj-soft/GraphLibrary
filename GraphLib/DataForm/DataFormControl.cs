@@ -92,8 +92,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
 
             Styles.CurrentType = StyleType.DarkFlat;
 
-            Styles.TextBox.BorderType = TextBoxBorderType.SoftDoublePlain;
-            Styles.TextBox.BorderType = TextBoxBorderType.SingleInteractiveHalf;
+            Styles.TextBox.BorderType = BorderType.SoftDoublePlain;
+            Styles.TextBox.BorderType = BorderType.SingleInteractiveHalf;
 
             this.ItemsList.Clear();
             InteractiveLabeledContainer tab = null;
@@ -175,8 +175,17 @@ Souřadnice prvku: {itemX}/{itemY}";
                     var textBounds = item.Text1.Bounds;
                     textBounds.Width = textWidths[nx % textWidths.Length];
                     item.Text1.Bounds = textBounds;
+                    int itemWidth = textBounds.Right + 4;
+                    if (nx == 3)
+                    {
+                        Rectangle buttonBounds = new Rectangle(textBounds.Right + 3, textBounds.Y - 1, 46, textBounds.Height + 2);
+                        item.Button.Visible = true;
+                        item.Button.Bounds = buttonBounds;
+                        item.Button.Text = "Tlačítko";
+                        itemWidth = buttonBounds.Right + 4;
+                    }
                     var itemSize = item.Size;
-                    itemSize.Width = textBounds.Right + 4;
+                    itemSize.Width = itemWidth;
                     item.Size = itemSize;
 
                     // Zvětšení velikosti Tabu tak, aby zobrazil i nově přidaný item:

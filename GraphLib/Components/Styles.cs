@@ -116,32 +116,6 @@ namespace Asol.Tools.WorkScheduler.Components
         private StyleType __CurrentType;
         #endregion
     }
-    /// <summary>
-    /// 
-    /// </summary>
-    public enum StyleType
-    {
-        /// <summary>
-        /// Systémový typ = opírá se o hodnoty ze <see cref="System.Drawing.SystemColors"/> a <see cref="System.Windows.Forms.SystemInformation"/>
-        /// </summary>
-        System,
-        /// <summary>
-        /// Světlý neutrální
-        /// </summary>
-        Light3D,
-        /// <summary>
-        /// Světlý neutrální bez 3D efektů
-        /// </summary>
-        LightFlat,
-        /// <summary>
-        /// Tmavý neutrální
-        /// </summary>
-        Dark3D,
-        /// <summary>
-        /// Tmavý neutrální bez 3D efektů
-        /// </summary>
-        DarkFlat
-    }
     #region ItemStyle : předek stylů
     /// <summary>
     /// <see cref="ItemStyle"/> : předek stylů
@@ -839,6 +813,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Font = DefaultFont;
             FontModifier = DefaultFontModifier;
+
             switch (styleType)
             {
                 case StyleType.System:
@@ -954,7 +929,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Druh okraje
         /// </summary>
-        public TextBoxBorderType? BorderType { get; set; }
+        public BorderType? BorderType { get; set; }
         /// <summary>
         /// Prostor mezi vnitřkem Borderu a začátkem textu = počet prázdných pixelů
         /// </summary>
@@ -975,6 +950,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             BorderType = DefaultBorderType;
             TextMargin = DefaultTextMargin;
+
             switch (styleType)
             {
                 case StyleType.System:
@@ -1045,7 +1021,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní hodnota pro <see cref="BorderColorMouseDown"/></summary>
         protected abstract Color DefaultBorderColorMouseDown { get; }
         /// <summary>Defaultní hodnota pro <see cref="BorderType"/></summary>
-        protected abstract TextBoxBorderType DefaultBorderType { get; }
+        protected abstract BorderType DefaultBorderType { get; }
         /// <summary>Defaultní hodnota pro <see cref="TextMargin"/></summary>
         protected abstract int DefaultTextMargin { get; }
         /// <summary>Maximální přípustná hodnota pro <see cref="TextMargin"/></summary>
@@ -1070,7 +1046,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Color ITextBorderStyle.GetTextColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((ILabelStyle)this).TextColor, () => ((ITextBorderStyle)this).TextColorDisabled, () => ((ITextBorderStyle)this).TextColorMouseOn, () => ((ITextBorderStyle)this).TextColorMouseDown); }
         Color ITextBorderStyle.GetBorderColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((ITextBorderStyle)this).BorderColor, () => ((ITextBorderStyle)this).BorderColorDisabled, () => ((ITextBorderStyle)this).BorderColorMouseOn, () => ((ITextBorderStyle)this).BorderColorMouseDown); }
 
-        TextBoxBorderType ITextBorderStyle.BorderType { get { return GetValue<TextBoxBorderType>(() => BorderType, () => Parent?.BorderType, () => StyleTextBorder.BorderType, () => DefaultBorderType); } }
+        BorderType ITextBorderStyle.BorderType { get { return GetValue<BorderType>(() => BorderType, () => Parent?.BorderType, () => StyleTextBorder.BorderType, () => DefaultBorderType); } }
         int ITextBorderStyle.TextMargin { get { return Align(GetValue<int>(() => TextMargin, () => Parent?.TextMargin, () => StyleTextBorder.TextMargin, () => DefaultTextMargin), 0, MaxTextMargin); } }
         #endregion
     }
@@ -1164,7 +1140,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     BorderColorDisabled = Color.FromArgb(96, 96, 96);
                     BorderColorMouseOn = Color.FromArgb(24, 24, 24);
                     BorderColorMouseDown = Color.FromArgb(0, 120, 215);
-                    BorderType = (styleType == StyleType.Light3D ? TextBoxBorderType.Single : TextBoxBorderType.Soft);
+                    BorderType = (styleType == StyleType.Light3D ? Components.BorderType.Single : Components.BorderType.Soft);
                     TextMargin = 1;
                     break;
                 case StyleType.Dark3D:
@@ -1173,7 +1149,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     BackColorWarning = Color.FromArgb(96, 32, 32);
                     BorderColorWarning = Color.FromArgb(192, 64, 64);
                     BackColorSelectedText = Color.FromArgb(196, 196, 224);
-                    TextColorSelectedText = Color.White;
+                    TextColorSelectedText = Color.Black;
                     CursorColor = Color.White;
                     BackColor = Color.FromArgb(24, 24, 24);
                     BackColorDisabled = Color.FromArgb(48, 48, 48);
@@ -1187,7 +1163,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     BorderColorDisabled = Color.FromArgb(96, 96, 96);
                     BorderColorMouseOn = Color.FromArgb(64, 64, 64);
                     BorderColorMouseDown = Color.FromArgb(64, 64, 64);
-                    BorderType = (styleType == StyleType.Dark3D ? TextBoxBorderType.Single : TextBoxBorderType.Soft);
+                    BorderType = (styleType == StyleType.Dark3D ? Components.BorderType.Single : Components.BorderType.Soft);
                     TextMargin = 1;
                     break;
             }
@@ -1253,7 +1229,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderColorMouseDown"/></summary>
         protected override Color DefaultBorderColorMouseDown { get { return SystemColors.ControlDarkDark; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderType"/></summary>
-        protected override TextBoxBorderType DefaultBorderType { get { return TextBoxBorderType.SoftSinglePlain; } }
+        protected override BorderType DefaultBorderType { get { return Components.BorderType.SoftSinglePlain; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextMargin"/></summary>
         protected override int DefaultTextMargin { get { return 1; } }
 
@@ -1287,11 +1263,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true tehdy, když this instance obsahuje alespoň jednu nenulovou hodnotu. Tedy typicky: return (this.Color.HasValue || ...);
         /// </summary>
         protected override bool HasValue { get { return (base.HasValue ||
-                    RoundCorner.HasValue); } }
+                    RoundCorner.HasValue || FontModifierFocused != null || TextAlignment.HasValue); } }
         /// <summary>
         /// Počet pixelů zaobleného rohu, default 0
         /// </summary>
         public int? RoundCorner { get; set; }
+        /// <summary>
+        /// Explicitně zadaný modifikátor písma pro stav Focused. Pokud není zadán, použije se <see cref="FontModifierInfo.Empty"/>
+        /// </summary>
+        public FontModifierInfo FontModifierFocused { get; set; }
+        /// <summary>
+        /// Zarovnání textu v rámci Buttonu
+        /// </summary>
+        public ContentAlignment? TextAlignment { get; set; }
 
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
@@ -1305,6 +1289,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void ActivateStyle(StyleType styleType)
         {
             base.ActivateStyle(styleType);
+            FontModifierFocused = DefaultFontModifierFocused;
+            TextAlignment = DefaultTextAlignment;
 
             switch (styleType)
             {
@@ -1327,7 +1313,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     BorderColorDisabled = Color.FromArgb(96, 96, 96);
                     BorderColorMouseOn = Color.FromArgb(64, 64, 64);
                     BorderColorMouseDown = Color.FromArgb(64, 64, 64);
-                    BorderType = (styleType == StyleType.Light3D ? TextBoxBorderType.Single : TextBoxBorderType.Soft);
+                    BorderType = (styleType == StyleType.Light3D ? Components.BorderType.Single : Components.BorderType.Soft);
                     TextMargin = 1;
                     break;
                 case StyleType.Dark3D:
@@ -1345,7 +1331,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     BorderColorDisabled = Color.FromArgb(96, 96, 96);
                     BorderColorMouseOn = Color.FromArgb(64, 64, 64);
                     BorderColorMouseDown = Color.FromArgb(64, 64, 64);
-                    BorderType = (styleType == StyleType.Dark3D ? TextBoxBorderType.Single : TextBoxBorderType.Soft);
+                    BorderType = (styleType == StyleType.Dark3D ? Components.BorderType.Single : Components.BorderType.Soft);
                     TextMargin = 1;
                     break;
             }
@@ -1370,8 +1356,12 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override TextBorderStyle StyleTextBorder { get { return StyleButton; } }
         #endregion
         #region Defaultní hodnoty: vlastní i overrides
-        /// <summary>Defaultní hodnota pro Počet pixelů zaobleného rohu.</summary>
+        /// <summary>Defaultní hodnota pro <see cref="RoundCorner"/>.</summary>
         protected virtual int DefaultRoundCorner { get { return 0; } }
+        /// <summary>Defaultní hodnota pro <see cref="FontModifierFocused"/>.</summary>
+        protected virtual FontModifierInfo DefaultFontModifierFocused { get { return GetDefault<FontModifierInfo>(ref _DefaultFontModifierFocused, () => new FontModifierInfo() { Bold = true} ); } } private static FontModifierInfo _DefaultFontModifierFocused;
+        /// <summary>Defaultní hodnota pro <see cref="TextAlignment"/>.</summary>
+        protected virtual ContentAlignment DefaultTextAlignment { get { return ContentAlignment.MiddleCenter; } }
 
         /// <summary>Defaultní hodnota pro <see cref="LabelStyle.Font"/>: třída <see cref="Button"/> používá jiný font než třída <see cref="Label"/>.</summary>
         protected override FontInfo DefaultFont { get { return ((IFontStyle)Styles.Font).FontButton; } }
@@ -1398,7 +1388,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderColorMouseDown"/></summary>
         protected override Color DefaultBorderColorMouseDown { get { return SystemColors.ControlDarkDark; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.BorderType"/></summary>
-        protected override TextBoxBorderType DefaultBorderType { get { return TextBoxBorderType.Single; } }
+        protected override BorderType DefaultBorderType { get { return Components.BorderType.Single; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextMargin"/></summary>
         protected override int DefaultTextMargin { get { return 1; } }
 
@@ -1407,6 +1397,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Implementace interface
         int IButtonStyle.RoundCorner { get { return GetValue<int>(() => RoundCorner, () => Parent?.RoundCorner, () => StyleButton.RoundCorner, () => DefaultRoundCorner); } }
+        FontInfo IButtonStyle.FontFocused { get { return GetFontInfo(() => Font, () => FontModifierFocused, () => Parent?.Font, () => Parent?.FontModifierFocused, () => StyleButton.Font, () => StyleButton.FontModifierFocused, DefaultFont, DefaultFontModifierFocused); } }
+        ContentAlignment IButtonStyle.TextAlignment { get { return GetValue<ContentAlignment>(() => TextAlignment, () => Parent?.TextAlignment, () => StyleButton.TextAlignment, () => DefaultTextAlignment); } }
         #endregion
     }
     #endregion
@@ -1984,7 +1976,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Reálný druh okraje
         /// </summary>
-        TextBoxBorderType BorderType { get; }
+        BorderType BorderType { get; }
         /// <summary>
         /// Prostor mezi vnitřkem Borderu a začátkem textu = počet prázdných pixelů.
         /// Rozumná hodnota je 0 až 6.
@@ -2053,6 +2045,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Počet pixelů zaobleného rohu, default 0
         /// </summary>
         int RoundCorner { get; }
+        /// <summary>
+        /// Font v situaci, kdy Button má Focus
+        /// </summary>
+        FontInfo FontFocused { get; }
+        /// <summary>
+        /// Zarovnání textu v rámci Buttonu
+        /// </summary>
+        ContentAlignment TextAlignment { get; }
     }
     /// <summary>
     /// Deklarace stylu pro kreslení Panelů
@@ -2173,12 +2173,38 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         ScrollBarProperties Properties { get; }
     }
-
+    /// <summary>
+    /// Základní styly, na které je možno inicializovat knihovnu stylů <see cref="Styles"/>.
+    /// Styl je vždy možno plně modifikovat na jiné hodnoty.
+    /// </summary>
+    public enum StyleType
+    {
+        /// <summary>
+        /// Systémový typ = opírá se o hodnoty ze <see cref="System.Drawing.SystemColors"/> a <see cref="System.Windows.Forms.SystemInformation"/>
+        /// </summary>
+        System,
+        /// <summary>
+        /// Světlý neutrální
+        /// </summary>
+        Light3D,
+        /// <summary>
+        /// Světlý neutrální bez 3D efektů
+        /// </summary>
+        LightFlat,
+        /// <summary>
+        /// Tmavý neutrální
+        /// </summary>
+        Dark3D,
+        /// <summary>
+        /// Tmavý neutrální bez 3D efektů
+        /// </summary>
+        DarkFlat
+    }
     /// <summary>
     /// Druhy okraje (rámeček) okolo textboxu
     /// </summary>
     [Flags]
-    public enum TextBoxBorderType
+    public enum BorderType
     {
         /// <summary>
         /// Nikdy není kreslen

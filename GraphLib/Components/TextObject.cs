@@ -18,7 +18,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public TextObject()
         {
-            this.BackgroundMode = DrawBackgroundMode.Transparent;
         }
         /// <summary>
         /// Vykreslí text

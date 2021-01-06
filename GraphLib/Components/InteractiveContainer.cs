@@ -309,6 +309,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (value)
                 {   // Zobrazit: použijeme property TitleLabel, tam se v případě potřeby vytvoří new instance, a do ní vložíme Visible = true:
                     TitleLabel.Visible = true;
+                    SetStylesToControls();
                 }
                 else
                 {   // Zneviditelnit = zlikvidovat:
@@ -332,14 +333,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (_TitleLabel == null)
                 {
-                    _TitleLabel = new Label()
-                    {
-                        Text = "TitleLabel",
-                        Bounds = new Rectangle(4, 4, 180, 20),
-                        Alignment = ContentAlignment.TopLeft,
-                        PrepareToolTipInParent = true
-                    };
-                    _TitleLabel.Visible = false;
+                    _TitleLabel = new Label() { Text = "TitleLabel", Bounds = new Rectangle(4, 4, 180, 20), Alignment = ContentAlignment.TopLeft, PrepareToolTipInParent = true, Visible = false, StyleParent = TitleLabelStyle };
                     this.AddItem(this._TitleLabel);
                 }
                 return _TitleLabel;
@@ -382,7 +376,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Titulkový label. Pokud je čtena hodnota, která by dosud byla null (tzn. <see cref="TitleLineVisible"/> je false), pak bude nejprve vytvořena new instance a ta vrácena,
+        /// Titulková linka. Pokud je čtena hodnota, která by dosud byla null (tzn. <see cref="TitleLineVisible"/> je false), pak bude nejprve vytvořena new instance a ta vrácena,
         /// ale její vlastní Visible bude false.
         /// </summary>
         public Line3D TitleLine
@@ -391,12 +385,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (_TitleLine == null)
                 {
-                    _TitleLine = new Line3D()
-                    {
-                        Bounds = new Rectangle(9, 26, 200, 2),
-                        PrepareToolTipInParent = true
-                    };
-                    _TitleLine.Visible = false;
+                    _TitleLine = new Line3D() { Bounds = new Rectangle(9, 26, 200, 2), PrepareToolTipInParent = true, Visible = false };
                     this.AddItem(this._TitleLine);
                 }
                 return _TitleLine;
@@ -443,6 +432,23 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         private static LabelStyle _TitleLabelStyleFocused;
+        /// <summary>
+        /// Připraví a vloží styly do this controlů (Title a Line)
+        /// </summary>
+        /// <param name="focused"></param>
+        /// <param name="force"></param>
+        protected void SetStylesToControls(bool? focused = null, bool force = false)
+        {
+            if (TitleLabelVisible)
+            {
+                if (force || TitleLabel.StyleParent == null)
+                {
+                    bool focus = (focused.HasValue ? focused.Value : this.HasFocus);
+                    TitleLabel.StyleParent = (!focus ? TitleLabelStyle : TitleLabelStyleFocused);
+                    TitleLabel.Invalidate();
+                }
+            }
+        }
         #endregion
         #region Interaktivita
         /// <summary>
@@ -453,11 +459,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusEnter(e);
-            if (TitleLabelVisible)
-            {
-                TitleLabel.StyleParent = TitleLabelStyleFocused;
-                TitleLabel.Invalidate();
-            }
+            SetStylesToControls(true, true);
         }
         /// <summary>
         /// Po odchodu Focusu z Containeru. Třída <see cref="InteractiveLabeledContainer"/> řídí modifikaci fontu a barvy titulku
@@ -467,12 +469,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusLeave(e);
-            if (TitleLabelVisible)
-            {
-                TitleLabel.StyleParent = TitleLabelStyle;
-                TitleLabel.Invalidate();
-            }
-            TitleLabel.Invalidate();
+            SetStylesToControls(false, true);
         }
         #endregion
     }

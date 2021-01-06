@@ -21,26 +21,8 @@ namespace Asol.Tools.WorkScheduler.DataForm
             this.TitleLabel.Text = "Popisek:";
             this.TitleLabel.Bounds = new Rectangle(4, 4, 95, 20);
             this.TitleLabel.Alignment = ContentAlignment.MiddleRight;
-            this.TitleLabel.PrepareToolTipInParent = true;
             this.TitleLabel.Visible = true;
-
-            this.Text1 = new TextEdit()
-            {
-                Bounds = new Rectangle(104, 4, 120, 20),
-                Alignment = System.Windows.Forms.HorizontalAlignment.Left,
-                PrepareToolTipInParent = true
-            };
-            this.AddItem(this.Text1);
-
-            this.Text2 = new TextEdit()
-            {
-                Bounds = new Rectangle(228, 4, 250, 20),
-                Alignment = System.Windows.Forms.HorizontalAlignment.Left,
-                PrepareToolTipInParent = true,
-                Visible = false
-            };
-            this.AddItem(this.Text2);
-
+            this.Text1.Visible = true;
             this.Size = new Size(240, 28);
             // this.TitleLine.Bounds = new Rectangle(4, 1, 232, 3);
         }
@@ -69,24 +51,16 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// </summary>
         public InteractiveIcon RightActiveIcon { get { return this.Text1.RightActiveIcon; } set { this.Text1.RightActiveIcon = value; this.Text2.RightActiveIcon = value; } }
         /// <summary>
-        /// Kompletní styl textboxu
-        /// </summary>
-        public TextBoxStyle Style { get { return this.Text1.Style; } set { this.Text1.Style = value; this.Text2.Style = value; } }
-        /// <summary>
-        /// Je tento prvek Visible
-        /// </summary>
-        public bool Visible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
-        /// <summary>
         /// Je tento prvek Enabled?
         /// Do prvku, který NENÍ Enabled, nelze vstoupit Focusem (ani provést DoubleClick ani na ikoně / overlay).
         /// </summary>
-        public bool Enabled { get { return this.Text1.Enabled; } set { this.TitleLabel.Enabled = value; this.Text1.Enabled = value; this.Text2.Enabled = value; } }
+        public new bool Enabled { get { return this.Text1.Enabled; } set { this.TitleLabel.Enabled = value; this.Text1.Enabled = value; this.Text2.Enabled = value; } }
         /// <summary>
         /// Je tento prvek ReadOnly?
         /// Do prvku, který JE ReadOnly, lze vstoupit Focusem, lze provést DoubleClick včetně ikony / overlay.
         /// Ale nelze prvek editovat, a má vzhled prvku který není Enabled (=typicky má šedou barvu a nereaguje vizuálně na myš).
         /// </summary>
-        public bool ReadOnly { get { return this.Text1.ReadOnly; } set { this.TitleLabel.Enabled = value; this.Text1.ReadOnly = value; this.Text2.ReadOnly = value; } }
+        public new bool ReadOnly { get { return this.Text1.ReadOnly; } set { this.TitleLabel.Enabled = value; this.Text1.ReadOnly = value; this.Text2.ReadOnly = value; } }
         /// <summary>
         /// ToolTip text
         /// </summary>
@@ -108,12 +82,51 @@ namespace Asol.Tools.WorkScheduler.DataForm
         /// <summary>
         /// První Textbox / Reference / Číslo
         /// </summary>
-        public TextEdit Text1 { get; private set; }
+        public TextEdit Text1
+        {
+            get
+            {
+                if (_Text1 == null)
+                {
+                    _Text1 = new TextEdit() { Bounds = new Rectangle(104, 4, 120, 20), Visible = false };
+                    this.AddItem(this._Text1);
+                }
+                return _Text1;
+            }
+        }
+        private TextEdit _Text1;
         /// <summary>
         /// Druhý Textbox / Název
         /// </summary>
-        public TextEdit Text2 { get; private set; }
-
+        public TextEdit Text2
+        {
+            get
+            {
+                if (_Text2 == null)
+                {
+                    _Text2 = new TextEdit() { Bounds = new Rectangle(228, 4, 250, 20), Visible = false };
+                    this.AddItem(this._Text2);
+                }
+                return _Text2;
+            }
+        }
+        private TextEdit _Text2;
+        /// <summary>
+        /// Tlačítko
+        /// </summary>
+        public Button Button
+        {
+            get
+            {
+                if (_Button == null)
+                {
+                    _Button = new Button() { Bounds = new Rectangle(), Visible = false };
+                    this.AddItem(this._Button);
+                }
+                return _Button;
+            }
+        }
+        private Button _Button;
         #region Interaktivita
         /// <summary>
         /// Po vstupu Focusu do containeru

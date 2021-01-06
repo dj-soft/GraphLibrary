@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Windows.Forms;
+using WinForms = System.Windows.Forms;
 using System.ComponentModel;
 
 using Asol.Tools.WorkScheduler.Components;
@@ -147,10 +147,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.ConfigTree = new System.Windows.Forms.TreeView()
             {
-                Dock = DockStyle.Fill,
-                BorderStyle = BorderStyle.None,
+                Dock = WinForms.DockStyle.Fill,
+                BorderStyle = WinForms.BorderStyle.None,
                 CheckBoxes = false,
-                DrawMode = TreeViewDrawMode.OwnerDrawText,
+                DrawMode = WinForms.TreeViewDrawMode.OwnerDrawText,
                 FullRowSelect = true,
                 HideSelection = false,
                 HotTracking = false,
@@ -164,7 +164,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             };
             this.ConfigTree.DrawNode += ConfigTree_DrawNode;
             this.ConfigTree.AfterSelect += ConfigTree_AfterSelect;
-            this.ConfigContainer = new SplitContainer() { FixedPanel = FixedPanel.Panel1, SplitterDistance = 270, Dock = DockStyle.Fill };
+            this.ConfigContainer = new WinForms.SplitContainer() { FixedPanel = WinForms.FixedPanel.Panel1, SplitterDistance = 270, Dock = WinForms.DockStyle.Fill };
             this.NodeFontInfoMain = FontInfo.CaptionBoldBig;
             this.NodeFontMain = this.NodeFontInfoMain.CreateNewFont();
             this.NodeFontInfoStandard = FontInfo.CaptionBold;
@@ -215,7 +215,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ConfigTree_DrawNode(object sender, DrawTreeNodeEventArgs e)
+        private void ConfigTree_DrawNode(object sender, WinForms.DrawTreeNodeEventArgs e)
         {
             System.Windows.Forms.TreeNode node = e.Node;
 
@@ -228,7 +228,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             Color nodeColor = (e.Node.IsSelected ? Color.LightBlue : this.ConfigTree.BackColor);
             Rectangle rowBounds = new Rectangle(nodeBounds.X, nodeBounds.Y + 1, treeSize.Width - nodeBounds.X, nodeBounds.Height - 2);
-            Painter.DrawAreaBase(e.Graphics, rowBounds, nodeColor, Orientation.Horizontal, GInteractiveState.Enabled);
+            Painter.DrawAreaBase(e.Graphics, rowBounds, nodeColor, WinForms.Orientation.Horizontal, GInteractiveState.Enabled);
 
             Rectangle textBounds = new Rectangle(nodeBounds.X + 3, nodeBounds.Y + 1, treeSize.Width - nodeBounds.X - 6, nodeBounds.Height - 2);
             FontInfo fontInfo = this.NodeFontInfoStandard;
@@ -249,11 +249,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Hlavní container
         /// </summary>
-        protected SplitContainer ConfigContainer;
+        protected WinForms.SplitContainer ConfigContainer;
         /// <summary>
         /// Strom obsahující položky konfigurace
         /// </summary>
-        protected TreeView ConfigTree;
+        protected WinForms.TreeView ConfigTree;
         /// <summary>
         /// Font pro hlavní úroveň nodů
         /// </summary>
@@ -319,9 +319,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             editorItem.VisualControl.ReadFromData();
 
-            Panel panel = editorItem.VisualControl.Panel;
+            WinForms.Panel panel = editorItem.VisualControl.Panel;
             panel.Visible = false;
-            panel.Dock = DockStyle.Fill;
+            panel.Dock = WinForms.DockStyle.Fill;
             this.ConfigContainer.Panel2.Controls.Add(panel);
         }
         /// <summary>
@@ -336,7 +336,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._TreeNodeDict.TryGetValue(nodeText, out node))
             {
                 string text = null;
-                TreeNodeCollection parentCollection = null;
+                WinForms.TreeNodeCollection parentCollection = null;
                 Font font = null;
                 string parentText = nodeText.SplitOn(SchedulerConfig.EditTitle_Separator, true);
                 if (parentText.Length == 0)
@@ -364,7 +364,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ConfigTree_AfterSelect(object sender, TreeViewEventArgs e)
+        private void ConfigTree_AfterSelect(object sender, WinForms.TreeViewEventArgs e)
         {
             System.Windows.Forms.TreeNode node = e.Node;
             SchedulerEditorItem editorItem = node.Tag as SchedulerEditorItem;
@@ -418,7 +418,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="owner"></param>
         /// <param name="config"></param>
-        public static void ShowDialog(Form owner, SchedulerConfig config)
+        public static void ShowDialog(WinForms.Form owner, SchedulerConfig config)
         {
             using (SchedulerConfigForm form = new SchedulerConfigForm())
             {
@@ -621,7 +621,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region ISchedulerEditorControlItem
         void ISchedulerEditorControlItem.ReadFromData() { this.ReadFromData(); }
         void ISchedulerEditorControlItem.SaveToData() { this.SaveToData(); }
-        Panel ISchedulerEditorControlItem.Panel { get { return this; } }
+        WinForms.Panel ISchedulerEditorControlItem.Panel { get { return this; } }
         #endregion
     }
     /// <summary>
@@ -639,8 +639,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             base.Initialize();
 
-            this.SnapCheck = new CheckBox() { Bounds = new Rectangle(14, 35, 174, 24), Text = "Přichytávat, na vzdálenost:", TabIndex = 0 };
-            this.DistTrack = new System.Windows.Forms.TrackBar() { Bounds = new Rectangle(50, 61, 188, 45), Minimum = 0, Maximum = ConfigSnapSamplePanel.SnapMaxDistance, TickFrequency = 2, TickStyle = TickStyle.TopLeft, TabIndex = 1 };
+            this.SnapCheck = new WinForms.CheckBox() { Bounds = new Rectangle(14, 35, 174, 24), Text = "Přichytávat, na vzdálenost:", TabIndex = 0 };
+            this.DistTrack = new System.Windows.Forms.TrackBar() { Bounds = new Rectangle(50, 61, 188, 45), Minimum = 0, Maximum = ConfigSnapSamplePanel.SnapMaxDistance, TickFrequency = 2, TickStyle = WinForms.TickStyle.TopLeft, TabIndex = 1 };
             this.PixelLabel = new System.Windows.Forms.Label() { Bounds = new Rectangle(194, 35, 59, 23), AutoSize = false, Text = "", TextAlign = ContentAlignment.MiddleLeft, TabIndex = 2 };
             this.SamplePanel = new ConfigSnapSamplePanel();
 
@@ -686,7 +686,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// CheckBox 
         /// </summary>
-        protected CheckBox SnapCheck;
+        protected WinForms.CheckBox SnapCheck;
         /// <summary>
         /// TrackBar 
         /// </summary>
@@ -872,7 +872,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected override void Initialize()
         {
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.SetStyle(WinForms.ControlStyles.OptimizedDoubleBuffer | WinForms.ControlStyles.AllPaintingInWmPaint | WinForms.ControlStyles.UserPaint, true);
 
             base.Initialize();
 
@@ -913,7 +913,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslení
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnPaint(WinForms.PaintEventArgs e)
         {
             e.Graphics.Clear(this.SampleBackColor);
             switch (this.ImageType)
@@ -942,14 +942,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslí sample typu: None
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintNone(PaintEventArgs e)
+        protected void PaintNone(WinForms.PaintEventArgs e)
         {
         }
         /// <summary>
         /// Vykreslí sample typu: Sequence
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintSequence(PaintEventArgs e)
+        protected void PaintSequence(WinForms.PaintEventArgs e)
         {
             Color color;
 
@@ -983,7 +983,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslí sample typu: InnerItem
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintInnerItem(PaintEventArgs e)
+        protected void PaintInnerItem(WinForms.PaintEventArgs e)
         {
             Color color;
 
@@ -1018,7 +1018,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslí sample typu: OriginalTimeNear (v témže grafu)
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintOriginalTimeNear(PaintEventArgs e)
+        protected void PaintOriginalTimeNear(WinForms.PaintEventArgs e)
         {
             Color color;
 
@@ -1042,11 +1042,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Řádek horní:
             Rectangle boundsA = new Rectangle(2, yA, OptimalWidth - 4, hR);
-            Painter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.Enabled);
+            Painter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, WinForms.Orientation.Horizontal, GInteractiveState.Enabled);
 
             // Řádek dolní:
             Rectangle boundsB = new Rectangle(2, yB, OptimalWidth - 4, hR);
-            Painter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.MouseOver);
+            Painter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, WinForms.Orientation.Horizontal, GInteractiveState.MouseOver);
 
             // Linka originálního času:
             Pen pen = Skin.Pen(this.SampleOriginalTimeColor);
@@ -1068,7 +1068,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslí sample typu: OriginalTimeLong (v jiném grafu)
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintOriginalTimeLong(PaintEventArgs e)
+        protected void PaintOriginalTimeLong(WinForms.PaintEventArgs e)
         {
             Color color;
 
@@ -1092,11 +1092,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Řádek horní:
             Rectangle boundsA = new Rectangle(2, yA, OptimalWidth - 4, hR);
-            Painter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.MouseOver);
+            Painter.DrawAreaBase(e.Graphics, boundsA, this.SampleBackColor, WinForms.Orientation.Horizontal, GInteractiveState.MouseOver);
 
             // Řádek dolní:
             Rectangle boundsB = new Rectangle(2, yB, OptimalWidth - 4, hR);
-            Painter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, Orientation.Horizontal, GInteractiveState.Enabled);
+            Painter.DrawAreaBase(e.Graphics, boundsB, this.SampleBackColor, WinForms.Orientation.Horizontal, GInteractiveState.Enabled);
 
             // Linka originálního času:
             Pen pen = Skin.Pen(this.SampleOriginalTimeColor);
@@ -1118,7 +1118,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslí sample typu: GridTick
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintGridTick(PaintEventArgs e)
+        protected void PaintGridTick(WinForms.PaintEventArgs e)
         {
             Color color;
 
@@ -1173,7 +1173,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="source"></param>
         /// <param name="target"></param>
         /// <param name="sameY"></param>
-        protected void PaintMagnetLine(PaintEventArgs e, Point source, Point target, bool sameY = false)
+        protected void PaintMagnetLine(WinForms.PaintEventArgs e, Point source, Point target, bool sameY = false)
         {
             if (source.X == target.X) return;
             if (sameY) target.Y = source.Y;
@@ -1455,7 +1455,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region ISchedulerEditorControlItem
         void ISchedulerEditorControlItem.ReadFromData() { this.ReadFromData(); }
         void ISchedulerEditorControlItem.SaveToData() { this.SaveToData(); }
-        Panel ISchedulerEditorControlItem.Panel { get { return this; } }
+        WinForms.Panel ISchedulerEditorControlItem.Panel { get { return this; } }
         #endregion
     }
     /// <summary>
@@ -1473,8 +1473,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             base.Initialize();
 
-            this.Radio0 = new RadioButton() { Bounds = new Rectangle(14, 35, 200, 24), TabIndex = 0 };
-            this.Radio1 = new RadioButton() { Bounds = new Rectangle(14, 70, 200, 24), TabIndex = 0 };
+            this.Radio0 = new WinForms.RadioButton() { Bounds = new Rectangle(14, 35, 200, 24), TabIndex = 0 };
+            this.Radio1 = new WinForms.RadioButton() { Bounds = new Rectangle(14, 70, 200, 24), TabIndex = 0 };
             this.SamplePanel = new ConfigLinkLineSamplePanel();
 
             this.SuspendLayout();
@@ -1515,11 +1515,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// RadioButton pro hodnotu 0
         /// </summary>
-        protected RadioButton Radio0;
+        protected WinForms.RadioButton Radio0;
         /// <summary>
         /// RadioButton pro hodnotu 1
         /// </summary>
-        protected RadioButton Radio1;
+        protected WinForms.RadioButton Radio1;
         /// <summary>
         /// ConfigSnapSamplePanel 
         /// </summary>
@@ -1695,7 +1695,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected override void Initialize()
         {
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            this.SetStyle(WinForms.ControlStyles.OptimizedDoubleBuffer | WinForms.ControlStyles.AllPaintingInWmPaint | WinForms.ControlStyles.UserPaint, true);
 
             base.Initialize();
 
@@ -1726,7 +1726,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vykreslení
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnPaint(WinForms.PaintEventArgs e)
         {
             e.Graphics.Clear(this.SampleBackColor);
 

@@ -1759,7 +1759,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Typ rámečku
         /// </summary>
-        public BorderStyleType BorderStyle { get { return this._Owner.GetValue(this._SkinSetKey, "BorderStyle", DefaultBorderStyle); } set { this._Owner.SetValue(this._SkinSetKey, "BorderStyle", value); } }
+        public BorderType BorderStyle { get { return this._Owner.GetValue(this._SkinSetKey, "BorderStyle", DefaultBorderStyle); } set { this._Owner.SetValue(this._SkinSetKey, "BorderStyle", value); } }
         /// <summary>
         /// Vnitřní okraj mezi Border a Textem, počet pixelů.
         /// </summary>
@@ -1865,7 +1865,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Default pro: Styl rámečku
         /// </summary>
-        protected virtual BorderStyleType DefaultBorderStyle { get { return BorderStyleType.Effect3D; } }
+        protected virtual BorderType DefaultBorderStyle { get { return BorderType.SingleInteractiveHalf; } }
         /// <summary>
         /// Default pro: Vnitřní okraj mezi Border a Textem, počet pixelů.
         /// </summary>

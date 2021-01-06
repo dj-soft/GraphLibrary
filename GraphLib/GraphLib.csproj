@@ -86,6 +86,7 @@
     <Compile Include="Components\BaseAxis.cs" />
     <Compile Include="Components\BitStorage.cs" />
     <Compile Include="Components\BoundsInfo.cs" />
+    <Compile Include="Components\Button.cs" />
     <Compile Include="Components\Controls.cs">
       <SubType>Component</SubType>
     </Compile>

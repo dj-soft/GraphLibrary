@@ -1995,42 +1995,4 @@ namespace Asol.Tools.WorkScheduler.Components
         Stop = 4
     }
     #endregion
-    #region Vizuální styly : interface IVisualMember, class VisualStyle, enum BorderLinesType
-    /// <summary>
-    /// Typ čáry při kreslení Borders, hodnoty lze sčítat
-    /// </summary>
-    [Flags]
-    public enum BorderLinesType
-    {
-        /// <summary>Žádné</summary>
-        None = 0,
-
-        /// <summary>Vodorovné = tečkovaná čára</summary>
-        HorizontalDotted = 1,
-        /// <summary>Vodorovné = plná čára</summary>
-        HorizontalSolid = HorizontalDotted << 1,
-        /// <summary>Vodorovné = plná čára s barevným 3D efektem Sunken (jakoby potopený dolů)</summary>
-        Horizontal3DSunken = HorizontalSolid << 1,
-        /// <summary>Vodorovné = plná čára s barevným 3D efektem Risen (jakoby vystupující nahoru)</summary>
-        Horizontal3DRisen = Horizontal3DSunken << 1,
-
-        /// <summary>Svislé = tečkovaná čára</summary>
-        VerticalDotted = Horizontal3DRisen << 1,
-        /// <summary>Svislé = plná čára</summary>
-        VerticalSolid = VerticalDotted << 1,
-        /// <summary>Svislé = plná čára s barevným 3D efektem Sunken (jakoby potopený dolů)</summary>
-        Vertical3DSunken = VerticalSolid << 1,
-        /// <summary>Svislé = plná čára s barevným 3D efektem Risen (jakoby vystupující nahoru)</summary>
-        Vertical3DRisen = Vertical3DSunken << 1,
-
-        /// <summary>Obě čáry tečkované, bez 3D efektu</summary>
-        AllDotted = HorizontalDotted | VerticalDotted,
-        /// <summary>Obě čáry plné, bez 3D efektu</summary>
-        AllSolid = HorizontalSolid | VerticalSolid,
-        /// <summary>Obě čáry s barevným 3D efektem Sunken (jakoby potopený dolů)</summary>
-        All3DSunken = Horizontal3DSunken | Vertical3DSunken,
-        /// <summary>Obě čáry s barevným 3D efektem Risen (jakoby vystupující nahoru)</summary>
-        All3DRisen = Horizontal3DRisen | Vertical3DRisen
-    }
-    #endregion
 }

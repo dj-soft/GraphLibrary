@@ -153,10 +153,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="borderType"></param>
         /// <returns></returns>
-        internal static int GetBorderWidth(TextBoxBorderType borderType)
+        internal static int GetBorderWidth(BorderType borderType)
         {
-            if (borderType.HasFlag(TextBoxBorderType.Single)) return 1;
-            if (borderType.HasFlag(TextBoxBorderType.Double)) return 2;
+            if (borderType.HasFlag(BorderType.Single)) return 1;
+            if (borderType.HasFlag(BorderType.Double)) return 2;
             return 0;
         }
         /// <summary>
@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="interactiveState"></param>
         /// <param name="drawSides"></param>
         /// <param name="dashStyle"></param>
-        internal static void DrawBorder(Graphics graphics, Rectangle bounds, Color borderColor, TextBoxBorderType borderType = TextBoxBorderType.Single, GInteractiveState interactiveState = GInteractiveState.Enabled, RectangleSide drawSides = RectangleSide.All, DashStyle dashStyle = DashStyle.Solid)
+        internal static void DrawBorder(Graphics graphics, Rectangle bounds, Color borderColor, BorderType borderType = BorderType.Single, GInteractiveState interactiveState = GInteractiveState.Enabled, RectangleSide drawSides = RectangleSide.All, DashStyle dashStyle = DashStyle.Solid)
         {
             if (drawSides == RectangleSide.None) return;
 
@@ -224,7 +224,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (drawSides.HasFlag(RectangleSide.Bottom) && w > 0)
                         graphics.DrawLine(Skin.Pen(borderColorRB, dashStyle: dashStyle), x0, y8, x8, y8);
                 }
-                else if (borderType.HasFlag(TextBoxBorderType.Soft))
+                else if (borderType.HasFlag(BorderType.Soft))
                 {   // Měkký okraj = vynecháme kreslení do rohových pixelů:
                     if (drawSides.HasFlag(RectangleSide.Left) && h > 2)
                         graphics.FillRectangle(Skin.Brush(borderColorLT), x0, y1, t, h2);
@@ -273,10 +273,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="borderType"></param>
         /// <param name="interactiveState"></param>
         /// <returns></returns>
-        private static bool ModifyBorderColorByState(ref Color borderColor, TextBoxBorderType borderType, GInteractiveState interactiveState)
+        private static bool ModifyBorderColorByState(ref Color borderColor, BorderType borderType, GInteractiveState interactiveState)
         {
-            bool isInteractiveHalf = borderType.HasFlag(TextBoxBorderType.InteractiveHalf);
-            bool isInteractiveOnly = borderType.HasFlag(TextBoxBorderType.InteractiveOnly);
+            bool isInteractiveHalf = borderType.HasFlag(BorderType.InteractiveHalf);
+            bool isInteractiveOnly = borderType.HasFlag(BorderType.InteractiveOnly);
             if (isInteractiveHalf || isInteractiveOnly)
             {
                 bool isActive = (!interactiveState.HasFlag(GInteractiveState.Disabled) &&
@@ -299,14 +299,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="borderColorLT"></param>
         /// <param name="borderColorRB"></param>
         /// <returns></returns>
-        private static bool ModifyBorderColorBy3DEffect(Color borderColor, TextBoxBorderType borderType, GInteractiveState interactiveState, out Color borderColorLT, out Color borderColorRB)
+        private static bool ModifyBorderColorBy3DEffect(Color borderColor, BorderType borderType, GInteractiveState interactiveState, out Color borderColorLT, out Color borderColorRB)
         {
             borderColorLT = borderColor;
             borderColorRB = borderColor;
 
-            bool is3DDown = borderType.HasFlag(TextBoxBorderType.Effect3DDown);
-            bool is3DUp = borderType.HasFlag(TextBoxBorderType.Effect3DUp);
-            bool is3DInteractive = borderType.HasFlag(TextBoxBorderType.Effect3DInteractive);
+            bool is3DDown = borderType.HasFlag(BorderType.Effect3DDown);
+            bool is3DUp = borderType.HasFlag(BorderType.Effect3DUp);
+            bool is3DInteractive = borderType.HasFlag(BorderType.Effect3DInteractive);
 
             if (is3DDown || is3DUp || is3DInteractive)
             {
@@ -735,7 +735,6 @@ namespace Asol.Tools.WorkScheduler.Components
             if (fontInfo == null || String.IsNullOrEmpty(text)) return textArea;
             if (bounds.Width <= 0 || bounds.Height <= 0) return textArea;
 
-
             if (stringFormat == null)
             {
                 StringFormatFlags sff = stringFormatFlags ?? DrawStringStandardFormatFlags;
@@ -751,9 +750,14 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Několik poznámek k měření velikosti textu pomocí Graphics:
                 // 1. graphics.MeasureString() NEREAGUJE na hodnotu graphics.TextRenderingHint: ať nastavím jaký Hint chci, výsledek měření bude vždy stejný
                 // 2. graphics.DrawString() REAGUJE na graphics.TextRenderingHint: 
-                //   a) vzhledově ideální je SystemDefault, ale velikost textu je jiná než bylo změřeno v graphics.MeasureString()
+                //   a) vzhledově ideální je ClearTypeGridFit nebo SystemDefault, ale velikost textu je jiná než bylo změřeno v graphics.MeasureString()
                 //   b) přesnost je správná při AntiAlias, kdy je text vizuálně vykreslen přesně do prostoru, který byl změřen
                 //   c) pokud chci použít ideální vzhled (SystemDefault), pak bych musel rozměr Width získaný v graphics.MeasureString() korigovat konstantou X, závislou na konkrétním fontu.
+
+                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;         // Nebude přesně zarovnávat Align = RightToLeft, ale všechna písmena budou čitelnější.
+                graphics.SmoothingMode = SmoothingMode.None;
+                graphics.InterpolationMode = InterpolationMode.Default;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
                 Font font = fontInfo.Font;
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, stringFormat);
@@ -761,7 +765,11 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 textArea = _AlignContentToBounds(textSize, alignState, bounds, 1, true, outerBounds);
 
-                // textArea = textSize.AlignTo(bounds, extAlignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
+
+                // test only
+                //      graphics.FillRectangle(Skin.Brush(Color.BlueViolet), textArea);
+
+
 
                 if (drawBackground != null)
                     drawBackground(textArea);                             // UserDraw pozadí pod textem: v nativní orientaci
@@ -777,7 +785,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (brush != null)
                     graphics.DrawString(text, font, brush, textArea, stringFormat);
                 else if (color.HasValue)
-                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, stringFormat);
+                    //graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, stringFormat);
+                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea.X, textArea.Y, stringFormat);
                 else
                     graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, stringFormat);
 
@@ -4161,7 +4170,7 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <returns></returns>
         public static int GetSingleLineOptimalHeight(ITextBoxStyle style)
         {
-            TextBoxBorderType borderType = style.BorderType;
+            BorderType borderType = style.BorderType;
             int borderWidth = Painter.GetBorderWidth(borderType);
             int textMargin = style.TextMargin;
             FontInfo font = style.Font;
@@ -5468,9 +5477,16 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// <param name="renderingHint"></param>
         private static void _GraphicsSetText(Graphics graphics, System.Drawing.Text.TextRenderingHint renderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias)
         {
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // SmoothingMode.AntiAlias poskytuje ideální hladké kreslení grafiky
-            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;  // Nemá vliv na vykreslování čehokoliv
-            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias je jediný, který garantuje korektní měření textu, což je nezbytné pro ContentAlignement;
+            //graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // SmoothingMode.AntiAlias poskytuje ideální hladké kreslení grafiky
+            //graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;  // Nemá vliv na vykreslování čehokoliv
+            //graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias je jediný, který garantuje korektní měření textu, což je nezbytné pro ContentAlignement;
+
+
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;         // Nebude přesně zarovnávat Align = RightToLeft, ale všechna písmena budou čitelnější.
+            graphics.SmoothingMode = SmoothingMode.None;
+            graphics.InterpolationMode = InterpolationMode.Default;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
 
             // graphics.SmoothingMode       nemá vliv na kvalitu písma
             // graphics.TextContrast = 6    nemá vliv
@@ -6171,28 +6187,6 @@ _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, ou
         /// Pokud konec má X rovno nebo vyšší, pak je vykreslena <see cref="ZigZagHorizontal"/> = nejprve doprava, pak nahoru/dolů, a pak doprava.
         /// </summary>
         ZigZagOptimal
-    }
-    /// <summary>
-    /// Typ borderu
-    /// </summary>
-    public enum BorderStyleType
-    {
-        /// <summary>
-        /// Žádný
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Jednobarevný jednoduchý
-        /// </summary>
-        Flat,
-        /// <summary>
-        /// Se 3D efektem (reaguje na focus a myš)
-        /// </summary>
-        Effect3D,
-        /// <summary>
-        /// Měkký (širší, poloprůhledný)
-        /// </summary>
-        Soft
     }
     /// <summary>
     /// Druhy transformací, pro které lze vygenerovat matrix v metodě GetMatrix(MatrixBasicTransformType).

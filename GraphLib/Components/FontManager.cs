@@ -80,6 +80,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     Current.__Bitmap = new Bitmap(500, 250, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                     Current.__Bitmap.SetResolution(96f, 96f);
                     Current.__DefaultGraphics = Graphics.FromImage(Current.__Bitmap);
+                    Painter.GraphicsSetText(Current.__DefaultGraphics);
                 }
                 return Current.__DefaultGraphics;
             }
@@ -689,7 +690,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 _SpaceSize = graphics.MeasureString(" ", font);
                 _FontSize = font.Size;
                 _SizeUnit = font.Unit;
-                _FirstOffsetX = _CalculateAllCharBounds(graphics, font, "AA", _LayoutBounds)[0].X;
+                // _FirstOffsetX = _CalculateAllCharBounds(graphics, font, "AA", _LayoutBounds)[0].X;       tohle tady bylo v době, kdy byl nesoulad ve StringFormat při měření grafiky oproti jejímu kreslení.
+                _FirstOffsetX = 0f;
                 _HasBasicData = true;
             }
             private bool _HasBasicData = false;

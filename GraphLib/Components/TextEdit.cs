@@ -218,7 +218,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             ITextBoxStyle style = this.StyleCurrent;
-            TextBoxBorderType borderType = style.BorderType;
+            BorderType borderType = style.BorderType;
             int borderWidth = Painter.GetBorderWidth(borderType);
             int textMargin = style.TextMargin;
             FontInfo font = style.Font;
@@ -308,7 +308,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             string text = this.Text;
             Graphics graphics = drawArgs.Graphics;
-            FontInfo fontInfo = this.FontCurrent;
+            FontInfo fontInfo = drawArgs.Style.Font;
             Point textShift = this.TextShift;
             Color? backColorStd = null;
             Color? fontColorStd = drawArgs.Style.GetTextColor(drawArgs.InteractiveState);
@@ -570,7 +570,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktuální typ rámečku. Změnit lze přes styl: <see cref="Style"/> nebo <see cref="StyleParent"/> nebo <see cref="Styles.TextBox"/>.
         /// </summary>
-        public TextBoxBorderType BorderTypeCurrent { get { return this.StyleCurrent.BorderType; } }
+        public BorderType BorderTypeCurrent { get { return this.StyleCurrent.BorderType; } }
         /// <summary>
         /// Zde potomek deklaruje barvu písma
         /// </summary>
@@ -616,7 +616,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void AnalyseCharPositions(TextEditDrawArgs drawArgs, bool forEditing)
         {
             string text = Text;
-            FontInfo currentFont = FontCurrent;
+            FontInfo currentFont = drawArgs.Font;
             bool isPasswordActive = IsPasswordActive;
             bool multiline = Multiline;
             bool wordWrap = WordWrap;
@@ -646,7 +646,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return (CharPositions != null &&
                    String.Equals(Text, _AnalysedText, StringComparison.InvariantCulture) &&
-                   String.Equals(FontCurrent.Key, _AnalysedFontKey, StringComparison.InvariantCulture) &&
+                   String.Equals(drawArgs.Font.Key, _AnalysedFontKey, StringComparison.InvariantCulture) &&
                    forEditing == _AnalysedForEditing &&
                    IsPasswordActive == _AnalysedIsPasswordActive &&
                    Multiline == _AnalysedMultiline &&
@@ -1086,7 +1086,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="interactiveState"></param>
         /// <param name="textEdit"></param>
         public TextEditDrawArgs(GInteractiveDrawArgs drawArgs, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, Rectangle innerBounds, Rectangle textBounds,
-            ITextBoxStyle style, FontInfo font, TextBoxBorderType borderType, int borderWidth, int textMargin, int fontHeight, 
+            ITextBoxStyle style, FontInfo font, BorderType borderType, int borderWidth, int textMargin, int fontHeight, 
             DrawItemMode drawMode, 
             bool hasFocus, GInteractiveState interactiveState, TextEdit textEdit)
         {
@@ -1142,7 +1142,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Typ rámečku, již vyhodnocený ze stylu
         /// </summary>
-        public TextBoxBorderType BorderType { get; set; }
+        public BorderType BorderType { get; set; }
         /// <summary>
         /// Počet pixelů rámečku, již vyhodnocený ze stylu
         /// </summary>
