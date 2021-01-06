@@ -5,14 +5,14 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
+using WinForms = System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using Asol.Tools.WorkScheduler.Components;
 
 namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 {
-    public partial class TestGraphSettingForm : Form
+    public partial class TestGraphSettingForm : WinForms.Form
     {
         public TestGraphSettingForm()
         {
@@ -23,8 +23,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         }
         private void InitializeScrollBar()
         {
-            this._VScrollBar = new VScrollBar();
-            this._VScrollBar.Dock = DockStyle.Right;
+            this._VScrollBar = new WinForms.VScrollBar();
+            this._VScrollBar.Dock = WinForms.DockStyle.Right;
             this._VScrollBar.Value = 0;
             this._VScrollBar.ValueChanged += _VScrollBar_ValueChanged;
             this.TestPanel.Controls.Add(this._VScrollBar);
@@ -63,13 +63,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this.TestPanel.Invalidate();
         }
 
-        private VScrollBar _VScrollBar;
+        private WinForms.VScrollBar _VScrollBar;
         private OneSetting[] _Settings;
-        private void TestPanel_Paint(object sender, PaintEventArgs e)
+        private void TestPanel_Paint(object sender, WinForms.PaintEventArgs e)
         {
             this.TestPaint(e);
         }
-        private void TestPaint(PaintEventArgs e)
+        private void TestPaint(WinForms.PaintEventArgs e)
         {
             int drawY = this._VScrollBar.Value;
             int drawH = this.TestPanel.ClientSize.Height;
@@ -175,8 +175,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
                 graphics.FillRectangle(backBrush, boundsRelative);
             }
 
-            using (Font fontStd = new Font(FontFamily.GenericSansSerif, 11f, FontStyle.Regular))
-            using (Font fontBold = new Font(FontFamily.GenericSansSerif, 11f, FontStyle.Bold))
+            using (Font fontStd = new Font(FontFamily.GenericSansSerif, 11f, System.Drawing.FontStyle.Regular))
+            using (Font fontBold = new Font(FontFamily.GenericSansSerif, 11f, System.Drawing.FontStyle.Bold))
             {
                 this.PaintOne(graphics, fontStd, boundsRelative, this.SmoothingBounds, this.SmoothingText);
                 this.PaintOne(graphics, fontStd, boundsRelative, this.InterpolationBounds, this.InterpolationText);
@@ -247,7 +247,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         #endregion
 
     }
-    public class DoubleBufferPanel : Panel
+    public class DoubleBufferPanel : WinForms.Panel
     {
         public DoubleBufferPanel()
         {
