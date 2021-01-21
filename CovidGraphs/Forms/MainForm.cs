@@ -436,7 +436,7 @@ namespace Djs.Tools.CovidGraphs
         /// Progress práce s databází
         /// </summary>
         /// <param name="args"></param>
-        private void DatabaseShowProgress(Data.Database.ProgressArgs args)
+        private void DatabaseShowProgress(Data.ProgressArgs args)
         {
             string text = "";
             if (!args.IsDone)
@@ -456,7 +456,7 @@ namespace Djs.Tools.CovidGraphs
             }
             StatusInfoText = text;
 
-            if (args.IsDone && this._Database != null && args.ProcessState == Data.Database.ProcessFileState.Loaded && (args.ContentType == Data.Database.FileContentType.Data || args.ContentType == Data.Database.FileContentType.DataPack))
+            if (args.IsDone && this._Database != null && args.ProcessState == Data.ProcessFileState.Loaded && (args.ContentType == Data.FileContentType.Data || args.ContentType == Data.FileContentType.DataPack))
             {
                 ShowCurrentGraph();
             }
@@ -484,7 +484,7 @@ namespace Djs.Tools.CovidGraphs
 
             graph = new Data.GraphInfo() { Title = "ČR: Denní přírůstky poslední měsíc+", Description = "Počty nově nakažených za den - přesně, a průměrně", TimeRangeLastMonths = 1, ChartAxisYRight = true };
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky", ValueType = Data.DataValueType.NewCount, LineThickness = 1, LineColor = Color.DarkViolet, LineDashStyle = Data.LineDashStyleType.Dot });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky průměrně", ValueType = Data.DataValueType.NewCountAvg, LineThickness = 3, LineColor = Color.DarkViolet, LineDashStyle = Data.LineDashStyleType.Full }); 
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky průměrně", ValueType = Data.DataValueType.NewCountAvg, LineThickness = 3, LineColor = Color.DarkViolet, LineDashStyle = Data.LineDashStyleType.Solid }); 
             _Graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK obce, relativně", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
@@ -542,10 +542,16 @@ namespace Djs.Tools.CovidGraphs
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.CurrentCountAvg });
             _Graphs.Add(graph);
 
-            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R", Description = "Stav celkový za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R avg", Description = "Stav celkový za celou dobu", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZeroAvg });
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZeroAvg });
+            _Graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R raw", Description = "Stav celkový za celou dobu", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZero });
             _Graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK Přírůstek/7 dní relativně", Description = "Počty nových případů za posledních 7 dní poměrně k počtu obyvatel", ChartEnableTimeZoom = true, ChartAxisYRight = true };

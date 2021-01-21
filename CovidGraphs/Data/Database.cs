@@ -1064,6 +1064,8 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         private ResultInfo[] _GetResult(string fullCode, IEntity entity, DataValueType valueType, DateTime? begin = null, DateTime? end = null)
         {
+            DataValueTypeInfo dataTypeInfo = DataValueTypeInfo.CreateFor(valueType);
+            _PrepareSourceTimeRange(dataTypeInfo, begin, end, out DateTime? sourceBegin, out DateTime? sourceEnd);
             ResultInfo[] results = null;
             lock (this.InterLock)
             {
@@ -1072,9 +1074,9 @@ namespace Djs.Tools.CovidGraphs.Data
 
                 if (entity != null)
                 {
-                    ResultArgs args = new ResultArgs(entity, valueType, begin, end);
+                    ResultArgs args = new ResultArgs(entity, valueType, dataTypeInfo, sourceBegin, sourceEnd);
                     entity.AddResults(args);
-                    results = ProcessResultValue(args);
+                    results = ProcessResultValue(args, begin, end);
                 }
                 else
                 {
@@ -1083,7 +1085,14 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             return results;
         }
-        private ResultInfo[] ProcessResultValue(ResultArgs args)
+
+        private void _PrepareSourceTimeRange(DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, out DateTime? sourceBegin, out DateTime? sourceEnd)
+        {
+            sourceBegin = (begin.HasValue ? (dataTypeInfo.DateOffsetBefore.HasValue ? (DateTime?)begin.Value.AddDays(dataTypeInfo.DateOffsetBefore.Value) : begin) : (DateTime?)null);
+            sourceEnd = (end.HasValue ? (dataTypeInfo.DateOffsetAfter.HasValue ? (DateTime?)end.Value.AddDays(dataTypeInfo.DateOffsetAfter.Value) : end) : (DateTime?)null);
+        }
+
+        private ResultInfo[] ProcessResultValue(ResultArgs args, DateTime? begin = null, DateTime? end = null)
         {
             ProcessResultValueDirect(args);
             switch (args.ValueType)
@@ -1140,9 +1149,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
 
             }
-            List<ResultInfo> resultList = new List<ResultInfo>(args.Results.Values);
-            resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
-            return resultList.ToArray();
+            return ProcessResultValueTimeRange(args.Results.Values, begin, end);
         }
         private void ProcessResultValueDirect(ResultArgs args)
         {
@@ -1231,6 +1238,26 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             args.Results.Values.ForEachExec(r => r.Value = Math.Round(r.Value, decimals));
         }
+        /// <summary>
+        /// Z dodané kolekce hodnot vybere jen ty, které vyhovují danému časovému rozmezí, setřídí dle data a vrátí jako pole
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        private ResultInfo[] ProcessResultValueTimeRange(IEnumerable<ResultInfo> values, DateTime? begin = null, DateTime? end = null)
+        {
+            List<ResultInfo> resultList;
+            bool hasBegin = begin.HasValue;
+            bool hasEnd = end.HasValue;
+            if (hasBegin || hasEnd)
+                resultList = values.Where(v => ((!hasBegin || v.Date >= begin.Value) && (!hasEnd || v.Date < end.Value))).ToList();
+            else
+                resultList = values.ToList();
+            resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
+            return resultList.ToArray();
+        }
+
         public IEntity[] GetEntities(string searchNazev)
         {
             List<IEntity> entitesStart = new List<IEntity>();
@@ -1320,7 +1347,6 @@ namespace Djs.Tools.CovidGraphs.Data
             return 0;
         }
         public const string EntityDelimiter = ".";
-        public enum EntityType { None, World, Zeme, Kraj, Okres, Mesto, Obec, Vesnice }
         #endregion
         #region Třídy dat
         public class World : IEntity
@@ -1867,169 +1893,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 this.RawValue += value;
             }
         }
-        public interface IEntity
-        {
-            EntityType Entity { get; }
-            bool IsVoid { get; }
-            bool ChildsIsVoid { get; }
-            string FullCode { get; }
-            string Text { get; }
-            Database Database { get; }
-            string Kod { get; }
-            string Nazev { get; }
-            int PocetObyvatel { get; }
-            void Clear(FileContentType contentType);
-            void Load(string[] items);
-            void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream);
-            void AddResults(ResultArgs args);
-            void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains);
-        }
-        public class ProcessFileInfo
-        {
-            public ProcessFileInfo(string fileName)
-            {
-                FileName = fileName;
-                ContentType = FileContentType.None;
-                StartTime = DateTime.Now;
-                LastProgressTime = DateTime.MinValue;
-                DoneTime = DateTime.MinValue;
-                Length = 0L;
-                ProcessState = ProcessFileState.None;
-                Position = 0L;
-                RecordCount = 0;
-            }
 
-            public string FileName { get; set; }
-            public Action<ProgressArgs> ProgressAction { get; set; }
-            public FileContentType ContentType { get; set; }
-            public DateTime StartTime { get; set; }
-            public DateTime LastProgressTime { get; set; }
-            public DateTime DoneTime { get; set; }
-            public long Length { get; set; }
-            public ProcessFileState ProcessState { get; set; }
-            public long Position { get; set; }
-            public decimal Ratio { get { return (Position > 0L && Length > 0L ? ((decimal)Position / (decimal)Length) : 0m); } }
-            public int RecordCount { get; set; }
-            public TimeSpan ProcessTime { get { return (DoneTime < StartTime ? TimeSpan.Zero : (DoneTime - StartTime)); } }
-            public ProcessFileCurrentInfo CurrentInfo { get; set; }
-            public string Description
-            {
-                get
-                {
-                    string description = "";
-                    switch (this.ProcessState)
-                    {
-                        case ProcessFileState.Loading:
-                            description = "Načítám soubor, obsahující ";
-                            break;
-                        case ProcessFileState.Loaded:
-                            description = "Načten soubor, obsahující ";
-                            break;
-                        case ProcessFileState.Saving:
-                            description = "Ukládám soubor, obsahující ";
-                            break;
-                        case ProcessFileState.Saved:
-                            description = "Uložen soubor, obsahující ";
-                            break;
-                        case ProcessFileState.WebDownloading:
-                            description = "Stahuji z webu soubor, obsahující ";
-                            break;
-                        case ProcessFileState.WebDownloaded:
-                            description = "Stažen z webu soubor, obsahující ";
-                            break;
-                        default:
-                            description = "Zpracovávám ";
-                            break;
-                    }
-                    switch (this.ContentType)
-                    {
-                        case FileContentType.Structure:
-                            description += "strukturu obcí ";
-                            break;
-                        case FileContentType.Data:
-                            description += "pracovní data ";
-                            break;
-                        case FileContentType.DataPack:
-                            description += "kompletní data ";
-                            break;
-                        case FileContentType.CovidObce1:
-                            description += "veřejná data verze 1 ";
-                            break;
-                        case FileContentType.CovidObce2:
-                            description += "veřejná data verze 2 ";
-                            break;
-                        case FileContentType.PocetObyvatel:
-                            description += "počty obyvatel ";
-                            break;
-                        default:
-                            description += "soubor typu " + this.ContentType.ToString();
-                            break;
-                    }
-                    return description.Trim();
-                }
-            }
-        }
-        public class ProcessFileCurrentInfo
-        {
-            public World World { get; set; }
-            public Zeme Zeme { get; set; }
-            public Kraj Kraj { get; set; }
-            public Okres Okres { get; set; }
-            public Mesto Mesto { get; set; }
-            public Obec Obec { get; set; }
-            public Vesnice Vesnice { get; set; }
-            public Pocet Pocet { get; set; }
-            public Info Info { get; set; }
-        }
-        /// <summary>
-        /// Stav zpracování souboru
-        /// </summary>
-        public enum ProcessFileState
-        {
-            None,
-            Open,
-            Loading,
-            Loaded,
-            Saving,
-            Saved,
-            WebDownloading,
-            WebDownloaded,
-            Invalid
-        }
-        /// <summary>
-        /// Obsah souboru
-        /// </summary>
-        public enum FileContentType
-        {
-            None,
-            Structure,
-            Data,
-            DataPack,
-            PocetObyvatel,
-            CovidObce1,
-            CovidObce2
-        }
-
-        public class ResultArgs
-        {
-            public ResultArgs(IEntity entity, DataValueType valueType, DateTime? begin, DateTime? end)
-            {
-                this.Entity = entity;
-                this.ValueType = valueType;
-                this.Begin = begin;
-                this.End = end;
-                this.Results = new Dictionary<int, ResultInfo>();
-                this.PocetObyvatel = 0;
-            }
-
-            public IEntity Entity { get; private set; }
-            public DataValueType ValueType { get; private set; }
-            public DateTime? Begin { get; private set; }
-            public DateTime? End { get; private set; }
-            public Dictionary<int, ResultInfo> Results { get; private set; }
-            public int PocetObyvatel { get; set; }
-
-        }
         #endregion
         #region Komprimace a dekomprimace stringu
         /// <summary>
@@ -2100,31 +1964,208 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         #endregion
         #region Třída pro progress ProgressArgs
-        public class ProgressArgs
-        {
-            public ProgressArgs(ProcessFileInfo processInfo, bool isDone)
-            {
-                this.ProcessInfo = processInfo;
-                this.IsDone = isDone;
-            }
-            protected ProcessFileInfo ProcessInfo { get; private set; }
-            public string Description { get { return ProcessInfo.Description; } }
-            public long DataLength { get { return ProcessInfo.Length; } }
-            public long DataPosition { get { return ProcessInfo.Position; } }
-            public decimal Ratio { get { return ProcessInfo.Ratio; } }
-            public FileContentType ContentType { get { return ProcessInfo.ContentType; } }
-            public ProcessFileState ProcessState { get { return ProcessInfo.ProcessState; } }
-            public TimeSpan ProcessTime { get { return ProcessInfo.ProcessTime; } }
-            public int RecordCount { get { return ProcessInfo.RecordCount; } }
-            public bool IsDone { get; private set; }
-        }
+
         #endregion
     }
+
+    #region Obecný přístup k datům entity (země, kraj, okres, město, obec, ves)
+
+    public interface IEntity
+    {
+        EntityType Entity { get; }
+        bool IsVoid { get; }
+        bool ChildsIsVoid { get; }
+        string FullCode { get; }
+        string Text { get; }
+        Database Database { get; }
+        string Kod { get; }
+        string Nazev { get; }
+        int PocetObyvatel { get; }
+        void Clear(FileContentType contentType);
+        void Load(string[] items);
+        void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream);
+        void AddResults(ResultArgs args);
+        void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains);
+    }
+    public enum EntityType { None, World, Zeme, Kraj, Okres, Mesto, Obec, Vesnice }
+    public class ProcessFileInfo
+    {
+        public ProcessFileInfo(string fileName)
+        {
+            FileName = fileName;
+            ContentType = FileContentType.None;
+            StartTime = DateTime.Now;
+            LastProgressTime = DateTime.MinValue;
+            DoneTime = DateTime.MinValue;
+            Length = 0L;
+            ProcessState = ProcessFileState.None;
+            Position = 0L;
+            RecordCount = 0;
+        }
+
+        public string FileName { get; set; }
+        public Action<ProgressArgs> ProgressAction { get; set; }
+        public FileContentType ContentType { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime LastProgressTime { get; set; }
+        public DateTime DoneTime { get; set; }
+        public long Length { get; set; }
+        public ProcessFileState ProcessState { get; set; }
+        public long Position { get; set; }
+        public decimal Ratio { get { return (Position > 0L && Length > 0L ? ((decimal)Position / (decimal)Length) : 0m); } }
+        public int RecordCount { get; set; }
+        public TimeSpan ProcessTime { get { return (DoneTime < StartTime ? TimeSpan.Zero : (DoneTime - StartTime)); } }
+        public ProcessFileCurrentInfo CurrentInfo { get; set; }
+        public string Description
+        {
+            get
+            {
+                string description = "";
+                switch (this.ProcessState)
+                {
+                    case ProcessFileState.Loading:
+                        description = "Načítám soubor, obsahující ";
+                        break;
+                    case ProcessFileState.Loaded:
+                        description = "Načten soubor, obsahující ";
+                        break;
+                    case ProcessFileState.Saving:
+                        description = "Ukládám soubor, obsahující ";
+                        break;
+                    case ProcessFileState.Saved:
+                        description = "Uložen soubor, obsahující ";
+                        break;
+                    case ProcessFileState.WebDownloading:
+                        description = "Stahuji z webu soubor, obsahující ";
+                        break;
+                    case ProcessFileState.WebDownloaded:
+                        description = "Stažen z webu soubor, obsahující ";
+                        break;
+                    default:
+                        description = "Zpracovávám ";
+                        break;
+                }
+                switch (this.ContentType)
+                {
+                    case FileContentType.Structure:
+                        description += "strukturu obcí ";
+                        break;
+                    case FileContentType.Data:
+                        description += "pracovní data ";
+                        break;
+                    case FileContentType.DataPack:
+                        description += "kompletní data ";
+                        break;
+                    case FileContentType.CovidObce1:
+                        description += "veřejná data verze 1 ";
+                        break;
+                    case FileContentType.CovidObce2:
+                        description += "veřejná data verze 2 ";
+                        break;
+                    case FileContentType.PocetObyvatel:
+                        description += "počty obyvatel ";
+                        break;
+                    default:
+                        description += "soubor typu " + this.ContentType.ToString();
+                        break;
+                }
+                return description.Trim();
+            }
+        }
+    }
+    public class ProcessFileCurrentInfo
+    {
+        public Database.World World { get; set; }
+        public Database.Zeme Zeme { get; set; }
+        public Database.Kraj Kraj { get; set; }
+        public Database.Okres Okres { get; set; }
+        public Database.Mesto Mesto { get; set; }
+        public Database.Obec Obec { get; set; }
+        public Database.Vesnice Vesnice { get; set; }
+        public Database.Pocet Pocet { get; set; }
+        public Database.Info Info { get; set; }
+    }
+    public class ProgressArgs
+    {
+        public ProgressArgs(ProcessFileInfo processInfo, bool isDone)
+        {
+            this.ProcessInfo = processInfo;
+            this.IsDone = isDone;
+        }
+        protected ProcessFileInfo ProcessInfo { get; private set; }
+        public string Description { get { return ProcessInfo.Description; } }
+        public long DataLength { get { return ProcessInfo.Length; } }
+        public long DataPosition { get { return ProcessInfo.Position; } }
+        public decimal Ratio { get { return ProcessInfo.Ratio; } }
+        public FileContentType ContentType { get { return ProcessInfo.ContentType; } }
+        public ProcessFileState ProcessState { get { return ProcessInfo.ProcessState; } }
+        public TimeSpan ProcessTime { get { return ProcessInfo.ProcessTime; } }
+        public int RecordCount { get { return ProcessInfo.RecordCount; } }
+        public bool IsDone { get; private set; }
+    }
+    /// <summary>
+    /// Stav zpracování souboru
+    /// </summary>
+    public enum ProcessFileState
+    {
+        None,
+        Open,
+        Loading,
+        Loaded,
+        Saving,
+        Saved,
+        WebDownloading,
+        WebDownloaded,
+        Invalid
+    }
+    /// <summary>
+    /// Obsah souboru
+    /// </summary>
+    public enum FileContentType
+    {
+        None,
+        Structure,
+        Data,
+        DataPack,
+        PocetObyvatel,
+        CovidObce1,
+        CovidObce2
+    }
+
+    public class ResultArgs
+    {
+        public ResultArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end)
+        {
+            this.Entity = entity;
+            this.ValueType = valueType;
+            this.DataTypeInfo = dataTypeInfo;
+            this.Begin = begin;
+            this.End = end;
+            this.Results = new Dictionary<int, Database.ResultInfo>();
+            this.PocetObyvatel = 0;
+        }
+
+        public IEntity Entity { get; private set; }
+        public DataValueType ValueType { get; private set; }
+        public DataValueTypeInfo DataTypeInfo { get; private set; }
+        public DateTime? Begin { get; private set; }
+        public DateTime? End { get; private set; }
+        public Dictionary<int, Database.ResultInfo> Results { get; private set; }
+        public int PocetObyvatel { get; set; }
+
+    }
+    #endregion
+
+
     /// <summary>
     /// Data pro vizualizaci objektu
     /// </summary>
     public class DataVisualInfo
     {
+        protected DataVisualInfo(object value)
+        {
+            this.Value = value;
+        }
         public DataVisualInfo(object value, string text, string toolTip = null, System.Drawing.Image icon = null, object tag = null)
         {
             this.Value = value;
