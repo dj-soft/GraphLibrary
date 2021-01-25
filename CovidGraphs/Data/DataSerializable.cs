@@ -623,7 +623,7 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             if (!value.HasValue) return SerialNull;
             var color = value.Value;
-            return color.A.ToString("000") + "." + value.Value.R.ToString("000") + "." + value.Value.G.ToString("000") + "." + value.Value.B.ToString("000");
+            return color.A.ToString("000") + "." + color.R.ToString("000") + "." + color.G.ToString("000") + "." + color.B.ToString("000");
             //  "AAA.RRR.GGG.BBB"
         }
         /// <summary>
@@ -654,6 +654,168 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             return defValue;
         }
+        /// <summary>
+        /// Převede Point hodnotu do serialtextu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetSerial(System.Drawing.Point value)
+        {
+            return GetSerial((System.Drawing.Point?)value);
+        }
+        /// <summary>
+        /// Převede serialtext na Point hodnotu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Point GetValue(string text, System.Drawing.Point defValue)
+        {
+            System.Drawing.Point? result = GetValue(text, (System.Drawing.Point?)null);
+            return (result ?? defValue);
+        }
+        /// <summary>
+        /// Převede Point? hodnotu do serialtextu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetSerial(System.Drawing.Point? value)
+        {
+            if (!value.HasValue) return SerialNull;
+            var bounds = value.Value;
+            return bounds.X.ToString("0000") + "." + bounds.Y.ToString("0000");
+            //  "XXXX.YYYY"
+        }
+        /// <summary>
+        /// Převede serialtext na Point? hodnotu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Point? GetValue(string text, System.Drawing.Point? defValue)
+        {
+            //  "XXXX.YYYY"
+            if (String.IsNullOrEmpty(text)) return defValue;
+            if (text == SerialNull) return defValue;
+            if (text.Length != 19) return defValue;
+            if (Int32.TryParse(text.Substring(0, 4), out int bx) &&
+                Int32.TryParse(text.Substring(5, 4), out int by))
+            {
+                return new System.Drawing.Point(bx, by);
+            }
+            return defValue;
+        }
+        /// <summary>
+        /// Převede PoSizeint hodnotu do serialtextu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetSerial(System.Drawing.Size value)
+        {
+            return GetSerial((System.Drawing.Size?)value);
+        }
+        /// <summary>
+        /// Převede serialtext na Size hodnotu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Size GetValue(string text, System.Drawing.Size defValue)
+        {
+            System.Drawing.Size? result = GetValue(text, (System.Drawing.Size?)null);
+            return (result ?? defValue);
+        }
+        /// <summary>
+        /// Převede Size? hodnotu do serialtextu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetSerial(System.Drawing.Size? value)
+        {
+            if (!value.HasValue) return SerialNull;
+            var bounds = value.Value;
+            return bounds.Width.ToString("0000") + "." + bounds.Height.ToString("0000");
+            //  "WWWW.HHHH"
+        }
+        /// <summary>
+        /// Převede serialtext na Size? hodnotu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Size? GetValue(string text, System.Drawing.Size? defValue)
+        {
+            //  "WWWW.HHHH"
+            if (String.IsNullOrEmpty(text)) return defValue;
+            if (text == SerialNull) return defValue;
+            if (text.Length != 19) return defValue;
+            if (Int32.TryParse(text.Substring(0, 4), out int bw) &&
+                Int32.TryParse(text.Substring(5, 4), out int bh))
+            {
+                return new System.Drawing.Size(bw, bh);
+            }
+            return defValue;
+        }
+        /// <summary>
+        /// Převede Rectangle hodnotu do serialtextu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetSerial(System.Drawing.Rectangle value)
+        {
+            return GetSerial((System.Drawing.Rectangle?)value);
+        }
+        /// <summary>
+        /// Převede serialtext na Rectangle hodnotu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Rectangle GetValue(string text, System.Drawing.Rectangle defValue)
+        {
+            System.Drawing.Rectangle? result = GetValue(text, (System.Drawing.Rectangle?)null);
+            return (result ?? defValue);
+        }
+        /// <summary>
+        /// Převede Rectangle? hodnotu do serialtextu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetSerial(System.Drawing.Rectangle? value)
+        {
+            if (!value.HasValue) return SerialNull;
+            var bounds = value.Value;
+            return bounds.X.ToString("0000") + "." + bounds.Y.ToString("0000") + "." + bounds.Width.ToString("0000") + "." + bounds.Height.ToString("0000");
+            //  "XXXX.YYYY.WWWW.HHHH"
+        }
+        /// <summary>
+        /// Převede serialtext na Rectangle? hodnotu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Rectangle? GetValue(string text, System.Drawing.Rectangle? defValue)
+        {
+            //  "XXXX.YYYY.WWWW.HHHH"
+            if (String.IsNullOrEmpty(text)) return defValue;
+            if (text == SerialNull) return defValue;
+            if (text.Length != 19) return defValue;
+            if (Int32.TryParse(text.Substring(0, 4), out int bx) &&
+                Int32.TryParse(text.Substring(5, 4), out int by) &&
+                Int32.TryParse(text.Substring(10, 4), out int bw) &&
+                Int32.TryParse(text.Substring(15, 4), out int bh))
+            {
+                return new System.Drawing.Rectangle(bx, by, bw, bh);
+            }
+            return defValue;
+        }
+
         /// <summary>
         /// Převede Enum hodnotu do serialtextu
         /// </summary>

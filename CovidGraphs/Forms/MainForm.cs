@@ -13,6 +13,7 @@ using DXB = DevExpress.XtraBars;
 using DXE = DevExpress.XtraEditors;
 using DC = DevExpress.XtraCharts;
 using DevExpress.XtraBars.Ribbon;
+using Djs.Tools.CovidGraphs.Data;
 
 namespace Djs.Tools.CovidGraphs
 {
@@ -59,11 +60,12 @@ namespace Djs.Tools.CovidGraphs
         #endregion
         private void InitDevExpressComponents()
         {
+            InitDevExpress();
             InitForm();
             InitFrames();
             InitRibbons();
             InitList();
-            InitGraph();
+            InitChart();
         }
         protected override void OnShown(EventArgs e)
         {
@@ -71,10 +73,62 @@ namespace Djs.Tools.CovidGraphs
             this.LoadDatabase();
             Data.App.Config.SaveEnabled = true;
         }
+        /// <summary>
+        /// Inicializace vlastností DevExpress, inciace skinu podle konfigurace
+        /// </summary>
+        private void InitDevExpress()
+        {
+            DevExpress.UserSkins.BonusSkins.Register();
+            DevExpress.Skins.SkinManager.EnableFormSkins();
+            DevExpress.Skins.SkinManager.EnableMdiFormSkins();
+
+            // DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "Stardust";
+            if (Data.App.Config.HasSkin)
+                DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle(Data.App.Config.ActiveSkinName, Data.App.Config.ActiveSkinPalette);
+
+            DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged += DevExpress_StyleChanged;
+        }
+        /// <summary>
+        /// Po změně SKinu uživatelem se uloží do konfigurace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DevExpress_StyleChanged(object sender, EventArgs e)
+        {
+            string skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSkinName;
+            string paletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
+            Data.App.Config.SetSkin(skinName, paletteName);
+        }
+        /// <summary>
+        /// Inicializace vlastností formuláře
+        /// </summary>
         private void InitForm()
         {
             this.WindowState = FormWindowState.Maximized;
+            this.Text = "Best in Covid! [ČR]";
         }
+        /// <summary>
+        /// Inicializace vnitřního layoutu - splitpanel
+        /// </summary>
+        private void InitFrames()
+        {
+            int splitterPosition = Data.App.Config.MainSplitterPosition;
+            _MainSplitContainer = new DXE.SplitContainerControl()
+            {
+                FixedPanel = DXE.SplitFixedPanel.Panel1,
+                Horizontal = true,
+                PanelVisibility = DXE.SplitPanelVisibility.Both,
+                SplitterPosition = splitterPosition,
+                Dock = DockStyle.Fill
+            };
+            _MainSplitContainer.ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True;
+            _MainSplitContainer.SplitterPositionChanged += _SplitterPositionChanged;
+
+            this.Controls.Add(_MainSplitContainer);
+        }
+        /// <summary>
+        /// Inicializace objektu Ribbon a Statusbar
+        /// </summary>
         private void InitRibbons()
         {
             this.Ribbon = new DXB.Ribbon.RibbonControl();
@@ -88,32 +142,19 @@ namespace Djs.Tools.CovidGraphs
 
             this.Controls.Add(this.Ribbon);
             this.Controls.Add(this.StatusBar);
-
         }
-        private void InitFrames()
-        {
-            int splitterPosition = Data.App.Config.SplitterPosition;
-            _MainSplitContainer = new DXE.SplitContainerControl()
-            {
-                FixedPanel = DXE.SplitFixedPanel.Panel1,
-                Horizontal = true,
-                PanelVisibility = DXE.SplitPanelVisibility.Both,
-                SplitterPosition = splitterPosition,
-                Dock = DockStyle.Fill
-            };
-            _MainSplitContainer.Panel1.BackColor = Color.LightBlue;
-            _MainSplitContainer.Panel2.BackColor = Color.LightCoral;
-            _MainSplitContainer.ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True;
-            _MainSplitContainer.SplitterPositionChanged += _SplitterPositionChanged;
-
-            this.Controls.Add(_MainSplitContainer);
-        }
-
+        /// <summary>
+        /// Po změně pozice splitteru v hlavním splitpanelu se uloží pozice splitteru do konfigurace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _SplitterPositionChanged(object sender, EventArgs e)
         {
-            Data.App.Config.SplitterPosition = _MainSplitContainer.SplitterPosition;
+            Data.App.Config.MainSplitterPosition = _MainSplitContainer.SplitterPosition;
         }
-
+        /// <summary>
+        /// Inicializace objektu seznamu grafů, součástí je i načtení seznamu grafů z disku
+        /// </summary>
         private void InitList()
         {
             _GraphListBox = new DXE.ListBoxControl()
@@ -162,13 +203,19 @@ namespace Djs.Tools.CovidGraphs
             _GraphListBox.SelectedIndexChanged += _GraphListBox_SelectedIndexChanged;
             _MainSplitContainer.Panel1.Controls.Add(_GraphListBox);
         }
-
+        /// <summary>
+        /// Po změně vybraného prvku v seznamu grafů se vyvolá načtení grafu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _GraphListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             ShowCurrentGraph();
         }
-
-        private void InitGraph()
+        /// <summary>
+        /// Inicializace objektu ChartControl = objekt zobrazující graf
+        /// </summary>
+        private void InitChart()
         {
             _ChartControl = new DevExpress.XtraCharts.ChartControl()
             {
@@ -184,17 +231,21 @@ namespace Djs.Tools.CovidGraphs
         DevExpress.XtraCharts.ChartControl _ChartControl;
         #endregion
         #region Ribbon a StatusBar
+        /// <summary>
+        /// Naplní prvky do Ribbonu, zaháčkuje eventhandlery
+        /// </summary>
         private void RibbonFillItems()
         {
             this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
 
             DXB.Ribbon.RibbonPage page0 = new DXB.Ribbon.RibbonPage("GRAF");
             this.Ribbon.Pages.Add(page0);
-            DXB.Ribbon.RibbonPageGroup group00 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA GRAFŮ");
-            page0.Groups.Add(group00);
 
-            DXB.Ribbon.RibbonPageGroup group01 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA DAT");
+            DXB.Ribbon.RibbonPageGroup group01 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA GRAFŮ");
             page0.Groups.Add(group01);
+
+            DXB.Ribbon.RibbonPageGroup group02 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA DAT");
+            page0.Groups.Add(group02);
 
             /*
             var provider = DevExpress.Utils.DxImageAssemblyUtil.ImageProvider;
@@ -227,13 +278,24 @@ namespace Djs.Tools.CovidGraphs
             var name = allImages[25].MakeUri();
             */
 
-            RibbonAddButton(group00, "Přidej", "Přidá nový graf", Properties.Resources.document_new_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickNewGraph);
-            RibbonAddButton(group00, "Uprav", "Umožní změnit datové zdroje grafu: výběr obcí, výběr dat", Properties.Resources.document_properties_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditDataGraph);
-            RibbonAddButton(group00, "Vzhled grafu", "Otevře editor vzhledu grafu", Properties.Resources.document_page_setup_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditLayoutGraph);
-            RibbonAddButton(group00, "Smaž", "Smaže aktuální graf", Properties.Resources.document_close_4_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickDeleteGraph);
-            RibbonAddButton(group01, "Aktualizuj data", "Zajistí aktualizaci dat z internetu", Properties.Resources.download_3_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickWebUpdate);
-            RibbonAddButton(group01, "Značky", "Značky jsou společné, jsou vkládány do všech grafů, označují význačné časové úseky", Properties.Resources.system_switch_user_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditStrip);
-            RibbonAddButton(group01, "Ulož", "Uloží všechna aktuální data do jednoho datového souboru DataPack, ten lze např odeslat mailem.", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveDataPack);
+
+            RibbonAddButton(group01, "Přidej", "Přidá nový graf", Properties.Resources.document_new_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickNewGraph);
+            RibbonAddButton(group01, "Uprav", "Umožní změnit datové zdroje grafu: výběr obcí, výběr dat", Properties.Resources.document_properties_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditDataGraph);
+            RibbonAddButton(group01, "Vzhled grafu", "Otevře editor vzhledu grafu", Properties.Resources.document_page_setup_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditLayoutGraph);
+            RibbonAddButton(group01, "Smaž", "Smaže aktuální graf", Properties.Resources.document_close_4_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickDeleteGraph);
+            RibbonAddButton(group02, "Aktualizuj data", "Zajistí aktualizaci dat z internetu", Properties.Resources.download_3_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickWebUpdate);
+            RibbonAddButton(group02, "Značky", "Značky jsou společné, jsou vkládány do všech grafů, označují význačné časové úseky", Properties.Resources.system_switch_user_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditStrip);
+            RibbonAddButton(group02, "Ulož", "Uloží všechna aktuální data do jednoho datového souboru DataPack, ten lze např odeslat mailem.", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveDataPack);
+
+
+            DXB.Ribbon.RibbonPage page1 = new DXB.Ribbon.RibbonPage("VZHLED APLIKACE");
+            this.Ribbon.Pages.Add(page1);
+
+            DXB.Ribbon.RibbonPageGroup group10 = new DXB.Ribbon.RibbonPageGroup("VZHLED");
+            page1.Groups.Add(group10);
+
+            group10.ItemLinks.Add(new DXB.SkinDropDownButtonItem());
+            group10.ItemLinks.Add(new DXB.SkinPaletteRibbonGalleryBarItem());
         }
         /// <summary>
         /// Do dané grupy přidá nový button podle definice
@@ -260,10 +322,11 @@ namespace Djs.Tools.CovidGraphs
         }
         private void RibbonClickNewGraph(object sender, DXB.ItemClickEventArgs e)
         {
+            Data.App.TryRun(TryShowGraphFormNew);
         }
         private void RibbonClickEditDataGraph(object sender, DXB.ItemClickEventArgs e)
         {
-            Data.App.TryRun(TryShowGraphForm);
+            Data.App.TryRun(TryShowGraphFormCurrent);
         }
         private void RibbonClickEditLayoutGraph(object sender, DXB.ItemClickEventArgs e)
         {
@@ -536,7 +599,7 @@ namespace Djs.Tools.CovidGraphs
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.NewCount7DaySumAvg });
             _Graphs.Add(graph);
 
-            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, průměrný stav", Description = "Stav celkový za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, aktuální stav průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.CurrentCountAvg });
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.CurrentCountAvg });
@@ -571,6 +634,24 @@ namespace Djs.Tools.CovidGraphs
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0524.5213.52132.576069", Title = "obec Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.568759", Title = "obec Chotěboř", ValueType = Data.DataValueType.NewCountAvg });
             graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5302.53021.571393", Title = "obec Hlinsko", ValueType = Data.DataValueType.NewCountAvg });
+            _Graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR, podle velikosti obce, relativně, aktuální stav průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
+            _Graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR, podle velikosti obce, relativně, týdenní přírůstky, průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
             _Graphs.Add(graph);
 
         }
@@ -622,6 +703,8 @@ namespace Djs.Tools.CovidGraphs
 
             _SetLayout(layout);
 
+            CurrentGraphData.FinaliseShowGraph();
+            this.ShowLoadGraphDataResult(CurrentGraphData);
 
             //if (!_SettingsApplied)
             //{
@@ -645,6 +728,12 @@ namespace Djs.Tools.CovidGraphs
                     string setting = _GetLayout();
                 }
             }
+        }
+
+        private void ShowLoadGraphDataResult(GraphData graphData)
+        {
+            string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCountText} vět, získáno {graphData.LoadRecordCountText} položek, zobrazeno {graphData.AcceptRecordCountText} hodnot, za {graphData.LoadSecondsText}.";
+            StatusInfoText = text;
         }
 
         private string _GetSettings()
@@ -1002,6 +1091,33 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
         /// </summary>
         private bool _IsChartValid { get { return (CurrentGraphDataSource != null && _ChartControl != null && _ChartControl.DataSource != null && !_ChartControl.IsDisposed); } }
         /// <summary>
+        /// Otevře formulář pro definici dat nového grafu
+        /// </summary>
+        private void TryShowGraphFormNew()
+        {
+
+        }
+        /// <summary>
+        /// Otevře formulář pro definici dat aktuálního grafu
+        /// </summary>
+        private void TryShowGraphFormCurrent()
+        {
+            using (var graphForm = new GraphForm(this.VisibleBounds))
+            {
+                graphForm.ShowDialog(this);
+            }
+        }
+        public Rectangle VisibleBounds
+        {
+            get
+            {
+                Rectangle bounds = this.Bounds;
+                if (this.WindowState == FormWindowState.Maximized)
+                    bounds = new Rectangle(bounds.X + 8, bounds.Y + 8, bounds.Width - 16, bounds.Height - 16);
+                return bounds;
+            }
+        }
+        /// <summary>
         /// Otevře Wizard pro editaci layoutu aktuálního grafu
         /// </summary>
         private void TryEditChartLayout()
@@ -1016,7 +1132,7 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
                 Caption = "Upravte graf...",
                 ShowActualData = true
             };
-            var response = designer.ShowDialog(true);
+            var response = designer.ShowDialog(false);
 
             // Wizard pracuje nad naším controlem, veškeré změny ve Wizardu provedené se ihned promítají do našeho grafu.
             // Pokud uživatel dal OK, chceme změny uložit i do příště,
@@ -1030,16 +1146,6 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
             else
             {
                 _SetLayout(oldLayout);
-            }
-        }
-        /// <summary>
-        /// Otevře formulář pro definici dat grafu
-        /// </summary>
-        private void TryShowGraphForm()
-        {
-            using (var graphForm = new GraphForm())
-            {
-                graphForm.ShowDialog(this);
             }
         }
         /// <summary>

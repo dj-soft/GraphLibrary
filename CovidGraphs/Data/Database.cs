@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IO = System.IO;
+using DW = System.Drawing;
 
 namespace Djs.Tools.CovidGraphs.Data
 {
@@ -1054,19 +1055,19 @@ namespace Djs.Tools.CovidGraphs.Data
         #endregion
         #endregion
         #region Získání dat za určitou úroveň
-        public ResultInfo[] GetResult(string fullCode, DataValueType valueType, DateTime? begin = null, DateTime? end = null)
+        public ResultSetInfo GetResult(string fullCode, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
-            return _GetResult(fullCode, null, valueType, begin, end);
+            return _GetResult(fullCode, null, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
         }
-        public ResultInfo[] GetResult(IEntity entity, DataValueType valueType, DateTime? begin = null, DateTime? end = null)
+        public ResultSetInfo GetResult(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
-            return _GetResult(null, entity, valueType, begin, end);
+            return _GetResult(null, entity, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
         }
-        private ResultInfo[] _GetResult(string fullCode, IEntity entity, DataValueType valueType, DateTime? begin = null, DateTime? end = null)
+        private ResultSetInfo _GetResult(string fullCode, IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
-            DataValueTypeInfo dataTypeInfo = DataValueTypeInfo.CreateFor(valueType);
+            if (dataTypeInfo == null) dataTypeInfo = DataValueTypeInfo.CreateFor(valueType);
             _PrepareSourceTimeRange(dataTypeInfo, begin, end, out DateTime? sourceBegin, out DateTime? sourceEnd);
-            ResultInfo[] results = null;
+            ResultSetInfo resultSet = null;
             lock (this.InterLock)
             {
                 if (entity == null && fullCode != null)
@@ -1074,16 +1075,13 @@ namespace Djs.Tools.CovidGraphs.Data
 
                 if (entity != null)
                 {
-                    ResultArgs args = new ResultArgs(entity, valueType, dataTypeInfo, sourceBegin, sourceEnd);
-                    entity.AddResults(args);
-                    results = ProcessResultValue(args, begin, end);
-                }
-                else
-                {
-                    results = new ResultInfo[0];
+                    SearchInfoArgs args = new SearchInfoArgs(entity, valueType, dataTypeInfo, sourceBegin, sourceEnd, pocetOd, pocetDo);
+                    entity.SearchInfo(args);
+                    ProcessResultValue(args, begin, end);
+                    resultSet = args.ResultSet;
                 }
             }
-            return results;
+            return resultSet;
         }
 
         private void _PrepareSourceTimeRange(DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, out DateTime? sourceBegin, out DateTime? sourceEnd)
@@ -1092,7 +1090,7 @@ namespace Djs.Tools.CovidGraphs.Data
             sourceEnd = (end.HasValue ? (dataTypeInfo.DateOffsetAfter.HasValue ? (DateTime?)end.Value.AddDays(dataTypeInfo.DateOffsetAfter.Value) : end) : (DateTime?)null);
         }
 
-        private ResultInfo[] ProcessResultValue(ResultArgs args, DateTime? begin = null, DateTime? end = null)
+        private void ProcessResultValue(SearchInfoArgs args, DateTime? begin = null, DateTime? end = null)
         {
             ProcessResultValueDirect(args);
             switch (args.ValueType)
@@ -1149,15 +1147,15 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
 
             }
-            return ProcessResultValueTimeRange(args.Results.Values, begin, end);
+            ProcessResultValueByTimeRange(args, begin, end);
         }
-        private void ProcessResultValueDirect(ResultArgs args)
+        private void ProcessResultValueDirect(SearchInfoArgs args)
         {
-            args.Results.Values.ForEachExec(r => r.Value = r.RawValue);
+            args.Results.ForEachExec(r => r.Value = r.RawValue);
         }
-        private void ProcessResultValue7DayFlowAverage(ResultArgs args)
+        private void ProcessResultValue7DayFlowAverage(SearchInfoArgs args)
         {
-            var data = args.Results;
+            var data = args.ResultSet.WorkingDict;
             int[] keys = data.Keys.ToArray();
             foreach (int key in keys)
             {
@@ -1179,11 +1177,11 @@ namespace Djs.Tools.CovidGraphs.Data
                 result.TempValue = sum / (decimal)count;
             }
             // Na závěr vložím TempValue do Value:
-            args.Results.Values.ForEachExec(r => r.Value = r.TempValue);
+            args.Results.ForEachExec(r => r.Value = r.TempValue);
         }
-        private void ProcessResultValue7DayLastSum(ResultArgs args)
+        private void ProcessResultValue7DayLastSum(SearchInfoArgs args)
         {
-            var data = args.Results;
+            var data = args.ResultDict;
             int[] keys = data.Keys.ToArray();
             foreach (int key in keys)
             {
@@ -1205,20 +1203,20 @@ namespace Djs.Tools.CovidGraphs.Data
                 result.TempValue = sum;
             }
             // Na závěr vložím TempValue do Value:
-            args.Results.Values.ForEachExec(r => r.Value = r.TempValue);
+            args.Results.ForEachExec(r => r.Value = r.TempValue);
         }
-        private void ProcessResultValueRelative(ResultArgs args)
+        private void ProcessResultValueRelative(SearchInfoArgs args)
         {
             decimal coefficient = (args.PocetObyvatel > 0 ? (100000m / (decimal)args.PocetObyvatel) : 0m);
-            args.Results.Values.ForEachExec(r => r.Value = coefficient * r.Value);
+            args.Results.ForEachExec(r => r.Value = coefficient * r.Value);
         }
         /// <summary>
         /// Vypočítá hodnotu R0 jako poměr hodnoty Value proti Value [mínus 5 dní] a výsledky na závěr vloží do Value
         /// </summary>
         /// <param name="args"></param>
-        private void ProcessResultValueRZero(ResultArgs args)
+        private void ProcessResultValueRZero(SearchInfoArgs args)
         {
-            var data = args.Results;
+            var data = args.ResultDict;
             int[] keys = data.Keys.ToArray();
             decimal lastRZero = 0m;
             foreach (int key in keys)
@@ -1232,30 +1230,32 @@ namespace Djs.Tools.CovidGraphs.Data
                 result.TempValue = lastRZero;
             }
             // Na závěr vložím TempValue do Value:
-            args.Results.Values.ForEachExec(r => r.Value = r.TempValue);
+            args.Results.ForEachExec(r => r.Value = r.TempValue);
         }
-        private void ProcessResultValueRound(ResultArgs args, int decimals = 0)
+        private void ProcessResultValueRound(SearchInfoArgs args, int decimals = 0)
         {
-            args.Results.Values.ForEachExec(r => r.Value = Math.Round(r.Value, decimals));
+            args.Results.ForEachExec(r => r.Value = Math.Round(r.Value, decimals));
         }
         /// <summary>
-        /// Z dodané kolekce hodnot vybere jen ty, které vyhovují danému časovému rozmezí, setřídí dle data a vrátí jako pole
+        /// Z dodané kolekce hodnot vybere jen ty, které vyhovují danému časovému rozmezí, setřídí dle data a vrátí jako pole.
+        /// Tato metoda se vždy volá jako poslední v řadě procesu, protože tato metoda jediná plní <see cref="ResultSetInfo.Results"/>.
         /// </summary>
         /// <param name="values"></param>
         /// <param name="begin"></param>
         /// <param name="end"></param>
         /// <returns></returns>
-        private ResultInfo[] ProcessResultValueTimeRange(IEnumerable<ResultInfo> values, DateTime? begin = null, DateTime? end = null)
+        private void ProcessResultValueByTimeRange(SearchInfoArgs args, DateTime? begin = null, DateTime? end = null)
         {
+            // IEnumerable<ResultInfo> values
             List<ResultInfo> resultList;
             bool hasBegin = begin.HasValue;
             bool hasEnd = end.HasValue;
             if (hasBegin || hasEnd)
-                resultList = values.Where(v => ((!hasBegin || v.Date >= begin.Value) && (!hasEnd || v.Date < end.Value))).ToList();
+                resultList = args.ResultSet.WorkingDict.Values.Where(v => ((!hasBegin || v.Date >= begin.Value) && (!hasEnd || v.Date < end.Value))).ToList();
             else
-                resultList = values.ToList();
+                resultList = args.ResultSet.WorkingDict.Values.ToList();
             resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
-            return resultList.ToArray();
+            args.ResultSet.Results = resultList.ToArray();
         }
 
         public IEntity[] GetEntities(string searchNazev)
@@ -1387,10 +1387,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 foreach (var item in this.Childs.Values)
                     item.Save(saveInfo, stream);
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                    item.SearchInfo(args);
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1443,10 +1445,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 foreach (var item in this.Childs.Values)
                     item.Save(saveInfo, stream);
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                    item.SearchInfo(args);
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1498,10 +1502,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 foreach (var item in this.Childs.Values)
                     item.Save(saveInfo, stream);
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                    item.SearchInfo(args);
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1553,10 +1559,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 foreach (var item in this.Childs.Values)
                     item.Save(saveInfo, stream);
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                    item.SearchInfo(args);
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1608,10 +1616,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 foreach (var item in this.Childs.Values)
                     item.Save(saveInfo, stream);
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                    item.SearchInfo(args);
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1663,10 +1673,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 foreach (var item in this.Childs.Values)
                     item.Save(saveInfo, stream);
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                    item.SearchInfo(args);
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1734,12 +1746,22 @@ namespace Djs.Tools.CovidGraphs.Data
                         break;
                 }
             }
-            public void AddResults(ResultArgs args)
+            public void SearchInfo(SearchInfoArgs args)
             {
-                foreach (var item in this.Childs.Values)
-                    item.AddResults(args);
+                args.ResultSet.ScanRecordCount++;                    // Statistika
 
-                args.PocetObyvatel += this.PocetObyvatel;
+                // Filtr na Počet obyvatel se aplikuje na této nejnižší úrovni:
+                int pocetObyvatel = this.PocetObyvatel;
+                bool add = ((!args.PocetOd.HasValue || (args.PocetOd.HasValue && pocetObyvatel >= args.PocetOd.Value)) &&
+                            (!args.PocetDo.HasValue || (args.PocetDo.HasValue && pocetObyvatel < args.PocetDo.Value)));
+
+                // Vyhovuje dle filtru obyvatel?
+                if (add)
+                {
+                    args.PocetObyvatel += this.PocetObyvatel;
+                    foreach (var item in this.Childs.Values)
+                        item.AddResults(args);
+                }
             }
             public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
             {
@@ -1784,12 +1806,13 @@ namespace Djs.Tools.CovidGraphs.Data
 
                 }
             }
-            public void AddResults(ResultArgs args)
+            public void AddResults(SearchInfoArgs args)
             {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+
                 if (args.Begin.HasValue && this.Date < args.Begin.Value) return;
                 if (args.End.HasValue && this.Date >= args.End.Value) return;
-                ResultInfo result = args.Results.AddOrCreate(this.DateKey, () => new ResultInfo(args.Entity, this.Date));
-                result.AddInfo(this, args.ValueType);
+                args.ResultSet.AddInfo(args.Entity, args.ValueType, this);
             }
         }
         public class Pocet
@@ -1832,68 +1855,6 @@ namespace Djs.Tools.CovidGraphs.Data
             public int PocetCelkem { get; private set; }
 
         }
-        public class ResultInfo
-        {
-            public ResultInfo(IEntity entity, DateTime date)
-            {
-                this.Entity = entity;
-                this.Date = date;
-                this.RawValue = 0;
-            }
-            public override string ToString()
-            {
-                return $"{Text}; Entity: {Entity.Text}";
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Datum: {(Date.ToString("dd.MM.yyyy"))}; Value: {Value}"; } }
-            public IEntity Entity { get; private set; }
-            public Database Database { get { return Entity.Database; } }
-            public DateTime Date { get; private set; }
-            public int DateKey { get { return Date.GetDateKey(); } }
-            /// <summary>
-            /// Vstupující hodnota (konkrétní počet)
-            /// </summary>
-            public decimal RawValue { get; private set; }
-            /// <summary>
-            /// Výstupní hodnota (například Average, nebo Relative)
-            /// </summary>
-            public decimal Value { get; set; }
-            /// <summary>
-            /// Pracovní hodnota pro výpočty
-            /// </summary>
-            public decimal TempValue { get; set; }
-            /// <summary>
-            /// Do this resultu vloží výchozí Raw data z <see cref="Info"/> podle požadovaného typu cílové hodnoty
-            /// </summary>
-            /// <param name="info"></param>
-            /// <param name="valueType"></param>
-            internal void AddInfo(Info info, DataValueType valueType)
-            {
-                decimal value = 0m;
-                switch (valueType)
-                {
-                    case DataValueType.NewCount:
-                    case DataValueType.NewCountAvg:
-                    case DataValueType.NewCountRelative:
-                    case DataValueType.NewCountRelativeAvg:
-                    case DataValueType.NewCount7DaySum:
-                    case DataValueType.NewCount7DaySumAvg:
-                    case DataValueType.NewCount7DaySumRelative:
-                    case DataValueType.NewCount7DaySumRelativeAvg:
-                    case DataValueType.RZero:
-                    case DataValueType.RZeroAvg:
-                        value = info.NewCount;
-                        break;
-                    case DataValueType.CurrentCount:
-                    case DataValueType.CurrentCountAvg:
-                    case DataValueType.CurrentCountRelative:
-                    case DataValueType.CurrentCountRelativeAvg:
-                        value = info.CurrentCount;
-                        break;
-                }
-                this.RawValue += value;
-            }
-        }
-
         #endregion
         #region Komprimace a dekomprimace stringu
         /// <summary>
@@ -1967,6 +1928,114 @@ namespace Djs.Tools.CovidGraphs.Data
 
         #endregion
     }
+    #region Třídy pro výsledky analýzy
+    /// <summary>
+    /// Třída výsledků
+    /// </summary>
+    public class ResultSetInfo
+    {
+        public ResultSetInfo()
+        {
+            this.ScanRecordCount = 0;
+            this.LoadRecordCount = 0;
+            this.WorkingDict = new Dictionary<int, ResultInfo>();
+
+        }
+        public int ScanRecordCount { get; set; }
+        public int LoadRecordCount { get; set; }
+        /// <summary>
+        /// Počet záznamů, které budeme zobrazovat
+        /// </summary>
+        public int AcceptRecordCount { get { return (Results != null ? Results.Length : 0); } }
+        /// <summary>
+        /// Pole nalezených záznamů s daty, Dictionary, Key = datum.
+        /// Jde o záznamy vstupní a pracovní, bez filtrování dle data.
+        /// </summary>
+        public Dictionary<int, ResultInfo> WorkingDict { get; private set; }
+        /// <summary>
+        /// Čisté pole výstupních záznamů, filtrované dle data.
+        /// </summary>
+        public ResultInfo[] Results { get; set; }
+        /// <summary>
+        /// Přidá další hodnotu
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="valueType"></param>
+        /// <param name="info"></param>
+        internal void AddInfo(IEntity entity, DataValueType valueType, Database.Info info)
+        {
+            this.LoadRecordCount++;                                  // Statistika
+
+            int key = info.DateKey;
+            ResultInfo result = this.WorkingDict.AddOrCreate(key, () => new ResultInfo(entity, info.Date));
+            result.AddInfo(info, valueType);
+        }
+    }
+    /// <summary>
+    /// Třída jednoho výsledku
+    /// </summary>
+    public class ResultInfo
+    {
+        public ResultInfo(IEntity entity, DateTime date)
+        {
+            this.Entity = entity;
+            this.Date = date;
+            this.RawValue = 0;
+        }
+        public override string ToString()
+        {
+            return $"{Text}; Entity: {Entity.Text}";
+        }
+        public string Text { get { return $"Prvek: {(this.GetType().Name)}; Datum: {(Date.ToString("dd.MM.yyyy"))}; Value: {Value}"; } }
+        public IEntity Entity { get; private set; }
+        public Database Database { get { return Entity.Database; } }
+        public DateTime Date { get; private set; }
+        public int DateKey { get { return Date.GetDateKey(); } }
+        /// <summary>
+        /// Vstupující hodnota (konkrétní počet)
+        /// </summary>
+        public decimal RawValue { get; private set; }
+        /// <summary>
+        /// Výstupní hodnota (například Average, nebo Relative)
+        /// </summary>
+        public decimal Value { get; set; }
+        /// <summary>
+        /// Pracovní hodnota pro výpočty
+        /// </summary>
+        public decimal TempValue { get; set; }
+        /// <summary>
+        /// Do this resultu vloží výchozí Raw data z <see cref="Info"/> podle požadovaného typu cílové hodnoty
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="valueType"></param>
+        internal void AddInfo(Database.Info info, DataValueType valueType)
+        {
+            decimal value = 0m;
+            switch (valueType)
+            {
+                case DataValueType.NewCount:
+                case DataValueType.NewCountAvg:
+                case DataValueType.NewCountRelative:
+                case DataValueType.NewCountRelativeAvg:
+                case DataValueType.NewCount7DaySum:
+                case DataValueType.NewCount7DaySumAvg:
+                case DataValueType.NewCount7DaySumRelative:
+                case DataValueType.NewCount7DaySumRelativeAvg:
+                case DataValueType.RZero:
+                case DataValueType.RZeroAvg:
+                    value = info.NewCount;
+                    break;
+                case DataValueType.CurrentCount:
+                case DataValueType.CurrentCountAvg:
+                case DataValueType.CurrentCountRelative:
+                case DataValueType.CurrentCountRelativeAvg:
+                    value = info.CurrentCount;
+                    break;
+            }
+            this.RawValue += value;
+        }
+    }
+    #endregion
 
     #region Obecný přístup k datům entity (země, kraj, okres, město, obec, ves)
 
@@ -1984,7 +2053,7 @@ namespace Djs.Tools.CovidGraphs.Data
         void Clear(FileContentType contentType);
         void Load(string[] items);
         void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream);
-        void AddResults(ResultArgs args);
+        void SearchInfo(SearchInfoArgs args);
         void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains);
     }
     public enum EntityType { None, World, Zeme, Kraj, Okres, Mesto, Obec, Vesnice }
@@ -2132,17 +2201,19 @@ namespace Djs.Tools.CovidGraphs.Data
         CovidObce2
     }
 
-    public class ResultArgs
+    public class SearchInfoArgs
     {
-        public ResultArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end)
+        public SearchInfoArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, int? pocetOd, int? pocetDo)
         {
             this.Entity = entity;
             this.ValueType = valueType;
             this.DataTypeInfo = dataTypeInfo;
             this.Begin = begin;
             this.End = end;
-            this.Results = new Dictionary<int, Database.ResultInfo>();
             this.PocetObyvatel = 0;
+            this.PocetOd = pocetOd;
+            this.PocetDo = pocetDo;
+            this.ResultSet = new ResultSetInfo();
         }
 
         public IEntity Entity { get; private set; }
@@ -2150,9 +2221,27 @@ namespace Djs.Tools.CovidGraphs.Data
         public DataValueTypeInfo DataTypeInfo { get; private set; }
         public DateTime? Begin { get; private set; }
         public DateTime? End { get; private set; }
-        public Dictionary<int, Database.ResultInfo> Results { get; private set; }
+        /// <summary>
+        /// Filtrovat pouze nejnižší obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
+        /// </summary>
+        public int? PocetOd { get; private set; }
+        /// <summary>
+        /// Filtrovat pouze nejnižší obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
+        /// </summary>
+        public int? PocetDo { get; private set; }
         public int PocetObyvatel { get; set; }
-
+        /// <summary>
+        /// Pole nalezených záznamů s daty
+        /// </summary>
+        public IEnumerable<ResultInfo> Results { get { return this.ResultSet.WorkingDict.Values; } }
+        /// <summary>
+        /// Pole nalezených záznamů s daty, Dictionary, kde Key = datum
+        /// </summary>
+        public Dictionary<int, ResultInfo> ResultDict { get { return this.ResultSet.WorkingDict; } }
+        /// <summary>
+        /// Kompletní data výsledků
+        /// </summary>
+        public ResultSetInfo ResultSet { get; private set; }
     }
     #endregion
 
@@ -2166,7 +2255,7 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             this.Value = value;
         }
-        public DataVisualInfo(object value, string text, string toolTip = null, System.Drawing.Image icon = null, object tag = null)
+        public DataVisualInfo(object value, string text, string toolTip = null, DW.Image icon = null, object tag = null)
         {
             this.Value = value;
             this.Text = text;
@@ -2177,29 +2266,8 @@ namespace Djs.Tools.CovidGraphs.Data
         public object Value { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
-        public System.Drawing.Image Icon { get; set; }
+        public DW.Image Icon { get; set; }
         public object Tag { get; set; }
-    }
-    /// <summary>
-    /// Druh dat získaných z databáze pro jednu serii
-    /// </summary>
-    public enum DataValueType
-    {
-        None,
-        NewCount,
-        NewCountAvg,
-        NewCountRelative,
-        NewCountRelativeAvg,
-        NewCount7DaySum,
-        NewCount7DaySumAvg,
-        NewCount7DaySumRelative,
-        NewCount7DaySumRelativeAvg,
-        CurrentCount,
-        CurrentCountAvg,
-        CurrentCountRelative,
-        CurrentCountRelativeAvg,
-        RZero,
-        RZeroAvg
     }
 
     public static class Extensions
@@ -2242,6 +2310,37 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             foreach (var item in collection)
                 action(item);
+        }
+        public static DW.Rectangle AlignTo(this DW.Rectangle bounds, DW.Rectangle parentBounds)
+        {
+            int px = parentBounds.X;
+            int py = parentBounds.Y;
+            int pw = parentBounds.Width;
+            int ph = parentBounds.Height;
+
+            int bx = bounds.X;
+            int by = bounds.Y;
+            int bw = bounds.Width;
+            int bh = bounds.Height;
+
+            AlignTo1D(ref bx, ref bw, px, pw);
+            AlignTo1D(ref by, ref bh, py, ph);
+
+            return new DW.Rectangle(bx, by, bw, bh);
+        }
+        private static void AlignTo1D(ref int b0, ref int bs, int c0, int cs)
+        {
+            if (b0 < c0) b0 = c0;
+            int c1 = c0 + cs;
+            if ((b0 + bs) > c1)
+            {
+                b0 = c1 - bs;
+                if (b0 < c0)
+                {
+                    b0 = c0;
+                    bs = cs;
+                }
+            }
         }
     }
 }

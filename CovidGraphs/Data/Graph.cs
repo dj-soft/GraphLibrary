@@ -14,7 +14,7 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class GraphInfo : DataSerializable
     {
-        #region Konstruktor, proměnné
+        #region Konstruktor, vnitřní proměnné
         /// <summary>
         /// Konstruktor pro definici grafu
         /// </summary>
@@ -22,6 +22,7 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             this.Id = NextId++;
             Init();
+            this.Clear();
         }
         /// <summary>
         /// Vizualizce
@@ -78,6 +79,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public bool ChartAxisYRight { get; set; }
         /// <summary>
+        /// Mají se zobrazit společné časové pruhy?
+        /// </summary>
+        public bool EnableCommonTimeStripes { get; set; }
+        /// <summary>
         /// Jednotlivé serie grafu
         /// </summary>
         public GraphSerieInfo[] Series { get { return _Series.ToArray(); } }
@@ -100,7 +105,7 @@ namespace Djs.Tools.CovidGraphs.Data
             DirectoryInfo dirInfo = new DirectoryInfo(path);
             if (dirInfo.Exists)
             {
-                string pattern = "*." + _Extension;
+                string pattern = "*." + FileExtension;
                 var fileInfos = dirInfo.GetFiles(pattern);
                 foreach (var fileInfo in fileInfos)
                 {
@@ -136,7 +141,22 @@ namespace Djs.Tools.CovidGraphs.Data
             File.Decrypt(fileName);
         }
         /// <summary>
-        /// Z daného souoru načte a vytvoří celou definici grafu
+        /// Z dodaného textu (Serial) vytvoří a vrátí new instanci.
+        /// Vrácená instance nemá vztah k podkladovému souboru, z něhož byla načtena data (serializovaná data neobsahují fyzický souor na disku).
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        public static GraphInfo LoadFromSerial(string serial)
+        {
+            if (String.IsNullOrEmpty(serial)) return null;
+
+            GraphInfo graphInfo = new GraphInfo();
+            graphInfo.Serial = serial;
+            graphInfo._FileName = null;
+            return graphInfo;
+        }
+        /// <summary>
+        /// Z daného souboru načte a vytvoří celou definici grafu
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
@@ -167,17 +187,41 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             set
             {
-                using (StringReader stream = new StringReader(value))
+                this.Clear();
+                string serial = value;
+                if (!String.IsNullOrEmpty(serial))
                 {
-                    _LoadFromStream(stream);
+                    using (StringReader stream = new StringReader(serial))
+                    {
+                        _LoadFromStream(stream);
+                    }
                 }
             }
+        }
+        /// <summary>
+        /// Vymaže všechna data
+        /// </summary>
+        public void Clear()
+        {
+            this.Title = "";
+            this.Order = 0;
+            this.Description = "";
+            this.TimeRangeLastDays = null;
+            this.TimeRangeLastMonths = null;
+            this.TimeRangeBegin = null;
+            this.TimeRangeEnd = null;
+            this.ChartEnableTimeZoom = true;
+            this.ChartAxisYRight = false;
+            this.EnableCommonTimeStripes = true;
+
+            _Series.Clear();
+            _ChartLayout = null;
+            _FileName = null;
         }
         /// <summary>
         /// Jméno souboru grafu, z něhož je načten. Pokud dosud není uložen, je null. I v takovém případě bude možno jej uložit, vygeneruje si svoje jméno souboru.
         /// </summary>
         public string GraphFileName { get { return _FileName; } }
-
         #region Privátní Load
         /// <summary>
         /// Do this instance načte plná data z daného streamu
@@ -252,6 +296,10 @@ namespace Djs.Tools.CovidGraphs.Data
                 case ChartHeaderAxisYRight:
                     this.ChartAxisYRight = GetValue(text, false);
                     break;
+                case ChartHeaderEnableCommonTimeStripes:
+                    this.EnableCommonTimeStripes = GetValue(text, false);
+                    break;
+                    // Nové prvky přidávej i do Clear() !
             }
 
             line = null;
@@ -324,6 +372,8 @@ namespace Djs.Tools.CovidGraphs.Data
                 stream.WriteLine(CreateLine(ChartHeaderEnableTimeZoom, GetSerial(true)));
             if (this.ChartAxisYRight)
                 stream.WriteLine(CreateLine(ChartHeaderAxisYRight, GetSerial(true)));
+            if (this.EnableCommonTimeStripes)
+                stream.WriteLine(CreateLine(ChartHeaderEnableCommonTimeStripes, GetSerial(true)));
 
         }
         /// <summary>
@@ -361,7 +411,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 if (!String.IsNullOrEmpty(fileName)) return fileName;
                 string name = CreateValidFileName(this.Title, "_");
                 string path = App.ConfigPath;
-                return System.IO.Path.Combine(path, name + "." + _Extension);
+                return System.IO.Path.Combine(path, name + "." + FileExtension);
             }
         }
         private string _FileName;
@@ -376,9 +426,10 @@ namespace Djs.Tools.CovidGraphs.Data
         private const string ChartHeaderTimeEnd = "TimeEnd";
         private const string ChartHeaderEnableTimeZoom = "EnableTimeZoom";
         private const string ChartHeaderAxisYRight = "AxisYRight";
+        private const string ChartHeaderEnableCommonTimeStripes = "EnableCommonTimeStripes";
         private const string ChartHeaderLayout = "LayoutXml";
-        private const string _Extension = "chart";
         internal const string ChartSeriesPrefix = "Serie.";
+        private const string FileExtension = "chart";
         #endregion
         #region Načtení dat grafu z databáze
         public GraphData LoadData(Database database)
@@ -393,6 +444,8 @@ namespace Djs.Tools.CovidGraphs.Data
             PrepareTimeRange(graphData);
             foreach (var serie in _Series)
                 serie.LoadData(database, graphData);
+
+            graphData.FinaliseLoading();
 
             return graphData;
         }
@@ -429,14 +482,19 @@ namespace Djs.Tools.CovidGraphs.Data
         #endregion
         #region Layout grafu, generátor defaultního layoutu
         /// <summary>
-        /// Vzhled grafu. Ve výchozím stavu generuje vhodný, po setování nenull udržuje setovaný layout. Po setování null vrací opět defaultní.
+        /// Vzhled grafu. Ve výchozím stavu je null, pak si aplikace má vyžádat defaultní layout z metody <see cref="CreateDefaultLayout(GraphData)"/>.
+        /// Aplikace může tento layout použít, následně editovat, a pak uložit sem do <see cref="ChartLayout"/>, odkud bude uložen na disk a příště bude použit již editovaný layout.
+        /// Aplikace může vždy vyžádat aktuální defaultní layout, vhodné například po změně dat.
         /// </summary>
         public string ChartLayout { get { return _ChartLayout; } set { _ChartLayout = value; } }
         private string _ChartLayout;
+        /// <summary>
+        /// Vygeneruje defaultní layout. Potřebuje k tomu plná data grafu, nejen definici. Definice serií grafu je uložena ve sloupcích dat.
+        /// </summary>
+        /// <param name="graphData"></param>
+        /// <returns></returns>
         public string CreateDefaultLayout(GraphData graphData)
         {
-
-
             string sumSerie = "";
             foreach (var column in graphData.Columns)
             {
@@ -451,9 +509,14 @@ namespace Djs.Tools.CovidGraphs.Data
             string currTitles = DefaultLayoutTitles;
             currTitles = currTitles.Replace("{{TITLETEXT}}", this.Title);
 
+            string currStrips = "";
+            if (this.EnableCommonTimeStripes)
+            {
+            }
+
             string currDiagram = DefaultLayoutDiagram;
             currDiagram = currDiagram.Replace("{{AXIS_INTERACTIVITY}}", (this.ChartEnableTimeZoom ? "EnableAxisXScrolling=\"true\" EnableAxisXZooming=\"true\" " : ""));
-            currDiagram = currDiagram.Replace("{{STRIPS}}", "");
+            currDiagram = currDiagram.Replace("{{STRIPS}}", currStrips);
             currDiagram = currDiagram.Replace("{{AXISY_ALIGNMENT}}", this.ChartAxisYRight ? "Alignment=\"Far\" " : "");
 
             string currLayout = DefaultLayoutMain;
@@ -464,6 +527,11 @@ namespace Djs.Tools.CovidGraphs.Data
 
             return currLayout;
         }
+        /// <summary>
+        /// Vytvoří a vrátí definici layoutu za jednu serii = jeden sloupec dat grafu
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
         protected static string CreateDefaultLayoutSerie(GraphColumn column)
         {
             var graphSerieInfo = column.GraphSerie;
@@ -478,6 +546,14 @@ namespace Djs.Tools.CovidGraphs.Data
             currSerie = currSerie.Replace("{{LINE_DASHSTYLE_ELEMENT}}", CreateElement("DashStyle", graphSerieInfo.LineDashStyleName));
             return currSerie;
         }
+        protected static string CreateElement(string elementName, string value)
+        {
+            if (value == null) return "";
+
+            System.Xml.XmlText s;
+            string xmlString = System.Web.HttpUtility.HtmlEncode(value);
+            return $"{elementName}=\"{xmlString}\" ";
+        }
         protected static string CreateElement(string elementName, Boolean? value)
         {
             if (!value.HasValue) return "";
@@ -487,11 +563,6 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             if (!value.HasValue) return "";
             return $"{elementName}=\"{value.Value}\" ";
-        }
-        protected static string CreateElement(string elementName, string value)
-        {
-            if (value == null) return "";
-            return $"{elementName}=\"{value}\" ";
         }
         protected static string CreateElement(string elementName, System.Drawing.Color? value)
         {
@@ -619,6 +690,197 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         #endregion
     }
+    #endregion
+    #region GraphSerieInfo : definice jedné řady v grafu (zdroj dat, typ dat, další vlastnosti)
+    /// <summary>
+    /// Definice jedné serie dat grafu = jedna čára s daty
+    /// </summary>
+    public class GraphSerieInfo : DataSerializable
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GraphSerieInfo()
+        {
+            ValueType = DataValueType.CurrentCount;
+        }
+        /// <summary>
+        /// Parent graf
+        /// </summary>
+        public GraphInfo Parent { get; set; }
+        /// <summary>
+        /// Název serie
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
+        /// Plný kód entity = definice místa, jehož data se načítají.
+        /// <para/>
+        /// Funguje podobně jako plná cesta k adresáři, může obsahovat např. jen "CZ", pak určuje celou Českou republiku; nebo "CZ.CZ053.CZ0531", pak určuje okres Chrudim,
+        /// anebo "CZ.CZ053.CZ0531.5304.53043.571164", pouze samotná Chrudim na nejnižší úrovni = bez okolních obcí.
+        /// </summary>
+        public string DataEntityCode { get; set; }
+        /// <summary>
+        /// Druh dat, která se budou zobrazovat. Určuje zdroj dat (počet nových případů za den, aktuální počet nemocných) i jejich agregaci (průměr za 7 dní, poměr k počtu obyvatel).
+        /// </summary>
+        public DataValueType ValueType { get; set; }
+        /// <summary>
+        /// Filtovat data podle velikosti obcí: načítat jen z obcí, jejichž Počet obyvatel je rovný nebo větší této hodnotě
+        /// </summary>
+        public int? FiltrPocetObyvatelOd { get; set; }
+        /// <summary>
+        /// Filtovat data podle velikosti obcí: načítat jen z obcí, jejichž Počet obyvatel je menší než tato hodnota
+        /// </summary>
+        public int? FiltrPocetObyvatelDo { get; set; }
+        /// <summary>
+        /// Detaily o aktuálním typu hodnoty <see cref="ValueType"/>
+        /// </summary>
+        public DataValueTypeInfo ValueTypeInfo { get { return DataValueTypeInfo.CreateFor(this.ValueType); } }
+        /// <summary>
+        /// Barva čáry explicitně zadaná
+        /// </summary>
+        public System.Drawing.Color? LineColor { get; set; }
+        /// <summary>
+        /// Síla čáry explicitně zadaná
+        /// </summary>
+        public int? LineThickness { get; set; }
+        /// <summary>
+        /// Styl tečkování čáry
+        /// </summary>
+        public LineDashStyleType? LineDashStyle { get; set; }
+        /// <summary>
+        /// Styl tečkování čáry, název do grafu
+        /// </summary>
+        public string LineDashStyleName
+        {
+            get
+            {
+                var style = LineDashStyle;
+                if (!style.HasValue || style.Value == LineDashStyleType.None) return null;
+                if (style.Value == LineDashStyleType.Solid) return null;                       // Pro plnou čáru se hodnota do XML nedává, ta je default
+                return style.Value.ToString();
+            }
+        }
+        #region Načtení ze souboru a uložení definice této serie do souboru
+
+        public static GraphSerieInfo LoadFromStream(StringReader stream, GraphInfo.FileVersion fileVersion, ref string line)
+        {
+            if (stream == null || stream.Peek() == 0) return null;
+
+            GraphSerieInfo serieInfo = null;
+
+            bool hasTitle = false;
+            while (stream.Peek() != 0)
+            {
+                if (line == null) line = stream.ReadLine();
+
+                // Pokud najdu řádek, který nemá prefix Serie, pak jej nebudu zpracovávat = jde o něco za seriemi - a skončíme:
+                if (!line.StartsWith(GraphInfo.ChartSeriesPrefix)) break;
+
+                // Pokud najdu řádek s titulkem serie v situaci, kdy už náš titulek máme, pak jde o titulek následující serie - a zdejší instance skončí:
+                bool isTitle = (line.StartsWith(ChartSeriesTitle));
+                if (hasTitle && isTitle) break;
+
+                // Je to řádek pro serii, a tedy pro zdejší instanci:
+                if (!hasTitle && isTitle) hasTitle = true;
+
+                // Mám data pro Serie, ale nemám cílový objekt => vytvořím new instanci:
+                if (serieInfo == null) serieInfo = new GraphSerieInfo();
+                serieInfo.LoadFromStreamHeaderLine(stream, fileVersion, ref line);
+            }
+
+            return serieInfo;
+        }
+        private void LoadFromStreamHeaderLine(StringReader stream, GraphInfo.FileVersion fileVersion, ref string line)
+        {
+            string name = LoadNameValueFromString(line, out string text);
+            switch (name)
+            {
+                case ChartSeriesTitle:
+                    this.Title = GetValue(text, "");
+                    break;
+                case ChartSeriesEntityCode:
+                    this.DataEntityCode = GetValue(text, "");
+                    break;
+                case ChartSeriesValueType:
+                    this.ValueType = GetValueEnum<DataValueType>(text, DataValueType.None);
+                    break;
+                case ChartSeriesLineColor:
+                    this.LineColor = GetValue(text, (System.Drawing.Color?)null);
+                    break;
+                case ChartSeriesLineThickness:
+                    this.LineThickness = GetValue(text, (int?)null);
+                    break;
+                case ChartSeriesLineDashStyle:
+                    this.LineDashStyle = GetValueEnum<LineDashStyleType>(text, (LineDashStyleType?)null);
+                    break;
+            }
+            line = null;
+        }
+        internal void SaveToStream(StringWriter stream)
+        {
+            stream.WriteLine(CreateLine(ChartSeriesTitle, GetSerial(this.Title)));
+            stream.WriteLine(CreateLine(ChartSeriesEntityCode, GetSerial(this.DataEntityCode)));
+            stream.WriteLine(CreateLine(ChartSeriesValueType, GetSerialEnum(this.ValueType)));
+            if (this.LineColor.HasValue)
+                stream.WriteLine(CreateLine(ChartSeriesLineColor, GetSerial(this.LineColor)));
+            if (this.LineThickness.HasValue)
+                stream.WriteLine(CreateLine(ChartSeriesLineThickness, GetSerial(this.LineThickness)));
+            if (this.LineDashStyle.HasValue)
+                stream.WriteLine(CreateLine(ChartSeriesLineDashStyle, GetSerialEnum(this.LineDashStyle)));
+        }
+        private const string ChartSeriesTitle = GraphInfo.ChartSeriesPrefix + "Title";
+        private const string ChartSeriesEntityCode = GraphInfo.ChartSeriesPrefix + "EntityCode";
+        private const string ChartSeriesValueType = GraphInfo.ChartSeriesPrefix + "ValueType";
+        private const string ChartSeriesLineColor = GraphInfo.ChartSeriesPrefix + "LineColor";
+        private const string ChartSeriesLineThickness = GraphInfo.ChartSeriesPrefix + "LineThickness";
+        private const string ChartSeriesLineDashStyle = GraphInfo.ChartSeriesPrefix + "LineDashStyle";
+        #endregion
+        #region Načtení dat grafu pro tuto sérii z databáze
+        /// <summary>
+        /// Načte data z databáze <see cref="Database"/> podle definice v této serii a uloží je do nového sloupce v dodaném objektu <paramref name="graphData"/> pro data grafu
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="graphData"></param>
+        public void LoadData(Database database, GraphData graphData)
+        {
+            string fullCode = this.DataEntityCode;
+            var entity = database.GetEntity(fullCode);
+            if (entity is null) return;
+
+            var result = database.GetResult(entity, this.ValueType, this.ValueTypeInfo, graphData.DateBegin, graphData.DateEnd, this.FiltrPocetObyvatelOd, this.FiltrPocetObyvatelDo);
+            var column = graphData.AddColumn(this, entity);
+            if (result != null)
+            {
+                foreach (var item in result.Results)
+                    graphData.AddCell(item.Date, column, item.Value);
+                graphData.AddCount(result.ScanRecordCount, result.LoadRecordCount, result.AcceptRecordCount);
+            }
+        }
+        #endregion
+    }
+    #endregion
+    #region DataValueType, DataValueTypeInfo : Typy dat - druhy informací
+    /// <summary>
+    /// Druh dat získaných z databáze pro jednu serii
+    /// </summary>
+    public enum DataValueType
+    {
+        None,
+        NewCount,
+        NewCountAvg,
+        NewCountRelative,
+        NewCountRelativeAvg,
+        NewCount7DaySum,
+        NewCount7DaySumAvg,
+        NewCount7DaySumRelative,
+        NewCount7DaySumRelativeAvg,
+        CurrentCount,
+        CurrentCountAvg,
+        CurrentCountRelative,
+        CurrentCountRelativeAvg,
+        RZero,
+        RZeroAvg
+    }
     /// <summary>
     /// Informace o jednom typu dat v grafu
     /// </summary>
@@ -737,155 +999,6 @@ namespace Djs.Tools.CovidGraphs.Data
         BigValuesLogarithmic
     }
     /// <summary>
-    /// Definice jedné serie dat grafu = jedna čára s daty
-    /// </summary>
-    public class GraphSerieInfo : DataSerializable
-    {
-        public GraphSerieInfo()
-        {
-            ValueType = DataValueType.CurrentCount;
-        }
-        /// <summary>
-        /// Parent graf
-        /// </summary>
-        public GraphInfo Parent { get; set; }
-        /// <summary>
-        /// Název serie
-        /// </summary>
-        public string Title { get; set; }
-        /// <summary>
-        /// Plný kód entity
-        /// </summary>
-        public string DataEntityCode { get; set; }
-        /// <summary>
-        /// Druh dat
-        /// </summary>
-        public DataValueType ValueType { get; set; }
-        /// <summary>
-        /// Detaily o aktuálním typu hodnoty <see cref="ValueType"/>
-        /// </summary>
-        public DataValueTypeInfo ValueTypeInfo { get { return DataValueTypeInfo.CreateFor(this.ValueType); } }
-        /// <summary>
-        /// Barva čáry explicitně zadaná
-        /// </summary>
-        public System.Drawing.Color? LineColor { get; set; }
-        /// <summary>
-        /// Síla čáry explicitně zadaná
-        /// </summary>
-        public int? LineThickness { get; set; }
-        /// <summary>
-        /// Styl tečkování čáry
-        /// </summary>
-        public LineDashStyleType? LineDashStyle { get; set; }
-        /// <summary>
-        /// Styl tečkování čáry, název do grafu
-        /// </summary>
-        public string LineDashStyleName
-        {
-            get
-            {
-                var style = LineDashStyle;
-                if (!style.HasValue || style.Value == LineDashStyleType.None) return null;
-                if (style.Value == LineDashStyleType.Solid) return null;                       // Pro plnou čáru se hodnota do XML nedává, ta je default
-                return style.Value.ToString();
-            }
-        }
-        #region Načtení ze souboru a uložení definice této serie do souboru
-
-        public static GraphSerieInfo LoadFromStream(StringReader stream, GraphInfo.FileVersion fileVersion, ref string line)
-        {
-            if (stream == null || stream.Peek() == 0) return null;
-
-            GraphSerieInfo serieInfo = null;
-
-            bool hasTitle = false;
-            while (stream.Peek() != 0)
-            {
-                if (line == null) line = stream.ReadLine();
-
-                // Pokud najdu řádek, který nemá prefix Serie, pak jej nebudu zpracovávat = jde o něco za seriemi - a skončíme:
-                if (!line.StartsWith(GraphInfo.ChartSeriesPrefix)) break;
-
-                // Pokud najdu řádek s titulkem serie v situaci, kdy už náš titulek máme, pak jde o titulek následující serie - a zdejší instance skončí:
-                bool isTitle = (line.StartsWith(ChartSeriesTitle));
-                if (hasTitle && isTitle) break;
-
-                // Je to řádek pro serii, a tedy pro zdejší instanci:
-                if (!hasTitle && isTitle) hasTitle = true;
-
-                // Mám data pro Serie, ale nemám cílový objekt => vytvořím new instanci:
-                if (serieInfo == null) serieInfo = new GraphSerieInfo();
-                serieInfo.LoadFromStreamHeaderLine(stream, fileVersion, ref line);
-            }
-
-            return serieInfo;
-        }
-        private void LoadFromStreamHeaderLine(StringReader stream, GraphInfo.FileVersion fileVersion, ref string line)
-        {
-            string name = LoadNameValueFromString(line, out string text);
-            switch (name)
-            {
-                case ChartSeriesTitle:
-                    this.Title = GetValue(text, "");
-                    break;
-                case ChartSeriesEntityCode:
-                    this.DataEntityCode = GetValue(text, "");
-                    break;
-                case ChartSeriesValueType:
-                    this.ValueType = GetValueEnum<DataValueType>(text, DataValueType.None);
-                    break;
-                case ChartSeriesLineColor:
-                    this.LineColor = GetValue(text, (System.Drawing.Color?)null);
-                    break;
-                case ChartSeriesLineThickness:
-                    this.LineThickness = GetValue(text, (int?)null);
-                    break;
-                case ChartSeriesLineDashStyle:
-                    this.LineDashStyle = GetValueEnum<LineDashStyleType>(text, (LineDashStyleType?)null);
-                    break;
-            }
-            line = null;
-        }
-        internal void SaveToStream(StringWriter stream)
-        {
-            stream.WriteLine(CreateLine(ChartSeriesTitle, GetSerial(this.Title)));
-            stream.WriteLine(CreateLine(ChartSeriesEntityCode, GetSerial(this.DataEntityCode)));
-            stream.WriteLine(CreateLine(ChartSeriesValueType, GetSerialEnum(this.ValueType)));
-            if (this.LineColor.HasValue)
-                stream.WriteLine(CreateLine(ChartSeriesLineColor, GetSerial(this.LineColor)));
-            if (this.LineThickness.HasValue)
-                stream.WriteLine(CreateLine(ChartSeriesLineThickness, GetSerial(this.LineThickness)));
-            if (this.LineDashStyle.HasValue)
-                stream.WriteLine(CreateLine(ChartSeriesLineDashStyle, GetSerialEnum(this.LineDashStyle)));
-        }
-        private const string ChartSeriesTitle = GraphInfo.ChartSeriesPrefix + "Title";
-        private const string ChartSeriesEntityCode = GraphInfo.ChartSeriesPrefix + "EntityCode";
-        private const string ChartSeriesValueType = GraphInfo.ChartSeriesPrefix + "ValueType";
-        private const string ChartSeriesLineColor = GraphInfo.ChartSeriesPrefix + "LineColor";
-        private const string ChartSeriesLineThickness = GraphInfo.ChartSeriesPrefix + "LineThickness";
-        private const string ChartSeriesLineDashStyle = GraphInfo.ChartSeriesPrefix + "LineDashStyle";
-        #endregion
-        #region Načtení dat grafu pro tuto sérii z databáze
-        /// <summary>
-        /// Načte data z databáze <see cref="Database"/> podle definice v této serii a uloží je do nového sloupce v dodaném objektu <paramref name="graphData"/> pro data grafu
-        /// </summary>
-        /// <param name="database"></param>
-        /// <param name="graphData"></param>
-        public void LoadData(Database database, GraphData graphData)
-        {
-            string fullCode = this.DataEntityCode;
-            var entity = database.GetEntity(fullCode);
-            if (entity is null) return;
-
-            var column = graphData.AddColumn(this, entity);
-
-            var items = database.GetResult(entity, this.ValueType, graphData.DateBegin, graphData.DateEnd);
-            foreach (var item in items)
-                graphData.AddCell(item.Date, column, item.Value);
-        }
-        #endregion
-    }
-    /// <summary>
     /// Styl čáry v grafu
     /// </summary>
     public enum LineDashStyleType
@@ -898,7 +1011,7 @@ namespace Djs.Tools.CovidGraphs.Data
         DashDotDot
     }
     #endregion
-    #region GraphStripInfo
+    #region GraphStripInfo : Definice pruhů v grafu = časové intervaly
     /// <summary>
     /// Data o jednom pruhu v rámci grafu. Pruh vyznačuje určité pásmo - časové období, nebo rozsah vhodných hodnot.
     /// </summary>
@@ -941,6 +1054,7 @@ namespace Djs.Tools.CovidGraphs.Data
             this._Columns = new Dictionary<int, GraphColumn>();
             this._Rows = new Dictionary<int, GraphRow>();
             this.ColumnId = 0;
+            this.StatisticInit();
         }
         private int ColumnId;
         /// <summary>
@@ -1002,6 +1116,51 @@ namespace Djs.Tools.CovidGraphs.Data
             dataColumn.DataType = dataType;
             return dataColumn;
         }
+
+        #region Statistika
+        private void StatisticInit()
+        {
+            this.LoadTimeBegin = DateTime.Now;
+            this.LoadTimeEnd = null;
+            this.ShowTimeEnd = null;
+            this.LoadRecordCount = 0;
+        }
+        public DateTime LoadTimeBegin { get; private set; }
+        public DateTime? LoadTimeEnd { get; private set; }
+        public DateTime? ShowTimeEnd { get; private set; }
+
+        public string LoadSecondsText { get { return (LoadTimeEnd.HasValue ? ((TimeSpan)(LoadTimeEnd.Value - LoadTimeBegin)).TotalSeconds.ToString("### ##0.000").Trim() + " sec": "???"); } }
+
+        public string ScanRecordCountText { get { return ScanRecordCount.ToString("### ### ### ##0").Trim(); } }
+        public int ScanRecordCount { get; private set; }
+        //string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCountText} vět, získáno {graphData.LoadRecordCountText} položek, za {graphData.LoadSecondsText}.";
+        // string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCount} vět, získáno {graphData.LoadRecordCount} položek, za {graphData.LoadSeconds}.";
+
+        public string LoadRecordCountText { get { return LoadRecordCount.ToString("### ### ### ##0").Trim(); } }
+        public int LoadRecordCount { get; private set; }
+
+        public string AcceptRecordCountText { get { return AcceptRecordCount.ToString("### ### ### ##0").Trim(); } }
+        public int AcceptRecordCount { get; private set; }
+        
+        public void AddCount(int scanCount, int loadCount, int acceptCount)
+        {
+            if (scanCount > 0) ScanRecordCount += scanCount;
+            if (loadCount > 0) LoadRecordCount += loadCount;
+            if (acceptCount > 0) AcceptRecordCount += acceptCount;
+        }
+        public void FinaliseLoading()
+        {
+            if (this.LoadTimeEnd.HasValue)
+                throw new InvalidOperationException("Nelze opakovaně provádět akci GraphData.FinaliseLoading !");
+            this.LoadTimeEnd = DateTime.Now;
+        }
+        public void FinaliseShowGraph()
+        {
+            if (this.ShowTimeEnd.HasValue)
+                throw new InvalidOperationException("Nelze opakovaně provádět akci GraphData.FinaliseShowGraph !");
+            this.ShowTimeEnd = DateTime.Now;
+        }
+        #endregion
     }
     /// <summary>
     /// Jeden sloupec, reprezentuje jednu serii grafu

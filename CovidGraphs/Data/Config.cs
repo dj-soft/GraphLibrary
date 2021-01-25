@@ -12,6 +12,7 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class Config : DataSerializable
     {
+        #region Konstruktor, soubor s konfigurací
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -49,6 +50,7 @@ namespace Djs.Tools.CovidGraphs.Data
             }
         }
         private string _ConfigFile;
+        #endregion
         #region Load & Save souboru s konfigurací
         /// <summary>
         /// Načte konfiguraci ze souboru this.ConfigFile.
@@ -88,8 +90,23 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             switch (name)
             {
-                case SplitterPositionName:
-                    this.SplitterPosition = GetValue(value, SplitterPositionDefault);
+                case CfgNameLastSaveGraphId:
+                    this.LastSaveGraphId = GetValue(value, 0);
+                    break;
+                case CfgNameMainSplitterPosition:
+                    this.MainSplitterPosition = GetValue(value, MainSplitterPositionDefault);
+                    break;
+                case CfgNameSkinName:
+                    this.ActiveSkinName = GetValue(value, "");
+                    break;
+                case CfgNameSkinPalette:
+                    this.ActiveSkinPalette = GetValue(value, "");
+                    break;
+                case CfgNameEditFormBounds:
+                    this.EditFormBounds = GetValue(value, (System.Drawing.Rectangle?)null);
+                    break;
+                case CfgNameEditFormMainSplitter:
+                    this.EditFormMainSplitter = GetValue(value, EditFormMainSplitterDefault);
                     break;
             }
         }
@@ -101,7 +118,10 @@ namespace Djs.Tools.CovidGraphs.Data
             bool oldEnabled = SaveEnabled;
             SaveEnabled = false;
 
-            this.SplitterPosition = SplitterPositionDefault;
+            this.LastSaveGraphId = 0;
+            this.MainSplitterPosition = MainSplitterPositionDefault;
+            this.EditFormBounds = null;
+            this.EditFormMainSplitter = EditFormMainSplitterDefault;
 
             SaveEnabled = oldEnabled;
         }
@@ -115,38 +135,117 @@ namespace Djs.Tools.CovidGraphs.Data
             using (var sw = CreateWriteStream(this.ConfigFile))
             {
                 sw.WriteLine(ConfigContentHeader);
-                sw.WriteLine(CreateLine(SplitterPositionName, GetSerial(this.SplitterPosition)));
+                sw.WriteLine(CreateLine(CfgNameLastSaveGraphId, GetSerial(this.LastSaveGraphId)));
+                sw.WriteLine(CreateLine(CfgNameMainSplitterPosition, GetSerial(this.MainSplitterPosition)));
+                sw.WriteLine(CreateLine(CfgNameSkinName, GetSerial(this.ActiveSkinName)));
+                sw.WriteLine(CreateLine(CfgNameSkinPalette, GetSerial(this.ActiveSkinPalette)));
+                sw.WriteLine(CreateLine(CfgNameEditFormBounds, GetSerial(this.EditFormBounds)));
+                sw.WriteLine(CreateLine(CfgNameEditFormMainSplitter, GetSerial(this.EditFormMainSplitter)));
             }
         }
         /// <summary>
         /// Je povoleno ukládat data do Config souboru? Default = false, je nutno nastavit ručně na true po inicializaci UI
         /// </summary>
         public bool SaveEnabled { get { return _SaveEnabled; } set { _SaveEnabled = value; } } private bool _SaveEnabled = false;
+        /// <summary>MainSplitterPositionDefault</summary>
+        protected const int MainSplitterPositionDefault = 240;
+        /// <summary>EditFormMainSplitterDefault</summary>
+        protected const int EditFormMainSplitterDefault = 300;
         /// <summary>== BestInCovid v1.0 config ==</summary>
         protected const string ConfigContentHeader = "== BestInCovid v1.0 config ==";
-        /// <summary>SplitterPosition</summary>
-        protected const string SplitterPositionName = "SplitterPosition";
-        protected const int SplitterPositionDefault = 240;
+        /// <summary>LastSaveGraphId</summary>
+        protected const string CfgNameLastSaveGraphId = "LastSaveGraphId";
+        /// <summary>MainSplitterPosition</summary>
+        protected const string CfgNameMainSplitterPosition = "MainSplitterPosition";
+        /// <summary>SkinName</summary>
+        protected const string CfgNameSkinName = "SkinName";
+        /// <summary>SkinPalette</summary>
+        protected const string CfgNameSkinPalette = "SkinPalette";
+        /// <summary>EditFormBounds</summary>
+        protected const string CfgNameEditFormBounds = "EditFormBounds";
+        /// <summary>EditFormMainSplitter</summary>
+        protected const string CfgNameEditFormMainSplitter = "EditFormMainSplitter";
+       
+
+
         /// <summary>ini</summary>
         public const string ConfigFileExtension = "ini";
         #endregion
         #region Data konfigurace
         /// <summary>
+        /// ID posledně uloženého grafu, následující bude mít +1.
+        /// ID se přiděluje při ukládání na disk pro graf, který dosud ID nemá.
+        /// </summary>
+        public int LastSaveGraphId
+        {
+            get { return _LastSaveGraphId; }
+            set { _LastSaveGraphId = value; this.Save(); }
+        }
+        private int _LastSaveGraphId;
+        /// <summary>
         /// Pozice splitteru. 
         /// Po setování se konfigurace ihned uloží.
         /// </summary>
-        public int SplitterPosition
+        public int MainSplitterPosition
         {
-            get { return this._SplitterPosition; }
-            set { this._SplitterPosition = (value < 100 ? 100 : (value > 800 ? 800 : value)); this.Save(); }
+            get { return this._MainSplitterPosition; }
+            set { this._MainSplitterPosition = (value < 100 ? 100 : (value > 800 ? 800 : value)); this.Save(); }
         }
-        private int _SplitterPosition;
+        private int _MainSplitterPosition;
+        /// <summary>
+        /// Jméno Skinu
+        /// Po setování se konfigurace ihned uloží.
+        /// </summary>
+        public string ActiveSkinName
+        {
+            get { return this._ActiveSkinName; }
+            set { this._ActiveSkinName = value; this.Save(); }
+        }
+        private string _ActiveSkinName;
+        /// <summary>
+        /// Jméno Palety Skinu
+        /// Po setování se konfigurace ihned uloží.
+        /// </summary>
+        public string ActiveSkinPalette
+        {
+            get { return this._ActiveSkinPalette; }
+            set { this._ActiveSkinPalette = value; this.Save(); }
+        }
+        private string _ActiveSkinPalette;
+        /// <summary>
+        /// Uloží najednou skin i paletu
+        /// </summary>
+        /// <param name="skinName"></param>
+        /// <param name="paletteName"></param>
+        public void SetSkin(string skinName, string paletteName)
+        {
+            this._ActiveSkinName = skinName;
+            this._ActiveSkinPalette = paletteName;
+            this.Save();
+        }
+        public bool HasSkin { get { return !String.IsNullOrEmpty(_ActiveSkinName); } }
+        /// <summary>
+        /// Souřadnice okna editoru, null = nezadáno, Empty = maximalizováno
+        /// </summary>
+        public System.Drawing.Rectangle? EditFormBounds
+        {
+            get { return _EditFormBounds; }
+            set { _EditFormBounds = value; this.Save(); }
+        }
+        private System.Drawing.Rectangle? _EditFormBounds;
+        /// <summary>
+        /// Pozice hlavního splitteru okna editoru
+        /// </summary>
+        public int EditFormMainSplitter
+        {
+            get { return _EditFormMainSplitter; }
+            set { _EditFormMainSplitter = (value < 100 ? 100 : (value > 9000 ? 9000 : value)); this.Save(); }
+        }
+        private int _EditFormMainSplitter;
 
 
 
-
+        
         #endregion
     }
-
-
 }
