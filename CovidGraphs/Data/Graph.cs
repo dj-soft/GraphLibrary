@@ -234,6 +234,7 @@ namespace Djs.Tools.CovidGraphs.Data
             while (stream.Peek() > 0)
             {
                 if (line == null) line = stream.ReadLine();
+                if (line == null) break;
 
                 if (fileVersion == FileVersion.None)
                 {   // Hledám header s označením verze:
@@ -772,6 +773,7 @@ namespace Djs.Tools.CovidGraphs.Data
             while (stream.Peek() != 0)
             {
                 if (line == null) line = stream.ReadLine();
+                if (line == null) break;
 
                 // Pokud najdu řádek, který nemá prefix Serie, pak jej nebudu zpracovávat = jde o něco za seriemi - a skončíme:
                 if (!line.StartsWith(GraphInfo.ChartSeriesPrefix)) break;
@@ -853,7 +855,7 @@ namespace Djs.Tools.CovidGraphs.Data
             {
                 foreach (var item in result.Results)
                     graphData.AddCell(item.Date, column, item.Value);
-                graphData.AddCount(result.ScanRecordCount, result.LoadRecordCount, result.AcceptRecordCount);
+                graphData.AddCount(result.ScanRecordCount, result.LoadRecordCount, result.ShowRecordCount);
             }
         }
         #endregion
@@ -1139,14 +1141,14 @@ namespace Djs.Tools.CovidGraphs.Data
         public string LoadRecordCountText { get { return LoadRecordCount.ToString("### ### ### ##0").Trim(); } }
         public int LoadRecordCount { get; private set; }
 
-        public string AcceptRecordCountText { get { return AcceptRecordCount.ToString("### ### ### ##0").Trim(); } }
-        public int AcceptRecordCount { get; private set; }
+        public string AcceptRecordCountText { get { return ShowRecordCount.ToString("### ### ### ##0").Trim(); } }
+        public int ShowRecordCount { get; private set; }
         
-        public void AddCount(int scanCount, int loadCount, int acceptCount)
+        public void AddCount(int scanCount, int loadCount, int showCount)
         {
             if (scanCount > 0) ScanRecordCount += scanCount;
             if (loadCount > 0) LoadRecordCount += loadCount;
-            if (acceptCount > 0) AcceptRecordCount += acceptCount;
+            if (showCount > 0) ShowRecordCount += showCount;
         }
         public void FinaliseLoading()
         {

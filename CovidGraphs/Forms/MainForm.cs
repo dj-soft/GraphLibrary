@@ -1104,6 +1104,8 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
         {
             using (var graphForm = new GraphForm(this.VisibleBounds))
             {
+                graphForm.Database = this._Database;
+                graphForm.CurrentGraphInfo = this.CurrentGraph;
                 graphForm.ShowDialog(this);
             }
         }

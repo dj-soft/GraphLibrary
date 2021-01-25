@@ -8,6 +8,9 @@ using DW = System.Drawing;
 
 namespace Djs.Tools.CovidGraphs.Data
 {
+    /// <summary>
+    /// Databáze
+    /// </summary>
     public class Database
     {
         #region Tvorba databáze, načtení a uložení dat
@@ -472,7 +475,7 @@ namespace Djs.Tools.CovidGraphs.Data
                         int infoNewCount = GetInt32(items[2]);
                         int infoCurrentCount = GetInt32(items[3]);
                         int infoKey = infoDate.GetDateKey();
-                        loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.Childs.AddOrCreate(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
+                        loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.AddOrCreateInfo(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
                         _RegisterMaxContentTime(infoDate);
                     }
                     break;
@@ -491,7 +494,7 @@ namespace Djs.Tools.CovidGraphs.Data
             if (items.Length < 3) return;
 
             if (loadInfo.CurrentInfo == null)
-            {
+            {   // Výchozí pozice je vždy naplněna na náš World:
                 loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
                 loadInfo.CurrentInfo.World = _World;
             }
@@ -505,33 +508,33 @@ namespace Djs.Tools.CovidGraphs.Data
                 case HeaderZeme:
                     string zemeKod = code;
                     string zemeNazev = name;
-                    loadInfo.CurrentInfo.Zeme = loadInfo.CurrentInfo.World.Childs.AddOrCreate(zemeKod, () => new Zeme(loadInfo.CurrentInfo.World, zemeKod, zemeNazev));
+                    loadInfo.CurrentInfo.Zeme = loadInfo.CurrentInfo.World.AddOrCreateChild(zemeKod, () => new Zeme(loadInfo.CurrentInfo.World, zemeKod, zemeNazev));
                     break;
                 case HeaderKraj:
                     string krajKod = code;
                     string krajNazev = name;
-                    loadInfo.CurrentInfo.Kraj = loadInfo.CurrentInfo.Zeme.Childs.AddOrCreate(krajKod, () => new Kraj(loadInfo.CurrentInfo.Zeme, krajKod, krajNazev));
+                    loadInfo.CurrentInfo.Kraj = loadInfo.CurrentInfo.Zeme.AddOrCreateChild(krajKod, () => new Kraj(loadInfo.CurrentInfo.Zeme, krajKod, krajNazev));
                     break;
                 case HeaderOkres:
                     string okresKod = code;
                     string okresNazev = name;
-                    loadInfo.CurrentInfo.Okres = loadInfo.CurrentInfo.Kraj.Childs.AddOrCreate(okresKod, () => new Okres(loadInfo.CurrentInfo.Kraj, okresKod, okresNazev));
+                    loadInfo.CurrentInfo.Okres = loadInfo.CurrentInfo.Kraj.AddOrCreateChild(okresKod, () => new Okres(loadInfo.CurrentInfo.Kraj, okresKod, okresNazev));
                     break;
                 case HeaderMesto:
                     string mestoKod = code;
                     string mestoNazev = name;
-                    loadInfo.CurrentInfo.Mesto = loadInfo.CurrentInfo.Okres.Childs.AddOrCreate(mestoKod, () => new Mesto(loadInfo.CurrentInfo.Okres, mestoKod, mestoNazev));
+                    loadInfo.CurrentInfo.Mesto = loadInfo.CurrentInfo.Okres.AddOrCreateChild(mestoKod, () => new Mesto(loadInfo.CurrentInfo.Okres, mestoKod, mestoNazev));
                     break;
                 case HeaderObec:
                     string obecKod = code;
                     string obecNazev = name;
-                    loadInfo.CurrentInfo.Obec = loadInfo.CurrentInfo.Mesto.Childs.AddOrCreate(obecKod, () => new Obec(loadInfo.CurrentInfo.Mesto, obecKod, obecNazev));
+                    loadInfo.CurrentInfo.Obec = loadInfo.CurrentInfo.Mesto.AddOrCreateChild(obecKod, () => new Obec(loadInfo.CurrentInfo.Mesto, obecKod, obecNazev));
                     break;
                 case HeaderVesnice:
                     string vesniceKod = code;
                     string vesniceNazev = name;
-                    loadInfo.CurrentInfo.Vesnice = loadInfo.CurrentInfo.Obec.Childs.AddOrCreate(vesniceKod, () => new Vesnice(loadInfo.CurrentInfo.Obec, vesniceKod, vesniceNazev));
-                    this._Vesnice.AddIfNotContains(vesniceKod, loadInfo.CurrentInfo.Vesnice);
+                    loadInfo.CurrentInfo.Vesnice = loadInfo.CurrentInfo.Obec.AddOrCreateChild(vesniceKod, () => new Vesnice(loadInfo.CurrentInfo.Obec, vesniceKod, vesniceNazev));
+                    this._Vesnice.AddIfNotContains(vesniceKod, loadInfo.CurrentInfo.Vesnice as Vesnice);
                     break;
                 case HeaderPocet:
                     // P;554979;Abertamy;Ostrov;Karlovarský;458;412;422;368
@@ -551,7 +554,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     int infoNewCount = GetInt32(items[2]);
                     int infoCurrentCount = GetInt32(items[3]);
                     int infoKey = infoDate.GetDateKey();
-                    loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.Childs.AddOrCreate(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
+                    loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.AddOrCreateInfo(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
                     _RegisterMaxContentTime(infoDate);
                     break;
             }
@@ -571,39 +574,39 @@ namespace Djs.Tools.CovidGraphs.Data
             string[] items = line.Split(';');
             if (items.Length != Covid1ItemCountExpected) return;
 
-            World world = this._World;
+            IEntity world = this._World;
 
             string zemeKod = "CZ";
             string zemeNazev = "Česká republika";
-            Zeme zeme = world.Childs.AddOrCreate(zemeKod, () => new Zeme(world, zemeKod, zemeNazev));
+            IEntity zeme = world.AddOrCreateChild(zemeKod, () => new Zeme(world as World, zemeKod, zemeNazev));
 
             string krajKod = items[2];
             string krajNazev = items[3];
-            Kraj kraj = zeme.Childs.AddOrCreate(krajKod, () => new Kraj(zeme, krajKod, krajNazev));
+            IEntity kraj = zeme.AddOrCreateChild(krajKod, () => new Kraj(zeme, krajKod, krajNazev));
 
             string okresKod = items[4];
             string okresNazev = items[5];
-            Okres okres = kraj.Childs.AddOrCreate(okresKod, () => new Okres(kraj, okresKod, okresNazev));
+            IEntity okres = kraj.AddOrCreateChild(okresKod, () => new Okres(kraj, okresKod, okresNazev));
 
             string mestoKod = items[6];
             string mestoNazev = items[7];
-            Mesto mesto = okres.Childs.AddOrCreate(mestoKod, () => new Mesto(okres, mestoKod, mestoNazev));
+            IEntity mesto = okres.AddOrCreateChild(mestoKod, () => new Mesto(okres, mestoKod, mestoNazev));
 
             string obecKod = items[8];
             string obecNazev = items[9];
-            Obec obec = mesto.Childs.AddOrCreate(obecKod, () => new Obec(mesto, obecKod, obecNazev));
+            IEntity obec = mesto.AddOrCreateChild(obecKod, () => new Obec(mesto, obecKod, obecNazev));
 
             string vesniceKod = items[10];
             string vesniceNazev = items[11];
-            Vesnice vesnice = obec.Childs.AddOrCreate(vesniceKod, () => new Vesnice(obec, vesniceKod, vesniceNazev));
+            IEntity vesnice = obec.AddOrCreateChild(vesniceKod, () => new Vesnice(obec, vesniceKod, vesniceNazev));
 
-            this._Vesnice.AddIfNotContains(vesniceKod, vesnice);
+            this._Vesnice.AddIfNotContains(vesniceKod, vesnice as Vesnice);
 
             DateTime infoDate = GetDate(items[1]);
             int newCount = GetInt32(items[12]);
             int currentCount = GetInt32(items[13]);
             int key = infoDate.GetDateKey();
-            Info info = vesnice.Childs.AddOrCreate(key, () => new Info(vesnice, infoDate, newCount, currentCount));
+            Info info = vesnice.InfoDict.AddOrCreate(key, () => new Info(vesnice, infoDate, newCount, currentCount));
             _RegisterMaxContentTime(infoDate);
 
             loadInfo.RecordCount += 1;
@@ -628,14 +631,14 @@ namespace Djs.Tools.CovidGraphs.Data
             string[] items = line.Split(',');
             if (items.Length != Covid2ItemCountExpected) return;
 
-            string krajKod = items[2];           // CZ053
+            //  string krajKod = items[2];           // CZ053
             string krajNazev = items[3];
-            string okresKod = items[4];          // CZ0531
+            //  string okresKod = items[4];          // CZ0531
             string okresNazev = items[5];
-            string mestoKod = items[6];          // 5304
+            //  string mestoKod = items[6];          // 5304
             string mestoNazev = items[7];
-            string obecKod = VoidEntityCode;     // zde není 53043
-            string obecNazev = null;
+            //  string obecKod = VoidEntityCode;     // zde není 53043
+            //  string obecNazev = null;
             string vesniceKod = items[8];        // 571164
             string vesniceNazev = items[9];
             if (!this._Vesnice.TryGetValue(vesniceKod, out Vesnice vesnice))
@@ -647,7 +650,7 @@ namespace Djs.Tools.CovidGraphs.Data
             int newCount = GetInt32(items[10]);
             int currentCount = GetInt32(items[11]);
             int key = infoDate.GetDateKey();
-            Info info = vesnice.Childs.AddOrCreate(key, () => new Info(vesnice, infoDate, newCount, currentCount));
+            Info info = vesnice.AddOrCreateInfo(key, () => new Info(vesnice, infoDate, newCount, currentCount));
             _RegisterMaxContentTime(infoDate);
 
             loadInfo.RecordCount += 1;
@@ -1115,12 +1118,12 @@ namespace Djs.Tools.CovidGraphs.Data
                     ProcessResultValueRound(args);
                     break;
                 case DataValueType.RZero:
-                    ProcessResultValue7DayFlowAverage(args);
+                    ProcessResultValue7DayLastAverage(args);
                     ProcessResultValueRZero(args);
                     ProcessResultValueRound(args, 2);
                     break;
                 case DataValueType.RZeroAvg:
-                    ProcessResultValue7DayFlowAverage(args);
+                    ProcessResultValue7DayLastAverage(args);
                     ProcessResultValueRZero(args);
                     ProcessResultValue7DayFlowAverage(args);
                     ProcessResultValueRound(args, 2);
@@ -1149,19 +1152,45 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             ProcessResultValueByTimeRange(args, begin, end);
         }
+        /// <summary>
+        /// Opíše RawValue do Value
+        /// </summary>
+        /// <param name="args"></param>
         private void ProcessResultValueDirect(SearchInfoArgs args)
         {
             args.Results.ForEachExec(r => r.Value = r.RawValue);
         }
+        /// <summary>
+        /// Průměr za posledních 7 dní = -6 až 0 dny
+        /// </summary>
+        /// <param name="args"></param>
+        private void ProcessResultValue7DayLastAverage(SearchInfoArgs args)
+        {
+            ProcessResultValueAnyAverage(args, -6, 7);
+        }
+        /// <summary>
+        /// Plovoucí průměr za 7 dní = -3 až +3 dny
+        /// </summary>
+        /// <param name="args"></param>
         private void ProcessResultValue7DayFlowAverage(SearchInfoArgs args)
+        {
+            ProcessResultValueAnyAverage(args, -3, 7);
+        }
+        /// <summary>
+        /// Průměr počínaje daným offsetem ke dnešku v daném počtu dní
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="daysBefore"></param>
+        /// <param name="daysCount"></param>
+        private void ProcessResultValueAnyAverage(SearchInfoArgs args, int daysBefore, int daysCount)
         {
             var data = args.ResultSet.WorkingDict;
             int[] keys = data.Keys.ToArray();
             foreach (int key in keys)
             {
                 var result = data[key];
-                DateTime date = result.Date.AddDays(-3d);
-                DateTime end = date.AddDays(7d);
+                DateTime date = result.Date.AddDays(daysBefore);
+                DateTime end = date.AddDays(daysCount);
                 int count = 0;
                 decimal sum = 0m;
                 while (date < end)
@@ -1179,6 +1208,10 @@ namespace Djs.Tools.CovidGraphs.Data
             // Na závěr vložím TempValue do Value:
             args.Results.ForEachExec(r => r.Value = r.TempValue);
         }
+        /// <summary>
+        /// Součet za posledních 7 dní, bez počítání průměru
+        /// </summary>
+        /// <param name="args"></param>
         private void ProcessResultValue7DayLastSum(SearchInfoArgs args)
         {
             var data = args.ResultDict;
@@ -1205,6 +1238,10 @@ namespace Djs.Tools.CovidGraphs.Data
             // Na závěr vložím TempValue do Value:
             args.Results.ForEachExec(r => r.Value = r.TempValue);
         }
+        /// <summary>
+        /// Vypočítá poměr hodnoty Value ku počtu obyvatel, na 100 000 (výsledná hodnota = počet případů na 100 000 obyvatel)
+        /// </summary>
+        /// <param name="args"></param>
         private void ProcessResultValueRelative(SearchInfoArgs args)
         {
             decimal coefficient = (args.PocetObyvatel > 0 ? (100000m / (decimal)args.PocetObyvatel) : 0m);
@@ -1232,12 +1269,18 @@ namespace Djs.Tools.CovidGraphs.Data
             // Na závěr vložím TempValue do Value:
             args.Results.ForEachExec(r => r.Value = r.TempValue);
         }
+        /// <summary>
+        /// Zaokrouhlí hodnotu na daný počet desetinných míst
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="decimals"></param>
         private void ProcessResultValueRound(SearchInfoArgs args, int decimals = 0)
         {
             args.Results.ForEachExec(r => r.Value = Math.Round(r.Value, decimals));
         }
         /// <summary>
-        /// Z dodané kolekce hodnot vybere jen ty, které vyhovují danému časovému rozmezí, setřídí dle data a vrátí jako pole.
+        /// Z dodané kolekce hodnot <see cref="ResultSetInfo.WorkingDict"/> vybere jen ty, které vyhovují danému časovému rozmezí, 
+        /// setřídí dle data a uloží jako pole do <see cref="ResultSetInfo.Results"/>.
         /// Tato metoda se vždy volá jako poslední v řadě procesu, protože tato metoda jediná plní <see cref="ResultSetInfo.Results"/>.
         /// </summary>
         /// <param name="values"></param>
@@ -1246,7 +1289,11 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <returns></returns>
         private void ProcessResultValueByTimeRange(SearchInfoArgs args, DateTime? begin = null, DateTime? end = null)
         {
-            // IEnumerable<ResultInfo> values
+            // Dnešní údaje (a případné novější) neakceptuji, nikdy nejsou kompletní:
+            DateTime now = DateTime.Now.Date;
+            if (!end.HasValue || end.Value.Date >= now.Date)
+                end = now;
+
             List<ResultInfo> resultList;
             bool hasBegin = begin.HasValue;
             bool hasEnd = end.HasValue;
@@ -1257,69 +1304,112 @@ namespace Djs.Tools.CovidGraphs.Data
             resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
             args.ResultSet.Results = resultList.ToArray();
         }
-
-        public IEntity[] GetEntities(string searchNazev)
+        #endregion
+        #region Vyhledání entit podle názvu a prefixu a Wildcards
+        /// <summary>
+        /// Metoda vyhledá v databázi obce (a jiné celky) odpovídající danému textu.
+        /// </summary>
+        /// <param name="searchNazev"></param>
+        /// <returns></returns>
+        public IEntity[] SearchEntities(string searchNazev)
         {
-            List<IEntity> entitesStart = new List<IEntity>();
-            List<IEntity> entitesContains = new List<IEntity>();
+            if (String.IsNullOrEmpty(searchNazev)) return new IEntity[0];
 
-            if (!String.IsNullOrEmpty(searchNazev))
-            {
-                searchNazev = searchNazev.Trim();
+            searchNazev = searchNazev.Trim();
 
-                if (searchNazev.StartsWith("*") || searchNazev.StartsWith("%"))
-                {
-                    entitesStart = null;
-                    searchNazev = searchNazev.Substring(1).Trim();
-                }
-                if (searchNazev.Length > 0)
-                    this._World.AddEntities(searchNazev, entitesStart, entitesContains);
-            }
+            EntityType? entityType = SearchGetPrefixEntity(ref searchNazev);
 
-            List<IEntity> entites = null;
-            if (entitesStart != null && entitesStart.Count > 0) entites = entitesStart;
-            else if (entitesContains != null && entitesContains.Count > 0) entites = entitesContains;
+            bool isWildCard = (searchNazev.StartsWith("*") || searchNazev.StartsWith("%"));
+            if (isWildCard)
+                searchNazev = searchNazev.Substring(1).Trim();
+            if (!entityType.HasValue && String.IsNullOrEmpty(searchNazev)) return new IEntity[0];             // Lze zadat jen prefix územního celku: pak se hledá i bez zadání textu = najdou se všechny
+            if (entityType.HasValue && String.IsNullOrEmpty(searchNazev))                                     // Po zadání jen prefixu bez názvu = "okres:" bez textu budeme hledat všechny okresy.
+                isWildCard = true;
 
-            if (entites == null) return new IEntity[0];
+            SearchEntityArgs args = new SearchEntityArgs(entityType, searchNazev, isWildCard);
+            this._World.SearchEntities(args);
 
-            entites.Sort((a, b) => String.Compare(a.Nazev, b.Nazev, StringComparison.CurrentCultureIgnoreCase));
-            return entites.ToArray();
+            List<IEntity> result = null;
+            if (args.FoundBeginEntities != null && args.FoundBeginEntities.Count > 0) result = args.FoundBeginEntities;
+            else if (args.FoundContainsEntities != null && args.FoundContainsEntities.Count > 0) result = args.FoundContainsEntities;
+            if (result == null) return new IEntity[0];
+
+            result.Sort((a, b) => String.Compare(a.Nazev, b.Nazev, StringComparison.CurrentCultureIgnoreCase));
+            return result.ToArray();
         }
-        protected static void AddEntities(IEntity entity, string nazev, string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
+
+        private EntityType? SearchGetPrefixEntity(ref string searchNazev)
         {
-            if (String.IsNullOrEmpty(nazev)) return;
-            if (entitesStart != null && nazev.StartsWith(search, StringComparison.CurrentCultureIgnoreCase))
-                entitesStart.Add(entity);
-            else if (entitesContains != null && nazev.IndexOf(search, StringComparison.CurrentCultureIgnoreCase) >= 0)
-                entitesContains.Add(entity);
+            EntityType? result = null;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixZeme1, EntityType.Zeme, ref result)) return result;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixZeme2, EntityType.Zeme, ref result)) return result;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixKraj, EntityType.Kraj, ref result)) return result;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixOkres, EntityType.Okres, ref result)) return result;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixMesto1, EntityType.Mesto, ref result)) return result;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixMesto2, EntityType.Mesto, ref result)) return result;
+            if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixObec, EntityType.Obec, ref result)) return result;
+            return null;
+        }
+
+        private bool TrySearchGetPrefixEntityOne(ref string searchNazev, string prefix, EntityType entity, ref EntityType? result)
+        {
+            if (!searchNazev.StartsWith(prefix, StringComparison.CurrentCultureIgnoreCase)) return false;
+            searchNazev = searchNazev.Substring(prefix.Length).Trim();
+            result = entity;
+            return true;
+        }
+
+        private const string SearchPrefixZeme1 = "země:";
+        private const string SearchPrefixZeme2 = "zeme:";
+        private const string SearchPrefixKraj = "kraj:";
+        private const string SearchPrefixOkres = "okres:";
+        private const string SearchPrefixMesto1 = "město:";
+        private const string SearchPrefixMesto2 = "mesto:";
+        private const string SearchPrefixObec = "obec:";
+        protected static void SearchEntityAdd(IEntity entity, SearchEntityArgs args)
+        {
+            if (entity == null || String.IsNullOrEmpty(entity.Nazev)) return;
+            if (args.EntityType.HasValue && entity.Entity != args.EntityType.Value) return;
+
+            if (args.HasText)
+            {
+                if (!args.IsWildCard && entity.Nazev.StartsWith(args.SearchText, StringComparison.CurrentCultureIgnoreCase))
+                    args.FoundBeginEntities.Add(entity);
+
+                else if (args.IsWildCard && entity.Nazev.IndexOf(args.SearchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                    args.FoundContainsEntities.Add(entity);
+            }
+            else if (args.IsWildCard && args.EntityType.HasValue && args.SearchText.Length == 0)
+                args.FoundContainsEntities.Add(entity);
         }
         public IEntity GetEntity(string fullCode)
         {
             if (String.IsNullOrEmpty(fullCode)) return null;
-            string[] codes = fullCode.Split(EntityDelimiter[0]);
+            string[] codes = fullCode.Split(EntityInfo.EntityDelimiter[0]);
             int count = codes.Length;
 
             if (count < 1) return null;
 
             World world = this._World;
-            if (TryGetChildEntity(world, world.Childs, codes[0], (count == 1), out var zeme)) return zeme;
-            if (TryGetChildEntity(zeme, zeme.Childs, codes[1], (count == 2), out var kraj)) return kraj;
-            if (TryGetChildEntity(kraj, kraj.Childs, codes[2], (count == 3), out var okres)) return okres;
-            if (TryGetChildEntity(okres, okres.Childs, codes[3], (count == 4), out var mesto)) return mesto;
-            if (TryGetChildEntity(mesto, mesto.Childs, codes[4], (count == 5), out var obec)) return obec;
-            if (TryGetChildEntity(obec, obec.Childs, codes[5], (count == 6), out var vesnice)) return vesnice;
+            if (TryGetChildEntity(world, codes[0], (count == 1), out var zeme)) return zeme;
+            if (TryGetChildEntity(zeme, codes[1], (count == 2), out var kraj)) return kraj;
+            if (TryGetChildEntity(kraj, codes[2], (count == 3), out var okres)) return okres;
+            if (TryGetChildEntity(okres, codes[3], (count == 4), out var mesto)) return mesto;
+            if (TryGetChildEntity(mesto, codes[4], (count == 5), out var obec)) return obec;
+            if (TryGetChildEntity(obec, codes[5], (count == 6), out var vesnice)) return vesnice;
 
             return null;
         }
-        protected bool TryGetChildEntity<TKey, TValue>(IEntity entity, Dictionary<TKey, TValue> childs, TKey key, bool isTarget, out TValue result) where TValue : class, IEntity
+        protected bool TryGetChildEntity(IEntity entity, string key, bool isTarget, out IEntity result)
         {
             result = null;
+            var dictionary = entity.ChildDict;
             bool isEnd = isTarget;
-            if (!childs.TryGetValue(key, out result))                // Pokud jsme nenašli záznam pro zadaný klíč, může to ýt proto, že máme jen jeden Void Child:
+            if (!dictionary.TryGetValue(key, out result))            // Pokud jsme nenašli záznam pro zadaný klíč, může to ýt proto, že máme jen jeden Void Child:
             {   // Pokud hledaný klíč nemáme:
-                if (entity.ChildsIsVoid && childs.Count == 1)
+                if (entity.ChildsIsVoid && dictionary.Count == 1)
                     // Tato entita má pouze jeden Void child (tzv. "průhledný" child):
-                    result = childs.Values.FirstOrDefault();         // Vezmeme jeden jediný Child, to je ten správný
+                    result = dictionary.Values.FirstOrDefault();     // Vezmeme jeden jediný Child, to je ten správný
                 else
                     // Tato entita nemá Void childs = má běžné Childs dohledatelné podle klíčů, ale nenašla požadovaný kód:
                     isEnd = true;                                    // hodnota "result" je null, a vrátíme true => hledání končí, ale nic nenalezlo
@@ -1346,407 +1436,120 @@ namespace Djs.Tools.CovidGraphs.Data
             if (!String.IsNullOrEmpty(kod) && _Pocet != null && _Pocet.TryGetValue(kod, out var pocet)) return pocet.PocetCelkem;
             return 0;
         }
-        public const string EntityDelimiter = ".";
+        private static string GetEntityText(IEntity entity)
+        {
+            string entityName = GetEntityName(entity.Entity);
+            string pocet = entity.PocetObyvatel.ToString("### ### ### ##0").Trim();
+
+            // Pro malé entity najděme jejich Parent okres:
+            string okres = null;
+            if (entity.Entity == EntityType.Vesnice)
+                okres = entity?.Parent?.Parent?.Parent?.Nazev;
+            else if (entity.Entity == EntityType.Obec)
+                okres = entity?.Parent?.Parent?.Nazev;
+            else if (entity.Entity == EntityType.Mesto)
+                okres = entity?.Parent?.Nazev;
+            okres = (okres == null ? "" : ", okr. " + okres);
+
+            string text = $"{entity.Nazev} ({entityName}, {pocet} obyv.{okres})";
+            return text;
+        }
+        private static string GetEntityName(EntityType entityType)
+        {
+            switch (entityType)
+            {
+                case EntityType.World: return "svět";
+                case EntityType.Zeme: return "stát";
+                case EntityType.Kraj: return "kraj";
+                case EntityType.Okres: return "okres";
+                case EntityType.Mesto: return "malý okres";
+                case EntityType.Obec: return "město a okolí";
+                case EntityType.Vesnice: return "obec";
+            }
+            return entityType.ToString();
+        }
         #endregion
         #region Třídy dat
-        public class World : IEntity
+        public class World : EntityInfo, IEntity
         {
             public World(Database database)
+                : base(null, "", "World")
             {
                 this.Database = database;
-                this.Childs = new Dictionary<string, Zeme>();
             }
-            public override string ToString()
-            {
-                return Text;
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return false; } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.World; } }
-            public string FullCode { get { return ""; } }
-            public Database Database { get; private set; }
-            public string Kod { get { return ""; } }
-            public string Nazev { get { return "World"; } }
-            public int PocetObyvatel { get { return (this.Childs.Count > 0 ? this.Childs.Values.Select(child => child.PocetObyvatel).Sum() : 0); } }
-            public Dictionary<string, Zeme> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                foreach (var item in this.Childs.Values)
-                    item.Clear(contentType);
-                if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
-            {
-            }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack)
-                    stream.WriteLine($"{HeaderWorld};{Kod};{Nazev}");
-                foreach (var item in this.Childs.Values)
-                    item.Save(saveInfo, stream);
-            }
-            public void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                foreach (var item in this.Childs.Values)
-                    item.SearchInfo(args);
-            }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
-            {
-                if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
-                foreach (var item in this.Childs.Values)
-                    item.AddEntities(search, entitesStart, entitesContains);
-            }
+            public override EntityType Entity { get { return EntityType.World; } }
+            protected override string StructureHeader { get { return HeaderWorld; } }
+            public override Database Database { get { return _Database; } protected set { _Database = value; } } private Database _Database;
         }
-        public class Zeme : IEntity
+        public class Zeme : EntityInfo, IEntity
         {
-            public Zeme(World world, string kod, string nazev)
-            {
-                this.Parent = world;
-                this.Kod = kod;
-                this.Nazev = nazev;
-                this.Childs = new Dictionary<string, Kraj>();
-                Parent.ChildsIsVoid = this.IsVoid;
-
-            }
-            public override string ToString()
-            {
-                return Text;
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.Kraj; } }
-            public string FullCode { get { return Kod; } }
-            public World Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
-            public string Kod { get; private set; }
-            public string Nazev { get; private set; }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = (this.Childs.Count > 0 ? this.Childs.Values.Select(child => child.PocetObyvatel).Sum() : 0); return _PocetObyvatel.Value; } } private int? _PocetObyvatel = null;
-            public Dictionary<string, Kraj> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                foreach (var item in this.Childs.Values)
-                    item.Clear(contentType);
-                if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
+            public Zeme(IEntity parent, string kod, string nazev)
+                : base(parent, kod, nazev)
             {
             }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack)
-                    stream.WriteLine($"{HeaderZeme};{Kod};{Nazev}");
-                foreach (var item in this.Childs.Values)
-                    item.Save(saveInfo, stream);
-            }
-            public void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                foreach (var item in this.Childs.Values)
-                    item.SearchInfo(args);
-            }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
-            {
-                if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
-                foreach (var item in this.Childs.Values)
-                    item.AddEntities(search, entitesStart, entitesContains);
-            }
+            public override EntityType Entity { get { return EntityType.Zeme; } }
+            protected override string StructureHeader { get { return HeaderZeme; } }
         }
-        public class Kraj : IEntity
+        public class Kraj : EntityInfo, IEntity
         {
-            public Kraj(Zeme parent, string kod, string nazev)
-            {
-                this.Parent = parent;
-                this.Kod = kod;
-                this.Nazev = nazev;
-                this.Childs = new Dictionary<string, Okres>();
-                Parent.ChildsIsVoid = this.IsVoid;
-            }
-            public override string ToString()
-            {
-                return Text;
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.Kraj; } }
-            public string FullCode { get { return Parent.FullCode + EntityDelimiter + Kod; } }
-            public Zeme Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
-            public string Kod { get; private set; }
-            public string Nazev { get; private set; }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = (this.Childs.Count > 0 ? this.Childs.Values.Select(child => child.PocetObyvatel).Sum() : 0); return _PocetObyvatel.Value; } } private int? _PocetObyvatel = null;
-            public Dictionary<string, Okres> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                foreach (var item in this.Childs.Values)
-                    item.Clear(contentType);
-                if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
+            public Kraj(IEntity parent, string kod, string nazev)
+                : base(parent, kod, nazev)
             {
             }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack)
-                    stream.WriteLine($"{HeaderKraj};{Kod};{Nazev}");
-                foreach (var item in this.Childs.Values)
-                    item.Save(saveInfo, stream);
-            }
-            public void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                foreach (var item in this.Childs.Values)
-                    item.SearchInfo(args);
-            }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
-            {
-                if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
-                foreach (var item in this.Childs.Values)
-                    item.AddEntities(search, entitesStart, entitesContains);
-            }
+            public override EntityType Entity { get { return EntityType.Kraj; } }
+            protected override string StructureHeader { get { return HeaderKraj; } }
         }
-        public class Okres : IEntity
+        public class Okres : EntityInfo, IEntity
         {
-            public Okres(Kraj parent, string kod, string nazev)
-            {
-                this.Parent = parent;
-                this.Kod = kod;
-                this.Nazev = nazev;
-                this.Childs = new Dictionary<string, Mesto>();
-                Parent.ChildsIsVoid = this.IsVoid;
-            }
-            public override string ToString()
-            {
-                return $"{Text}; Parent: {Parent.Text}";
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.Okres; } }
-            public string FullCode { get { return Parent.FullCode + EntityDelimiter + Kod; } }
-            public Kraj Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
-            public string Kod { get; private set; }
-            public string Nazev { get; private set; }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = (this.Childs.Count > 0 ? this.Childs.Values.Select(child => child.PocetObyvatel).Sum() : 0); return _PocetObyvatel.Value; } } private int? _PocetObyvatel = null;
-            public Dictionary<string, Mesto> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                foreach (var item in this.Childs.Values)
-                    item.Clear(contentType);
-                if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
+            public Okres(IEntity parent, string kod, string nazev)
+                : base(parent, kod, nazev)
             {
             }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack)
-                    stream.WriteLine($"{HeaderOkres};{Kod};{Nazev}");
-                foreach (var item in this.Childs.Values)
-                    item.Save(saveInfo, stream);
-            }
-            public void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                foreach (var item in this.Childs.Values)
-                    item.SearchInfo(args);
-            }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
-            {
-                if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
-                foreach (var item in this.Childs.Values)
-                    item.AddEntities(search, entitesStart, entitesContains);
-            }
+            public override EntityType Entity { get { return EntityType.Okres; } }
+            protected override string StructureHeader { get { return HeaderOkres; } }
         }
-        public class Mesto : IEntity
+        public class Mesto : EntityInfo, IEntity
         {
-            public Mesto(Okres parent, string kod, string nazev)
-            {
-                this.Parent = parent;
-                this.Kod = kod;
-                this.Nazev = nazev;
-                this.Childs = new Dictionary<string, Obec>();
-                Parent.ChildsIsVoid = this.IsVoid;
-            }
-            public override string ToString()
-            {
-                return $"{Text}; Parent: {Parent.Text}";
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.Mesto; } }
-            public string FullCode { get { return Parent.FullCode + EntityDelimiter + Kod; } }
-            public Okres Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
-            public string Kod { get; private set; }
-            public string Nazev { get; private set; }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = (this.Childs.Count > 0 ? this.Childs.Values.Select(child => child.PocetObyvatel).Sum() : 0); return _PocetObyvatel.Value; } } private int? _PocetObyvatel = null;
-            public Dictionary<string, Obec> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                foreach (var item in this.Childs.Values)
-                    item.Clear(contentType);
-                if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
+            public Mesto(IEntity parent, string kod, string nazev)
+                : base(parent, kod, nazev)
             {
             }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack)
-                    stream.WriteLine($"{HeaderMesto};{Kod};{Nazev}");
-                foreach (var item in this.Childs.Values)
-                    item.Save(saveInfo, stream);
-            }
-            public void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                foreach (var item in this.Childs.Values)
-                    item.SearchInfo(args);
-            }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
-            {
-                if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
-                foreach (var item in this.Childs.Values)
-                    item.AddEntities(search, entitesStart, entitesContains);
-            }
+            public override EntityType Entity { get { return EntityType.Mesto; } }
+            protected override string StructureHeader { get { return HeaderMesto; } }
         }
-        public class Obec : IEntity
+        /// <summary>
+        ///  Data jedné obce
+        /// </summary>
+        public class Obec : EntityInfo, IEntity
         {
-            public Obec(Mesto parent, string kod, string nazev)
-            {
-                this.Parent = parent;
-                this.Kod = kod;
-                this.Nazev = nazev;
-                this.Childs = new Dictionary<string, Vesnice>();
-                Parent.ChildsIsVoid = this.IsVoid;
-            }
-            public override string ToString()
-            {
-                return $"{Text}; Parent: {Parent.Text}";
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.Obec; } }
-            public string FullCode { get { return Parent.FullCode + EntityDelimiter + Kod; } }
-            public Mesto Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
-            public string Kod { get; private set; }
-            public string Nazev { get; private set; }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = (this.Childs.Count > 0 ? this.Childs.Values.Select(child => child.PocetObyvatel).Sum() : 0); return _PocetObyvatel.Value; } } private int? _PocetObyvatel = null;
-            public Dictionary<string, Vesnice> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                foreach (var item in this.Childs.Values)
-                    item.Clear(contentType);
-                if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
+            public Obec(IEntity parent, string kod, string nazev)
+                : base(parent, kod, nazev)
             {
             }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack)
-                    stream.WriteLine($"{HeaderObec};{Kod};{Nazev}");
-                foreach (var item in this.Childs.Values)
-                    item.Save(saveInfo, stream);
-            }
-            public void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                foreach (var item in this.Childs.Values)
-                    item.SearchInfo(args);
-            }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
-            {
-                if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
-                foreach (var item in this.Childs.Values)
-                    item.AddEntities(search, entitesStart, entitesContains);
-            }
+            public override EntityType Entity { get { return EntityType.Obec; } }
+            protected override string StructureHeader { get { return HeaderObec; } }
         }
-        public class Vesnice : IEntity
+        /// <summary>
+        /// Data jedné vesnice
+        /// </summary>
+        public class Vesnice : EntityInfo, IEntity
         {
-            public Vesnice(Obec parent, string kod, string nazev)
-            {
-                this.Parent = parent;
-                this.Kod = kod;
-                this.Nazev = nazev;
-                this.Childs = new Dictionary<int, Info>();
-                Parent.ChildsIsVoid = this.IsVoid;
-            }
-            public override string ToString()
-            {
-                return $"{Text}; Parent: {Parent.Text}";
-            }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}"; } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public EntityType Entity { get { return EntityType.Vesnice; } }
-            public string FullCode { get { return Parent.FullCode + EntityDelimiter + Kod; } }
-            public Obec Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
-            public string Kod { get; private set; }
-            public string Nazev { get; private set; }
-            public Pocet Pocet { get { return this.Database.GetPocet(this.Kod); } }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = this.Database.GetPocetObyvatelInternal(this.Kod); return _PocetObyvatel.Value; } } private int? _PocetObyvatel = null;
-            public Dictionary<int, Info> Childs { get; private set; }
-            public void Clear(FileContentType contentType)
-            {
-                if (contentType == FileContentType.Data || contentType == FileContentType.DataPack)
-                    this.Childs.Clear();
-            }
-            public void Load(string[] items)
+            public Vesnice(IEntity parent, string kod, string nazev)
+                : base(parent, kod, nazev)
             {
             }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+            public override EntityType Entity { get { return EntityType.Vesnice; } }
+            protected override string StructureHeader { get { return HeaderVesnice; } }
+            protected override void SaveHeader(ProcessFileInfo saveInfo, IO.StreamWriter stream)
             {
-                Pocet pocet;
-                switch (saveInfo.ContentType)
+                base.SaveHeader(saveInfo, stream);
+                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.Data)
                 {
-                    case FileContentType.Structure:
-                        stream.WriteLine($"{HeaderVesnice};{Kod};{Nazev};");
-                        pocet = this.Pocet;
-                        if (pocet != null) pocet.Save(saveInfo, stream);
-                        break;
-                    case FileContentType.Data:
-                        stream.WriteLine($"{HeaderVesnice};{Kod};{Nazev};");
-                        foreach (var item in this.Childs.Values)
-                            item.Save(saveInfo, stream);
-                        break;
-                    case FileContentType.DataPack:
-                        stream.WriteLine($"{HeaderVesnice};{Kod};{Nazev};");
-                        pocet = this.Pocet;
-                        if (pocet != null) pocet.Save(saveInfo, stream);
-                        foreach (var item in this.Childs.Values)
-                            item.Save(saveInfo, stream);
-                        break;
+                    Pocet pocet = this.Database.GetPocet(this.Kod);
+                    if (pocet != null) pocet.Save(saveInfo, stream);
                 }
             }
-            public void SearchInfo(SearchInfoArgs args)
+            public override void SearchInfo(SearchInfoArgs args)
             {
                 args.ResultSet.ScanRecordCount++;                    // Statistika
 
@@ -1759,19 +1562,139 @@ namespace Djs.Tools.CovidGraphs.Data
                 if (add)
                 {
                     args.PocetObyvatel += this.PocetObyvatel;
-                    foreach (var item in this.Childs.Values)
+                    foreach (var item in this.InfoDict.Values)
                         item.AddResults(args);
                 }
             }
-            public void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains)
+        }
+        /// <summary>
+        /// Předek pro třídy reprezentující strukturu obcí dle <see cref="IEntity"/> (země, kraj, okres, město, obec, vesnice)
+        /// </summary>
+        public abstract class EntityInfo : DataInfo, IEntity
+        {
+            public EntityInfo(IEntity parent, string kod, string nazev)
+            {
+                this.Parent = parent;
+                this.Kod = kod;
+                this.Nazev = nazev;
+                this.ChildDict = new Dictionary<string, IEntity>();
+                this.InfoDict = (this.EnableInfo ? new Dictionary<int, Info>() : null);
+                if (parent != null)
+                    parent.ChildsIsVoid |= this.IsVoid;
+            }
+            public override string ToString() { return Text; }
+            public abstract EntityType Entity { get; }
+            protected virtual bool EnableInfo { get { return (this.Entity == EntityType.Vesnice); } }
+            protected abstract string StructureHeader { get; }
+            public IEntity Parent { get; protected set; }
+            public Dictionary<string, IEntity> ChildDict { get; protected set; }
+            protected bool HasChilds { get { return (this.ChildDict != null && this.ChildDict.Count > 0); } }
+            public Dictionary<int, Info> InfoDict { get; protected set; }
+            protected bool HasInfos { get { return (this.InfoDict != null && this.InfoDict.Count > 0); } }
+            public string Text { get { return GetEntityText(this); } }
+            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
+            public bool ChildsIsVoid { get; set; }
+            public string Kod { get; protected set; }
+            public string Nazev { get; protected set; }
+            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = this.Database.GetPocetObyvatelInternal(this.Kod); return _PocetObyvatel.Value; } }
+            private int? _PocetObyvatel = null;
+            protected virtual int PocetObyvatelCurrent
+            {
+                get
+                {
+                    if (this.Entity == EntityType.Vesnice)
+                        return this.Database.GetPocetObyvatelInternal(this.Kod);
+                    if (this.HasChilds)
+                        return this.ChildDict.Values.Select(child => child.PocetObyvatel).Sum();
+                    return 0;
+                }
+            }
+            public virtual string FullCode
+            {
+                get
+                {
+                    string parentCode = Parent?.FullCode ?? "";
+                    return (parentCode.Length > 0 ? (parentCode + EntityDelimiter) : "") + Kod;
+                }
+            }
+            public virtual Database Database { get { return Parent?.Database; } protected set { } }
+            public virtual IEntity AddOrCreateChild(string kod, Func<IEntity> creator)
+            {
+                if (kod == null) throw new ArgumentNullException($"Nelze přidat nový Child do prvku typu {this.GetType().Name}, pokud jeho kód nového Child je NULL");
+                IEntity result;
+                if (!this.ChildDict.TryGetValue(kod, out result))
+                {
+                    result = creator();
+                    this.ChildDict.Add(kod, result);
+                }
+                return result;
+            }
+            public virtual Info AddOrCreateInfo(int key, Func<Info> creator)
+            {
+                Info result;
+                if (this.InfoDict == null) throw new ArgumentNullException($"Nelze přidat prvek Info do prvku {this.GetType().Name}, protože tento prvek neočekává Info.");
+                if (!this.InfoDict.TryGetValue(key, out result))
+                {
+                    result = creator();
+                    this.InfoDict.Add(key, result);
+                }
+                return result;
+            }
+            public virtual void Clear(FileContentType contentType)
+            {
+                foreach (var item in this.ChildDict.Values)
+                    item.Clear(contentType);
+
+                if (HasChilds && (contentType == FileContentType.Structure || contentType == FileContentType.DataPack))
+                {
+                    this.ChildDict.Clear();
+                    Parent.ChildsIsVoid = false;
+                }
+                if (HasInfos && (contentType == FileContentType.Data || contentType == FileContentType.DataPack))
+                    this.InfoDict.Clear();
+            }
+            public virtual void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+            {
+                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack || (saveInfo.ContentType == FileContentType.Data && this.Entity == EntityType.Vesnice))
+                    SaveHeader(saveInfo, stream);
+                if (HasInfos && (saveInfo.ContentType == FileContentType.Data || saveInfo.ContentType == FileContentType.DataPack))
+                    this.InfoDict.Values.ForEachExec(c => c.Save(saveInfo, stream));
+                if (HasChilds)
+                    this.ChildDict.Values.ForEachExec(c => c.Save(saveInfo, stream));
+            }
+            protected virtual void SaveHeader(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+            {
+                stream.WriteLine($"{StructureHeader};{Kod};{Nazev}");
+            }
+            public virtual void SearchInfo(SearchInfoArgs args)
+            {
+                args.ResultSet.ScanRecordCount++;                    // Statistika
+                if (this.HasChilds)
+                    this.ChildDict.Values.ForEachExec(c => c.SearchInfo(args));
+            }
+            public virtual void SearchEntities(SearchEntityArgs args)
             {
                 if (!this.IsVoid)
-                    Database.AddEntities(this, this.Nazev, search, entitesStart, entitesContains);
+                    Database.SearchEntityAdd(this, args);
+                if (this.HasChilds)
+                    this.ChildDict.Values.ForEachExec(c => c.SearchEntities(args));
             }
+            /// <summary>
+            /// Oddělovač složek v plném kódu entity
+            /// </summary>
+            public const string EntityDelimiter = ".";
         }
-        public class Info
+
+        public class Info : DataInfo
         {
-            public Info(Vesnice parent, DateTime date, int newCount, int currentCount)
+            public Info(IEntity parent, DateTime date)
+            {
+                this.Parent = parent;
+                this.Date = date;
+                this.NewCount = 0;
+                this.CurrentCount = 0;
+            }
+            public Info(IEntity parent, DateTime date, int newCount, int currentCount)
             {
                 this.Parent = parent;
                 this.Date = date;
@@ -1780,19 +1703,14 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             public override string ToString()
             {
-                return $"{Text}; Parent: {Parent.Text}";
+                return Text;
             }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Datum: {(Date.ToString("dd.MM.yyyy"))}; NewCount: {NewCount}; CurrentCount: {CurrentCount}"; } }
-            public Vesnice Parent { get; private set; }
+            public string Text { get { return $"Datum: {(Date.ToString("dd.MM.yyyy"))}; NewCount: {NewCount}; CurrentCount: {CurrentCount}; Parent: {Parent.Text}"; } }
+            public IEntity Parent { get; private set; }
             public Database Database { get { return Parent.Database; } }
             public DateTime Date { get; private set; }
             public int DateKey { get { return Date.GetDateKey(); } }
             public int DateKeyShort { get { return this.Date.GetDateKeyShort(); } }
-            public int NewCount { get; private set; }
-            public int CurrentCount { get; private set; }
-            public void Load(string[] items)
-            {
-            }
             public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
             {
                 switch (saveInfo.ContentType)
@@ -1814,8 +1732,15 @@ namespace Djs.Tools.CovidGraphs.Data
                 if (args.End.HasValue && this.Date >= args.End.Value) return;
                 args.ResultSet.AddInfo(args.Entity, args.ValueType, this);
             }
+            public int NewCount { get; private set; }
+            public int CurrentCount { get; private set; }
+            public void AddData1(int newCount, int currentCount)
+            {
+                this.NewCount += newCount;
+                this.CurrentCount += currentCount;
+            }
         }
-        public class Pocet
+        public class Pocet : DataInfo
         {
             public Pocet(Database database, string kod, string nazev, string mesto, string kraj, int pocetMC, int pocetMS, int pocetFC, int pocetFS)
             {
@@ -1834,12 +1759,9 @@ namespace Djs.Tools.CovidGraphs.Data
             {
                 return Text;
             }
-            public string Text { get { return $"Prvek: {(this.GetType().Name)}; Kód: {Kod}; Název: {Nazev}; Mesto: {Mesto}; Počet obyvatel: {PocetCelkem}" ; } }
-            public EntityType Entity { get { return EntityType.Vesnice; } }
+            public string Text { get { return TextDebug; } }
+            public string TextDebug { get { return $"Počet; Kód: {Kod}; Název: {Nazev}; Mesto: {Mesto}; Počet obyvatel: {PocetCelkem}" ; } }
             public Database Database { get; private set; }
-            public void Load(string[] items)
-            {
-            }
             public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
             {
                 stream.WriteLine($"{HeaderPocet};{Kod};{Nazev};{Mesto};{Kraj};{PocetMC};{PocetMS};{PocetFC};{PocetFS}");
@@ -1855,6 +1777,9 @@ namespace Djs.Tools.CovidGraphs.Data
             public int PocetCelkem { get; private set; }
 
         }
+
+        public abstract class DataInfo
+        { }
         #endregion
         #region Komprimace a dekomprimace stringu
         /// <summary>
@@ -1930,10 +1855,75 @@ namespace Djs.Tools.CovidGraphs.Data
     }
     #region Třídy pro výsledky analýzy
     /// <summary>
+    /// Argument pro hledání dat grafů
+    /// </summary>
+    public class SearchInfoArgs
+    {
+        public SearchInfoArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, int? pocetOd, int? pocetDo)
+        {
+            this.Entity = entity;
+            this.ValueType = valueType;
+            this.DataTypeInfo = dataTypeInfo;
+            this.Begin = begin;
+            this.End = end;
+            this.PocetObyvatel = 0;
+            this.PocetOd = pocetOd;
+            this.PocetDo = pocetDo;
+            this.ResultSet = new ResultSetInfo();
+        }
+        /// <summary>
+        /// Výchozí entita hledání
+        /// </summary>
+        public IEntity Entity { get; private set; }
+        /// <summary>
+        /// Typ datové hodnoty
+        /// </summary>
+        public DataValueType ValueType { get; private set; }
+        /// <summary>
+        /// Info o typu datové hodnoty
+        /// </summary>
+        public DataValueTypeInfo DataTypeInfo { get; private set; }
+        /// <summary>
+        /// Počátek období, finální hodnota (toto datum půjde do grafu)
+        /// </summary>
+        public DateTime? Begin { get; private set; }
+        /// <summary>
+        /// Konec období, finální hodnota (toto datum půjde do grafu)
+        /// </summary>
+        public DateTime? End { get; private set; }
+        /// <summary>
+        /// Filtrovat (na nejnižší úrovni) pouze obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
+        /// </summary>
+        public int? PocetOd { get; private set; }
+        /// <summary>
+        /// Filtrovat (na nejnižší úrovni) pouze obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
+        /// </summary>
+        public int? PocetDo { get; private set; }
+        /// <summary>
+        /// Sumární počet obyvatel výchozí entity, pro relativní výpočty
+        /// </summary>
+        public int PocetObyvatel { get; set; }
+        /// <summary>
+        /// Pole nalezených záznamů s daty
+        /// </summary>
+        public IEnumerable<ResultInfo> Results { get { return this.ResultSet.WorkingDict.Values; } }
+        /// <summary>
+        /// Pole nalezených záznamů s daty, Dictionary, kde Key = datum
+        /// </summary>
+        public Dictionary<int, ResultInfo> ResultDict { get { return this.ResultSet.WorkingDict; } }
+        /// <summary>
+        /// Kompletní data výsledků
+        /// </summary>
+        public ResultSetInfo ResultSet { get; private set; }
+    }
+    /// <summary>
     /// Třída výsledků
     /// </summary>
     public class ResultSetInfo
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public ResultSetInfo()
         {
             this.ScanRecordCount = 0;
@@ -1941,12 +1931,18 @@ namespace Djs.Tools.CovidGraphs.Data
             this.WorkingDict = new Dictionary<int, ResultInfo>();
 
         }
+        /// <summary>
+        /// Počet všech záznamů, které prošly vyhledáváním
+        /// </summary>
         public int ScanRecordCount { get; set; }
+        /// <summary>
+        /// Počet datových záznamů, započtených do výsledků vyhledání
+        /// </summary>
         public int LoadRecordCount { get; set; }
         /// <summary>
         /// Počet záznamů, které budeme zobrazovat
         /// </summary>
-        public int AcceptRecordCount { get { return (Results != null ? Results.Length : 0); } }
+        public int ShowRecordCount { get { return (Results != null ? Results.Length : 0); } }
         /// <summary>
         /// Pole nalezených záznamů s daty, Dictionary, Key = datum.
         /// Jde o záznamy vstupní a pracovní, bez filtrování dle data.
@@ -1984,13 +1980,27 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         public override string ToString()
         {
-            return $"{Text}; Entity: {Entity.Text}";
+            return Text;
         }
-        public string Text { get { return $"Prvek: {(this.GetType().Name)}; Datum: {(Date.ToString("dd.MM.yyyy"))}; Value: {Value}"; } }
+        public string Text { get { return TextDebug; } }
+        public string TextDebug { get { return $"ResultInfo; Datum: {(Date.ToString("dd.MM.yyyy"))}; RawValue: {RawValueText}, Value: {ValueText}, TempValue: {TempValueText}; Entita: {Entity.Text}"; } }
         public IEntity Entity { get; private set; }
         public Database Database { get { return Entity.Database; } }
         public DateTime Date { get; private set; }
         public int DateKey { get { return Date.GetDateKey(); } }
+        private string RawValueText { get { return GetText(RawValue); } }
+        private string ValueText { get { return GetText(Value); } }
+        private string TempValueText { get { return GetText(TempValue); } }
+        private static string GetText(decimal value)
+        {
+            if (value < 20m)
+                return Math.Round(value, 2).ToString("### ##0.00").Trim();
+            else if (value < 80m)
+                return Math.Round(value, 1).ToString("##0.0").Trim();
+            else
+                return Math.Round(value, 0).ToString("### ### ##0").Trim();
+        }
+
         /// <summary>
         /// Vstupující hodnota (konkrétní počet)
         /// </summary>
@@ -2035,26 +2045,52 @@ namespace Djs.Tools.CovidGraphs.Data
             this.RawValue += value;
         }
     }
+    /// <summary>
+    /// Průběžná data pro hledání obcí (okresů, krajů...)
+    /// </summary>
+    public class SearchEntityArgs
+    {
+        public SearchEntityArgs(EntityType? entityType, string searchText, bool isWildCard)
+        {
+            this.EntityType = entityType;
+            this.HasText = !String.IsNullOrEmpty(searchText);
+            this.SearchText = searchText;
+            this.IsWildCard = isWildCard;
+            this.FoundBeginEntities = new List<IEntity>();
+            this.FoundContainsEntities = new List<IEntity>();
+        }
+        public EntityType? EntityType { get; private set; }
+        public bool HasText { get; private set; }
+        public string SearchText { get; private set; }
+        public bool IsWildCard { get; private set; }
+        public List<IEntity> FoundBeginEntities { get; private set; }
+        public List<IEntity> FoundContainsEntities { get; private set; }
+    }
     #endregion
-
     #region Obecný přístup k datům entity (země, kraj, okres, město, obec, ves)
-
+    /// <summary>
+    /// Obecný popis jedné obce, města, okresu, kraje, země
+    /// </summary>
     public interface IEntity
     {
         EntityType Entity { get; }
+        IEntity Parent { get; }
         bool IsVoid { get; }
-        bool ChildsIsVoid { get; }
+        bool ChildsIsVoid { get; set; }
         string FullCode { get; }
         string Text { get; }
         Database Database { get; }
         string Kod { get; }
         string Nazev { get; }
         int PocetObyvatel { get; }
+        Dictionary<string, IEntity> ChildDict { get; }
+        Dictionary<int, Database.Info> InfoDict { get; }
         void Clear(FileContentType contentType);
-        void Load(string[] items);
+        IEntity AddOrCreateChild(string kod, Func<IEntity> creator);
+        Database.Info AddOrCreateInfo(int key, Func<Database.Info> creator);
         void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream);
         void SearchInfo(SearchInfoArgs args);
-        void AddEntities(string search, List<IEntity> entitesStart, List<IEntity> entitesContains);
+        void SearchEntities(SearchEntityArgs args);
     }
     public enum EntityType { None, World, Zeme, Kraj, Okres, Mesto, Obec, Vesnice }
     public class ProcessFileInfo
@@ -2144,13 +2180,13 @@ namespace Djs.Tools.CovidGraphs.Data
     }
     public class ProcessFileCurrentInfo
     {
-        public Database.World World { get; set; }
-        public Database.Zeme Zeme { get; set; }
-        public Database.Kraj Kraj { get; set; }
-        public Database.Okres Okres { get; set; }
-        public Database.Mesto Mesto { get; set; }
-        public Database.Obec Obec { get; set; }
-        public Database.Vesnice Vesnice { get; set; }
+        public IEntity World { get; set; }
+        public IEntity Zeme { get; set; }
+        public IEntity Kraj { get; set; }
+        public IEntity Okres { get; set; }
+        public IEntity Mesto { get; set; }
+        public IEntity Obec { get; set; }
+        public IEntity Vesnice { get; set; }
         public Database.Pocet Pocet { get; set; }
         public Database.Info Info { get; set; }
     }
@@ -2200,52 +2236,8 @@ namespace Djs.Tools.CovidGraphs.Data
         CovidObce1,
         CovidObce2
     }
-
-    public class SearchInfoArgs
-    {
-        public SearchInfoArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, int? pocetOd, int? pocetDo)
-        {
-            this.Entity = entity;
-            this.ValueType = valueType;
-            this.DataTypeInfo = dataTypeInfo;
-            this.Begin = begin;
-            this.End = end;
-            this.PocetObyvatel = 0;
-            this.PocetOd = pocetOd;
-            this.PocetDo = pocetDo;
-            this.ResultSet = new ResultSetInfo();
-        }
-
-        public IEntity Entity { get; private set; }
-        public DataValueType ValueType { get; private set; }
-        public DataValueTypeInfo DataTypeInfo { get; private set; }
-        public DateTime? Begin { get; private set; }
-        public DateTime? End { get; private set; }
-        /// <summary>
-        /// Filtrovat pouze nejnižší obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
-        /// </summary>
-        public int? PocetOd { get; private set; }
-        /// <summary>
-        /// Filtrovat pouze nejnižší obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
-        /// </summary>
-        public int? PocetDo { get; private set; }
-        public int PocetObyvatel { get; set; }
-        /// <summary>
-        /// Pole nalezených záznamů s daty
-        /// </summary>
-        public IEnumerable<ResultInfo> Results { get { return this.ResultSet.WorkingDict.Values; } }
-        /// <summary>
-        /// Pole nalezených záznamů s daty, Dictionary, kde Key = datum
-        /// </summary>
-        public Dictionary<int, ResultInfo> ResultDict { get { return this.ResultSet.WorkingDict; } }
-        /// <summary>
-        /// Kompletní data výsledků
-        /// </summary>
-        public ResultSetInfo ResultSet { get; private set; }
-    }
     #endregion
-
-
+    #region DataVisualInfo
     /// <summary>
     /// Data pro vizualizaci objektu
     /// </summary>
@@ -2269,78 +2261,5 @@ namespace Djs.Tools.CovidGraphs.Data
         public DW.Image Icon { get; set; }
         public object Tag { get; set; }
     }
-
-    public static class Extensions
-    {
-        public static int GetDateKey(this DateTime date)
-        {
-            return 10000 * date.Year + 100 * date.Month + date.Day;
-        }
-        public static int GetDateKeyShort(this DateTime date)
-        {
-            TimeSpan time = date - new DateTime(2019, 1, 1);
-            return (int)time.TotalDays;
-        }
-        public static TValue AddOrCreate<TKey, TValue>(this Dictionary<TKey, TValue> data, TKey key, Func<TValue> creator)
-        {
-            if (data.TryGetValue(key, out TValue value)) return value;
-            value = creator();
-            data.Add(key, value);
-            return value;
-        }
-        public static void AddOrUpdate<TKey, TValue>(this Dictionary<TKey, TValue> data, TKey key, TValue value)
-        {
-            if (!data.ContainsKey(key))
-                data.Add(key, value);
-            else
-                data[key] = value;
-        }
-        public static void AddIfNotContains<TKey, TValue>(this Dictionary<TKey, TValue> data, TKey key, TValue value)
-        {
-            if (!data.ContainsKey(key))
-                data.Add(key, value);
-        }
-        public static TValue[] GetSortedValues<TKey, TValue>(this Dictionary<TKey, TValue> data, Func<TValue, TValue, int> sorter)
-        {
-            List<TValue> values = data.Values.ToList();
-            values.Sort((a, b) => sorter(a, b));
-            return values.ToArray();
-        }
-        public static void ForEachExec<T>(this IEnumerable<T> collection, Action<T> action)
-        {
-            foreach (var item in collection)
-                action(item);
-        }
-        public static DW.Rectangle AlignTo(this DW.Rectangle bounds, DW.Rectangle parentBounds)
-        {
-            int px = parentBounds.X;
-            int py = parentBounds.Y;
-            int pw = parentBounds.Width;
-            int ph = parentBounds.Height;
-
-            int bx = bounds.X;
-            int by = bounds.Y;
-            int bw = bounds.Width;
-            int bh = bounds.Height;
-
-            AlignTo1D(ref bx, ref bw, px, pw);
-            AlignTo1D(ref by, ref bh, py, ph);
-
-            return new DW.Rectangle(bx, by, bw, bh);
-        }
-        private static void AlignTo1D(ref int b0, ref int bs, int c0, int cs)
-        {
-            if (b0 < c0) b0 = c0;
-            int c1 = c0 + cs;
-            if ((b0 + bs) > c1)
-            {
-                b0 = c1 - bs;
-                if (b0 < c0)
-                {
-                    b0 = c0;
-                    bs = cs;
-                }
-            }
-        }
-    }
+    #endregion
 }

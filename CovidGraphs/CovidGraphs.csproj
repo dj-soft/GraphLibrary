@@ -109,6 +109,7 @@
     <Compile Include="Data\Config.cs" />
     <Compile Include="Data\Database.cs" />
     <Compile Include="Data\DataSerializable.cs" />
+    <Compile Include="Data\Extensions.cs" />
     <Compile Include="Data\Graph.cs" />
     <Compile Include="Data\ThreadManager.cs" />
     <Compile Include="Forms\GraphForm.cs">

@@ -108,6 +108,10 @@ namespace Djs.Tools.CovidGraphs.Data
                 case CfgNameEditFormMainSplitter:
                     this.EditFormMainSplitter = GetValue(value, EditFormMainSplitterDefault);
                     break;
+                case CfgNameEditFormGraphPanelLayout:
+                    this.EditFormGraphPanelLayout = GetValueInt32Array(value);
+                    break;
+
             }
         }
         /// <summary>
@@ -122,7 +126,7 @@ namespace Djs.Tools.CovidGraphs.Data
             this.MainSplitterPosition = MainSplitterPositionDefault;
             this.EditFormBounds = null;
             this.EditFormMainSplitter = EditFormMainSplitterDefault;
-
+            this.EditFormGraphPanelLayout = null;
             SaveEnabled = oldEnabled;
         }
         /// <summary>
@@ -141,6 +145,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 sw.WriteLine(CreateLine(CfgNameSkinPalette, GetSerial(this.ActiveSkinPalette)));
                 sw.WriteLine(CreateLine(CfgNameEditFormBounds, GetSerial(this.EditFormBounds)));
                 sw.WriteLine(CreateLine(CfgNameEditFormMainSplitter, GetSerial(this.EditFormMainSplitter)));
+                sw.WriteLine(CreateLine(CfgNameEditFormGraphPanelLayout, GetSerialInt32Array(this.EditFormGraphPanelLayout)));
             }
         }
         /// <summary>
@@ -165,7 +170,9 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const string CfgNameEditFormBounds = "EditFormBounds";
         /// <summary>EditFormMainSplitter</summary>
         protected const string CfgNameEditFormMainSplitter = "EditFormMainSplitter";
-       
+        /// <summary>EditFormGraphPanelLayout</summary>
+        protected const string CfgNameEditFormGraphPanelLayout = "EditFormGraphPanelLayout";
+        
 
 
         /// <summary>ini</summary>
@@ -242,10 +249,17 @@ namespace Djs.Tools.CovidGraphs.Data
             set { _EditFormMainSplitter = (value < 100 ? 100 : (value > 9000 ? 9000 : value)); this.Save(); }
         }
         private int _EditFormMainSplitter;
+        /// <summary>
+        /// Layout pro panel s daty grafu
+        /// </summary>
+        public int[] EditFormGraphPanelLayout
+        {
+            get { return _EditFormGraphPanelLayout; }
+            set { _EditFormGraphPanelLayout = value; this.Save(); }
+        }
+        private int[] _EditFormGraphPanelLayout;
 
 
-
-        
         #endregion
     }
 }

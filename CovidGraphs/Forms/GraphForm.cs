@@ -11,6 +11,7 @@ using WF = System.Windows.Forms;
 
 using DXB = DevExpress.XtraBars;
 using DXE = DevExpress.XtraEditors;
+using DXT = DevExpress.XtraTab;
 using DC = DevExpress.XtraCharts;
 using DevExpress.XtraBars.Ribbon;
 
@@ -98,6 +99,8 @@ namespace Djs.Tools.CovidGraphs
         {
             _MainSplitContainer.SplitterPosition = Data.App.Config.EditFormMainSplitter;
             _MainSplitContainer.SplitterPositionChanged += _MainSplitContainer_SplitterPositionChanged;
+
+            _GraphPanel.OnFirstShown();
         }
         protected override void OnLocationChanged(EventArgs e)
         {
@@ -160,30 +163,33 @@ namespace Djs.Tools.CovidGraphs
             panel.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
             panel.Visible = true;
             panel.SizeChanged += _ButtonPanel_SizeChanged;
-            panel.Height = 40;
+            panel.Height = DefaultButtonPanelHeight;
             _ButtonPanel = panel;
             this.Controls.Add(panel);
 
-            DXE.SimpleButton button1 = new DXE.SimpleButton() { Text = "Uložit", Size = new Size(140, 33) };
+            DXE.SimpleButton button1 = new DXE.SimpleButton() { Text = "Uložit", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
             button1.Click += ButtonSave_Click;
             this._ButtonPanel.Controls.Add(button1);
             _Button1 = button1;
 
-            DXE.SimpleButton button2 = new DXE.SimpleButton() { Text = "Uložit jako nový", Size = new Size(140, 33) };
+            DXE.SimpleButton button2 = new DXE.SimpleButton() { Text = "Uložit jako nový", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
             button2.Click += ButtonSaveAs_Click;
             this._ButtonPanel.Controls.Add(button2);
             _Button2 = button2;
 
-            DXE.SimpleButton button3 = new DXE.SimpleButton() { Text = "Storno", Size = new Size(140, 33) };
+            DXE.SimpleButton button3 = new DXE.SimpleButton() { Text = "Storno", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
             button3.Click += ButtonCancel_Click;
             this._ButtonPanel.Controls.Add(button3);
             _Button3 = button3;
 
-            this.AcceptButton = _Button1;
+            // this.AcceptButton = _Button1;
             this.CancelButton = _Button3;
 
             _ButtonPanelLayout();
         }
+        internal const int DefaultButtonPanelHeight = 40;
+        internal const int DefaultButtonWidth = 150;
+        internal const int DefaultButtonHeight = 34;
         /// <summary>
         /// Po kliknutí na "Uložit"
         /// </summary>
@@ -247,7 +253,7 @@ namespace Djs.Tools.CovidGraphs
         protected void InitData()
         {
             _CurrentGraphInfo = new GraphInfo();
-            _GraphPanel = new GraphPanel() { Dock = DockStyle.Fill, CurrentGraphInfo = _CurrentGraphInfo };
+            _GraphPanel = new GraphPanel() { Dock = DockStyle.Fill, ParentForm = this };
             _MainSplitContainer.Panel1.Controls.Add(_GraphPanel);
         }
         protected void InitChart()
@@ -314,7 +320,13 @@ namespace Djs.Tools.CovidGraphs
         }
         private void InitDevExpressComponents()
         {
-            InitListObce();
+            this.AutoSize = true;
+            this.Controls.Add(InitFrames());
+
+            _GraphSeriesNewHost.Controls.Add(InitSeriesNewControl());
+
+            this.SizeChanged += Frame_SizeChanged;
+
             /*
             InitForm();
             InitFrames();
@@ -323,31 +335,275 @@ namespace Djs.Tools.CovidGraphs
             InitGraph();
             */
         }
-        private void InitListObce()
+        /// <summary>
+        /// Volá se těsně před prvním zobrazením. Layout formuláře (rozměry a splittery) je nastaven.
+        /// Zdejší objekt si má z konfigurace načíst svůj layout a aplikovat jej do Controlů.
+        /// </summary>
+        internal void OnFirstShown()
         {
+            var configLayout = Data.App.Config.EditFormGraphPanelLayout;
+
+        }
+        #region Rozvržení layoutu
+        private WF.Control InitFrames()
+        {
+            // Main splitter
+            _GraphSplitContainer = new DXE.SplitContainerControl()
+            {
+                FixedPanel = DXE.SplitFixedPanel.Panel1,
+                Horizontal = false,
+                PanelVisibility = DXE.SplitPanelVisibility.Both,
+                Size = new Size(600, 400),
+                SplitterPosition = 200,
+                Dock = DockStyle.Fill,
+                ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True
+            };
+            _GraphSplitContainer.Panel1.MinSize = 150;
+            _GraphSplitContainer.Panel2.MinSize = 250;
+
+            // Horní panel obsadí TabPage se záložkami pro hlavičku a pro nové položky:
+            _TabContainer = new DXT.XtraTabControl()
+            {
+                BorderStyle = DXE.Controls.BorderStyles.NoBorder,
+                Dock = DockStyle.Fill
+            };
+            _TabPage1 = new DXT.XtraTabPage() { Text = "Společná data grafu" };
+            _TabContainer.TabPages.Add(_TabPage1);
+            _TabPage2 = new DXT.XtraTabPage() { Text = "Zadání nových datových zdrojů" };
+            _TabContainer.TabPages.Add(_TabPage2);
+
+            _GraphSplitContainer.Panel1.Controls.Add(_TabContainer);
+
+            // Dolní panel obsadí splitter, obsahující v Panel1 = Seznam položek, a v Panel2 = detail jedné položky:
+            _SeriesSplitContainer = new DXE.SplitContainerControl()
+            {
+                FixedPanel = DXE.SplitFixedPanel.Panel2,
+                Horizontal = false,
+                PanelVisibility = DXE.SplitPanelVisibility.Both,
+                SplitterPosition = 200,
+                Dock = DockStyle.Fill,
+                ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True
+            };
+            _SeriesSplitContainer.Panel1.MinSize = 150;
+            _SeriesSplitContainer.Panel2.MinSize = 100;
+
+            _GraphSplitContainer.Panel2.Controls.Add(_SeriesSplitContainer);
+
+            return _GraphSplitContainer;
+        }
+        private void Frame_SizeChanged(object sender, EventArgs e)
+        {
+            Size size = this.ClientSize;
+            _TabContainer.Bounds = new Rectangle(0, 0, size.Width, size.Height);
+        }
+        DXE.SplitContainerControl _GraphSplitContainer;
+        DXT.XtraTabControl _TabContainer;
+        DXT.XtraTabPage _TabPage1;
+        DXT.XtraTabPage _TabPage2;
+        DXE.SplitContainerControl _SeriesSplitContainer;
+
+        WF.Control _GraphHeaderDetailHost { get { return _TabPage1; } }
+        WF.Control _GraphSeriesNewHost { get { return _TabPage2; } }
+        WF.Control _GraphSeriesListHost { get { return _SeriesSplitContainer.Panel1; } }
+        WF.Control _GraphSeriesDetailHost { get { return _SeriesSplitContainer.Panel2; } }
+        #endregion
+        #region Hlavička grafu
+
+        #endregion
+        #region Panel pro zadání nových serií
+        private WF.Control InitSeriesNewControl()
+        {
+            _SeriesNewPanel = new DXE.PanelControl() { Dock = DockStyle.Fill };
+
+            _SeriesNewSplitContainer = new DXE.SplitContainerControl()
+            {
+                FixedPanel = DXE.SplitFixedPanel.None,
+                Horizontal = true,
+                PanelVisibility = DXE.SplitPanelVisibility.Both,
+                Size = new Size(600, 300),
+                SplitterPosition = 300,
+                Dock = DockStyle.Fill,
+                ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True
+            };
+            _SeriesNewSplitContainer.Panel1.MinSize = 150;
+            _SeriesNewSplitContainer.Panel2.MinSize = 100;
+            _SeriesNewSplitContainer.SizeChanged += _SeriesNewSplitContainer_SizeChanged;
+            _SeriesNewPanel.Controls.Add(_SeriesNewSplitContainer);
+
+            _SeriesNewSplitContainer.Panel1.Controls.Add(InitPanelObce());
+
+
+            _SeriesNewButtonsPanel = new DXE.PanelControl() { Dock = DockStyle.Bottom, Height = GraphForm.DefaultButtonPanelHeight };
+            _SeriesNewAddButton = new DXE.SimpleButton() { Text = "Přidej jako další serie", Size = new Size(210, GraphForm.DefaultButtonHeight) };
+            _SeriesNewButtonsPanel.Controls.Add(_SeriesNewAddButton);
+            _SeriesNewButtonsPanel.SizeChanged += _SeriesNewButtonsPanel_SizeChanged;
+
+            _SeriesNewPanel.Controls.Add(_SeriesNewButtonsPanel);
+
+            return _SeriesNewPanel;
+        }
+
+        private void _SeriesNewSplitContainer_SizeChanged(object sender, EventArgs e)
+        {
+        }
+
+        private void _SeriesNewButtonsPanel_SizeChanged(object sender, EventArgs e)
+        {
+            Size buttonSize = _SeriesNewAddButton.Size;
+            Size panelSize = _SeriesNewButtonsPanel.ClientSize;
+            Point location = new Point((panelSize.Width - buttonSize.Width) / 2, (panelSize.Height - buttonSize.Height) / 2);
+            _SeriesNewAddButton.Bounds = new Rectangle(location, buttonSize);
+        }
+
+        private DXE.PanelControl _SeriesNewPanel;
+        private DXE.SplitContainerControl _SeriesNewSplitContainer;
+        private DXE.PanelControl _SeriesNewButtonsPanel;
+        private DXE.SimpleButton _SeriesNewAddButton;
+        #endregion
+        #region Seznam s obcemi = zdroj entit
+        private WF.Control InitPanelObce()
+        {
+            _ObcePanel = new DXE.PanelControl() { Dock = DockStyle.Fill };
+            this.Controls.Add(_ObcePanel);
+
+            _ObceSearchLabel = new DXE.LabelControl() { Bounds = new Rectangle(3, 3, 200, 25), Text = "Vyhledat obec:" };
+            _ObcePanel.Controls.Add(_ObceSearchLabel);
+
+            _ObceSearchText = new DXE.TextEdit() { Bounds = new Rectangle(3, 22, 200, 25) };
+            _ObceSearchText.SuperTip = new DevExpress.Utils.SuperToolTip();
+            _ObceSearchText.SuperTip.Items.AddTitle("Vyhledat obec:");
+            _ObceSearchText.SuperTip.Items.Add(@"Zadejte počátek názvu, budou nabídnuty všechny obce s tímto začátkem.
+Zadejte hvězdičku a část názvu, budou nalezeny všechny obce obsahující ve jménu daný text.
+Zadejte na začátek textu výraz kraj: (nebo okres: nebo město: nebo obec:), a budou vypsány pouze odpovídající jednotky.
+Po zadání tohoto prefixu nemusíte psát další text, budou vypsány všechny kraje (okresy, města, obce).
+
+Následně si vyberete pouze patřičné obce ze seznamu.");
+            _ObceSearchText.KeyUp += _ObceSearchText_KeyUp;
+            _ObcePanel.Controls.Add(_ObceSearchText);
+            _ObceLastSearchText = "";
+
+            _ObceSearchButton = new DXE.SimpleButton() { Bounds = new Rectangle(206, 22, 50, 25), Text = "Vyhledat" };
+            _ObceSearchButton.SuperTip = new DevExpress.Utils.SuperToolTip();
+            _ObceSearchButton.SuperTip.Items.AddTitle("Vyhledat v databázi");
+            _ObceSearchButton.SuperTip.Items.Add("Po zadání textu vlevo stiskněte toto tlačítko.");
+            _ObceSearchButton.Click += _ObceSearchButton_Click;
+            _ObceSearchButton.Visible = false;
+            _ObcePanel.Controls.Add(_ObceSearchButton);
+
             _ObceListBox = new DXE.ListBoxControl()
             {
+                Bounds = new Rectangle(3, 50, 240, 300),
                 MultiColumn = false,
-                SelectionMode = SelectionMode.One,
-                Dock = DockStyle.Fill
+                SelectionMode = SelectionMode.MultiExtended,
+                Dock = DockStyle.None
 
             };
             _ObceListBox.Appearance.FontSizeDelta = 1;
+            _ObceListBox.SelectedIndex = 0;
+            _ObcePanel.Controls.Add(_ObceListBox);
 
+            this.LayoutPanelObce();
+
+            this._ObcePanel.SizeChanged += _ObcePanel_SizeChanged;
+
+            return _ObcePanel;
         }
+        private void _ObcePanel_SizeChanged(object sender, EventArgs e)
+        {
+            this.LayoutPanelObce();
+        }
+        private void _ObceSearchText_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Down || e.KeyCode == Keys.Enter)
+                _ObceListBox.Focus();
+            else if (e.KeyCode == Keys.Home || e.KeyCode == Keys.End || e.KeyCode == Keys.Up /* || e.KeyCode == Keys.Down */ || e.KeyCode == Keys.Left || e.KeyCode == Keys.Right || e.KeyCode == Keys.PageUp || e.KeyCode == Keys.PageDown || e.KeyCode == Keys.Tab || e.KeyCode == Keys.Escape)
+            { }
+            else if (e.Modifiers == Keys.Control)
+            { }
+            else
+                ObceRunSearch();
+        }
+        private void _ObceSearchButton_Click(object sender, EventArgs e)
+        {
+            ObceRunSearch();
+            this._ObceSearchText.Focus();
+        }
+        private void LayoutPanelObce()
+        {
+            if (_ObceListBox == null) return;
 
+            int mx = 3;
+            int my = 3;
+            int sx = 2;
+            int sy = 2;
+            Size size = _ObcePanel.ClientSize;
+            bool btnVisible = _ObceSearchButton.Visible;
+            int btnWidth = (btnVisible ? _ObceSearchButton.GetPreferredSize(new Size(200, 80)).Width + 16 : 0);
+            int inpWidth = size.Width - mx - btnWidth - mx - (btnVisible ? sx : 0);
+            _ObceSearchLabel.Bounds = new Rectangle(mx, my, inpWidth, 20);
+            _ObceSearchText.Bounds = new Rectangle(mx, _ObceSearchLabel.Bounds.Bottom + sy, inpWidth, 25);
+            int inpBottom = _ObceSearchText.Bounds.Bottom;
+            if (btnVisible)
+            {
+                int btnX = _ObceSearchText.Right + sx;
+                int btnY = my + 4;
+                _ObceSearchButton.Bounds = new Rectangle(btnX, btnY, size.Width - mx - btnX, inpBottom - btnY);
+            }
+
+            _ObceListBox.Bounds = new Rectangle(mx, inpBottom + sy, size.Width - mx - mx, size.Height - my - inpBottom - sy);
+        }
+        private void ObceRunSearch()
+        {
+            if (this.Database == null) return;
+
+            string newText = _ObceSearchText.Text.Trim();
+            string oldText = _ObceLastSearchText;
+            if (String.Equals(newText, oldText, StringComparison.CurrentCultureIgnoreCase)) return;
+            _ObceLastSearchText = newText;
+
+            this._ObceListBox.Items.Clear();
+            if (newText.Length < 2) return;
+
+            var entites = this.Database.SearchEntities(newText);
+            if (entites.Length > 0)
+            {
+                this._ObceListBox.Items.AddRange(entites);
+                if (!this._ObceListBox.Enabled)
+                    this._ObceListBox.Enabled = true;
+            }
+            else
+            {
+                this._ObceListBox.Items.Add("Nenalezeno");
+                if (this._ObceListBox.Enabled)
+                    this._ObceListBox.Enabled = false;
+            }
+        }
+        private string _ObceLastSearchText;
+        private DXE.PanelControl _ObcePanel;
+        private DXE.LabelControl _ObceSearchLabel;
+        private DXE.SimpleButton _ObceSearchButton;
+        private DXE.TextEdit _ObceSearchText;
         private DXE.ListBoxControl _ObceListBox;
+        #endregion
+        #region Seznam s datovými typy
+
+        #endregion
+
 
         #region Data, Refresh, Store
-
+        /// <summary>
+        /// Formulář, který obsahuje referenci na definici grafu i na databázi
+        /// </summary>
+        public GraphForm ParentForm { get; set; }
+        public Database Database { get { return ParentForm?.Database; } }
+        public GraphInfo CurrentGraphInfo { get { return ParentForm?.CurrentGraphInfo; } }
         public void DataRefresh()
-        { }
-        public GraphInfo CurrentGraphInfo
         {
-            get { return _CurrentGraphInfo; }
-            set { _CurrentGraphInfo = value; }
+            Database database = this.Database;
+            GraphInfo graphInfo = this.CurrentGraphInfo;
+
+
         }
-        private GraphInfo _CurrentGraphInfo;
         #endregion
     }
 }

@@ -862,7 +862,41 @@ namespace Djs.Tools.CovidGraphs.Data
             return defValue;
         }
 
-
+        /// <summary>
+        /// Převede int[] hodnotu do serialtextu
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        protected static string GetSerialInt32Array(int[] values)
+        {
+            if (values == null) return SerialNull;
+            StringBuilder sb = new StringBuilder();
+            foreach (int value in values)
+                sb.Append(";" + value.ToString());
+            return (sb.Length == 0 ? "" : sb.ToString().Substring(1));
+        }
+        /// <summary>
+        /// Převede serialtext na hodnotu int[].
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="name"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        protected static int[] GetValueInt32Array(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return null;
+            if (text == SerialNull) return null;
+            List<int> values = new List<int>();
+            string[] items = text.Split(';');
+            foreach (string item in items)
+            {
+                if (!String.IsNullOrEmpty(item) && Int32.TryParse(item, out int value))
+                    values.Add(value);
+                else
+                    values.Add(0);
+            }
+            return values.ToArray();
+        }
 
         protected const string SerialNull = "N";
         #endregion
