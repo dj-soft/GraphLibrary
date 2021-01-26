@@ -543,6 +543,7 @@ namespace Djs.Tools.CovidGraphs.Data
             currSerie = currSerie.Replace("{{MARKER_VISIBILITY_ELEMENT}}", CreateElement("MarkerVisibility", false));
             currSerie = currSerie.Replace("{{LINECOLOR_ELEMENT}}", CreateElement("Color", graphSerieInfo.LineColor));
             currSerie = currSerie.Replace("{{ENABLE_ANTIALIASING_ELEMENT}}", CreateElement("EnableAntialiasing", true));
+            currSerie = currSerie.Replace("{{LINE_JOIN_ELEMENT}}", CreateElement("LineJoin", "Bevel"));            // Druh vykreslení zalomení čáry: Mitter = ostrý (neuvádí se), Round = kulatý roh, Bevel = Zkosení (ostrý oříznutý), MiterClipped = Hodně ostrý
             currSerie = currSerie.Replace("{{LINE_THICK_ELEMENT}}", CreateElement("Thickness", graphSerieInfo.LineThickness));
             currSerie = currSerie.Replace("{{LINE_DASHSTYLE_ELEMENT}}", CreateElement("DashStyle", graphSerieInfo.LineDashStyleName));
             return currSerie;
@@ -608,7 +609,7 @@ namespace Djs.Tools.CovidGraphs.Data
             {
                 string settings = @"﻿        <{{ITEMNAME}} Name='{{TITLE}}' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='{{COLUMNNAME}}' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
           <View {{MARKER_VISIBILITY_ELEMENT}}{{ENABLE_ANTIALIASING_ELEMENT}}{{LINECOLOR_ELEMENT}}TypeNameSerializable='LineSeriesView'>
-            <LineStyle {{LINE_THICK_ELEMENT}}{{LINE_DASHSTYLE_ELEMENT}} />
+            <LineStyle {{LINE_JOIN_ELEMENT}}{{LINE_THICK_ELEMENT}}{{LINE_DASHSTYLE_ELEMENT}} />
             <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
             <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
               <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
@@ -889,61 +890,118 @@ namespace Djs.Tools.CovidGraphs.Data
     public class DataValueTypeInfo : DataVisualInfo
     {
         /// <summary>
+        /// Vrátí pole informací o všech typech
+        /// </summary>
+        /// <returns></returns>
+        public static DataValueTypeInfo[] CreateAll()
+        {
+            List<DataValueTypeInfo> result = new List<DataValueTypeInfo>();
+            var valueTypes = Enum.GetValues(typeof(DataValueType));
+            foreach (var valueType in valueTypes)
+            {
+                if (TryCreateFor((DataValueType)valueType, out DataValueTypeInfo info))
+                    result.Add(info);
+            }
+            return result.ToArray();
+        }
+        /// <summary>
         /// Statický konstruktor
         /// </summary>
         /// <param name="valueType"></param>
         /// <returns></returns>
         public static DataValueTypeInfo CreateFor(DataValueType valueType)
         {
+            if (TryCreateFor(valueType, out DataValueTypeInfo result))
+                return result;
+
+            throw new KeyNotFoundException($"Nelze vytvořit data {nameof(DataValueTypeInfo)} pro valueType = {valueType}, není vytvořen segment kódu.");
+        }
+        /// <summary>
+        /// Statický konstruktor
+        /// </summary>
+        /// <param name="valueType"></param>
+        /// <returns></returns>
+        public static bool TryCreateFor(DataValueType valueType, out DataValueTypeInfo result)
+        {
             switch (valueType)
             {
-                case DataValueType.NewCount: return new DataValueTypeInfo(valueType, "Denní počet nových případů", "Neupravený počet nově nalezených případů", 
+                case DataValueType.NewCount:
+                    result = new DataValueTypeInfo(valueType, "Denní počet nových případů", "Neupravený počet nově nalezených případů", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     0, 0);
-                case DataValueType.NewCountAvg: return new DataValueTypeInfo(valueType, "Průměrný denní přírůstek", "Počet nově nalezených případů, zprůměrovaný za okolních 7 dní (-3  +3 dny)", 
+                    return true;
+                case DataValueType.NewCountAvg:
+                    result = new DataValueTypeInfo(valueType, "Průměrný denní přírůstek", "Počet nově nalezených případů, zprůměrovaný za okolních 7 dní (-3  +3 dny)", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                      -4, +4);
-                case DataValueType.NewCountRelative: return new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání", 
+                    return true;
+                case DataValueType.NewCountRelative:
+                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
                     0, 0);
-                case DataValueType.NewCountRelativeAvg: return new DataValueTypeInfo(valueType, "Relativní přírůstek na 100t, zprůměrovaný", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, zprůměrovaný za okolních 7 dní (-3  +3 dny)", 
+                    return true;
+                case DataValueType.NewCountRelativeAvg:
+                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100t, zprůměrovaný", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, zprůměrovaný za okolních 7 dní (-3  +3 dny)", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -4, +4);
+                    return true;
 
-                case DataValueType.NewCount7DaySum: return new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "", 
+                case DataValueType.NewCount7DaySum:
+                    result = new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     -7, 0);
-                case DataValueType.NewCount7DaySumAvg: return new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "", 
+                    return true;
+                case DataValueType.NewCount7DaySumAvg:
+                    result = 
+                        new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -11, +4);
-                case DataValueType.NewCount7DaySumRelative: return new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "", 
+                    return true;
+                case DataValueType.NewCount7DaySumRelative:
+                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
                     -7, 0);
-                case DataValueType.NewCount7DaySumRelativeAvg: return new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "", 
+                    return true;
+                case DataValueType.NewCount7DaySumRelativeAvg:
+                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -11, +4);
+                    return true;
 
-                case DataValueType.CurrentCount: return new DataValueTypeInfo(valueType, "Aktuální stav případů", "", 
+                case DataValueType.CurrentCount:
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     0, 0);
-                case DataValueType.CurrentCountAvg: return new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "", 
+                    return true;
+                case DataValueType.CurrentCountAvg:
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                      -4, +4);
-                case DataValueType.CurrentCountRelative: return new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "", 
+                    return true;
+                case DataValueType.CurrentCountRelative:
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
                     0, 0);
-                case DataValueType.CurrentCountRelativeAvg: return new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "", 
+                    return true;
+                case DataValueType.CurrentCountRelativeAvg:
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -4, +4);
+                    return true;
 
-                case DataValueType.RZero: return new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "", 
+                case DataValueType.RZero:
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "", 
                     GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     -6, 0);
-                case DataValueType.RZeroAvg: return new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "", 
+                    return true;
+                case DataValueType.RZeroAvg:
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "", 
                     GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -10, +4);
+                    return true;
             }
-            throw new KeyNotFoundException($"Nelze vytvořit data {nameof(DataValueTypeInfo)} pro valueType = {valueType}, není vytvořen segment kódu.");
+            result = null;
+            return false;
         }
         private DataValueTypeInfo(DataValueType value, string text, string toolTip, 
             GraphSerieAxisType axisType, EntityType entityType, LineDashStyleType suggestedDashStyle,
@@ -960,34 +1018,34 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Datový typ grafu
         /// </summary>
-        public new DataValueType Value { get; set; }
+        public new DataValueType Value { get; protected set; }
         /// <summary>
         /// Vhodný typ osy
         /// </summary>
-        public GraphSerieAxisType AxisType { get; set; }
+        public GraphSerieAxisType AxisType { get; protected set; }
         /// <summary>
         /// Druh entity, kde jsou fyzicky data uložena.
         /// Data tohoto typu lze číst i z vyšších entit, ale ne z nižších: pokud např. určitý údaj je jen za okresy, nelze jej číst z obcí.
         /// </summary>
-        public EntityType EntityType { get; set; }
+        public EntityType EntityType { get; protected set; }
         /// <summary>
         /// Vhodný styl čáry, použije se ale jen když se v jednom grafu sejde více stylů.
         /// Pokud v jednom grafu bude jen jeden typ, pak se použije Full.
         /// Má význam: pokud máme data Average i Raw, pak výrazně zobrazím Average, a tečkovaně a tenčí čarou zobrazím Raw data.
         /// </summary>
-        public LineDashStyleType SuggestedDashStyle { get; set; }
+        public LineDashStyleType SuggestedDashStyle { get; protected set; }
         /// <summary>
         /// Předstih RAW dat načítaných z databáze proti uživatelskému datu počátku grafu - potřebný pro to, aby byl správně napočten agregát k prvnímu uživatelskému dni i z dní předešlých.
         /// Typicky součet za posledních 7 dní je třeba pro 10.1.2021 vypočítat za dny {4, 5, 6, 7, 8, 9, 10}, 
         /// proto musím z databáze získat data od 4.1.2021, napočíst agregát a pak ponechat k zobrazení jen data od 10.1.2021.
         /// V tom případě zde bude ZÁPORNÁ hodnota -6: pro Begin = 10.1.2021 bude SourceBegin = 4.1.2021
         /// </summary>
-        public int? DateOffsetBefore { get; set; }
+        public int? DateOffsetBefore { get; protected set; }
         /// <summary>
         /// Přesah RAW dat načítaných z databáze proti uživatelskému datu konce grafu - potřebný pro to, aby byl správně napočten agregát k prvnímu uživatelskému dni i z dní předešlých.
         /// Typicky pro plovoucí průměr (za okolních 7 dní: pro 10.1.2021 budou napočteny dny { 7, 8, 9, 10, 11, 12, 13 }
         /// </summary>
-        public int? DateOffsetAfter { get; set; }
+        public int? DateOffsetAfter { get; protected set; }
     }
     /// <summary>
     /// Vhodný typ osy Y

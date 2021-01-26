@@ -12,6 +12,7 @@ using WF = System.Windows.Forms;
 using DXB = DevExpress.XtraBars;
 using DXE = DevExpress.XtraEditors;
 using DXT = DevExpress.XtraTab;
+using DXG = DevExpress.XtraGrid;
 using DC = DevExpress.XtraCharts;
 using DevExpress.XtraBars.Ribbon;
 
@@ -324,6 +325,7 @@ namespace Djs.Tools.CovidGraphs
             this.Controls.Add(InitFrames());
 
             _GraphSeriesNewHost.Controls.Add(InitSeriesNewControl());
+            _GraphSeriesListHost.Controls.Add(InitSeriesListControl());
 
             this.SizeChanged += Frame_SizeChanged;
 
@@ -431,6 +433,7 @@ namespace Djs.Tools.CovidGraphs
             _SeriesNewPanel.Controls.Add(_SeriesNewSplitContainer);
 
             _SeriesNewSplitContainer.Panel1.Controls.Add(InitPanelObce());
+            _SeriesNewSplitContainer.Panel2.Controls.Add(InitPanelValueType());
 
 
             _SeriesNewButtonsPanel = new DXE.PanelControl() { Dock = DockStyle.Bottom, Height = GraphForm.DefaultButtonPanelHeight };
@@ -496,13 +499,12 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
                 MultiColumn = false,
                 SelectionMode = SelectionMode.MultiExtended,
                 Dock = DockStyle.None
-
             };
             _ObceListBox.Appearance.FontSizeDelta = 1;
             _ObceListBox.SelectedIndex = 0;
             _ObcePanel.Controls.Add(_ObceListBox);
 
-            this.LayoutPanelObce();
+            this._ObcePanelLayout();
 
             this._ObcePanel.SizeChanged += _ObcePanel_SizeChanged;
 
@@ -510,7 +512,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         }
         private void _ObcePanel_SizeChanged(object sender, EventArgs e)
         {
-            this.LayoutPanelObce();
+            this._ObcePanelLayout();
         }
         private void _ObceSearchText_KeyUp(object sender, KeyEventArgs e)
         {
@@ -528,7 +530,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             ObceRunSearch();
             this._ObceSearchText.Focus();
         }
-        private void LayoutPanelObce()
+        private void _ObcePanelLayout()
         {
             if (_ObceListBox == null) return;
 
@@ -586,9 +588,92 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         private DXE.ListBoxControl _ObceListBox;
         #endregion
         #region Seznam s datovými typy
+        private WF.Control InitPanelValueType()
+        {
+            _ValueTypePanel = new DXE.PanelControl() { Dock = DockStyle.Fill };
+            _ValueTypePanel.SizeChanged += _ValueTypePanel_SizeChanged;
 
+            _ValueTypeLabel = new DXE.LabelControl() { Text = "Označte jeden nebo více typů dat:", BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            _ValueTypePanel.Controls.Add(_ValueTypeLabel);
+
+            _ValueTypeInfos = DataValueTypeInfo.CreateAll();
+
+            _ValueTypeListBox = new DXE.ListBoxControl()
+            { 
+                MultiColumn = false,
+                SelectionMode = SelectionMode.MultiExtended,
+                Dock = DockStyle.None
+            };
+            _ValueTypeListBox.Appearance.FontSizeDelta = 1;
+            _ValueTypeListBox.SelectedIndex = 0;
+            _ValueTypeListBox.DataSource = _ValueTypeInfos;
+
+            _ValueTypePanel.Controls.Add(_ValueTypeListBox);
+
+
+            _ValueTypeInfo = new DXE.LabelControl() { Text = "", AutoSizeMode = DXE.LabelAutoSizeMode.Vertical, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            _ValueTypeInfo.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
+            _ValueTypeInfo.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Near;
+            _ValueTypeInfo.Appearance.Options.UseTextOptions = true;
+            _ValueTypePanel.Controls.Add(_ValueTypeListBox);
+
+            _ValueTypeLayout();
+            return _ValueTypePanel;
+        }
+        private void _ValueTypePanel_SizeChanged(object sender, EventArgs e)
+        {
+            _ValueTypeLayout();
+        }
+        private void _ValueTypeLayout()
+        {
+            if (_ValueTypeInfo == null) return;
+
+            Size size = _ValueTypePanel.ClientSize;
+            int mx = 3;
+            int my = 3;
+            int sx = 2;
+            int sy = 2;
+            int x = mx;
+            int w = size.Width - mx - mx;
+
+            int y = my;
+            _ValueTypeLabel.Bounds = new Rectangle(x, y, w, 20); y = _ValueTypeLabel.Bounds.Bottom + sy;
+
+            int ih = (int)(3f * _ValueTypeInfo.Font.GetHeight());
+            int iy = size.Height - my - ih;
+            _ValueTypeInfo.Bounds = new Rectangle(x, iy, w, ih);
+
+            int lh = iy - sy - y;
+            _ValueTypeListBox.Bounds = new Rectangle(x, y, w, lh);
+        }
+        private DXE.PanelControl _ValueTypePanel;
+        private DXE.LabelControl _ValueTypeLabel;
+        private DXE.ListBoxControl _ValueTypeListBox;
+        private DXE.LabelControl _ValueTypeInfo;
+        private DataValueTypeInfo[] _ValueTypeInfos;
         #endregion
+        #region Seznam existujících serií
+        private WF.Control InitSeriesListControl()
+        {
+            _SeriesListPanel = new DXE.PanelControl() { Dock = DockStyle.Fill };
 
+            _SeriesListGrid = new DXG.GridControl() { Dock = DockStyle.Fill };
+            // _SeriesListGrid.DataSource
+            _SeriesListPanel.Controls.Add(_SeriesListGrid);
+
+            _SeriesListButtonPanel = new DXE.PanelControl() { Dock = DockStyle.Top, Height = GraphForm.DefaultButtonPanelHeight };
+            _SeriesListPanel.Controls.Add(_SeriesListButtonPanel);
+
+            _SeriesListRemoveButton = new DXE.SimpleButton() { Text = "Odeber řádek", Size = new Size(120, GraphForm.DefaultButtonHeight), Location = new Point(8, 3) };
+            _SeriesListButtonPanel.Controls.Add(_SeriesListRemoveButton);
+
+            return _SeriesListPanel;
+        }
+        private DXE.PanelControl _SeriesListPanel;
+        private DXE.PanelControl _SeriesListButtonPanel;
+        private DXG.GridControl _SeriesListGrid;
+        private DXE.SimpleButton _SeriesListRemoveButton;
+        #endregion
 
         #region Data, Refresh, Store
         /// <summary>

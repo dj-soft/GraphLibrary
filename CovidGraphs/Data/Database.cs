@@ -1596,7 +1596,22 @@ namespace Djs.Tools.CovidGraphs.Data
             public bool ChildsIsVoid { get; set; }
             public string Kod { get; protected set; }
             public string Nazev { get; protected set; }
-            public int PocetObyvatel { get { if (!_PocetObyvatel.HasValue) _PocetObyvatel = this.Database.GetPocetObyvatelInternal(this.Kod); return _PocetObyvatel.Value; } }
+            public int PocetObyvatel
+            {
+                get
+                {
+                    if (!_PocetObyvatel.HasValue)
+                    {
+                        if (this.Entity == EntityType.Vesnice)
+                            _PocetObyvatel = this.Database.GetPocetObyvatelInternal(this.Kod);
+                        else if (HasChilds)
+                            _PocetObyvatel = this.ChildDict.Values.Sum(c => c.PocetObyvatel);
+                        else
+                            _PocetObyvatel = 0;
+                    }
+                    return _PocetObyvatel.Value;
+                }
+            }
             private int? _PocetObyvatel = null;
             protected virtual int PocetObyvatelCurrent
             {
@@ -2255,11 +2270,15 @@ namespace Djs.Tools.CovidGraphs.Data
             this.Icon = icon;
             this.Tag = tag;
         }
-        public object Value { get; set; }
-        public string Text { get; set; }
-        public string ToolTip { get; set; }
-        public DW.Image Icon { get; set; }
-        public object Tag { get; set; }
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        public object Value { get; protected set; }
+        public string Text { get; protected set; }
+        public string ToolTip { get; protected set; }
+        public DW.Image Icon { get; protected set; }
+        public object Tag { get; protected set; }
     }
     #endregion
 }
