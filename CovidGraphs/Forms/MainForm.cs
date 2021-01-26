@@ -87,6 +87,8 @@ namespace Djs.Tools.CovidGraphs
                 DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle(Data.App.Config.ActiveSkinName, Data.App.Config.ActiveSkinPalette);
 
             DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged += DevExpress_StyleChanged;
+
+            Data.Localization.Enabled = true;
         }
         /// <summary>
         /// Po změně SKinu uživatelem se uloží do konfigurace
@@ -165,6 +167,7 @@ namespace Djs.Tools.CovidGraphs
                 
             };
             _GraphListBox.Appearance.FontSizeDelta = 1;
+
 
             /*
             DXE.TableLayout.ItemTemplateBase template = new DXE.TableLayout.ItemTemplateBase();  // DXE.TableLayout.ItemTemplateBase();

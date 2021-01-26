@@ -936,7 +936,7 @@ namespace Djs.Tools.CovidGraphs.Data
                      -4, +4);
                     return true;
                 case DataValueType.NewCountRelative:
-                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání", 
+                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
                     0, 0);
                     return true;
@@ -947,55 +947,55 @@ namespace Djs.Tools.CovidGraphs.Data
                     return true;
 
                 case DataValueType.NewCount7DaySum:
-                    result = new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "", 
+                    result = new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "Počet nově nalezených případů, sečtený za posledních 7 dní", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     -7, 0);
                     return true;
                 case DataValueType.NewCount7DaySumAvg:
                     result = 
-                        new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "", 
+                        new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -11, +4);
                     return true;
                 case DataValueType.NewCount7DaySumRelative:
-                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "", 
+                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "Počet nově nalezených případů, sečtený za posledních 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
                     -7, 0);
                     return true;
                 case DataValueType.NewCount7DaySumRelativeAvg:
-                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "", 
+                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -11, +4);
                     return true;
 
                 case DataValueType.CurrentCount:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů", "", 
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů", "Aktuální počet pozitivních osob", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     0, 0);
                     return true;
                 case DataValueType.CurrentCountAvg:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "", 
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "Aktuální počet pozitivních osob, průměr za 7 dní", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                      -4, +4);
                     return true;
                 case DataValueType.CurrentCountRelative:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "", 
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "Aktuální počet pozitivních osob, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
                     0, 0);
                     return true;
                 case DataValueType.CurrentCountRelativeAvg:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "", 
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "Aktuální počet pozitivních osob, průměr za 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                     GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -4, +4);
                     return true;
 
                 case DataValueType.RZero:
-                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "", 
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny", 
                     GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
                     -6, 0);
                     return true;
                 case DataValueType.RZeroAvg:
-                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "", 
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny, kdy výsledek je zprůměrovaný za 7 dní", 
                     GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
                     -10, +4);
                     return true;

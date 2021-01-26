@@ -24,11 +24,11 @@ namespace Djs.Tools.CovidGraphs.Data
             this.Init();
         }
         private object InterLock;
-        private World _World; // return new DataVisualInfo(valueType, "", "", null, GraphSerieAxisType.BigValuesLinear);;
-        // private Zeme xxx_Zeme;
+        private World _World;
         private Dictionary<string, Vesnice> _Vesnice;
         private Dictionary<string, Pocet> _Pocet;
         private DateTime? _DataContentTime;
+        private DateTime? _LastValidDataDate;
         private bool _HasData;
         protected void Init()
         {
@@ -38,6 +38,7 @@ namespace Djs.Tools.CovidGraphs.Data
             _Vesnice = new Dictionary<string, Vesnice>();
             _Pocet = new Dictionary<string, Pocet>();
             _DataContentTime = null;
+            _LastValidDataDate = null;
             _CovidInfo = null;
             _PocetInfo = null;
             State = StateType.Empty;
@@ -100,6 +101,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     _DataSaveInfo = null;
                     _World.Clear(FileContentType.Data);
                     _DataContentTime = null;
+                    _LastValidDataDate = null;
                     _HasData = false;
                     break;
                 case FileContentType.DataPack:
@@ -109,12 +111,15 @@ namespace Djs.Tools.CovidGraphs.Data
                     _Vesnice.Clear();
                     _Pocet.Clear();
                     _DataContentTime = null;
+                    _LastValidDataDate = null;
                     _HasData = false;
                     break;
                 case FileContentType.CovidObce1:
                 case FileContentType.CovidObce2:
                     _CovidInfo = null;
                     _World.Clear(FileContentType.Data);
+                    _DataContentTime = null;
+                    _LastValidDataDate = null;
                     _HasData = false;
                     break;
                 case FileContentType.PocetObyvatel:
@@ -476,7 +481,8 @@ namespace Djs.Tools.CovidGraphs.Data
                         int infoCurrentCount = GetInt32(items[3]);
                         int infoKey = infoDate.GetDateKey();
                         loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.AddOrCreateInfo(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                        _RegisterMaxContentTime(infoDate);
+                        bool hasValidData = (infoNewCount != 0);
+                        _RegisterMaxContentTime(infoDate, hasValidData);
                     }
                     break;
             }
@@ -555,7 +561,8 @@ namespace Djs.Tools.CovidGraphs.Data
                     int infoCurrentCount = GetInt32(items[3]);
                     int infoKey = infoDate.GetDateKey();
                     loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.AddOrCreateInfo(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                    _RegisterMaxContentTime(infoDate);
+                    bool hasValidData = (infoNewCount != 0);
+                    _RegisterMaxContentTime(infoDate, hasValidData);
                     break;
             }
 
@@ -607,7 +614,8 @@ namespace Djs.Tools.CovidGraphs.Data
             int currentCount = GetInt32(items[13]);
             int key = infoDate.GetDateKey();
             Info info = vesnice.InfoDict.AddOrCreate(key, () => new Info(vesnice, infoDate, newCount, currentCount));
-            _RegisterMaxContentTime(infoDate);
+            bool hasValidData = (newCount != 0);
+            _RegisterMaxContentTime(infoDate, hasValidData);
 
             loadInfo.RecordCount += 1;
         }
@@ -651,7 +659,8 @@ namespace Djs.Tools.CovidGraphs.Data
             int currentCount = GetInt32(items[11]);
             int key = infoDate.GetDateKey();
             Info info = vesnice.AddOrCreateInfo(key, () => new Info(vesnice, infoDate, newCount, currentCount));
-            _RegisterMaxContentTime(infoDate);
+            bool hasValidData = (newCount != 0);
+            _RegisterMaxContentTime(infoDate, hasValidData);
 
             loadInfo.RecordCount += 1;
         }
@@ -659,10 +668,13 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Zaeviduje maximální datum s daty
         /// </summary>
         /// <param name="infoDate"></param>
-        private void _RegisterMaxContentTime(DateTime infoDate)
+        private void _RegisterMaxContentTime(DateTime infoDate, bool hasValidData)
         {
             if (!_DataContentTime.HasValue || infoDate > _DataContentTime.Value)
                 _DataContentTime = infoDate;
+
+            if (hasValidData && (!_LastValidDataDate.HasValue || infoDate > _LastValidDataDate.Value))
+                _LastValidDataDate = infoDate;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.PocetObyvatel"/>
@@ -1289,7 +1301,8 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <returns></returns>
         private void ProcessResultValueByTimeRange(SearchInfoArgs args, DateTime? begin = null, DateTime? end = null)
         {
-            // Dnešní údaje (a případné novější) neakceptuji, nikdy nejsou kompletní:
+            // Do výsledku přebírám pouze záznamy, jejichž datum je menší nebo rovno _LastValidDataDate, a současně menší než dnešní den (za dnešní den nikdy nejsou data směrodatná),
+            DateTime? last = _LastValidDataDate;
             DateTime now = DateTime.Now.Date;
             if (!end.HasValue || end.Value.Date >= now.Date)
                 end = now;
@@ -1297,12 +1310,16 @@ namespace Djs.Tools.CovidGraphs.Data
             List<ResultInfo> resultList;
             bool hasBegin = begin.HasValue;
             bool hasEnd = end.HasValue;
-            if (hasBegin || hasEnd)
-                resultList = args.ResultSet.WorkingDict.Values.Where(v => ((!hasBegin || v.Date >= begin.Value) && (!hasEnd || v.Date < end.Value))).ToList();
-            else
-                resultList = args.ResultSet.WorkingDict.Values.ToList();
+            resultList = args.ResultSet.WorkingDict.Values.Where(v => ComplyInfoByDate(v.Date, begin, end, last)).ToList();
             resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
             args.ResultSet.Results = resultList.ToArray();
+        }
+        private bool ComplyInfoByDate(DateTime infoDate, DateTime? begin, DateTime? end, DateTime? last)
+        {
+            if (begin.HasValue && infoDate < begin.Value) return false;
+            if (end.HasValue && infoDate >= end.Value) return false;
+            if (last.HasValue && infoDate > last.Value) return false;
+            return true;
         }
         #endregion
         #region Vyhledání entit podle názvu a prefixu a Wildcards
@@ -1330,7 +1347,7 @@ namespace Djs.Tools.CovidGraphs.Data
             this._World.SearchEntities(args);
 
             List<IEntity> result = null;
-            if (args.FoundBeginEntities != null && args.FoundBeginEntities.Count > 0) result = args.FoundBeginEntities;
+            if (!args.IsWildCard && args.FoundBeginEntities != null && args.FoundBeginEntities.Count > 0) result = args.FoundBeginEntities;
             else if (args.FoundContainsEntities != null && args.FoundContainsEntities.Count > 0) result = args.FoundContainsEntities;
             if (result == null) return new IEntity[0];
 
@@ -1376,7 +1393,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 if (!args.IsWildCard && entity.Nazev.StartsWith(args.SearchText, StringComparison.CurrentCultureIgnoreCase))
                     args.FoundBeginEntities.Add(entity);
 
-                else if (args.IsWildCard && entity.Nazev.IndexOf(args.SearchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                else if (entity.Nazev.IndexOf(args.SearchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
                     args.FoundContainsEntities.Add(entity);
             }
             else if (args.IsWildCard && args.EntityType.HasValue && args.SearchText.Length == 0)

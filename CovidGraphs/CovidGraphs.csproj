@@ -111,6 +111,7 @@
     <Compile Include="Data\DataSerializable.cs" />
     <Compile Include="Data\Extensions.cs" />
     <Compile Include="Data\Graph.cs" />
+    <Compile Include="Data\Localizers.cs" />
     <Compile Include="Data\ThreadManager.cs" />
     <Compile Include="Forms\GraphForm.cs">
       <SubType>Form</SubType>

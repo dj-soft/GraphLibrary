@@ -133,6 +133,10 @@ namespace Djs.Tools.CovidGraphs.Data
         private static string _DefaultApplicationCode = "BasicApplication";
         #endregion
         #region Služby
+        /// <summary>
+        /// Provede danou akci v bloku try - catch, případnou chybu odchytí a zobrazí uživateli. Korektně vrátí řízení.
+        /// </summary>
+        /// <param name="action"></param>
         public static void TryRun(Action action)
         {
             try
@@ -148,6 +152,10 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             ShowMessage(text: text, buttons: WF.MessageBoxButtons.OK, icon: WF.MessageBoxIcon.Error);
         }
+        public static void ShowWarning(WF.IWin32Window owner = null, string text = null, string caption = null)
+        {
+            ShowMessage(owner, text, caption, WF.MessageBoxButtons.OK, WF.MessageBoxIcon.Warning);
+        }
         public static WF.DialogResult ShowMessage(WF.IWin32Window owner = null, string text = null, string caption = null, WF.MessageBoxButtons buttons = WF.MessageBoxButtons.OK, WF.MessageBoxIcon icon = WF.MessageBoxIcon.Information, WF.MessageBoxDefaultButton defaultButton = WF.MessageBoxDefaultButton.Button1)
         {
             if (owner == null) owner = GetMainForm();
@@ -157,7 +165,6 @@ namespace Djs.Tools.CovidGraphs.Data
                 return (WF.DialogResult)form.Invoke(new Func<WF.IWin32Window, string, string, WF.MessageBoxButtons, WF.MessageBoxIcon, WF.MessageBoxDefaultButton, WF.DialogResult>(_ShowMessage), owner, text, caption, buttons, icon, defaultButton);
             else
                 return _ShowMessage(owner, text, caption, buttons, icon, defaultButton);
-            
         }
         private static WF.DialogResult _ShowMessage(WF.IWin32Window owner, string text, string caption, WF.MessageBoxButtons buttons, WF.MessageBoxIcon icon, WF.MessageBoxDefaultButton defaultButton)
         {
