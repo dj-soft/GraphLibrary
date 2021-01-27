@@ -1098,74 +1098,115 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             return resultSet;
         }
-
+        /// <summary>
+        /// Určí časové rozmezí pro načítání vstupních dat z databáze na základě zadaného časového rozmezí grafu (=uživatelův výběr) plus/mínus offsety potřebné pro agregační funkci.
+        /// Například pro typ hodnoty 
+        /// </summary>
+        /// <param name="dataTypeInfo"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="sourceBegin"></param>
+        /// <param name="sourceEnd"></param>
         private void _PrepareSourceTimeRange(DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, out DateTime? sourceBegin, out DateTime? sourceEnd)
         {
             sourceBegin = (begin.HasValue ? (dataTypeInfo.DateOffsetBefore.HasValue ? (DateTime?)begin.Value.AddDays(dataTypeInfo.DateOffsetBefore.Value) : begin) : (DateTime?)null);
             sourceEnd = (end.HasValue ? (dataTypeInfo.DateOffsetAfter.HasValue ? (DateTime?)end.Value.AddDays(dataTypeInfo.DateOffsetAfter.Value) : end) : (DateTime?)null);
         }
-
+        /// <summary>
+        /// Zpracuje výchozí data načtená z databáze <see cref="SearchInfoArgs.Results"/> 
+        /// pomocí zadané agregační funkce <see cref="SearchInfoArgs.ValueType"/> do výstupního pole 
+        /// <see cref="ResultSetInfo.Results"/>
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         private void ProcessResultValue(SearchInfoArgs args, DateTime? begin = null, DateTime? end = null)
         {
             ProcessResultValueDirect(args);
+
+            // enum DataValueType obsahuje bity, které předepisují jednotlivé agregátní funkce. Nutno je provést ve správném pořadí 
+            //  - tak, aby následující výpočet měl připravená správná data z předešlého výpočtu:
+
+            if (args.ValueType.HasFlag(DataValueType.AggrLast7DayAverage)) ProcessResultAggrLast7DayAverage(args);               // O tohle se může opřít Coefficient (=o průměr z posledních dnů)
+
+            if (args.ValueType.HasFlag(DataValueType.AggrCoefficient5Days)) ProcessResultAggrCoefficient5Days(args);             // Koeficient se smí počítat jen 5Days nebo 7Days (nebo žádný), ale nikdy ne oba
+            else if (args.ValueType.HasFlag(DataValueType.AggrCoefficient7Days)) ProcessResultAggrCoefficient7Days(args);
+ 
+            if (args.ValueType.HasFlag(DataValueType.AggrLast7DaySum)) ProcessResultAggrLast7DaySum(args);                       // Součet posledních dnů se používá jako výchozí hodnota pro jiné typy než Coefficient
+
+            if (args.ValueType.HasFlag(DataValueType.AggrFlow7DayAverage)) ProcessResultAggrFlow7DayAverage(args);               // Průměr průběžných 7 dnů (klouzavý průměr) je typická závěrečná akce na vyhlazení křivek
+
+            if (args.ValueType.HasFlag(DataValueType.AggrRelativeTo100K)) ProcessResultAggrRelativeTo100K(args);                 // Přepočet na 100T nebo 1M může být před i po klouzavém průměru
+            else if (args.ValueType.HasFlag(DataValueType.AggrRelativeTo1M)) ProcessResultAggrRelativeTo1M(args);                //  ale nikdy nesmí být ba přepočty najednou
+
+            if (args.ValueType.HasFlag(DataValueType.Round0D)) ProcessResultRound0D(args);                                       // Některé ze zaokrouhlení je poslední
+            else if (args.ValueType.HasFlag(DataValueType.Round1D)) ProcessResultRound1D(args);
+            else if (args.ValueType.HasFlag(DataValueType.Round2D)) ProcessResultRound2D(args);
+
+            #region Původní sekvence
+            /*    
             switch (args.ValueType)
             {
-                case DataValueType.CurrentCount:
                 case DataValueType.NewCount:
+                case DataValueType.CurrentCount:
                     break;
-                case DataValueType.CurrentCountAvg:
                 case DataValueType.NewCountAvg:
-                    ProcessResultValue7DayFlowAverage(args);
-                    ProcessResultValueRound(args);
+                case DataValueType.CurrentCountAvg:
+                    ProcessResultAggrFlow7DayAverage(args);
+                    ProcessResultRound0D(args);
                     break;
                 case DataValueType.CurrentCountRelative:
                 case DataValueType.NewCountRelative:
-                    ProcessResultValueRelative(args);
-                    ProcessResultValueRound(args);
+                    ProcessResultAggrRelativeTo100K(args);
+                    ProcessResultRound0D(args);
                     break;
                 case DataValueType.CurrentCountRelativeAvg:
                 case DataValueType.NewCountRelativeAvg:
-                    ProcessResultValue7DayFlowAverage(args);
-                    ProcessResultValueRelative(args);
-                    ProcessResultValueRound(args);
+                    ProcessResultAggrFlow7DayAverage(args);
+                    ProcessResultAggrRelativeTo100K(args);
+                    ProcessResultRound0D(args);
                     break;
                 case DataValueType.RZero:
-                    ProcessResultValue7DayLastAverage(args);
-                    ProcessResultValueRZero(args);
-                    ProcessResultValueRound(args, 2);
+                    ProcessResultAggrLast7DayAverage(args);
+                    ProcessResultAggrCoefficient5Days(args);
+                    ProcessResultRound0D(args, 2);
                     break;
                 case DataValueType.RZeroAvg:
-                    ProcessResultValue7DayLastAverage(args);
-                    ProcessResultValueRZero(args);
-                    ProcessResultValue7DayFlowAverage(args);
-                    ProcessResultValueRound(args, 2);
+                    ProcessResultAggrLast7DayAverage(args);
+                    ProcessResultAggrCoefficient5Days(args);
+                    ProcessResultAggrFlow7DayAverage(args);
+                    ProcessResultRound0D(args, 2);
                     break;
                 case DataValueType.NewCount7DaySum:
-                    ProcessResultValue7DayLastSum(args);
-                    ProcessResultValueRound(args);
+                    ProcessResultAggrLast7DaySum(args);
+                    ProcessResultRound0D(args);
                     break;
                 case DataValueType.NewCount7DaySumAvg:
-                    ProcessResultValue7DayLastSum(args);
-                    ProcessResultValue7DayFlowAverage(args);
-                    ProcessResultValueRound(args);
+                    ProcessResultAggrLast7DaySum(args);
+                    ProcessResultAggrFlow7DayAverage(args);
+                    ProcessResultRound0D(args);
                     break;
                 case DataValueType.NewCount7DaySumRelative:
-                    ProcessResultValue7DayLastSum(args);
-                    ProcessResultValueRelative(args);
-                    ProcessResultValueRound(args);
+                    ProcessResultAggrLast7DaySum(args);
+                    ProcessResultAggrRelativeTo100K(args);
+                    ProcessResultRound0D(args);
                     break;
                 case DataValueType.NewCount7DaySumRelativeAvg:
-                    ProcessResultValue7DayLastSum(args);
-                    ProcessResultValue7DayFlowAverage(args);
-                    ProcessResultValueRelative(args);
-                    ProcessResultValueRound(args);
+                    ProcessResultAggrLast7DaySum(args);
+                    ProcessResultAggrFlow7DayAverage(args);
+                    ProcessResultAggrRelativeTo100K(args);
+                    ProcessResultRound0D(args);
                     break;
-
             }
+            */
+            #endregion
+
             ProcessResultValueByTimeRange(args, begin, end);
         }
         /// <summary>
-        /// Opíše RawValue do Value
+        /// Opíše RawValue do Value.
+        /// <para/>
+        /// Jde vždy o první proces. Všechny další procesy pracují s hodnotou Value (vstup i výstup) s případnou pomocí TempValue (mezivýsledky u časových řad).
         /// </summary>
         /// <param name="args"></param>
         private void ProcessResultValueDirect(SearchInfoArgs args)
@@ -1176,25 +1217,25 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Průměr za posledních 7 dní = -6 až 0 dny
         /// </summary>
         /// <param name="args"></param>
-        private void ProcessResultValue7DayLastAverage(SearchInfoArgs args)
+        private void ProcessResultAggrLast7DayAverage(SearchInfoArgs args)
         {
-            ProcessResultValueAnyAverage(args, -6, 7);
+            ProcessResultAggrAnyAverage(args, -6, 7);
         }
         /// <summary>
         /// Plovoucí průměr za 7 dní = -3 až +3 dny
         /// </summary>
         /// <param name="args"></param>
-        private void ProcessResultValue7DayFlowAverage(SearchInfoArgs args)
+        private void ProcessResultAggrFlow7DayAverage(SearchInfoArgs args)
         {
-            ProcessResultValueAnyAverage(args, -3, 7);
+            ProcessResultAggrAnyAverage(args, -3, 7);
         }
         /// <summary>
         /// Průměr počínaje daným offsetem ke dnešku v daném počtu dní
         /// </summary>
         /// <param name="args"></param>
-        /// <param name="daysBefore"></param>
-        /// <param name="daysCount"></param>
-        private void ProcessResultValueAnyAverage(SearchInfoArgs args, int daysBefore, int daysCount)
+        /// <param name="daysBefore">Záporné číslo = před dneškem, 0 = dnes, kladné číslo = po dnešku</param>
+        /// <param name="daysCount">Počet dní započítaných</param>
+        private void ProcessResultAggrAnyAverage(SearchInfoArgs args, int daysBefore, int daysCount)
         {
             var data = args.ResultSet.WorkingDict;
             int[] keys = data.Keys.ToArray();
@@ -1224,15 +1265,25 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Součet za posledních 7 dní, bez počítání průměru
         /// </summary>
         /// <param name="args"></param>
-        private void ProcessResultValue7DayLastSum(SearchInfoArgs args)
+        private void ProcessResultAggrLast7DaySum(SearchInfoArgs args)
+        {
+            ProcessResultAggrLastAnyDaySum(args, -6, 7);
+        }
+        /// <summary>
+        /// Součet počínaje daným offsetem ke dnešku v daném počtu dní, bez počítání průměru
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="daysBefore">Záporné číslo = před dneškem, 0 = dnes, kladné číslo = po dnešku</param>
+        /// <param name="daysCount">Počet dní započítaných</param>
+        private void ProcessResultAggrLastAnyDaySum(SearchInfoArgs args, int daysBefore, int daysCount)
         {
             var data = args.ResultDict;
             int[] keys = data.Keys.ToArray();
             foreach (int key in keys)
             {
                 var result = data[key];
-                DateTime date = result.Date.AddDays(-6d);            // První datum pro sumu do dne 18.1.2021 (pondělí) je minulé úterý 12.1.2021
-                DateTime end = date.AddDays(7d);                     // End je datum, které se už počítat nebude = 12.1. + 7 = 19.1.2021
+                DateTime date = result.Date.AddDays(daysBefore);     // První datum pro sumu do dne 18.1.2021 (pondělí) je minulé úterý 12.1.2021
+                DateTime end = date.AddDays(daysCount);              // End je datum, které se už počítat nebude = 12.1. + 7 = 19.1.2021
                 int count = 0;
                 decimal sum = 0m;
                 while (date < end)
@@ -1254,16 +1305,50 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Vypočítá poměr hodnoty Value ku počtu obyvatel, na 100 000 (výsledná hodnota = počet případů na 100 000 obyvatel)
         /// </summary>
         /// <param name="args"></param>
-        private void ProcessResultValueRelative(SearchInfoArgs args)
+        private void ProcessResultAggrRelativeTo100K(SearchInfoArgs args)
         {
-            decimal coefficient = (args.PocetObyvatel > 0 ? (100000m / (decimal)args.PocetObyvatel) : 0m);
+            ProcessResultAggrRelativeToAny(args, 100000);
+        }
+        /// <summary>
+        /// Vypočítá poměr hodnoty Value ku počtu obyvatel, na 100 000 (výsledná hodnota = počet případů na 100 000 obyvatel)
+        /// </summary>
+        /// <param name="args"></param>
+        private void ProcessResultAggrRelativeTo1M(SearchInfoArgs args)
+        {
+            ProcessResultAggrRelativeToAny(args, 1000000);
+        }
+        /// <summary>
+        /// Vypočítá poměr hodnoty Value ku počtu obyvatel, na daný počet obyvatel (výsledná hodnota = počet případů na dané číslo)
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="relativeBase">Základna pro počet obyvatel (100 000 nebo 1 000 000)</param>
+        private void ProcessResultAggrRelativeToAny(SearchInfoArgs args, int relativeBase)
+        {
+            decimal coefficient = (args.PocetObyvatel > 0 ? ((decimal)relativeBase / (decimal)args.PocetObyvatel) : 0m);
             args.Results.ForEachExec(r => r.Value = coefficient * r.Value);
         }
         /// <summary>
         /// Vypočítá hodnotu R0 jako poměr hodnoty Value proti Value [mínus 5 dní] a výsledky na závěr vloží do Value
         /// </summary>
         /// <param name="args"></param>
-        private void ProcessResultValueRZero(SearchInfoArgs args)
+        private void ProcessResultAggrCoefficient5Days(SearchInfoArgs args)
+        {
+            ProcessResultAggrCoefficientAny(args, -5);
+        }
+        /// <summary>
+        /// Vypočítá hodnotu R0 jako poměr hodnoty Value proti Value [mínus 5 dní] a výsledky na závěr vloží do Value
+        /// </summary>
+        /// <param name="args"></param>
+        private void ProcessResultAggrCoefficient7Days(SearchInfoArgs args)
+        {
+            ProcessResultAggrCoefficientAny(args, -7);
+        }
+        /// <summary>
+        /// Vypočítá hodnotu R0 jako poměr hodnoty Value proti Value [mínus 5 dní] a výsledky na závěr vloží do Value
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="daysBefore">Záporné číslo = před dneškem, 0 = dnes, kladné číslo = po dnešku</param>
+        private void ProcessResultAggrCoefficientAny(SearchInfoArgs args, int daysBefore)
         {
             var data = args.ResultDict;
             int[] keys = data.Keys.ToArray();
@@ -1272,7 +1357,7 @@ namespace Djs.Tools.CovidGraphs.Data
             {   // Nejprve vypočtu hodnotu RZero a uložím ji do TempValue, protože hodnoty v Value průběžně potřebuji pro následující výpočty
                 //  (mohl bych jít datumově od konce a rovnou hodnotu Value přepisovat, ale pak bych neměl šanci řešit chybějící dny = pomocí lastRZero):
                 var result = data[key];
-                DateTime date = result.Date.AddDays(-5d);
+                DateTime date = result.Date.AddDays(daysBefore);
                 int sourceKey = date.GetDateKey();
                 if (data.TryGetValue(sourceKey, out var source) && source.Value > 0m)
                     lastRZero = result.Value / source.Value;
@@ -1286,14 +1371,42 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="args"></param>
         /// <param name="decimals"></param>
-        private void ProcessResultValueRound(SearchInfoArgs args, int decimals = 0)
+        private void ProcessResultRound0D(SearchInfoArgs args, int decimals = 0)
+        {
+            ProcessResultRoundAny(args, 0);
+        }
+        /// <summary>
+        /// Zaokrouhlí hodnotu na daný počet desetinných míst
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="decimals"></param>
+        private void ProcessResultRound1D(SearchInfoArgs args, int decimals = 0)
+        {
+            ProcessResultRoundAny(args, 1);
+        }
+        /// <summary>
+        /// Zaokrouhlí hodnotu na daný počet desetinných míst
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="decimals"></param>
+        private void ProcessResultRound2D(SearchInfoArgs args, int decimals = 0)
+        {
+            ProcessResultRoundAny(args, 2);
+        }
+        /// <summary>
+        /// Zaokrouhlí hodnotu na daný počet desetinných míst
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="decimals"></param>
+        private void ProcessResultRoundAny(SearchInfoArgs args, int decimals)
         {
             args.Results.ForEachExec(r => r.Value = Math.Round(r.Value, decimals));
         }
         /// <summary>
         /// Z dodané kolekce hodnot <see cref="ResultSetInfo.WorkingDict"/> vybere jen ty, které vyhovují danému časovému rozmezí, 
         /// setřídí dle data a uloží jako pole do <see cref="ResultSetInfo.Results"/>.
-        /// Tato metoda se vždy volá jako poslední v řadě procesu, protože tato metoda jediná plní <see cref="ResultSetInfo.Results"/>.
+        /// <para/>
+        /// Tato metoda se vždy volá jako poslední v řadě procesu, protože tato metoda jediná plní pole <see cref="ResultSetInfo.Results"/> a aplikuje výstupní časový filtr.
         /// </summary>
         /// <param name="values"></param>
         /// <param name="begin"></param>
@@ -1301,7 +1414,9 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <returns></returns>
         private void ProcessResultValueByTimeRange(SearchInfoArgs args, DateTime? begin = null, DateTime? end = null)
         {
-            // Do výsledku přebírám pouze záznamy, jejichž datum je menší nebo rovno _LastValidDataDate, a současně menší než dnešní den (za dnešní den nikdy nejsou data směrodatná),
+            // Do výsledku přebírám pouze záznamy, jejichž datum je menší nebo rovno _LastValidDataDate (poslední datum, za které máme nenulová data),
+            //  a současně je menší než dnešní den (za dnešní den nikdy nejsou data směrodatná, i kdyby byly nenulové):
+            //  A přitom akceptujeme datum 'end' z parametru, pokud není větší než dnešní (uživatel může chtít vidět třeba jen data za první kvartál):
             DateTime? last = _LastValidDataDate;
             DateTime now = DateTime.Now.Date;
             if (!end.HasValue || end.Value.Date >= now.Date)
@@ -1314,6 +1429,14 @@ namespace Djs.Tools.CovidGraphs.Data
             resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
             args.ResultSet.Results = resultList.ToArray();
         }
+        /// <summary>
+        /// Vrátí true, pokud dané datum <paramref name="infoDate"/> vyhovuje daným mezím
+        /// </summary>
+        /// <param name="infoDate"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="last"></param>
+        /// <returns></returns>
         private bool ComplyInfoByDate(DateTime infoDate, DateTime? begin, DateTime? end, DateTime? last)
         {
             if (begin.HasValue && infoDate < begin.Value) return false;
@@ -1762,7 +1885,7 @@ namespace Djs.Tools.CovidGraphs.Data
 
                 if (args.Begin.HasValue && this.Date < args.Begin.Value) return;
                 if (args.End.HasValue && this.Date >= args.End.Value) return;
-                args.ResultSet.AddInfo(args.Entity, args.ValueType, this);
+                args.ResultSet.AddInfo(args.Entity, args.SourceType, this);         // SourceType obsahuje pouze Source bity z hodnoty ValueType
             }
             public int NewCount { get; private set; }
             public int CurrentCount { get; private set; }
@@ -1894,6 +2017,7 @@ namespace Djs.Tools.CovidGraphs.Data
         public SearchInfoArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, int? pocetOd, int? pocetDo)
         {
             this.Entity = entity;
+            this.SourceType = (DataValueType)(valueType & DataValueType.CommonSources);
             this.ValueType = valueType;
             this.DataTypeInfo = dataTypeInfo;
             this.Begin = begin;
@@ -1907,6 +2031,11 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Výchozí entita hledání
         /// </summary>
         public IEntity Entity { get; private set; }
+        /// <summary>
+        /// Zdroj dat z databáze (jde o hodnotu <see cref="ValueType"/> oseknutou pouze na bity Source = <see cref="DataValueType.CommonSources"/>).
+        /// Používá se při fyzickém načítání z databáze.
+        /// </summary>
+        public DataValueType SourceType { get; private set; }
         /// <summary>
         /// Typ datové hodnoty
         /// </summary>
@@ -1988,15 +2117,15 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Přidá další hodnotu
         /// </summary>
         /// <param name="entity"></param>
-        /// <param name="valueType"></param>
+        /// <param name="sourceType"></param>
         /// <param name="info"></param>
-        internal void AddInfo(IEntity entity, DataValueType valueType, Database.Info info)
+        internal void AddInfo(IEntity entity, DataValueType sourceType, Database.Info info)
         {
             this.LoadRecordCount++;                                  // Statistika
 
             int key = info.DateKey;
             ResultInfo result = this.WorkingDict.AddOrCreate(key, () => new ResultInfo(entity, info.Date));
-            result.AddInfo(info, valueType);
+            result.AddInfo(info, sourceType);
         }
     }
     /// <summary>
@@ -2049,28 +2178,16 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Do this resultu vloží výchozí Raw data z <see cref="Info"/> podle požadovaného typu cílové hodnoty
         /// </summary>
         /// <param name="info"></param>
-        /// <param name="valueType"></param>
-        internal void AddInfo(Database.Info info, DataValueType valueType)
+        /// <param name="sourceType">Source bity z ValueType</param>
+        internal void AddInfo(Database.Info info, DataValueType sourceType)
         {
             decimal value = 0m;
-            switch (valueType)
+            switch (sourceType)
             {
-                case DataValueType.NewCount:
-                case DataValueType.NewCountAvg:
-                case DataValueType.NewCountRelative:
-                case DataValueType.NewCountRelativeAvg:
-                case DataValueType.NewCount7DaySum:
-                case DataValueType.NewCount7DaySumAvg:
-                case DataValueType.NewCount7DaySumRelative:
-                case DataValueType.NewCount7DaySumRelativeAvg:
-                case DataValueType.RZero:
-                case DataValueType.RZeroAvg:
+                case DataValueType.SourceNewCount:
                     value = info.NewCount;
                     break;
-                case DataValueType.CurrentCount:
-                case DataValueType.CurrentCountAvg:
-                case DataValueType.CurrentCountRelative:
-                case DataValueType.CurrentCountRelativeAvg:
+                case DataValueType.SourceCurrentCount:
                     value = info.CurrentCount;
                     break;
             }

@@ -864,27 +864,6 @@ namespace Djs.Tools.CovidGraphs.Data
     #endregion
     #region DataValueType, DataValueTypeInfo : Typy dat - druhy informací
     /// <summary>
-    /// Druh dat získaných z databáze pro jednu serii
-    /// </summary>
-    public enum DataValueType
-    {
-        None,
-        NewCount,
-        NewCountAvg,
-        NewCountRelative,
-        NewCountRelativeAvg,
-        NewCount7DaySum,
-        NewCount7DaySumAvg,
-        NewCount7DaySumRelative,
-        NewCount7DaySumRelativeAvg,
-        CurrentCount,
-        CurrentCountAvg,
-        CurrentCountRelative,
-        CurrentCountRelativeAvg,
-        RZero,
-        RZeroAvg
-    }
-    /// <summary>
     /// Informace o jednom typu dat v grafu
     /// </summary>
     public class DataValueTypeInfo : DataVisualInfo
@@ -896,12 +875,21 @@ namespace Djs.Tools.CovidGraphs.Data
         public static DataValueTypeInfo[] CreateAll()
         {
             List<DataValueTypeInfo> result = new List<DataValueTypeInfo>();
-            var valueTypes = Enum.GetValues(typeof(DataValueType));
-            foreach (var valueType in valueTypes)
-            {
-                if (TryCreateFor((DataValueType)valueType, out DataValueTypeInfo info))
-                    result.Add(info);
-            }
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCount));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCountAvg));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCountRelative));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCountRelativeAvg));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCount7DaySum));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCount7DaySumAvg));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCount7DaySumRelative));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewCount7DaySumRelativeAvg));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.CurrentCount));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.CurrentCountAvg));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.CurrentCountRelative));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.CurrentCountRelativeAvg));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.RZero));
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.RZeroAvg));
+
             return result.ToArray();
         }
         /// <summary>
@@ -1046,6 +1034,104 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Typicky pro plovoucí průměr (za okolních 7 dní: pro 10.1.2021 budou napočteny dny { 7, 8, 9, 10, 11, 12, 13 }
         /// </summary>
         public int? DateOffsetAfter { get; protected set; }
+    }
+
+    /// <summary>
+    /// Druh dat získaných z databáze pro jednu serii
+    /// </summary>
+    [Flags]
+    public enum DataValueType : int
+    {
+        None = 0,
+
+        // Orientační poznámka: procesy probíhají v pořadí jednotlivých bitů, tedy tak jako jsou zde uvedeny jednotlivé základní hodnoty.
+
+        /// <summary>
+        /// Zdroj: NewCount
+        /// </summary>
+        SourceNewCount = 0x00000001,
+        /// <summary>
+        /// Zdroj: CurrentCount
+        /// </summary>
+        SourceCurrentCount = 0x00000002,
+
+        // Případný další zdroj přidej i dole do CommonSources!
+
+        /// <summary>
+        /// Aggregate: Průměr minulých 7 dní = za minulých 6 dní plus aktuální den (průměr: součet reálných dnů děleno počtem reálných dnů)
+        /// </summary>
+        AggrLast7DayAverage = 0x00000100,
+
+        /// <summary>
+        /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 5 dny (Den[X] / Den[X-5]) = číslo R0
+        /// </summary>
+        AggrCoefficient5Days = 0x00001000,
+        /// <summary>
+        /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 7 dny (Den[X] / Den[X-7])
+        /// </summary>
+        AggrCoefficient7Days = 0x00002000,
+
+        /// <summary>
+        /// Aggregate: Součet minulých 7 dní = za minulých 6 dní plus aktuální den
+        /// </summary>
+        AggrLast7DaySum = 0x00010000,
+        /// <summary>
+        /// Aggregate: Průměr plovoucích 7 dní = za minulé 3 dny plus aktuální den plus následující 3 dny (průměr: součet reálných dnů děleno počtem reálných dnů)
+        /// </summary>
+        AggrFlow7DayAverage = 0x00020000,
+        /// <summary>
+        /// Aggregate: Přepočet dle počtu obyvatel, na počet případů na 100 000 osob
+        /// </summary>
+        
+        AggrRelativeTo100K = 0x00100000,
+        /// <summary>
+        /// Aggregate: Přepočet dle počtu obyvatel, na počet případů na 1 000 000 osob
+        /// </summary>
+        AggrRelativeTo1M = 0x00200000,
+
+        /// <summary>
+        /// Round: na 0 míst (na celá čísla)
+        /// </summary>
+        Round0D = 0x01000000,
+        /// <summary>
+        /// Round: na 1 desetinné místo
+        /// </summary>
+        Round1D = 0x02000000,
+        /// <summary>
+        /// Round: na 2 desetinná místa (typicky pro Coefficient)
+        /// </summary>
+        Round2D = 0x04000000,
+
+        /// <summary>
+        /// Maska všech zdrojů
+        /// </summary>
+        CommonSources = SourceNewCount | SourceCurrentCount,
+
+        // Orientační poznámka: procesy probíhají v pořadí jednotlivých bitů, tedy tak jako jsou zde uvedeny jednotlivé základní hodnoty.
+        // Při skládání finálních hodnot (následující segment) se bere ohled na fyzické pořadí bitů;
+        //  a nelze brát ohled na to, v jakém pořadí jsou zde jednotlivé bity vkládány do výsledné hodnoty!!!
+
+        // Pořadí akcí fyzicky realizuje metoda Database.ProcessResultValue() !
+
+        NewCount = SourceNewCount | Round0D,
+        NewCountAvg = SourceNewCount | AggrFlow7DayAverage | Round0D,
+        NewCountRelative = SourceNewCount | AggrRelativeTo100K | Round0D,
+        NewCountRelativeAvg = SourceNewCount | AggrFlow7DayAverage | AggrRelativeTo100K | Round0D,
+        NewCount7DaySum = SourceNewCount | AggrLast7DaySum | Round0D,
+        NewCount7DaySumAvg = SourceNewCount | AggrLast7DaySum | AggrFlow7DayAverage | Round0D,
+        NewCount7DaySumRelative = SourceNewCount | AggrLast7DaySum | AggrRelativeTo100K | Round0D,
+        NewCount7DaySumRelativeAvg = SourceNewCount | AggrLast7DaySum | AggrFlow7DayAverage | AggrRelativeTo100K | Round0D,
+        CurrentCount = SourceCurrentCount | Round0D,
+        CurrentCountAvg = SourceCurrentCount | AggrFlow7DayAverage | Round0D,
+        CurrentCountRelative = SourceCurrentCount | AggrRelativeTo100K | Round0D,
+        CurrentCountRelativeAvg = SourceCurrentCount | AggrFlow7DayAverage | AggrRelativeTo100K | Round0D,
+        RZero = SourceNewCount | AggrLast7DayAverage | AggrCoefficient5Days | Round2D,
+        RZeroAvg = SourceNewCount | AggrLast7DayAverage | AggrCoefficient5Days | AggrFlow7DayAverage | Round2D
+
+        // Po přidání další finální hodnoty ji přidej i do metod:
+        //  public static DataValueTypeInfo[] CreateAll()
+        //  public static bool TryCreateFor(DataValueType valueType, out DataValueTypeInfo result)
+        // Protože tam se generují uživatelské nabídky hodnot a jejich detaily.
     }
     /// <summary>
     /// Vhodný typ osy Y
