@@ -1186,7 +1186,7 @@ namespace Djs.Tools.CovidGraphs.Data
         public System.Drawing.Color? Color2 { get; set; }
     }
     #endregion
-    #region GraphData : Načtená aktuální data o jednom celém garfu (data grafu, sloupce za jednotlivé serie, řádky za jednotlivé datumy)
+    #region GraphData : Načtená aktuální data o jednom celém grafu (data grafu, sloupce za jednotlivé serie, řádky za jednotlivé datumy)
     /// <summary>
     /// Data pro jeden graf shrnutá z definice grafu <see cref="GraphInfo"/>, ze všech jeho serií <see cref="GraphSerieInfo"/>, načtená z databáze <see cref="Database"/>.
     /// Obsahuje sloupce <see cref="Columns"/> za jednotlivé serie grafu, obsahuje řádky <see cref="Rows"/> za jednotlvié datumy, obsahující konkrétní hodnoty.

@@ -102,11 +102,11 @@ namespace Djs.Tools.CovidGraphs.Data
                 case CfgNameSkinPalette:
                     this.ActiveSkinPalette = GetValue(value, "");
                     break;
-                case CfgNameEditFormBounds:
-                    this.EditFormBounds = GetValue(value, (System.Drawing.Rectangle?)null);
+                case CfgNameEditFormPosition:
+                    this.EditFormPosition = GetValueInt32Array(value);
                     break;
-                case CfgNameEditFormMainSplitter:
-                    this.EditFormMainSplitter = GetValue(value, EditFormMainSplitterDefault);
+                case CfgNameEditFormLayout:
+                    this.EditFormLayout = GetValueInt32Array(value);
                     break;
                 case CfgNameEditFormGraphPanelLayout:
                     this.EditFormGraphPanelLayout = GetValueInt32Array(value);
@@ -124,8 +124,8 @@ namespace Djs.Tools.CovidGraphs.Data
 
             this.LastSaveGraphId = 0;
             this.MainSplitterPosition = MainSplitterPositionDefault;
-            this.EditFormBounds = null;
-            this.EditFormMainSplitter = EditFormMainSplitterDefault;
+            this.EditFormPosition = null;
+            this.EditFormLayout = null;
             this.EditFormGraphPanelLayout = null;
             SaveEnabled = oldEnabled;
         }
@@ -143,8 +143,8 @@ namespace Djs.Tools.CovidGraphs.Data
                 sw.WriteLine(CreateLine(CfgNameMainSplitterPosition, GetSerial(this.MainSplitterPosition)));
                 sw.WriteLine(CreateLine(CfgNameSkinName, GetSerial(this.ActiveSkinName)));
                 sw.WriteLine(CreateLine(CfgNameSkinPalette, GetSerial(this.ActiveSkinPalette)));
-                sw.WriteLine(CreateLine(CfgNameEditFormBounds, GetSerial(this.EditFormBounds)));
-                sw.WriteLine(CreateLine(CfgNameEditFormMainSplitter, GetSerial(this.EditFormMainSplitter)));
+                sw.WriteLine(CreateLine(CfgNameEditFormPosition, GetSerialInt32Array(this.EditFormPosition)));
+                sw.WriteLine(CreateLine(CfgNameEditFormLayout, GetSerialInt32Array(this.EditFormLayout)));
                 sw.WriteLine(CreateLine(CfgNameEditFormGraphPanelLayout, GetSerialInt32Array(this.EditFormGraphPanelLayout)));
             }
         }
@@ -154,8 +154,6 @@ namespace Djs.Tools.CovidGraphs.Data
         public bool SaveEnabled { get { return _SaveEnabled; } set { _SaveEnabled = value; } } private bool _SaveEnabled = false;
         /// <summary>MainSplitterPositionDefault</summary>
         protected const int MainSplitterPositionDefault = 240;
-        /// <summary>EditFormMainSplitterDefault</summary>
-        protected const int EditFormMainSplitterDefault = 300;
         /// <summary>== BestInCovid v1.0 config ==</summary>
         protected const string ConfigContentHeader = "== BestInCovid v1.0 config ==";
         /// <summary>LastSaveGraphId</summary>
@@ -167,9 +165,9 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>SkinPalette</summary>
         protected const string CfgNameSkinPalette = "SkinPalette";
         /// <summary>EditFormBounds</summary>
-        protected const string CfgNameEditFormBounds = "EditFormBounds";
+        protected const string CfgNameEditFormPosition = "EditFormBounds";
         /// <summary>EditFormMainSplitter</summary>
-        protected const string CfgNameEditFormMainSplitter = "EditFormMainSplitter";
+        protected const string CfgNameEditFormLayout = "EditFormMainSplitter";
         /// <summary>EditFormGraphPanelLayout</summary>
         protected const string CfgNameEditFormGraphPanelLayout = "EditFormGraphPanelLayout";
         
@@ -234,23 +232,23 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Souřadnice okna editoru, null = nezadáno, Empty = maximalizováno
         /// </summary>
-        public System.Drawing.Rectangle? EditFormBounds
+        public int[] EditFormPosition
         {
             get { return _EditFormBounds; }
             set { _EditFormBounds = value; this.Save(); }
         }
-        private System.Drawing.Rectangle? _EditFormBounds;
+        private int[] _EditFormBounds;
         /// <summary>
-        /// Pozice hlavního splitteru okna editoru
+        /// Layout pro okno editoru (splittery atd)
         /// </summary>
-        public int EditFormMainSplitter
+        public int[] EditFormLayout
         {
-            get { return _EditFormMainSplitter; }
-            set { _EditFormMainSplitter = (value < 100 ? 100 : (value > 9000 ? 9000 : value)); this.Save(); }
+            get { return _EditFormLayout; }
+            set { _EditFormLayout = value; this.Save(); }
         }
-        private int _EditFormMainSplitter;
+        private int[] _EditFormLayout;
         /// <summary>
-        /// Layout pro panel s daty grafu
+        /// Layout pro panel s daty grafu (splittery atd)
         /// </summary>
         public int[] EditFormGraphPanelLayout
         {

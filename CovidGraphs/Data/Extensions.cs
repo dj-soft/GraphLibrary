@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DW = System.Drawing;
+using WF = System.Windows.Forms;
 
 namespace Djs.Tools.CovidGraphs.Data
 {
@@ -47,6 +48,25 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             foreach (var item in collection)
                 action(item);
+        }
+        public static int[] GetFormPosition(this WF.Form form)
+        {
+            int[] position = new int[5];
+            bool isMaximized = (form.WindowState == WF.FormWindowState.Maximized);
+            DW.Rectangle bounds = (isMaximized ? form.RestoreBounds : form.Bounds);      // Pokud je nyní Form maximalizovaný, pak uložím souřadnice v Normal stavu (=ne současné maximalizované)
+            position[0] = (isMaximized ? 2 : 1);
+            position[1] = bounds.X;
+            position[2] = bounds.Y;
+            position[3] = bounds.Width;
+            position[4] = bounds.Height;
+            return position;
+        }
+        public static void SetFormPosition(this WF.Form form, int[] position)
+        {
+            if (position == null || position.Length < 5) return;
+            form.Bounds = new DW.Rectangle(position[1], position[2], position[3], position[4]);   // Toto jsou souřadnice normální, nikoli Maximized
+            form.WindowState = (position[0] == 2 ? WF.FormWindowState.Maximized : WF.FormWindowState.Normal);
+            form.StartPosition = WF.FormStartPosition.Manual;
         }
         public static DW.Rectangle AlignTo(this DW.Rectangle bounds, DW.Rectangle parentBounds)
         {

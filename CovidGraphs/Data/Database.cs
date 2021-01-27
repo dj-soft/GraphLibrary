@@ -1576,6 +1576,11 @@ namespace Djs.Tools.CovidGraphs.Data
             if (!String.IsNullOrEmpty(kod) && _Pocet != null && _Pocet.TryGetValue(kod, out var pocet)) return pocet.PocetCelkem;
             return 0;
         }
+        /// <summary>
+        /// Vrátí uživatelsky použitelný text pro danou entitu
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
         private static string GetEntityText(IEntity entity)
         {
             string entityName = GetEntityName(entity.Entity);
@@ -1590,10 +1595,16 @@ namespace Djs.Tools.CovidGraphs.Data
             else if (entity.Entity == EntityType.Mesto)
                 okres = entity?.Parent?.Nazev;
             okres = (okres == null ? "" : ", okr. " + okres);
-
-            string text = $"{entity.Nazev} ({entityName}, {pocet} obyv.{okres})";
+            string obyv = " obyv.";
+            if (entity.FullCode.StartsWith("CZ.CZ010")) obyv = " pražáků";          // EasterEggs!     "CZ.CZ010.CZ0100" = okres Praha, "CZ.CZ010" = kraj Praha
+            string text = $"{entity.Nazev} ({entityName}, {pocet}{obyv}{okres})";
             return text;
         }
+        /// <summary>
+        /// Vrátí uživatelský text druhu entity
+        /// </summary>
+        /// <param name="entityType"></param>
+        /// <returns></returns>
         private static string GetEntityName(EntityType entityType)
         {
             switch (entityType)

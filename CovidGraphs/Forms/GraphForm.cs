@@ -58,9 +58,12 @@ namespace Djs.Tools.CovidGraphs
             this.IsShown = false;
             this.MinimizeBox = false;
             this.DialogResult = DialogResult.None;
+            this.MinimumSize = new Size(800, 600);
 
-            Rectangle? configBounds = Data.App.Config.EditFormBounds;
-            if (!configBounds.HasValue)
+            var position = Data.App.Config.EditFormPosition;
+            if (position != null && position.Length >= 5)
+                RestoreFormBoundsToConfig(position, parentBounds);
+            else
             {
                 Size size = Size.Empty;
                 if (parentBounds.HasValue && parentBounds.Value.Width > 100)
@@ -74,59 +77,38 @@ namespace Djs.Tools.CovidGraphs
                 this.StartPosition = FormStartPosition.CenterParent;
                 this.Size = new Size(w, h);
             }
-            else
-            {
-                if (configBounds.Value.Width <= 0 || configBounds.Value.Height <= 0)
-                    this.WindowState = FormWindowState.Maximized;
-                else
-                {
-                    this.WindowState = FormWindowState.Normal;
-                    this.StartPosition = FormStartPosition.Manual;
-                    if (parentBounds.HasValue)
-                        this.Bounds = configBounds.Value.AlignTo(parentBounds.Value);
-                    else
-                        this.Bounds = configBounds.Value;
-                }
-            }
         }
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
             if (!IsShown)
                 OnFirstShown();
-            this.IsShown = true;
         }
         protected void OnFirstShown()
         {
-            _MainSplitContainer.SplitterPosition = Data.App.Config.EditFormMainSplitter;
-            _MainSplitContainer.SplitterPositionChanged += _MainSplitContainer_SplitterPositionChanged;
+            this.IsShown = true;
+
+            RestoreSplitters();
 
             _GraphPanel.OnFirstShown();
         }
+        /// <summary>
+        /// Po změně pozice formuláře - uložíme Position do configu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnLocationChanged(EventArgs e)
         {
             base.OnLocationChanged(e);
             StoreFormBoundsToConfig();
         }
+        /// <summary>
+        /// Po změně velikosti formuláře - uložíme Position do configu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
             StoreFormBoundsToConfig();
-        }
-        protected void StoreFormBoundsToConfig()
-        {
-            if (IsShown)
-            {
-                switch (this.WindowState)
-                {
-                    case FormWindowState.Maximized:
-                        Data.App.Config.EditFormBounds = Rectangle.Empty;
-                        break;
-                    case FormWindowState.Normal:
-                        Data.App.Config.EditFormBounds = this.Bounds;
-                        break;
-                }
-            }
         }
         protected bool IsShown;
         /// <summary>
@@ -145,15 +127,6 @@ namespace Djs.Tools.CovidGraphs
             };
 
             this.Controls.Add(_MainSplitContainer);
-        }
-        /// <summary>
-        /// Po přesunutí Splitteru uložím jeho pozici do Configu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _MainSplitContainer_SplitterPositionChanged(object sender, EventArgs e)
-        {
-            Data.App.Config.EditFormMainSplitter = _MainSplitContainer.SplitterPosition;
         }
         /// <summary>
         /// Vytvoří panel pro buttony, vytvoří buttony, naváže handlery a postaví layout
@@ -265,7 +238,6 @@ namespace Djs.Tools.CovidGraphs
             };
             _MainSplitContainer.Panel2.Controls.Add(_ChartControl);
         }
-
         DXE.SplitContainerControl _MainSplitContainer;
         DXE.PanelControl _ButtonPanel;
         DXE.SimpleButton _Button1;
@@ -273,6 +245,72 @@ namespace Djs.Tools.CovidGraphs
         DXE.SimpleButton _Button3;
         GraphPanel _GraphPanel;
         DevExpress.XtraCharts.ChartControl _ChartControl;
+        #endregion
+        #region Persistence rozměrů formuláře a layoutu splitterů
+        /// <summary>
+        /// Obnoví rozměry formuláře z konfigurace
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="parentBounds"></param>
+        private void RestoreFormBoundsToConfig(int[] position, Rectangle? parentBounds)
+        {
+            this.SetFormPosition(position);
+            if (this.WindowState != FormWindowState.Maximized && parentBounds.HasValue)
+                this.Bounds = this.Bounds.AlignTo(parentBounds.Value);
+        }
+        /// <summary>
+        /// Po změně umístění nebo velikosti okna - uložíme Position do configu
+        /// </summary>
+        protected void StoreFormBoundsToConfig()
+        {
+            if (!IsShown) return;
+            Data.App.Config.EditFormPosition = this.GetFormPosition();
+        }
+        /// <summary>
+        /// Z konfigurace načte pozice splitterů a vepíše je do nich
+        /// </summary>
+        private void RestoreSplitters()
+        {
+            // Pole Int32 hodnot, které reprezentují pozice splitterů:
+            var configLayout = Data.App.Config.EditFormLayout;
+
+            // 1. Main SplitContainer
+            _MainSplitContainer.SplitterPosition = GetSplitterPosition(configLayout, 0, 200, _MainSplitContainer.Width * 3 / 10);
+            _MainSplitContainer.SplitterPositionChanged += _AnySplitterPositionChanged;
+        }
+        /// <summary>
+        /// Vrátí požadovanou hodnotu z pole konfigurace (pokud existuje), nejméně minValue, nebo defaultValue
+        /// </summary>
+        /// <param name="configLayout"></param>
+        /// <param name="index"></param>
+        /// <param name="minValue"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        private int GetSplitterPosition(int[] configLayout, int index, int minValue, int defaultValue)
+        {
+            if (configLayout != null && index < configLayout.Length && configLayout[index] > minValue) return configLayout[index];
+            return defaultValue;
+        }
+        /// <summary>
+        /// Po změně pozice kteréhokoli splitteru se uloží layout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _AnySplitterPositionChanged(object sender, EventArgs e)
+        {
+            StoreSplitters();
+        }
+        /// <summary>
+        /// Posbírá layout (pozice splitterů) a uloží je do konfigurace
+        /// </summary>
+        private void StoreSplitters()
+        {
+            List<int> configLayout = new List<int>();
+
+            configLayout.Add(_MainSplitContainer.SplitterPosition);
+
+            Data.App.Config.EditFormLayout = configLayout.ToArray();
+        }
         #endregion
         #region Data grafu
         /// <summary>
@@ -315,6 +353,7 @@ namespace Djs.Tools.CovidGraphs
 
     public class GraphPanel : DXE.PanelControl
     {
+        #region Konstruktor
         public GraphPanel()
         {
             InitDevExpressComponents();
@@ -339,15 +378,6 @@ namespace Djs.Tools.CovidGraphs
             InitGraph();
             */
         }
-        /// <summary>
-        /// Volá se těsně před prvním zobrazením. Layout formuláře (rozměry a splittery) je nastaven.
-        /// Zdejší objekt si má z konfigurace načíst svůj layout a aplikovat jej do Controlů.
-        /// </summary>
-        internal void OnFirstShown()
-        {
-            var configLayout = Data.App.Config.EditFormGraphPanelLayout;
-
-        }
         private void InitStyles()
         {
             _TitleStyle = new DXE.StyleController();
@@ -359,10 +389,11 @@ namespace Djs.Tools.CovidGraphs
 
         }
         DXE.StyleController _TitleStyle;
+        #endregion
         #region Rozvržení layoutu
         private WF.Control CreateControlForFrames()
         {
-            // Main splitter
+            // Main SplitContainer, dva panely nad sebou:
             _GraphSplitContainer = new DXE.SplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel1,
@@ -376,7 +407,7 @@ namespace Djs.Tools.CovidGraphs
             _GraphSplitContainer.Panel1.MinSize = 150;
             _GraphSplitContainer.Panel2.MinSize = 250;
 
-            // Horní panel obsadí TabPage se záložkami pro hlavičku a pro nové položky:
+            // Horní panel Main SplitContaineru obsadí TabPage se záložkami pro hlavičku a pro nové položky:
             _TabContainer = new DXT.XtraTabControl()
             {
                 BorderStyle = DXE.Controls.BorderStyles.NoBorder,
@@ -390,10 +421,11 @@ namespace Djs.Tools.CovidGraphs
 
             _GraphSplitContainer.Panel1.Controls.Add(_TabContainer);
 
-            // Dolní panel obsadí splitter, obsahující v Panel1 = Seznam položek, a v Panel2 = detail jedné položky:
+            // Dolní panel Main SplitContaineru obsadí sekundární SplitContainer, obsahující v Panel1 = Grid = Seznam položek, a v Panel2 = detail jedné položky:
             _SeriesSplitContainer = new DXE.SplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel2,
+                IsSplitterFixed = true,
                 Horizontal = false,
                 PanelVisibility = DXE.SplitPanelVisibility.Both,
                 SplitterPosition = 200,
@@ -417,11 +449,11 @@ namespace Djs.Tools.CovidGraphs
         DXT.XtraTabPage _TabPage1;
         DXT.XtraTabPage _TabPage2;
         DXE.SplitContainerControl _SeriesSplitContainer;
-
         WF.Control _GraphHeaderDetailHost { get { return _TabPage1; } }
         WF.Control _GraphSeriesNewHost { get { return _TabPage2; } }
         WF.Control _GraphSeriesListHost { get { return _SeriesSplitContainer.Panel1; } }
         WF.Control _GraphSeriesDetailHost { get { return _SeriesSplitContainer.Panel2; } }
+        int _GraphSeriesDetailHeight { get { return _SeriesSplitContainer.SplitterPosition; } set { _SeriesSplitContainer.SplitterPosition = value; } }
         #endregion
         #region Hlavička grafu
 
@@ -451,11 +483,9 @@ namespace Djs.Tools.CovidGraphs
 
             return _SeriesNewPanel;
         }
-
         private void _SeriesNewSplitContainer_SizeChanged(object sender, EventArgs e)
         {
         }
-
         private DXE.PanelControl _SeriesNewPanel;
         private DXE.SplitContainerControl _SeriesNewSplitContainer;
         #endregion
@@ -675,37 +705,35 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 4", Hodnota = "Včerejší počet" });
             _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Vesnička 1", Hodnota = "Zítřejší počet" });
 
+
+            var _SeriesListGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
+            _SeriesListGridView.OptionsBehavior.AutoPopulateColumns = true;
+            _SeriesListGridView.OptionsBehavior.Editable = false;
+            // _SeriesListGridView.OptionsBehavior.EditingMode = DXG.Views.Grid.GridEditingMode.
+            _SeriesListGridView.OptionsBehavior.AllowAddRows = DevExpress.Utils.DefaultBoolean.False;
+            _SeriesListGridView.OptionsBehavior.AllowDeleteRows = DevExpress.Utils.DefaultBoolean.False;
+            _SeriesListGridView.OptionsBehavior.AllowIncrementalSearch = true;
+            _SeriesListGridView.OptionsSelection.MultiSelectMode = DXG.Views.Grid.GridMultiSelectMode.RowSelect;
+
+
             _SeriesListGrid = new DXG.GridControl() { Dock = DockStyle.Fill };
-            _SeriesListGrid.DataSource = _SeriesListData;
-            _SeriesListGrid.RefreshDataSource();
-            _SeriesListGrid.Refresh();
-            _SeriesListGrid.MainView = _SeriesListGrid.AvailableViews[1].CreateView(_SeriesListGrid); // .vie .CreateView(_SeriesListGrid).SourceView;
-            var view = _SeriesListGrid.MainView as DXG.Views.Grid.GridView;
-
-            var columns = view.Columns;
-
-            view.PopulateColumns();
-            view.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
-            view.DetailTabHeaderLocation = DXT.TabHeaderLocation.Left;
-            // _SeriesListGrid.DataMember = "Entita";
-
-            /*
-            string layout = "";
-            using (System.IO.MemoryStream sw = new System.IO.MemoryStream())
-            {
-                view.Appearance.SaveLayoutToStream(sw);
-                var bytes = sw.ToArray();
-                layout = Encoding.UTF8.GetString(bytes);
-            }
-            */
-
-            // _SeriesListGrid.MainView.RefreshData();
-            // _SeriesListGrid.MainView.PopulateColumns();
-            // _SeriesListGrid.MainView
-
-
+            _SeriesListGrid.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { _SeriesListGridView });
+            _SeriesListGrid.MainView = _SeriesListGridView;
+            _SeriesListGridView.GridControl = _SeriesListGrid;
 
             _SeriesListPanel.Controls.Add(_SeriesListGrid);
+
+
+            _SeriesListGrid.DataSource = GraphSerieGridRow.GetData();
+            _SeriesListGrid.RefreshDataSource();
+
+            _SeriesListGridView.PopulateColumns();
+            var gwc = _SeriesListGridView.Columns;
+            _SeriesListGridView.ColumnChanged += _SeriesListGridView_ColumnChanged;
+            _SeriesListGridView.DataSourceChanged += _SeriesListGridView_DataSourceChanged;
+
+
+
 
             _SeriesListButtonPanel = new DXE.PanelControl() { Dock = DockStyle.Top, BorderStyle = DXE.Controls.BorderStyles.NoBorder, Height = GraphForm.DefaultButtonPanelHeight };
             _SeriesListPanel.Controls.Add(_SeriesListButtonPanel);
@@ -718,6 +746,16 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _SeriesListButtonPanel.Controls.Add(_SeriesListRemoveButton);
 
             return _SeriesListPanel;
+        }
+
+        private void _SeriesListGridView_DataSourceChanged(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void _SeriesListGridView_ColumnChanged(object sender, EventArgs e)
+        {
+            
         }
 
         private void _SeriesListAddButton_Click(object sender, EventArgs e)
@@ -780,6 +818,70 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         private DXE.SimpleButton _SeriesListRemoveButton;
         private List<GraphSerieGridRow> _SeriesListData;
         #endregion
+        #region Správa layoutu - splittery, uložení konfigurace
+        /// <summary>
+        /// Volá se těsně před prvním zobrazením. Layout formuláře (rozměry a splittery) je nastaven.
+        /// Zdejší objekt si má z konfigurace načíst svůj layout a aplikovat jej do Controlů.
+        /// </summary>
+        internal void OnFirstShown()
+        {
+            RestoreSplitters();
+        }
+        /// <summary>
+        /// Z konfigurace načte pozice splitterů a vepíše je do nich
+        /// </summary>
+        private void RestoreSplitters()
+        {
+            // Pole Int32 hodnot, které reprezentují pozice splitterů:
+            var configLayout = Data.App.Config.EditFormGraphPanelLayout;
+
+            // 1. Main SplitContainer
+            _GraphSplitContainer.SplitterPosition = GetSplitterPosition(configLayout, 0, 150, _GraphSplitContainer.Height * 4 / 10);
+            _GraphSplitContainer.SplitterPositionChanged += _AnySplitterPositionChanged;
+
+            // 2. SplitContainer v TabContaineru na stránce [1]:
+            _SeriesNewSplitContainer.SplitterPosition = GetSplitterPosition(configLayout, 1, 250, _SeriesNewSplitContainer.Width * 5 / 10);
+            _SeriesNewSplitContainer.SplitterPositionChanged += _AnySplitterPositionChanged;
+
+            // 3. SplitContainer v dolní části, ten je fixní:
+            _SeriesSplitContainer.SplitterPosition = 120;
+        }
+
+        /// <summary>
+        /// Vrátí požadovanou hodnotu z pole konfigurace (pokud existuje), nejméně minValue, nebo defaultValue
+        /// </summary>
+        /// <param name="configLayout"></param>
+        /// <param name="index"></param>
+        /// <param name="minValue"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        private int GetSplitterPosition(int[] configLayout, int index, int minValue, int defaultValue)
+        {
+            if (configLayout != null && index < configLayout.Length && configLayout[index] > minValue) return configLayout[index];
+            return defaultValue;
+        }
+        /// <summary>
+        /// Po změně pozice kteréhokoli splitteru se uloží layout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _AnySplitterPositionChanged(object sender, EventArgs e)
+        {
+            StoreSplitters();
+        }
+        /// <summary>
+        /// Posbírá layout (pozice splitterů) a uloží je do konfigurace
+        /// </summary>
+        private void StoreSplitters()
+        {
+            List<int> configLayout = new List<int>();
+
+            configLayout.Add(_GraphSplitContainer.SplitterPosition);
+            configLayout.Add(_SeriesNewSplitContainer.SplitterPosition);
+
+            Data.App.Config.EditFormGraphPanelLayout = configLayout.ToArray();
+        }
+        #endregion
 
         #region Data, Refresh, Store
         /// <summary>
@@ -798,9 +900,56 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         #endregion
     }
 
-    public class GraphSerieGridRow
+    public class GraphSerieGridRow : INotifyPropertyChanged
     {
-        public string Entita { get; set; }
-        public string Hodnota { get; set; }
+        [DisplayName("Název informace")]
+        public string Name { get { return _Name; } set { _Set(ref _Name, value); } } private string _Name;
+        [DisplayName("Obec (město, okres, kraj)")]
+        public string Entita { get { return _Entita; } set { _Set(ref _Entita, value); } } private string _Entita;
+        [DisplayName("Druh zobrazených dat")]
+        public string Hodnota { get { return _Hodnota; } set { _Set(ref _Hodnota, value); } } private string _Hodnota;
+
+
+        public static System.Data.DataTable GetData()
+        {
+            System.Data.DataTable table = new DataTable();
+            table.Columns.Add(new DataColumn("popis") { Caption = "Uživatelský popis", DataType = typeof(string) });
+            table.Columns.Add(new DataColumn("entita") { Caption = "Město", DataType = typeof(string) });
+            table.Columns.Add(new DataColumn("hodnota") { Caption = "Hodnota dat", DataType = typeof(string) });
+
+            table.Rows.Add("Chrudim, denní nové", "Chrudim", "Denní počet");
+            table.Rows.Add("pardubice, denní nové", "pardubice", "Denní počet");
+            table.Rows.Add("HraKra, denní nové", "Hradec", "Denní počet");
+
+            return table;
+        }
+
+        public static BindingList<GraphSerieGridRow> GetData2()
+        {
+            BindingList<GraphSerieGridRow> records = new BindingList<GraphSerieGridRow>();
+            records.Add(new GraphSerieGridRow() { Name = "Praha, denní stav", Entita = "Praha (obec, 1M pražáků)", Hodnota = "Počet" });
+            return records;
+        }
+        #region INotifyPropertyChanged
+        private void _Set<T>(ref T variable, T value, [System.Runtime.CompilerServices.CallerMemberName] string propertyName = "") where T : IComparable
+        {
+            if (value.CompareTo(variable) != 0)
+            {
+                variable = value;
+                OnPropertyChanged(propertyName);
+            }
+        }
+        protected virtual void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = "")
+        {
+            if (_PropertyChanged != null)
+                _PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        }
+        event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
+        {
+            add { _PropertyChanged += value; }
+            remove { _PropertyChanged -= value; }
+        }
+        event PropertyChangedEventHandler _PropertyChanged;
+        #endregion
     }
 }

@@ -732,310 +732,14 @@ namespace Djs.Tools.CovidGraphs
                 }
             }
         }
-
+        /// <summary>
+        /// Do Statusbaru vloží výsledky o načítání dat grafu z databáze
+        /// </summary>
+        /// <param name="graphData"></param>
         private void ShowLoadGraphDataResult(GraphData graphData)
         {
             string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCountText} vět, získáno {graphData.LoadRecordCountText} položek, zobrazeno {graphData.AcceptRecordCountText} hodnot, za {graphData.LoadSecondsText}.";
             StatusInfoText = text;
-        }
-
-        private string _GetSettings()
-        {
-            #region Ukázky
-            /*
-
-﻿<?xml version="1.0" encoding="utf-8"?>
-<ChartXmlSerializer version="20.1.4.0">
-  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
-    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
-      <SeriesSerializable>
-        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item1>
-        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item2>
-        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item3>
-      </SeriesSerializable>
-      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
-    </DataContainer>
-    <Legend VerticalIndent="25" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" BackColor="183, 221, 232" Font="Tahoma, 11.25pt, style=Bold" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
-    <Titles>
-      <Item1 Text="Best in Covid, ČR" Font="Tahoma, 18pt" TextColor="" Antialiasing="true" EnableAntialiasing="Default" />
-    </Titles>
-    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
-      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
-        <WholeRange StartSideMargin="21.2" EndSideMargin="21.2" SideMarginSizeUnit="AxisUnit" />
-        <DateTimeScaleOptions GridAlignment="Month" AutoGrid="false">
-          <IntervalOptions />
-        </DateTimeScaleOptions>
-      </AxisX>
-      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
-        <WholeRange StartSideMargin="238.6" EndSideMargin="238.6" SideMarginSizeUnit="AxisUnit" />
-        <GridLines Color="128, 100, 162" />
-      </AxisY>
-      <SelectionOptions />
-    </Diagram>
-  </Chart>
-</ChartXmlSerializer>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-ZAŠKRTÁVACÍ LEGENDA NAHOŘE UPROSTŘED
-
-﻿<?xml version="1.0" encoding="utf-8"?>
-<ChartXmlSerializer version="20.1.4.0">
-  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
-    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
-      <SeriesSerializable>
-        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item1>
-        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item2>
-        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item3>
-      </SeriesSerializable>
-      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
-    </DataContainer>
-    <Legend HorizontalIndent="40" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
-    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
-      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
-        <WholeRange StartSideMargin="21.466666666666665" EndSideMargin="21.466666666666665" SideMarginSizeUnit="AxisUnit" />
-      </AxisX>
-      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
-        <WholeRange StartSideMargin="1.4" EndSideMargin="1.4" SideMarginSizeUnit="AxisUnit" />
-      </AxisY>
-      <SelectionOptions />
-    </Diagram>
-  </Chart>
-</ChartXmlSerializer>
-
-
-
-
-
-
-
-
-
-DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
-
-﻿<?xml version="1.0" encoding="utf-8"?>
-<ChartXmlSerializer version="20.1.4.0">
-  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
-    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
-      <SeriesSerializable>
-        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item1>
-        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item2>
-        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
-          <View TypeNameSerializable="LineSeriesView">
-            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
-            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
-              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
-            </LastPoint>
-          </View>
-        </Item3>
-      </SeriesSerializable>
-      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
-    </DataContainer>
-    <Legend HorizontalIndent="40" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
-    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
-      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
-        <Strips>
-          <Item1 Color="251, 213, 181" LegendText="Prázdniny" Name="Prázdniny">
-            <MinLimit AxisValueSerializable="07/01/2020 00:00:00.000" />
-            <MaxLimit AxisValueSerializable="09/01/2020 00:00:00.000" />
-            <FillStyle FillMode="Gradient">
-              <Options GradientMode="BottomToTop" Color2="242, 242, 242" TypeNameSerializable="RectangleGradientFillOptions" />
-            </FillStyle>
-          </Item1>
-          <Item2 Color="183, 221, 232" LegendText="Vánoce" Name="Vánoce">
-            <MinLimit AxisValueSerializable="12/23/2020 00:00:00.000" />
-            <MaxLimit AxisValueSerializable="12/31/2020 00:00:00.000" />
-            <FillStyle FillMode="Gradient">
-              <Options GradientMode="BottomToTop" Color2="242, 242, 242" TypeNameSerializable="RectangleGradientFillOptions" />
-            </FillStyle>
-          </Item2>
-        </Strips>
-        <WholeRange StartSideMargin="21.466666666666665" EndSideMargin="21.466666666666665" SideMarginSizeUnit="AxisUnit" />
-      </AxisX>
-      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
-        <WholeRange StartSideMargin="232.5" EndSideMargin="232.5" SideMarginSizeUnit="AxisUnit" />
-      </AxisY>
-      <SelectionOptions />
-    </Diagram>
-  </Chart>
-</ChartXmlSerializer>
-
-
-
-
-
-            */
-            #endregion
-
-
-
-            string settings = @"﻿<?xml version='1.0' encoding='utf-8'?>
-<ChartXmlSerializer version='20.1.4.0'>
-  <Chart AppearanceNameSerializable='Default' SelectionMode='None' SeriesSelectionMode='Series'>
-    <DataContainer ValidateDataMembers='true' BoundSeriesSorting='None'>
-      <SeriesSerializable>
-        <Item1 Name='Series 1' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column0' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
-          <View TypeNameSerializable='LineSeriesView'>
-            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
-            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
-              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
-              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
-            </LastPoint>
-          </View>
-        </Item1>
-        <Item2 Name='Series 2' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column1' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
-          <View TypeNameSerializable='LineSeriesView'>
-            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
-            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
-              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
-              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
-            </LastPoint>
-          </View>
-        </Item2>
-        <Item3 Name='Series 3' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column2' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
-          <View TypeNameSerializable='LineSeriesView'>
-            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
-            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
-              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
-            </FirstPoint>
-            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
-              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
-            </LastPoint>
-          </View>
-        </Item3>
-      </SeriesSerializable>
-      <SeriesTemplate CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText='' />
-    </DataContainer>
-    <Legend HorizontalIndent='40' AlignmentHorizontal='Center' Direction='LeftToRight' CrosshairContentOffset='4' MarkerSize='@2,Width=45@2,Height=16' MarkerMode='CheckBox' MaxCrosshairContentWidth='50' MaxCrosshairContentHeight='0' Name='Default Legend' />
-    <Diagram RuntimePaneCollapse='true' RuntimePaneResize='false' PaneLayoutDirection='Vertical' TypeNameSerializable='XYDiagram'>
-      <AxisX StickToEnd='false' VisibleInPanesSerializable='-1' ShowBehind='false'>
-        <Strips>
-          <Item1 Color='251, 213, 181' LegendText='Prázdniny' Name='Prázdniny'>
-            <MinLimit AxisValueSerializable='01.07.2020 00:00:00.000' />
-            <MaxLimit AxisValueSerializable='01.09.2020 00:00:00.000' />
-            <FillStyle FillMode='Gradient'>
-              <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
-            </FillStyle>
-          </Item1>
-          <Item2 Color='183, 221, 232' LegendText='Vánoce' Name='Vánoce'>
-            <MinLimit AxisValueSerializable='23.12.2020 00:00:00.000' />
-            <MaxLimit AxisValueSerializable='01.01.2021 00:00:00.000' />
-            <FillStyle FillMode='Gradient'>
-              <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
-            </FillStyle>
-          </Item2>
-        </Strips>
-        <WholeRange StartSideMargin='21.466666666666665' EndSideMargin='21.466666666666665' SideMarginSizeUnit='AxisUnit' />
-      </AxisX>
-      <AxisY VisibleInPanesSerializable='-1' ShowBehind='false'>
-        <WholeRange StartSideMargin='232.5' EndSideMargin='232.5' SideMarginSizeUnit='AxisUnit' />
-      </AxisY>
-      <SelectionOptions />
-    </Diagram>
-  </Chart>
-</ChartXmlSerializer>";
-            settings = settings.Replace("'", "\"");
-            return settings;
         }
 
 
@@ -1382,5 +1086,305 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
         */
         #endregion
         #endregion
+
+        private string SAMPLES_LAYOUT()
+        {
+            #region Ukázky
+            /*
+
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChartXmlSerializer version="20.1.4.0">
+  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
+    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
+      <SeriesSerializable>
+        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
+    </DataContainer>
+    <Legend VerticalIndent="25" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" BackColor="183, 221, 232" Font="Tahoma, 11.25pt, style=Bold" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Titles>
+      <Item1 Text="Best in Covid, ČR" Font="Tahoma, 18pt" TextColor="" Antialiasing="true" EnableAntialiasing="Default" />
+    </Titles>
+    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
+      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="21.2" EndSideMargin="21.2" SideMarginSizeUnit="AxisUnit" />
+        <DateTimeScaleOptions GridAlignment="Month" AutoGrid="false">
+          <IntervalOptions />
+        </DateTimeScaleOptions>
+      </AxisX>
+      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="238.6" EndSideMargin="238.6" SideMarginSizeUnit="AxisUnit" />
+        <GridLines Color="128, 100, 162" />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ZAŠKRTÁVACÍ LEGENDA NAHOŘE UPROSTŘED
+
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChartXmlSerializer version="20.1.4.0">
+  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
+    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
+      <SeriesSerializable>
+        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
+    </DataContainer>
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
+      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="21.466666666666665" EndSideMargin="21.466666666666665" SideMarginSizeUnit="AxisUnit" />
+      </AxisX>
+      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="1.4" EndSideMargin="1.4" SideMarginSizeUnit="AxisUnit" />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>
+
+
+
+
+
+
+
+
+
+DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
+
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChartXmlSerializer version="20.1.4.0">
+  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
+    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
+      <SeriesSerializable>
+        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
+    </DataContainer>
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
+      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <Strips>
+          <Item1 Color="251, 213, 181" LegendText="Prázdniny" Name="Prázdniny">
+            <MinLimit AxisValueSerializable="07/01/2020 00:00:00.000" />
+            <MaxLimit AxisValueSerializable="09/01/2020 00:00:00.000" />
+            <FillStyle FillMode="Gradient">
+              <Options GradientMode="BottomToTop" Color2="242, 242, 242" TypeNameSerializable="RectangleGradientFillOptions" />
+            </FillStyle>
+          </Item1>
+          <Item2 Color="183, 221, 232" LegendText="Vánoce" Name="Vánoce">
+            <MinLimit AxisValueSerializable="12/23/2020 00:00:00.000" />
+            <MaxLimit AxisValueSerializable="12/31/2020 00:00:00.000" />
+            <FillStyle FillMode="Gradient">
+              <Options GradientMode="BottomToTop" Color2="242, 242, 242" TypeNameSerializable="RectangleGradientFillOptions" />
+            </FillStyle>
+          </Item2>
+        </Strips>
+        <WholeRange StartSideMargin="21.466666666666665" EndSideMargin="21.466666666666665" SideMarginSizeUnit="AxisUnit" />
+      </AxisX>
+      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="232.5" EndSideMargin="232.5" SideMarginSizeUnit="AxisUnit" />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>
+
+
+
+
+
+            */
+            #endregion
+
+
+
+            string settings = @"﻿<?xml version='1.0' encoding='utf-8'?>
+<ChartXmlSerializer version='20.1.4.0'>
+  <Chart AppearanceNameSerializable='Default' SelectionMode='None' SeriesSelectionMode='Series'>
+    <DataContainer ValidateDataMembers='true' BoundSeriesSorting='None'>
+      <SeriesSerializable>
+        <Item1 Name='Series 1' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column0' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
+          <View TypeNameSerializable='LineSeriesView'>
+            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
+            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name='Series 2' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column1' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
+          <View TypeNameSerializable='LineSeriesView'>
+            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
+            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name='Series 3' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column2' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
+          <View TypeNameSerializable='LineSeriesView'>
+            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
+            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText='' />
+    </DataContainer>
+    <Legend HorizontalIndent='40' AlignmentHorizontal='Center' Direction='LeftToRight' CrosshairContentOffset='4' MarkerSize='@2,Width=45@2,Height=16' MarkerMode='CheckBox' MaxCrosshairContentWidth='50' MaxCrosshairContentHeight='0' Name='Default Legend' />
+    <Diagram RuntimePaneCollapse='true' RuntimePaneResize='false' PaneLayoutDirection='Vertical' TypeNameSerializable='XYDiagram'>
+      <AxisX StickToEnd='false' VisibleInPanesSerializable='-1' ShowBehind='false'>
+        <Strips>
+          <Item1 Color='251, 213, 181' LegendText='Prázdniny' Name='Prázdniny'>
+            <MinLimit AxisValueSerializable='01.07.2020 00:00:00.000' />
+            <MaxLimit AxisValueSerializable='01.09.2020 00:00:00.000' />
+            <FillStyle FillMode='Gradient'>
+              <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
+            </FillStyle>
+          </Item1>
+          <Item2 Color='183, 221, 232' LegendText='Vánoce' Name='Vánoce'>
+            <MinLimit AxisValueSerializable='23.12.2020 00:00:00.000' />
+            <MaxLimit AxisValueSerializable='01.01.2021 00:00:00.000' />
+            <FillStyle FillMode='Gradient'>
+              <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
+            </FillStyle>
+          </Item2>
+        </Strips>
+        <WholeRange StartSideMargin='21.466666666666665' EndSideMargin='21.466666666666665' SideMarginSizeUnit='AxisUnit' />
+      </AxisX>
+      <AxisY VisibleInPanesSerializable='-1' ShowBehind='false'>
+        <WholeRange StartSideMargin='232.5' EndSideMargin='232.5' SideMarginSizeUnit='AxisUnit' />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>";
+            settings = settings.Replace("'", "\"");
+            return settings;
+        }
+
     }
 }
