@@ -699,21 +699,27 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
 
 
             _SeriesListData = new List<GraphSerieGridRow>();
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Město 1", Hodnota = "Dnešní počet" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Město 2", Hodnota = "Dnešní počet" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 3", Hodnota = "Včerejší počet" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 4", Hodnota = "Včerejší počet" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Vesnička 1", Hodnota = "Zítřejší počet" });
-
+            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Město 1", Hodnota = "Dnešní počet", Name = "Město 1, dnes" });
+            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Město 2", Hodnota = "Dnešní počet", Name = "Město 2, dnes" });
+            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 3", Hodnota = "Včerejší počet", Name = "Obec 3, včera" });
+            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 4", Hodnota = "Včerejší počet", Name = "Obec 4, včera" });
+            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Vesnička 5", Hodnota = "Zítřejší počet", Name = "Vesnička 5, zítra" });
 
             var _SeriesListGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
-            _SeriesListGridView.OptionsBehavior.AutoPopulateColumns = true;
+            _SeriesListGridView.OptionsBehavior.AutoPopulateColumns = false;
             _SeriesListGridView.OptionsBehavior.Editable = false;
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Name), Caption = "Název dat", Visible = true, Width = 120 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Entita), Caption = "Obec/město/okres", Visible = true, Width = 250 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Hodnota), Caption = "Zobrazená data", Visible = true, Width = 120 });
+            _SeriesListGridView.OptionsView.BestFitMode = DXG.Views.Grid.GridBestFitMode.Fast;
+
+
             // _SeriesListGridView.OptionsBehavior.EditingMode = DXG.Views.Grid.GridEditingMode.
             _SeriesListGridView.OptionsBehavior.AllowAddRows = DevExpress.Utils.DefaultBoolean.False;
             _SeriesListGridView.OptionsBehavior.AllowDeleteRows = DevExpress.Utils.DefaultBoolean.False;
             _SeriesListGridView.OptionsBehavior.AllowIncrementalSearch = true;
             _SeriesListGridView.OptionsSelection.MultiSelectMode = DXG.Views.Grid.GridMultiSelectMode.RowSelect;
+            _SeriesListGridView.Appearance.HeaderPanel.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
 
 
             _SeriesListGrid = new DXG.GridControl() { Dock = DockStyle.Fill };
@@ -724,10 +730,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _SeriesListPanel.Controls.Add(_SeriesListGrid);
 
 
-            _SeriesListGrid.DataSource = GraphSerieGridRow.GetData();
-            _SeriesListGrid.RefreshDataSource();
-
-            _SeriesListGridView.PopulateColumns();
+            _SeriesListGrid.DataSource = _SeriesListData; //  GraphSerieGridRow.GetDataGraph();
             var gwc = _SeriesListGridView.Columns;
             _SeriesListGridView.ColumnChanged += _SeriesListGridView_ColumnChanged;
             _SeriesListGridView.DataSourceChanged += _SeriesListGridView_DataSourceChanged;
@@ -762,7 +765,29 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         {
             _SeriesListAddNewSeries();
         }
+        private void _SeriesListRemoveButton_Click(object sender, EventArgs e)
+        {
+
+        }
+
         private void _SeriesListAddNewSeries()
+        {
+            var entityItems = _EntityListBox.SelectedItems.OfType<IEntity>().ToArray();
+            var valueItems = _ValueTypeListBox.SelectedItems.OfType<DataValueTypeInfo>().ToArray();
+            if (!_HasValidDataForNewSeries(entityItems, valueItems))
+                return;
+
+           
+
+
+        }
+        /// <summary>
+        /// Ověří, zda aktuálně můžeme zadaná data přidat jako nové serie. Pokud ne, oznámí uživateli problém a vrátí false.
+        /// </summary>
+        /// <param name="entityItems"></param>
+        /// <param name="valueItems"></param>
+        /// <returns></returns>
+        private bool _HasValidDataForNewSeries(IEntity[] entityItems, DataValueTypeInfo[] valueItems)
         {
             int requestPage = 1;
             if (_TabContainer.SelectedTabPageIndex != requestPage)
@@ -770,12 +795,10 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
                 _TabContainer.SelectedTabPageIndex = requestPage;
                 string text = $@"Na stránce '{_TabContainer.TabPages[requestPage].Text}' najděte místa (obce) a vyberte data pro zobrazení, a pak teprve stiskněte tlačítko '{_SeriesListAddButton.Text}'.";
                 App.ShowWarning(this, text);
-                return;
+                return false;
             }
 
-            var entityItems = _EntityListBox.SelectedItems.OfType<IEntity>().ToArray();
             bool hasEntities = (entityItems != null && entityItems.Length > 0);
-            var valueItems = _ValueTypeListBox.SelectedItems.OfType<DataValueTypeInfo>().ToArray();
             bool hasValues = (valueItems != null && valueItems.Length > 0);
             if (!hasEntities || !hasValues)
             {
@@ -798,18 +821,12 @@ V pravé části vyberte jeden nebo více druhů dat, které chcete zobrazit.
 
 Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidány kombinace všech označených míst a všech označených typů dat.";
 
-
                 App.ShowWarning(this, text);
-                return;
+                return false;
             }
-
-
+            return true;
         }
 
-        private void _SeriesListRemoveButton_Click(object sender, EventArgs e)
-        {
-            
-        }
 
         private DXE.PanelControl _SeriesListPanel;
         private DXE.PanelControl _SeriesListButtonPanel;
@@ -910,7 +927,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         public string Hodnota { get { return _Hodnota; } set { _Set(ref _Hodnota, value); } } private string _Hodnota;
 
 
-        public static System.Data.DataTable GetData()
+        public static System.Data.DataTable GetDataTable()
         {
             System.Data.DataTable table = new DataTable();
             table.Columns.Add(new DataColumn("popis") { Caption = "Uživatelský popis", DataType = typeof(string) });
@@ -924,7 +941,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             return table;
         }
 
-        public static BindingList<GraphSerieGridRow> GetData2()
+        public static BindingList<GraphSerieGridRow> GetDataGraph()
         {
             BindingList<GraphSerieGridRow> records = new BindingList<GraphSerieGridRow>();
             records.Add(new GraphSerieGridRow() { Name = "Praha, denní stav", Entita = "Praha (obec, 1M pražáků)", Hodnota = "Počet" });
