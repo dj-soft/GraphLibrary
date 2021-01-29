@@ -316,7 +316,7 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// 
         /// </summary>
-        public Database Database
+        public DatabaseInfo Database
         {
             get { return _Database; }
             set
@@ -326,7 +326,7 @@ namespace Djs.Tools.CovidGraphs
                     this._DataRefresh();
             }
         }
-        private Database _Database;
+        private DatabaseInfo _Database;
         /// <summary>
         /// Definice grafu.
         /// Lze setovat, lze číst.
@@ -772,7 +772,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
 
         private void _SeriesListAddNewSeries()
         {
-            var entityItems = _EntityListBox.SelectedItems.OfType<IEntity>().ToArray();
+            var entityItems = _EntityListBox.SelectedItems.OfType<DatabaseInfo.EntityInfo>().ToArray();
             var valueItems = _ValueTypeListBox.SelectedItems.OfType<DataValueTypeInfo>().ToArray();
             if (!_HasValidDataForNewSeries(entityItems, valueItems))
                 return;
@@ -787,7 +787,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         /// <param name="entityItems"></param>
         /// <param name="valueItems"></param>
         /// <returns></returns>
-        private bool _HasValidDataForNewSeries(IEntity[] entityItems, DataValueTypeInfo[] valueItems)
+        private bool _HasValidDataForNewSeries(DatabaseInfo.EntityInfo[] entityItems, DataValueTypeInfo[] valueItems)
         {
             int requestPage = 1;
             if (_TabContainer.SelectedTabPageIndex != requestPage)
@@ -905,11 +905,11 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         /// Formulář, který obsahuje referenci na definici grafu i na databázi
         /// </summary>
         public GraphForm ParentForm { get; set; }
-        public Database Database { get { return ParentForm?.Database; } }
+        public DatabaseInfo Database { get { return ParentForm?.Database; } }
         public GraphInfo CurrentGraphInfo { get { return ParentForm?.CurrentGraphInfo; } }
         public void DataRefresh()
         {
-            Database database = this.Database;
+            DatabaseInfo database = this.Database;
             GraphInfo graphInfo = this.CurrentGraphInfo;
 
 

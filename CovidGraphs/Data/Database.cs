@@ -11,7 +11,7 @@ namespace Djs.Tools.CovidGraphs.Data
     /// <summary>
     /// Databáze
     /// </summary>
-    public class Database
+    public class DatabaseInfo
     {
         #region Tvorba databáze, načtení a uložení dat
         #region Konstruktor, základní proměnné pro data
@@ -19,14 +19,14 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Konstruktor
         /// </summary>
         /// <param name="file"></param>
-        public Database()
+        public DatabaseInfo()
         {
             this.Init();
         }
         private object InterLock;
-        private World _World;
-        private Dictionary<string, Vesnice> _Vesnice;
-        private Dictionary<string, Pocet> _Pocet;
+        private EntityInfo _World;
+        private Dictionary<string, EntityInfo> _Vesnice;
+        private Dictionary<string, PocetObyvatelInfo> _Pocet;
         private DateTime? _DataContentTime;
         private DateTime? _LastValidDataDate;
         private bool _HasData;
@@ -34,9 +34,9 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             State = StateType.Initializing;
             InterLock = new object();
-            _World = new World(this);
-            _Vesnice = new Dictionary<string, Vesnice>();
-            _Pocet = new Dictionary<string, Pocet>();
+            _World = new EntityInfo(this, "", "World");
+            _Vesnice = new Dictionary<string, EntityInfo>();
+            _Pocet = new Dictionary<string, PocetObyvatelInfo>();
             _DataContentTime = null;
             _LastValidDataDate = null;
             _CovidInfo = null;
@@ -462,25 +462,24 @@ namespace Djs.Tools.CovidGraphs.Data
             string[] items = line.Split(';');
             if (items.Length < 3) return;
 
-            if (loadInfo.CurrentInfo == null) loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
+            ProcessFileCurrentInfo currentInfo = _LoadGetCurrentInfo(loadInfo);
 
             string header = items[0];
             switch (header)
             {
                 case HeaderVesnice:
                     string vesniceKod = items[1];
-                    string vesniceNazev = items[2];
                     bool hasVesnice = (this._Vesnice.TryGetValue(vesniceKod, out var vesnice));
-                    loadInfo.CurrentInfo.Vesnice = (hasVesnice ? vesnice : null);
+                    currentInfo.Vesnice = (hasVesnice ? vesnice : null);
                     break;
                 case HeaderInfo:
-                    if (loadInfo.CurrentInfo.Vesnice != null)
+                    if (currentInfo.Vesnice != null)
                     {
                         DateTime infoDate = GetDate(items[1]);
                         int infoNewCount = GetInt32(items[2]);
                         int infoCurrentCount = GetInt32(items[3]);
                         int infoKey = infoDate.GetDateKey();
-                        loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.AddOrCreateInfo(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
+                        currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
                         bool hasValidData = (infoNewCount != 0);
                         _RegisterMaxContentTime(infoDate, hasValidData);
                     }
@@ -497,76 +496,74 @@ namespace Djs.Tools.CovidGraphs.Data
         private void _LoadLineDataPack(ProcessFileInfo loadInfo, string line)
         {
             string[] items = line.Split(';');
-            if (items.Length < 3) return;
+            int count = items.Length;
+            if (count < 3) return;
 
-            if (loadInfo.CurrentInfo == null)
-            {   // Výchozí pozice je vždy naplněna na náš World:
-                loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
-                loadInfo.CurrentInfo.World = _World;
-            }
+            ProcessFileCurrentInfo currentInfo = _LoadGetCurrentInfo(loadInfo);
 
             string header = items[0];
             string code = items[1];
-            string name = items[2];
 
             switch (header)
             {
                 case HeaderZeme:
-                    string zemeKod = code;
-                    string zemeNazev = name;
-                    loadInfo.CurrentInfo.Zeme = loadInfo.CurrentInfo.World.AddOrCreateChild(zemeKod, () => new Zeme(loadInfo.CurrentInfo.World, zemeKod, zemeNazev));
+                    currentInfo.Zeme = currentInfo.World.AddOrCreateChild(code, () => new EntityInfo(currentInfo.World, items));
                     break;
                 case HeaderKraj:
-                    string krajKod = code;
-                    string krajNazev = name;
-                    loadInfo.CurrentInfo.Kraj = loadInfo.CurrentInfo.Zeme.AddOrCreateChild(krajKod, () => new Kraj(loadInfo.CurrentInfo.Zeme, krajKod, krajNazev));
+                    currentInfo.Kraj = currentInfo.Zeme.AddOrCreateChild(code, () => new EntityInfo(currentInfo.Zeme, items));
                     break;
                 case HeaderOkres:
-                    string okresKod = code;
-                    string okresNazev = name;
-                    loadInfo.CurrentInfo.Okres = loadInfo.CurrentInfo.Kraj.AddOrCreateChild(okresKod, () => new Okres(loadInfo.CurrentInfo.Kraj, okresKod, okresNazev));
+                    currentInfo.Okres = currentInfo.Kraj.AddOrCreateChild(code, () => new EntityInfo(currentInfo.Kraj, items));
                     break;
                 case HeaderMesto:
-                    string mestoKod = code;
-                    string mestoNazev = name;
-                    loadInfo.CurrentInfo.Mesto = loadInfo.CurrentInfo.Okres.AddOrCreateChild(mestoKod, () => new Mesto(loadInfo.CurrentInfo.Okres, mestoKod, mestoNazev));
+                    currentInfo.Mesto = currentInfo.Okres.AddOrCreateChild(code, () => new EntityInfo(currentInfo.Okres, items));
                     break;
                 case HeaderObec:
-                    string obecKod = code;
-                    string obecNazev = name;
-                    loadInfo.CurrentInfo.Obec = loadInfo.CurrentInfo.Mesto.AddOrCreateChild(obecKod, () => new Obec(loadInfo.CurrentInfo.Mesto, obecKod, obecNazev));
+                    currentInfo.Obec = currentInfo.Mesto.AddOrCreateChild(code, () => new EntityInfo(currentInfo.Mesto, items));
                     break;
                 case HeaderVesnice:
-                    string vesniceKod = code;
-                    string vesniceNazev = name;
-                    loadInfo.CurrentInfo.Vesnice = loadInfo.CurrentInfo.Obec.AddOrCreateChild(vesniceKod, () => new Vesnice(loadInfo.CurrentInfo.Obec, vesniceKod, vesniceNazev));
-                    this._Vesnice.AddIfNotContains(vesniceKod, loadInfo.CurrentInfo.Vesnice as Vesnice);
+                    currentInfo.Vesnice = currentInfo.Obec.AddOrCreateChild(code, () => new EntityInfo(currentInfo.Obec, items));
+                    this._Vesnice.AddIfNotContains(code, currentInfo.Vesnice);
+                    if (currentInfo.Vesnice.IsPocetObyvLoaded)
+                        this._Pocet.AddOrUpdate(code, currentInfo.Vesnice.PocetObyv);
                     break;
                 case HeaderPocet:
-                    // P;554979;Abertamy;Ostrov;Karlovarský;458;412;422;368
-                    string pocetKod = code;
-                    string pocetVesnice = name;
-                    string pocetMesto = items[3];
-                    string pocetKraj = items[4];
-                    int pocetMC = GetInt32(items[5]);
-                    int pocetMS = GetInt32(items[6]);
-                    int pocetFC = GetInt32(items[7]);
-                    int pocetFS = GetInt32(items[8]);
-                    Pocet pocet = new Pocet(this, pocetKod, pocetVesnice, pocetMesto, pocetKraj, pocetMC, pocetMS, pocetFC, pocetFS);
-                    this._Pocet.AddOrUpdate(pocetKod, pocet);
+                    bool hasPocet = false;
+                    PocetObyvatelInfo pocet = null;
+                    if (count == 9)
+                        // P;554979;Abertamy;Ostrov;Karlovarský;458;412;422;368
+                        hasPocet = PocetObyvatelInfo.TryCreate(items, 5, out pocet);
+                    else if (count == 6)
+                        // P;554979;458;412;422;368
+                        hasPocet = PocetObyvatelInfo.TryCreate(items, 2, out pocet);
+                    this._Pocet.AddOrUpdate(code, pocet);
                     break;
                 case HeaderInfo:
                     DateTime infoDate = GetDate(items[1]);
                     int infoNewCount = GetInt32(items[2]);
                     int infoCurrentCount = GetInt32(items[3]);
                     int infoKey = infoDate.GetDateKey();
-                    loadInfo.CurrentInfo.Info = loadInfo.CurrentInfo.Vesnice.AddOrCreateInfo(infoKey, () => new Info(loadInfo.CurrentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
+                    currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
                     bool hasValidData = (infoNewCount != 0);
                     _RegisterMaxContentTime(infoDate, hasValidData);
                     break;
             }
 
             loadInfo.RecordCount += 1;
+        }
+        /// <summary>
+        /// Metoda v případě potřeby vytvoří new instanci <see cref="ProcessFileCurrentInfo"/> do <see cref="ProcessFileInfo.CurrentInfo"/>, a vrátí ji.
+        /// </summary>
+        /// <param name="loadInfo"></param>
+        /// <returns></returns>
+        private ProcessFileCurrentInfo _LoadGetCurrentInfo(ProcessFileInfo loadInfo)
+        {
+            if (loadInfo.CurrentInfo == null)
+            {   // Výchozí pozice je vždy nastavena na náš World:
+                loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
+                loadInfo.CurrentInfo.World = _World;
+            }
+            return loadInfo.CurrentInfo;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce1"/>
@@ -581,39 +578,21 @@ namespace Djs.Tools.CovidGraphs.Data
             string[] items = line.Split(';');
             if (items.Length != Covid1ItemCountExpected) return;
 
-            IEntity world = this._World;
+            EntityInfo world = this._World;
+            EntityInfo zeme = world.AddOrCreateChild("CZ", () => new EntityInfo(world, "CZ", "Česká republika"));
+            EntityInfo kraj = zeme.AddOrCreateChild(items[2], () => new EntityInfo(zeme, items, 2));
+            EntityInfo okres = kraj.AddOrCreateChild(items[4], () => new EntityInfo(zeme, items, 4));
+            EntityInfo mesto = okres.AddOrCreateChild(items[6], () => new EntityInfo(zeme, items, 6));
+            EntityInfo obec = mesto.AddOrCreateChild(items[8], () => new EntityInfo(zeme, items, 8));
+            EntityInfo vesnice = obec.AddOrCreateChild(items[10], () => new EntityInfo(obec, items, 10));
 
-            string zemeKod = "CZ";
-            string zemeNazev = "Česká republika";
-            IEntity zeme = world.AddOrCreateChild(zemeKod, () => new Zeme(world as World, zemeKod, zemeNazev));
-
-            string krajKod = items[2];
-            string krajNazev = items[3];
-            IEntity kraj = zeme.AddOrCreateChild(krajKod, () => new Kraj(zeme, krajKod, krajNazev));
-
-            string okresKod = items[4];
-            string okresNazev = items[5];
-            IEntity okres = kraj.AddOrCreateChild(okresKod, () => new Okres(kraj, okresKod, okresNazev));
-
-            string mestoKod = items[6];
-            string mestoNazev = items[7];
-            IEntity mesto = okres.AddOrCreateChild(mestoKod, () => new Mesto(okres, mestoKod, mestoNazev));
-
-            string obecKod = items[8];
-            string obecNazev = items[9];
-            IEntity obec = mesto.AddOrCreateChild(obecKod, () => new Obec(mesto, obecKod, obecNazev));
-
-            string vesniceKod = items[10];
-            string vesniceNazev = items[11];
-            IEntity vesnice = obec.AddOrCreateChild(vesniceKod, () => new Vesnice(obec, vesniceKod, vesniceNazev));
-
-            this._Vesnice.AddIfNotContains(vesniceKod, vesnice as Vesnice);
+            this._Vesnice.AddIfNotContains(items[10], vesnice);
 
             DateTime infoDate = GetDate(items[1]);
             int newCount = GetInt32(items[12]);
             int currentCount = GetInt32(items[13]);
             int key = infoDate.GetDateKey();
-            Info info = vesnice.InfoDict.AddOrCreate(key, () => new Info(vesnice, infoDate, newCount, currentCount));
+            DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
             bool hasValidData = (newCount != 0);
             _RegisterMaxContentTime(infoDate, hasValidData);
 
@@ -633,24 +612,18 @@ namespace Djs.Tools.CovidGraphs.Data
             // neděle,2020-03-01,CZ053,"Pardubický kraj",CZ0531,Chrudim,5304,Chrudim,            571164,Chrudim,0,0
 
             // Abychom měli data v paměti umístěná ve správné struktuře (plných 5 úrovní, a nikoli jedna z nich Void), 
-            // tak nebudeme z tohoto souboru načítat kompoetní strukturu obcí = tato musí být načtena dříve,
-            // a zde budeme načítat pouze kód Vesnice, tu dohledáme, a do ní vepíšeme data Info:
+            // tak nebudeme z tohoto souboru načítat kompletní strukturu obcí = tato musí být načtena dříve,
+            // a zde budeme načítat pouze kód Vesnice, tu dohledáme v indexu, a do ní vepíšeme data Info:
             line = line.Replace("\"", "");
             string[] items = line.Split(',');
             if (items.Length != Covid2ItemCountExpected) return;
 
-            //  string krajKod = items[2];           // CZ053
-            string krajNazev = items[3];
-            //  string okresKod = items[4];          // CZ0531
-            string okresNazev = items[5];
-            //  string mestoKod = items[6];          // 5304
-            string mestoNazev = items[7];
-            //  string obecKod = VoidEntityCode;     // zde není 53043
-            //  string obecNazev = null;
             string vesniceKod = items[8];        // 571164
-            string vesniceNazev = items[9];
-            if (!this._Vesnice.TryGetValue(vesniceKod, out Vesnice vesnice))
+            if (!this._Vesnice.TryGetValue(vesniceKod, out EntityInfo vesnice))
             {   // V datech je kód 5. úrovně "Vesnice", ale my jej nemáme ve struktuře:
+                string okresNazev = items[5];
+                string mestoNazev = items[7];
+                string vesniceNazev = items[9];
                 throw new KeyNotFoundException($"Ve vstupních datech je uvedena obec {vesniceKod}: {vesniceNazev}, patřící do města {mestoNazev} (okres {okresNazev}), ale tuto obec nemáme načtenou ve struktuře obcí.");
             }
 
@@ -658,7 +631,7 @@ namespace Djs.Tools.CovidGraphs.Data
             int newCount = GetInt32(items[10]);
             int currentCount = GetInt32(items[11]);
             int key = infoDate.GetDateKey();
-            Info info = vesnice.AddOrCreateInfo(key, () => new Info(vesnice, infoDate, newCount, currentCount));
+            DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
             bool hasValidData = (newCount != 0);
             _RegisterMaxContentTime(infoDate, hasValidData);
 
@@ -689,16 +662,13 @@ namespace Djs.Tools.CovidGraphs.Data
             string[] items = line.Split(';');
             if (items.Length != PocetItemCountExpected) return;
 
-            string kraj = items[1];
-            string mesto = items[2];
-            string kod = items[3];
-            string vesnice = items[4];
-            int pocetMC = GetInt32(items[5]);
-            int pocetMS = GetInt32(items[6]);
-            int pocetFC = GetInt32(items[7]);
-            int pocetFS = GetInt32(items[8]);
+            string kod = items[3];                         // Kód vesnice
+            int pocetMuziCelkem = GetInt32(items[5]);
+            int pocetMuziNad15 = GetInt32(items[6]);
+            int pocetZenyCelkem = GetInt32(items[7]);
+            int pocetZenyNad15 = GetInt32(items[8]);
 
-            Pocet pocet = new Pocet(this, kod, vesnice, mesto, kraj, pocetMC, pocetMS, pocetFC, pocetFS);
+            PocetObyvatelInfo pocet = new PocetObyvatelInfo(pocetMuziCelkem, pocetMuziNad15, pocetZenyCelkem, pocetZenyNad15);
             this._Pocet.AddOrUpdate(kod, pocet);
 
             loadInfo.RecordCount += 1;
@@ -1074,11 +1044,11 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             return _GetResult(fullCode, null, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
         }
-        public ResultSetInfo GetResult(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
+        public ResultSetInfo GetResult(EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
             return _GetResult(null, entity, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
         }
-        private ResultSetInfo _GetResult(string fullCode, IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
+        private ResultSetInfo _GetResult(string fullCode, EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
             if (dataTypeInfo == null) dataTypeInfo = DataValueTypeInfo.CreateFor(valueType);
             _PrepareSourceTimeRange(dataTypeInfo, begin, end, out DateTime? sourceBegin, out DateTime? sourceEnd);
@@ -1090,7 +1060,7 @@ namespace Djs.Tools.CovidGraphs.Data
 
                 if (entity != null)
                 {
-                    SearchInfoArgs args = new SearchInfoArgs(entity, valueType, dataTypeInfo, sourceBegin, sourceEnd, pocetOd, pocetDo);
+                    SearchInfoArgs args = new SearchInfoArgs(entity, valueType, dataTypeInfo, begin, end, sourceBegin, sourceEnd, pocetOd, pocetDo);
                     entity.SearchInfo(args);
                     ProcessResultValue(args, begin, end);
                     resultSet = args.ResultSet;
@@ -1103,10 +1073,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Například pro typ hodnoty 
         /// </summary>
         /// <param name="dataTypeInfo"></param>
-        /// <param name="begin"></param>
-        /// <param name="end"></param>
-        /// <param name="sourceBegin"></param>
-        /// <param name="sourceEnd"></param>
+        /// <param name="begin">Vstup: uživatelem požadovaný počátek (včetně) = tato data chce vidět</param>
+        /// <param name="end">Vstup: uživatelem požadovaný konec (mimo) = tato data chce vidět</param>
+        /// <param name="sourceBegin">Výstup: potřebný počátek načítaných dat (včetně) = tato data je třeba načíst, abychom mohli spočítat podklady k uživatelskému počátku</param>
+        /// <param name="sourceEnd">Výstup: potřebný konec načítaných dat (mimo) = tato data je třeba načíst, abychom mohli spočítat podklady k uživatelskému počátku</param>
         private void _PrepareSourceTimeRange(DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, out DateTime? sourceBegin, out DateTime? sourceEnd)
         {
             sourceBegin = (begin.HasValue ? (dataTypeInfo.DateOffsetBefore.HasValue ? (DateTime?)begin.Value.AddDays(dataTypeInfo.DateOffsetBefore.Value) : begin) : (DateTime?)null);
@@ -1451,9 +1421,9 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="searchNazev"></param>
         /// <returns></returns>
-        public IEntity[] SearchEntities(string searchNazev)
+        public EntityInfo[] SearchEntities(string searchNazev)
         {
-            if (String.IsNullOrEmpty(searchNazev)) return new IEntity[0];
+            if (String.IsNullOrEmpty(searchNazev)) return new EntityInfo[0];
 
             searchNazev = searchNazev.Trim();
 
@@ -1462,17 +1432,17 @@ namespace Djs.Tools.CovidGraphs.Data
             bool isWildCard = (searchNazev.StartsWith("*") || searchNazev.StartsWith("%"));
             if (isWildCard)
                 searchNazev = searchNazev.Substring(1).Trim();
-            if (!entityType.HasValue && String.IsNullOrEmpty(searchNazev)) return new IEntity[0];             // Lze zadat jen prefix územního celku: pak se hledá i bez zadání textu = najdou se všechny
+            if (!entityType.HasValue && String.IsNullOrEmpty(searchNazev)) return new EntityInfo[0];             // Lze zadat jen prefix územního celku: pak se hledá i bez zadání textu = najdou se všechny
             if (entityType.HasValue && String.IsNullOrEmpty(searchNazev))                                     // Po zadání jen prefixu bez názvu = "okres:" bez textu budeme hledat všechny okresy.
                 isWildCard = true;
 
             SearchEntityArgs args = new SearchEntityArgs(entityType, searchNazev, isWildCard);
             this._World.SearchEntities(args);
 
-            List<IEntity> result = null;
+            List<EntityInfo> result = null;
             if (!args.IsWildCard && args.FoundBeginEntities != null && args.FoundBeginEntities.Count > 0) result = args.FoundBeginEntities;
             else if (args.FoundContainsEntities != null && args.FoundContainsEntities.Count > 0) result = args.FoundContainsEntities;
-            if (result == null) return new IEntity[0];
+            if (result == null) return new EntityInfo[0];
 
             result.Sort((a, b) => String.Compare(a.Nazev, b.Nazev, StringComparison.CurrentCultureIgnoreCase));
             return result.ToArray();
@@ -1506,7 +1476,7 @@ namespace Djs.Tools.CovidGraphs.Data
         private const string SearchPrefixMesto1 = "město:";
         private const string SearchPrefixMesto2 = "mesto:";
         private const string SearchPrefixObec = "obec:";
-        protected static void SearchEntityAdd(IEntity entity, SearchEntityArgs args)
+        protected static void SearchEntityAdd(EntityInfo entity, SearchEntityArgs args)
         {
             if (entity == null || String.IsNullOrEmpty(entity.Nazev)) return;
             if (args.EntityType.HasValue && entity.Entity != args.EntityType.Value) return;
@@ -1522,46 +1492,22 @@ namespace Djs.Tools.CovidGraphs.Data
             else if (args.IsWildCard && args.EntityType.HasValue && args.SearchText.Length == 0)
                 args.FoundContainsEntities.Add(entity);
         }
-        public IEntity GetEntity(string fullCode)
+        /// <summary>
+        /// Najde a vrátí entitu s daným FullCode.
+        /// FullCode začíná kódem Země (typicky "CZ") a následují postupně kódy nižších entit (kraje, okresy, města), oddělené tečkou (= <see cref="EntityInfo.EntityDelimiter"/>).
+        /// </summary>
+        /// <param name="fullCode"></param>
+        /// <returns></returns>
+        public EntityInfo GetEntity(string fullCode)
         {
-            if (String.IsNullOrEmpty(fullCode)) return null;
-            string[] codes = fullCode.Split(EntityInfo.EntityDelimiter[0]);
-            int count = codes.Length;
-
-            if (count < 1) return null;
-
-            World world = this._World;
-            if (TryGetChildEntity(world, codes[0], (count == 1), out var zeme)) return zeme;
-            if (TryGetChildEntity(zeme, codes[1], (count == 2), out var kraj)) return kraj;
-            if (TryGetChildEntity(kraj, codes[2], (count == 3), out var okres)) return okres;
-            if (TryGetChildEntity(okres, codes[3], (count == 4), out var mesto)) return mesto;
-            if (TryGetChildEntity(mesto, codes[4], (count == 5), out var obec)) return obec;
-            if (TryGetChildEntity(obec, codes[5], (count == 6), out var vesnice)) return vesnice;
-
-            return null;
-        }
-        protected bool TryGetChildEntity(IEntity entity, string key, bool isTarget, out IEntity result)
-        {
-            result = null;
-            var dictionary = entity.ChildDict;
-            bool isEnd = isTarget;
-            if (!dictionary.TryGetValue(key, out result))            // Pokud jsme nenašli záznam pro zadaný klíč, může to ýt proto, že máme jen jeden Void Child:
-            {   // Pokud hledaný klíč nemáme:
-                if (entity.ChildsIsVoid && dictionary.Count == 1)
-                    // Tato entita má pouze jeden Void child (tzv. "průhledný" child):
-                    result = dictionary.Values.FirstOrDefault();     // Vezmeme jeden jediný Child, to je ten správný
-                else
-                    // Tato entita nemá Void childs = má běžné Childs dohledatelné podle klíčů, ale nenašla požadovaný kód:
-                    isEnd = true;                                    // hodnota "result" je null, a vrátíme true => hledání končí, ale nic nenalezlo
-            }
-            return isEnd;
+            return this._World.GetEntity(fullCode);
         }
         /// <summary>
         /// Načte a vrátí záznam pro počet obyvatel z databáze z datové tabulky Počet obyvatel. Vstupem je vždy jednoduchý kód entity <see cref="EntityType.Vesnice"/>.
         /// </summary>
         /// <param name="kod"></param>
         /// <returns></returns>
-        private Pocet GetPocet(string kod)
+        private PocetObyvatelInfo GetPocet(string kod)
         {
             if (!String.IsNullOrEmpty(kod) && _Pocet != null && _Pocet.TryGetValue(kod, out var pocet)) return pocet;
             return null;
@@ -1573,15 +1519,53 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <returns></returns>
         private int GetPocetObyvatelInternal(string kod)
         {
-            if (!String.IsNullOrEmpty(kod) && _Pocet != null && _Pocet.TryGetValue(kod, out var pocet)) return pocet.PocetCelkem;
+            if (!String.IsNullOrEmpty(kod) && _Pocet != null && _Pocet.TryGetValue(kod, out var pocet)) return pocet.Pocet;
             return 0;
+        }
+        /// <summary>
+        /// Vrací typ entity pro danou úroveň, kde 0 = World ... 6 = Vesnice
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        private static EntityType GetEntityType(int level)
+        {
+            switch (level)
+            {
+                case 0: return EntityType.World;
+                case 1: return EntityType.Zeme;
+                case 2: return EntityType.Kraj;
+                case 3: return EntityType.Okres;
+                case 4: return EntityType.Mesto;
+                case 5: return EntityType.Obec;
+                case 6: return EntityType.Vesnice;
+            }
+            return EntityType.None;
+        }
+        /// <summary>
+        /// Vrátí text Header pro daný level struktury
+        /// </summary>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        private static string GetStructureHeader(int level)
+        {
+            switch (level)
+            {
+                case 0: return HeaderWorld;
+                case 1: return HeaderZeme;
+                case 2: return HeaderKraj;
+                case 3: return HeaderOkres;
+                case 4: return HeaderMesto;
+                case 5: return HeaderObec;
+                case 6: return HeaderVesnice;
+            }
+            return "X";
         }
         /// <summary>
         /// Vrátí uživatelsky použitelný text pro danou entitu
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        private static string GetEntityText(IEntity entity)
+        private static string GetEntityText(EntityInfo entity)
         {
             string entityName = GetEntityName(entity.Entity);
             string pocet = entity.PocetObyvatel.ToString("### ### ### ##0").Trim();
@@ -1621,160 +1605,76 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         #endregion
         #region Třídy dat
-        public class World : EntityInfo, IEntity
+        /// <summary>
+        /// Místní entita (Země, kraj, okres, město, obec, vesnice).
+        /// Obsahuje svoje popisná data (kód, název), počet obyvatel, svůj typ, parenta (nadřízený uzel), svoje data, svoje podřízenéí prvky.
+        /// </summary>
+        public class EntityInfo : ItemInfo
         {
-            public World(Database database)
-                : base(null, "", "World")
+            /// <summary>
+            /// Konstruktor pro Root prvek = nemá Parenta, ale má Databázi. Použije se pouze jedenkrát pro root entitu = World.
+            /// </summary>
+            /// <param name="database"></param>
+            /// <param name="kod"></param>
+            /// <param name="nazev"></param>
+            public EntityInfo(DatabaseInfo database, string kod, string nazev)
             {
                 this.Database = database;
+                this.Kod = kod;
+                this.Nazev = nazev;
             }
-            public override EntityType Entity { get { return EntityType.World; } }
-            protected override string StructureHeader { get { return HeaderWorld; } }
-            public override Database Database { get { return _Database; } protected set { _Database = value; } } private Database _Database;
-        }
-        public class Zeme : EntityInfo, IEntity
-        {
-            public Zeme(IEntity parent, string kod, string nazev)
-                : base(parent, kod, nazev)
-            {
-            }
-            public override EntityType Entity { get { return EntityType.Zeme; } }
-            protected override string StructureHeader { get { return HeaderZeme; } }
-        }
-        public class Kraj : EntityInfo, IEntity
-        {
-            public Kraj(IEntity parent, string kod, string nazev)
-                : base(parent, kod, nazev)
-            {
-            }
-            public override EntityType Entity { get { return EntityType.Kraj; } }
-            protected override string StructureHeader { get { return HeaderKraj; } }
-        }
-        public class Okres : EntityInfo, IEntity
-        {
-            public Okres(IEntity parent, string kod, string nazev)
-                : base(parent, kod, nazev)
-            {
-            }
-            public override EntityType Entity { get { return EntityType.Okres; } }
-            protected override string StructureHeader { get { return HeaderOkres; } }
-        }
-        public class Mesto : EntityInfo, IEntity
-        {
-            public Mesto(IEntity parent, string kod, string nazev)
-                : base(parent, kod, nazev)
-            {
-            }
-            public override EntityType Entity { get { return EntityType.Mesto; } }
-            protected override string StructureHeader { get { return HeaderMesto; } }
-        }
-        /// <summary>
-        ///  Data jedné obce
-        /// </summary>
-        public class Obec : EntityInfo, IEntity
-        {
-            public Obec(IEntity parent, string kod, string nazev)
-                : base(parent, kod, nazev)
-            {
-            }
-            public override EntityType Entity { get { return EntityType.Obec; } }
-            protected override string StructureHeader { get { return HeaderObec; } }
-        }
-        /// <summary>
-        /// Data jedné vesnice
-        /// </summary>
-        public class Vesnice : EntityInfo, IEntity
-        {
-            public Vesnice(IEntity parent, string kod, string nazev)
-                : base(parent, kod, nazev)
-            {
-            }
-            public override EntityType Entity { get { return EntityType.Vesnice; } }
-            protected override string StructureHeader { get { return HeaderVesnice; } }
-            protected override void SaveHeader(ProcessFileInfo saveInfo, IO.StreamWriter stream)
-            {
-                base.SaveHeader(saveInfo, stream);
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.Data)
-                {
-                    Pocet pocet = this.Database.GetPocet(this.Kod);
-                    if (pocet != null) pocet.Save(saveInfo, stream);
-                }
-            }
-            public override void SearchInfo(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                // Filtr na Počet obyvatel se aplikuje na této nejnižší úrovni:
-                int pocetObyvatel = this.PocetObyvatel;
-                bool add = ((!args.PocetOd.HasValue || (args.PocetOd.HasValue && pocetObyvatel >= args.PocetOd.Value)) &&
-                            (!args.PocetDo.HasValue || (args.PocetDo.HasValue && pocetObyvatel < args.PocetDo.Value)));
-
-                // Vyhovuje dle filtru obyvatel?
-                if (add)
-                {
-                    args.PocetObyvatel += this.PocetObyvatel;
-                    foreach (var item in this.InfoDict.Values)
-                        item.AddResults(args);
-                }
-            }
-        }
-        /// <summary>
-        /// Předek pro třídy reprezentující strukturu obcí dle <see cref="IEntity"/> (země, kraj, okres, město, obec, vesnice)
-        /// </summary>
-        public abstract class EntityInfo : DataInfo, IEntity
-        {
-            public EntityInfo(IEntity parent, string kod, string nazev)
+            /// <summary>
+            /// Konstruktor pro běžný prvek, který má svého Parenta
+            /// </summary>
+            /// <param name="parent"></param>
+            /// <param name="items"></param>
+            /// <param name="index"></param>
+            public EntityInfo(EntityInfo parent, string kod, string nazev)
             {
                 this.Parent = parent;
                 this.Kod = kod;
                 this.Nazev = nazev;
-                this.ChildDict = new Dictionary<string, IEntity>();
-                this.InfoDict = (this.EnableInfo ? new Dictionary<int, Info>() : null);
-                if (parent != null)
-                    parent.ChildsIsVoid |= this.IsVoid;
             }
-            public override string ToString() { return Text; }
-            public abstract EntityType Entity { get; }
-            protected virtual bool EnableInfo { get { return (this.Entity == EntityType.Vesnice); } }
-            protected abstract string StructureHeader { get; }
-            public IEntity Parent { get; protected set; }
-            public Dictionary<string, IEntity> ChildDict { get; protected set; }
-            protected bool HasChilds { get { return (this.ChildDict != null && this.ChildDict.Count > 0); } }
-            public Dictionary<int, Info> InfoDict { get; protected set; }
-            protected bool HasInfos { get { return (this.InfoDict != null && this.InfoDict.Count > 0); } }
-            public string Text { get { return GetEntityText(this); } }
-            public bool IsVoid { get { return (Kod == VoidEntityCode); } }
-            public bool ChildsIsVoid { get; set; }
-            public string Kod { get; protected set; }
-            public string Nazev { get; protected set; }
-            public int PocetObyvatel
+            /// <summary>
+            /// Konstruktor pro běžný prvek, který má svého Parenta
+            /// </summary>
+            /// <param name="parent"></param>
+            /// <param name="items"></param>
+            /// <param name="index"></param>
+            public EntityInfo(EntityInfo parent, string[] items, int index = 1)
             {
-                get
+                this.Parent = parent;
+                if (items != null && items.Length >= (index + 2))
                 {
-                    if (!_PocetObyvatel.HasValue)
+                    this.Kod = items[index];
+                    this.Nazev = items[index + 1];
+                    if (items.Length >= (index + 6) && PocetObyvatelInfo.TryCreate(items, (index + 2), out var pocetObyv))
                     {
-                        if (this.Entity == EntityType.Vesnice)
-                            _PocetObyvatel = this.Database.GetPocetObyvatelInternal(this.Kod);
-                        else if (HasChilds)
-                            _PocetObyvatel = this.ChildDict.Values.Sum(c => c.PocetObyvatel);
-                        else
-                            _PocetObyvatel = 0;
+                        _PocetObyv = pocetObyv;
+                        IsPocetObyvLoaded = true;
                     }
-                    return _PocetObyvatel.Value;
                 }
             }
-            private int? _PocetObyvatel = null;
-            protected virtual int PocetObyvatelCurrent
-            {
-                get
-                {
-                    if (this.Entity == EntityType.Vesnice)
-                        return this.Database.GetPocetObyvatelInternal(this.Kod);
-                    if (this.HasChilds)
-                        return this.ChildDict.Values.Select(child => child.PocetObyvatel).Sum();
-                    return 0;
-                }
-            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString() { return Text; }
+            /// <summary>
+            /// Parent entita, u Root entity je null
+            /// </summary>
+            public EntityInfo Parent { get; protected set; }
+            /// <summary>
+            /// Reference na databázi
+            /// </summary>
+            public DatabaseInfo Database { get { return Parent?.Database ?? _Database; } protected set { _Database = value; } } private DatabaseInfo _Database;
+            /// <summary>
+            /// Úroveň, Root má 0, jeho Child mají postupně +1
+            /// </summary>
+            public int Level { get { return (Parent != null ? (Parent.Level + 1) : 0); } }
+            /// <summary>
+            /// Plný kód entity počínaje Root entitou
+            /// </summary>
             public virtual string FullCode
             {
                 get
@@ -1783,11 +1683,142 @@ namespace Djs.Tools.CovidGraphs.Data
                     return (parentCode.Length > 0 ? (parentCode + EntityDelimiter) : "") + Kod;
                 }
             }
-            public virtual Database Database { get { return Parent?.Database; } protected set { } }
-            public virtual IEntity AddOrCreateChild(string kod, Func<IEntity> creator)
+            /// <summary>
+            /// Typ this entity
+            /// </summary>
+            public EntityType Entity { get { return DatabaseInfo.GetEntityType(this.Level); } }
+            /// <summary>
+            /// Text záhlaví při ukládání entity
+            /// </summary>
+            protected string StructureHeader { get { return DatabaseInfo.GetStructureHeader(this.Level); } }
+            /// <summary>
+            /// true pokud reálně máme nějaké <see cref="ChildDict "/>
+            /// </summary>
+            protected bool HasChilds { get { return (this.ChildDict != null && this.ChildDict.Count > 0); } }
+            /// <summary>
+            /// Moje vlastní Child entity (například pod Krajem jsou Okresy)
+            /// </summary>
+            public Dictionary<string, EntityInfo> ChildDict { get; protected set; }
+            /// <summary>
+            /// true pokud reálně máme nějaké <see cref="LocalDataDict"/>
+            /// </summary>
+            protected bool HasLocalData { get { return (this.LocalDataDict != null && this.LocalDataDict.Count > 0); } }
+            /// <summary>
+            /// Nativní informace, vztahující se výhradně k této entitě. 
+            /// Zde nejsou informace sumarizované z Child entit.
+            /// </summary>
+            protected Dictionary<int, DataInfo> LocalDataDict { get; private set; }
+            /// <summary>
+            /// true pokud zde máme cachované informace z podřízených Childs prvků
+            /// </summary>
+            protected bool HasCachedData { get { return (this.CachedDataDict != null); } }
+            /// <summary>
+            /// Souhrn cachovaných informací z Child prvků i z this prvků. Je použitelný pouze pokud nefiltrujeme i podle počtu obyvatel.
+            /// </summary>
+            protected Dictionary<int, DataInfo> CachedDataDict { get; private set; }
+            /// <summary>
+            /// Uživatelský text popisující this entitu
+            /// </summary>
+            public string Text { get { return GetEntityText(this); } }
+            /// <summary>
+            /// Kód entity, používá se do <see cref="FullCode"/>
+            /// </summary>
+            public string Kod { get; protected set; }
+            /// <summary>
+            /// Holý název entity (jméno města, obce...)
+            /// </summary>
+            public string Nazev { get; protected set; }
+            /// <summary>
+            /// Strukturovaný počet obyvatel
+            /// </summary>
+            public PocetObyvatelInfo PocetObyv
             {
-                if (kod == null) throw new ArgumentNullException($"Nelze přidat nový Child do prvku typu {this.GetType().Name}, pokud jeho kód nového Child je NULL");
-                IEntity result;
+                get
+                {
+                    if (_PocetObyv == null)
+                    {
+                        if (this.Entity == EntityType.Vesnice)
+                        {
+                            var pocet = this.Database.GetPocet(this.Kod);
+                            if (pocet != null)
+                            {
+                                _PocetObyv = pocet;
+                                IsPocetObyvLoaded = true;
+                            }
+                        }
+                        if (_PocetObyv == null)
+                        {
+                            if (this.HasChilds)
+                            {
+                                _PocetObyv = PocetObyvatelInfo.CreateFromSum(this.ChildDict.Values.Select(c => c.PocetObyv));
+                            }
+                        }
+                        if (_PocetObyv == null)
+                        {
+                            _PocetObyv = new PocetObyvatelInfo(0, 0, 0, 0);
+                        }
+                    }
+                    return _PocetObyv;
+                }
+            }
+            /// <summary>
+            /// Obsahuje true v případě, že Počet obyvatel je načten z reálných dat, false pokud je sečten z Childs údajů. Takový se neukládá.
+            /// </summary>
+            public bool IsPocetObyvLoaded { get; private set; }
+            /// <summary>
+            /// Strukturovaný počet obyvatel
+            /// </summary>
+            private PocetObyvatelInfo _PocetObyv;
+            /// <summary>
+            /// Počet obyvatel
+            /// </summary>
+            public int PocetObyvatel { get { return PocetObyv.Pocet; } }
+            /// <summary>
+            /// Najde a vrátí entitu s daným kódem, kde první část kódu hledá ve svých Childs.
+            /// </summary>
+            /// <param name="fullCode"></param>
+            /// <returns></returns>
+            public EntityInfo GetEntity(string fullCode)
+            {
+                if (String.IsNullOrEmpty(fullCode)) return null;
+                if (!HasChilds) return null;
+
+                string[] codes = fullCode.Split(EntityInfo.EntityDelimiter[0]);
+                int count = codes.Length;
+
+                if (count < 1) return null;
+                Queue<string> codeQueue = new Queue<string>(codes);
+
+                return GetEntity(codeQueue);
+            }
+            /// <summary>
+            /// Najde a vrátí entitu s daným kódem, kde první část kódu hledá ve svých Childs.
+            /// </summary>
+            /// <param name="codeQueue"></param>
+            /// <returns></returns>
+            public EntityInfo GetEntity(Queue<string> codeQueue)
+            {
+                if (codeQueue == null || codeQueue.Count == 0) return null;
+                if (!HasChilds) return null;
+
+                string code = codeQueue.Dequeue();
+                if (code == null) return null;
+                if (!this.ChildDict.TryGetValue(code, out var entity) || entity == null) return null;
+
+                if (codeQueue.Count == 0) return entity;
+                return entity.GetEntity(codeQueue);
+            }
+            /// <summary>
+            /// Přidá nový prvek Child. Lze přidat do jakékoli úrovně.
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="creator"></param>
+            /// <returns></returns>
+            public virtual EntityInfo AddOrCreateChild(string kod, Func<EntityInfo> creator)
+            {
+                if (kod == null) throw new ArgumentNullException($"Nelze najít ani přidat Child prvek do prvku typu {this.GetType().Name}, pokud kód Child prvku je NULL.");
+                EntityInfo result;
+                if (this.ChildDict == null) this.ChildDict = new Dictionary<string, EntityInfo>();
                 if (!this.ChildDict.TryGetValue(kod, out result))
                 {
                     result = creator();
@@ -1795,53 +1826,118 @@ namespace Djs.Tools.CovidGraphs.Data
                 }
                 return result;
             }
-            public virtual Info AddOrCreateInfo(int key, Func<Info> creator)
+            /// <summary>
+            /// Přidá nový prvek Info = reálná informace na této úrovni. Lze přidat do jakékoli úrovně.
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="creator"></param>
+            /// <returns></returns>
+            public virtual DataInfo AddOrCreateData(int key, Func<DataInfo> creator)
             {
-                Info result;
-                if (this.InfoDict == null) throw new ArgumentNullException($"Nelze přidat prvek Info do prvku {this.GetType().Name}, protože tento prvek neočekává Info.");
-                if (!this.InfoDict.TryGetValue(key, out result))
+                DataInfo result;
+                if (this.LocalDataDict == null) this.LocalDataDict = new Dictionary<int, DataInfo>();
+                if (!this.LocalDataDict.TryGetValue(key, out result))
                 {
                     result = creator();
-                    this.InfoDict.Add(key, result);
+                    this.LocalDataDict.Add(key, result);
                 }
                 return result;
             }
             public virtual void Clear(FileContentType contentType)
             {
-                foreach (var item in this.ChildDict.Values)
-                    item.Clear(contentType);
-
-                if (HasChilds && (contentType == FileContentType.Structure || contentType == FileContentType.DataPack))
+                if (HasChilds)
                 {
-                    this.ChildDict.Clear();
-                    Parent.ChildsIsVoid = false;
+                    foreach (var item in this.ChildDict.Values)
+                        item.Clear(contentType);
+
+                    if (contentType == FileContentType.Structure || contentType == FileContentType.DataPack)
+                    {
+                        this.ChildDict.Clear();
+                        this.ChildDict = null;
+                    }
                 }
-                if (HasInfos && (contentType == FileContentType.Data || contentType == FileContentType.DataPack))
-                    this.InfoDict.Clear();
+                if (HasLocalData && (contentType == FileContentType.Data || contentType == FileContentType.DataPack))
+                {
+                    this.LocalDataDict.Clear();
+                    this.LocalDataDict = null;
+                }
             }
             public virtual void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
             {
-                if (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack || (saveInfo.ContentType == FileContentType.Data && this.Entity == EntityType.Vesnice))
+                // Uložit hlavičku pro this instanci? Pokud se ukládá komletní struktura entit (Structure nebo DataPack), 
+                ///  anebo tehdy pokud máme vlastní data = pak řádek typu Entita reprezentuje konkrétní entitu, do které patří následující data:
+                bool saveHeader = (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack || HasLocalData);
+                if (saveHeader)
                     SaveHeader(saveInfo, stream);
-                if (HasInfos && (saveInfo.ContentType == FileContentType.Data || saveInfo.ContentType == FileContentType.DataPack))
-                    this.InfoDict.Values.ForEachExec(c => c.Save(saveInfo, stream));
+
+                // Uložit informace: pokud se ukládá odpovídající formát, a pokud my máme nějaké vlastní informace:
+                bool saveData = ((saveInfo.ContentType == FileContentType.Data || saveInfo.ContentType == FileContentType.DataPack) && HasLocalData);
+                if (saveData)
+                    this.LocalDataDict.Values.ForEachExec(c => c.Save(saveInfo, stream));
+
+                // Childs vždycky, když jsou:
                 if (HasChilds)
                     this.ChildDict.Values.ForEachExec(c => c.Save(saveInfo, stream));
             }
+            /// <summary>
+            /// Uloží jeden řádek obsahující vlastní data this entity (kód, název, volitelně počet obyvatel)
+            /// </summary>
+            /// <param name="saveInfo"></param>
+            /// <param name="stream"></param>
             protected virtual void SaveHeader(ProcessFileInfo saveInfo, IO.StreamWriter stream)
             {
-                stream.WriteLine($"{StructureHeader};{Kod};{Nazev}");
+                // Plné ukládání (včetně počtu obyvatel) při ukládání Struktury nebo DataPack, ale ne při ukládání holých dat:
+                bool saveFull = (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack);
+                string line = $"{StructureHeader};{Kod};{Nazev}";
+                if (saveFull && IsPocetObyvLoaded)
+                    line += ";" + this.PocetObyv.Line;
+                stream.WriteLine(line);
             }
+            /// <summary>
+            /// Prohledá informace a vyhovující vloží do argumentu
+            /// </summary>
+            /// <param name="args"></param>
             public virtual void SearchInfo(SearchInfoArgs args)
             {
                 args.ResultSet.ScanRecordCount++;                    // Statistika
+
+                // Filtr na Počet obyvatel je závažný rozdíl v algoritmu z hlediska cachovaných informací:
+                bool isTestPocetObyvatel = args.IsTestPocetObyvatel;
+
+                // Cachované data (až budou) budou akceptovatelné jen tehdy, když NEBUDE potřebný filtr na počet obyvatel:
+                if (HasCachedData && !isTestPocetObyvatel)
+                {
+
+
+
+                    return;    // nejdeme dál, a hlavně neřešíme Childs, protože jejich informace už máme zpracované v cache.
+                }
+
+                // Pokud mám vlastní data, pak je zpracuji:
+                if (HasLocalData)
+                {
+                    bool isValidPocetObyvatel = true;
+                    // Filtr na Počet obyvatel se aplikuje pouze na nejnižší úrovni entit (=tam, kde nemám Childs).
+                    // Pokud bych měl lokální data (HasLocalData) a současně měl Childs (HasChilds), pak svoje lokální data budu akceptovat i bez filtru na počet obyvatel,
+                    //  šlo by totiž o nějaké jiné informace než ty standardně filtrované počtem obyvatel (typicky: počet volných lůžek, uváděný na úrovni Okresu).
+                    if (!HasChilds)
+                        isValidPocetObyvatel = args.IsValidPocetObyvatel(this.PocetObyvatel);
+
+                    if (isValidPocetObyvatel)
+                    {
+                        args.PocetObyvatel += this.PocetObyvatel;
+                        foreach (var data in this.LocalDataDict.Values)
+                            args.AddDataToResult(data);
+                    }
+                }
+
+                // Projdu všechny svoje Child entity:
                 if (this.HasChilds)
                     this.ChildDict.Values.ForEachExec(c => c.SearchInfo(args));
             }
             public virtual void SearchEntities(SearchEntityArgs args)
             {
-                if (!this.IsVoid)
-                    Database.SearchEntityAdd(this, args);
+                DatabaseInfo.SearchEntityAdd(this, args);
                 if (this.HasChilds)
                     this.ChildDict.Values.ForEachExec(c => c.SearchEntities(args));
             }
@@ -1850,17 +1946,116 @@ namespace Djs.Tools.CovidGraphs.Data
             /// </summary>
             public const string EntityDelimiter = ".";
         }
-
-        public class Info : DataInfo
+        /// <summary>
+        /// Počet obyvatel lehce strukturovaný
+        /// </summary>
+        public class PocetObyvatelInfo
         {
-            public Info(IEntity parent, DateTime date)
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="pocetMuziCelkem"></param>
+            /// <param name="pocetMuziNad15"></param>
+            /// <param name="pocetZenyCelkem"></param>
+            /// <param name="pocetZenyNad15"></param>
+            public PocetObyvatelInfo(int pocetMuziCelkem, int pocetMuziNad15, int pocetZenyCelkem, int pocetZenyNad15)
+            {
+                this.MuziCelkem = pocetMuziCelkem;
+                this.MuziNad15 = pocetMuziNad15;
+                this.ZenyCelkem = pocetZenyCelkem;
+                this.ZenyNad15 = pocetZenyNad15;
+            }
+            /// <summary>
+            /// Vytvoří new instanci ze součtu hodnot dodaných instancí. Pokud není dodáno nic, vrací empty instanci (ne null)
+            /// </summary>
+            /// <param name="items"></param>
+            /// <returns></returns>
+            public static PocetObyvatelInfo CreateFromSum(IEnumerable<PocetObyvatelInfo> items)
+            {
+                int mc = 0;
+                int mn = 0;
+                int zc = 0;
+                int zn = 0;
+                if (items != null)
+                {
+                    foreach (var item in items)
+                    {
+                        if (item == null) continue;
+                        mc += item.MuziCelkem;
+                        mn += item.MuziNad15;
+                        zc += item.ZenyCelkem;
+                        zn += item.ZenyNad15;
+                    }
+                }
+                return new PocetObyvatelInfo(mc, mn, zc, zn);
+            }
+            /// <summary>
+            /// Zkusí vytvořit instanci z textů v poli items, počínaje daným indexem.
+            /// Používá se při načítání dat ze souboru.
+            /// Víceméně koreluje s property <see cref="Line"/>, která z dat instance vytvoří text ukládaný do souboru při Save().
+            /// </summary>
+            /// <param name="items"></param>
+            /// <param name="index"></param>
+            /// <param name="pocetObyv"></param>
+            /// <returns></returns>
+            internal static bool TryCreate(string[] items, int index, out PocetObyvatelInfo pocetObyv)
+            {
+                pocetObyv = null;
+                if (items == null || items.Length < (index + 4)) return false;
+                if (!(Int32.TryParse(items[index], out int mc) &&
+                      Int32.TryParse(items[index + 1], out int mn) &&
+                      Int32.TryParse(items[index + 2], out int zc) &&
+                      Int32.TryParse(items[index + 3], out int zn)))
+                    return false;
+                pocetObyv = new PocetObyvatelInfo(mc, mn, zc, zn);
+                return true;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Počet obyvatel: {Pocet}";
+            }
+            /// <summary>
+            /// Text pro uložení do databáze
+            /// </summary>
+            public string Line { get { return $"{MuziCelkem};{MuziNad15};{ZenyCelkem};{ZenyNad15}"; } }
+            /// <summary>
+            /// Počet mužů celkem
+            /// </summary>
+            public int MuziCelkem { get; private set; }
+            /// <summary>
+            /// Počet mužů nad 15 roků
+            /// </summary>
+            public int MuziNad15 { get; private set; }
+            /// <summary>
+            /// Počet žen celkem
+            /// </summary>
+            public int ZenyCelkem { get; private set; }
+            /// <summary>
+            /// Počet žen nad 15 roků
+            /// </summary>
+            public int ZenyNad15 { get; private set; }
+            /// <summary>
+            /// Počet celkem
+            /// </summary>
+            public int Pocet { get { return (MuziCelkem + ZenyCelkem); } }
+        }
+        /// <summary>
+        /// Datové informace základní / cachované
+        /// </summary>
+        public class DataInfo : ItemInfo
+        {
+            public DataInfo(EntityInfo parent, DateTime date)
             {
                 this.Parent = parent;
                 this.Date = date;
                 this.NewCount = 0;
                 this.CurrentCount = 0;
             }
-            public Info(IEntity parent, DateTime date, int newCount, int currentCount)
+            public DataInfo(EntityInfo parent, DateTime date, int newCount, int currentCount)
             {
                 this.Parent = parent;
                 this.Date = date;
@@ -1872,8 +2067,8 @@ namespace Djs.Tools.CovidGraphs.Data
                 return Text;
             }
             public string Text { get { return $"Datum: {(Date.ToString("dd.MM.yyyy"))}; NewCount: {NewCount}; CurrentCount: {CurrentCount}; Parent: {Parent.Text}"; } }
-            public IEntity Parent { get; private set; }
-            public Database Database { get { return Parent.Database; } }
+            public EntityInfo Parent { get; private set; }
+            public DatabaseInfo Database { get { return Parent.Database; } }
             public DateTime Date { get; private set; }
             public int DateKey { get { return Date.GetDateKey(); } }
             public int DateKeyShort { get { return this.Date.GetDateKeyShort(); } }
@@ -1890,14 +2085,6 @@ namespace Djs.Tools.CovidGraphs.Data
 
                 }
             }
-            public void AddResults(SearchInfoArgs args)
-            {
-                args.ResultSet.ScanRecordCount++;                    // Statistika
-
-                if (args.Begin.HasValue && this.Date < args.Begin.Value) return;
-                if (args.End.HasValue && this.Date >= args.End.Value) return;
-                args.ResultSet.AddInfo(args.Entity, args.SourceType, this);         // SourceType obsahuje pouze Source bity z hodnoty ValueType
-            }
             public int NewCount { get; private set; }
             public int CurrentCount { get; private set; }
             public void AddData1(int newCount, int currentCount)
@@ -1906,9 +2093,9 @@ namespace Djs.Tools.CovidGraphs.Data
                 this.CurrentCount += currentCount;
             }
         }
-        public class Pocet : DataInfo
+        public class Pocet : ItemInfo
         {
-            public Pocet(Database database, string kod, string nazev, string mesto, string kraj, int pocetMC, int pocetMS, int pocetFC, int pocetFS)
+            public Pocet(DatabaseInfo database, string kod, string nazev, string mesto, string kraj, int pocetMC, int pocetMS, int pocetFC, int pocetFS)
             {
                 this.Database = database;
                 this.Kod = kod;
@@ -1927,7 +2114,7 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             public string Text { get { return TextDebug; } }
             public string TextDebug { get { return $"Počet; Kód: {Kod}; Název: {Nazev}; Mesto: {Mesto}; Počet obyvatel: {PocetCelkem}" ; } }
-            public Database Database { get; private set; }
+            public DatabaseInfo Database { get; private set; }
             public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
             {
                 stream.WriteLine($"{HeaderPocet};{Kod};{Nazev};{Mesto};{Kraj};{PocetMC};{PocetMS};{PocetFC};{PocetFS}");
@@ -1944,7 +2131,7 @@ namespace Djs.Tools.CovidGraphs.Data
 
         }
 
-        public abstract class DataInfo
+        public abstract class ItemInfo
         { }
         #endregion
         #region Komprimace a dekomprimace stringu
@@ -2025,7 +2212,19 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class SearchInfoArgs
     {
-        public SearchInfoArgs(IEntity entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, int? pocetOd, int? pocetDo)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="valueType"></param>
+        /// <param name="dataTypeInfo"></param>
+        /// <param name="begin">Vstup: uživatelem požadovaný počátek (včetně) = tato data chce vidět</param>
+        /// <param name="end">Vstup: uživatelem požadovaný konec (mimo) = tato data chce vidět</param>
+        /// <param name="sourceBegin">Potřebný počátek načítaných dat (včetně) = tato data je třeba načíst, abychom mohli spočítat podklady k uživatelskému počátku</param>
+        /// <param name="sourceEnd">Potřebný konec načítaných dat (mimo) = tato data je třeba načíst, abychom mohli spočítat podklady k uživatelskému počátku</param>
+        /// <param name="pocetOd"></param>
+        /// <param name="pocetDo"></param>
+        public SearchInfoArgs(DatabaseInfo.EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo, DateTime? begin, DateTime? end, DateTime? sourceBegin, DateTime? sourceEnd, int? pocetOd, int? pocetDo)
         {
             this.Entity = entity;
             this.SourceType = (DataValueType)(valueType & DataValueType.CommonSources);
@@ -2033,6 +2232,8 @@ namespace Djs.Tools.CovidGraphs.Data
             this.DataTypeInfo = dataTypeInfo;
             this.Begin = begin;
             this.End = end;
+            this.SourceBegin = sourceBegin;
+            this.SourceEnd = sourceEnd;
             this.PocetObyvatel = 0;
             this.PocetOd = pocetOd;
             this.PocetDo = pocetDo;
@@ -2041,7 +2242,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Výchozí entita hledání
         /// </summary>
-        public IEntity Entity { get; private set; }
+        public DatabaseInfo.EntityInfo Entity { get; private set; }
         /// <summary>
         /// Zdroj dat z databáze (jde o hodnotu <see cref="ValueType"/> oseknutou pouze na bity Source = <see cref="DataValueType.CommonSources"/>).
         /// Používá se při fyzickém načítání z databáze.
@@ -2056,13 +2257,21 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public DataValueTypeInfo DataTypeInfo { get; private set; }
         /// <summary>
-        /// Počátek období, finální hodnota (toto datum půjde do grafu)
+        /// Počátek období, finální uživatelská hodnota (včetně) (toto datum půjde do grafu)
         /// </summary>
         public DateTime? Begin { get; private set; }
         /// <summary>
-        /// Konec období, finální hodnota (toto datum půjde do grafu)
+        /// Konec období, finální uživatelská hodnota (mimo) (toto datum půjde do grafu)
         /// </summary>
         public DateTime? End { get; private set; }
+        /// <summary>
+        /// Potřebný počátek načítaných dat (včetně) = tato data je třeba načíst, abychom mohli spočítat podklady k uživatelskému počátku
+        /// </summary>
+        public DateTime? SourceBegin { get; private set; }
+        /// <summary>
+        /// Potřebný konec načítaných dat (mimo) = tato data je třeba načíst, abychom mohli spočítat podklady k uživatelskému počátku
+        /// </summary>
+        public DateTime? SourceEnd { get; private set; }
         /// <summary>
         /// Filtrovat (na nejnižší úrovni) pouze obce s počtem obyvatel v rozmezí <see cref="PocetOd"/> až <see cref="PocetDo"/>
         /// </summary>
@@ -2087,6 +2296,36 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Kompletní data výsledků
         /// </summary>
         public ResultSetInfo ResultSet { get; private set; }
+
+        /// <summary>
+        /// Obsahuje true, pokud this argument obsahuje filtr na Počet obyvatel.
+        /// Pokud ano, pak se filtr na počet obyvatel <see cref="IsValidPocetObyvatel(int)"/> musí aplikovat na nejnižší úrovni struktury (entity), 
+        /// a nelze akceptovat cachované informace na vyšších úrovních entity, protože ty jsou sumované ze všech podřízených entit bez filtru na počet obyvatel.
+        /// </summary>
+        public bool IsTestPocetObyvatel { get { return (this.PocetOd.HasValue || this.PocetDo.HasValue); } }
+        /// <summary>
+        /// Vrátí true, pokud daný počet obyvatel vyhovuje požadavku.
+        /// </summary>
+        /// <param name="pocetObyvatel"></param>
+        /// <returns></returns>
+        public bool IsValidPocetObyvatel(int pocetObyvatel)
+        {
+            if (this.PocetOd.HasValue && pocetObyvatel < this.PocetOd.Value) return false;         // Filtr je: "Od 1000", pak 999 nevyhovuje, ale 1000 vyhovuje
+            if (this.PocetDo.HasValue && pocetObyvatel >= this.PocetDo.Value) return false;        // Filtr je: "Do 5000", pak 5000 už nevyhovuje (ale 4999 vyhovuje)
+            return true;
+        }
+        /// <summary>
+        /// Otestuje dodaná data zda vyhovují z hlediska datumu, a pokud ano pak do resultu přidá jejich patřičnou hodnotu.
+        /// </summary>
+        /// <param name="data"></param>
+        public void AddDataToResult(DatabaseInfo.DataInfo data)
+        {
+            this.ResultSet.ScanRecordCount++;                                                      // Statistika
+
+            if (this.SourceBegin.HasValue && data.Date < this.SourceBegin.Value) return;
+            if (this.SourceEnd.HasValue && data.Date >= this.SourceEnd.Value) return;
+            this.ResultSet.AddInfo(this.Entity, this.SourceType, data);                            // SourceType obsahuje pouze Source bity z hodnoty ValueType
+        }
     }
     /// <summary>
     /// Třída výsledků
@@ -2130,7 +2369,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="entity"></param>
         /// <param name="sourceType"></param>
         /// <param name="info"></param>
-        internal void AddInfo(IEntity entity, DataValueType sourceType, Database.Info info)
+        internal void AddInfo(DatabaseInfo.EntityInfo entity, DataValueType sourceType, DatabaseInfo.DataInfo info)
         {
             this.LoadRecordCount++;                                  // Statistika
 
@@ -2144,7 +2383,7 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class ResultInfo
     {
-        public ResultInfo(IEntity entity, DateTime date)
+        public ResultInfo(DatabaseInfo.EntityInfo entity, DateTime date)
         {
             this.Entity = entity;
             this.Date = date;
@@ -2156,8 +2395,8 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         public string Text { get { return TextDebug; } }
         public string TextDebug { get { return $"ResultInfo; Datum: {(Date.ToString("dd.MM.yyyy"))}; RawValue: {RawValueText}, Value: {ValueText}, TempValue: {TempValueText}; Entita: {Entity.Text}"; } }
-        public IEntity Entity { get; private set; }
-        public Database Database { get { return Entity.Database; } }
+        public DatabaseInfo.EntityInfo Entity { get; private set; }
+        public DatabaseInfo Database { get { return Entity.Database; } }
         public DateTime Date { get; private set; }
         public int DateKey { get { return Date.GetDateKey(); } }
         private string RawValueText { get { return GetText(RawValue); } }
@@ -2190,7 +2429,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="info"></param>
         /// <param name="sourceType">Source bity z ValueType</param>
-        internal void AddInfo(Database.Info info, DataValueType sourceType)
+        internal void AddInfo(DatabaseInfo.DataInfo info, DataValueType sourceType)
         {
             decimal value = 0m;
             switch (sourceType)
@@ -2216,42 +2455,19 @@ namespace Djs.Tools.CovidGraphs.Data
             this.HasText = !String.IsNullOrEmpty(searchText);
             this.SearchText = searchText;
             this.IsWildCard = isWildCard;
-            this.FoundBeginEntities = new List<IEntity>();
-            this.FoundContainsEntities = new List<IEntity>();
+            this.FoundBeginEntities = new List<DatabaseInfo.EntityInfo>();
+            this.FoundContainsEntities = new List<DatabaseInfo.EntityInfo>();
         }
         public EntityType? EntityType { get; private set; }
         public bool HasText { get; private set; }
         public string SearchText { get; private set; }
         public bool IsWildCard { get; private set; }
-        public List<IEntity> FoundBeginEntities { get; private set; }
-        public List<IEntity> FoundContainsEntities { get; private set; }
+        public List<DatabaseInfo.EntityInfo> FoundBeginEntities { get; private set; }
+        public List<DatabaseInfo.EntityInfo> FoundContainsEntities { get; private set; }
     }
     #endregion
     #region Obecný přístup k datům entity (země, kraj, okres, město, obec, ves)
-    /// <summary>
-    /// Obecný popis jedné obce, města, okresu, kraje, země
-    /// </summary>
-    public interface IEntity
-    {
-        EntityType Entity { get; }
-        IEntity Parent { get; }
-        bool IsVoid { get; }
-        bool ChildsIsVoid { get; set; }
-        string FullCode { get; }
-        string Text { get; }
-        Database Database { get; }
-        string Kod { get; }
-        string Nazev { get; }
-        int PocetObyvatel { get; }
-        Dictionary<string, IEntity> ChildDict { get; }
-        Dictionary<int, Database.Info> InfoDict { get; }
-        void Clear(FileContentType contentType);
-        IEntity AddOrCreateChild(string kod, Func<IEntity> creator);
-        Database.Info AddOrCreateInfo(int key, Func<Database.Info> creator);
-        void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream);
-        void SearchInfo(SearchInfoArgs args);
-        void SearchEntities(SearchEntityArgs args);
-    }
+  
     public enum EntityType { None, World, Zeme, Kraj, Okres, Mesto, Obec, Vesnice }
     public class ProcessFileInfo
     {
@@ -2340,15 +2556,15 @@ namespace Djs.Tools.CovidGraphs.Data
     }
     public class ProcessFileCurrentInfo
     {
-        public IEntity World { get; set; }
-        public IEntity Zeme { get; set; }
-        public IEntity Kraj { get; set; }
-        public IEntity Okres { get; set; }
-        public IEntity Mesto { get; set; }
-        public IEntity Obec { get; set; }
-        public IEntity Vesnice { get; set; }
-        public Database.Pocet Pocet { get; set; }
-        public Database.Info Info { get; set; }
+        public DatabaseInfo.EntityInfo World { get; set; }
+        public DatabaseInfo.EntityInfo Zeme { get; set; }
+        public DatabaseInfo.EntityInfo Kraj { get; set; }
+        public DatabaseInfo.EntityInfo Okres { get; set; }
+        public DatabaseInfo.EntityInfo Mesto { get; set; }
+        public DatabaseInfo.EntityInfo Obec { get; set; }
+        public DatabaseInfo.EntityInfo Vesnice { get; set; }
+        public DatabaseInfo.Pocet Pocet { get; set; }
+        public DatabaseInfo.DataInfo Info { get; set; }
     }
     public class ProgressArgs
     {

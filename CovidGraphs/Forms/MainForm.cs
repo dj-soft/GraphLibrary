@@ -250,45 +250,13 @@ namespace Djs.Tools.CovidGraphs
             DXB.Ribbon.RibbonPageGroup group02 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA DAT");
             page0.Groups.Add(group02);
 
-            /*
-            var provider = DevExpress.Utils.DxImageAssemblyUtil.ImageProvider;
-
-            var baseImages = provider.GetBaseImages();
-            var baseImage0 = provider.GetImage(baseImages[0]);
-
-            var file0 = provider.GetFile(baseImages[0]);
-
-
-            var svgImages = provider.GetSvgImages().ToArray();
-            var svgImage0 = provider.GetSvgImage(svgImages[0]);
-            var svgImage1 = provider.GetSvgImage(svgImages[1]);
-            var svgImage2 = provider.GetSvgImage(svgImages[2]);
-
-            */
-
-
-            /*
-            var allImages = provider.GetAllImages();
-
-
-            var allImage0 = allImages[0];
-            var allImage0Uri = allImage0.MakeUri();
-            var allImage0Img = provider.GetImageByPath(allImage0Uri);
-
-            var files = provider.GetFiles("CostAnalysis_16x16.png").ToArray();
-            var files0Img = provider.GetImageByPath(files[0]);
-
-            var name = allImages[25].MakeUri();
-            */
-
-
             RibbonAddButton(group01, "Přidej", "Přidá nový graf", Properties.Resources.document_new_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickNewGraph);
             RibbonAddButton(group01, "Uprav", "Umožní změnit datové zdroje grafu: výběr obcí, výběr dat", Properties.Resources.document_properties_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditDataGraph);
             RibbonAddButton(group01, "Vzhled grafu", "Otevře editor vzhledu grafu", Properties.Resources.document_page_setup_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditLayoutGraph);
             RibbonAddButton(group01, "Smaž", "Smaže aktuální graf", Properties.Resources.document_close_4_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickDeleteGraph);
             RibbonAddButton(group02, "Aktualizuj data", "Zajistí aktualizaci dat z internetu", Properties.Resources.download_3_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickWebUpdate);
             RibbonAddButton(group02, "Značky", "Značky jsou společné, jsou vkládány do všech grafů, označují význačné časové úseky", Properties.Resources.system_switch_user_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditStrip);
-            RibbonAddButton(group02, "Ulož", "Uloží všechna aktuální data do jednoho datového souboru DataPack, ten lze např odeslat mailem.", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveDataPack);
+            RibbonAddButton(group02, "Ulož", "Uloží všechna aktuální data do datových souborů (Structure, Data, i kompaktního DataPack, ten lze např odeslat mailem).", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveData);
 
 
             DXB.Ribbon.RibbonPage page1 = new DXB.Ribbon.RibbonPage("VZHLED APLIKACE");
@@ -345,9 +313,9 @@ namespace Djs.Tools.CovidGraphs
         private void RibbonClickEditStrip(object sender, DXB.ItemClickEventArgs e)
         {
         }
-        private void RibbonClickSaveDataPack(object sender, DXB.ItemClickEventArgs e)
+        private void RibbonClickSaveData(object sender, DXB.ItemClickEventArgs e)
         {
-            Data.App.TryRun(TrySaveDatabasePack);
+            Data.App.TryRun(TrySaveData);
         }
         private void StatusFillItems()
         {
@@ -471,7 +439,7 @@ namespace Djs.Tools.CovidGraphs
             StatusProgressValue = 0f;
             StatusInfoText = "Načítáme data...";
 
-            this._Database = new Data.Database();
+            this._Database = new Data.DatabaseInfo();
             this._Database.LoadStandardDataAsync(DatabaseShowProgress);
         }
         /// <summary>
@@ -489,13 +457,14 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Zkusí uložit databázi do DataPacku
         /// </summary>
-        private void TrySaveDatabasePack()
+        private void TrySaveData()
         {
             if (this._Database == null)
                 throw new InvalidOperationException("Nelze uložit databázi, dosud není vytvořena. Počkejte několik sekund...");
             if (!this._Database.IsReady)
                 throw new InvalidOperationException("Nelze uložit databázi, dosud není připravena. Počkejte několik sekund...");
 
+            this._Database.SaveStandardData(true, DatabaseShowProgress);
             this._Database.SaveDataPackData(DatabaseShowProgress);
         }
         /// <summary>
@@ -530,7 +499,7 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Úložiště databáze
         /// </summary>
-        private Data.Database _Database;
+        private Data.DatabaseInfo _Database;
         #endregion
         #region Správce grafů
         /// <summary>

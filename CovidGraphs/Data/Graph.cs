@@ -433,7 +433,7 @@ namespace Djs.Tools.CovidGraphs.Data
         private const string FileExtension = "chart";
         #endregion
         #region Načtení dat grafu z databáze
-        public GraphData LoadData(Database database)
+        public GraphData LoadData(DatabaseInfo database)
         {
             if (database == null)
                 throw new InvalidOperationException($"Nelze získat data grafu v metodě GraphInfo.LoadData(), protože není k dispozici databáze.");
@@ -840,11 +840,11 @@ namespace Djs.Tools.CovidGraphs.Data
         #endregion
         #region Načtení dat grafu pro tuto sérii z databáze
         /// <summary>
-        /// Načte data z databáze <see cref="Database"/> podle definice v této serii a uloží je do nového sloupce v dodaném objektu <paramref name="graphData"/> pro data grafu
+        /// Načte data z databáze <see cref="DatabaseInfo"/> podle definice v této serii a uloží je do nového sloupce v dodaném objektu <paramref name="graphData"/> pro data grafu
         /// </summary>
         /// <param name="database"></param>
         /// <param name="graphData"></param>
-        public void LoadData(Database database, GraphData graphData)
+        public void LoadData(DatabaseInfo database, GraphData graphData)
         {
             string fullCode = this.DataEntityCode;
             var entity = database.GetEntity(fullCode);
@@ -1188,7 +1188,7 @@ namespace Djs.Tools.CovidGraphs.Data
     #endregion
     #region GraphData : Načtená aktuální data o jednom celém grafu (data grafu, sloupce za jednotlivé serie, řádky za jednotlivé datumy)
     /// <summary>
-    /// Data pro jeden graf shrnutá z definice grafu <see cref="GraphInfo"/>, ze všech jeho serií <see cref="GraphSerieInfo"/>, načtená z databáze <see cref="Database"/>.
+    /// Data pro jeden graf shrnutá z definice grafu <see cref="GraphInfo"/>, ze všech jeho serií <see cref="GraphSerieInfo"/>, načtená z databáze <see cref="DatabaseInfo"/>.
     /// Obsahuje sloupce <see cref="Columns"/> za jednotlivé serie grafu, obsahuje řádky <see cref="Rows"/> za jednotlvié datumy, obsahující konkrétní hodnoty.
     /// Property <see cref="DataTable"/> vygeneruje new tabulku pro zobrazení v grafu.
     /// </summary>
@@ -1216,7 +1216,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public DateTime? DateEnd { get; set; }
         public System.Data.DataTable DataTable { get { return CreateDataTable(); } }
-        public GraphColumn AddColumn(GraphSerieInfo serie, IEntity entity)
+        public GraphColumn AddColumn(GraphSerieInfo serie, DatabaseInfo.EntityInfo entity)
         {
             int index = ColumnId++;
             string columnName = "column" + index.ToString();
@@ -1313,7 +1313,7 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class GraphColumn
     {
-        public GraphColumn(GraphData graphData, int columnIndex, string columnName, GraphSerieInfo graphSerie, IEntity dataEntity)
+        public GraphColumn(GraphData graphData, int columnIndex, string columnName, GraphSerieInfo graphSerie, DatabaseInfo.EntityInfo dataEntity)
         {
             this.GraphData = graphData;
             Index = columnIndex;
@@ -1329,7 +1329,7 @@ namespace Djs.Tools.CovidGraphs.Data
         public int Index { get; private set; }
         public string Name { get; set; }
         public GraphSerieInfo GraphSerie { get; private set; }
-        public IEntity DataEntity { get; private set; }
+        public DatabaseInfo.EntityInfo DataEntity { get; private set; }
         public string Title { get { return this.GraphSerie.Title; } }
         public string Description { get; set; }
         public string EntityFullCode { get { return this.DataEntity.FullCode; } }
