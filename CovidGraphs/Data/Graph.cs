@@ -539,7 +539,7 @@ namespace Djs.Tools.CovidGraphs.Data
             string currSerie = DefaultLayoutSerie;
             currSerie = currSerie.Replace("{{ITEMNAME}}", "Item" + (column.Index + 1).ToString());
             currSerie = currSerie.Replace("{{TITLE}}", column.Title);
-            currSerie = currSerie.Replace("{{COLUMNNAME}}", column.Name);
+            currSerie = currSerie.Replace("{{COLUMNNAME}}", column.ColumnNameData);
             currSerie = currSerie.Replace("{{MARKER_VISIBILITY_ELEMENT}}", CreateElement("MarkerVisibility", false));
             currSerie = currSerie.Replace("{{LINECOLOR_ELEMENT}}", CreateElement("Color", graphSerieInfo.LineColor));
             currSerie = currSerie.Replace("{{ENABLE_ANTIALIASING_ELEMENT}}", CreateElement("EnableAntialiasing", true));
@@ -551,8 +551,6 @@ namespace Djs.Tools.CovidGraphs.Data
         protected static string CreateElement(string elementName, string value)
         {
             if (value == null) return "";
-
-            System.Xml.XmlText s;
             string xmlString = System.Web.HttpUtility.HtmlEncode(value);
             return $"{elementName}=\"{xmlString}\" ";
         }
@@ -1215,12 +1213,11 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Poslední zobrazené datum
         /// </summary>
         public DateTime? DateEnd { get; set; }
-        public System.Data.DataTable DataTable { get { return CreateDataTable(); } }
         public GraphColumn AddColumn(GraphSerieInfo serie, DatabaseInfo.EntityInfo entity)
         {
             int index = ColumnId++;
-            string columnName = "column" + index.ToString();
-            GraphColumn column = new GraphColumn(this, index, columnName, serie, entity);
+            string columnNameData = "column" + index.ToString();
+            GraphColumn column = new GraphColumn(this, index, columnNameData, serie, entity);
             this._Columns.AddOrUpdate(index, column);
             return column;
         }
@@ -1234,7 +1231,16 @@ namespace Djs.Tools.CovidGraphs.Data
         public GraphRow[] Rows { get { return _Rows.GetSortedValues((a, b) => a.Date.CompareTo(b.Date)); } }
         private Dictionary<int, GraphColumn> _Columns;
         private Dictionary<int, GraphRow> _Rows;
-        private System.Data.DataTable CreateDataTable()
+        #region Vytváření obecné DataTable
+        /// <summary>
+        /// Tabulka s daty sloužící jako DataSource pro graf
+        /// </summary>
+        public DataTable DataTable { get { return CreateDataTable(); } }
+        /// <summary>
+        /// Vygeneruje a vrátí DataTable pro komponentu grafu
+        /// </summary>
+        /// <returns></returns>
+        private DataTable CreateDataTable()
         {
             System.Data.DataTable dataTable = new System.Data.DataTable("GraphData");
 
@@ -1242,7 +1248,7 @@ namespace Djs.Tools.CovidGraphs.Data
             dataTable.Columns.Add(dataColumn);
             foreach (var column in this.Columns)
             {
-                dataColumn = CreateDataColumn(column.Name, column.Title, typeof(decimal));
+                dataColumn = CreateDataColumn(column.ColumnNameData, column.Title, typeof(decimal));
                 dataTable.Columns.Add(dataColumn);
             }
 
@@ -1253,7 +1259,13 @@ namespace Djs.Tools.CovidGraphs.Data
 
             return dataTable;
         }
-
+        /// <summary>
+        /// Vygeneruje a vrátí DataColumn
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="caption"></param>
+        /// <param name="dataType"></param>
+        /// <returns></returns>
         private DataColumn CreateDataColumn(string columnName, string caption, Type dataType)
         {
             DataColumn dataColumn = new DataColumn(columnName);
@@ -1262,44 +1274,84 @@ namespace Djs.Tools.CovidGraphs.Data
             dataColumn.DataType = dataType;
             return dataColumn;
         }
-
+        #endregion
         #region Statistika
+        /// <summary>
+        /// Inicializace statistiky
+        /// </summary>
         private void StatisticInit()
         {
             this.LoadTimeBegin = DateTime.Now;
             this.LoadTimeEnd = null;
             this.ShowTimeEnd = null;
+            this.ScanRecordCount = 0;
             this.LoadRecordCount = 0;
+            this.ShowRecordCount = 0;
         }
+        /// <summary>
+        /// Čas zahájení načítání dat
+        /// </summary>
         public DateTime LoadTimeBegin { get; private set; }
+        /// <summary>
+        /// Čas dokončení načítání dat
+        /// </summary>
         public DateTime? LoadTimeEnd { get; private set; }
+        /// <summary>
+        /// Čas dokončení zobrazení grafu
+        /// </summary>
         public DateTime? ShowTimeEnd { get; private set; }
-
+        /// <summary>
+        /// Počet sekund načítání dat, textem
+        /// </summary>
         public string LoadSecondsText { get { return (LoadTimeEnd.HasValue ? ((TimeSpan)(LoadTimeEnd.Value - LoadTimeBegin)).TotalSeconds.ToString("### ##0.000").Trim() + " sec": "???"); } }
-
+        /// <summary>
+        /// Počet záznamů prověřovaných, zda vyhoví filtru, textem
+        /// </summary>
         public string ScanRecordCountText { get { return ScanRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů prověřovaných, zda vyhoví filtru
+        /// </summary>
         public int ScanRecordCount { get; private set; }
-        //string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCountText} vět, získáno {graphData.LoadRecordCountText} položek, za {graphData.LoadSecondsText}.";
-        // string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCount} vět, získáno {graphData.LoadRecordCount} položek, za {graphData.LoadSeconds}.";
-
+        /// <summary>
+        /// Počet záznamů načtených podle filtru, textem
+        /// </summary>
         public string LoadRecordCountText { get { return LoadRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů načtených podle filtru
+        /// </summary>
         public int LoadRecordCount { get; private set; }
-
-        public string AcceptRecordCountText { get { return ShowRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů určených k zobrazení v grafu, textem
+        /// </summary>
+        public string ShowRecordCountText { get { return ShowRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů určených k zobrazení v grafu
+        /// </summary>
         public int ShowRecordCount { get; private set; }
-        
+        /// <summary>
+        /// Přidá další počty načtených dat
+        /// </summary>
+        /// <param name="scanCount"></param>
+        /// <param name="loadCount"></param>
+        /// <param name="showCount"></param>
         public void AddCount(int scanCount, int loadCount, int showCount)
         {
             if (scanCount > 0) ScanRecordCount += scanCount;
             if (loadCount > 0) LoadRecordCount += loadCount;
             if (showCount > 0) ShowRecordCount += showCount;
         }
+        /// <summary>
+        /// Volá se po dokončení načítání dat grafu, jen kvůli měření času
+        /// </summary>
         public void FinaliseLoading()
         {
             if (this.LoadTimeEnd.HasValue)
                 throw new InvalidOperationException("Nelze opakovaně provádět akci GraphData.FinaliseLoading !");
             this.LoadTimeEnd = DateTime.Now;
         }
+        /// <summary>
+        /// Volá se po dokončení zobrazení grafu, jen kvůli měření času
+        /// </summary>
         public void FinaliseShowGraph()
         {
             if (this.ShowTimeEnd.HasValue)
@@ -1313,22 +1365,31 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class GraphColumn
     {
-        public GraphColumn(GraphData graphData, int columnIndex, string columnName, GraphSerieInfo graphSerie, DatabaseInfo.EntityInfo dataEntity)
+        public GraphColumn(GraphData graphData, int columnIndex, string columnNameData, GraphSerieInfo graphSerie, DatabaseInfo.EntityInfo dataEntity)
         {
             this.GraphData = graphData;
             Index = columnIndex;
-            Name = columnName;
+            ColumnNameData = columnNameData;
             this.GraphSerie = graphSerie;
             this.DataEntity = dataEntity;
         }
         public override string ToString()
         {
-            return $"Column[{Index}]: {Name} = \"{Title}\"";
+            return $"Column[{Index}]: {ColumnNameData} = \"{Title}\"";
         }
         public GraphData GraphData { get; private set; }
         public int Index { get; private set; }
-        public string Name { get; set; }
+        /// <summary>
+        /// Jméno sloupce s daty (ColumnName) v obecné DataTable
+        /// </summary>
+        public string ColumnNameData { get; set; }
+        /// <summary>
+        /// Reference na serii s daty
+        /// </summary>
         public GraphSerieInfo GraphSerie { get; private set; }
+        /// <summary>
+        /// Reference na entitu (okres, obec, atd)
+        /// </summary>
         public DatabaseInfo.EntityInfo DataEntity { get; private set; }
         public string Title { get { return this.GraphSerie.Title; } }
         public string Description { get; set; }

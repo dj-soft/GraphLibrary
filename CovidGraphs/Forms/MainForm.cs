@@ -712,12 +712,9 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="graphData"></param>
         private void ShowLoadGraphDataResult(GraphData graphData)
         {
-            string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCountText} vět, získáno {graphData.LoadRecordCountText} položek, zobrazeno {graphData.AcceptRecordCountText} hodnot, za {graphData.LoadSecondsText}.";
+            string text = $"Načtena data grafu: analyzováno {graphData.ScanRecordCountText} vět, získáno {graphData.LoadRecordCountText} položek, zobrazeno {graphData.ShowRecordCountText} hodnot, za {graphData.LoadSecondsText}.";
             StatusInfoText = text;
         }
-
-
-
         /// <summary>
         /// Načte a vrátí Layout z aktuálního grafu
         /// </summary>
