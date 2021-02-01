@@ -131,8 +131,11 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="Db\Data.pack" />
     <None Include="Db\Data.zip" />
+    <None Include="Db\DataPack.pack" />
     <None Include="Db\DataPack.zip" />
+    <None Include="Db\Structure.pack" />
     <None Include="Db\Structure.zip" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
