@@ -257,6 +257,7 @@ namespace Djs.Tools.CovidGraphs
             RibbonAddButton(group02, "Aktualizuj data", "Zajistí aktualizaci dat z internetu", Properties.Resources.download_3_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickWebUpdate);
             RibbonAddButton(group02, "Značky", "Značky jsou společné, jsou vkládány do všech grafů, označují význačné časové úseky", Properties.Resources.system_switch_user_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditStrip);
             RibbonAddButton(group02, "Ulož", "Uloží všechna aktuální data do datových souborů (Structure, Data, i kompaktního DataPack, ten lze např odeslat mailem).", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveData);
+            RibbonAddButton(group02, "Config", "Nastavení projektu", Properties.Resources.run_build_configure_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickRunConfig);
 
 
             DXB.Ribbon.RibbonPage page1 = new DXB.Ribbon.RibbonPage("VZHLED APLIKACE");
@@ -316,6 +317,10 @@ namespace Djs.Tools.CovidGraphs
         private void RibbonClickSaveData(object sender, DXB.ItemClickEventArgs e)
         {
             Data.App.TryRun(TrySaveData);
+        }
+        private void RibbonClickRunConfig(object sender, DXB.ItemClickEventArgs e)
+        {
+            Data.App.TryRun(TryRunConfig);
         }
         private void StatusFillItems()
         {
@@ -785,6 +790,7 @@ namespace Djs.Tools.CovidGraphs
                 graphForm.ShowDialog(this);
             }
         }
+        private void TryRunConfig() { }
         public Rectangle VisibleBounds
         {
             get

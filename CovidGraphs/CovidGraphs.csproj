@@ -177,5 +177,14 @@
   <ItemGroup>
     <None Include="Pic\document-save-as-6_32.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\run-build-configure_32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\run-build-file_32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\system-settings_32.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

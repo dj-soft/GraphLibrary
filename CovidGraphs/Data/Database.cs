@@ -325,14 +325,25 @@ namespace Djs.Tools.CovidGraphs.Data
             if (!IO.File.Exists(file)) throw new ArgumentException($"Database.Import() : zadaný vstupní soubor {file} neexistuje.");
             ProcessFileInfo loadInfo = new ProcessFileInfo(file);
             loadInfo.ProgressAction = progress;
-            using (var stream = new IO.StreamReader(file, Encoding.UTF8))
+            using (var stream = new DZipFileReader(file, CompressMode.ByContent))
             {
                 _LoadStream(stream, loadInfo);
                 stream.Close();
             }
         }
         /// <summary>
-        /// Načte obsah daného souboru, detekuje a zpracuje jej
+        /// Vrátí true, pokud daný soubor má být komprimovaný (podle přípony / podle obsahu)
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="byContent"></param>
+        /// <returns></returns>
+        private bool _DetectCompressFile(string file, bool byContent)
+        {
+            string extension = IO.Path.GetExtension(file);
+            return (String.Equals(extension, StandardPackExtension, StringComparison.InvariantCultureIgnoreCase));
+        }
+        /// <summary>
+        /// Načte obsah daného bufferu, detekuje a zpracuje jej
         /// </summary>
         /// <param name="content"></param>
         /// <param name="progress"></param>
@@ -341,8 +352,7 @@ namespace Djs.Tools.CovidGraphs.Data
             if (content == null || content.Length == 0) throw new ArgumentException($"Database.Load() : není zadán vstupní obsah dat.");
             ProcessFileInfo loadInfo = new ProcessFileInfo("Content");
             loadInfo.ProgressAction = progress;
-            using (var memoryStream = new IO.MemoryStream(content))
-            using (var stream = new IO.StreamReader(memoryStream, Encoding.UTF8))
+            using (var stream = new DZipFileReader(content))
             {
                 _LoadStream(stream, loadInfo);
                 stream.Close();
@@ -353,18 +363,18 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="loadInfo"></param>
-        private void _LoadStream(IO.StreamReader stream, ProcessFileInfo loadInfo)
+        private void _LoadStream(DZipFileReader stream, ProcessFileInfo loadInfo)
         {
             lock (this.InterLock)
             {
                 State = StateType.LoadingFile;
                 loadInfo.ProcessState = ProcessFileState.Open;
-                loadInfo.Length = stream.BaseStream.Length;
-                while (!stream.EndOfStream)
+                loadInfo.Length = stream.Length;
+                while (!stream.IsEnd)
                 {
                     string line = stream.ReadLine();
                     _LoadLine(line, loadInfo);
-                    _CallProgress(loadInfo, stream: stream);
+                    _CallProgress(loadInfo, position: stream.Position);
                 }
                 this.StoreProcessFileResults(loadInfo);
                 _CallProgress(loadInfo, force: true, isDone: true);
@@ -708,7 +718,6 @@ namespace Djs.Tools.CovidGraphs.Data
             if (!existsA && existsB) return fileB;
             return (fileA.LastWriteTimeUtc >= fileB.LastWriteTimeUtc ? fileA : fileB);
         }
-
         #endregion
         #region WebUpdate : aktualizace dat z internetu
         /// <summary>
@@ -818,7 +827,6 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         private void _SaveStandardData(FileContentType contentType, bool packed, Action<ProgressArgs> progress = null)
         {
-            packed = false;                // Zatím neumíme
             string file = GetSaveFileName(contentType, packed);
             _Save(file, contentType, progress);
         }
@@ -864,7 +872,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 saveInfo.ProgressAction = progress;
                 saveInfo.ContentType = contentType;
                 saveInfo.ProcessState = ProcessFileState.Saving;
-                using (var stream = new IO.StreamWriter(file, false, Encoding.UTF8))
+                using (var stream = new DZipFileWriter(file, CompressMode.ByName))
                 {
                     _SaveFileHeader(saveInfo, stream);
                     _SaveFileProperties(saveInfo, stream);
@@ -881,7 +889,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        private void _SaveFileHeader(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+        private void _SaveFileHeader(ProcessFileInfo saveInfo, DZipFileWriter stream)
         {
             switch (saveInfo.ContentType)
             {
@@ -903,7 +911,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        private void _SaveFileProperties(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+        private void _SaveFileProperties(ProcessFileInfo saveInfo, DZipFileWriter stream)
         {
             switch (saveInfo.ContentType)
             {
@@ -923,7 +931,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="progress"></param>
         /// <param name="stream"></param>
         /// <param name="processInfo"></param>
-        private void _CallProgress(ProcessFileInfo processInfo, bool force = false, IO.StreamReader stream = null, bool isDone = false)
+        private void _CallProgress(ProcessFileInfo processInfo, bool force = false, long? position = null, bool isDone = false)
         {
             if (processInfo is null || processInfo.ProgressAction is null) return;
 
@@ -937,8 +945,8 @@ namespace Djs.Tools.CovidGraphs.Data
             DateTime now = DateTime.Now;
             if (!force && (((TimeSpan)(now - processInfo.LastProgressTime)).TotalMilliseconds < 80d)) return;
 
-            if (!isDone && stream != null && stream.BaseStream != null)
-                processInfo.Position = stream.BaseStream.Position;
+            if (!isDone && position.HasValue)
+                processInfo.Position = position.Value;
 
             ProgressArgs args = new ProgressArgs(processInfo, isDone);
             processInfo.ProgressAction(args);
@@ -1037,6 +1045,275 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const char FixSpaceChar = (char)160;
 
 
+        #endregion
+        #region Komprimace a dekomprimace streamu
+
+        public class DZipFileReader : IDisposable
+        {
+            public DZipFileReader(string file, CompressMode compressMode)
+            {
+                _IsCompress = _DetectComprimed(file, compressMode);
+                _IsMemory = false;
+                _Length = (new IO.FileInfo(file)).Length;
+                if (_IsCompress)
+                {
+                    _FileStream = IO.File.OpenRead(file);
+                    _ZipStream = new IO.Compression.GZipStream(_FileStream, IO.Compression.CompressionMode.Decompress);
+                    _StreamReader = new IO.StreamReader(_ZipStream);
+                }
+                else
+                {
+                    _StreamReader = new IO.StreamReader(file);
+                }
+            }
+            public DZipFileReader(byte[] buffer)
+            {
+                _IsCompress = false;
+                _IsMemory = true;
+                _Length = buffer.LongLength;
+                _MemoryStream = new IO.MemoryStream(buffer);
+                _StreamReader = new IO.StreamReader(_MemoryStream, Encoding.UTF8);
+            }
+            protected bool _DetectComprimed(string file, CompressMode compressMode)
+            {
+                switch (compressMode)
+                {
+                    case CompressMode.None: return false;
+                    case CompressMode.ByName:
+                        string extension = IO.Path.GetExtension(file).ToLower().Trim();
+                        return (extension == StandardPackExtension && extension == ".pack" || extension == ".zip");
+                    case CompressMode.ByContent:
+                        byte[] header = new byte[16];
+                        int length = 0;
+                        using (var inp = IO.File.OpenRead(file))
+                        {
+                            length = inp.Read(header, 0, 16);
+                            inp.Close();
+                        }
+                        return (length > 3 && header[0] == 0x1F && header[1] == 0x8B && header[2] == 0x08 && header[3] == 0x00);
+                    case CompressMode.Compress: return true;
+                }
+                return false;
+            }
+            CompressMode _CompressMode;
+            bool _IsCompress;
+            bool _IsMemory;
+            long _Length;
+            IO.FileStream _FileStream;
+            IO.Compression.GZipStream _ZipStream;
+            IO.MemoryStream _MemoryStream;
+            IO.StreamReader _StreamReader;
+
+            public bool IsEnd { get { return _StreamReader.EndOfStream; } }
+            public long Length { get { return _Length; } }
+            public long? Position
+            {
+                get
+                {
+                    if (_IsCompress) return _FileStream.Position;
+                    else if (_IsMemory) return _MemoryStream.Position;
+                    else return _StreamReader.BaseStream?.Position;
+                }
+            }
+            public string ReadLine() { return _StreamReader.ReadLine(); }
+            public void Close()
+            {
+                if (_IsCompress)
+                {
+                    _StreamReader.Close();
+                    _ZipStream.Close();
+                    _FileStream.Close();
+                }
+                else if (_IsMemory)
+                {
+                    _StreamReader.Close();
+                    _MemoryStream.Close();
+                }
+                else
+                {
+                    _StreamReader.Close();
+                }
+            }
+            public void Dispose()
+            {
+                if (_IsCompress)
+                {
+                    _StreamReader.Dispose();
+                    _ZipStream.Dispose();
+                    _FileStream.Dispose();
+                }
+                else if (_IsMemory)
+                {
+                    _StreamReader.Dispose();
+                    _MemoryStream.Dispose();
+                }
+                else
+                {
+                    _StreamReader.Dispose();
+                }
+            }
+        }
+
+        public class DZipFileWriter : IDisposable
+        {
+            public DZipFileWriter(string file, CompressMode compressMode)
+            {
+                _IsCompress = _DetectComprimed(file, compressMode);
+                _IsMemory = false;
+                if (_IsCompress)
+                {
+                    _FileStream = IO.File.OpenWrite(file);
+                    _ZipStream = new IO.Compression.GZipStream(_FileStream, IO.Compression.CompressionMode.Compress);
+                    _StreamWriter = new IO.StreamWriter(_ZipStream);
+                }
+                else
+                {
+                    _StreamWriter = new IO.StreamWriter(file);
+                }
+            }
+            public DZipFileWriter()
+            {
+                _IsCompress = false;
+                _IsMemory = true;
+                _MemoryStream = new IO.MemoryStream();
+                _StreamWriter = new IO.StreamWriter(_MemoryStream, Encoding.UTF8);
+            }
+            protected bool _DetectComprimed(string file, CompressMode compressMode)
+            {
+                switch (compressMode)
+                {
+                    case CompressMode.None: return false;
+                    case CompressMode.ByName:
+                        string extension = IO.Path.GetExtension(file).ToLower().Trim();
+                        return (extension == StandardPackExtension && extension == ".pack" || extension == ".zip");
+                    case CompressMode.ByContent:
+                        throw new ArgumentException("Ve třídě DZipFileWriter nelze použít compressMode = CompressMode.ByContent !");
+                    case CompressMode.Compress: return true;
+                }
+                return false;
+            }
+            CompressMode _CompressMode;
+            bool _IsCompress;
+            bool _IsMemory;
+            IO.FileStream _FileStream;
+            IO.Compression.GZipStream _ZipStream;
+            IO.MemoryStream _MemoryStream;
+            IO.StreamWriter _StreamWriter;
+
+            public void WriteLine(string line) { _StreamWriter.WriteLine(line); }
+            public void Close()
+            {
+                if (_IsCompress)
+                {
+                    _StreamWriter.Close();
+                    _ZipStream.Close();
+                    _FileStream.Close();
+                }
+                else if (_IsMemory)
+                {
+                    _StreamWriter.Close();
+                    _MemoryStream.Close();
+                }
+                else
+                {
+                    _StreamWriter.Close();
+                }
+            }
+            public void Dispose()
+            {
+                if (_IsCompress)
+                {
+                    _StreamWriter.Dispose();
+                    _ZipStream.Dispose();
+                    _FileStream.Dispose();
+                }
+                else if (_IsMemory)
+                {
+                    _StreamWriter.Dispose();
+                    _MemoryStream.Dispose();
+                }
+                else
+                {
+                    _StreamWriter.Dispose();
+                }
+            }
+        }
+        /// <summary>
+        /// Režim komprimace
+        /// </summary>
+        public enum CompressMode
+        {
+            None,
+            ByName,
+            ByContent,
+            Compress
+        }
+        /// <summary>
+        /// Metoda vrátí daný string KOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený do Base64 stringu.
+        /// Standardní serializovanou DataTable tato komprimace zmenší na cca 3-5% původní délky stringu.
+        /// </summary>
+        /// <param name="source">Vstupní string</param>
+        /// <param name="splitToRows">Rozdělit výstupní komprimát na řádky (použije se <see cref="Base64FormattingOptions.InsertLineBreaks"/>).</param>
+        /// <returns></returns>
+        public static string Compress(string source, bool splitToRows = false)
+        {
+            if (source == null || source.Length == 0) return source;
+
+            string target = null;
+            byte[] inpBuffer = System.Text.Encoding.UTF8.GetBytes(source);
+            using (IO.MemoryStream inpStream = new IO.MemoryStream(inpBuffer))
+            using (IO.MemoryStream outStream = new IO.MemoryStream())
+            {
+                using (IO.Compression.GZipStream zipStream = new IO.Compression.GZipStream(outStream, IO.Compression.CompressionMode.Compress))
+                {
+                    inpStream.CopyTo(zipStream);
+                }   // Obsah streamu outStream je použitelný až po Dispose streamu GZipStream !
+                outStream.Flush();
+                byte[] outBuffer = outStream.ToArray();
+                Base64FormattingOptions options = (splitToRows ? Base64FormattingOptions.InsertLineBreaks : Base64FormattingOptions.None);
+                target = System.Convert.ToBase64String(outBuffer, options);
+            }
+            return target;
+        }
+        /// <summary>
+        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="IO.Compression.GZipStream"/>, převedený z Base64 stringu.
+        /// Pokud někde dojde k chybě, vrátí null ale ne chybu.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static string TryDecompress(string source)
+        {
+            try
+            {
+                return Decompress(source);
+            }
+            catch { }
+            return null;
+        }
+        /// <summary>
+        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="IO.Compression.GZipStream"/>, převedený z Base64 stringu.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static string Decompress(string source)
+        {
+            if (source == null || source.Length == 0) return source;
+
+            string target = null;
+            byte[] inpBuffer = System.Convert.FromBase64String(source);
+            using (IO.MemoryStream inpStream = new IO.MemoryStream(inpBuffer))
+            using (IO.MemoryStream outStream = new IO.MemoryStream())
+            {
+                using (System.IO.Compression.GZipStream zipStream = new System.IO.Compression.GZipStream(inpStream, System.IO.Compression.CompressionMode.Decompress))
+                {
+                    zipStream.CopyTo(outStream);
+                }   // Obsah streamu outStream je použitelný až po Dispose streamu GZipStream !
+                outStream.Flush();
+                byte[] outBuffer = outStream.ToArray();
+                target = System.Text.Encoding.UTF8.GetString(outBuffer);
+            }
+            return target;
+        }
         #endregion
         #endregion
         #region Získání dat za určitou úroveň
@@ -1862,7 +2139,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     this.LocalDataDict = null;
                 }
             }
-            public virtual void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+            public virtual void Save(ProcessFileInfo saveInfo, DZipFileWriter stream)
             {
                 // Uložit hlavičku pro this instanci? Pokud se ukládá komletní struktura entit (Structure nebo DataPack), 
                 ///  anebo tehdy pokud máme vlastní data = pak řádek typu Entita reprezentuje konkrétní entitu, do které patří následující data:
@@ -1884,7 +2161,7 @@ namespace Djs.Tools.CovidGraphs.Data
             /// </summary>
             /// <param name="saveInfo"></param>
             /// <param name="stream"></param>
-            protected virtual void SaveHeader(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+            protected virtual void SaveHeader(ProcessFileInfo saveInfo, DZipFileWriter stream)
             {
                 // Plné ukládání (včetně počtu obyvatel) při ukládání Struktury nebo DataPack, ale ne při ukládání holých dat:
                 bool saveFull = (saveInfo.ContentType == FileContentType.Structure || saveInfo.ContentType == FileContentType.DataPack);
@@ -2072,7 +2349,7 @@ namespace Djs.Tools.CovidGraphs.Data
             public DateTime Date { get; private set; }
             public int DateKey { get { return Date.GetDateKey(); } }
             public int DateKeyShort { get { return this.Date.GetDateKeyShort(); } }
-            public void Save(ProcessFileInfo saveInfo, IO.StreamWriter stream)
+            public void Save(ProcessFileInfo saveInfo, DZipFileWriter stream)
             {
                 switch (saveInfo.ContentType)
                 {
@@ -2133,74 +2410,6 @@ namespace Djs.Tools.CovidGraphs.Data
 
         public abstract class ItemInfo
         { }
-        #endregion
-        #region Komprimace a dekomprimace stringu
-        /// <summary>
-        /// Metoda vrátí daný string KOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený do Base64 stringu.
-        /// Standardní serializovanou DataTable tato komprimace zmenší na cca 3-5% původní délky stringu.
-        /// </summary>
-        /// <param name="source">Vstupní string</param>
-        /// <param name="splitToRows">Rozdělit výstupní komprimát na řádky (použije se <see cref="Base64FormattingOptions.InsertLineBreaks"/>).</param>
-        /// <returns></returns>
-        public static string Compress(string source, bool splitToRows = false)
-        {
-            if (source == null || source.Length == 0) return source;
-
-            string target = null;
-            byte[] inpBuffer = System.Text.Encoding.UTF8.GetBytes(source);
-            using (IO.MemoryStream inpStream = new IO.MemoryStream(inpBuffer))
-            using (IO.MemoryStream outStream = new IO.MemoryStream())
-            {
-                using (IO.Compression.GZipStream zipStream = new IO.Compression.GZipStream(outStream, IO.Compression.CompressionMode.Compress))
-                {
-                    inpStream.CopyTo(zipStream);
-                }   // Obsah streamu outStream je použitelný až po Dispose streamu GZipStream !
-                outStream.Flush();
-                byte[] outBuffer = outStream.ToArray();
-                Base64FormattingOptions options = (splitToRows ? Base64FormattingOptions.InsertLineBreaks : Base64FormattingOptions.None);
-                target = System.Convert.ToBase64String(outBuffer, options);
-            }
-            return target;
-        }
-        /// <summary>
-        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="IO.Compression.GZipStream"/>, převedený z Base64 stringu.
-        /// Pokud někde dojde k chybě, vrátí null ale ne chybu.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        public static string TryDecompress(string source)
-        {
-            try
-            {
-                return Decompress(source);
-            }
-            catch { }
-            return null;
-        }
-        /// <summary>
-        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="IO.Compression.GZipStream"/>, převedený z Base64 stringu.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        public static string Decompress(string source)
-        {
-            if (source == null || source.Length == 0) return source;
-
-            string target = null;
-            byte[] inpBuffer = System.Convert.FromBase64String(source);
-            using (IO.MemoryStream inpStream = new IO.MemoryStream(inpBuffer))
-            using (IO.MemoryStream outStream = new IO.MemoryStream())
-            {
-                using (System.IO.Compression.GZipStream zipStream = new System.IO.Compression.GZipStream(inpStream, System.IO.Compression.CompressionMode.Decompress))
-                {
-                    zipStream.CopyTo(outStream);
-                }   // Obsah streamu outStream je použitelný až po Dispose streamu GZipStream !
-                outStream.Flush();
-                byte[] outBuffer = outStream.ToArray();
-                target = System.Text.Encoding.UTF8.GetString(outBuffer);
-            }
-            return target;
-        }
         #endregion
         #region Třída pro progress ProgressArgs
 
