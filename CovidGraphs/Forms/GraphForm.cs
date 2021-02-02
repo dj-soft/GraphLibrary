@@ -141,29 +141,35 @@ namespace Djs.Tools.CovidGraphs
             _ButtonPanel = panel;
             this.Controls.Add(panel);
 
-            DXE.SimpleButton button1 = new DXE.SimpleButton() { Text = "Uložit", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
-            button1.Click += ButtonSave_Click;
-            this._ButtonPanel.Controls.Add(button1);
-            _Button1 = button1;
-
-            DXE.SimpleButton button2 = new DXE.SimpleButton() { Text = "Uložit jako nový", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
-            button2.Click += ButtonSaveAs_Click;
-            this._ButtonPanel.Controls.Add(button2);
-            _Button2 = button2;
-
-            DXE.SimpleButton button3 = new DXE.SimpleButton() { Text = "Storno", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
-            button3.Click += ButtonCancel_Click;
-            this._ButtonPanel.Controls.Add(button3);
-            _Button3 = button3;
-
+            _ButtonSave = new DXE.SimpleButton() { Text = "Uložit", Size = new Size(DefaultButtonWidth, DefaultButtonHeight), Enabled = false };
+            _ButtonSave.Click += ButtonSave_Click;
+            this._ButtonPanel.Controls.Add(_ButtonSave);
+          
+            _ButtonSaveAs = new DXE.SimpleButton() { Text = "Uložit jako nový", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
+            _ButtonSaveAs.Click += ButtonSaveAs_Click;
+            this._ButtonPanel.Controls.Add(_ButtonSaveAs);
+          
+            _ButtonCancel = new DXE.SimpleButton() { Text = "Storno", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
+            _ButtonCancel.Click += ButtonCancel_Click;
+            this._ButtonPanel.Controls.Add(_ButtonCancel);
+            
             // this.AcceptButton = _Button1;
-            this.CancelButton = _Button3;
+            this.CancelButton = _ButtonCancel;
 
             _ButtonPanelLayout();
         }
+        /// <summary>
+        /// Aktualizuje Enabled na buttonech podle stavu dat
+        /// </summary>
+        protected void RefreshButtons()
+        {
+            _ButtonSave.Enabled = this.ContainChanges;
+            _ButtonSaveAs.Enabled = true;
+            _ButtonCancel.Enabled = true;
+        }
         internal const int DefaultButtonPanelHeight = 40;
         internal const int DefaultButtonWidth = 150;
-        internal const int DefaultButtonHeight = 34;
+        internal const int DefaultButtonHeight = 31;
         /// <summary>
         /// Po kliknutí na "Uložit"
         /// </summary>
@@ -208,28 +214,45 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void _ButtonPanelLayout()
         {
-            if (_Button3 == null) return;
+            if (_ButtonCancel == null) return;
 
             Size size = _ButtonPanel.ClientSize;
 
-            int bW = 140;
-            int bH = size.Height - 12;
+            int bW = DefaultButtonWidth;
+            int bH = DefaultButtonHeight;
             int margin = 12;
             int space = 9;
             int bX = size.Width - (3 * bW + 2 * space + margin);
             int bY = 3;
-            _Button1.Bounds = new Rectangle(bX, bY, bW, bH);
+            _ButtonSave.Bounds = new Rectangle(bX, bY, bW, bH);
             bX += bW + space;
-            _Button2.Bounds = new Rectangle(bX, bY, bW, bH);
+            _ButtonSaveAs.Bounds = new Rectangle(bX, bY, bW, bH);
             bX += bW + space;
-            _Button3.Bounds = new Rectangle(bX, bY, bW, bH);
+            _ButtonCancel.Bounds = new Rectangle(bX, bY, bW, bH);
         }
+        /// <summary>
+        /// Inicializace datového panelu
+        /// </summary>
         protected void InitData()
         {
             _CurrentGraphInfo = new GraphInfo();
-            _GraphPanel = new GraphPanel() { Dock = DockStyle.Fill, ParentForm = this };
+            _GraphPanel = new GraphPanel() { Dock = DockStyle.Fill, ParentForm = this, CurrentGraphInfo = _CurrentGraphInfo };
+            _GraphPanel.DataChanged += _GraphPanel_DataChanged;
             _MainSplitContainer.Panel1.Controls.Add(_GraphPanel);
         }
+        /// <summary>
+        /// Poté, kdy uživatel změnil data v definici grafu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _GraphPanel_DataChanged(object sender, EventArgs e)
+        {
+            RefreshButtons();
+        }
+        /// <summary>
+        /// Panel s daty obsahuje změny?
+        /// </summary>
+        public bool ContainChanges { get { return _GraphPanel?.ContainChanges ?? false; } }
         protected void InitChart()
         {
             _ChartControl = new DevExpress.XtraCharts.ChartControl()
@@ -240,9 +263,9 @@ namespace Djs.Tools.CovidGraphs
         }
         DXE.SplitContainerControl _MainSplitContainer;
         DXE.PanelControl _ButtonPanel;
-        DXE.SimpleButton _Button1;
-        DXE.SimpleButton _Button2;
-        DXE.SimpleButton _Button3;
+        private DXE.SimpleButton _ButtonSave;
+        private DXE.SimpleButton _ButtonSaveAs;
+        private DXE.SimpleButton _ButtonCancel;
         GraphPanel _GraphPanel;
         DevExpress.XtraCharts.ChartControl _ChartControl;
         #endregion
@@ -364,19 +387,12 @@ namespace Djs.Tools.CovidGraphs
             this.InitStyles();
 
             this.Controls.Add(CreateControlForFrames());
-            //_GraphHeaderDetailHost.Controls.Add(CreateControlForHeaderDetail());
+            _GraphHeaderDetailHost.Controls.Add(CreateControlForHeaderDetail());
             _GraphSeriesNewHost.Controls.Add(CreateControlForNewSeries());
             _GraphSeriesListHost.Controls.Add(CreateControlForSeriesList());
+            _GraphSeriesDetailHost.Controls.Add(CreateControlForSeriesDetail());
 
             this.SizeChanged += Frame_SizeChanged;
-
-            /*
-            InitForm();
-            InitFrames();
-            InitRibbons();
-            InitList();
-            InitGraph();
-            */
         }
         private void InitStyles()
         {
@@ -387,8 +403,30 @@ namespace Djs.Tools.CovidGraphs
             _TitleStyle.Appearance.Options.UseBackColor = false;
             _TitleStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
+            _InputStyle = new DXE.StyleController();
+            _InputStyle.Appearance.FontSizeDelta = 1;
+            _InputStyle.Appearance.FontStyleDelta = FontStyle.Bold;
+            _InputStyle.Appearance.Options.UseBorderColor = false;
+            _InputStyle.Appearance.Options.UseBackColor = false;
+            _InputStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
+
+            _LabelStyle = new DXE.StyleController();
+            _LabelStyle.Appearance.FontSizeDelta = 1;
+            _LabelStyle.Appearance.FontStyleDelta = FontStyle.Italic;
+            _LabelStyle.Appearance.Options.UseBorderColor = false;
+            _LabelStyle.Appearance.Options.UseBackColor = false;
+            _LabelStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
         }
         DXE.StyleController _TitleStyle;
+        DXE.StyleController _InputStyle;
+        DXE.StyleController _LabelStyle;
+        const int DetailXLabel = 16;
+        const int DetailXText = 12;
+        const int DetailYFirst = 9;
+        const int DetailYHeightLabel = 19;
+        const int DetailYHeightText = 22;
+        const int DetailYSpaceLabel = 2;
+        const int DetailYSpaceText = 3;
         #endregion
         #region Rozvržení layoutu
         private WF.Control CreateControlForFrames()
@@ -455,8 +493,200 @@ namespace Djs.Tools.CovidGraphs
         WF.Control _GraphSeriesDetailHost { get { return _SeriesSplitContainer.Panel2; } }
         int _GraphSeriesDetailHeight { get { return _SeriesSplitContainer.SplitterPosition; } set { _SeriesSplitContainer.SplitterPosition = value; } }
         #endregion
-        #region Hlavička grafu
+        #region Hlavička grafu (Panel)
+        private WF.Control CreateControlForHeaderDetail()
+        {
+            _HeaderDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
+            int y = DetailYFirst;
+            _HeaderDetailTitleLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 320, DetailYHeightLabel), Text = "Název celého grafu" };
+            _HeaderDetailTitleLabel.StyleController = _LabelStyle;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTitleLabel);
+
+            _HeaderDetailDescriptionLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel + 390, y, 320, DetailYHeightLabel), Text = "Název celého grafu" };
+            _HeaderDetailDescriptionLabel.StyleController = _LabelStyle;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailDescriptionLabel);
+
+            y = _HeaderDetailTitleLabel.Bounds.Bottom + DetailYSpaceLabel;
+
+            _HeaderDetailTitleText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText, y, 375, DetailYHeightText) };
+            _HeaderDetailTitleText.StyleController = _InputStyle;
+            _HeaderDetailTitleText.TextChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTitleText);
+
+            _HeaderDetailDescriptionText = new DXE.MemoEdit() { Bounds = new Rectangle(DetailXText + 390, y, 375, 135) };
+            _HeaderDetailDescriptionText.StyleController = _InputStyle;
+            _HeaderDetailDescriptionText.TextChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailDescriptionText);
+
+            y = _HeaderDetailTitleText.Bounds.Bottom + DetailYSpaceText;
+
+            _HeaderDetailTimeTypeLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 320, DetailYHeightLabel), Text = "Časové omezení dat grafu" };
+            _HeaderDetailTimeTypeLabel.StyleController = _LabelStyle;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeTypeLabel);
+
+            y = _HeaderDetailTimeTypeLabel.Bounds.Bottom + DetailYSpaceLabel;
+
+            _HeaderDetailTimeTypeCombo = new DXE.ImageComboBoxEdit() { Bounds = new Rectangle(DetailXText, y, 200, DetailYHeightText) };
+            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Bez omezení", 0, 0);
+            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Posledních několik měsíců", 1, 0);
+            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Posledních několik dnů", 2, 0);
+            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Přesně daný interval Od-Do", 3, 0);
+            _HeaderDetailTimeTypeCombo.StyleController = _InputStyle;
+            _HeaderDetailTimeTypeCombo.SelectedIndexChanged += _HeaderDetailTimeTypeCombo_SelectedIndexChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeTypeCombo);
+
+            _HeaderDetailTimeLastMonthsText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 210, y, 45, DetailYHeightText), Visible = false };
+            _HeaderDetailTimeLastMonthsText.StyleController = _InputStyle;
+            _HeaderDetailTimeLastMonthsText.Properties.Mask.MaskType = DXE.Mask.MaskType.Numeric;
+            _HeaderDetailTimeLastMonthsText.Properties.Mask.EditMask = "###0";
+            _HeaderDetailTimeLastMonthsText.Properties.Mask.UseMaskAsDisplayFormat = true;
+            _HeaderDetailTimeLastMonthsText.TextChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeLastMonthsText);
+
+            _HeaderDetailTimeLastDaysText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 210, y, 45, DetailYHeightText), Visible = false };
+            _HeaderDetailTimeLastDaysText.StyleController = _InputStyle;
+            _HeaderDetailTimeLastDaysText.Properties.Mask.MaskType = DXE.Mask.MaskType.Numeric;
+            _HeaderDetailTimeLastDaysText.Properties.Mask.EditMask = "###0";
+            _HeaderDetailTimeLastDaysText.Properties.Mask.UseMaskAsDisplayFormat = true;
+            _HeaderDetailTimeLastDaysText.TextChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeLastDaysText);
+
+            _HeaderDetailTimeRangeBeginText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 210, y, 80, DetailYHeightText), Visible = false };
+            _HeaderDetailTimeRangeBeginText.StyleController = _InputStyle;
+            _HeaderDetailTimeRangeBeginText.Properties.Mask.MaskType = DXE.Mask.MaskType.DateTimeAdvancingCaret;
+            _HeaderDetailTimeRangeBeginText.Properties.Mask.EditMask = "d";
+            _HeaderDetailTimeRangeBeginText.Properties.Mask.UseMaskAsDisplayFormat = true;
+            _HeaderDetailTimeRangeBeginText.TextChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeRangeBeginText);
+
+            _HeaderDetailTimeRangeEndText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 295, y, 80, DetailYHeightText), Visible = false };
+            _HeaderDetailTimeRangeEndText.StyleController = _InputStyle;
+            _HeaderDetailTimeRangeEndText.Properties.Mask.MaskType = DXE.Mask.MaskType.DateTimeAdvancingCaret;
+            _HeaderDetailTimeRangeEndText.Properties.Mask.EditMask = "d";
+            _HeaderDetailTimeRangeEndText.Properties.Mask.UseMaskAsDisplayFormat = true;
+            _HeaderDetailTimeRangeEndText.TextChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeRangeEndText);
+
+            y = _HeaderDetailTimeTypeCombo.Bounds.Bottom + DetailYSpaceText;
+
+            int checkWidth = 350;
+            int checkX = DetailXText;
+            _HeaderDetailTimeStripesCheck = new DXE.CheckEdit() { Bounds = new Rectangle(checkX, y, checkWidth, DetailYHeightText), Text = "Zobrazovat význačné časové intervaly" }; y = _HeaderDetailTimeStripesCheck.Bounds.Bottom + DetailYSpaceText;
+            _HeaderDetailTimeStripesCheck.StyleController = _InputStyle;
+            _HeaderDetailTimeStripesCheck.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
+            _HeaderDetailTimeStripesCheck.Properties.CheckBoxOptions.Style = DXE.Controls.CheckBoxStyle.SvgToggle1;
+            _HeaderDetailTimeStripesCheck.CheckedChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeStripesCheck);
+
+            _HeaderDetailTimeZoomCheck = new DXE.CheckEdit() { Bounds = new Rectangle(checkX, y, checkWidth, DetailYHeightText), Text = "Povolit zoom na časové ose" }; y = _HeaderDetailTimeZoomCheck.Bounds.Bottom + DetailYSpaceText;
+            _HeaderDetailTimeZoomCheck.StyleController = _InputStyle;
+            _HeaderDetailTimeZoomCheck.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
+            _HeaderDetailTimeZoomCheck.Properties.CheckBoxOptions.Style = DXE.Controls.CheckBoxStyle.SvgToggle1;
+            _HeaderDetailTimeZoomCheck.CheckedChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeZoomCheck);
+
+            _HeaderDetailAxisOnRightCheck = new DXE.CheckEdit() { Bounds = new Rectangle(checkX, y, checkWidth, DetailYHeightText), Text = "Svislá osa vpravo" }; y = _HeaderDetailAxisOnRightCheck.Bounds.Bottom + DetailYSpaceText;
+            _HeaderDetailAxisOnRightCheck.StyleController = _InputStyle;
+            _HeaderDetailAxisOnRightCheck.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
+            _HeaderDetailAxisOnRightCheck.Properties.CheckBoxOptions.Style = DXE.Controls.CheckBoxStyle.SvgToggle1;
+            _HeaderDetailAxisOnRightCheck.CheckedChanged += _HeaderValueChanged;
+            _HeaderDetailPanel.Controls.Add(_HeaderDetailAxisOnRightCheck);
+
+            return _HeaderDetailPanel;
+        }
+        /// <summary>
+        /// Po změně předvolby v ComboBoxu "Časové omezení dat grafu" se nastaví odpovídající viditelnost
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _HeaderDetailTimeTypeCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int index = _HeaderDetailTimeTypeCombo.SelectedIndex;
+            _HeaderDetailTimeLastMonthsText.Visible = (index == 1);
+            _HeaderDetailTimeLastDaysText.Visible = (index == 2);
+            _HeaderDetailTimeRangeBeginText.Visible = (index == 3);
+            _HeaderDetailTimeRangeEndText.Visible = (index == 3);
+        }
+        /// <summary>
+        /// Po změně jakéhokoli údaje v hlavičce se uloží data z GUI do datového objektu grafu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _HeaderValueChanged(object sender, EventArgs e)
+        {
+            HeaderDetailStore();
+            ContainChanges = true;
+        }
+        /// <summary>
+        /// Načte data hlavičky z datového objektu do GUI
+        /// </summary>
+        private void HeaderDetailRefresh()
+        {
+            var graph = this.CurrentGraphInfo;
+            _HeaderDetailTitleText.Text = graph.Title;
+            _HeaderDetailDescriptionText.Text = graph.Description;
+
+            int timeIndex = (graph.TimeRangeLastMonths.HasValue ? 1 :
+                    (graph.TimeRangeLastDays.HasValue ? 2 :
+                    ((graph.TimeRangeBegin.HasValue || graph.TimeRangeEnd.HasValue) ? 3 : 0)));
+            _HeaderDetailTimeTypeCombo.SelectedIndex = timeIndex;
+            _HeaderDetailTimeLastMonthsText.EditValue = (graph.TimeRangeLastMonths.HasValue ? graph.TimeRangeLastMonths.Value : (int?)null);
+            _HeaderDetailTimeLastDaysText.EditValue = (graph.TimeRangeLastDays.HasValue ? graph.TimeRangeLastDays.Value : (int?)null);
+            _HeaderDetailTimeRangeBeginText.EditValue = (graph.TimeRangeBegin.HasValue ? graph.TimeRangeBegin.Value : (DateTime?)null);
+            _HeaderDetailTimeRangeEndText.EditValue = (graph.TimeRangeEnd.HasValue ? graph.TimeRangeEnd.Value : (DateTime?)null);
+
+            _HeaderDetailTimeStripesCheck.Checked = graph.EnableCommonTimeStripes;
+            _HeaderDetailTimeZoomCheck.Checked = graph.ChartEnableTimeZoom;
+            _HeaderDetailAxisOnRightCheck.Checked = graph.ChartAxisYRight;
+        }
+        /// <summary>
+        /// Uloží data hlavičky z GUI do datového objektu
+        /// </summary>
+        private void HeaderDetailStore()
+        {
+            if (_DataRefreshRunning) return;               // Probíhá DataRefresh(), mění se hodnoty v UI, volají se eventy Changed => nesmím provádět Store, nemá to smysl !!!
+
+            var graph = this.CurrentGraphInfo;
+            graph.Title = _HeaderDetailTitleText.Text;
+            graph.Description = _HeaderDetailDescriptionText.Text;
+
+            int timeIndex = _HeaderDetailTimeTypeCombo.SelectedIndex;
+            graph.TimeRangeLastMonths = (timeIndex == 1 ? GetValue<int>(_HeaderDetailTimeLastMonthsText.EditValue) : (int?)null);
+            graph.TimeRangeLastDays = (timeIndex == 2 ? GetValue<int>(_HeaderDetailTimeLastDaysText.EditValue) : (int?)null);
+            graph.TimeRangeBegin = (timeIndex == 3 ? GetValue<DateTime>(_HeaderDetailTimeRangeBeginText.EditValue) : (DateTime?)null);
+            graph.TimeRangeEnd = (timeIndex == 3 ? GetValue<DateTime>(_HeaderDetailTimeRangeEndText.EditValue) : (DateTime?)null);
+
+            graph.EnableCommonTimeStripes = _HeaderDetailTimeStripesCheck.Checked;
+            graph.ChartEnableTimeZoom = _HeaderDetailTimeZoomCheck.Checked;
+            graph.ChartAxisYRight = _HeaderDetailAxisOnRightCheck.Checked;
+        }
+        /// <summary>
+        /// Vrátí hodnotu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="editValue"></param>
+        /// <returns></returns>
+        private static T? GetValue<T>(object editValue) where T : struct
+        {
+            if (editValue == null) return null;
+            if (!(editValue is T)) return null;
+            return (T)editValue;
+        }
+        DXE.PanelControl _HeaderDetailPanel;
+        DXE.LabelControl _HeaderDetailTitleLabel;
+        DXE.LabelControl _HeaderDetailDescriptionLabel;
+        DXE.TextEdit _HeaderDetailTitleText;
+        DXE.TextEdit _HeaderDetailDescriptionText;
+        DXE.LabelControl _HeaderDetailTimeTypeLabel;
+        DXE.ImageComboBoxEdit _HeaderDetailTimeTypeCombo;
+        DXE.TextEdit _HeaderDetailTimeLastMonthsText;
+        DXE.TextEdit _HeaderDetailTimeLastDaysText;
+        DXE.TextEdit _HeaderDetailTimeRangeBeginText;
+        DXE.TextEdit _HeaderDetailTimeRangeEndText;
+        DXE.CheckEdit _HeaderDetailTimeStripesCheck;
+        DXE.CheckEdit _HeaderDetailTimeZoomCheck;
+        DXE.CheckEdit _HeaderDetailAxisOnRightCheck;
         #endregion
         #region Panel pro zadání nových serií
         private WF.Control CreateControlForNewSeries()
@@ -692,25 +922,54 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         private DXE.LabelControl _ValueTypeInfo;
         private DataValueTypeInfo[] _ValueTypeInfos;
         #endregion
-        #region Seznam existujících serií
+        #region Seznam existujících serií (Grid)
         private WF.Control CreateControlForSeriesList()
         {
             _SeriesListPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
+            SeriesListInitViewData();
 
+            _SeriesListGrid = new DXG.GridControl() { Dock = DockStyle.Fill };
+            _SeriesListGrid.ViewCollection.AddRange(new DXG.Views.Base.BaseView[] { _SeriesListGridView });
+            _SeriesListGrid.MainView = _SeriesListGridView;
+            _SeriesListGridView.GridControl = _SeriesListGrid;
+            _SeriesListGridView.FocusedRowChanged += _SeriesListGridView_FocusedRowChanged;
+
+            _SeriesListPanel.Controls.Add(_SeriesListGrid);
+
+
+            _SeriesListGrid.DataSource = _SeriesListData; //  GraphSerieGridRow.GetDataGraph();
+
+
+            _SeriesListButtonPanel = new DXE.PanelControl() { Dock = DockStyle.Top, BorderStyle = DXE.Controls.BorderStyles.NoBorder, Height = GraphForm.DefaultButtonPanelHeight };
+            _SeriesListPanel.Controls.Add(_SeriesListButtonPanel);
+
+            _SeriesListAddButton = new DXE.SimpleButton() { Text = "Přidej řádky", Size = new Size(GraphForm.DefaultButtonWidth, GraphForm.DefaultButtonHeight), Location = new Point(8, 3) };
+            _SeriesListAddButton.Click += _SeriesListAddButton_Click;
+            _SeriesListButtonPanel.Controls.Add(_SeriesListAddButton);
+            _SeriesListRemoveButton = new DXE.SimpleButton() { Text = "Odeber řádky", Size = new Size(GraphForm.DefaultButtonWidth, GraphForm.DefaultButtonHeight), Location = new Point(_SeriesListAddButton.Bounds.Right + 6, 3) };
+            _SeriesListRemoveButton.Click += _SeriesListRemoveButton_Click;
+            _SeriesListButtonPanel.Controls.Add(_SeriesListRemoveButton);
+
+            SeriesListRefreshData(false);
+
+            return _SeriesListPanel;
+        }
+        /// <summary>
+        /// Připraví GridView tak, aby následně správně zobrazovalo data
+        /// </summary>
+        protected void SeriesListInitViewData()
+        {
             _SeriesListData = new List<GraphSerieGridRow>();
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Město 1", Hodnota = "Dnešní počet", Name = "Město 1, dnes" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Město 2", Hodnota = "Dnešní počet", Name = "Město 2, dnes" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 3", Hodnota = "Včerejší počet", Name = "Obec 3, včera" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Obec 4", Hodnota = "Včerejší počet", Name = "Obec 4, včera" });
-            _SeriesListData.Add(new GraphSerieGridRow() { Entita = "Vesnička 5", Hodnota = "Zítřejší počet", Name = "Vesnička 5, zítra" });
 
-            var _SeriesListGridView = new DevExpress.XtraGrid.Views.Grid.GridView();
+            _SeriesListGridView = new DXG.Views.Grid.GridView();
             _SeriesListGridView.OptionsBehavior.AutoPopulateColumns = false;
             _SeriesListGridView.OptionsBehavior.Editable = false;
-            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Name), Caption = "Název dat", Visible = true, Width = 120 });
-            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Entita), Caption = "Obec/město/okres", Visible = true, Width = 250 });
-            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Hodnota), Caption = "Zobrazená data", Visible = true, Width = 120 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.Title), Caption = "Název dat", Visible = true, Width = 200 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.EntityText), Caption = "Obec/město/okres", Visible = true, Width = 170 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.ValueTypeName), Caption = "Zobrazená data", Visible = true, Width = 150 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.PocetOd), Caption = "Obyvatel OD", Visible = true, Width = 60 });
+            _SeriesListGridView.Columns.Add(new DXG.Columns.GridColumn() { FieldName = nameof(GraphSerieGridRow.PocetDo), Caption = "Obyvatel DO", Visible = true, Width = 60 });
             _SeriesListGridView.OptionsView.BestFitMode = DXG.Views.Grid.GridBestFitMode.Fast;
 
 
@@ -721,55 +980,52 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _SeriesListGridView.OptionsSelection.MultiSelectMode = DXG.Views.Grid.GridMultiSelectMode.RowSelect;
             _SeriesListGridView.Appearance.HeaderPanel.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
 
-
-            _SeriesListGrid = new DXG.GridControl() { Dock = DockStyle.Fill };
-            _SeriesListGrid.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] { _SeriesListGridView });
-            _SeriesListGrid.MainView = _SeriesListGridView;
-            _SeriesListGridView.GridControl = _SeriesListGrid;
-
-            _SeriesListPanel.Controls.Add(_SeriesListGrid);
-
-
-            _SeriesListGrid.DataSource = _SeriesListData; //  GraphSerieGridRow.GetDataGraph();
-            var gwc = _SeriesListGridView.Columns;
-            _SeriesListGridView.ColumnChanged += _SeriesListGridView_ColumnChanged;
-            _SeriesListGridView.DataSourceChanged += _SeriesListGridView_DataSourceChanged;
-
-
-
-
-            _SeriesListButtonPanel = new DXE.PanelControl() { Dock = DockStyle.Top, BorderStyle = DXE.Controls.BorderStyles.NoBorder, Height = GraphForm.DefaultButtonPanelHeight };
-            _SeriesListPanel.Controls.Add(_SeriesListButtonPanel);
-
-            _SeriesListAddButton = new DXE.SimpleButton() { Text = "Přidej řádky", Size = new Size(120, GraphForm.DefaultButtonHeight), Location = new Point(8, 3) };
-            _SeriesListAddButton.Click += _SeriesListAddButton_Click;
-            _SeriesListButtonPanel.Controls.Add(_SeriesListAddButton);
-            _SeriesListRemoveButton = new DXE.SimpleButton() { Text = "Odeber řádky", Size = new Size(120, GraphForm.DefaultButtonHeight), Location = new Point(132, 3) };
-            _SeriesListRemoveButton.Click += _SeriesListRemoveButton_Click;
-            _SeriesListButtonPanel.Controls.Add(_SeriesListRemoveButton);
-
-            return _SeriesListPanel;
         }
-
-        private void _SeriesListGridView_DataSourceChanged(object sender, EventArgs e)
+        /// <summary>
+        /// Do gridu se seriemi <see cref="_SeriesListGrid"/> načte aktuální obsah definice grafu <see cref="CurrentGraphInfo"/>.
+        /// </summary>
+        protected void SeriesListRefreshData(bool refreshGui)
         {
-            
-        }
+            if (_SeriesListData.Count > 0) _SeriesListData.Clear();
+            if (this.Database == null || this.CurrentGraphInfo == null) return;
 
-        private void _SeriesListGridView_ColumnChanged(object sender, EventArgs e)
+            foreach (var serie in this.CurrentGraphInfo.Series)
+                AddSerieToSeriesList(serie);
+
+            if (refreshGui)
+                RefreshSeriesListGrid();
+        }
+        /// <summary>
+        /// Danou serii (data z Grafu) přidá do this listu, který je zobrazován v Gridu
+        /// </summary>
+        /// <param name="serie"></param>
+        private void AddSerieToSeriesList(GraphSerieInfo serie)
         {
-            
+            GraphSerieGridRow gridRow = GraphSerieGridRow.Create(serie, this.Database);
+            if (gridRow != null)
+                _SeriesListData.Add(gridRow);
         }
+        /// <summary>
+        /// Provede vizuální refresh gridu s daty serií
+        /// </summary>
+        private void RefreshSeriesListGrid()
+        {
+            _SeriesListGridView.RefreshData();
+            _SeriesListGrid.RefreshDataSource();
+            _SeriesListGrid.Refresh();
 
+       }
         private void _SeriesListAddButton_Click(object sender, EventArgs e)
         {
-            _SeriesListAddNewSeries();
+            App.TryRun(_SeriesListAddNewSeries);
         }
         private void _SeriesListRemoveButton_Click(object sender, EventArgs e)
         {
 
         }
-
+        /// <summary>
+        /// Přidat nové serie do aktuální definice, serie jsou zadány v GUI (<see cref="_EntityListBox"/> a <see cref="_ValueTypeListBox"/>)
+        /// </summary>
         private void _SeriesListAddNewSeries()
         {
             var entityItems = _EntityListBox.SelectedItems.OfType<DatabaseInfo.EntityInfo>().ToArray();
@@ -777,9 +1033,24 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             if (!_HasValidDataForNewSeries(entityItems, valueItems))
                 return;
 
-           
+            var newSerieKeys = _CreateKeysForNewSeries(entityItems, valueItems);
+            int newSeriesCount = newSerieKeys.Count;
+            if (newSeriesCount == 0)
+            {
+                App.ShowWarning(this.FindForm(), "Zadané obce a datové hodnoty jsou v grafu již obsaženy.");
+                return;
+            }
 
+            int sumCount = this.CurrentGraphInfo.Series.Length + newSeriesCount;
+            if (sumCount > 20)
+            {
+                App.ShowWarning(this.FindForm(), "Pro rozumnou přehlednost grafu není možno do něj vložit více než 20 datových řad.");
+                return;
+            }
 
+            _AddNewSeriesToGraph(newSerieKeys);
+            RefreshSeriesListGrid();
+            ContainChanges = true;
         }
         /// <summary>
         /// Ověří, zda aktuálně můžeme zadaná data přidat jako nové serie. Pokud ne, oznámí uživateli problém a vrátí false.
@@ -821,19 +1092,105 @@ V pravé části vyberte jeden nebo více druhů dat, které chcete zobrazit.
 
 Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidány kombinace všech označených míst a všech označených typů dat.";
 
-                App.ShowWarning(this, text);
+                App.ShowWarning(this.FindForm(), text);
                 return false;
             }
             return true;
         }
-
+        /// <summary>
+        /// Vytvoří a vrátí všechny nové kombinace vstupních hodnot (entita a typ hodnoty), které dosud nejsou přítomny v aktuálním grafu.
+        /// </summary>
+        /// <param name="entityItems"></param>
+        /// <param name="valueItems"></param>
+        /// <returns></returns>
+        private IList<Tuple<DatabaseInfo.EntityInfo, DataValueTypeInfo>> _CreateKeysForNewSeries(DatabaseInfo.EntityInfo[] entityItems, DataValueTypeInfo[] valueItems)
+        {
+            var result = new List<Tuple<DatabaseInfo.EntityInfo, DataValueTypeInfo>>();
+            var series = this.CurrentGraphInfo.Series;
+            foreach (var entityItem in entityItems)
+            {
+                string entityCode = entityItem.FullCode;
+                foreach (var valueItem in valueItems)
+                {   // Máme zde kombinaci požadovaných hodnot entityItem (a její entityCode) plus typ hodnoty valueItem:
+                    // Zjistím, zda takovou kombinaci v grafu již máme:
+                    bool exists = series.Any(s => s.DataEntityCode == entityCode && s.ValueType == valueItem.Value);
+                    if (!exists)
+                        result.Add(new Tuple<DatabaseInfo.EntityInfo, DataValueTypeInfo>(entityItem, valueItem));
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// Do aktuálního grafu přidá nové serie podle zadaných klíčů. Neprovádí refresh Gridu.
+        /// </summary>
+        /// <param name="newSerieKeys"></param>
+        private void _AddNewSeriesToGraph(IEnumerable<Tuple<DatabaseInfo.EntityInfo, DataValueTypeInfo>> newSerieKeys)
+        {
+            foreach (var newSerieKey in newSerieKeys)
+            {
+                var entity = newSerieKey.Item1;
+                var valueType = newSerieKey.Item2;
+                string title = entity.Text + ", " + valueType.Text;
+                GraphSerieInfo serie = new GraphSerieInfo() { Title = title, DataEntityCode = entity.FullCode, ValueType = valueType.Value };
+                this.CurrentGraphInfo.AddSerie(serie);
+                AddSerieToSeriesList(serie);
+            }
+        }
+        /// <summary>
+        /// Obsahuje aktuálně focusovaný řádek, obsahující serii grafu
+        /// </summary>
+        private GraphSerieGridRow SeriesListCurrentRow { get { return (_SeriesListGridView.GetFocusedRow() as GraphSerieGridRow); } }
 
         private DXE.PanelControl _SeriesListPanel;
         private DXE.PanelControl _SeriesListButtonPanel;
+        private DXG.Views.Grid.GridView _SeriesListGridView;
         private DXG.GridControl _SeriesListGrid;
         private DXE.SimpleButton _SeriesListAddButton;
         private DXE.SimpleButton _SeriesListRemoveButton;
         private List<GraphSerieGridRow> _SeriesListData;
+        #endregion
+        #region Detaily jednoho řádku (Panel)
+        private WF.Control CreateControlForSeriesDetail()
+        {
+            _SeriesDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+
+            int y = DetailYFirst;
+            _SeriesDetailTitleLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 520, DetailYHeightLabel), Text = "Název datové řady" };
+            _SeriesDetailTitleLabel.StyleController = _LabelStyle;
+            _SeriesDetailPanel.Controls.Add(_SeriesDetailTitleLabel);
+
+            y = _SeriesDetailTitleLabel.Bounds.Bottom + DetailYSpaceLabel;
+
+            _SeriesDetailTitleText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText, y, 520, DetailYHeightText) }; 
+            _SeriesDetailTitleText.StyleController = _InputStyle;
+            _SeriesDetailPanel.Controls.Add(_SeriesDetailTitleText);
+
+            y = _SeriesDetailTitleText.Bounds.Bottom + DetailYSpaceText;
+
+
+            return _SeriesDetailPanel;
+        }
+        private void SeriesDetailRefresh()
+        {
+            var row = SeriesListCurrentRow;
+            var serie = row?.Serie;
+            _SeriesDetailTitleText.Text = serie?.Title ?? "";
+        }
+        DXE.PanelControl _SeriesDetailPanel;
+        DXE.LabelControl _SeriesDetailTitleLabel;
+        DXE.TextEdit _SeriesDetailTitleText;
+        DXE.LabelControl _SeriesDetailEntityLabel;
+        DXE.TextEdit _SeriesDetailEntityText;
+        DXE.LabelControl _SeriesDetailValueTypeLabel;
+        DXE.TextEdit _SeriesDetailValueTypeText;
+        DXE.LabelControl _SeriesDetailPocetOdDoLabel;
+        DXE.TextEdit _SeriesDetailPocetOdText;
+        DXE.TextEdit _SeriesDetailPocetDoText;
+
+        private void _SeriesListGridView_FocusedRowChanged(object sender, DXG.Views.Base.FocusedRowChangedEventArgs e)
+        {
+            SeriesDetailRefresh();
+        }
         #endregion
         #region Správa layoutu - splittery, uložení konfigurace
         /// <summary>
@@ -899,20 +1256,61 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             Data.App.Config.EditFormGraphPanelLayout = configLayout.ToArray();
         }
         #endregion
-
         #region Data, Refresh, Store
         /// <summary>
         /// Formulář, který obsahuje referenci na definici grafu i na databázi
         /// </summary>
         public GraphForm ParentForm { get; set; }
+        /// <summary>
+        /// Databáze
+        /// </summary>
         public DatabaseInfo Database { get { return ParentForm?.Database; } }
-        public GraphInfo CurrentGraphInfo { get { return ParentForm?.CurrentGraphInfo; } }
+        /// <summary>
+        /// Objekt s definicí grafu, do něj přímo ukládáme data. Za běžné situace není null, pouze krátký čas při inicializaci.
+        /// Po vnější změně obsahu dat (setování) je vyvolána zdejší metoda <see cref="DataRefresh"/>.
+        /// Jde o referenci na soukromou pracovní instanci, která je uložena ve formuláři.
+        /// </summary>
+        public GraphInfo CurrentGraphInfo { get; set; }
+        /// <summary>
+        /// Obsahuje změny?
+        /// </summary>
+        public bool ContainChanges
+        {
+            get { return _ContainChanges; }
+            protected set
+            {
+                if (!_DataRefreshRunning && value && !_ContainChanges)
+                {
+                    _ContainChanges = true;
+                    OnDataChanged();
+                }
+            }
+        }
+        private bool _ContainChanges;
+        private bool _DataRefreshRunning;
+        /// <summary>
+        /// Je voláno po první změně, která je provedena do "čistého" objektu
+        /// </summary>
+        protected virtual void OnDataChanged()
+        {
+            DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Je voláno po první změně, která je provedena do "čistého" objektu
+        /// </summary>
+        public event EventHandler DataChanged;
+        /// <summary>
+        /// Metoda je volaná po změně dat v objektu <see cref="CurrentGraphInfo"/>.
+        /// Změnu dat provádí vnjší logika v procesu editace. Zdejší objekt má aktualizovat data ve svých objektech.
+        /// </summary>
         public void DataRefresh()
         {
-            DatabaseInfo database = this.Database;
-            GraphInfo graphInfo = this.CurrentGraphInfo;
-
-
+            _DataRefreshRunning = true;
+            HeaderDetailRefresh();
+            SeriesDetailRefresh();
+            SeriesListRefreshData(true);
+            _ContainChanges = false;
+            _DataRefreshRunning = false;
         }
         #endregion
     }
@@ -920,32 +1318,34 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
     public class GraphSerieGridRow : INotifyPropertyChanged
     {
         [DisplayName("Název informace")]
-        public string Name { get { return _Name; } set { _Set(ref _Name, value); } } private string _Name;
+        public string Title { get { return Serie.Title; } }
         [DisplayName("Obec (město, okres, kraj)")]
-        public string Entita { get { return _Entita; } set { _Set(ref _Entita, value); } } private string _Entita;
+        public string EntityText { get { return _EntityText; } } private string _EntityText;
         [DisplayName("Druh zobrazených dat")]
-        public string Hodnota { get { return _Hodnota; } set { _Set(ref _Hodnota, value); } } private string _Hodnota;
+        public string ValueTypeName { get { return _ValueTypeName; } } private string _ValueTypeName;
+        [DisplayName("Počet obyvatel OD")]
+        public string PocetOd { get { return _PocetOd; } } private string _PocetOd;
+        [DisplayName("Počet obyvatel DO")]
+        public string PocetDo { get { return _PocetDo; } } private string _PocetDo;
 
+        public GraphSerieInfo Serie { get; set; }
+        protected DatabaseInfo Database { get; set; }
 
-        public static System.Data.DataTable GetDataTable()
+        internal static GraphSerieGridRow Create(GraphSerieInfo serie, DatabaseInfo database)
         {
-            System.Data.DataTable table = new DataTable();
-            table.Columns.Add(new DataColumn("popis") { Caption = "Uživatelský popis", DataType = typeof(string) });
-            table.Columns.Add(new DataColumn("entita") { Caption = "Město", DataType = typeof(string) });
-            table.Columns.Add(new DataColumn("hodnota") { Caption = "Hodnota dat", DataType = typeof(string) });
-
-            table.Rows.Add("Chrudim, denní nové", "Chrudim", "Denní počet");
-            table.Rows.Add("pardubice, denní nové", "pardubice", "Denní počet");
-            table.Rows.Add("HraKra, denní nové", "Hradec", "Denní počet");
-
-            return table;
+            if (serie == null || database == null) return null;
+            GraphSerieGridRow gridRow = new GraphSerieGridRow();
+            gridRow.Serie = serie;
+            gridRow.Database = database;
+            gridRow._EntityText = (database.GetEntity(serie.DataEntityCode)?.Text ?? "");
+            gridRow._ValueTypeName = serie.ValueTypeInfo?.Text;
+            gridRow._PocetOd = _GetPocet(serie.FiltrPocetObyvatelOd);
+            gridRow._PocetDo = _GetPocet(serie.FiltrPocetObyvatelDo);
+            return gridRow;
         }
-
-        public static BindingList<GraphSerieGridRow> GetDataGraph()
+        protected static string _GetPocet(int? pocet)
         {
-            BindingList<GraphSerieGridRow> records = new BindingList<GraphSerieGridRow>();
-            records.Add(new GraphSerieGridRow() { Name = "Praha, denní stav", Entita = "Praha (obec, 1M pražáků)", Hodnota = "Počet" });
-            return records;
+            return (pocet.HasValue ? pocet.Value.ToString("### ### ##0").Trim() : "");
         }
         #region INotifyPropertyChanged
         private void _Set<T>(ref T variable, T value, [System.Runtime.CompilerServices.CallerMemberName] string propertyName = "") where T : IComparable
@@ -961,6 +1361,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             if (_PropertyChanged != null)
                 _PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
+
         event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
         {
             add { _PropertyChanged += value; }

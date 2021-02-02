@@ -724,6 +724,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public DataValueType ValueType { get; set; }
         /// <summary>
+        /// Detaily o aktuálním typu hodnoty <see cref="ValueType"/>
+        /// </summary>
+        public DataValueTypeInfo ValueTypeInfo { get { return DataValueTypeInfo.CreateFor(this.ValueType); } }
+        /// <summary>
         /// Filtovat data podle velikosti obcí: načítat jen z obcí, jejichž Počet obyvatel je rovný nebo větší této hodnotě
         /// </summary>
         public int? FiltrPocetObyvatelOd { get; set; }
@@ -731,10 +735,6 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Filtovat data podle velikosti obcí: načítat jen z obcí, jejichž Počet obyvatel je menší než tato hodnota
         /// </summary>
         public int? FiltrPocetObyvatelDo { get; set; }
-        /// <summary>
-        /// Detaily o aktuálním typu hodnoty <see cref="ValueType"/>
-        /// </summary>
-        public DataValueTypeInfo ValueTypeInfo { get { return DataValueTypeInfo.CreateFor(this.ValueType); } }
         /// <summary>
         /// Barva čáry explicitně zadaná
         /// </summary>
@@ -761,7 +761,6 @@ namespace Djs.Tools.CovidGraphs.Data
             }
         }
         #region Načtení ze souboru a uložení definice této serie do souboru
-
         public static GraphSerieInfo LoadFromStream(StringReader stream, GraphInfo.FileVersion fileVersion, ref string line)
         {
             if (stream == null || stream.Peek() == 0) return null;
@@ -805,6 +804,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 case ChartSeriesValueType:
                     this.ValueType = GetValueEnum<DataValueType>(text, DataValueType.None);
                     break;
+                case ChartSeriesFiltrPocetOd:
+                    this.FiltrPocetObyvatelOd = GetValue(text, (int?)0);
+                    break;
+                case ChartSeriesFiltrPocetDo:
+                    this.FiltrPocetObyvatelDo = GetValue(text, (int?)0);
+                    break;
                 case ChartSeriesLineColor:
                     this.LineColor = GetValue(text, (System.Drawing.Color?)null);
                     break;
@@ -822,6 +827,10 @@ namespace Djs.Tools.CovidGraphs.Data
             stream.WriteLine(CreateLine(ChartSeriesTitle, GetSerial(this.Title)));
             stream.WriteLine(CreateLine(ChartSeriesEntityCode, GetSerial(this.DataEntityCode)));
             stream.WriteLine(CreateLine(ChartSeriesValueType, GetSerialEnum(this.ValueType)));
+            if (this.FiltrPocetObyvatelOd.HasValue)
+                stream.WriteLine(CreateLine(ChartSeriesFiltrPocetOd, GetSerial(this.FiltrPocetObyvatelOd)));
+            if (this.FiltrPocetObyvatelDo.HasValue)
+                stream.WriteLine(CreateLine(ChartSeriesFiltrPocetDo, GetSerial(this.FiltrPocetObyvatelDo)));
             if (this.LineColor.HasValue)
                 stream.WriteLine(CreateLine(ChartSeriesLineColor, GetSerial(this.LineColor)));
             if (this.LineThickness.HasValue)
@@ -832,6 +841,8 @@ namespace Djs.Tools.CovidGraphs.Data
         private const string ChartSeriesTitle = GraphInfo.ChartSeriesPrefix + "Title";
         private const string ChartSeriesEntityCode = GraphInfo.ChartSeriesPrefix + "EntityCode";
         private const string ChartSeriesValueType = GraphInfo.ChartSeriesPrefix + "ValueType";
+        private const string ChartSeriesFiltrPocetOd = GraphInfo.ChartSeriesPrefix + "FiltrPocetOd";
+        private const string ChartSeriesFiltrPocetDo = GraphInfo.ChartSeriesPrefix + "FiltrPocetDo";
         private const string ChartSeriesLineColor = GraphInfo.ChartSeriesPrefix + "LineColor";
         private const string ChartSeriesLineThickness = GraphInfo.ChartSeriesPrefix + "LineThickness";
         private const string ChartSeriesLineDashStyle = GraphInfo.ChartSeriesPrefix + "LineDashStyle";
@@ -989,6 +1000,18 @@ namespace Djs.Tools.CovidGraphs.Data
             result = null;
             return false;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="text"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="axisType"></param>
+        /// <param name="entityType"></param>
+        /// <param name="suggestedDashStyle"></param>
+        /// <param name="dateOffsetBefore"></param>
+        /// <param name="dateOffsetAfter"></param>
+        /// <param name="icon"></param>
         private DataValueTypeInfo(DataValueType value, string text, string toolTip, 
             GraphSerieAxisType axisType, EntityType entityType, LineDashStyleType suggestedDashStyle,
             int? dateOffsetBefore = null, int? dateOffsetAfter = null, System.Drawing.Image icon = null)
@@ -1056,16 +1079,23 @@ namespace Djs.Tools.CovidGraphs.Data
         // Případný další zdroj přidej i dole do CommonSources!
 
         /// <summary>
-        /// Aggregate: Průměr minulých 7 dní = za minulých 6 dní plus aktuální den (průměr: součet reálných dnů děleno počtem reálných dnů)
+        /// Aggregate: Průměr minulých 7 dní = za minulých 6 dní plus aktuální den (průměr: součet reálných dnů děleno počtem reálných dnů).
+        /// Tento agregát se aplikuje jako přípravný = jako první v řadě, ještě před <see cref="AggrCoefficient5Days"/> nebo <see cref="AggrCoefficient7Days"/>.
         /// </summary>
-        AggrLast7DayAverage = 0x00000100,
+        AggrPrepareLast7DayAverage = 0x00000100,
 
         /// <summary>
-        /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 5 dny (Den[X] / Den[X-5]) = číslo R0
+        /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 5 dny (Den[X] / Den[X-5]) = standardně uváděné číslo R0.
+        /// Tuto hodnotu je nutno povinně kombinovat s <see cref="AggrPrepareLast7DayAverage"/>, aby výsledky byly korektní. Samotná hodnota <see cref="AggrCoefficient5Days"/> ale <see cref="AggrPrepareLast7DayAverage"/> neprovádí.
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrCoefficient7Days"/>, při zkombinování se použije pouze <see cref="AggrCoefficient5Days"/>.
         /// </summary>
         AggrCoefficient5Days = 0x00001000,
         /// <summary>
-        /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 7 dny (Den[X] / Den[X-7])
+        /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 7 dny (Den[X] / Den[X-7]).
+        /// Tuto hodnotu je nutno povinně kombinovat s <see cref="AggrPrepareLast7DayAverage"/>, aby výsledky byly korektní. Samotná hodnota <see cref="AggrCoefficient7Days"/> ale <see cref="AggrPrepareLast7DayAverage"/> neprovádí.
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrCoefficient5Days"/>, při zkombinování se použije pouze <see cref="AggrCoefficient5Days"/>.
         /// </summary>
         AggrCoefficient7Days = 0x00002000,
 
@@ -1074,29 +1104,54 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         AggrLast7DaySum = 0x00010000,
         /// <summary>
-        /// Aggregate: Průměr plovoucích 7 dní = za minulé 3 dny plus aktuální den plus následující 3 dny (průměr: součet reálných dnů děleno počtem reálných dnů)
+        /// Aggregate: Průměr 7 dní dle konfigurace (buď Flow = plovoucí, anebo Last = minulé dny).
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrLast7DayAverage"/>, při zkombinování se použije pouze <see cref="AggrLast7DayAverage"/>.
         /// </summary>
-        AggrFlow7DayAverage = 0x00020000,
+        AggrStd7DayAverage = 0x00020000,
+        /// <summary>
+        /// Aggregate: Průměr minuých 7 dní = za minulých 6 dní plus aktuální den (průměr: součet reálných dnů děleno počtem reálných dnů).
+        /// Tento agregát se aplikuje jako standardní, po případné aplikaci <see cref="AggrCoefficient5Days"/> nebo <see cref="AggrCoefficient7Days"/>.
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrFlow7DayAverage"/>, při zkombinování se použije pouze <see cref="AggrLast7DayAverage"/>.
+        /// </summary>
+        AggrLast7DayAverage = 0x00040000,
+        /// <summary>
+        /// Aggregate: Průměr plovoucích 7 dní = za minulé 3 dny plus aktuální den plus následující 3 dny (průměr: součet reálných dnů děleno počtem reálných dnů)
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrLast7DayAverage"/>, při zkombinování se použije pouze <see cref="AggrLast7DayAverage"/>.
+        /// </summary>
+        AggrFlow7DayAverage = 0x00080000,
+
         /// <summary>
         /// Aggregate: Přepočet dle počtu obyvatel, na počet případů na 100 000 osob
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrRelativeTo1M"/>, při zkombinování se použije pouze <see cref="AggrRelativeTo100K"/>.
         /// </summary>
-        
         AggrRelativeTo100K = 0x00100000,
         /// <summary>
         /// Aggregate: Přepočet dle počtu obyvatel, na počet případů na 1 000 000 osob
+        /// <para/>
+        /// Tento agregát nelze kombinovat s <see cref="AggrRelativeTo100K"/>, při zkombinování se použije pouze <see cref="AggrRelativeTo100K"/>.
         /// </summary>
         AggrRelativeTo1M = 0x00200000,
 
         /// <summary>
         /// Round: na 0 míst (na celá čísla)
+        /// <para/>
+        /// Tuto nelze kombinovat s <see cref="Round1D"/> ani s <see cref="Round2D"/>, při zkombinování se použije nejnižší hodnota (0, 1).
         /// </summary>
         Round0D = 0x01000000,
         /// <summary>
         /// Round: na 1 desetinné místo
+        /// <para/>
+        /// Tuto nelze kombinovat s <see cref="Round0D"/> ani s <see cref="Round2D"/>, při zkombinování se použije nejnižší hodnota (0, 1).
         /// </summary>
         Round1D = 0x02000000,
         /// <summary>
         /// Round: na 2 desetinná místa (typicky pro Coefficient)
+        /// <para/>
+        /// Tuto nelze kombinovat s <see cref="Round0D"/> ani s <see cref="Round1D"/>, při zkombinování se použije nejnižší hodnota (0, 1).
         /// </summary>
         Round2D = 0x04000000,
 
@@ -1112,19 +1167,19 @@ namespace Djs.Tools.CovidGraphs.Data
         // Pořadí akcí fyzicky realizuje metoda Database.ProcessResultValue() !
 
         NewCount = SourceNewCount | Round0D,
-        NewCountAvg = SourceNewCount | AggrFlow7DayAverage | Round0D,
+        NewCountAvg = SourceNewCount | AggrStd7DayAverage | Round0D,
         NewCountRelative = SourceNewCount | AggrRelativeTo100K | Round0D,
-        NewCountRelativeAvg = SourceNewCount | AggrFlow7DayAverage | AggrRelativeTo100K | Round0D,
+        NewCountRelativeAvg = SourceNewCount | AggrStd7DayAverage | AggrRelativeTo100K | Round0D,
         NewCount7DaySum = SourceNewCount | AggrLast7DaySum | Round0D,
-        NewCount7DaySumAvg = SourceNewCount | AggrLast7DaySum | AggrFlow7DayAverage | Round0D,
+        NewCount7DaySumAvg = SourceNewCount | AggrLast7DaySum | AggrStd7DayAverage | Round0D,
         NewCount7DaySumRelative = SourceNewCount | AggrLast7DaySum | AggrRelativeTo100K | Round0D,
-        NewCount7DaySumRelativeAvg = SourceNewCount | AggrLast7DaySum | AggrFlow7DayAverage | AggrRelativeTo100K | Round0D,
+        NewCount7DaySumRelativeAvg = SourceNewCount | AggrLast7DaySum | AggrStd7DayAverage | AggrRelativeTo100K | Round0D,
         CurrentCount = SourceCurrentCount | Round0D,
-        CurrentCountAvg = SourceCurrentCount | AggrFlow7DayAverage | Round0D,
+        CurrentCountAvg = SourceCurrentCount | AggrStd7DayAverage | Round0D,
         CurrentCountRelative = SourceCurrentCount | AggrRelativeTo100K | Round0D,
-        CurrentCountRelativeAvg = SourceCurrentCount | AggrFlow7DayAverage | AggrRelativeTo100K | Round0D,
-        RZero = SourceNewCount | AggrLast7DayAverage | AggrCoefficient5Days | Round2D,
-        RZeroAvg = SourceNewCount | AggrLast7DayAverage | AggrCoefficient5Days | AggrFlow7DayAverage | Round2D
+        CurrentCountRelativeAvg = SourceCurrentCount | AggrStd7DayAverage | AggrRelativeTo100K | Round0D,
+        RZero = SourceNewCount | AggrPrepareLast7DayAverage | AggrCoefficient5Days | Round2D,
+        RZeroAvg = SourceNewCount | AggrPrepareLast7DayAverage | AggrCoefficient5Days | AggrStd7DayAverage | Round2D
 
         // Po přidání další finální hodnoty ji přidej i do metod:
         //  public static DataValueTypeInfo[] CreateAll()

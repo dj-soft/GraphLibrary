@@ -780,6 +780,8 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void TryShowGraphFormCurrent()
         {
+            if (this._Database == null || !this._Database.HasData) throw new InvalidOperationException("Dosud nejsou načtena a připravena data, počkejte malou chvilku...");
+
             using (var graphForm = new GraphForm(this.VisibleBounds))
             {
                 graphForm.Database = this._Database;

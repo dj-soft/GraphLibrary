@@ -1374,14 +1374,16 @@ namespace Djs.Tools.CovidGraphs.Data
             // enum DataValueType obsahuje bity, které předepisují jednotlivé agregátní funkce. Nutno je provést ve správném pořadí 
             //  - tak, aby následující výpočet měl připravená správná data z předešlého výpočtu:
 
-            if (args.ValueType.HasFlag(DataValueType.AggrLast7DayAverage)) ProcessResultAggrLast7DayAverage(args);               // O tohle se může opřít Coefficient (=o průměr z posledních dnů)
+            if (args.ValueType.HasFlag(DataValueType.AggrPrepareLast7DayAverage)) ProcessResultAggrLast7DayAverage(args);        // Přípravný agregát: O tohle se může opřít Coefficient (=o průměr z posledních dnů)
 
             if (args.ValueType.HasFlag(DataValueType.AggrCoefficient5Days)) ProcessResultAggrCoefficient5Days(args);             // Koeficient se smí počítat jen 5Days nebo 7Days (nebo žádný), ale nikdy ne oba
             else if (args.ValueType.HasFlag(DataValueType.AggrCoefficient7Days)) ProcessResultAggrCoefficient7Days(args);
  
             if (args.ValueType.HasFlag(DataValueType.AggrLast7DaySum)) ProcessResultAggrLast7DaySum(args);                       // Součet posledních dnů se používá jako výchozí hodnota pro jiné typy než Coefficient
 
-            if (args.ValueType.HasFlag(DataValueType.AggrFlow7DayAverage)) ProcessResultAggrFlow7DayAverage(args);               // Průměr průběžných 7 dnů (klouzavý průměr) je typická závěrečná akce na vyhlazení křivek
+            if (args.ValueType.HasFlag(DataValueType.AggrStd7DayAverage)) ProcessResultAggrStd7DayAverage(args);                 // Průměr 7 dnů standardní dle konfigurace
+            else if (args.ValueType.HasFlag(DataValueType.AggrLast7DayAverage)) ProcessResultAggrLast7DayAverage(args);          // Průměr průběžných 7 dnů (klouzavý průměr) je typická závěrečná akce na vyhlazení křivek
+            else if (args.ValueType.HasFlag(DataValueType.AggrFlow7DayAverage)) ProcessResultAggrFlow7DayAverage(args);          // Průměr průběžných 7 dnů (klouzavý průměr) je typická závěrečná akce na vyhlazení křivek
 
             if (args.ValueType.HasFlag(DataValueType.AggrRelativeTo100K)) ProcessResultAggrRelativeTo100K(args);                 // Přepočet na 100T nebo 1M může být před i po klouzavém průměru
             else if (args.ValueType.HasFlag(DataValueType.AggrRelativeTo1M)) ProcessResultAggrRelativeTo1M(args);                //  ale nikdy nesmí být ba přepočty najednou
@@ -1389,64 +1391,6 @@ namespace Djs.Tools.CovidGraphs.Data
             if (args.ValueType.HasFlag(DataValueType.Round0D)) ProcessResultRound0D(args);                                       // Některé ze zaokrouhlení je poslední
             else if (args.ValueType.HasFlag(DataValueType.Round1D)) ProcessResultRound1D(args);
             else if (args.ValueType.HasFlag(DataValueType.Round2D)) ProcessResultRound2D(args);
-
-            #region Původní sekvence
-            /*    
-            switch (args.ValueType)
-            {
-                case DataValueType.NewCount:
-                case DataValueType.CurrentCount:
-                    break;
-                case DataValueType.NewCountAvg:
-                case DataValueType.CurrentCountAvg:
-                    ProcessResultAggrFlow7DayAverage(args);
-                    ProcessResultRound0D(args);
-                    break;
-                case DataValueType.CurrentCountRelative:
-                case DataValueType.NewCountRelative:
-                    ProcessResultAggrRelativeTo100K(args);
-                    ProcessResultRound0D(args);
-                    break;
-                case DataValueType.CurrentCountRelativeAvg:
-                case DataValueType.NewCountRelativeAvg:
-                    ProcessResultAggrFlow7DayAverage(args);
-                    ProcessResultAggrRelativeTo100K(args);
-                    ProcessResultRound0D(args);
-                    break;
-                case DataValueType.RZero:
-                    ProcessResultAggrLast7DayAverage(args);
-                    ProcessResultAggrCoefficient5Days(args);
-                    ProcessResultRound0D(args, 2);
-                    break;
-                case DataValueType.RZeroAvg:
-                    ProcessResultAggrLast7DayAverage(args);
-                    ProcessResultAggrCoefficient5Days(args);
-                    ProcessResultAggrFlow7DayAverage(args);
-                    ProcessResultRound0D(args, 2);
-                    break;
-                case DataValueType.NewCount7DaySum:
-                    ProcessResultAggrLast7DaySum(args);
-                    ProcessResultRound0D(args);
-                    break;
-                case DataValueType.NewCount7DaySumAvg:
-                    ProcessResultAggrLast7DaySum(args);
-                    ProcessResultAggrFlow7DayAverage(args);
-                    ProcessResultRound0D(args);
-                    break;
-                case DataValueType.NewCount7DaySumRelative:
-                    ProcessResultAggrLast7DaySum(args);
-                    ProcessResultAggrRelativeTo100K(args);
-                    ProcessResultRound0D(args);
-                    break;
-                case DataValueType.NewCount7DaySumRelativeAvg:
-                    ProcessResultAggrLast7DaySum(args);
-                    ProcessResultAggrFlow7DayAverage(args);
-                    ProcessResultAggrRelativeTo100K(args);
-                    ProcessResultRound0D(args);
-                    break;
-            }
-            */
-            #endregion
 
             ProcessResultValueByTimeRange(args, begin, end);
         }
@@ -1459,6 +1403,18 @@ namespace Djs.Tools.CovidGraphs.Data
         private void ProcessResultValueDirect(SearchInfoArgs args)
         {
             args.Results.ForEachExec(r => r.Value = r.RawValue);
+        }
+        /// <summary>
+        /// Průměr za standardních 7 dní = minulé nebo plovoucí, dle nastavení
+        /// </summary>
+        /// <param name="args"></param>
+        private void ProcessResultAggrStd7DayAverage(SearchInfoArgs args)
+        {
+            bool useLastDaysAvg = true;
+            if (useLastDaysAvg)
+                ProcessResultAggrLast7DayAverage(args);
+            else
+                ProcessResultAggrFlow7DayAverage(args);
         }
         /// <summary>
         /// Průměr za posledních 7 dní = -6 až 0 dny
