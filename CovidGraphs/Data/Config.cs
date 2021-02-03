@@ -178,6 +178,16 @@ namespace Djs.Tools.CovidGraphs.Data
         #endregion
         #region Data konfigurace
         /// <summary>
+        /// Vygeneruje a vrátí ID pro nový graf. Používá se až při ukládání grafu na disk.
+        /// </summary>
+        /// <returns></returns>
+        public int GetNextGraphId()
+        {
+            int nextId = LastSaveGraphId + 1;
+            LastSaveGraphId = nextId;
+            return nextId;
+        }
+        /// <summary>
         /// ID posledně uloženého grafu, následující bude mít +1.
         /// ID se přiděluje při ukládání na disk pro graf, který dosud ID nemá.
         /// </summary>

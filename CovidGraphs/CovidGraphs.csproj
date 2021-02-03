@@ -32,6 +32,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>aeskulap.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DevExpress.BonusSkins.v20.1">
       <HintPath>..\..\DevExpress.20.1\DevExpress.BonusSkins.v20.1.dll</HintPath>
@@ -188,6 +191,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Pic\system-settings_32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="aeskulap.ico" />
+    <None Include="Pic\aeskulap.ico" />
+    <None Include="Pic\aeskulap_32.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

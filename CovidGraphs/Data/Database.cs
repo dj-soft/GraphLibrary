@@ -234,7 +234,7 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             this.Clear();
 
-            string appDataPath = IO.Path.Combine(App.AppPath, "Data");
+            string appDataPath = App.AppDataPath;
             string usrDataPath = App.ConfigPath;
 
             // 1. Standardní varianta: Struktura + Data:
@@ -1724,6 +1724,25 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             else if (args.IsWildCard && args.EntityType.HasValue && args.SearchText.Length == 0)
                 args.FoundContainsEntities.Add(entity);
+        }
+        /// <summary>
+        /// Najde a vrátí entity s daným FullCode.
+        /// </summary>
+        /// <param name="fullCodes"></param>
+        /// <returns></returns>
+        public EntityInfo[] GetEntities(IEnumerable<string> fullCodes)
+        {
+            List<EntityInfo> entities = new List<EntityInfo>();
+            if (fullCodes != null)
+            {
+                foreach (string fullCode in fullCodes)
+                {
+                    EntityInfo entity = GetEntity(fullCode);
+                    if (entity != null)
+                        entities.Add(entity);
+                }
+            }
+            return entities.ToArray();
         }
         /// <summary>
         /// Najde a vrátí entitu s daným FullCode.

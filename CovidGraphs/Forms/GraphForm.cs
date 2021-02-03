@@ -55,6 +55,8 @@ namespace Djs.Tools.CovidGraphs
         protected void InitForm(Rectangle? parentBounds)
         {
             this.Text = "Upravit data grafu...";
+            this.IconOptions.Icon = Properties.Resources.aeskulap;
+            this.ShowInTaskbar = false;
             this.IsShown = false;
             this.MinimizeBox = false;
             this.DialogResult = DialogResult.None;
@@ -110,7 +112,14 @@ namespace Djs.Tools.CovidGraphs
             base.OnSizeChanged(e);
             StoreFormBoundsToConfig();
         }
-        protected bool IsShown;
+        /// <summary>
+        /// Obsahuje true od chvíle, kdy začíná první zobrazení formuláře. Obsahuje false od konstruktoru do prvného Show().
+        /// </summary>
+        public bool IsShown { get; protected set; }
+        /// <summary>
+        /// Bude zobrazen button "Uložit jako nový" ?
+        /// </summary>
+        public bool ShowSaveAsNewButton { get { return _ShowSaveAsNewButton; } set { _ShowSaveAsNewButton = value; RefreshButtons(); } } private bool _ShowSaveAsNewButton;
         /// <summary>
         /// Inicializace vnitřního layoutu - splitpanel
         /// </summary>
@@ -166,6 +175,14 @@ namespace Djs.Tools.CovidGraphs
             _ButtonSave.Enabled = this.ContainChanges;
             _ButtonSaveAs.Enabled = true;
             _ButtonCancel.Enabled = true;
+
+            bool showSaveAsNewButton = this._ShowSaveAsNewButton;
+            if (_ButtonSaveAs.Visible != showSaveAsNewButton)
+            {   // Změna viditelnosti?
+                _ButtonSaveAs.Visible = false;
+                _ButtonPanelLayout();
+                _ButtonSaveAs.Visible = showSaveAsNewButton;
+            }
         }
         internal const int DefaultButtonPanelHeight = 40;
         internal const int DefaultButtonWidth = 150;
@@ -217,17 +234,23 @@ namespace Djs.Tools.CovidGraphs
             if (_ButtonCancel == null) return;
 
             Size size = _ButtonPanel.ClientSize;
+            bool showSaveAsNewButton = this._ShowSaveAsNewButton;
 
             int bW = DefaultButtonWidth;
             int bH = DefaultButtonHeight;
             int margin = 12;
             int space = 9;
-            int bX = size.Width - (3 * bW + 2 * space + margin);
+
+            int bX = size.Width - (2 * bW + space + margin);
+            if (showSaveAsNewButton) bX -= (bW + space);
             int bY = 3;
             _ButtonSave.Bounds = new Rectangle(bX, bY, bW, bH);
             bX += bW + space;
-            _ButtonSaveAs.Bounds = new Rectangle(bX, bY, bW, bH);
-            bX += bW + space;
+            if (showSaveAsNewButton)
+            {
+                _ButtonSaveAs.Bounds = new Rectangle(bX, bY, bW, bH);
+                bX += bW + space;
+            }
             _ButtonCancel.Bounds = new Rectangle(bX, bY, bW, bH);
         }
         /// <summary>
@@ -363,6 +386,18 @@ namespace Djs.Tools.CovidGraphs
             set
             {
                 _CurrentGraphInfo.Serial = value?.Serial ?? "";
+                this._DataRefresh();
+            }
+        }
+        /// <summary>
+        /// Serializovaná data grafu
+        /// </summary>
+        public string CurrentGraphInfoSerial
+        {
+            get { return _CurrentGraphInfo.Serial; }
+            set
+            {
+                _CurrentGraphInfo.Serial = value ?? "";
                 this._DataRefresh();
             }
         }
@@ -623,6 +658,9 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void HeaderDetailRefresh()
         {
+            bool oldDRR = _DataRefreshRunning;
+            _DataRefreshRunning = true;
+
             var graph = this.CurrentGraphInfo;
             _HeaderDetailTitleText.Text = graph.Title;
             _HeaderDetailDescriptionText.Text = graph.Description;
@@ -639,13 +677,15 @@ namespace Djs.Tools.CovidGraphs
             _HeaderDetailTimeStripesCheck.Checked = graph.EnableCommonTimeStripes;
             _HeaderDetailTimeZoomCheck.Checked = graph.ChartEnableTimeZoom;
             _HeaderDetailAxisOnRightCheck.Checked = graph.ChartAxisYRight;
+
+            _DataRefreshRunning = oldDRR;
         }
         /// <summary>
         /// Uloží data hlavičky z GUI do datového objektu
         /// </summary>
         private void HeaderDetailStore()
         {
-            if (_DataRefreshRunning) return;               // Probíhá DataRefresh(), mění se hodnoty v UI, volají se eventy Changed => nesmím provádět Store, nemá to smysl !!!
+            if (_DataRefreshRunning) return;               // Probíhá HeaderDetailRefresh(), mění se hodnoty v UI, volají se eventy Changed => nesmím provádět Store, nemá to smysl !!!
 
             var graph = this.CurrentGraphInfo;
             graph.Title = _HeaderDetailTitleText.Text;
@@ -716,6 +756,14 @@ namespace Djs.Tools.CovidGraphs
         private void _SeriesNewSplitContainer_SizeChanged(object sender, EventArgs e)
         {
         }
+        /// <summary>
+        /// V rámci Refreshe dat (=načtení z dat do GUI) označíme ty prvky, které jsou ve stávajícím grafu obsaženy
+        /// </summary>
+        protected void SeriesNewRefreshData()
+        {
+            SeriesNewEntityRefreshData();
+            SeriesNewValueTypeRefreshData();
+        }
         private DXE.PanelControl _SeriesNewPanel;
         private DXE.SplitContainerControl _SeriesNewSplitContainer;
         #endregion
@@ -766,6 +814,24 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             this._EntityPanel.SizeChanged += _EntityPanel_SizeChanged;
 
             return _EntityPanel;
+        }
+        /// <summary>
+        /// V rámci Refreshe dat (=načtení z dat do GUI) zobrazíme ty entity, které jsou ve stávajícím grafu obsaženy
+        /// </summary>
+        protected void SeriesNewEntityRefreshData()
+        {
+            string[] entityCodes = null;
+            if (this.CurrentGraphInfo != null && this.CurrentGraphInfo.Series != null)
+                entityCodes = this.CurrentGraphInfo.Series.Select(s => s.DataEntityCode).Distinct().ToArray();
+            if (entityCodes == null || entityCodes.Length == 0) return;
+
+            var entites = this.Database.GetEntities(entityCodes);
+            if (entites == null || entites.Length == 0) return;
+
+            this._EntityListBox.Items.AddRange(entites);
+            if (!this._EntityListBox.Enabled)
+                this._EntityListBox.Enabled = true;
+            this._EntityListBox.SelectAll();
         }
         private void _EntityPanel_SizeChanged(object sender, EventArgs e)
         {
@@ -880,7 +946,31 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _ValueTypeLayout();
             return _ValueTypePanel;
         }
+        /// <summary>
+        /// V rámci Refreshe dat (=načtení z dat do GUI) označíme ty datové řady, které jsou ve stávajícím grafu obsaženy
+        /// </summary>
+        protected void SeriesNewValueTypeRefreshData()
+        {
+            if (_ValueTypeListBox == null) return;
 
+            DataValueType[] usedValueTypes = null;
+            if (this.CurrentGraphInfo != null && this.CurrentGraphInfo.Series != null)
+                usedValueTypes = this.CurrentGraphInfo.Series.Select(s => s.ValueType).Distinct().ToArray();
+
+            // _ValueTypeListBox nepoužívá Items, ale DataSource = _ValueTypeInfos:
+            int count = _ValueTypeInfos.Length;
+            for (int i = 0; i < count; i++)
+            {
+                DataValueTypeInfo info = _ValueTypeInfos[i];
+                bool isSelected = usedValueTypes.Any(t => t == info.Value);
+                _ValueTypeListBox.SetSelected(i, isSelected);
+            }
+
+            var selectedItems = _ValueTypeListBox.SelectedItems;
+            var valueItems = _ValueTypeListBox.SelectedItems.OfType<DataValueTypeInfo>().ToArray();
+
+            _ValueTypeListBox.Refresh();
+        }
         private void _ValueTypeListBox_SelectedValueChanged(object sender, EventArgs e)
         {
             string text = "";
@@ -982,6 +1072,15 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
 
         }
         /// <summary>
+        /// Po změně focusovaného řádku zajistíme zobrazení detailů aktuální serie
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SeriesListGridView_FocusedRowChanged(object sender, DXG.Views.Base.FocusedRowChangedEventArgs e)
+        {
+            SeriesDetailRefresh();
+        }
+        /// <summary>
         /// Do gridu se seriemi <see cref="_SeriesListGrid"/> načte aktuální obsah definice grafu <see cref="CurrentGraphInfo"/>.
         /// </summary>
         protected void SeriesListRefreshData(bool refreshGui)
@@ -1037,14 +1136,31 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             int newSeriesCount = newSerieKeys.Count;
             if (newSeriesCount == 0)
             {
-                App.ShowWarning(this.FindForm(), "Zadané obce a datové hodnoty jsou v grafu již obsaženy.");
+                App.ShowWarning(this.FindForm(), "Všechny zvolené obce a datové hodnoty jsou v grafu již obsaženy.");
                 return;
             }
 
-            int sumCount = this.CurrentGraphInfo.Series.Length + newSeriesCount;
-            if (sumCount > 20)
+            int currentCount = this.CurrentGraphInfo.Series.Length;
+            int sumCount = currentCount + newSeriesCount;
+            if (sumCount > GraphInfo.MaxSeriesCount)
             {
-                App.ShowWarning(this.FindForm(), "Pro rozumnou přehlednost grafu není možno do něj vložit více než 20 datových řad.");
+                string eol = Environment.NewLine;
+                string message = $"Pro rozumnou přehlednost grafu není možno do něj vložit více než {GraphInfo.MaxSeriesCount} datových řad.{eol}{eol}";
+                if (currentCount > 0)
+                {
+                    string currentSeriesText = GetCountText(currentCount, "není v grafu žádná datová řada", "je v grafu jedna datová řada", "jsou v grafu {0} datové řady", "je v grafu {0} datových řad");
+                    string newSeriesText = GetCountText(newSeriesCount, "žádné řady", "další jedné řady", "dalších {0} řad", "dalších {0} řad");
+                    message += $"Aktuálně {currentSeriesText}, a při požadavku na přidání {newSeriesText} by byl překročen maximální povolený počet.";
+                }
+                else
+                {
+                    string valueText = GetCountText(valueItems.Length, "žádnou typ dat", "jednoho typu dat", "{0} typů dat", "{0} typů dat");
+                    string entitytext = GetCountText(entityItems.Length, "žádnou obec", "jednu obec", "{0} obce", "{1} obcí");
+                    string newSeriesText = GetCountText(newSeriesCount, "žádnou datovou řadu", "jednu datovou řadu", "{0} datové řady", "{0} datových řad");
+                    message += $"Zvolili jste přidání {valueText} pro {entitytext}, celkem tedy {newSeriesText}. Zmenšete jejich počet.";
+                }
+                message += $"{eol}{eol}Zvolte méně dat a zkuste je přidat poté.";
+                App.ShowWarning(this.FindForm(), message);
                 return;
             }
 
@@ -1053,13 +1169,50 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             ContainChanges = true;
         }
         /// <summary>
-        /// Ověří, zda aktuálně můžeme zadaná data přidat jako nové serie. Pokud ne, oznámí uživateli problém a vrátí false.
+        /// Vrací text podle počtu: 
+        /// pro počet (<paramref name="count"/>) = 0 vrací String.Format(<paramref name="text0"/>, count);
+        /// pro počet 1 vrací String.Format(<paramref name="text1"/>, count);
+        /// pro počet 2,3,4 vrací String.Format(<paramref name="text234"/>, count);
+        /// a pro ostatní vrací String.Format(<paramref name="text5plus"/>, count);
+        /// <para/> Pro definici textu tedy lze využít vložení daného počtu do potřebného místa textu, pomocí {0}, anebo nemusí být použit vůbec.
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="text0"></param>
+        /// <param name="text1"></param>
+        /// <param name="text234"></param>
+        /// <param name="text5plus"></param>
+        /// <returns></returns>
+        private string GetCountText(int count, string text0, string text1, string text234, string text5plus)
+        {
+            switch (count)
+            {
+                case 0: return String.Format(text0, count);
+                case 1: return String.Format(text1, count);
+                case 2:
+                case 3:
+                case 4: return String.Format(text234, count);
+            }
+            return String.Format(text5plus, count);
+        }
+        /// <summary>
+        /// Ověří, zda aktuálně můžeme zadaná data přidat jako nové serie. Vrátí true pokud je vše OK.
+        /// Ověří stávající počet datových řad v grafu, ověří aktuálně vybranou záložu v okně (aby uživatel viděl, která data se přidávají),
+        /// a ověří zda jsou vybrané entity a datové typy. 
+        /// Pokud nejsou data OK, pak uživateli zobrazí varování s informacemi, a vrátí false.
         /// </summary>
         /// <param name="entityItems"></param>
         /// <param name="valueItems"></param>
         /// <returns></returns>
         private bool _HasValidDataForNewSeries(DatabaseInfo.EntityInfo[] entityItems, DataValueTypeInfo[] valueItems)
         {
+            int currentCount = this.CurrentGraphInfo.Series.Length;
+            if (currentCount >= GraphInfo.MaxSeriesCount)
+            {
+                string text = $@"Aktuální graf již obsahuje {currentCount} datových řad'. Nelze přidat další řadu, graf by nebyl přehledný.";
+                App.ShowWarning(this, text);
+                return false;
+            }
+
             int requestPage = 1;
             if (_TabContainer.SelectedTabPageIndex != requestPage)
             {
@@ -1130,7 +1283,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             {
                 var entity = newSerieKey.Item1;
                 var valueType = newSerieKey.Item2;
-                string title = entity.Text + ", " + valueType.Text;
+                string title = entity.Nazev + ", " + valueType.ShortText;
                 GraphSerieInfo serie = new GraphSerieInfo() { Title = title, DataEntityCode = entity.FullCode, ValueType = valueType.Value };
                 this.CurrentGraphInfo.AddSerie(serie);
                 AddSerieToSeriesList(serie);
@@ -1139,7 +1292,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         /// <summary>
         /// Obsahuje aktuálně focusovaný řádek, obsahující serii grafu
         /// </summary>
-        private GraphSerieGridRow SeriesListCurrentRow { get { return (_SeriesListGridView.GetFocusedRow() as GraphSerieGridRow); } }
+        private GraphSerieGridRow CurrentSerieGridRow { get { return (_SeriesListGridView.GetFocusedRow() as GraphSerieGridRow); } }
 
         private DXE.PanelControl _SeriesListPanel;
         private DXE.PanelControl _SeriesListButtonPanel;
@@ -1163,6 +1316,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
 
             _SeriesDetailTitleText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText, y, 520, DetailYHeightText) }; 
             _SeriesDetailTitleText.StyleController = _InputStyle;
+            _SeriesDetailTitleText.TextChanged += _SeriesValueChanged;
             _SeriesDetailPanel.Controls.Add(_SeriesDetailTitleText);
 
             y = _SeriesDetailTitleText.Bounds.Bottom + DetailYSpaceText;
@@ -1170,12 +1324,49 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
 
             return _SeriesDetailPanel;
         }
+        /// <summary>
+        /// Po změně jakéhokoli údaje v hlavičce se uloží data z GUI do datového objektu grafu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SeriesValueChanged(object sender, EventArgs e)
+        {
+            SeriesDetailStore();
+            ContainChanges = true;
+        }
+        /// <summary>
+        /// Načte data aktuálně zobrazené serie z datového objektu do GUI
+        /// </summary>
         private void SeriesDetailRefresh()
         {
-            var row = SeriesListCurrentRow;
+            bool oldDRR = _DataRefreshRunning;
+            _DataRefreshRunning = true;
+
+            var row = CurrentSerieGridRow;
             var serie = row?.Serie;
+            CurrentSerieInfo = serie;
             _SeriesDetailTitleText.Text = serie?.Title ?? "";
+
+            _DataRefreshRunning = oldDRR;
         }
+        /// <summary>
+        /// Uloží data aktuální položky z GUI do datového objektu
+        /// </summary>
+        private void SeriesDetailStore()
+        {
+            if (_DataRefreshRunning) return;               // Probíhá SeriesDetailRefresh(), mění se hodnoty v UI, volají se eventy Changed => nesmím provádět Store, nemá to smysl !!!
+
+            var serie = CurrentSerieInfo;
+            if (serie == null) return;
+
+
+        }
+        /// <summary>
+        /// Serie grafu, aktuálně zobrazení v Gridu, její data jsou zobrazena v poli SeriesDetail.
+        /// Do této serie grafu se budou vkládat data po editaci.
+        /// Teoreticky to může být null.
+        /// </summary>
+        private GraphSerieInfo CurrentSerieInfo;
         DXE.PanelControl _SeriesDetailPanel;
         DXE.LabelControl _SeriesDetailTitleLabel;
         DXE.TextEdit _SeriesDetailTitleText;
@@ -1186,11 +1377,6 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         DXE.LabelControl _SeriesDetailPocetOdDoLabel;
         DXE.TextEdit _SeriesDetailPocetOdText;
         DXE.TextEdit _SeriesDetailPocetDoText;
-
-        private void _SeriesListGridView_FocusedRowChanged(object sender, DXG.Views.Base.FocusedRowChangedEventArgs e)
-        {
-            SeriesDetailRefresh();
-        }
         #endregion
         #region Správa layoutu - splittery, uložení konfigurace
         /// <summary>
@@ -1200,6 +1386,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         internal void OnFirstShown()
         {
             RestoreSplitters();
+            this.DataRefresh();
         }
         /// <summary>
         /// Z konfigurace načte pozice splitterů a vepíše je do nich
@@ -1305,16 +1492,25 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         /// </summary>
         public void DataRefresh()
         {
+            if (this.ParentForm == null || !this.ParentForm.IsShown) return;        // DataRefresh() je volán i v procesu FirstShown, a teprve tehdy má smysl jej provádět
+
             _DataRefreshRunning = true;
+
             HeaderDetailRefresh();
-            SeriesDetailRefresh();
+            SeriesNewRefreshData();
             SeriesListRefreshData(true);
+            SeriesDetailRefresh();
+
             _ContainChanges = false;
             _DataRefreshRunning = false;
         }
         #endregion
     }
 
+    #region class GraphSerieGridRow : Třída pro zobrazení dat serií
+    /// <summary>
+    /// <see cref="GraphSerieGridRow"/> : Třída pro zobrazení dat serií
+    /// </summary>
     public class GraphSerieGridRow : INotifyPropertyChanged
     {
         [DisplayName("Název informace")]
@@ -1370,4 +1566,5 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         event PropertyChangedEventHandler _PropertyChanged;
         #endregion
     }
+    #endregion
 }

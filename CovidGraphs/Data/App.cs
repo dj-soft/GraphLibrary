@@ -102,6 +102,10 @@ namespace Djs.Tools.CovidGraphs.Data
         public static string AppPath { get { return Instance._AppPath; } }
         private string _AppPath;
         /// <summary>
+        /// Adresář s daty vedle aplikace = <see cref="AppPath"/>/Data
+        /// </summary>
+        public static string AppDataPath { get { return System.IO.Path.Combine(Instance._AppPath, "Data"); } }
+        /// <summary>
         /// Adresář, kde je ukládána konfigurace (=Aplikační data: konfigurace, provozní data, atd).
         /// Jde o adresář 
         /// Tento adresář uživatel nemůže změnit.

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,8 +21,8 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public GraphInfo()
         {
-            this.Id = NextId++;
-            Init();
+            this.Id = 0;
+            this.Init();
             this.Clear();
         }
         /// <summary>
@@ -37,10 +38,20 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             _Series = new List<GraphSerieInfo>();
         }
-        private static int NextId = 0;
         #endregion
         #region Data definující záhlaví grafu
+        /// <summary>
+        /// ID grafu. Je součástí jména souboru. Výchozí je 0 = pro dosud neuložený záznam.
+        /// Prvním uložením na disk se ID přidělí.
+        /// <see cref="Id"/> je načítáno z disku, je ukládáno na disk, ale nepřenáší se přenosem hodnoty <see cref="Serial"/>.
+        /// </summary>
         public int Id { get; private set; }
+        /// <summary>
+        /// Jméno souboru grafu, z něhož je načten. Pokud dosud není uložen, je null. 
+        /// I v takovém případě bude možno jej uložit, vygeneruje si svoje jméno souboru.
+        /// <see cref="FileName"/> není serializováno.
+        /// </summary>
+        public string FileName { get; private set; }
         /// <summary>
         /// Titulek grafu: zobrazuje se v seznamu grafů a v záhlaví grafu
         /// </summary>
@@ -53,7 +64,6 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Popisek grafu: zobrazuje se jako Tooltip grafu
         /// </summary>
         public string Description { get; set; }
-        public System.Drawing.Image Icon { get; set; }
         /// <summary>
         /// Zobrazit posledních NNN dnů
         /// </summary>
@@ -96,24 +106,185 @@ namespace Djs.Tools.CovidGraphs.Data
             _Series.Add(serie);
         }
         #endregion
-        #region Static načtení celého seznamu grafů z config adresáře
+        #region Static načtení celého seznamu grafů z config adresáře, tvorba sample grafů
+        /// <summary>
+        /// Načte data grafů z daného adresáře
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public static List<GraphInfo> LoadFromPath(string path = null)
         {
             List<GraphInfo> graphs = new List<GraphInfo>();
-
-            if (path == null) path = App.ConfigPath;
-            DirectoryInfo dirInfo = new DirectoryInfo(path);
-            if (dirInfo.Exists)
-            {
-                string pattern = "*." + FileExtension;
-                var fileInfos = dirInfo.GetFiles(pattern);
+            FileInfo[] fileInfos = _SearchForGraphFiles(path);
+            int lastId = 0;
+            if (fileInfos != null && fileInfos.Length > 0)
+            { 
                 foreach (var fileInfo in fileInfos)
                 {
                     GraphInfo graph = GraphInfo.LoadFromFile(fileInfo.FullName);
                     if (graph != null)
+                    {
                         graphs.Add(graph);
+                        if (graph.Id > lastId) lastId = graph.Id;
+                    }
                 }
             }
+            App.Config.LastSaveGraphId = lastId;
+            return graphs;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí soubory na dané cestě, anebo je zkusí najít ve standardní datové cestě nebo v adresáři aplikace.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        private static FileInfo[] _SearchForGraphFiles(string path = null)
+        {
+            FileInfo[] fileInfos = null;
+            string pattern = "*." + FileExtension;
+            DirectoryInfo dirInfo = null;
+            if (!String.IsNullOrEmpty(path))
+            {   // Povinně z dané cesty
+                dirInfo = new DirectoryInfo(path);
+                if (dirInfo.Exists)
+                    fileInfos = dirInfo.GetFiles(pattern);
+            }
+            else
+            {   // Hledat ve standardní cestě:
+                dirInfo = new DirectoryInfo(App.ConfigPath);
+                if (dirInfo.Exists)
+                    fileInfos = dirInfo.GetFiles(pattern);
+
+                // Hledat ve aplikační cestě:
+                if (fileInfos == null || fileInfos.Length == 0)
+                {
+                    dirInfo = new DirectoryInfo(App.AppDataPath);
+                    if (dirInfo.Exists)
+                        fileInfos = dirInfo.GetFiles(pattern);
+                }
+            }
+            return fileInfos;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí sadu ukázkových grafů
+        /// </summary>
+        /// <param name="saveToFiles"></param>
+        /// <returns></returns>
+        public static List<GraphInfo> CreateSamples(bool saveToFiles = false)
+        {
+            List<GraphInfo> graphs = new List<GraphInfo>();
+            GraphInfo graph;
+
+            graph = new Data.GraphInfo() { Title = "ČR: Denní přírůstky poslední měsíc+", Description = "Počty nově nakažených za den - přesně, a průměrně", TimeRangeLastMonths = 1, ChartAxisYRight = true };
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky", ValueType = DataValueType.NewCount, LineThickness = 1, LineColor = Color.DarkViolet, LineDashStyle = LineDashStyleType.Dot });
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky průměrně", ValueType = DataValueType.NewCountAvg, LineThickness = 3, LineColor = Color.DarkViolet, LineDashStyle = LineDashStyleType.Solid });
+            graphs.Add(graph);
+
+            graph = new GraphInfo() { Title = "CR+PC+HK obce, relativně", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
+            graphs.Add(graph);
+
+            graph = new GraphInfo() { Title = "Chrudim", Description = "Stav v Chrudimi za poslední 4 měsíce", TimeRangeLastMonths = 4, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = DataValueType.CurrentCount });
+            graphs.Add(graph);
+
+            graph = new GraphInfo() { Title = "Pardubice", Description = "Stav v Pardubicích za posledních 7 měsíců", TimeRangeLastMonths = 7, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = DataValueType.CurrentCount });
+            graphs.Add(graph);
+
+            graph = new GraphInfo() { Title = "Krucemburk", Description = "Stav v Krucborku a Ždírci za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.568945", Title = "Krucbork, aktuálně", ValueType = DataValueType.CurrentCount });
+            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.569780", Title = "Ždírec, aktuálně", ValueType = DataValueType.CurrentCount });
+            graphs.Add(graph);
+
+            graph = new GraphInfo() { Title = "CR+PC+HK obce", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "CR+PC+HK obce poslední 3 měsíce", Description = "Stav ve trojměstí za poslední 3 měsíce", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "CR+PC+HK okresy", Description = "Stav okresů za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "CR+PC+HK obce, číslo R", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, přírůstky 7dní", Description = "Stav celkový za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.NewCount7DaySumAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.NewCount7DaySumAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, aktuální stav průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.CurrentCountAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R avg", Description = "Stav celkový za celou dobu", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZeroAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R raw", Description = "Stav celkový za celou dobu", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZero });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "CR+PC+HK Přírůstek/7 dní relativně", Description = "Počty nových případů za posledních 7 dní poměrně k počtu obyvatel", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, číslo R", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, číslo R", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, číslo R", ValueType = Data.DataValueType.RZeroAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "CR+PC+HK+RK+CH+HL Přírůstek průměr", Description = "Počty nových případů, zprůměrované", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0524", Title = "okres Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0524.5213.52132.576069", Title = "obec Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.568759", Title = "obec Chotěboř", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5302.53021.571393", Title = "obec Hlinsko", ValueType = Data.DataValueType.NewCountAvg });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR, podle velikosti obce, relativně, aktuální stav průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
+            graphs.Add(graph);
+
+            graph = new Data.GraphInfo() { Title = "ČR, podle velikosti obce, relativně, týdenní přírůstky, průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
+            graphs.Add(graph);
+
+            if (saveToFiles)
+                graphs.ForEachExec(g => g.SaveToFile());
 
             return graphs;
         }
@@ -125,10 +296,11 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="fileName"></param>
         public void SaveToFile(string fileName = null)
         {
+            bool isExplicitFile = !String.IsNullOrEmpty(fileName);
+            string targetFile = (isExplicitFile ? fileName : GetFileName());             // Metoda GetFileName() může vygenerovat nové ID, to chci uložit - takže GetFileName() musí být dříve než získání Serial:
             string data = this.Serial;
-            if (fileName == null) fileName = this.CurrentFileName;
-            File.WriteAllText(fileName, data, Encoding.UTF8);
-            _FileName = fileName;
+            File.WriteAllText(targetFile, data, Encoding.UTF8);
+            if (!isExplicitFile) this.SetFileName(targetFile);
         }
         /// <summary>
         /// Pokud this graf je uložen v souboru, smaže tento soubor.
@@ -136,9 +308,14 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public void DeleteGraphFile()
         {
-            string fileName = this.GraphFileName;
-            if (String.IsNullOrEmpty(fileName) || !File.Exists(fileName)) return;
-            File.Decrypt(fileName);
+            string fileName = this.FileName;
+            if (!String.IsNullOrEmpty(fileName))
+            {
+                fileName = fileName.Trim();
+                if (File.Exists(fileName))
+                    App.TryRun(() => File.Delete(fileName));
+            }
+            ResetId();
         }
         /// <summary>
         /// Z dodaného textu (Serial) vytvoří a vrátí new instanci.
@@ -152,7 +329,7 @@ namespace Djs.Tools.CovidGraphs.Data
 
             GraphInfo graphInfo = new GraphInfo();
             graphInfo.Serial = serial;
-            graphInfo._FileName = null;
+            graphInfo.ResetId();
             return graphInfo;
         }
         /// <summary>
@@ -168,11 +345,12 @@ namespace Djs.Tools.CovidGraphs.Data
 
             GraphInfo graphInfo = new GraphInfo();
             graphInfo.Serial = data;
-            graphInfo._FileName = fileName;
+            graphInfo.FileName = fileName;
             return graphInfo;
         }
         /// <summary>
-        /// Serializovaný obraz celé this instance
+        /// Serializovaný obraz celé this instance.
+        /// Neobsahuje <see cref="Id"/> ani <see cref="FileName"/>
         /// </summary>
         public string Serial
         {
@@ -199,7 +377,18 @@ namespace Djs.Tools.CovidGraphs.Data
             }
         }
         /// <summary>
-        /// Vymaže všechna data
+        /// Resetuje <see cref="Id"/> a vynuluje jméno souboru <see cref="FileName"/>.
+        /// Pokud bude následně prováděno Save, pak se do grafu vygeneruje nové ID a soubor bude uložen jako nový soubor.
+        /// Voláním této metody se instance grafu odpojí od zdrojového souboru, volá se typicky při změně garfu a jeho uložení grafu jako nový graf.
+        /// </summary>
+        public void ResetId()
+        {
+            this.Id = 0;
+            this.FileName = null;
+        }
+        /// <summary>
+        /// Vymaže všechna data.
+        /// Nesmaže <see cref="Id"/> ani <see cref="FileName"/>.
         /// </summary>
         public void Clear()
         {
@@ -216,12 +405,8 @@ namespace Djs.Tools.CovidGraphs.Data
 
             _Series.Clear();
             _ChartLayout = null;
-            _FileName = null;
+            _WorkingChartLayout = null;
         }
-        /// <summary>
-        /// Jméno souboru grafu, z něhož je načten. Pokud dosud není uložen, je null. I v takovém případě bude možno jej uložit, vygeneruje si svoje jméno souboru.
-        /// </summary>
-        public string GraphFileName { get { return _FileName; } }
         #region Privátní Load
         /// <summary>
         /// Do this instance načte plná data z daného streamu
@@ -270,6 +455,10 @@ namespace Djs.Tools.CovidGraphs.Data
 
             switch (name)
             {
+                case ChartHeaderId:
+                    if (this.Id == 0)
+                        this.Id = GetValue(text, 0);
+                    break;
                 case ChartHeaderTitle:
                     this.Title = GetValue(text, "");
                     break;
@@ -339,14 +528,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         private void _SaveToStream(StringWriter stream)
         {
-            string fileName = CurrentFileName;
-
             stream.WriteLine(ChartHeaderFileV1);
             SaveToFileHeader(stream);
             SaveToFileSeries(stream);
             SaveToFileLayout(stream);
-
-            _FileName = fileName;
         }
         /// <summary>
         /// Do daného streamu vepíše vlastnosti hlavičky grafu. Nikoli položky, a nikoli layout.
@@ -354,6 +539,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="stream"></param>
         private void SaveToFileHeader(StringWriter stream)
         {
+            stream.WriteLine(CreateLine(ChartHeaderId, GetSerial(this.Id)));
             stream.WriteLine(CreateLine(ChartHeaderTitle, GetSerial(this.Title)));
             stream.WriteLine(CreateLine(ChartHeaderOrder, GetSerial(this.Order)));
             if (!String.IsNullOrEmpty(this.Description))
@@ -402,22 +588,43 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         #endregion
         /// <summary>
-        /// Jméno souboru grafu aktuální = buď reálné, nebo nově vygenerované pro ukládání.
+        /// Metoda vrátí plné jméno pro soubor. Používá se těsně před Save do souboru.
+        /// Tato metoda v případě potřeby vygeneruje nové jméno pro soubor a vygeneruje i nové ID.
+        /// Po uložení souboru se má jméno tohoto souboru vložit do <see cref="FileName"/> pomocí metody <see cref="SetFileName(string)"/>.
         /// </summary>
-        protected string CurrentFileName
+        protected string GetFileName()
         {
-            get
-            {
-                string fileName = _FileName;
-                if (!String.IsNullOrEmpty(fileName)) return fileName;
-                string name = CreateValidFileName(this.Title, "_");
-                string path = App.ConfigPath;
-                return System.IO.Path.Combine(path, name + "." + FileExtension);
-            }
+            if (this.Id == 0)
+                this.Id = App.Config.GetNextGraphId();
+
+            string name = "Chart" + this.Id.ToString("00000") + "-" + CreateValidFileName(this.Title, "") + "." + FileExtension;
+            string path = App.ConfigPath;
+            return Path.Combine(path, name);
         }
-        private string _FileName;
+        /// <summary>
+        /// Metoda zajistí uložení jména souboru do this instance.
+        /// Pokud dosud jméno existuje a je shodné, nic nedělá.
+        /// Pokud se ličí, pak smaže soubor původního jména.
+        /// </summary>
+        /// <param name="fileName"></param>
+        protected void SetFileName(string fileName)
+        {
+            if (String.IsNullOrEmpty(fileName)) return;
+
+            string newFile = fileName.Trim();
+            string oldFile = this.FileName;
+            if (!String.IsNullOrEmpty(oldFile))
+            {
+                oldFile = oldFile.Trim();
+                bool isEqual = String.Equals(oldFile, newFile, StringComparison.OrdinalIgnoreCase);
+                if (!isEqual && File.Exists(oldFile))
+                    App.TryRun(() => File.Delete(oldFile));
+            }
+            this.FileName = newFile;
+        }
         public enum FileVersion { None, Version1 }
         private const string ChartHeaderFileV1 = "== BestInCovid v1.0 chart ==";
+        private const string ChartHeaderId = "ChartId";
         private const string ChartHeaderTitle = "Title";
         private const string ChartHeaderOrder = "Order";
         private const string ChartHeaderDescription = "Description";
@@ -431,6 +638,10 @@ namespace Djs.Tools.CovidGraphs.Data
         private const string ChartHeaderLayout = "LayoutXml";
         internal const string ChartSeriesPrefix = "Serie.";
         private const string FileExtension = "chart";
+        /// <summary>
+        /// Maximální počet datových řad v jednom vgrafu, kvůli přehlednosti
+        /// </summary>
+        internal const int MaxSeriesCount = 24;
         #endregion
         #region Načtení dat grafu z databáze
         public GraphData LoadData(DatabaseInfo database)
@@ -487,8 +698,12 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Aplikace může tento layout použít, následně editovat, a pak uložit sem do <see cref="ChartLayout"/>, odkud bude uložen na disk a příště bude použit již editovaný layout.
         /// Aplikace může vždy vyžádat aktuální defaultní layout, vhodné například po změně dat.
         /// </summary>
-        public string ChartLayout { get { return _ChartLayout; } set { _ChartLayout = value; } }
-        private string _ChartLayout;
+        public string ChartLayout { get { return _ChartLayout; } set { _ChartLayout = value; } } private string _ChartLayout;
+        /// <summary>
+        /// Provozní vzhled grafu. Používá se, když <see cref="ChartLayout"/> není definován. Neserializuje se do souboru.
+        /// Při editaci grafu se neakceptuje, po editaci se nuluje.
+        /// </summary>
+        public string WorkingChartLayout { get { return _WorkingChartLayout; } set { _WorkingChartLayout = value; } } private string _WorkingChartLayout;
         /// <summary>
         /// Vygeneruje defaultní layout. Potřebuje k tomu plná data grafu, nejen definici. Definice serií grafu je uložena ve sloupcích dat.
         /// </summary>
@@ -688,6 +903,308 @@ namespace Djs.Tools.CovidGraphs.Data
                 return settings;
             }
         }
+
+
+
+        private string SAMPLES_LAYOUT()
+        {
+            #region Ukázky
+            /*
+
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChartXmlSerializer version="20.1.4.0">
+  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
+    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
+      <SeriesSerializable>
+        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
+    </DataContainer>
+    <Legend VerticalIndent="25" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" BackColor="183, 221, 232" Font="Tahoma, 11.25pt, style=Bold" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Titles>
+      <Item1 Text="Best in Covid, ČR" Font="Tahoma, 18pt" TextColor="" Antialiasing="true" EnableAntialiasing="Default" />
+    </Titles>
+    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
+      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="21.2" EndSideMargin="21.2" SideMarginSizeUnit="AxisUnit" />
+        <DateTimeScaleOptions GridAlignment="Month" AutoGrid="false">
+          <IntervalOptions />
+        </DateTimeScaleOptions>
+      </AxisX>
+      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="238.6" EndSideMargin="238.6" SideMarginSizeUnit="AxisUnit" />
+        <GridLines Color="128, 100, 162" />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ZAŠKRTÁVACÍ LEGENDA NAHOŘE UPROSTŘED
+
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChartXmlSerializer version="20.1.4.0">
+  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
+    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
+      <SeriesSerializable>
+        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
+    </DataContainer>
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
+      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="21.466666666666665" EndSideMargin="21.466666666666665" SideMarginSizeUnit="AxisUnit" />
+      </AxisX>
+      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="1.4" EndSideMargin="1.4" SideMarginSizeUnit="AxisUnit" />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>
+
+
+
+
+
+
+
+
+
+DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
+
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ChartXmlSerializer version="20.1.4.0">
+  <Chart AppearanceNameSerializable="Default" SelectionMode="None" SeriesSelectionMode="Series">
+    <DataContainer ValidateDataMembers="true" BoundSeriesSorting="None">
+      <SeriesSerializable>
+        <Item1 Name="Series 1" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column0" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name="Series 2" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column1" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name="Series 3" DataSourceSorted="false" ArgumentDataMember="date" ValueDataMembersSerializable="column2" CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="">
+          <View TypeNameSerializable="LineSeriesView">
+            <SeriesPointAnimation TypeNameSerializable="XYMarkerWidenAnimation" />
+            <FirstPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="180" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode="Default" LabelDisplayMode="Default" TypeNameSerializable="SidePointMarker">
+              <Label Angle="0" TypeNameSerializable="PointSeriesLabel" TextOrientation="Horizontal" />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode="Default" CrosshairEmptyValueLegendText="" />
+    </DataContainer>
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Center" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Diagram RuntimePaneCollapse="true" RuntimePaneResize="false" PaneLayoutDirection="Vertical" TypeNameSerializable="XYDiagram">
+      <AxisX StickToEnd="false" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <Strips>
+          <Item1 Color="251, 213, 181" LegendText="Prázdniny" Name="Prázdniny">
+            <MinLimit AxisValueSerializable="07/01/2020 00:00:00.000" />
+            <MaxLimit AxisValueSerializable="09/01/2020 00:00:00.000" />
+            <FillStyle FillMode="Gradient">
+              <Options GradientMode="BottomToTop" Color2="242, 242, 242" TypeNameSerializable="RectangleGradientFillOptions" />
+            </FillStyle>
+          </Item1>
+          <Item2 Color="183, 221, 232" LegendText="Vánoce" Name="Vánoce">
+            <MinLimit AxisValueSerializable="12/23/2020 00:00:00.000" />
+            <MaxLimit AxisValueSerializable="12/31/2020 00:00:00.000" />
+            <FillStyle FillMode="Gradient">
+              <Options GradientMode="BottomToTop" Color2="242, 242, 242" TypeNameSerializable="RectangleGradientFillOptions" />
+            </FillStyle>
+          </Item2>
+        </Strips>
+        <WholeRange StartSideMargin="21.466666666666665" EndSideMargin="21.466666666666665" SideMarginSizeUnit="AxisUnit" />
+      </AxisX>
+      <AxisY VisibleInPanesSerializable="-1" ShowBehind="false">
+        <WholeRange StartSideMargin="232.5" EndSideMargin="232.5" SideMarginSizeUnit="AxisUnit" />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>
+
+
+
+
+
+            */
+            #endregion
+
+
+
+            string settings = @"﻿<?xml version='1.0' encoding='utf-8'?>
+<ChartXmlSerializer version='20.1.4.0'>
+  <Chart AppearanceNameSerializable='Default' SelectionMode='None' SeriesSelectionMode='Series'>
+    <DataContainer ValidateDataMembers='true' BoundSeriesSorting='None'>
+      <SeriesSerializable>
+        <Item1 Name='Series 1' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column0' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
+          <View TypeNameSerializable='LineSeriesView'>
+            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
+            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </LastPoint>
+          </View>
+        </Item1>
+        <Item2 Name='Series 2' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column1' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
+          <View TypeNameSerializable='LineSeriesView'>
+            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
+            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </LastPoint>
+          </View>
+        </Item2>
+        <Item3 Name='Series 3' DataSourceSorted='false' ArgumentDataMember='date' ValueDataMembersSerializable='column2' CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText=''>
+          <View TypeNameSerializable='LineSeriesView'>
+            <SeriesPointAnimation TypeNameSerializable='XYMarkerWidenAnimation' />
+            <FirstPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='180' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </FirstPoint>
+            <LastPoint MarkerDisplayMode='Default' LabelDisplayMode='Default' TypeNameSerializable='SidePointMarker'>
+              <Label Angle='0' TypeNameSerializable='PointSeriesLabel' TextOrientation='Horizontal' />
+            </LastPoint>
+          </View>
+        </Item3>
+      </SeriesSerializable>
+      <SeriesTemplate CrosshairContentShowMode='Default' CrosshairEmptyValueLegendText='' />
+    </DataContainer>
+    <Legend HorizontalIndent='40' AlignmentHorizontal='Center' Direction='LeftToRight' CrosshairContentOffset='4' MarkerSize='@2,Width=45@2,Height=16' MarkerMode='CheckBox' MaxCrosshairContentWidth='50' MaxCrosshairContentHeight='0' Name='Default Legend' />
+    <Diagram RuntimePaneCollapse='true' RuntimePaneResize='false' PaneLayoutDirection='Vertical' TypeNameSerializable='XYDiagram'>
+      <AxisX StickToEnd='false' VisibleInPanesSerializable='-1' ShowBehind='false'>
+        <Strips>
+          <Item1 Color='251, 213, 181' LegendText='Prázdniny' Name='Prázdniny'>
+            <MinLimit AxisValueSerializable='01.07.2020 00:00:00.000' />
+            <MaxLimit AxisValueSerializable='01.09.2020 00:00:00.000' />
+            <FillStyle FillMode='Gradient'>
+              <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
+            </FillStyle>
+          </Item1>
+          <Item2 Color='183, 221, 232' LegendText='Vánoce' Name='Vánoce'>
+            <MinLimit AxisValueSerializable='23.12.2020 00:00:00.000' />
+            <MaxLimit AxisValueSerializable='01.01.2021 00:00:00.000' />
+            <FillStyle FillMode='Gradient'>
+              <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
+            </FillStyle>
+          </Item2>
+        </Strips>
+        <WholeRange StartSideMargin='21.466666666666665' EndSideMargin='21.466666666666665' SideMarginSizeUnit='AxisUnit' />
+      </AxisX>
+      <AxisY VisibleInPanesSerializable='-1' ShowBehind='false'>
+        <WholeRange StartSideMargin='232.5' EndSideMargin='232.5' SideMarginSizeUnit='AxisUnit' />
+      </AxisY>
+      <SelectionOptions />
+    </Diagram>
+  </Chart>
+</ChartXmlSerializer>";
+            settings = settings.Replace("'", "\"");
+            return settings;
+        }
+
         #endregion
     }
     #endregion
@@ -923,78 +1440,92 @@ namespace Djs.Tools.CovidGraphs.Data
             switch (valueType)
             {
                 case DataValueType.NewCount:
-                    result = new DataValueTypeInfo(valueType, "Denní počet nových případů", "Neupravený počet nově nalezených případů", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
-                    0, 0);
+                    result = new DataValueTypeInfo(valueType, "Denní počet nových případů", "nové za den",
+                        "Neupravený počet nově nalezených případů", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        0, 0);
                     return true;
                 case DataValueType.NewCountAvg:
-                    result = new DataValueTypeInfo(valueType, "Průměrný denní přírůstek", "Počet nově nalezených případů, zprůměrovaný za okolních 7 dní (-3  +3 dny)", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                     -4, +4);
+                    result = new DataValueTypeInfo(valueType, "Průměrný denní přírůstek", "nové za den, průměr",
+                        "Počet nově nalezených případů, týdenní průměr", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        -8, +4);
                     return true;
                 case DataValueType.NewCountRelative:
-                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
-                    0, 0);
+                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "nové za den / 100T",
+                        "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
+                        0, 0);
                     return true;
                 case DataValueType.NewCountRelativeAvg:
-                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100t, zprůměrovaný", "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, zprůměrovaný za okolních 7 dní (-3  +3 dny)", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                    -4, +4);
+                    result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100t, zprůměrovaný", "nové za den, průměr / 100T",
+                        "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, týdenní průměr", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        -8, +4);
                     return true;
 
                 case DataValueType.NewCount7DaySum:
-                    result = new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "Počet nově nalezených případů, sečtený za posledních 7 dní", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
-                    -7, 0);
+                    result = new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "nové za týden",
+                        "Počet nově nalezených případů, sečtený za posledních 7 dní", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        -7, 0);
                     return true;
                 case DataValueType.NewCount7DaySumAvg:
                     result = 
-                        new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                    -11, +4);
+                        new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "nové za týden, průměr",
+                        "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        -14, +4);
                     return true;
                 case DataValueType.NewCount7DaySumRelative:
-                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "Počet nově nalezených případů, sečtený za posledních 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
-                    -7, 0);
+                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "nové za týden / 100T",
+                        "Počet nově nalezených případů, sečtený za posledních 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
+                        -7, 0);
                     return true;
                 case DataValueType.NewCount7DaySumRelativeAvg:
-                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                    -11, +4);
+                    result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "nové za týden, průměr / 100T",
+                        "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        -14, +4);
                     return true;
 
                 case DataValueType.CurrentCount:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů", "Aktuální počet pozitivních osob", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
-                    0, 0);
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů", "aktuální stav",
+                        "Aktuální počet pozitivních osob", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        0, 0);
                     return true;
                 case DataValueType.CurrentCountAvg:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "Aktuální počet pozitivních osob, průměr za 7 dní", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                     -4, +4);
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "aktuální stav, průměr",
+                        "Aktuální počet pozitivních osob, průměr za 7 dní", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                         -7, +4);
                     return true;
                 case DataValueType.CurrentCountRelative:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "Aktuální počet pozitivních osob, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
-                    0, 0);
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "aktuální stav / 100T",
+                        "Aktuální počet pozitivních osob, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
+                        0, 0);
                     return true;
                 case DataValueType.CurrentCountRelativeAvg:
-                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "Aktuální počet pozitivních osob, průměr za 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
-                    GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                    -4, +4);
+                    result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "aktuální stav, průměr / 100T", 
+                        "Aktuální počet pozitivních osob, průměr za 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        -7, +4);
                     return true;
 
                 case DataValueType.RZero:
-                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny", 
-                    GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
-                    -6, 0);
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "číslo R0", 
+                        "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny", 
+                        GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        -6, 0);
                     return true;
                 case DataValueType.RZeroAvg:
-                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny, kdy výsledek je zprůměrovaný za 7 dní", 
-                    GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                    -10, +4);
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "číslo R0, průměr",
+                        "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny, kdy výsledek je zprůměrovaný za 7 dní", 
+                        GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        -14, +4);
                     return true;
             }
             result = null;
@@ -1004,7 +1535,8 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Konstruktor
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="text"></param>
+        /// <param name="text">Krátký text, do titulku grafu</param>
+        /// <param name="shortText"></param>
         /// <param name="toolTip"></param>
         /// <param name="axisType"></param>
         /// <param name="entityType"></param>
@@ -1012,11 +1544,12 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="dateOffsetBefore"></param>
         /// <param name="dateOffsetAfter"></param>
         /// <param name="icon"></param>
-        private DataValueTypeInfo(DataValueType value, string text, string toolTip, 
+        private DataValueTypeInfo(DataValueType value, string text, string shortText, string toolTip, 
             GraphSerieAxisType axisType, EntityType entityType, LineDashStyleType suggestedDashStyle,
             int? dateOffsetBefore = null, int? dateOffsetAfter = null, System.Drawing.Image icon = null)
             : base(value, text, toolTip, icon)
         {
+            this.ShortText = shortText;
             this.Value = value;
             this.AxisType = axisType;
             this.EntityType = entityType;
@@ -1024,6 +1557,10 @@ namespace Djs.Tools.CovidGraphs.Data
             this.DateOffsetBefore = dateOffsetBefore;
             this.DateOffsetAfter = dateOffsetAfter;
         }
+        /// <summary>
+        /// Krátký text, do titulku grafu
+        /// </summary>
+        public string ShortText { get; protected set; }
         /// <summary>
         /// Datový typ grafu
         /// </summary>
