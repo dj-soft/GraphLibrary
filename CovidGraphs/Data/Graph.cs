@@ -175,112 +175,112 @@ namespace Djs.Tools.CovidGraphs.Data
             GraphInfo graph;
 
             graph = new Data.GraphInfo() { Title = "ČR: Denní přírůstky poslední měsíc+", Description = "Počty nově nakažených za den - přesně, a průměrně", TimeRangeLastMonths = 1, ChartAxisYRight = true };
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky", ValueType = DataValueType.NewCount, LineThickness = 1, LineColor = Color.DarkViolet, LineDashStyle = LineDashStyleType.Dot });
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ", Title = "Česká republika, denní přírůstky průměrně", ValueType = DataValueType.NewCountAvg, LineThickness = 3, LineColor = Color.DarkViolet, LineDashStyle = LineDashStyleType.Solid });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ", Title = "Česká republika, denní přírůstky", ValueType = DataValueType.NewCount, LineThickness = 1, LineColor = Color.DarkViolet, LineDashStyle = LineDashStyleType.Dot });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ", Title = "Česká republika, denní přírůstky průměrně", ValueType = DataValueType.NewCountAvg, LineThickness = 3, LineColor = Color.DarkViolet, LineDashStyle = LineDashStyleType.Solid });
             graphs.Add(graph);
 
             graph = new GraphInfo() { Title = "CR+PC+HK obce, relativně", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = DataValueType.CurrentCountRelativeAvg });
             graphs.Add(graph);
 
             graph = new GraphInfo() { Title = "Chrudim", Description = "Stav v Chrudimi za poslední 4 měsíce", TimeRangeLastMonths = 4, ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = DataValueType.CurrentCount });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = DataValueType.CurrentCount });
             graphs.Add(graph);
 
             graph = new GraphInfo() { Title = "Pardubice", Description = "Stav v Pardubicích za posledních 7 měsíců", TimeRangeLastMonths = 7, ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = DataValueType.CurrentCount });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = DataValueType.CurrentCount });
             graphs.Add(graph);
 
             graph = new GraphInfo() { Title = "Krucemburk", Description = "Stav v Krucborku a Ždírci za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.568945", Title = "Krucbork, aktuálně", ValueType = DataValueType.CurrentCount });
-            graph.AddSerie(new GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.569780", Title = "Ždírec, aktuálně", ValueType = DataValueType.CurrentCount });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ063.CZ0631.6304.63041.568945", Title = "Krucbork, aktuálně", ValueType = DataValueType.CurrentCount });
+            graph.AddSerie(new GraphSerieInfo() { EntityFullCode = "CZ.CZ063.CZ0631.6304.63041.569780", Title = "Ždírec, aktuálně", ValueType = DataValueType.CurrentCount });
             graphs.Add(graph);
 
             graph = new GraphInfo() { Title = "CR+PC+HK obce", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK obce poslední 3 měsíce", Description = "Stav ve trojměstí za poslední 3 měsíce", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK okresy", Description = "Stav okresů za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK obce, číslo R", Description = "Stav ve trojměstí za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531.5304.53043.571164", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532.5309.53092.555134", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521.5205.52051.569810", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, přírůstky 7dní", Description = "Stav celkový za celou dobu", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.NewCount7DaySumAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.NewCount7DaySumAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.NewCount7DaySumAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.NewCount7DaySumAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, aktuální stav průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.CurrentCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.CurrentCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.CurrentCountAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R avg", Description = "Stav celkový za celou dobu", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZeroAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZeroAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "ČR + kraje PC+HK, číslo R raw", Description = "Stav celkový za celou dobu", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZero });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZero });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, aktuálně", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053", Title = "Kraj Pardubice", ValueType = Data.DataValueType.RZero });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052", Title = "Kraj HK", ValueType = Data.DataValueType.RZero });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK Přírůstek/7 dní relativně", Description = "Počty nových případů za posledních 7 dní poměrně k počtu obyvatel", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, číslo R", ValueType = Data.DataValueType.RZeroAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, číslo R", ValueType = Data.DataValueType.RZeroAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, číslo R", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.NewCount7DaySumRelative });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531", Title = "Chrudim, číslo R", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532", Title = "Pardubice, číslo R", ValueType = Data.DataValueType.RZeroAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521", Title = "Hradec, číslo R", ValueType = Data.DataValueType.RZeroAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "CR+PC+HK+RK+CH+HL Přírůstek průměr", Description = "Počty nových případů, zprůměrované", TimeRangeLastMonths = 3, ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0524", Title = "okres Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ052.CZ0524.5213.52132.576069", Title = "obec Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ063.CZ0631.6304.63041.568759", Title = "obec Chotěboř", ValueType = Data.DataValueType.NewCountAvg });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ.CZ053.CZ0531.5302.53021.571393", Title = "obec Hlinsko", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531", Title = "Chrudim, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0532", Title = "Pardubice, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0521", Title = "Hradec, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0524", Title = "okres Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ052.CZ0524.5213.52132.576069", Title = "obec Rychnov n/K, aktuálně", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ063.CZ0631.6304.63041.568759", Title = "obec Chotěboř", ValueType = Data.DataValueType.NewCountAvg });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ.CZ053.CZ0531.5302.53021.571393", Title = "obec Hlinsko", ValueType = Data.DataValueType.NewCountAvg });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "ČR, podle velikosti obce, relativně, aktuální stav průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.CurrentCountRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
             graphs.Add(graph);
 
             graph = new Data.GraphInfo() { Title = "ČR, podle velikosti obce, relativně, týdenní přírůstky, průměr", Description = "Aktuální stav, průměrovaný, celá doba", ChartEnableTimeZoom = true, ChartAxisYRight = true };
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
-            graph.AddSerie(new Data.GraphSerieInfo() { DataEntityCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce pod 300 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 0, 0), FiltrPocetObyvatelDo = 300 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 300 - 2000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(160, 64, 0), FiltrPocetObyvatelOd = 300, FiltrPocetObyvatelDo = 2000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 2000 - 12000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(0, 192, 128), FiltrPocetObyvatelOd = 2000, FiltrPocetObyvatelDo = 12000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 12000 - 60000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(64, 96, 0), FiltrPocetObyvatelOd = 12000, FiltrPocetObyvatelDo = 60000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, obce 60000 - 350000 osob", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(32, 32, 192), FiltrPocetObyvatelOd = 60000, FiltrPocetObyvatelDo = 350000 });
+            graph.AddSerie(new Data.GraphSerieInfo() { EntityFullCode = "CZ", Title = "ČR, Praha", ValueType = Data.DataValueType.NewCount7DaySumRelativeAvg, LineColor = Color.FromArgb(96, 96, 224), FiltrPocetObyvatelOd = 350000 });
             graphs.Add(graph);
 
             if (saveToFiles)
@@ -689,6 +689,25 @@ namespace Djs.Tools.CovidGraphs.Data
                 begin = new DateTime(begin.Year, begin.Month, 1);
                 graphData.DateBegin = begin;
                 graphData.DateEnd = end;
+            }
+        }
+        #endregion
+        #region Kontroly
+        /// <summary>
+        /// Vrací text všech chyb. Pokud nejsou chyby, vrací prázdný string (ne null).
+        /// </summary>
+        public string Errors
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+
+                if (String.IsNullOrEmpty(this.Title)) sb.AppendLine("- Titulek grafu není zadán");
+                if (this._Series.Count == 0) sb.AppendLine("- Graf neobsahuje žádná data");
+                foreach (var serie in this._Series)
+                    serie.AddErrors(sb);
+
+                return sb.ToString();
             }
         }
         #endregion
@@ -1235,7 +1254,7 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
         /// Funguje podobně jako plná cesta k adresáři, může obsahovat např. jen "CZ", pak určuje celou Českou republiku; nebo "CZ.CZ053.CZ0531", pak určuje okres Chrudim,
         /// anebo "CZ.CZ053.CZ0531.5304.53043.571164", pouze samotná Chrudim na nejnižší úrovni = bez okolních obcí.
         /// </summary>
-        public string DataEntityCode { get; set; }
+        public string EntityFullCode { get; set; }
         /// <summary>
         /// Druh dat, která se budou zobrazovat. Určuje zdroj dat (počet nových případů za den, aktuální počet nemocných) i jejich agregaci (průměr za 7 dní, poměr k počtu obyvatel).
         /// </summary>
@@ -1316,7 +1335,7 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
                     this.Title = GetValue(text, "");
                     break;
                 case ChartSeriesEntityCode:
-                    this.DataEntityCode = GetValue(text, "");
+                    this.EntityFullCode = GetValue(text, "");
                     break;
                 case ChartSeriesValueType:
                     this.ValueType = GetValueEnum<DataValueType>(text, DataValueType.None);
@@ -1342,7 +1361,7 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
         internal void SaveToStream(StringWriter stream)
         {
             stream.WriteLine(CreateLine(ChartSeriesTitle, GetSerial(this.Title)));
-            stream.WriteLine(CreateLine(ChartSeriesEntityCode, GetSerial(this.DataEntityCode)));
+            stream.WriteLine(CreateLine(ChartSeriesEntityCode, GetSerial(this.EntityFullCode)));
             stream.WriteLine(CreateLine(ChartSeriesValueType, GetSerialEnum(this.ValueType)));
             if (this.FiltrPocetObyvatelOd.HasValue)
                 stream.WriteLine(CreateLine(ChartSeriesFiltrPocetOd, GetSerial(this.FiltrPocetObyvatelOd)));
@@ -1372,7 +1391,7 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
         /// <param name="graphData"></param>
         public void LoadData(DatabaseInfo database, GraphData graphData)
         {
-            string fullCode = this.DataEntityCode;
+            string fullCode = this.EntityFullCode;
             var entity = database.GetEntity(fullCode);
             if (entity is null) return;
 
@@ -1384,6 +1403,17 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
                     graphData.AddCell(item.Date, column, item.Value);
                 graphData.AddCount(result.ScanRecordCount, result.LoadRecordCount, result.ShowRecordCount);
             }
+        }
+        #endregion
+        #region Kontroly
+        /// <summary>
+        /// přidá text všech svých chyb
+        /// </summary>
+        public void AddErrors(StringBuilder sb)
+        {
+            if (String.IsNullOrEmpty(this.Title)) sb.AppendLine("- Titulek datové řady není zadán");
+            if (((int)this.ValueType) == 0) sb.AppendLine($"- Typ dat v datové řadě {Title} není zadán");
+            if (String.IsNullOrEmpty(this.EntityFullCode)) sb.AppendLine($"- Místo (okres, obec) v datové řadě {Title} není zadáno");
         }
         #endregion
     }

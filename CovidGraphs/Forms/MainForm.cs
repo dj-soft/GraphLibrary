@@ -108,7 +108,7 @@ namespace Djs.Tools.CovidGraphs
         {
             this.IconOptions.Icon = Properties.Resources.aeskulap;
             this.WindowState = FormWindowState.Maximized;
-            this.Text = "Best in Covid! [ČR]";
+            this.FormAppTitle = "Best in Covid! [ČR]";
         }
         /// <summary>
         /// Inicializace vnitřního layoutu - splitpanel
@@ -233,6 +233,25 @@ namespace Djs.Tools.CovidGraphs
         DXE.SplitContainerControl _MainSplitContainer;
         DXE.ListBoxControl _GraphListBox;
         DevExpress.XtraCharts.ChartControl _ChartControl;
+        /// <summary>
+        /// Titulek okna, aplikace
+        /// </summary>
+        public string FormAppTitle { get { return _FormAppTitle; } set { _FormAppTitle = value; RefreshTitle(); } }
+        private string _FormAppTitle;
+        /// <summary>
+        /// Titulek okna, dokument
+        /// </summary>
+        public string FormDocumentTitle { get { return _FormDocumentTitle; } set { _FormDocumentTitle = value; RefreshTitle(); } }
+        private string _FormDocumentTitle;
+        protected void RefreshTitle()
+        {
+            string text = _FormAppTitle;
+            string document = _FormDocumentTitle;
+            if (!String.IsNullOrEmpty(document))
+                text += ": " + document;
+            this.Text = text;
+        }
+
         #endregion
         #region Ribbon a StatusBar
         /// <summary>
@@ -540,6 +559,8 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void TryShowCurrentGraph()
         {
+            this.FormDocumentTitle = "";
+
             if (!(_GraphListBox.SelectedItem is Data.GraphInfo graph)) return;
 
             var database = _Database;
@@ -555,6 +576,7 @@ namespace Djs.Tools.CovidGraphs
             CurrentGraph = graph;
             CurrentGraphData = graph.LoadData(database);
             CurrentGraphDataSource = CurrentGraphData.DataTable;
+            this.FormDocumentTitle = graph.Title;
 
             // Layout:
             string layout = graph.WorkingChartLayout;

@@ -160,6 +160,11 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             ShowMessage(owner, text, caption, WF.MessageBoxButtons.OK, WF.MessageBoxIcon.Warning);
         }
+        public static bool ShowQuestionYN(WF.IWin32Window owner = null, string text = null, string caption = null)
+        {
+            var result = ShowMessage(owner, text, caption, WF.MessageBoxButtons.YesNo, WF.MessageBoxIcon.Question);
+            return (result == WF.DialogResult.Yes);
+        }
         public static WF.DialogResult ShowMessage(WF.IWin32Window owner = null, string text = null, string caption = null, WF.MessageBoxButtons buttons = WF.MessageBoxButtons.OK, WF.MessageBoxIcon icon = WF.MessageBoxIcon.Information, WF.MessageBoxDefaultButton defaultButton = WF.MessageBoxDefaultButton.Button1)
         {
             if (owner == null) owner = GetMainForm();
