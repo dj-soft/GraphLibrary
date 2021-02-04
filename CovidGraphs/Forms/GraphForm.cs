@@ -882,6 +882,10 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _EntityListBox.SelectedIndex = 0;
             _EntityPanel.Controls.Add(_EntityListBox);
 
+            int fontheight = _EntityListBox.Appearance.GetFont().Height;
+            _EntityListBox.ItemAutoHeight = false;
+            _EntityListBox.ItemHeight = fontheight + 4;
+
             this._EntityPanelLayout();
 
             this._EntityPanel.SizeChanged += _EntityPanel_SizeChanged;
@@ -994,6 +998,9 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
 
             _ValueTypePanel.Controls.Add(_ValueTypeListBox);
 
+            int fontheight = _ValueTypeListBox.Appearance.GetFont().Height;
+            _ValueTypeListBox.ItemAutoHeight = false;
+            _ValueTypeListBox.ItemHeight = fontheight + 4;
 
             _ValueTypeInfo = new DXE.LabelControl() { Text = "", AutoSizeMode = DXE.LabelAutoSizeMode.Vertical, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
             _ValueTypeInfo.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;

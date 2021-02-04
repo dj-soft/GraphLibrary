@@ -170,6 +170,10 @@ namespace Djs.Tools.CovidGraphs
             _GraphListBox.Appearance.FontSizeDelta = 1;
 
 
+            // var mcx = DXE.MultiColumnListBoxCreator.CreateMultiColumnListBox();
+
+
+
             /*
             DXE.TableLayout.ItemTemplateBase template = new DXE.TableLayout.ItemTemplateBase();  // DXE.TableLayout.ItemTemplateBase();
 
@@ -206,6 +210,10 @@ namespace Djs.Tools.CovidGraphs
             _GraphListBox.SelectedIndex = 0;
             _GraphListBox.SelectedIndexChanged += _GraphListBox_SelectedIndexChanged;
             _MainSplitContainer.Panel1.Controls.Add(_GraphListBox);
+
+            int fontheight = _GraphListBox.Appearance.GetFont().Height;
+            _GraphListBox.ItemAutoHeight = false;
+            _GraphListBox.ItemHeight = fontheight + 6;
         }
         /// <summary>
         /// Po změně vybraného prvku v seznamu grafů se vyvolá načtení grafu
