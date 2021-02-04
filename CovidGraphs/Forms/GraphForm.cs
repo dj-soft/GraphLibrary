@@ -532,7 +532,7 @@ namespace Djs.Tools.CovidGraphs
             _GraphSplitContainer.Panel1.MinSize = 150;
             _GraphSplitContainer.Panel2.MinSize = 250;
 
-            // Horní panel Main SplitContaineru obsadí TabPage se záložkami pro hlavičku a pro nové položky:
+            // Horní panel Main SplitContaineru obsadí TabPage se záložkou pro hlavičku a druhou záložkou pro nové položky (obce a datové typy):
             _TabContainer = new DXT.XtraTabControl()
             {
                 BorderStyle = DXE.Controls.BorderStyles.NoBorder,
@@ -546,19 +546,20 @@ namespace Djs.Tools.CovidGraphs
 
             _GraphSplitContainer.Panel1.Controls.Add(_TabContainer);
 
-            // Dolní panel Main SplitContaineru obsadí sekundární SplitContainer, obsahující v Panel1 = Grid = Seznam položek, a v Panel2 = detail jedné položky:
+            // Dolní panel Main SplitContaineru obsadí sekundární SplitContainer, obsahující nahoře v Panel1 = Grid (Seznam položek), a v Panel2 = Detail jedné položky:
             _SeriesSplitContainer = new DXE.SplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel2,
                 IsSplitterFixed = true,
                 Horizontal = false,
                 PanelVisibility = DXE.SplitPanelVisibility.Both,
-                SplitterPosition = 200,
+                SplitterPosition = 250,
                 Dock = DockStyle.Fill,
                 ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True
             };
+            _SeriesSplitContainer.ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.False;
             _SeriesSplitContainer.Panel1.MinSize = 150;
-            _SeriesSplitContainer.Panel2.MinSize = 100;
+            _SeriesSplitContainer.Panel2.MinSize = 200;
 
             _GraphSplitContainer.Panel2.Controls.Add(_SeriesSplitContainer);
 
@@ -1417,6 +1418,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             y = _SeriesDetailValueTypeLabel.Bounds.Bottom + DetailYSpaceText;
 
 
+            _GraphSeriesDetailHeight = y + 12;
 
 
             return _SeriesDetailPanel;

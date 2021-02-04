@@ -108,7 +108,8 @@ namespace Djs.Tools.CovidGraphs
         {
             this.IconOptions.Icon = Properties.Resources.aeskulap;
             this.WindowState = FormWindowState.Maximized;
-            this.FormAppTitle = "Best in Covid! [ČR]";
+            this.FormAppTitle = "Best in Covid";
+            this.FormAppTitleEmpty = "Best in Covid! [ČR]";
         }
         /// <summary>
         /// Inicializace vnitřního layoutu - splitpanel
@@ -242,24 +243,33 @@ namespace Djs.Tools.CovidGraphs
         DXE.ListBoxControl _GraphListBox;
         DevExpress.XtraCharts.ChartControl _ChartControl;
         /// <summary>
-        /// Titulek okna, aplikace
+        /// Titulek okna, část Aplikace
         /// </summary>
         public string FormAppTitle { get { return _FormAppTitle; } set { _FormAppTitle = value; RefreshTitle(); } }
         private string _FormAppTitle;
         /// <summary>
-        /// Titulek okna, dokument
+        /// Titulek okna, Aplikace bez dokumentu
+        /// </summary>
+        public string FormAppTitleEmpty { get { return _FormAppTitleEmpty; } set { _FormAppTitleEmpty = value; RefreshTitle(); } }
+        private string _FormAppTitleEmpty;
+        /// <summary>
+        /// Titulek okna, část Dokument
         /// </summary>
         public string FormDocumentTitle { get { return _FormDocumentTitle; } set { _FormDocumentTitle = value; RefreshTitle(); } }
         private string _FormDocumentTitle;
+        /// <summary>
+        /// Aktualizuje titulek okna z podkladů <see cref="FormAppTitle"/> a <see cref="FormDocumentTitle"/>
+        /// </summary>
         protected void RefreshTitle()
         {
-            string text = _FormAppTitle;
+            string text = "";
             string document = _FormDocumentTitle;
-            if (!String.IsNullOrEmpty(document))
-                text += ": " + document;
+            if (String.IsNullOrEmpty(document))
+                text = _FormAppTitleEmpty;
+            else
+                text = $"{_FormAppTitle}: {(document.Trim())}";
             this.Text = text;
         }
-
         #endregion
         #region Ribbon a StatusBar
         /// <summary>
