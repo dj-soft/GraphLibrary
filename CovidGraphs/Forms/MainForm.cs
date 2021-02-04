@@ -344,6 +344,7 @@ namespace Djs.Tools.CovidGraphs
         }
         private void RibbonClickDeleteGraph(object sender, DXB.ItemClickEventArgs e)
         {
+            Data.App.TryRun(TryDeleteGraph);
         }
         private void RibbonClickWebUpdate(object sender, DXB.ItemClickEventArgs e)
         {
@@ -590,25 +591,72 @@ namespace Djs.Tools.CovidGraphs
                 CurrentGraph.WorkingChartLayout = _GetChartControlLayout();
             }
 
-            // Přepneme na nový layout:
+            // Přepneme se na nový layout:
             CurrentGraph = graph;
             CurrentGraphData = graph.LoadData(database);
             CurrentGraphDataSource = CurrentGraphData.DataTable;
             this.FormDocumentTitle = graph.Title;
 
-            // Layout:
-            string layout = graph.WorkingChartLayout;
-            if (String.IsNullOrEmpty(layout)) layout = graph.ChartLayout;
-            if (String.IsNullOrEmpty(layout)) layout = graph.CreateDefaultLayout(CurrentGraphData);
-
-            // Tato sekvence je důležitá, jinak dojde k chybám:
-            _SetChartControlLayout("");
-            _ChartControl.DataSource = CurrentGraphDataSource;
-            _SetChartControlLayout(layout);
+            // Zobrazíme graf s určitým layoutem:
+            bool isOk = TryShowChartLayoutBySource(ShowChartSourceType.Working);
+            if (!isOk) isOk = TryShowChartLayoutBySource(ShowChartSourceType.User);
+            if (!isOk) isOk = TryShowChartLayoutBySource(ShowChartSourceType.Default);
 
             CurrentGraphData.FinaliseShowGraph();
             this.ShowLoadGraphDataResult(CurrentGraphData);
         }
+        private bool TryShowChartLayoutBySource(ShowChartSourceType source)
+        {
+            var graph = CurrentGraph;
+            string layout = (source == ShowChartSourceType.Working ? graph.WorkingChartLayout :
+                            (source == ShowChartSourceType.User ? graph.ChartLayout :
+                            (source == ShowChartSourceType.Default ? graph.CreateDefaultLayout(CurrentGraphData) : null)));
+            if (String.IsNullOrEmpty(layout)) return false;
+
+            // Tato sekvence je důležitá, jinak dojde k chybám:
+            bool result = false;
+            try
+            {
+                _SetChartControlLayout("");
+                _ChartControl.DataSource = CurrentGraphDataSource;
+                _SetChartControlLayout(layout);
+                result = true;
+            }
+            catch (Exception exc)
+            {
+                string text;
+                string eol = Environment.NewLine;
+                switch (source)
+                {
+                    case ShowChartSourceType.Working:
+                        result = false;
+                        break;
+                    case ShowChartSourceType.User:
+                        text = $"V uložené definici grafu je chyba: '{exc.Message}'. {eol}{eol}K tomu může dojít, pokud existuje graf s upraveným vzhledem, a následně je z něj odebrána datová řada. {eol}{eol}Přejete si definici zahodit a zobrazit graf ve výchozím vzhledu?";
+                        if (App.ShowQuestionYN(this, text))
+                        {
+                            graph.ChartLayout = null;
+                            graph.SaveToFile();
+                            result = false;
+                        }
+                        else
+                        {
+                            result = true;
+                        }
+                        break;
+                    case ShowChartSourceType.Default:
+                        text = $"V základní definici grafu je chyba: '{exc.Message}'. {eol}{eol}Bohužel, tuto chybu musí opravit programátor. Zkuste upravit vzhled grafu a vytvořit jej ručně.";
+                        App.ShowWarning(this, text);
+                        result = false;
+                        break;
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// Druh zdroje pro layout grafu
+        /// </summary>
+        private enum ShowChartSourceType { None, Working, User, Default }
         /// <summary>
         /// Do Statusbaru vloží výsledky o načítání dat grafu z databáze
         /// </summary>
@@ -710,6 +758,24 @@ namespace Djs.Tools.CovidGraphs
                 _SetChartControlLayout(oldLayout);
             }
         }
+        private void TryDeleteGraph()
+        {
+            var graph = CurrentGraph;
+            if (graph == null)
+                throw new InvalidOperationException($"V tuto chvíli nelze odstranit graf, dosud není načten nebo není definován.");
+
+            if (!App.ShowQuestionYN(this, $"Přejete si odstranit graf '{graph.Title}' ?")) return;
+
+            int index = _Graphs.FindIndex(g => Object.ReferenceEquals(g, graph));
+            if (index >= 0)
+            {
+                _Graphs.RemoveAt(index);
+                _GraphListBox.Refresh();
+                ShowCurrentGraph();
+            }
+
+            graph.DeleteGraphFile(true);
+        }
         /// <summary>
         /// Načte a vrátí Layout z aktuálního grafu
         /// </summary>
@@ -722,7 +788,8 @@ namespace Djs.Tools.CovidGraphs
                 using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
                 {
                     _ChartControl.SaveToStream(ms);
-                    layout = Encoding.UTF8.GetString(ms.GetBuffer());
+                    var buffer = ms.ToArray();
+                    layout = Encoding.UTF8.GetString(buffer);
                 }
             }
             return layout;
@@ -735,7 +802,7 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="layout"></param>
         private void _SetChartControlLayout(string layout)
         {
-            if (_IsChartValid)
+            if (_IsChartExists)
             {
                 try
                 {
@@ -759,6 +826,10 @@ namespace Djs.Tools.CovidGraphs
                 }
             }
         }
+        /// <summary>
+        /// Obsahuje true, pokud graf existuje
+        /// </summary>
+        private bool _IsChartExists { get { return (_ChartControl != null && !_ChartControl.IsDisposed); } }
         /// <summary>
         /// Obsahuje true, pokud graf je platný (není null, má data a není Disposed)
         /// </summary>

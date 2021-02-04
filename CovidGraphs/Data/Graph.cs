@@ -105,6 +105,17 @@ namespace Djs.Tools.CovidGraphs.Data
             serie.Parent = this;
             _Series.Add(serie);
         }
+        /// <summary>
+        /// Z grafu odebere danou serii.
+        /// </summary>
+        /// <param name="serie"></param>
+        public void RemoveSerie(GraphSerieInfo serie)
+        {
+            if (serie == null) return;
+            int index = this._Series.FindIndex(s => Object.ReferenceEquals(s, serie));
+            if (index < 0) return;
+            this._Series.RemoveAt(index);
+        }
         #endregion
         #region Static načtení celého seznamu grafů z config adresáře, tvorba sample grafů
         /// <summary>
@@ -306,14 +317,26 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Pokud this graf je uložen v souboru, smaže tento soubor.
         /// Volá se v procesu smazání grafu.
         /// </summary>
-        public void DeleteGraphFile()
+        public void DeleteGraphFile(bool renameOnly = false)
         {
             string fileName = this.FileName;
             if (!String.IsNullOrEmpty(fileName))
             {
                 fileName = fileName.Trim();
                 if (File.Exists(fileName))
-                    App.TryRun(() => File.Delete(fileName));
+                {
+                    if (renameOnly)
+                    {
+                        string renameName = Path.ChangeExtension(fileName, "delChart");
+                        if (File.Exists(renameName))
+                            App.TryRun(() => File.Delete(renameName));
+                        App.TryRun(() => File.Move(fileName, renameName));
+                    }
+                    else
+                    {
+                        App.TryRun(() => File.Delete(fileName));
+                    }
+                }
             }
             ResetId();
         }
@@ -860,7 +883,9 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             get
             {
-                string settings = @"﻿    <Legend HorizontalIndent='40' AlignmentHorizontal='Center' Direction='LeftToRight' CrosshairContentOffset='4' MarkerSize='@2,Width=45@2,Height=16' MarkerMode='CheckBox' MaxCrosshairContentWidth='50' MaxCrosshairContentHeight='0' Name='Default Legend' />
+                string settings = @"﻿    <Legend HorizontalIndent='40' AlignmentHorizontal='Left' AlignmentVertical='Top' Direction='TopToBottom' CrosshairContentOffset='4' MarkerSize='@2,Width=30@2,Height=16' MarkerMode='CheckBoxAndMarker' MaxCrosshairContentWidth='50' MaxCrosshairContentHeight='0' Name='Základní legenda'>
+        <Title WordWrap='false' MaxLineCount='0' Alignment='Center' Text='Jednotlivé řady' Visible='true' Font='Tahoma, 12pt' TextColor='' Antialiasing='false' />
+    </Legend>
 ";
                 settings = settings.Replace("'", "\"");
                 return settings;
@@ -1143,6 +1168,91 @@ DTTO + DVA ČASOVÉ PRUHY Prázdniny a Vánoce
 </ChartXmlSerializer>
 
 
+
+
+
+
+
+
+
+
+
+
+
+Legenda:
+
+
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" Direction="BottomToTop" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" AlignmentVertical="Center" Direction="BottomToTop" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Legend HorizontalIndent="40" AlignmentHorizontal="LeftOutside" AlignmentVertical="Center" Direction="BottomToTop" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Legend HorizontalIndent="40" AlignmentHorizontal="LeftOutside" AlignmentVertical="BottomOutside" Direction="BottomToTop" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" AlignmentVertical="TopOutside" Direction="BottomToTop" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+
+
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" Direction="LeftToRight" CrosshairContentOffset="4" MarkerSize="@2,Width=45@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend" />
+
+
+
+
+MarkerSize="@2,Width=45@2,Height=16"  = prostor a border checkboxu
+
+
+
+
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" Direction="BottomToTop" CrosshairContentOffset="4" MarkerSize="@2,Width=30@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend">
+      <Title WordWrap="false" MaxLineCount="0" Alignment="Center" Text="Jednotlivé řady" Visible="true" Font="Tahoma, 12pt" TextColor="" Antialiasing="false" />
+    </Legend>
+
+má titulek
+
+
+
+
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" Direction="BottomToTop" TextOffset="15" CrosshairContentOffset="4" MarkerSize="@2,Width=30@2,Height=16" MarkerMode="CheckBox" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend">
+      <Title WordWrap="false" MaxLineCount="0" Alignment="Center" Text="Jednotlivé řady" Visible="true" Font="Tahoma, 12pt" TextColor="" Antialiasing="false" />
+    </Legend>
+text offset = mezera mezi checkboxem a textem
+
+
+
+
+    <Legend HorizontalIndent="40" AlignmentHorizontal="Left" Direction="BottomToTop" TextOffset="15" CrosshairContentOffset="4" MarkerSize="@2,Width=30@2,Height=16" MarkerMode="CheckBoxAndMarker" MaxCrosshairContentWidth="50" MaxCrosshairContentHeight="0" Name="Default Legend">
+      <Title WordWrap="false" MaxLineCount="0" Alignment="Center" Text="Jednotlivé řady" Visible="true" Font="Tahoma, 12pt" TextColor="" Antialiasing="false" />
+    </Legend>
+
+MarkerMode = checkbox, čára, text
+
+
+
+
+
+STRIPES V OSE Y = pro číslo R :
+
+
+      <AxisY Alignment="Far" VisibleInPanesSerializable="-1" ShowBehind="false">
+        <Strips>
+          <Item1 Color="118, 146, 60" ShowInLegend="false" Name="Strip 1">
+            <MinLimit AxisValueSerializable="0.75" />
+            <MaxLimit AxisValueSerializable="0.85" />
+          </Item1>
+          <Item2 Color="146, 205, 220" ShowInLegend="false" Name="Strip 2">
+            <MinLimit AxisValueSerializable="0.85" />
+            <MaxLimit AxisValueSerializable="1" />
+            <FillStyle FillMode="Solid" />
+          </Item2>
+          <Item3 Color="217, 150, 148" ShowInLegend="false" Name="Strip 3">
+            <MinLimit AxisValueSerializable="1" />
+            <MaxLimit AxisValueSerializable="1.1" />
+          </Item3>
+          <Item4 Color="149, 55, 52" ShowInLegend="false" Name="Strip 4">
+            <MinLimit AxisValueSerializable="1.1" />
+            <MaxLimit AxisValueSerializable="1.3" />
+          </Item4>
+        </Strips>
+        <WholeRange StartSideMargin="0.16599999999999998" EndSideMargin="0.16599999999999998" SideMarginSizeUnit="AxisUnit" />
+      </AxisY>
 
 
 

@@ -587,120 +587,24 @@ namespace Djs.Tools.CovidGraphs
             _HeaderDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
             int y = DetailYFirst;
-            _HeaderDetailTitleLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 320, DetailYHeightLabel), Text = "Název celého grafu" };
-            _HeaderDetailTitleLabel.StyleController = _LabelStyle;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTitleLabel);
+            _HeaderDetailTitleLabel = CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, "Název celého grafu");
+            _HeaderDetailDescriptionLabel = CreateDxeLabel(DetailXLabel + 390, ref y, 320, _HeaderDetailPanel, "Detailní popisek obsahu grafu", shiftY: true);
 
-            _HeaderDetailDescriptionLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel + 390, y, 320, DetailYHeightLabel), Text = "Detailní popisek obsahu grafu" };
-            _HeaderDetailDescriptionLabel.StyleController = _LabelStyle;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailDescriptionLabel);
-
-            y = _HeaderDetailTitleLabel.Bounds.Bottom + DetailYSpaceLabel;
-
-            _HeaderDetailTitleText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText, y, 375, DetailYHeightText) };
-            _HeaderDetailTitleText.StyleController = _InputStyle;
-            _HeaderDetailTitleText.TextChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTitleText);
-
-            _HeaderDetailDescriptionText = new DXE.MemoEdit() { Bounds = new Rectangle(DetailXText + 390, y, 375, 135) };
-            _HeaderDetailDescriptionText.StyleController = _InputStyle;
-            _HeaderDetailDescriptionText.TextChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailDescriptionText);
-
+            _HeaderDetailTitleText = CreateDxeTextEdit(DetailXText, ref y, 375, _HeaderDetailPanel, _HeaderValueChanged);
+            _HeaderDetailDescriptionText = CreateDxeMemoEdit(DetailXText + 390, ref y, 375, 135, _HeaderDetailPanel, _HeaderValueChanged);
             y = _HeaderDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
-            _HeaderDetailTimeTypeLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 320, DetailYHeightLabel), Text = "Časové omezení dat grafu" };
-            _HeaderDetailTimeTypeLabel.StyleController = _LabelStyle;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeTypeLabel);
+            _HeaderDetailTimeTypeLabel = CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, Text = "Časové omezení dat grafu", shiftY: true);
+            _HeaderDetailTimeTypeCombo = CreateDxeImageComboBox(DetailXText, ref y, 200, _HeaderDetailPanel, _HeaderDetailTimeTypeCombo_SelectedIndexChanged, "Bez omezení\tPosledních několik měsíců\tPosledních několik dnů\tPřesně daný interval Od-Do");
 
-            y = _HeaderDetailTimeTypeLabel.Bounds.Bottom + DetailYSpaceLabel;
+            _HeaderDetailTimeLastMonthsText = CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 120m, 1m, "##0", DXE.Controls.SpinStyles.Vertical, visible: false);
+            _HeaderDetailTimeLastDaysText = CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 3650m, 7m, "# ##0", DXE.Controls.SpinStyles.Vertical, visible: false);
+            _HeaderDetailTimeRangeBeginText = CreateDxeTextEdit(DetailXText + 210, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false);
+            _HeaderDetailTimeRangeEndText = CreateDxeTextEdit(DetailXText + 295, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false, shiftY: true);
 
-            _HeaderDetailTimeTypeCombo = new DXE.ImageComboBoxEdit() { Bounds = new Rectangle(DetailXText, y, 200, DetailYHeightText) };
-            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Bez omezení", 0, 0);
-            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Posledních několik měsíců", 1, 0);
-            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Posledních několik dnů", 2, 0);
-            _HeaderDetailTimeTypeCombo.Properties.Items.Add("Přesně daný interval Od-Do", 3, 0);
-            _HeaderDetailTimeTypeCombo.StyleController = _InputStyle;
-            _HeaderDetailTimeTypeCombo.SelectedIndexChanged += _HeaderDetailTimeTypeCombo_SelectedIndexChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeTypeCombo);
-
-            _HeaderDetailTimeLastMonthsText = new DXE.SpinEdit() { Bounds = new Rectangle(DetailXText + 210, y, 65, DetailYHeightText), Visible = false };
-            _HeaderDetailTimeLastMonthsText.StyleController = _InputStyle;
-            _HeaderDetailTimeLastMonthsText.Properties.MinValue = 1m;
-            _HeaderDetailTimeLastMonthsText.Properties.MaxValue = 120m;
-            _HeaderDetailTimeLastMonthsText.Properties.EditMask = "##0";
-            _HeaderDetailTimeLastMonthsText.Properties.SpinStyle = DevExpress.XtraEditors.Controls.SpinStyles.Vertical;
-            _HeaderDetailTimeLastMonthsText.Properties.Increment = 1m;
-            _HeaderDetailTimeLastMonthsText.ValueChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeLastMonthsText);
-
-            _HeaderDetailTimeLastDaysText = new DXE.SpinEdit() { Bounds = new Rectangle(DetailXText + 210, y, 65, DetailYHeightText), Visible = false };
-            _HeaderDetailTimeLastDaysText.StyleController = _InputStyle;
-            _HeaderDetailTimeLastDaysText.Properties.MinValue = 1m;
-            _HeaderDetailTimeLastDaysText.Properties.MaxValue = 3650m;
-            _HeaderDetailTimeLastDaysText.Properties.EditMask = "# ##0";
-            _HeaderDetailTimeLastDaysText.Properties.SpinStyle = DevExpress.XtraEditors.Controls.SpinStyles.Vertical;
-            _HeaderDetailTimeLastDaysText.Properties.Increment = 7m;
-            _HeaderDetailTimeLastDaysText.ValueChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeLastDaysText);
-
-            //   Textboxy s maskou:
-            //_HeaderDetailTimeLastMonthsText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 210, y, 45, DetailYHeightText), Visible = false };
-            //_HeaderDetailTimeLastMonthsText.StyleController = _InputStyle;
-            //_HeaderDetailTimeLastMonthsText.Properties.Mask.MaskType = DXE.Mask.MaskType.Numeric;
-            //_HeaderDetailTimeLastMonthsText.Properties.Mask.EditMask = "###0";
-            //_HeaderDetailTimeLastMonthsText.Properties.Mask.UseMaskAsDisplayFormat = true;
-            //_HeaderDetailTimeLastMonthsText.TextChanged += _HeaderValueChanged;
-            //_HeaderDetailPanel.Controls.Add(_HeaderDetailTimeLastMonthsText);
-
-            //_HeaderDetailTimeLastDaysText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 210, y, 45, DetailYHeightText), Visible = false };
-            //_HeaderDetailTimeLastDaysText.StyleController = _InputStyle;
-            //_HeaderDetailTimeLastDaysText.Properties.Mask.MaskType = DXE.Mask.MaskType.Numeric;
-            //_HeaderDetailTimeLastDaysText.Properties.Mask.EditMask = "###0";
-            //_HeaderDetailTimeLastDaysText.Properties.Mask.UseMaskAsDisplayFormat = true;
-            //_HeaderDetailTimeLastDaysText.TextChanged += _HeaderValueChanged;
-            //_HeaderDetailPanel.Controls.Add(_HeaderDetailTimeLastDaysText);
-
-            _HeaderDetailTimeRangeBeginText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 210, y, 80, DetailYHeightText), Visible = false };
-            _HeaderDetailTimeRangeBeginText.StyleController = _InputStyle;
-            _HeaderDetailTimeRangeBeginText.Properties.Mask.MaskType = DXE.Mask.MaskType.DateTimeAdvancingCaret;
-            _HeaderDetailTimeRangeBeginText.Properties.Mask.EditMask = "d";
-            _HeaderDetailTimeRangeBeginText.Properties.Mask.UseMaskAsDisplayFormat = true;
-            _HeaderDetailTimeRangeBeginText.TextChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeRangeBeginText);
-
-            _HeaderDetailTimeRangeEndText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 295, y, 80, DetailYHeightText), Visible = false };
-            _HeaderDetailTimeRangeEndText.StyleController = _InputStyle;
-            _HeaderDetailTimeRangeEndText.Properties.Mask.MaskType = DXE.Mask.MaskType.DateTimeAdvancingCaret;
-            _HeaderDetailTimeRangeEndText.Properties.Mask.EditMask = "d";
-            _HeaderDetailTimeRangeEndText.Properties.Mask.UseMaskAsDisplayFormat = true;
-            _HeaderDetailTimeRangeEndText.TextChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeRangeEndText);
-
-            y = _HeaderDetailTimeTypeCombo.Bounds.Bottom + DetailYSpaceText;
-
-            int checkWidth = 350;
-            int checkX = DetailXText;
-            _HeaderDetailTimeStripesCheck = new DXE.CheckEdit() { Bounds = new Rectangle(checkX, y, checkWidth, DetailYHeightText), Text = "Zobrazovat význačné časové intervaly" }; y = _HeaderDetailTimeStripesCheck.Bounds.Bottom + DetailYSpaceText;
-            _HeaderDetailTimeStripesCheck.StyleController = _InputStyle;
-            _HeaderDetailTimeStripesCheck.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
-            _HeaderDetailTimeStripesCheck.Properties.CheckBoxOptions.Style = DXE.Controls.CheckBoxStyle.SvgToggle1;
-            _HeaderDetailTimeStripesCheck.CheckedChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeStripesCheck);
-
-            _HeaderDetailTimeZoomCheck = new DXE.CheckEdit() { Bounds = new Rectangle(checkX, y, checkWidth, DetailYHeightText), Text = "Povolit zoom na časové ose" }; y = _HeaderDetailTimeZoomCheck.Bounds.Bottom + DetailYSpaceText;
-            _HeaderDetailTimeZoomCheck.StyleController = _InputStyle;
-            _HeaderDetailTimeZoomCheck.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
-            _HeaderDetailTimeZoomCheck.Properties.CheckBoxOptions.Style = DXE.Controls.CheckBoxStyle.SvgToggle1;
-            _HeaderDetailTimeZoomCheck.CheckedChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailTimeZoomCheck);
-
-            _HeaderDetailAxisOnRightCheck = new DXE.CheckEdit() { Bounds = new Rectangle(checkX, y, checkWidth, DetailYHeightText), Text = "Svislá osa vpravo" }; y = _HeaderDetailAxisOnRightCheck.Bounds.Bottom + DetailYSpaceText;
-            _HeaderDetailAxisOnRightCheck.StyleController = _InputStyle;
-            _HeaderDetailAxisOnRightCheck.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
-            _HeaderDetailAxisOnRightCheck.Properties.CheckBoxOptions.Style = DXE.Controls.CheckBoxStyle.SvgToggle1;
-            _HeaderDetailAxisOnRightCheck.CheckedChanged += _HeaderValueChanged;
-            _HeaderDetailPanel.Controls.Add(_HeaderDetailAxisOnRightCheck);
+            _HeaderDetailTimeStripesCheck = CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Zobrazovat význačné časové intervaly", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailTimeZoomCheck = CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Povolit zoom na časové ose", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailAxisOnRightCheck = CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Svislá osa vpravo", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
 
             return _HeaderDetailPanel;
         }
@@ -981,13 +885,13 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _ValueTypePanel.SizeChanged += _ValueTypePanel_SizeChanged;
 
             _ValueTypeLabel = new DXE.LabelControl() { Text = "Označte jeden nebo více typů dat:", BorderStyle = DXE.Controls.BorderStyles.NoBorder };
-            _ValueTypeLabel.StyleController = _TitleStyle; 
+            _ValueTypeLabel.StyleController = _TitleStyle;
             _ValueTypePanel.Controls.Add(_ValueTypeLabel);
 
             _ValueTypeInfos = DataValueTypeInfo.CreateAll();
 
             _ValueTypeListBox = new DXE.ListBoxControl()
-            { 
+            {
                 MultiColumn = false,
                 SelectionMode = SelectionMode.MultiExtended,
                 Dock = DockStyle.None
@@ -1177,15 +1081,24 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _SeriesListGridView.RefreshData();
             _SeriesListGrid.RefreshDataSource();
             _SeriesListGrid.Refresh();
-
-       }
+        }
+        /// <summary>
+        /// Po kliknutí na button Přidej serie
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _SeriesListAddButton_Click(object sender, EventArgs e)
         {
             App.TryRun(_SeriesListAddNewSeries);
         }
+        /// <summary>
+        /// Po kliknutí na button Odeber serii
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _SeriesListRemoveButton_Click(object sender, EventArgs e)
         {
-
+            App.TryRun(_SeriesListRemoveSeries);
         }
         /// <summary>
         /// Přidat nové serie do aktuální definice, serie jsou zadány v GUI (<see cref="_EntityListBox"/> a <see cref="_ValueTypeListBox"/>)
@@ -1355,6 +1268,27 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             }
         }
         /// <summary>
+        /// Odebere aktuální serii
+        /// </summary>
+        private void _SeriesListRemoveSeries()
+        {
+            var row = CurrentSerieGridRow;
+            var serie = row?.Serie;
+            if (serie == null) return;
+
+            if (!App.ShowQuestionYN(this.FindForm(), $"Odebrat řádek '{serie.Title}' ?")) return;
+
+            int rowIndex = _SeriesListData.FindIndex(r => Object.ReferenceEquals(r, row));
+            if (rowIndex >= 0)
+                _SeriesListData.RemoveAt(rowIndex);
+
+            var graph = CurrentGraphInfo;
+            graph.RemoveSerie(serie);
+            ContainChanges = true;
+
+            RefreshSeriesListGrid();
+        }
+        /// <summary>
         /// Obsahuje aktuálně focusovaný řádek, obsahující serii grafu
         /// </summary>
         private GraphSerieGridRow CurrentSerieGridRow { get { return (_SeriesListGridView.GetFocusedRow() as GraphSerieGridRow); } }
@@ -1373,49 +1307,29 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             _SeriesDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
             int y = DetailYFirst;
-            _SeriesDetailTitleLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 600, DetailYHeightLabel), Text = "Název datové řady" };
-            _SeriesDetailTitleLabel.StyleController = _LabelStyle;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailTitleLabel);
+            _SeriesDetailTitleLabel = CreateDxeLabel(DetailXLabel, ref y, 600, _SeriesDetailPanel, "Název datové řady");
+            _SeriesDetailValueInfoLabel = CreateDxeLabel(DetailXLabel + 610, ref y, 250, _SeriesDetailPanel, "Informace o datech", shiftY: true);
 
-            _SeriesDetailValueInfoLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel + 610, y, 250, DetailYHeightLabel), Text = "Informace o datech" };
-            _SeriesDetailValueInfoLabel.StyleController = _LabelStyle;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailValueInfoLabel);
-
-            y = _SeriesDetailTitleLabel.Bounds.Bottom + DetailYSpaceLabel;
-
-            _SeriesDetailTitleText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText, y, 600, DetailYHeightText) }; 
-            _SeriesDetailTitleText.StyleController = _InputStyle;
-            _SeriesDetailTitleText.TextChanged += _SeriesValueChanged;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailTitleText);
-
-            _SeriesDetailValueInfoText = new DXE.MemoEdit() { Bounds = new Rectangle(DetailXLabel + 610, y, 250, 50), ReadOnly = true, TabStop = false };
-            _SeriesDetailValueInfoText.StyleController = _InputStyle;
-            _SeriesDetailValueInfoText.TextChanged += _SeriesValueChanged;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailValueInfoText);
-
+            _SeriesDetailTitleText = CreateDxeTextEdit(DetailXLabel, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
+            _SeriesDetailValueInfoText = CreateDxeMemoEdit(DetailXLabel + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
+                
             y = _SeriesDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
-            _SeriesDetailEntityLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel, y, 295, DetailYHeightLabel), Text = "Okres/město" };
-            _SeriesDetailEntityLabel.StyleController = _LabelStyle;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailEntityLabel);
+            _SeriesDetailEntityLabel = CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Okres/město");
+            _SeriesDetailValueTypeLabel = CreateDxeLabel(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, "Druh zobrazených dat", shiftY: true);
 
-            _SeriesDetailValueTypeLabel = new DXE.LabelControl() { Bounds = new Rectangle(DetailXLabel + 305, y, 295, DetailYHeightLabel), Text = "Druh zobrazených dat" };
-            _SeriesDetailValueTypeLabel.StyleController = _LabelStyle;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailValueTypeLabel);
+            _SeriesDetailEntityText = CreateDxeTextEdit(DetailXLabel, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailValueTypeText = CreateDxeTextEdit(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
 
-            y = _SeriesDetailEntityLabel.Bounds.Bottom + DetailYSpaceLabel;
+            y = _SeriesDetailValueTypeText.Bottom;
+            _SeriesDetailValueInfoText.Height = (y - _SeriesDetailValueInfoText.Top);
+            y += DetailYSpaceText;
 
-            _SeriesDetailEntityText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText, y, 295, DetailYHeightText), ReadOnly = true, TabStop = false };
-            _SeriesDetailEntityText.StyleController = _InputStyle;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailEntityText);
+            _SeriesDetailPocetOdDoLabel = CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Výběr obcí dle počtu obyvatel OD-DO:", shiftY: true);
 
-            _SeriesDetailValueTypeText = new DXE.TextEdit() { Bounds = new Rectangle(DetailXText + 305, y, 295, DetailYHeightText), ReadOnly = true, TabStop = false };
-            _SeriesDetailValueTypeText.StyleController = _InputStyle;
-            _SeriesDetailPanel.Controls.Add(_SeriesDetailValueTypeText);
 
-            _SeriesDetailValueInfoText.Height = (_SeriesDetailValueTypeText.Bottom - _SeriesDetailValueInfoText.Top);
-
-            y = _SeriesDetailValueTypeLabel.Bounds.Bottom + DetailYSpaceText;
+            _SeriesDetailPocetOdText = CreateDxeSpinEdit(DetailXLabel, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailPocetDoText = CreateDxeSpinEdit(DetailXLabel + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
 
 
             _GraphSeriesDetailHeight = y + 12;
@@ -1448,7 +1362,8 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             _SeriesDetailEntityText.Text = row?.EntityText ?? "";
             _SeriesDetailValueTypeText.Text = row?.ValueTypeName ?? "";
             _SeriesDetailValueInfoText.Text = serie?.ValueTypeInfo.ToolTip ?? "";
-
+            _SeriesDetailPocetOdText.Value = serie?.FiltrPocetObyvatelOd ?? 0;
+            _SeriesDetailPocetDoText.Value = serie?.FiltrPocetObyvatelDo ?? 0;
 
 
             _DataRefreshRunning = oldDRR;
@@ -1464,7 +1379,13 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             if (serie == null) return;
 
             serie.Title = _SeriesDetailTitleText.Text;
+            serie.FiltrPocetObyvatelOd = (_SeriesDetailPocetOdText.Value > 0m ? (int?)_SeriesDetailPocetOdText.Value : (int?)null);
+            serie.FiltrPocetObyvatelDo = (_SeriesDetailPocetDoText.Value > 0m ? (int?)_SeriesDetailPocetDoText.Value : (int?)null);
 
+
+
+            _SeriesListGridView.RefreshData();
+//             _SeriesListGrid.RefreshDataSource();
 
         }
         /// <summary>
@@ -1483,8 +1404,119 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         DXE.LabelControl _SeriesDetailValueInfoLabel;
         DXE.MemoEdit _SeriesDetailValueInfoText;
         DXE.LabelControl _SeriesDetailPocetOdDoLabel;
-        DXE.TextEdit _SeriesDetailPocetOdText;
-        DXE.TextEdit _SeriesDetailPocetDoText;
+        DXE.SpinEdit _SeriesDetailPocetOdText;
+        DXE.SpinEdit _SeriesDetailPocetDoText;
+        #endregion
+        #region Generátory controlů
+        private DXE.LabelControl CreateDxeLabel(int x, ref int y, int w, Control parent, string text,
+            bool? visible = null, bool shiftY = false)
+        {
+            DXE.LabelControl label = new DXE.LabelControl() { Bounds = new Rectangle(x, y, w, DetailYHeightLabel), Text = text };
+            label.StyleController = _LabelStyle;
+            if (visible.HasValue) label.Visible = visible.Value;
+            parent.Controls.Add(label);
+            if (shiftY) y = y + label.Height + DetailYSpaceLabel;
+            return label;
+        }
+        private DXE.TextEdit CreateDxeTextEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
+            DXE.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            DXE.TextEdit textEdit = new DXE.TextEdit() { Bounds = new Rectangle(x, y, w, DetailYHeightText) };
+            textEdit.StyleController = _InputStyle;
+            if (visible.HasValue) textEdit.Visible = visible.Value;
+            if (readOnly.HasValue) textEdit.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) textEdit.TabStop = tabStop.Value;
+
+            if (maskType.HasValue) textEdit.Properties.Mask.MaskType = maskType.Value;
+            if (editMask != null) textEdit.Properties.Mask.EditMask = editMask;
+            if (useMaskAsDisplayFormat.HasValue) textEdit.Properties.Mask.UseMaskAsDisplayFormat = useMaskAsDisplayFormat.Value;
+
+            if (textChanged != null) textEdit.TextChanged += textChanged;
+            parent.Controls.Add(textEdit);
+            if (shiftY) y = y + textEdit.Height + DetailYSpaceText;
+            return textEdit;
+        }
+        private DXE.MemoEdit CreateDxeMemoEdit(int x, ref int y, int w, int h, Control parent, EventHandler textChanged = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            DXE.MemoEdit memoEdit = new DXE.MemoEdit() { Bounds = new Rectangle(x, y, w, h) };
+            memoEdit.StyleController = _InputStyle;
+            if (visible.HasValue) memoEdit.Visible = visible.Value;
+            if (readOnly.HasValue) memoEdit.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) memoEdit.TabStop = tabStop.Value;
+
+            if (textChanged != null) memoEdit.TextChanged += textChanged;
+            parent.Controls.Add(memoEdit);
+            if (shiftY) y = y + memoEdit.Height + DetailYSpaceText;
+            return memoEdit;
+        }
+        private DXE.ImageComboBoxEdit CreateDxeImageComboBox(int x, ref int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null, 
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            DXE.ImageComboBoxEdit comboBox = new DXE.ImageComboBoxEdit() { Bounds = new Rectangle(x, y, w, DetailYHeightText) };
+            comboBox.StyleController = _InputStyle;
+            if (visible.HasValue) comboBox.Visible = visible.Value;
+            if (readOnly.HasValue) comboBox.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) comboBox.TabStop = tabStop.Value;
+
+            if (itemsTabbed != null)
+            {
+                string[] items = itemsTabbed.Split('\t');
+                for (int i = 0; i < items.Length; i++)
+                    comboBox.Properties.Items.Add(items[i], i, 0);
+            }
+            if (selectedIndexChanged != null) comboBox.SelectedIndexChanged += selectedIndexChanged;
+            parent.Controls.Add(comboBox);
+            if (shiftY) y = y + comboBox.Height + DetailYSpaceText;
+            return comboBox;
+        }
+        private DXE.SpinEdit CreateDxeSpinEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
+            decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DXE.Controls.SpinStyles? spinStyles = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            DXE.SpinEdit spinEdit = new DXE.SpinEdit() { Bounds = new Rectangle(x, y, w, DetailYHeightText) };
+            spinEdit.StyleController = _InputStyle;
+            if (visible.HasValue) spinEdit.Visible = visible.Value;
+            if (readOnly.HasValue) spinEdit.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) spinEdit.TabStop = tabStop.Value;
+
+            if (minValue.HasValue) spinEdit.Properties.MinValue = minValue.Value;
+            if (maxValue.HasValue) spinEdit.Properties.MaxValue = maxValue.Value;
+            if (increment.HasValue) spinEdit.Properties.Increment = increment.Value;
+            if (mask != null)
+            {
+                spinEdit.Properties.EditMask = mask;
+                spinEdit.Properties.DisplayFormat.FormatString = mask;
+                spinEdit.Properties.Mask.UseMaskAsDisplayFormat = true;
+                spinEdit.Properties.EditFormat.FormatString = mask;
+            }
+            if (spinStyles.HasValue) spinEdit.Properties.SpinStyle = spinStyles.Value;
+
+            if (valueChanged != null) spinEdit.ValueChanged += valueChanged;
+            parent.Controls.Add(spinEdit);
+            if (shiftY) y = y + spinEdit.Height + DetailYSpaceText;
+            return spinEdit;
+        }
+        private DXE.CheckEdit CreateDxeCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
+            DXE.Controls.CheckBoxStyle? checkBoxStyle = null, DXE.Controls.BorderStyles? borderStyles = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            DXE.CheckEdit checkEdit = new DXE.CheckEdit() { Bounds = new Rectangle(x, y, w, DetailYHeightText), Text = text };
+            checkEdit.StyleController = _InputStyle;
+            if (visible.HasValue) checkEdit.Visible = visible.Value;
+            if (readOnly.HasValue) checkEdit.ReadOnly = readOnly.Value;
+            if (tabStop.HasValue) checkEdit.TabStop = tabStop.Value;
+
+            if (checkBoxStyle.HasValue) checkEdit.Properties.CheckBoxOptions.Style = checkBoxStyle.Value;
+            if (borderStyles.HasValue) checkEdit.BorderStyle = borderStyles.Value;
+
+            if (checkedChanged != null) checkEdit.CheckedChanged += checkedChanged;
+            parent.Controls.Add(checkEdit);
+            if (shiftY) y = y + checkEdit.Height + DetailYSpaceText;
+            return checkEdit;
+        }
+
         #endregion
         #region Správa layoutu - splittery, uložení konfigurace
         /// <summary>
@@ -1642,9 +1674,9 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         [DisplayName("Druh zobrazených dat")]
         public string ValueTypeName { get { return _ValueTypeName; } } private string _ValueTypeName;
         [DisplayName("Počet obyvatel OD")]
-        public string PocetOd { get { return _PocetOd; } } private string _PocetOd;
+        public string PocetOd { get { return _GetPocet(Serie.FiltrPocetObyvatelOd); } }
         [DisplayName("Počet obyvatel DO")]
-        public string PocetDo { get { return _PocetDo; } } private string _PocetDo;
+        public string PocetDo { get { return _GetPocet(Serie.FiltrPocetObyvatelDo); } }
 
         public GraphSerieInfo Serie { get; set; }
         protected DatabaseInfo Database { get; set; }
@@ -1657,8 +1689,6 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             gridRow.Database = database;
             gridRow._EntityText = (database.GetEntity(serie.EntityFullCode)?.Text ?? "");
             gridRow._ValueTypeName = serie.ValueTypeInfo?.Text;
-            gridRow._PocetOd = _GetPocet(serie.FiltrPocetObyvatelOd);
-            gridRow._PocetDo = _GetPocet(serie.FiltrPocetObyvatelDo);
             return gridRow;
         }
         protected static string _GetPocet(int? pocet)
