@@ -136,22 +136,7 @@ namespace Djs.Tools.CovidGraphs.Data
         public static string DefaultApplicationCode { get { return _DefaultApplicationCode; } set { if (!String.IsNullOrEmpty(value)) _DefaultApplicationCode = value; } }
         private static string _DefaultApplicationCode = "BasicApplication";
         #endregion
-        #region Služby
-        /// <summary>
-        /// Provede danou akci v bloku try - catch, případnou chybu odchytí a zobrazí uživateli. Korektně vrátí řízení.
-        /// </summary>
-        /// <param name="action"></param>
-        public static void TryRun(Action action)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception exc)
-            {
-                ShowError(exc.Message);
-            }
-        }
+        #region Message
         public static void ShowError(string text)
         {
             ShowMessage(text: text, buttons: WF.MessageBoxButtons.OK, icon: WF.MessageBoxIcon.Error);
@@ -196,6 +181,49 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             catch { }
             return mainForm;
+        }
+        #endregion
+        #region Služby
+        /// <summary>
+        /// Provede danou akci v bloku try - catch, případnou chybu odchytí a zobrazí uživateli. Korektně vrátí řízení.
+        /// </summary>
+        /// <param name="action"></param>
+        public static void TryRun(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception exc)
+            {
+                ShowError(exc.Message);
+            }
+        }
+        /// <summary>
+        /// Vrací text podle počtu: 
+        /// pro počet (<paramref name="count"/>) = 0 vrací String.Format(<paramref name="text0"/>, count);
+        /// pro počet 1 vrací String.Format(<paramref name="text1"/>, count);
+        /// pro počet 2,3,4 vrací String.Format(<paramref name="text234"/>, count);
+        /// a pro ostatní vrací String.Format(<paramref name="text5plus"/>, count);
+        /// <para/> Pro definici textu tedy lze využít vložení daného počtu do potřebného místa textu, pomocí {0}, anebo nemusí být použit vůbec.
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="text0"></param>
+        /// <param name="text1"></param>
+        /// <param name="text234"></param>
+        /// <param name="text5plus"></param>
+        /// <returns></returns>
+        public static string GetCountText(int count, string text0, string text1, string text234, string text5plus)
+        {
+            switch (count)
+            {
+                case 0: return String.Format(text0, count);
+                case 1: return String.Format(text1, count);
+                case 2:
+                case 3:
+                case 4: return String.Format(text234, count);
+            }
+            return String.Format(text5plus, count);
         }
         #endregion
         #region Logování a čas

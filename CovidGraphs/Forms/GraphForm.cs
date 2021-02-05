@@ -310,7 +310,7 @@ namespace Djs.Tools.CovidGraphs
         {
             _CurrentGraphInfo = new GraphInfo();
             _GraphPanel = new GraphPanel() { Dock = DockStyle.Fill, ParentForm = this, CurrentGraphInfo = _CurrentGraphInfo };
-            _GraphPanel.DataChanged += _GraphPanel_DataChanged;
+            _GraphPanel.FirstDataChanged += _GraphPanel_FirstDataChanged;
             _MainSplitContainer.Panel1.Controls.Add(_GraphPanel);
         }
         /// <summary>
@@ -318,12 +318,12 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _GraphPanel_DataChanged(object sender, EventArgs e)
+        private void _GraphPanel_FirstDataChanged(object sender, EventArgs e)
         {
             RefreshButtons();
         }
         /// <summary>
-        /// Panel s daty obsahuje změny?
+        /// Panel s daty obsahuje jakékoli změny?
         /// </summary>
         public bool ContainChanges { get { return _GraphPanel?.ContainChanges ?? false; } }
         protected void InitChart()
@@ -1010,7 +1010,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             _SeriesListRemoveButton.Click += _SeriesListRemoveButton_Click;
             _SeriesListButtonPanel.Controls.Add(_SeriesListRemoveButton);
 
-            SeriesListRefreshData(false);
+            SeriesListReloadDataFromGraph(false);
 
             return _SeriesListPanel;
         }
@@ -1050,9 +1050,11 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             SeriesDetailRefresh();
         }
         /// <summary>
-        /// Do gridu se seriemi <see cref="_SeriesListGrid"/> načte aktuální obsah definice grafu <see cref="CurrentGraphInfo"/>.
+        /// Do lokálního Listu se seriemi <see cref="_SeriesListGrid"/> načte aktuální obsah definice grafu <see cref="CurrentGraphInfo"/>.
+        /// Tento List slouží jako datový zdroj pro Grid.
+        /// Volitelně vyvolá refresh Gridu.
         /// </summary>
-        protected void SeriesListRefreshData(bool refreshGui)
+        protected void SeriesListReloadDataFromGraph(bool refreshGui)
         {
             if (_SeriesListData.Count > 0) _SeriesListData.Clear();
             if (this.Database == null || this.CurrentGraphInfo == null) return;
@@ -1061,7 +1063,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
                 AddSerieToSeriesList(serie);
 
             if (refreshGui)
-                RefreshSeriesListGrid();
+                SeriesListRefreshGrid();
         }
         /// <summary>
         /// Danou serii (data z Grafu) přidá do this listu, který je zobrazován v Gridu
@@ -1076,7 +1078,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         /// <summary>
         /// Provede vizuální refresh gridu s daty serií
         /// </summary>
-        private void RefreshSeriesListGrid()
+        private void SeriesListRefreshGrid()
         {
             _SeriesListGridView.RefreshData();
             _SeriesListGrid.RefreshDataSource();
@@ -1111,66 +1113,16 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
                 return;
 
             var newSerieKeys = _CreateKeysForNewSeries(entityItems, valueItems);
-            int newSeriesCount = newSerieKeys.Count;
-            if (newSeriesCount == 0)
-            {
-                App.ShowWarning(this.FindForm(), "Všechny zvolené obce a datové hodnoty jsou v grafu již obsaženy.");
+            if (!_HasValidCountForNewSeries(entityItems.Length, valueItems.Length, newSerieKeys.Count))
                 return;
-            }
-
-            int currentCount = this.CurrentGraphInfo.Series.Length;
-            int sumCount = currentCount + newSeriesCount;
-            if (sumCount > GraphInfo.MaxSeriesCount)
-            {
-                string eol = Environment.NewLine;
-                string message = $"Pro rozumnou přehlednost grafu není možno do něj vložit více než {GraphInfo.MaxSeriesCount} datových řad.{eol}{eol}";
-                if (currentCount > 0)
-                {
-                    string currentSeriesText = GetCountText(currentCount, "není v grafu žádná datová řada", "je v grafu jedna datová řada", "jsou v grafu {0} datové řady", "je v grafu {0} datových řad");
-                    string newSeriesText = GetCountText(newSeriesCount, "žádné řady", "další jedné řady", "dalších {0} řad", "dalších {0} řad");
-                    message += $"Aktuálně {currentSeriesText}, a při požadavku na přidání {newSeriesText} by byl překročen maximální povolený počet.";
-                }
-                else
-                {
-                    string valueText = GetCountText(valueItems.Length, "žádnou typ dat", "jednoho typu dat", "{0} typů dat", "{0} typů dat");
-                    string entitytext = GetCountText(entityItems.Length, "žádnou obec", "jednu obec", "{0} obce", "{1} obcí");
-                    string newSeriesText = GetCountText(newSeriesCount, "žádnou datovou řadu", "jednu datovou řadu", "{0} datové řady", "{0} datových řad");
-                    message += $"Zvolili jste přidání {valueText} pro {entitytext}, celkem tedy {newSeriesText}. Zmenšete jejich počet.";
-                }
-                message += $"{eol}{eol}Zvolte méně dat a zkuste je přidat poté.";
-                App.ShowWarning(this.FindForm(), message);
-                return;
-            }
 
             _AddNewSeriesToGraph(newSerieKeys);
-            RefreshSeriesListGrid();
+
+            SeriesListRefreshGrid();
             ContainChanges = true;
-        }
-        /// <summary>
-        /// Vrací text podle počtu: 
-        /// pro počet (<paramref name="count"/>) = 0 vrací String.Format(<paramref name="text0"/>, count);
-        /// pro počet 1 vrací String.Format(<paramref name="text1"/>, count);
-        /// pro počet 2,3,4 vrací String.Format(<paramref name="text234"/>, count);
-        /// a pro ostatní vrací String.Format(<paramref name="text5plus"/>, count);
-        /// <para/> Pro definici textu tedy lze využít vložení daného počtu do potřebného místa textu, pomocí {0}, anebo nemusí být použit vůbec.
-        /// </summary>
-        /// <param name="count"></param>
-        /// <param name="text0"></param>
-        /// <param name="text1"></param>
-        /// <param name="text234"></param>
-        /// <param name="text5plus"></param>
-        /// <returns></returns>
-        private string GetCountText(int count, string text0, string text1, string text234, string text5plus)
-        {
-            switch (count)
-            {
-                case 0: return String.Format(text0, count);
-                case 1: return String.Format(text1, count);
-                case 2:
-                case 3:
-                case 4: return String.Format(text234, count);
-            }
-            return String.Format(text5plus, count);
+            ContainSerieChanges = true;
+
+            CheckChartLayoutOnSeriesChange(newSerieKeys.Count);
         }
         /// <summary>
         /// Ověří, zda aktuálně můžeme zadaná data přidat jako nové serie. Vrátí true pokud je vše OK.
@@ -1252,6 +1204,46 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             return result;
         }
         /// <summary>
+        /// Ověří, zda do grafu je možno přidat další serie z hlediska maximálního počtu
+        /// </summary>
+        /// <param name="entityItems"></param>
+        /// <param name="valueItems"></param>
+        /// <param name="newSeriesCount"></param>
+        /// <returns></returns>
+        private bool _HasValidCountForNewSeries(int entityCount, int valueCount, int newSeriesCount)
+        {
+            if (newSeriesCount == 0)
+            {
+                App.ShowWarning(this.FindForm(), "Všechny zvolené obce a datové hodnoty jsou v grafu již obsaženy.");
+                return false;
+            }
+
+            int currentCount = this.CurrentGraphInfo.Series.Length;
+            int sumCount = currentCount + newSeriesCount;
+            if (sumCount > GraphInfo.MaxSeriesCount)
+            {
+                string eol = Environment.NewLine;
+                string message = $"Pro rozumnou přehlednost grafu není možno do něj vložit více než {GraphInfo.MaxSeriesCount} datových řad.{eol}{eol}";
+                if (currentCount > 0)
+                {
+                    string currentSeriesText = App.GetCountText(currentCount, "není v grafu žádná datová řada", "je v grafu jedna datová řada", "jsou v grafu {0} datové řady", "je v grafu {0} datových řad");
+                    string newSeriesText = App.GetCountText(newSeriesCount, "žádné řady", "další jedné řady", "dalších {0} řad", "dalších {0} řad");
+                    message += $"Aktuálně {currentSeriesText}, a při požadavku na přidání {newSeriesText} by byl překročen maximální povolený počet.";
+                }
+                else
+                {
+                    string valueText = App.GetCountText(valueCount, "žádnou typ dat", "jednoho typu dat", "{0} typů dat", "{0} typů dat");
+                    string entitytext = App.GetCountText(entityCount, "žádnou obec", "jednu obec", "{0} obce", "{1} obcí");
+                    string newSeriesText = App.GetCountText(newSeriesCount, "žádnou datovou řadu", "jednu datovou řadu", "{0} datové řady", "{0} datových řad");
+                    message += $"Zvolili jste přidání {valueText} pro {entitytext}, celkem tedy {newSeriesText}. Zmenšete jejich počet.";
+                }
+                message += $"{eol}{eol}Zvolte méně dat a zkuste je přidat poté.";
+                App.ShowWarning(this.FindForm(), message);
+                return false;
+            }
+            return true;
+        }
+        /// <summary>
         /// Do aktuálního grafu přidá nové serie podle zadaných klíčů. Neprovádí refresh Gridu.
         /// </summary>
         /// <param name="newSerieKeys"></param>
@@ -1285,9 +1277,64 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             var graph = CurrentGraphInfo;
             graph.RemoveSerie(serie);
             ContainChanges = true;
+            ContainSerieChanges = true;
 
-            RefreshSeriesListGrid();
+            SeriesListRefreshGrid();
+            SeriesDetailRefresh();
+
+            CheckChartLayoutOnSeriesChange(-1);
         }
+        /// <summary>
+        /// Metoda je volaná po přidání / odebrání datových řad z grafu.
+        /// Pokud má graf uložený layout, nabídne se uživateli jeho odstranění včetně důvodu. Pouze při první změně.
+        /// </summary>
+        /// <param name="seriesDiff"></param>
+        private void CheckChartLayoutOnSeriesChange(int seriesDiff)
+        {
+            if (seriesDiff == 0) return;
+
+            var graph = CurrentGraphInfo;
+            string xmlLayout = graph?.ChartLayout;
+            if (String.IsNullOrEmpty(xmlLayout)) return;                       // Graf NEMÁ speciální úpravený layout
+
+            if (seriesDiff > 0 && ChartLayoutAddSeriesWarningShown) return;    // Graf sice má upravený vzhled, ale my už jsme uživatele po PŘIDÁNÍ nových series varovali...
+            if (seriesDiff < 0 && ChartLayoutRemoveSeriesWarningShown) return; //  dtto pro případ Odebrání series
+
+            string info1 = (seriesDiff > 0 ? App.GetCountText(seriesDiff, "", "přidali datovou řadu", "přidali {0} datové řady", "přidali {0} datových řad") :
+                           (seriesDiff < 0 ? App.GetCountText(-seriesDiff, "", "odebrali datovou řadu", "odebrali {0} datové řady", "odebrali {0} datových řad") : ""));
+            string info2 = (seriesDiff > 0 ? "Přidané datové řady nebudou ve Vámi upraveném grafu zobrazeny, budete muset graf opět ručně upravit." :
+                                             "Odebrání datových řad způsobí chybu při zobrazení grafu podle původní definice (ta očekává původní datové řady).");
+            string text = $@"Tento graf má speciálně upravený vzhled (pomocí tlačítka 'Vzhled grafu').
+
+Nyní jste {info1}.
+{info2}
+
+Bylo by vhodné zrušit Vaše úpravy vzhledu grafu a použít výchozí vzhled. Ten pak můžete znovu upravit, až budou datové řady definitivní.
+
+Zrušit úpravy vzhledu?";
+            bool yes = App.ShowQuestionYN(this.FindForm(), text);
+
+            // Nyní jsme tedy uživatele varovali:
+            if (seriesDiff > 0) ChartLayoutAddSeriesWarningShown = true;
+            if (seriesDiff < 0) ChartLayoutRemoveSeriesWarningShown = true;
+
+            // Uživatel souhlasí s odebráním Layoutu:
+            if (yes)
+            {
+                graph.ChartLayout = null;
+                ContainChanges = true;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true poté, kdy bylo uživateli vydáno varování o vhodnosti změny layoutu po přidání Series.
+        /// Výchozí je false.
+        /// </summary>
+        private bool ChartLayoutAddSeriesWarningShown = false;
+        /// <summary>
+        /// Obsahuje true poté, kdy bylo uživateli vydáno varování o vhodnosti změny layoutu po přidání Series.
+        /// Výchozí je false.
+        /// </summary>
+        private bool ChartLayoutRemoveSeriesWarningShown = false;
         /// <summary>
         /// Obsahuje aktuálně focusovaný řádek, obsahující serii grafu
         /// </summary>
@@ -1346,9 +1393,10 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         {
             SeriesDetailStore();
             ContainChanges = true;
+            ContainSerieChanges = true;
         }
         /// <summary>
-        /// Načte data aktuálně zobrazené serie z datového objektu do GUI
+        /// Načte detailní data z aktuálně zobrazené serie z datového objektu grafu do GUI SeriesDetail
         /// </summary>
         private void SeriesDetailRefresh()
         {
@@ -1599,33 +1647,87 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
         /// </summary>
         public GraphInfo CurrentGraphInfo { get; set; }
         /// <summary>
-        /// Obsahuje změny?
+        /// Obsahuje jakékoli změny?
         /// </summary>
         public bool ContainChanges
         {
             get { return _ContainChanges; }
             protected set
             {
-                if (!_DataRefreshRunning && value && !_ContainChanges)
+                if (!_DataRefreshRunning && value)
                 {
-                    _ContainChanges = true;
-                    OnDataChanged();
+                    if (!_ContainChanges)
+                    {
+                        _ContainChanges = true;
+                        OnFirstDataChanged();
+                    }
+                    OnAnyDataChanged();
                 }
             }
         }
         private bool _ContainChanges;
+        /// <summary>
+        /// Obsahuje změny serií (přidané, odebrané, přejmenované)?
+        /// </summary>
+        public bool ContainSerieChanges
+        {
+            get { return _ContainSerieChanges; }
+            protected set
+            {
+                if (!_DataRefreshRunning && value)
+                {
+                    if (!_ContainSerieChanges)
+                    {
+                        _ContainSerieChanges = true;
+                        OnFirstSerieDataChanged();
+                    }
+                    OnAnyDataChanged();
+                }
+            }
+        }
+        private bool _ContainSerieChanges;
+        /// <summary>
+        /// true = Právě probíhá Refresh dat, v té situaci ignorujeme hlášení změn
+        /// </summary>
         private bool _DataRefreshRunning;
         /// <summary>
-        /// Je voláno po první změně, která je provedena do "čistého" objektu
+        /// Je voláno po první změně kterýchkoli dat, která je provedena do "čistého" objektu
         /// </summary>
-        protected virtual void OnDataChanged()
+        protected virtual void OnFirstDataChanged()
         {
-            DataChanged?.Invoke(this, EventArgs.Empty);
+            FirstDataChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Je voláno po první změně, která je provedena do "čistého" objektu
+        /// Je voláno po první změně kterýchkoli dat, která je provedena do "čistého" objektu
         /// </summary>
-        public event EventHandler DataChanged;
+        public event EventHandler FirstDataChanged;
+        /// <summary>
+        /// Je voláno po první změně dat serie, která je provedena do "čistého" objektu
+        /// </summary>
+        protected virtual void OnFirstSerieDataChanged()
+        {
+            FirstSerieDataChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Je voláno po první změně dat serie, která je provedena do "čistého" objektu
+        /// </summary>
+        public event EventHandler FirstSerieDataChanged;
+
+
+        /// <summary>
+        /// Je voláno po každé změně dat
+        /// </summary>
+        protected virtual void OnAnyDataChanged()
+        {
+            AnyDataChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Je voláno po každé změně dat
+        /// </summary>
+        public event EventHandler AnyDataChanged;
+
+
+
         /// <summary>
         /// Metoda je volaná po změně dat v objektu <see cref="CurrentGraphInfo"/>.
         /// Změnu dat provádí vnjší logika v procesu editace. Zdejší objekt má aktualizovat data ve svých objektech.
@@ -1638,7 +1740,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
 
             HeaderDetailRefresh();
             SeriesNewRefreshData();
-            SeriesListRefreshData(true);
+            SeriesListReloadDataFromGraph(true);
             SeriesDetailRefresh();
 
             _ContainChanges = false;
