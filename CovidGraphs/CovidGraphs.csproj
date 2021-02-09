@@ -116,6 +116,7 @@
     <Compile Include="Data\Graph.cs" />
     <Compile Include="Data\Localizers.cs" />
     <Compile Include="Data\ThreadManager.cs" />
+    <Compile Include="Forms\DxComponents.cs" />
     <Compile Include="Forms\GraphForm.cs">
       <SubType>Form</SubType>
     </Compile>

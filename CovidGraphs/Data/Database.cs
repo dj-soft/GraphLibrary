@@ -234,12 +234,12 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             this.Clear();
 
-            string appDataPath = App.AppDataPath;
-            string usrDataPath = App.ConfigPath;
+            string standardDataPath = PathData;            // Tady jsou data ukládaná docela standardně
+            string applicationDataPath = App.AppDataPath;  // Tady jsou data distribuovaná spolu s aplikací, ale sem se neukládají
 
             // 1. Standardní varianta: Struktura + Data:
-            string structureFile = SearchFile(StandardStructureFileName, usrDataPath, appDataPath);
-            string dataFile = SearchFile(StandardDataFileName, usrDataPath, appDataPath);
+            string structureFile = SearchFile(StandardStructureFileName, standardDataPath, applicationDataPath);
+            string dataFile = SearchFile(StandardDataFileName, standardDataPath, applicationDataPath);
             if (structureFile != null && dataFile != null)
             {
                 Load(structureFile, progress);
@@ -248,37 +248,48 @@ namespace Djs.Tools.CovidGraphs.Data
             }
 
             // 2. Záložní varianta: DataPack (vše v jednom), typicky první poinstalační spuštění:
-            string dataPackFile = SearchFile(StandardDataPackFileName, usrDataPath, appDataPath);
+            string dataPackFile = SearchFile(StandardDataPackFileName, standardDataPath, applicationDataPath);
             if (dataPackFile != null)
             {
                 Load(dataPackFile, progress);
-                _SaveStandardData(FileContentType.Structure, true, progress);
-                _SaveStandardData(FileContentType.Data, true, progress);
+                _SaveStandardDataSet(progress);
                 return;
             }
 
             // 3. Z plných webových dat (počet obyvatel + první verze Obce, obsahující kompletní strukturu):
-            string pocetFile = SearchFile(StandardWebPocetFileName, usrDataPath, appDataPath);
-            string webObce1File = SearchFile(StandardWebObce1FileName, usrDataPath, appDataPath);
+            string pocetFile = SearchFile(StandardWebPocetFileName, standardDataPath, applicationDataPath);
+            string webObce1File = SearchFile(StandardWebObce1FileName, standardDataPath, applicationDataPath);
             if (dataPackFile != null && webObce1File != null)
             {
                 Load(pocetFile, progress);
                 Load(webObce1File, progress);
-                _SaveStandardData(FileContentType.Structure, true, progress);
-                _SaveStandardData(FileContentType.Data, true, progress);
+                _SaveStandardDataSet(progress);
                 return;
             }
 
             // 4. Z kombinovaných dat (struktura obcí + druhá verze Obce, obsahující NE-kompletní strukturu):
-            string webObce2File = SearchFile(StandardWebObce2FileName, usrDataPath, appDataPath);
+            string webObce2File = SearchFile(StandardWebObce2FileName, standardDataPath, applicationDataPath);
             if (structureFile != null && webObce2File != null)
             {
                 Load(structureFile, progress);
                 Load(webObce2File, progress);
-                _SaveStandardData(FileContentType.Structure, true, progress);
-                _SaveStandardData(FileContentType.Data, true, progress);
+                _SaveStandardDataSet(progress);
                 return;
             }
+        }
+        /// <summary>
+        /// Uloží standardní data set = Structure + Data
+        /// </summary>
+        /// <param name="progress"></param>
+        private void _SaveStandardDataSet(Action<ProgressArgs> progress = null)
+        {
+            SaveDataArgs saveArgs = new SaveDataArgs() { Packed = SaveFormat.Pack, BackupOldFileMode = BackupMode.OneForDay, Progress = progress };
+
+            saveArgs.ContentType = FileContentType.Structure;
+            _SaveStandardData(saveArgs);
+
+            saveArgs.ContentType = FileContentType.Data;
+            _SaveStandardData(saveArgs);
         }
         /// <summary>
         /// Zajistí aktualizaci dat z internetu, pokud je vhodná
@@ -809,31 +820,39 @@ namespace Djs.Tools.CovidGraphs.Data
         private void _WebUpdateCompletedProcessData(byte[] content, Action<ProgressArgs> progress = null)
         {
             this.Load(content, progress);
-            this.SaveStandardData(false, progress);
+            this.SaveStandardData(false, true, progress);
         }
         #endregion
         #region Save : ukládání do interního formátu
-        public void SaveStandardData(bool withStructure, Action<ProgressArgs> progress = null)
+        public void SaveStandardData(bool withStructure, bool backupData, Action<ProgressArgs> progress = null)
         {
             State = StateType.SavingFile;
+            SaveDataArgs args = new SaveDataArgs() { Packed = SaveFormat.Pack, Progress = progress };
             if (withStructure)
-                App.TryRun(() => _SaveStandardData(FileContentType.Structure, true, progress));
-            App.TryRun(() => _SaveStandardData(FileContentType.Data, true, progress));
+            {
+                args.ContentType = FileContentType.Structure;
+                App.TryRun(() => _SaveStandardData(args));
+            }
+            args.ContentType = FileContentType.Data;
+            App.TryRun(() => _SaveStandardData(args));
             State = StateType.Ready;
         }
         public void SaveDataPackData(Action<ProgressArgs> progress = null)
         {
-            App.TryRun(() => _SaveStandardData(FileContentType.DataPack, true, progress));
+            SaveDataArgs args = new SaveDataArgs() { ContentType = FileContentType.DataPack, Packed = SaveFormat.Pack, Progress = progress };
+            App.TryRun(() => _SaveStandardData(args));
         }
-        private void _SaveStandardData(FileContentType contentType, bool packed, Action<ProgressArgs> progress = null)
+        private void _SaveStandardData(SaveDataArgs args)
         {
-            string file = GetSaveFileName(contentType, packed);
-            _Save(file, contentType, progress);
+            string file = GetSaveFileName(args);
+            _Save(file, args);
         }
-        protected string GetSaveFileName(FileContentType contentType, bool packed)
+        protected string GetSaveFileName(SaveDataArgs args)
         {
+            if (!String.IsNullOrEmpty(args.FileName)) return args.FileName;
+
             string name = null;
-            switch (contentType)
+            switch (args.ContentType)
             {
                 case FileContentType.Structure:
                     name = StandardStructureFileName;
@@ -845,11 +864,14 @@ namespace Djs.Tools.CovidGraphs.Data
                     name = StandardDataPackFileName;
                     break;
                 default:
-                    throw new ArgumentException($"Nelze uložit data typu: {contentType}.");
+                    throw new ArgumentException($"Nelze uložit data typu: {args.ContentType}.");
             }
-            if (packed)
+            if (args.Packed == SaveFormat.Pack)
                 name = IO.Path.ChangeExtension(name, StandardPackExtension);
-            return IO.Path.Combine(DataPathLocal, name);
+            else if (args.Packed == SaveFormat.Zip)
+                name = IO.Path.ChangeExtension(name, ".zip");
+            string fullName = IO.Path.Combine(PathData, name);
+            return fullName;
         }
         /// <summary>
         /// Uloží data do souboru v interním formátu
@@ -858,18 +880,30 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="progress"></param>
         public void Save(string file, FileContentType contentType, Action<ProgressArgs> progress = null)
         {
-            App.TryRun(() => _Save(file, contentType, progress));
+            SaveDataArgs args = new SaveDataArgs() { ContentType = contentType, Progress = progress };
+            App.TryRun(() => _Save(file, args));
         }
-        private void _Save(string file, FileContentType contentType, Action<ProgressArgs> progress = null)
+        /// <summary>
+        /// Zajistí uložení dat dle požadavku. Zajistí i zálohování stávajícího souboru.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="args"></param>
+        private void _Save(string file, SaveDataArgs args)
         {
+            FileContentType contentType = args.ContentType;
             if (!(contentType == FileContentType.Structure || contentType == FileContentType.Data || contentType == FileContentType.DataPack))
                 throw new ArgumentException($"Databáze může ukládat pouze data typu {FileContentType.Structure}, {FileContentType.Data} nebo {FileContentType.DataPack}. Nelze uložit data typu {contentType}.");
+
+            string path = IO.Path.GetDirectoryName(file);
+            if (!System.IO.Directory.Exists(path)) System.IO.Directory.CreateDirectory(path);
+
+            _SaveBackup(file, args);
 
             lock (this.InterLock)
             {
                 State = StateType.SavingFile;
                 ProcessFileInfo saveInfo = new ProcessFileInfo(file);
-                saveInfo.ProgressAction = progress;
+                saveInfo.ProgressAction = args.Progress;
                 saveInfo.ContentType = contentType;
                 saveInfo.ProcessState = ProcessFileState.Saving;
                 using (var stream = new DZipFileWriter(file, CompressMode.ByName))
@@ -881,6 +915,42 @@ namespace Djs.Tools.CovidGraphs.Data
                 this.StoreProcessFileResults(saveInfo);
                 _CallProgress(saveInfo, force: true, isDone: true);
                 State = StateType.Ready;
+            }
+        }
+        /// <summary>
+        /// Zajistí zálohování existujícího souboru daného jména podle požadavku.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="args"></param>
+        private void _SaveBackup(string fileName, SaveDataArgs args)
+        {
+            var mode = args.BackupOldFileMode;
+            if (mode == BackupMode.None || mode == BackupMode.Overwrite) return;
+
+            IO.FileInfo fileInfo = new IO.FileInfo(fileName);
+            if (!fileInfo.Exists) return;
+
+            string path = PathBackup;
+            string name = IO.Path.GetFileNameWithoutExtension(fileName);
+            string extension = IO.Path.GetExtension(fileName);
+
+            string backupName = null;
+            switch (mode)
+            {
+                case BackupMode.OneForDay:
+                    backupName = IO.Path.Combine(path, name + "_" + fileInfo.LastWriteTime.ToString("yyyyMMdd") + extension);
+                    break;
+                case BackupMode.AllFiles:
+                    backupName = IO.Path.Combine(path, name + "_" + fileInfo.LastWriteTime.ToString("yyyyMMdd-HHmm") + extension);
+                    break;
+            }
+            if (backupName != null)
+            {
+                if (!System.IO.Directory.Exists(path)) System.IO.Directory.CreateDirectory(path);
+                IO.FileInfo backupFile = new IO.FileInfo(backupName);
+                if (backupFile.Exists)
+                    backupFile.Delete();
+                IO.File.Move(fileName, backupName);
             }
         }
         /// <summary>
@@ -923,6 +993,60 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
             }
         }
+        /// <summary>
+        /// Data pro ukládání souboru
+        /// </summary>
+        public class SaveDataArgs
+        {
+            /// <summary>
+            /// Konstruktor. Nastaví <see cref="Packed"/> = <see cref="SaveFormat.Pack"/>; a <see cref="BackupOldFileMode"/> = <see cref="BackupMode.OneForDay"/>.
+            /// </summary>
+            public SaveDataArgs()
+            {
+                Packed = SaveFormat.Pack;
+                BackupOldFileMode = BackupMode.OneForDay;
+            }
+            /// <summary>
+            /// Druh ukládaných dat
+            /// </summary>
+            public FileContentType ContentType { get; set; }
+            /// <summary>
+            /// Explicitní jméno souboru, default = null = odvodí se podle <see cref="ContentType"/>
+            /// </summary>
+            public string FileName { get; set; }
+            /// <summary>
+            /// Jak zálohovat existující soubor (přejmenovat starší před tím, než se uloží nový)
+            /// </summary>
+            public BackupMode BackupOldFileMode { get; set; }
+            /// <summary>
+            /// Režim formátu a komprimace
+            /// </summary>
+            public SaveFormat Packed { get; set; }
+            public Action<ProgressArgs> Progress { get; set; }
+        }
+        /// <summary>
+        /// Režim zálohování při ukládání
+        /// </summary>
+        public enum BackupMode
+        {
+            /// <summary>
+            /// Nezadáno, použije se <see cref="Overwrite"/>
+            /// </summary>
+            None,
+            /// <summary>
+            /// Vždy přepsat starší soubor
+            /// </summary>
+            Overwrite,
+            /// <summary>
+            /// Zachovat jeden soubor za jeden den: pokud cílový soubor existuje, pak zajistíme že dostane suffix podle jeho dne
+            /// </summary>
+            OneForDay,
+            /// <summary>
+            /// Vždy zálohovat (i více souborů za jeden den)
+            /// </summary>
+            AllFiles
+        }
+        public enum SaveFormat { Csv, Pack, Zip }
         #endregion
         #region Privátní podpora: adresáře, jména standardních souborů, hlavičkové konstanty v souborech, konverzní metody
         /// <summary>
@@ -971,14 +1095,13 @@ namespace Djs.Tools.CovidGraphs.Data
             return processState;
         }
         /// <summary>
-        /// Adresář pro data u aplikace = nezapisovat!
+        /// Adresář pro standardní načítání a ukládání pracovních dat
         /// </summary>
-        protected static string DataPathApp { get { return IO.Path.Combine(App.AppPath, "Data"); } }
+        protected static string PathData { get { return IO.Path.Combine(App.ConfigPath, "Data"); } }
         /// <summary>
-        /// Adresář pro data pracovaní, zde možno zapisovat
+        /// Adresář pro zálohování dat
         /// </summary>
-        protected static string DataPathLocal { get { return App.ConfigPath; } }
-
+        protected static string PathBackup { get { return IO.Path.Combine(App.ConfigPath, "Backup"); } }
         protected const string StandardStructureFileName = "Structure.db";
         protected const string StandardDataFileName = "Data.db";
         protected const string StandardDataPackFileName = "DataPack.db";

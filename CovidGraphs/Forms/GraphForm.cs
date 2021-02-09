@@ -14,7 +14,7 @@ using DXE = DevExpress.XtraEditors;
 using DXT = DevExpress.XtraTab;
 using DXG = DevExpress.XtraGrid;
 using DC = DevExpress.XtraCharts;
-using DevExpress.XtraBars.Ribbon;
+// using DevExpress.XtraBars.Ribbon;
 
 using Djs.Tools.CovidGraphs.Data;
 
@@ -125,7 +125,7 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void InitFrames()
         {
-            _MainSplitContainer = new DXE.SplitContainerControl()
+            _MainSplitContainer = new DxSplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel2,
                 Horizontal = true,
@@ -334,7 +334,7 @@ namespace Djs.Tools.CovidGraphs
             };
             _MainSplitContainer.Panel2.Controls.Add(_ChartControl);
         }
-        DXE.SplitContainerControl _MainSplitContainer;
+        DxSplitContainerControl _MainSplitContainer;
         DXE.PanelControl _ButtonPanel;
         private DXE.SimpleButton _ButtonSave;
         private DXE.SimpleButton _ButtonSaveAs;
@@ -519,7 +519,7 @@ namespace Djs.Tools.CovidGraphs
         private WF.Control CreateControlForFrames()
         {
             // Main SplitContainer, dva panely nad sebou:
-            _GraphSplitContainer = new DXE.SplitContainerControl()
+            _GraphSplitContainer = new DxSplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel1,
                 Horizontal = false,
@@ -547,7 +547,7 @@ namespace Djs.Tools.CovidGraphs
             _GraphSplitContainer.Panel1.Controls.Add(_TabContainer);
 
             // Dolní panel Main SplitContaineru obsadí sekundární SplitContainer, obsahující nahoře v Panel1 = Grid (Seznam položek), a v Panel2 = Detail jedné položky:
-            _SeriesSplitContainer = new DXE.SplitContainerControl()
+            _SeriesSplitContainer = new DxSplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel2,
                 IsSplitterFixed = true,
@@ -570,11 +570,11 @@ namespace Djs.Tools.CovidGraphs
             Size size = this.ClientSize;
             _TabContainer.Bounds = new Rectangle(0, 0, size.Width, size.Height);
         }
-        DXE.SplitContainerControl _GraphSplitContainer;
+        DxSplitContainerControl _GraphSplitContainer;
         DXT.XtraTabControl _TabContainer;
         DXT.XtraTabPage _TabPage1;
         DXT.XtraTabPage _TabPage2;
-        DXE.SplitContainerControl _SeriesSplitContainer;
+        DxSplitContainerControl _SeriesSplitContainer;
         WF.Control _GraphHeaderDetailHost { get { return _TabPage1; } }
         WF.Control _GraphSeriesNewHost { get { return _TabPage2; } }
         WF.Control _GraphSeriesListHost { get { return _SeriesSplitContainer.Panel1; } }
@@ -587,24 +587,24 @@ namespace Djs.Tools.CovidGraphs
             _HeaderDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
             int y = DetailYFirst;
-            _HeaderDetailTitleLabel = CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, "Název celého grafu");
-            _HeaderDetailDescriptionLabel = CreateDxeLabel(DetailXLabel + 390, ref y, 320, _HeaderDetailPanel, "Detailní popisek obsahu grafu", shiftY: true);
+            _HeaderDetailTitleLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, "Název celého grafu");
+            _HeaderDetailDescriptionLabel = DxComponent.CreateDxeLabel(DetailXLabel + 390, ref y, 320, _HeaderDetailPanel, "Detailní popisek obsahu grafu", shiftY: true);
 
-            _HeaderDetailTitleText = CreateDxeTextEdit(DetailXText, ref y, 375, _HeaderDetailPanel, _HeaderValueChanged);
-            _HeaderDetailDescriptionText = CreateDxeMemoEdit(DetailXText + 390, ref y, 375, 135, _HeaderDetailPanel, _HeaderValueChanged);
+            _HeaderDetailTitleText = DxComponent.CreateDxeTextEdit(DetailXText, ref y, 375, _HeaderDetailPanel, _HeaderValueChanged);
+            _HeaderDetailDescriptionText = DxComponent.CreateDxeMemoEdit(DetailXText + 390, ref y, 375, 135, _HeaderDetailPanel, _HeaderValueChanged);
             y = _HeaderDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
-            _HeaderDetailTimeTypeLabel = CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, Text = "Časové omezení dat grafu", shiftY: true);
-            _HeaderDetailTimeTypeCombo = CreateDxeImageComboBox(DetailXText, ref y, 200, _HeaderDetailPanel, _HeaderDetailTimeTypeCombo_SelectedIndexChanged, "Bez omezení\tPosledních několik měsíců\tPosledních několik dnů\tPřesně daný interval Od-Do");
+            _HeaderDetailTimeTypeLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, Text = "Časové omezení dat grafu", shiftY: true);
+            _HeaderDetailTimeTypeCombo = DxComponent.CreateDxeImageComboBox(DetailXText, ref y, 200, _HeaderDetailPanel, _HeaderDetailTimeTypeCombo_SelectedIndexChanged, "Bez omezení\tPosledních několik měsíců\tPosledních několik dnů\tPřesně daný interval Od-Do");
 
-            _HeaderDetailTimeLastMonthsText = CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 120m, 1m, "##0", DXE.Controls.SpinStyles.Vertical, visible: false);
-            _HeaderDetailTimeLastDaysText = CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 3650m, 7m, "# ##0", DXE.Controls.SpinStyles.Vertical, visible: false);
-            _HeaderDetailTimeRangeBeginText = CreateDxeTextEdit(DetailXText + 210, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false);
-            _HeaderDetailTimeRangeEndText = CreateDxeTextEdit(DetailXText + 295, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false, shiftY: true);
+            _HeaderDetailTimeLastMonthsText = DxComponent.CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 120m, 1m, "##0", DXE.Controls.SpinStyles.Vertical, visible: false);
+            _HeaderDetailTimeLastDaysText = DxComponent.CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 3650m, 7m, "# ##0", DXE.Controls.SpinStyles.Vertical, visible: false);
+            _HeaderDetailTimeRangeBeginText = DxComponent.CreateDxeTextEdit(DetailXText + 210, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false);
+            _HeaderDetailTimeRangeEndText = DxComponent.CreateDxeTextEdit(DetailXText + 295, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false, shiftY: true);
 
-            _HeaderDetailTimeStripesCheck = CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Zobrazovat význačné časové intervaly", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
-            _HeaderDetailTimeZoomCheck = CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Povolit zoom na časové ose", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
-            _HeaderDetailAxisOnRightCheck = CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Svislá osa vpravo", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailTimeStripesCheck = DxComponent.CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Zobrazovat význačné časové intervaly", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailTimeZoomCheck = DxComponent.CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Povolit zoom na časové ose", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailAxisOnRightCheck = DxComponent.CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Svislá osa vpravo", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
 
             return _HeaderDetailPanel;
         }
@@ -756,27 +756,23 @@ namespace Djs.Tools.CovidGraphs
         #region Seznam s obcemi = zdroj entit (Text + List)
         private WF.Control CreateControlForEntities()
         {
-            _EntityPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
-            this.Controls.Add(_EntityPanel);
+            int y = 0;
+            _EntityPanel = DxComponent.CreateDxePanel(this, dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
+            _EntitySearchLabel = DxComponent.CreateDxeLabel(0, ref y, 250, _EntityPanel, "Vyhledat obec:", DxComponent.LabelStyleType.Title);
 
-            _EntitySearchLabel = new DXE.LabelControl() { Text = "Vyhledat obec:" };
-            _EntitySearchLabel.StyleController = _TitleStyle;
-            _EntityPanel.Controls.Add(_EntitySearchLabel);
-
-            _EntitySearchText = new DXE.TextEdit() { EnterMoveNextControl = true };
-            _EntitySearchText.SuperTip = new DevExpress.Utils.SuperToolTip();
-            _EntitySearchText.SuperTip.Items.AddTitle("Vyhledat obec:");
-            _EntitySearchText.SuperTip.Items.Add(@"Zadejte počátek názvu, budou nabídnuty všechny obce s tímto začátkem.
+            _EntitySearchText = new DxTextEdit() { EnterMoveNextControl = true };
+            _EntitySearchText.SetToolTip("Vyhledat obec:", @"Zadejte počátek názvu, budou nabídnuty všechny obce s tímto začátkem.
 Zadejte hvězdičku a část názvu, budou nalezeny všechny obce obsahující ve jménu daný text.
 Zadejte na začátek textu výraz kraj: (nebo okres: nebo město: nebo obec:), a budou vypsány pouze odpovídající jednotky.
 Po zadání tohoto prefixu nemusíte psát další text, budou vypsány všechny kraje (okresy, města, obce).
 
 Následně si vyberete pouze patřičné obce ze seznamu.");
+
             _EntitySearchText.KeyUp += _EntitySearchText_KeyUp;
             _EntityPanel.Controls.Add(_EntitySearchText);
             _EntityLastSearchText = "";
 
-            _EntityListBox = new DXE.ListBoxControl()
+            _EntityListBox = new DxListBoxControl()
             {
                 Bounds = new Rectangle(3, 50, 240, 300),
                 MultiColumn = false,
@@ -796,6 +792,22 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             this._EntityPanel.SizeChanged += _EntityPanel_SizeChanged;
 
             return _EntityPanel;
+        }
+        private void _EntityPanelLayout()
+        {
+            if (_EntityListBox == null) return;
+
+            int mx = DxComponent.DetailXMargin;
+            int my = DxComponent.DetailYMargin;
+            int sy = DxComponent.DetailYSpaceLabel;
+            int ty = DxComponent.DetailYSpaceText;
+            Size size = _EntityPanel.ClientSize;
+            int inpWidth = size.Width - mx - mx;
+            _EntitySearchLabel.Bounds = new Rectangle(mx, my, inpWidth, 20);
+            _EntitySearchText.Bounds = new Rectangle(mx, _EntitySearchLabel.Bounds.Bottom + ty, inpWidth, 25);
+            int inpBottom = _EntitySearchText.Bounds.Bottom;
+
+            _EntityListBox.Bounds = new Rectangle(mx, inpBottom + sy, size.Width - mx - mx, size.Height - my - inpBottom - sy);
         }
         /// <summary>
         /// V rámci Refreshe dat (=načtení z dat do GUI) zobrazíme ty entity, které jsou ve stávajícím grafu obsaženy
@@ -830,22 +842,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             else
                 EntitySearchRun();
         }
-        private void _EntityPanelLayout()
-        {
-            if (_EntityListBox == null) return;
-
-            int mx = 3;
-            int my = 3;
-            int sy = 2;
-            int ty = 4;
-            Size size = _EntityPanel.ClientSize;
-            int inpWidth = size.Width - mx - mx;
-            _EntitySearchLabel.Bounds = new Rectangle(mx, my, inpWidth, 20);
-            _EntitySearchText.Bounds = new Rectangle(mx, _EntitySearchLabel.Bounds.Bottom + ty, inpWidth, 25);
-            int inpBottom = _EntitySearchText.Bounds.Bottom;
-
-            _EntityListBox.Bounds = new Rectangle(mx, inpBottom + sy, size.Width - mx - mx, size.Height - my - inpBottom - sy);
-        }
+       
         private void EntitySearchRun()
         {
             if (this.Database == null) return;
@@ -873,24 +870,23 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             }
         }
         private string _EntityLastSearchText;
-        private DXE.PanelControl _EntityPanel;
-        private DXE.LabelControl _EntitySearchLabel;
-        private DXE.TextEdit _EntitySearchText;
-        private DXE.ListBoxControl _EntityListBox;
+        private DxPanelControl _EntityPanel;
+        private DxLabelControl _EntitySearchLabel;
+        private DxTextEdit _EntitySearchText;
+        private DxListBoxControl _EntityListBox;
         #endregion
         #region Seznam s datovými typy = zdroj dat (List + Info)
         private WF.Control CreateControlForValueTypes()
         {
-            _ValueTypePanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            int y = 0;
+            _ValueTypePanel = DxComponent.CreateDxePanel(dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
             _ValueTypePanel.SizeChanged += _ValueTypePanel_SizeChanged;
 
-            _ValueTypeLabel = new DXE.LabelControl() { Text = "Označte jeden nebo více typů dat:", BorderStyle = DXE.Controls.BorderStyles.NoBorder };
-            _ValueTypeLabel.StyleController = _TitleStyle;
-            _ValueTypePanel.Controls.Add(_ValueTypeLabel);
+            _ValueTypeLabel = DxComponent.CreateDxeLabel(0, ref y, 200, _ValueTypePanel, "Označte jeden nebo více typů dat:", DxComponent.LabelStyleType.Title);
 
             _ValueTypeInfos = DataValueTypeInfo.CreateAll();
 
-            _ValueTypeListBox = new DXE.ListBoxControl()
+            _ValueTypeListBox = new DxListBoxControl()
             {
                 MultiColumn = false,
                 SelectionMode = SelectionMode.MultiExtended,
@@ -957,11 +953,11 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
             if (_ValueTypeInfo == null) return;
 
             Size size = _ValueTypePanel.ClientSize;
-            int mx = 3;
-            int my = 3;
-            int sx = 2;
-            int sy = 2;
-            int ty = 4;
+            int mx = DxComponent.DetailXMargin;
+            int my = DxComponent.DetailYMargin;
+            // int sx = 2;
+            int sy = DxComponent.DetailYSpaceText;
+            int ty = DxComponent.DetailYSpaceText;
             int x = mx;
             int w = size.Width - mx - mx;
 
@@ -977,7 +973,7 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         }
         private DXE.PanelControl _ValueTypePanel;
         private DXE.LabelControl _ValueTypeLabel;
-        private DXE.ListBoxControl _ValueTypeListBox;
+        private DxListBoxControl _ValueTypeListBox;
         private DXE.LabelControl _ValueTypeInfo;
         private DataValueTypeInfo[] _ValueTypeInfos;
         #endregion
@@ -1354,29 +1350,29 @@ Zrušit úpravy vzhledu?";
             _SeriesDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
             int y = DetailYFirst;
-            _SeriesDetailTitleLabel = CreateDxeLabel(DetailXLabel, ref y, 600, _SeriesDetailPanel, "Název datové řady");
-            _SeriesDetailValueInfoLabel = CreateDxeLabel(DetailXLabel + 610, ref y, 250, _SeriesDetailPanel, "Informace o datech", shiftY: true);
+            _SeriesDetailTitleLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 600, _SeriesDetailPanel, "Název datové řady");
+            _SeriesDetailValueInfoLabel = DxComponent.CreateDxeLabel(DetailXLabel + 610, ref y, 250, _SeriesDetailPanel, "Informace o datech", shiftY: true);
 
-            _SeriesDetailTitleText = CreateDxeTextEdit(DetailXLabel, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
-            _SeriesDetailValueInfoText = CreateDxeMemoEdit(DetailXLabel + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailTitleText = DxComponent.CreateDxeTextEdit(DetailXLabel, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
+            _SeriesDetailValueInfoText = DxComponent.CreateDxeMemoEdit(DetailXLabel + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
                 
             y = _SeriesDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
-            _SeriesDetailEntityLabel = CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Okres/město");
-            _SeriesDetailValueTypeLabel = CreateDxeLabel(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, "Druh zobrazených dat", shiftY: true);
+            _SeriesDetailEntityLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Okres/město");
+            _SeriesDetailValueTypeLabel = DxComponent.CreateDxeLabel(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, "Druh zobrazených dat", shiftY: true);
 
-            _SeriesDetailEntityText = CreateDxeTextEdit(DetailXLabel, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
-            _SeriesDetailValueTypeText = CreateDxeTextEdit(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailEntityText = DxComponent.CreateDxeTextEdit(DetailXLabel, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailValueTypeText = DxComponent.CreateDxeTextEdit(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
 
             y = _SeriesDetailValueTypeText.Bottom;
             _SeriesDetailValueInfoText.Height = (y - _SeriesDetailValueInfoText.Top);
             y += DetailYSpaceText;
 
-            _SeriesDetailPocetOdDoLabel = CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Výběr obcí dle počtu obyvatel OD-DO:", shiftY: true);
+            _SeriesDetailPocetOdDoLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Výběr obcí dle počtu obyvatel OD-DO:", shiftY: true);
 
 
-            _SeriesDetailPocetOdText = CreateDxeSpinEdit(DetailXLabel, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
-            _SeriesDetailPocetDoText = CreateDxeSpinEdit(DetailXLabel + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailPocetOdText = DxComponent.CreateDxeSpinEdit(DetailXLabel, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailPocetDoText = DxComponent.CreateDxeSpinEdit(DetailXLabel + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
 
 
             _GraphSeriesDetailHeight = y + 12;
@@ -1456,6 +1452,7 @@ Zrušit úpravy vzhledu?";
         DXE.SpinEdit _SeriesDetailPocetDoText;
         #endregion
         #region Generátory controlů
+        /*
         private DXE.LabelControl CreateDxeLabel(int x, ref int y, int w, Control parent, string text,
             bool? visible = null, bool shiftY = false)
         {
@@ -1565,6 +1562,8 @@ Zrušit úpravy vzhledu?";
             return checkEdit;
         }
 
+
+        */
         #endregion
         #region Správa layoutu - splittery, uložení konfigurace
         /// <summary>

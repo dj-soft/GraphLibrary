@@ -117,7 +117,7 @@ namespace Djs.Tools.CovidGraphs
         private void InitFrames()
         {
             int splitterPosition = Data.App.Config.MainSplitterPosition;
-            _MainSplitContainer = new DXE.SplitContainerControl()
+            _MainSplitContainer = new DxSplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.Panel1,
                 Horizontal = true,
@@ -161,7 +161,7 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void InitList()
         {
-            _GraphListBox = new DXE.ListBoxControl()
+            _GraphListBox = new DxListBoxControl()
             {
                 MultiColumn = false,
                 SelectionMode = SelectionMode.One,
@@ -239,8 +239,8 @@ namespace Djs.Tools.CovidGraphs
         DXB.BarStaticItem _StatusInfoTextItem;
         DXE.Repository.RepositoryItemProgressBar _StatusProgressBar;
         DXB.BarEditItem _StatusProgressEdit;
-        DXE.SplitContainerControl _MainSplitContainer;
-        DXE.ListBoxControl _GraphListBox;
+        DxSplitContainerControl _MainSplitContainer;
+        DxListBoxControl _GraphListBox;
         DevExpress.XtraCharts.ChartControl _ChartControl;
         /// <summary>
         /// Titulek okna, část Aplikace
@@ -508,7 +508,7 @@ namespace Djs.Tools.CovidGraphs
             if (!this._Database.IsReady)
                 throw new InvalidOperationException("Nelze uložit databázi, dosud není připravena. Počkejte několik sekund...");
 
-            this._Database.SaveStandardData(true, DatabaseShowProgress);
+            this._Database.SaveStandardData(true, true, DatabaseShowProgress);
             this._Database.SaveDataPackData(DatabaseShowProgress);
         }
         /// <summary>

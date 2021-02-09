@@ -161,17 +161,20 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             else
             {   // Hledat ve standardní cestě:
-                dirInfo = new DirectoryInfo(App.ConfigPath);
+                dirInfo = new DirectoryInfo(PathData);               // Tady jsou grafy ukládané docela standardně
                 if (dirInfo.Exists)
                     fileInfos = dirInfo.GetFiles(pattern);
 
-                // Hledat ve aplikační cestě:
+                // Hledat v aplikační cestě:
                 if (fileInfos == null || fileInfos.Length == 0)
                 {
-                    dirInfo = new DirectoryInfo(App.AppDataPath);
+                    dirInfo = new DirectoryInfo(App.AppDataPath);    // Tady jsou grafy distribuované spolu s aplikací, ale sem se neukládají
                     if (dirInfo.Exists)
                         fileInfos = dirInfo.GetFiles(pattern);
                 }
+
+                // Vygenerovat výchozí grafy standardně z kódu pomocí deserializace:
+#warning Vygenerovat výchozí grafy standardně z kódu pomocí deserializace:
             }
             return fileInfos;
         }
@@ -621,9 +624,15 @@ namespace Djs.Tools.CovidGraphs.Data
                 this.Id = App.Config.GetNextGraphId();
 
             string name = "Chart" + this.Id.ToString("00000") + "-" + CreateValidFileName(this.Title, "") + "." + FileExtension;
-            string path = App.ConfigPath;
+            string path = PathData;
+            if (!System.IO.Directory.Exists(path)) System.IO.Directory.CreateDirectory(path);
             return Path.Combine(path, name);
         }
+        /// <summary>
+        /// Adresář pro standardní načítání a ukládání pracovních dat
+        /// </summary>
+        protected static string PathData { get { return System.IO.Path.Combine(App.ConfigPath, "Charts"); } }
+
         /// <summary>
         /// Metoda zajistí uložení jména souboru do this instance.
         /// Pokud dosud jméno existuje a je shodné, nic nedělá.
