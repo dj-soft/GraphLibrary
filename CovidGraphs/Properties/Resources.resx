@@ -127,6 +127,99 @@
   <data name="applications_internet_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\applications-internet_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="book_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_add_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-add_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_delete_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-delete_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_edit_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-edit_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_go_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-go_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_key_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-key_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_link_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\book-link_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bug_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\bug_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bug_add_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\bug-add_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bug_delete_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\bug-delete_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bug_edit_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\bug-edit_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bug_go_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\bug-go_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bug_link_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\bug-link_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="code_class_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\code-class_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer_add_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\computer-add_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer_delete_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\computer-delete_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer_edit_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\computer-edit_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer_go_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\computer-go_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer_key_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\computer-key_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer_link_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\computer-link_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_add_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_add_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_add_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_add-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_comit_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_comit_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_comit_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_comit-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_remove_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_remove_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_remove_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_remove-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_status_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_status_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_status_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_status-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_update_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_update_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_update_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\db_update-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="document_close_4_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\document-close-4_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -144,6 +237,21 @@
   </data>
   <data name="download_3_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\download-3_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_black_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\flag-black_22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_blue_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\flag-blue_22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_green_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\flag-green_22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_red_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\flag-red_22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_yellow_22" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\flag-yellow_22.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="journal_new_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\journal-new_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

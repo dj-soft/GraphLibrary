@@ -225,6 +225,10 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             return String.Format(text5plus, count);
         }
+        /// <summary>
+        /// Vrací true pokud aktuálně je připojen Debugger VisualStudia, false při běhu přímo EXE souboru
+        /// </summary>
+        public static bool IsRunningInVisualStudio { get { return System.Diagnostics.Debugger.IsAttached; } }
         #endregion
         #region Logování a čas
         /// <summary>

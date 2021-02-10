@@ -13,7 +13,7 @@ namespace Djs.Tools.CovidGraphs.Data
     /// </summary>
     public class DatabaseInfo
     {
-        #region Tvorba databáze, načtení a uložení dat
+        #region Tvorba databáze, načtení a uložení dat, WebUpdate
         #region Konstruktor, základní proměnné pro data
         /// <summary>
         /// Konstruktor
@@ -46,7 +46,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Stav databáze
         /// </summary>
-        public StateType State { get; private set; }
+        public StateType State { get { return _State; } private set { _State = value; } } private StateType _State;
         /// <summary>
         /// Obsahuje true, pokud databáze je připravena k práci.
         /// Pokud bude zadána práce v době, kdy <see cref="IsReady"/> je false, bude volající akce čekat.
@@ -815,12 +815,32 @@ namespace Djs.Tools.CovidGraphs.Data
 
             // Zdejší metoda běží v Main threadu (to je dané WebClientem), ale my chceme zpracování dat provést v Background threadu, kvůli GUI:
             var content = e.Result;
-            ThreadManager.AddAction(() => _WebUpdateCompletedProcessData(content, updateInfo.ProgressAction));
+            ThreadManager.AddAction(() => _WebUpdateCompletedProcessData(content, updateInfo));
         }
-        private void _WebUpdateCompletedProcessData(byte[] content, Action<ProgressArgs> progress = null)
+        private void _WebUpdateCompletedProcessData(byte[] content, ProcessFileInfo updateInfo)
         {
-            this.Load(content, progress);
-            this.SaveStandardData(false, true, progress);
+            this.BackupContent(content, updateInfo);
+            this.Load(content, updateInfo.ProgressAction);
+            this.SaveStandardData(false, true, updateInfo.ProgressAction);
+        }
+        /// <summary>
+        /// Daný obsah uloží jako zálohu 
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="updateInfo"></param>
+        private void BackupContent(byte[] content, ProcessFileInfo updateInfo)
+        {
+            try
+            {
+                string backupName = IO.Path.Combine(PathBackup, StandardBackupdownloadFileName);
+                IO.FileInfo backupFile = new IO.FileInfo(backupName);
+                if (backupFile.Exists) backupFile.Delete();
+                using (var stream = new DZipFileWriter(backupName, CompressMode.Compress, true))
+                {
+                    stream.WriteBuffer(content);
+                }
+            }
+            catch (Exception exc) { }
         }
         #endregion
         #region Save : ukládání do interního formátu
@@ -906,7 +926,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 saveInfo.ProgressAction = args.Progress;
                 saveInfo.ContentType = contentType;
                 saveInfo.ProcessState = ProcessFileState.Saving;
-                using (var stream = new DZipFileWriter(file, CompressMode.ByName))
+                using (var stream = new DZipFileWriter(file, CompressMode.ByName, false))
                 {
                     _SaveFileHeader(saveInfo, stream);
                     _SaveFileProperties(saveInfo, stream);
@@ -1108,6 +1128,7 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const string StandardWebObce1FileName = "WebObce1.csv";
         protected const string StandardWebObce2FileName = "WebObce2.csv";
         protected const string StandardWebPocetFileName = "WebPocet.csv";
+        protected const string StandardBackupdownloadFileName = "LastDownload" + StandardPackExtension;
         protected const string StandardPackExtension = ".pack";
 
         protected const string StandardWebObce2UpdateUrl = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
@@ -1279,28 +1300,44 @@ namespace Djs.Tools.CovidGraphs.Data
 
         public class DZipFileWriter : IDisposable
         {
-            public DZipFileWriter(string file, CompressMode compressMode)
+            public DZipFileWriter(string file, CompressMode compressMode, bool isBinary)
             {
                 _IsCompress = _DetectComprimed(file, compressMode);
-                _IsMemory = false;
+                _IsBinary = isBinary;
+                _StreamMode = StreamMode.None;
                 if (_IsCompress)
                 {
-                    _FileStream = IO.File.OpenWrite(file);
-                    _ZipStream = new IO.Compression.GZipStream(_FileStream, IO.Compression.CompressionMode.Compress);
-                    _StreamWriter = new IO.StreamWriter(_ZipStream);
+                    if (isBinary)
+                    {
+                        _StreamMode = StreamMode.BinaryCompress;
+                        _FileStream = IO.File.OpenWrite(file);
+                        _ZipStream = new IO.Compression.GZipStream(_FileStream, IO.Compression.CompressionMode.Compress);
+                        _BinaryWriter = new IO.BinaryWriter(_ZipStream);
+                    }
+                    else
+                    {
+                        _StreamMode = StreamMode.TextCompress;
+                        _FileStream = IO.File.OpenWrite(file);
+                        _ZipStream = new IO.Compression.GZipStream(_FileStream, IO.Compression.CompressionMode.Compress);
+                        _StreamWriter = new IO.StreamWriter(_ZipStream);
+                    }
                 }
                 else
                 {
-                    _StreamWriter = new IO.StreamWriter(file);
+                    if (isBinary)
+                    {
+                        _StreamMode = StreamMode.BinaryPlain;
+                        _FileStream = IO.File.OpenWrite(file);
+                        _BinaryWriter = new IO.BinaryWriter(_FileStream);
+                    }
+                    else
+                    {
+                        _StreamMode = StreamMode.TextPlain;
+                        _StreamWriter = new IO.StreamWriter(file);
+                    }
                 }
             }
-            public DZipFileWriter()
-            {
-                _IsCompress = false;
-                _IsMemory = true;
-                _MemoryStream = new IO.MemoryStream();
-                _StreamWriter = new IO.StreamWriter(_MemoryStream, Encoding.UTF8);
-            }
+            protected enum StreamMode { None, TextPlain, TextCompress, BinaryPlain, BinaryCompress }
             protected bool _DetectComprimed(string file, CompressMode compressMode)
             {
                 switch (compressMode)
@@ -1315,50 +1352,84 @@ namespace Djs.Tools.CovidGraphs.Data
                 }
                 return false;
             }
-            CompressMode _CompressMode;
+            bool _IsBinary;
             bool _IsCompress;
-            bool _IsMemory;
+            StreamMode _StreamMode;
             IO.FileStream _FileStream;
             IO.Compression.GZipStream _ZipStream;
             IO.MemoryStream _MemoryStream;
             IO.StreamWriter _StreamWriter;
+            IO.BinaryWriter _BinaryWriter;
+            /// <summary>
+            /// Do tohoto streamu vepíše daný text jako nový řádek (text + EOL)
+            /// </summary>
+            /// <param name="line"></param>
+            public void WriteLine(string line)
+            {
+                if (_IsBinary)
+                    throw new InvalidOperationException("DZipFileWriter je vytvořen jako Binární, a je požadován textový zápis metodou WriteLine(string).");
+                _StreamWriter.WriteLine(line);
+            }
+            /// <summary>
+            /// Do tohoto streamu vepíše daný obsah dat
+            /// </summary>
+            /// <param name="content"></param>
+            public void WriteBuffer(byte[] content)
+            {
+                if (!_IsBinary)
+                    throw new InvalidOperationException("DZipFileWriter je vytvořen jako Textový, a je požadován binární zápis metodou WriteBuffer(byte[]).");
 
-            public void WriteLine(string line) { _StreamWriter.WriteLine(line); }
+                _BinaryWriter.Write(content);
+            }
             public void Close()
             {
-                if (_IsCompress)
+                switch (_StreamMode)
                 {
-                    _StreamWriter.Close();
-                    _ZipStream.Close();
-                    _FileStream.Close();
-                }
-                else if (_IsMemory)
-                {
-                    _StreamWriter.Close();
-                    _MemoryStream.Close();
-                }
-                else
-                {
-                    _StreamWriter.Close();
+                    case StreamMode.BinaryCompress:
+                        _BinaryWriter.Close();
+                        _ZipStream.Close();
+                        _FileStream.Close();
+                        break;
+                    case StreamMode.TextCompress:
+                        _StreamWriter.Close();
+                        _ZipStream.Close();
+                        _FileStream.Close();
+                        break;
+                    case StreamMode.BinaryPlain:
+                        _BinaryWriter.Close();
+                        _FileStream.Close();
+                        break;
+                    case StreamMode.TextPlain:
+                        _StreamWriter.Close();
+                        break;
                 }
             }
             public void Dispose()
             {
-                if (_IsCompress)
+                this.Close();
+                switch (_StreamMode)
                 {
-                    _StreamWriter.Dispose();
-                    _ZipStream.Dispose();
-                    _FileStream.Dispose();
+                    case StreamMode.BinaryCompress:
+                        _BinaryWriter.Dispose();
+                        _ZipStream.Dispose();
+                        _FileStream.Dispose();
+                        break;
+                    case StreamMode.TextCompress:
+                        _StreamWriter.Dispose();
+                        _ZipStream.Dispose();
+                        _FileStream.Dispose();
+                        break;
+                    case StreamMode.BinaryPlain:
+                        _BinaryWriter.Dispose();
+                        _FileStream.Dispose();
+                        break;
+                    case StreamMode.TextPlain:
+                        _StreamWriter.Dispose();
+                        break;
                 }
-                else if (_IsMemory)
-                {
-                    _StreamWriter.Dispose();
-                    _MemoryStream.Dispose();
-                }
-                else
-                {
-                    _StreamWriter.Dispose();
-                }
+                _StreamWriter = null;
+                _ZipStream = null;
+                _FileStream = null;
             }
         }
         /// <summary>
@@ -2890,6 +2961,18 @@ namespace Djs.Tools.CovidGraphs.Data
         public TimeSpan ProcessTime { get { return ProcessInfo.ProcessTime; } }
         public int RecordCount { get { return ProcessInfo.RecordCount; } }
         public bool IsDone { get; private set; }
+        /// <summary>
+        /// Obsahuje true tehdy, když obsah <see cref="ContentType"/> reprezentuje jakákoli data k zobrazení.
+        /// Pokud je dokončen nějaký proces v databázi
+        /// </summary>
+        public bool ContentHasData
+        {
+            get
+            {
+                var contentType = this.ContentType;
+                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2);
+            }
+        }
     }
     /// <summary>
     /// Stav zpracování souboru

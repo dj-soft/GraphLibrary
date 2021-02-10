@@ -142,27 +142,18 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         protected void InitButtons()
         {
-            var panel = new DevExpress.XtraEditors.PanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, TabStop = false, Dock = DockStyle.Bottom };
-            panel.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
-            panel.Visible = true;
-            panel.SizeChanged += _ButtonPanel_SizeChanged;
-            panel.Height = DefaultButtonPanelHeight;
-            _ButtonPanel = panel;
-            this.Controls.Add(panel);
+            int pH = DxComponent.DefaultButtonPanelHeight;
+            int bW = DxComponent.DefaultButtonWidth;
+            int bH = DxComponent.DefaultButtonHeight;
 
-            _ButtonSave = new DXE.SimpleButton() { Text = "Uložit", Size = new Size(DefaultButtonWidth, DefaultButtonHeight), Enabled = false };
-            _ButtonSave.Click += ButtonSave_Click;
-            this._ButtonPanel.Controls.Add(_ButtonSave);
-          
-            _ButtonSaveAs = new DXE.SimpleButton() { Text = "Uložit jako nový", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
-            _ButtonSaveAs.Click += ButtonSaveAs_Click;
-            this._ButtonPanel.Controls.Add(_ButtonSaveAs);
-          
-            _ButtonCancel = new DXE.SimpleButton() { Text = "Storno", Size = new Size(DefaultButtonWidth, DefaultButtonHeight) };
-            _ButtonCancel.Click += ButtonCancel_Click;
-            this._ButtonPanel.Controls.Add(_ButtonCancel);
+            _ButtonPanel = DxComponent.CreateDxPanel(this, dock: DockStyle.Bottom, borderStyles: DXE.Controls.BorderStyles.NoBorder, height: pH);
+            _ButtonPanel.SizeChanged += _ButtonPanel_SizeChanged;
+
+            int bY = 0;
+            _ButtonSave = DxComponent.CreateDxSimpleButton(0, ref bY, bW, bH, _ButtonPanel, "Uložit", ButtonSave_Click);
+            _ButtonSaveAs = DxComponent.CreateDxSimpleButton(0, ref bY, bW, bH, _ButtonPanel, "Uložit jako nový", ButtonSaveAs_Click);
+            _ButtonCancel = DxComponent.CreateDxSimpleButton(0, ref bY, bW, bH, _ButtonPanel, "Storno", ButtonCancel_Click);
             
-            // this.AcceptButton = _Button1;
             this.CancelButton = _ButtonCancel;
 
             _ButtonPanelLayout();
@@ -184,9 +175,33 @@ namespace Djs.Tools.CovidGraphs
                 _ButtonSaveAs.Visible = showSaveAsNewButton;
             }
         }
-        internal const int DefaultButtonPanelHeight = 40;
-        internal const int DefaultButtonWidth = 150;
-        internal const int DefaultButtonHeight = 31;
+        /// <summary>
+        /// Nastaví souřadnice buttonů podle rozměru panelu buttonů
+        /// </summary>
+        private void _ButtonPanelLayout()
+        {
+            if (_ButtonCancel == null) return;
+
+            Size size = _ButtonPanel.ClientSize;
+            bool showSaveAsNewButton = this._ShowSaveAsNewButton;
+
+            int bW = DxComponent.DefaultButtonWidth;
+            int bH = DxComponent.DefaultButtonHeight;
+            int margin = 12;
+            int space = 9;
+
+            int bX = size.Width - (2 * bW + space + margin);
+            if (showSaveAsNewButton) bX -= (bW + space);
+            int bY = 3;
+            _ButtonSave.Bounds = new Rectangle(bX, bY, bW, bH);
+            bX += bW + space;
+            if (showSaveAsNewButton)
+            {
+                _ButtonSaveAs.Bounds = new Rectangle(bX, bY, bW, bH);
+                bX += bW + space;
+            }
+            _ButtonCancel.Bounds = new Rectangle(bX, bY, bW, bH);
+        }
         /// <summary>
         /// Po kliknutí na "Uložit"
         /// </summary>
@@ -277,33 +292,6 @@ namespace Djs.Tools.CovidGraphs
             _ButtonPanelLayout();
         }
         /// <summary>
-        /// Nastaví souřadnice buttonů podle rozměru panelu buttonů
-        /// </summary>
-        private void _ButtonPanelLayout()
-        {
-            if (_ButtonCancel == null) return;
-
-            Size size = _ButtonPanel.ClientSize;
-            bool showSaveAsNewButton = this._ShowSaveAsNewButton;
-
-            int bW = DefaultButtonWidth;
-            int bH = DefaultButtonHeight;
-            int margin = 12;
-            int space = 9;
-
-            int bX = size.Width - (2 * bW + space + margin);
-            if (showSaveAsNewButton) bX -= (bW + space);
-            int bY = 3;
-            _ButtonSave.Bounds = new Rectangle(bX, bY, bW, bH);
-            bX += bW + space;
-            if (showSaveAsNewButton)
-            {
-                _ButtonSaveAs.Bounds = new Rectangle(bX, bY, bW, bH);
-                bX += bW + space;
-            }
-            _ButtonCancel.Bounds = new Rectangle(bX, bY, bW, bH);
-        }
-        /// <summary>
         /// Inicializace datového panelu
         /// </summary>
         protected void InitData()
@@ -334,12 +322,12 @@ namespace Djs.Tools.CovidGraphs
             };
             _MainSplitContainer.Panel2.Controls.Add(_ChartControl);
         }
-        DxSplitContainerControl _MainSplitContainer;
-        DXE.PanelControl _ButtonPanel;
-        private DXE.SimpleButton _ButtonSave;
-        private DXE.SimpleButton _ButtonSaveAs;
-        private DXE.SimpleButton _ButtonCancel;
-        GraphPanel _GraphPanel;
+        private DxSplitContainerControl _MainSplitContainer;
+        private DxPanelControl _ButtonPanel;
+        private DxSimpleButton _ButtonSave;
+        private DxSimpleButton _ButtonSaveAs;
+        private DxSimpleButton _ButtonCancel;
+        private GraphPanel _GraphPanel;
         DevExpress.XtraCharts.ChartControl _ChartControl;
         #endregion
         #region Persistence rozměrů formuláře a layoutu splitterů
@@ -584,27 +572,27 @@ namespace Djs.Tools.CovidGraphs
         #region Hlavička grafu (Panel uvnitř TabPage0, obsahuje Texty a Checkboxy)
         private WF.Control CreateControlForHeaderDetail()
         {
-            _HeaderDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            _HeaderDetailPanel = DxComponent.CreateDxPanel(null, dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
 
             int y = DetailYFirst;
-            _HeaderDetailTitleLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, "Název celého grafu");
-            _HeaderDetailDescriptionLabel = DxComponent.CreateDxeLabel(DetailXLabel + 390, ref y, 320, _HeaderDetailPanel, "Detailní popisek obsahu grafu", shiftY: true);
+            _HeaderDetailTitleLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, "Název celého grafu");
+            _HeaderDetailDescriptionLabel = DxComponent.CreateDxLabel(DetailXLabel + 390, ref y, 320, _HeaderDetailPanel, "Detailní popisek obsahu grafu", shiftY: true);
 
-            _HeaderDetailTitleText = DxComponent.CreateDxeTextEdit(DetailXText, ref y, 375, _HeaderDetailPanel, _HeaderValueChanged);
-            _HeaderDetailDescriptionText = DxComponent.CreateDxeMemoEdit(DetailXText + 390, ref y, 375, 135, _HeaderDetailPanel, _HeaderValueChanged);
+            _HeaderDetailTitleText = DxComponent.CreateDxTextEdit(DetailXText, ref y, 375, _HeaderDetailPanel, _HeaderValueChanged);
+            _HeaderDetailDescriptionText = DxComponent.CreateDxMemoEdit(DetailXText + 390, ref y, 375, 135, _HeaderDetailPanel, _HeaderValueChanged);
             y = _HeaderDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
-            _HeaderDetailTimeTypeLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, Text = "Časové omezení dat grafu", shiftY: true);
-            _HeaderDetailTimeTypeCombo = DxComponent.CreateDxeImageComboBox(DetailXText, ref y, 200, _HeaderDetailPanel, _HeaderDetailTimeTypeCombo_SelectedIndexChanged, "Bez omezení\tPosledních několik měsíců\tPosledních několik dnů\tPřesně daný interval Od-Do");
+            _HeaderDetailTimeTypeLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 320, _HeaderDetailPanel, Text = "Časové omezení dat grafu", shiftY: true);
+            _HeaderDetailTimeTypeCombo = DxComponent.CreateDxImageComboBox(DetailXText, ref y, 200, _HeaderDetailPanel, _HeaderDetailTimeTypeCombo_SelectedIndexChanged, "Bez omezení\tPosledních několik měsíců\tPosledních několik dnů\tPřesně daný interval Od-Do");
 
-            _HeaderDetailTimeLastMonthsText = DxComponent.CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 120m, 1m, "##0", DXE.Controls.SpinStyles.Vertical, visible: false);
-            _HeaderDetailTimeLastDaysText = DxComponent.CreateDxeSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 3650m, 7m, "# ##0", DXE.Controls.SpinStyles.Vertical, visible: false);
-            _HeaderDetailTimeRangeBeginText = DxComponent.CreateDxeTextEdit(DetailXText + 210, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false);
-            _HeaderDetailTimeRangeEndText = DxComponent.CreateDxeTextEdit(DetailXText + 295, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false, shiftY: true);
+            _HeaderDetailTimeLastMonthsText = DxComponent.CreateDxSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 120m, 1m, "##0", DXE.Controls.SpinStyles.Vertical, visible: false);
+            _HeaderDetailTimeLastDaysText = DxComponent.CreateDxSpinEdit(DetailXText + 210, ref y, 65, _HeaderDetailPanel, _HeaderValueChanged, 1m, 3650m, 7m, "# ##0", DXE.Controls.SpinStyles.Vertical, visible: false);
+            _HeaderDetailTimeRangeBeginText = DxComponent.CreateDxTextEdit(DetailXText + 210, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false);
+            _HeaderDetailTimeRangeEndText = DxComponent.CreateDxTextEdit(DetailXText + 295, ref y, 80, _HeaderDetailPanel, _HeaderValueChanged, maskType: DXE.Mask.MaskType.DateTimeAdvancingCaret, editMask: "d", useMaskAsDisplayFormat: true, visible: false, shiftY: true);
 
-            _HeaderDetailTimeStripesCheck = DxComponent.CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Zobrazovat význačné časové intervaly", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
-            _HeaderDetailTimeZoomCheck = DxComponent.CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Povolit zoom na časové ose", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
-            _HeaderDetailAxisOnRightCheck = DxComponent.CreateDxeCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Svislá osa vpravo", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailTimeStripesCheck = DxComponent.CreateDxCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Zobrazovat význačné časové intervaly", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailTimeZoomCheck = DxComponent.CreateDxCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Povolit zoom na časové ose", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
+            _HeaderDetailAxisOnRightCheck = DxComponent.CreateDxCheckEdit(DetailXText, ref y, 350, _HeaderDetailPanel, "Svislá osa vpravo", _HeaderValueChanged, checkBoxStyle: DXE.Controls.CheckBoxStyle.SvgToggle1, borderStyles: DXE.Controls.BorderStyles.NoBorder, shiftY: true);
 
             return _HeaderDetailPanel;
         }
@@ -697,29 +685,27 @@ namespace Djs.Tools.CovidGraphs
             if (!(editValue is T)) return null;
             return (T)editValue;
         }
-        DXE.PanelControl _HeaderDetailPanel;
-        DXE.LabelControl _HeaderDetailTitleLabel;
-        DXE.LabelControl _HeaderDetailDescriptionLabel;
-        DXE.TextEdit _HeaderDetailTitleText;
-        DXE.TextEdit _HeaderDetailDescriptionText;
-        DXE.LabelControl _HeaderDetailTimeTypeLabel;
-        DXE.ImageComboBoxEdit _HeaderDetailTimeTypeCombo;
-        DXE.SpinEdit _HeaderDetailTimeLastMonthsText;
-        DXE.SpinEdit _HeaderDetailTimeLastDaysText;
-        // DXE.TextEdit _HeaderDetailTimeLastMonthsText;
-        // DXE.TextEdit _HeaderDetailTimeLastDaysText;
-        DXE.TextEdit _HeaderDetailTimeRangeBeginText;
-        DXE.TextEdit _HeaderDetailTimeRangeEndText;
-        DXE.CheckEdit _HeaderDetailTimeStripesCheck;
-        DXE.CheckEdit _HeaderDetailTimeZoomCheck;
-        DXE.CheckEdit _HeaderDetailAxisOnRightCheck;
+        DxPanelControl _HeaderDetailPanel;
+        DxLabelControl _HeaderDetailTitleLabel;
+        DxLabelControl _HeaderDetailDescriptionLabel;
+        DxTextEdit _HeaderDetailTitleText;
+        DxMemoEdit _HeaderDetailDescriptionText;
+        DxLabelControl _HeaderDetailTimeTypeLabel;
+        DxImageComboBoxEdit _HeaderDetailTimeTypeCombo;
+        DxSpinEdit _HeaderDetailTimeLastMonthsText;
+        DxSpinEdit _HeaderDetailTimeLastDaysText;
+        DxTextEdit _HeaderDetailTimeRangeBeginText;
+        DxTextEdit _HeaderDetailTimeRangeEndText;
+        DxCheckEdit _HeaderDetailTimeStripesCheck;
+        DxCheckEdit _HeaderDetailTimeZoomCheck;
+        DxCheckEdit _HeaderDetailAxisOnRightCheck;
         #endregion
         #region Panel pro zadání nových serií (Panel uvnitř TabPage1, obsahuje Entity + ValueType)
         private WF.Control CreateControlForNewSeries()
         {
-            _SeriesNewPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            _SeriesNewPanel = DxComponent.CreateDxPanel(null, dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
 
-            _SeriesNewSplitContainer = new DXE.SplitContainerControl()
+            _SeriesNewSplitContainer = new DxSplitContainerControl()
             {
                 FixedPanel = DXE.SplitFixedPanel.None,
                 Horizontal = true,
@@ -750,46 +736,32 @@ namespace Djs.Tools.CovidGraphs
             SeriesNewEntityRefreshData();
             SeriesNewValueTypeRefreshData();
         }
-        private DXE.PanelControl _SeriesNewPanel;
-        private DXE.SplitContainerControl _SeriesNewSplitContainer;
+        private DxPanelControl _SeriesNewPanel;
+        private DxSplitContainerControl _SeriesNewSplitContainer;
         #endregion
         #region Seznam s obcemi = zdroj entit (Text + List)
         private WF.Control CreateControlForEntities()
         {
             int y = 0;
-            _EntityPanel = DxComponent.CreateDxePanel(this, dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
-            _EntitySearchLabel = DxComponent.CreateDxeLabel(0, ref y, 250, _EntityPanel, "Vyhledat obec:", DxComponent.LabelStyleType.Title);
+            _EntityPanel = DxComponent.CreateDxPanel(this, dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
+            _EntitySearchLabel = DxComponent.CreateDxLabel(0, ref y, 250, _EntityPanel, "Vyhledat obec:", LabelStyleType.Title);
 
-            _EntitySearchText = new DxTextEdit() { EnterMoveNextControl = true };
-            _EntitySearchText.SetToolTip("Vyhledat obec:", @"Zadejte počátek názvu, budou nabídnuty všechny obce s tímto začátkem.
+            string toolTipText = @"Zadejte počátek názvu, budou nabídnuty všechny obce s tímto začátkem.
 Zadejte hvězdičku a část názvu, budou nalezeny všechny obce obsahující ve jménu daný text.
 Zadejte na začátek textu výraz kraj: (nebo okres: nebo město: nebo obec:), a budou vypsány pouze odpovídající jednotky.
 Po zadání tohoto prefixu nemusíte psát další text, budou vypsány všechny kraje (okresy, města, obce).
 
-Následně si vyberete pouze patřičné obce ze seznamu.");
-
+Následně si vyberete pouze patřičné obce ze seznamu.";
+            _EntitySearchText = DxComponent.CreateDxTextEdit(0, ref y, 250, _EntityPanel, toolTipTitle: "Vyhledat obec:", toolTipText: toolTipText);
             _EntitySearchText.KeyUp += _EntitySearchText_KeyUp;
-            _EntityPanel.Controls.Add(_EntitySearchText);
-            _EntityLastSearchText = "";
 
-            _EntityListBox = new DxListBoxControl()
-            {
-                Bounds = new Rectangle(3, 50, 240, 300),
-                MultiColumn = false,
-                SelectionMode = SelectionMode.MultiExtended,
-                Dock = DockStyle.None
-            };
-            _EntityListBox.Appearance.FontSizeDelta = 1;
-            _EntityListBox.SelectedIndex = 0;
-            _EntityPanel.Controls.Add(_EntityListBox);
-
-            int fontheight = _EntityListBox.Appearance.GetFont().Height;
-            _EntityListBox.ItemAutoHeight = false;
-            _EntityListBox.ItemHeight = fontheight + 4;
+            _EntityListBox = DxComponent.CreateDxListBox(0, ref y, 240, 300, _EntityPanel, multiColumn: false, selectionMode: SelectionMode.MultiExtended, itemHeightPadding: 2, reorderByDragEnabled: true);
 
             this._EntityPanelLayout();
 
             this._EntityPanel.SizeChanged += _EntityPanel_SizeChanged;
+
+            _EntityLastSearchText = "";
 
             return _EntityPanel;
         }
@@ -878,39 +850,43 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         #region Seznam s datovými typy = zdroj dat (List + Info)
         private WF.Control CreateControlForValueTypes()
         {
-            int y = 0;
-            _ValueTypePanel = DxComponent.CreateDxePanel(dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
-            _ValueTypePanel.SizeChanged += _ValueTypePanel_SizeChanged;
-
-            _ValueTypeLabel = DxComponent.CreateDxeLabel(0, ref y, 200, _ValueTypePanel, "Označte jeden nebo více typů dat:", DxComponent.LabelStyleType.Title);
-
             _ValueTypeInfos = DataValueTypeInfo.CreateAll();
 
-            _ValueTypeListBox = new DxListBoxControl()
-            {
-                MultiColumn = false,
-                SelectionMode = SelectionMode.MultiExtended,
-                Dock = DockStyle.None
-            };
-            _ValueTypeListBox.Appearance.FontSizeDelta = 1;
-            _ValueTypeListBox.SelectedIndex = 0;
+            int y = 0;
+            _ValueTypePanel = DxComponent.CreateDxPanel(dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
+            _ValueTypePanel.SizeChanged += _ValueTypePanel_SizeChanged;
+
+            _ValueTypeLabel = DxComponent.CreateDxLabel(0, ref y, 200, _ValueTypePanel, "Označte jeden nebo více typů dat:", LabelStyleType.Title);
+            _ValueTypeListBox = DxComponent.CreateDxListBox(0, ref y, 200, 50, _ValueTypePanel, multiColumn: false, selectionMode: SelectionMode.MultiExtended, selectedIndexChanged: _ValueTypeListBox_SelectedValueChanged, itemHeightPadding: 2);
             _ValueTypeListBox.DataSource = _ValueTypeInfos;
-            _ValueTypeListBox.SelectedValueChanged += _ValueTypeListBox_SelectedValueChanged;
 
-            _ValueTypePanel.Controls.Add(_ValueTypeListBox);
-
-            int fontheight = _ValueTypeListBox.Appearance.GetFont().Height;
-            _ValueTypeListBox.ItemAutoHeight = false;
-            _ValueTypeListBox.ItemHeight = fontheight + 4;
-
-            _ValueTypeInfo = new DXE.LabelControl() { Text = "", AutoSizeMode = DXE.LabelAutoSizeMode.Vertical, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
-            _ValueTypeInfo.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
-            _ValueTypeInfo.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Near;
-            _ValueTypeInfo.Appearance.Options.UseTextOptions = true;
-            _ValueTypePanel.Controls.Add(_ValueTypeInfo);
+            _ValueTypeInfo = DxComponent.CreateDxLabel(0, ref y, 200, _ValueTypePanel, "", wordWrap: DevExpress.Utils.WordWrap.Wrap, autoSizeMode: DXE.LabelAutoSizeMode.Vertical, hAlignment: DevExpress.Utils.HorzAlignment.Near);
 
             _ValueTypeLayout();
             return _ValueTypePanel;
+        }
+        private void _ValueTypeLayout()
+        {
+            if (_ValueTypeInfo == null) return;
+
+            Size size = _ValueTypePanel.ClientSize;
+            int mx = DxComponent.DetailXMargin;
+            int my = DxComponent.DetailYMargin;
+            // int sx = 2;
+            int sy = DxComponent.DetailYSpaceText;
+            int ty = DxComponent.DetailYSpaceText;
+            int x = mx;
+            int w = size.Width - mx - mx;
+
+            int y = my;
+            _ValueTypeLabel.Bounds = new Rectangle(x, y, w, 20); y = _ValueTypeLabel.Bounds.Bottom + ty;
+
+            int ih = (int)(3f * _ValueTypeInfo.Font.GetHeight());
+            int iy = size.Height - my - ih;
+            _ValueTypeInfo.Bounds = new Rectangle(x, iy, w, ih);
+
+            int lh = iy - sy - y;
+            _ValueTypeListBox.Bounds = new Rectangle(x, y, w, lh);
         }
         /// <summary>
         /// V rámci Refreshe dat (=načtení z dat do GUI) označíme ty datové řady, které jsou ve stávajícím grafu obsaženy
@@ -948,39 +924,16 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
         {
             _ValueTypeLayout();
         }
-        private void _ValueTypeLayout()
-        {
-            if (_ValueTypeInfo == null) return;
-
-            Size size = _ValueTypePanel.ClientSize;
-            int mx = DxComponent.DetailXMargin;
-            int my = DxComponent.DetailYMargin;
-            // int sx = 2;
-            int sy = DxComponent.DetailYSpaceText;
-            int ty = DxComponent.DetailYSpaceText;
-            int x = mx;
-            int w = size.Width - mx - mx;
-
-            int y = my;
-            _ValueTypeLabel.Bounds = new Rectangle(x, y, w, 20); y = _ValueTypeLabel.Bounds.Bottom + ty;
-
-            int ih = (int)(3f * _ValueTypeInfo.Font.GetHeight());
-            int iy = size.Height - my - ih;
-            _ValueTypeInfo.Bounds = new Rectangle(x, iy, w, ih);
-
-            int lh = iy - sy - y;
-            _ValueTypeListBox.Bounds = new Rectangle(x, y, w, lh);
-        }
-        private DXE.PanelControl _ValueTypePanel;
-        private DXE.LabelControl _ValueTypeLabel;
-        private DxListBoxControl _ValueTypeListBox;
-        private DXE.LabelControl _ValueTypeInfo;
         private DataValueTypeInfo[] _ValueTypeInfos;
+        private DxPanelControl _ValueTypePanel;
+        private DxLabelControl _ValueTypeLabel;
+        private DxListBoxControl _ValueTypeListBox;
+        private DxLabelControl _ValueTypeInfo;
         #endregion
         #region Seznam existujících serií (Grid)
         private WF.Control CreateControlForSeriesList()
         {
-            _SeriesListPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            _SeriesListPanel = DxComponent.CreateDxPanel(null, dock: DockStyle.Fill, borderStyles: DXE.Controls.BorderStyles.NoBorder);
 
             SeriesListInitViewData();
 
@@ -992,19 +945,19 @@ Následně si vyberete pouze patřičné obce ze seznamu.");
 
             _SeriesListPanel.Controls.Add(_SeriesListGrid);
 
-
             _SeriesListGrid.DataSource = _SeriesListData; //  GraphSerieGridRow.GetDataGraph();
 
 
-            _SeriesListButtonPanel = new DXE.PanelControl() { Dock = DockStyle.Top, BorderStyle = DXE.Controls.BorderStyles.NoBorder, Height = GraphForm.DefaultButtonPanelHeight };
-            _SeriesListPanel.Controls.Add(_SeriesListButtonPanel);
+            int pH = DxComponent.DefaultButtonPanelHeight;
+            _SeriesListButtonPanel = DxComponent.CreateDxPanel(_SeriesListPanel, dock: DockStyle.Top, borderStyles: DXE.Controls.BorderStyles.NoBorder, height: pH);
 
-            _SeriesListAddButton = new DXE.SimpleButton() { Text = "Přidej řádky", Size = new Size(GraphForm.DefaultButtonWidth, GraphForm.DefaultButtonHeight), Location = new Point(8, 3) };
-            _SeriesListAddButton.Click += _SeriesListAddButton_Click;
-            _SeriesListButtonPanel.Controls.Add(_SeriesListAddButton);
-            _SeriesListRemoveButton = new DXE.SimpleButton() { Text = "Odeber řádky", Size = new Size(GraphForm.DefaultButtonWidth, GraphForm.DefaultButtonHeight), Location = new Point(_SeriesListAddButton.Bounds.Right + 6, 3) };
-            _SeriesListRemoveButton.Click += _SeriesListRemoveButton_Click;
-            _SeriesListButtonPanel.Controls.Add(_SeriesListRemoveButton);
+            int bX = 8;
+            int bY = 3;
+            int bW = DxComponent.DefaultButtonWidth;
+            int bH = DxComponent.DefaultButtonHeight;
+            _SeriesListAddButton = DxComponent.CreateDxSimpleButton(bX, ref bY, bW, bH, _SeriesListButtonPanel, "Přidej řádky", _SeriesListAddButton_Click);
+            bX += bW + 6;
+            _SeriesListRemoveButton = DxComponent.CreateDxSimpleButton(bX, ref bY, bW, bH, _SeriesListButtonPanel, "Odeber řádky", _SeriesListRemoveButton_Click);
 
             SeriesListReloadDataFromGraph(false);
 
@@ -1336,13 +1289,13 @@ Zrušit úpravy vzhledu?";
         /// </summary>
         private GraphSerieGridRow CurrentSerieGridRow { get { return (_SeriesListGridView.GetFocusedRow() as GraphSerieGridRow); } }
 
-        private DXE.PanelControl _SeriesListPanel;
-        private DXE.PanelControl _SeriesListButtonPanel;
+        private List<GraphSerieGridRow> _SeriesListData;
+        private DxPanelControl _SeriesListPanel;
+        private DxPanelControl _SeriesListButtonPanel;
         private DXG.Views.Grid.GridView _SeriesListGridView;
         private DXG.GridControl _SeriesListGrid;
-        private DXE.SimpleButton _SeriesListAddButton;
-        private DXE.SimpleButton _SeriesListRemoveButton;
-        private List<GraphSerieGridRow> _SeriesListData;
+        private DxSimpleButton _SeriesListAddButton;
+        private DxSimpleButton _SeriesListRemoveButton;
         #endregion
         #region Detaily jednoho řádku (Panel, obsahuje Texty a Comboboxy)
         private WF.Control CreateControlForSeriesDetail()
@@ -1350,29 +1303,29 @@ Zrušit úpravy vzhledu?";
             _SeriesDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
 
             int y = DetailYFirst;
-            _SeriesDetailTitleLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 600, _SeriesDetailPanel, "Název datové řady");
-            _SeriesDetailValueInfoLabel = DxComponent.CreateDxeLabel(DetailXLabel + 610, ref y, 250, _SeriesDetailPanel, "Informace o datech", shiftY: true);
+            _SeriesDetailTitleLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 600, _SeriesDetailPanel, "Název datové řady");
+            _SeriesDetailValueInfoLabel = DxComponent.CreateDxLabel(DetailXLabel + 610, ref y, 250, _SeriesDetailPanel, "Informace o datech", shiftY: true);
 
-            _SeriesDetailTitleText = DxComponent.CreateDxeTextEdit(DetailXLabel, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
-            _SeriesDetailValueInfoText = DxComponent.CreateDxeMemoEdit(DetailXLabel + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailTitleText = DxComponent.CreateDxTextEdit(DetailXLabel, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
+            _SeriesDetailValueInfoText = DxComponent.CreateDxMemoEdit(DetailXLabel + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
                 
             y = _SeriesDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
-            _SeriesDetailEntityLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Okres/město");
-            _SeriesDetailValueTypeLabel = DxComponent.CreateDxeLabel(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, "Druh zobrazených dat", shiftY: true);
+            _SeriesDetailEntityLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Okres/město");
+            _SeriesDetailValueTypeLabel = DxComponent.CreateDxLabel(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, "Druh zobrazených dat", shiftY: true);
 
-            _SeriesDetailEntityText = DxComponent.CreateDxeTextEdit(DetailXLabel, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
-            _SeriesDetailValueTypeText = DxComponent.CreateDxeTextEdit(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailEntityText = DxComponent.CreateDxTextEdit(DetailXLabel, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailValueTypeText = DxComponent.CreateDxTextEdit(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
 
             y = _SeriesDetailValueTypeText.Bottom;
             _SeriesDetailValueInfoText.Height = (y - _SeriesDetailValueInfoText.Top);
             y += DetailYSpaceText;
 
-            _SeriesDetailPocetOdDoLabel = DxComponent.CreateDxeLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Výběr obcí dle počtu obyvatel OD-DO:", shiftY: true);
+            _SeriesDetailPocetOdDoLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Výběr obcí dle počtu obyvatel OD-DO:", shiftY: true);
 
 
-            _SeriesDetailPocetOdText = DxComponent.CreateDxeSpinEdit(DetailXLabel, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
-            _SeriesDetailPocetDoText = DxComponent.CreateDxeSpinEdit(DetailXLabel + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailPocetOdText = DxComponent.CreateDxSpinEdit(DetailXLabel, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailPocetDoText = DxComponent.CreateDxSpinEdit(DetailXLabel + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
 
 
             _GraphSeriesDetailHeight = y + 12;

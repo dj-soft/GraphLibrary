@@ -96,6 +96,10 @@ namespace Djs.Tools.CovidGraphs
             _DetailYSpaceText = 3;
             _DetailXMargin = 6;
             _DetailYMargin = 4;
+
+            _DefaultButtonPanelHeight = 40;
+            _DefaultButtonWidth = 150;
+            _DefaultButtonHeight = 32;
         }
         /// <summary>
         /// Styl pro labely zobrazené jako <see cref="LabelStyleType.Title"/>
@@ -113,6 +117,7 @@ namespace Djs.Tools.CovidGraphs
         /// Styl pro Input prvky
         /// </summary>
         public static DXE.StyleController InputStyle { get { return Instance._InputStyle; } }
+
         public static int DetailXLabel { get { return Instance._DetailXLabel; } }
         public static int DetailXText { get { return Instance._DetailXText; } }
         public static int DetailYFirst { get { return Instance._DetailYFirst; } }
@@ -122,6 +127,9 @@ namespace Djs.Tools.CovidGraphs
         public static int DetailYSpaceText { get { return Instance._DetailYSpaceText; } }
         public static int DetailXMargin { get { return Instance._DetailXMargin; } }
         public static int DetailYMargin { get { return Instance._DetailYMargin; } }
+        public static int DefaultButtonPanelHeight { get { return Instance._DefaultButtonPanelHeight; } }
+        public static int DefaultButtonWidth { get { return Instance._DefaultButtonWidth; } }
+        public static int DefaultButtonHeight { get { return Instance._DefaultButtonHeight; } }
 
         private DXE.StyleController _TitleStyle;
         private DXE.StyleController _LabelStyle;
@@ -136,9 +144,12 @@ namespace Djs.Tools.CovidGraphs
         private int _DetailYSpaceText;
         private int _DetailXMargin;
         private int _DetailYMargin;
+        private int _DefaultButtonPanelHeight;
+        private int _DefaultButtonWidth;
+        private int _DefaultButtonHeight;
         #endregion
         #region Factory metody
-        public static DxPanelControl CreateDxePanel(Control parent = null, 
+        public static DxPanelControl CreateDxPanel(Control parent = null, 
             DockStyle? dock = null, DXE.Controls.BorderStyles? borderStyles = null,
             int? width = null, int? height = null,
             bool? visible = null)
@@ -154,19 +165,28 @@ namespace Djs.Tools.CovidGraphs
             if (visible.HasValue) panel.Visible = visible.Value;
             return panel;
         }
-        public static DxLabelControl CreateDxeLabel(int x, ref int y, int w, Control parent, string text,
-            LabelStyleType? styleType = null, bool? visible = null, bool shiftY = false)
+        public static DxLabelControl CreateDxLabel(int x, ref int y, int w, Control parent, string text,
+            LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DXE.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
+            bool? visible = null, bool shiftY = false)
         {
             var inst = Instance;
 
             var label = new DxLabelControl() { Bounds = new Rectangle(x, y, w, inst._DetailYHeightLabel), Text = text };
             label.StyleController = (styleType == LabelStyleType.Title ? inst._TitleStyle : (styleType == LabelStyleType.Info ? inst._InfoStyle : inst._LabelStyle));
+            if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
+            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
+            if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
+            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
+            if (autoSizeMode.HasValue) label.AutoSizeMode = autoSizeMode.Value;
+
             if (visible.HasValue) label.Visible = visible.Value;
+
             if (parent != null) parent.Controls.Add(label);
             if (shiftY) y = y + label.Height + inst._DetailYSpaceLabel;
+
             return label;
         }
-        public static DxTextEdit CreateDxeTextEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
+        public static DxTextEdit CreateDxTextEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
             DXE.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
@@ -190,7 +210,7 @@ namespace Djs.Tools.CovidGraphs
             if (shiftY) y = y + textEdit.Height + inst._DetailYSpaceText;
             return textEdit;
         }
-        public static DxMemoEdit CreateDxeMemoEdit(int x, ref int y, int w, int h, Control parent, EventHandler textChanged = null,
+        public static DxMemoEdit CreateDxMemoEdit(int x, ref int y, int w, int h, Control parent, EventHandler textChanged = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -204,9 +224,10 @@ namespace Djs.Tools.CovidGraphs
             if (textChanged != null) memoEdit.TextChanged += textChanged;
             if (parent != null) parent.Controls.Add(memoEdit);
             if (shiftY) y = y + memoEdit.Height + inst._DetailYSpaceText;
+
             return memoEdit;
         }
-        public static DxImageComboBoxEdit CreateDxeImageComboBox(int x, ref int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
+        public static DxImageComboBoxEdit CreateDxImageComboBox(int x, ref int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -228,7 +249,7 @@ namespace Djs.Tools.CovidGraphs
             if (shiftY) y = y + comboBox.Height + inst._DetailYSpaceText;
             return comboBox;
         }
-        public static DxSpinEdit CreateDxeSpinEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
+        public static DxSpinEdit CreateDxSpinEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
             decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DXE.Controls.SpinStyles? spinStyles = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
@@ -257,7 +278,7 @@ namespace Djs.Tools.CovidGraphs
             if (shiftY) y = y + spinEdit.Height + inst._DetailYSpaceText;
             return spinEdit;
         }
-        public static DxCheckEdit CreateDxeCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
+        public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DXE.Controls.CheckBoxStyle? checkBoxStyle = null, DXE.Controls.BorderStyles? borderStyles = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
@@ -275,22 +296,83 @@ namespace Djs.Tools.CovidGraphs
             if (checkedChanged != null) checkEdit.CheckedChanged += checkedChanged;
             if (parent != null) parent.Controls.Add(checkEdit);
             if (shiftY) y = y + checkEdit.Height + inst._DetailYSpaceText;
+
             return checkEdit;
         }
-
-
-        public static DxListBoxControl CreateDxeListBox()
+        public static DxListBoxControl CreateDxListBox(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? visible = null, bool? tabStop = null)
         {
-            return new DxListBoxControl();
+            int y = 0;
+            int w = width ?? 0;
+            int h = height ?? 0;
+            return CreateDxListBox(0, ref y, w, h, parent, selectedIndexChanged,
+                multiColumn, selectionMode, itemHeightPadding, reorderByDragEnabled,
+                dock, visible, tabStop, false);
         }
+        public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            DockStyle? dock = null, bool? visible = null, bool? tabStop = null, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            DxListBoxControl listBox = new DxListBoxControl() { Bounds = new Rectangle(x, y, w, h) };
+            listBox.StyleController = inst._InputStyle;
+            if (dock.HasValue) listBox.Dock = dock.Value;
+            if (multiColumn.HasValue) listBox.MultiColumn = multiColumn.Value;
+            if (selectionMode.HasValue) listBox.SelectionMode = selectionMode.Value;
+            if (itemHeightPadding.HasValue) listBox.ItemHeightPadding = itemHeightPadding.Value;
+            if (reorderByDragEnabled.HasValue) listBox.ReorderByDragEnabled= reorderByDragEnabled.Value;
+            if (visible.HasValue) listBox.Visible = visible.Value;
+            if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
+
+            if (selectedIndexChanged != null) listBox.SelectedIndexChanged += selectedIndexChanged;
+            if (parent != null) parent.Controls.Add(listBox);
+            if (shiftY) y = y + listBox.Height + inst._DetailYSpaceText;
+
+            return listBox;
+        }
+        public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            var simpleButton = new DxSimpleButton() { Bounds = new Rectangle(x, y, w, h) };
+            simpleButton.StyleController = inst._InputStyle;
+            simpleButton.Text = text;
+            if (visible.HasValue) simpleButton.Visible = visible.Value;
+            if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
+
+            if (click != null) simpleButton.Click += click;
+            if (parent != null) parent.Controls.Add(simpleButton);
+            if (shiftY) y = y + simpleButton.Height + inst._DetailYSpaceText;
+
+            return simpleButton;
+        }
+
         #endregion
-        /// <summary>
-        /// Styl použitý pro Label
-        /// </summary>
-        public enum LabelStyleType { Default, Title, Info }
     }
     #endregion
-
+    #region Enumy
+    /// <summary>
+    /// Styl použitý pro Label
+    /// </summary>
+    public enum LabelStyleType
+    {
+        /// <summary>
+        /// Běžný label u jednotlivých input prvků
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Titulkový label
+        /// </summary>
+        Title,
+        /// <summary>
+        /// Dodatková informace
+        /// </summary>
+        Info
+    }
+    #endregion
     #region DxSplitContainerControl
     /// <summary>
     /// SplitContainerControl
@@ -298,8 +380,6 @@ namespace Djs.Tools.CovidGraphs
     public class DxSplitContainerControl : DXE.SplitContainerControl
     { }
     #endregion
-
-    
     #region DxPanelControl
     /// <summary>
     /// PanelControl
@@ -325,6 +405,10 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxTextEdit : DXE.TextEdit
     {
+        public DxTextEdit()
+        {
+            EnterMoveNextControl = true;
+        }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
@@ -385,11 +469,37 @@ namespace Djs.Tools.CovidGraphs
     {
         public DxListBoxControl()
         {
-            ReorderByDragEnabled = true;
+            ReorderByDragEnabled = false;
             ReorderIconColor = Color.FromArgb(192, 116, 116, 96);
             ReorderIconColorHot = Color.FromArgb(220, 160, 160, 122);
         }
-
+        /// <summary>
+        /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
+        /// Hodnota 0 a záporná: bude nastaveno <see cref="DXE.BaseListBoxControl.ItemAutoHeight"/> = true.
+        /// Kladná hodnota přidá daný počet pixelů nad a pod text = zvýší výšku řádku o 2x <see cref="ItemHeightPadding"/>.
+        /// Hodnota vyšší než 10 se akceptuje jako 10.
+        /// </summary>
+        public int ItemHeightPadding
+        {
+            get { return _ItemHeightPadding; }
+            set
+            {
+                if (value > 0)
+                {
+                    int padding = (value > 10 ? 10 : value);
+                    int fontheight = this.Appearance.GetFont().Height;
+                    this.ItemAutoHeight = false;
+                    this.ItemHeight = fontheight + (2 * padding);
+                    _ItemHeightPadding = padding;
+                }
+                else
+                {
+                    this.ItemAutoHeight = true;
+                    _ItemHeightPadding = 0;
+                }
+            }
+        }
+        private int _ItemHeightPadding = 0;
 
         #region Overrides
         protected override void OnPaint(PaintEventArgs e)
@@ -434,29 +544,6 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         public Color ReorderIconColorHot { get; set; }
         /// <summary>
-        /// Zajistí vykreslení ikony pro ReorderByDrag a případně i přemisťovaného prvku
-        /// </summary>
-        /// <param name="e"></param>
-        private void PaintOnMouseItem(PaintEventArgs e)
-        {
-            Rectangle? iconBounds = OnMouseIconBounds;
-            if (!iconBounds.HasValue) return;
-
-            int wb = iconBounds.Value.Width;
-            int x0 = iconBounds.Value.X;
-            int yc = iconBounds.Value.Y + iconBounds.Value.Height / 2;
-            Color iconColor = (_IsMouseOverReorderIcon ? ReorderIconColorHot : ReorderIconColor);
-            float alphaRatio = OnMouseItemAlphaRatio;
-            int alpha = (int)((float)iconColor.A * alphaRatio);
-            iconColor = Color.FromArgb(alpha, iconColor);
-            using (SolidBrush brush = new SolidBrush(iconColor))
-            {
-                e.Graphics.FillRectangle(brush, x0, yc - 6, wb, 2);
-                e.Graphics.FillRectangle(brush, x0, yc - 1, wb, 2);
-                e.Graphics.FillRectangle(brush, x0, yc + 4, wb, 2);
-            }
-        }
-        /// <summary>
         /// Určí a uloží si index myšoaktivního prvku na dané absolutní souřadnici
         /// </summary>
         /// <param name="mouseAbsolutePosition"></param>
@@ -498,9 +585,37 @@ namespace Djs.Tools.CovidGraphs
 
             if (isCursorActive != _IsMouseOverReorderIcon)
             {
-                this.Cursor = (isCursorActive ? Cursors.SizeNS : Cursors.Default);
                 _IsMouseOverReorderIcon = isCursorActive;
-                this.Invalidate();                         // Překreslení => jiná barva ikony
+                if (ReorderByDragEnabled)
+                {
+                    this.Cursor = (isCursorActive ? Cursors.SizeNS : Cursors.Default);
+                    this.Invalidate();                         // Překreslení => jiná barva ikony
+                }
+            }
+        }
+        /// <summary>
+        /// Zajistí vykreslení ikony pro ReorderByDrag a případně i přemisťovaného prvku
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintOnMouseItem(PaintEventArgs e)
+        {
+            if (!ReorderByDragEnabled) return;
+
+            Rectangle? iconBounds = OnMouseIconBounds;
+            if (!iconBounds.HasValue) return;
+
+            int wb = iconBounds.Value.Width;
+            int x0 = iconBounds.Value.X;
+            int yc = iconBounds.Value.Y + iconBounds.Value.Height / 2;
+            Color iconColor = (_IsMouseOverReorderIcon ? ReorderIconColorHot : ReorderIconColor);
+            float alphaRatio = OnMouseItemAlphaRatio;
+            int alpha = (int)((float)iconColor.A * alphaRatio);
+            iconColor = Color.FromArgb(alpha, iconColor);
+            using (SolidBrush brush = new SolidBrush(iconColor))
+            {
+                e.Graphics.FillRectangle(brush, x0, yc - 6, wb, 2);
+                e.Graphics.FillRectangle(brush, x0, yc - 1, wb, 2);
+                e.Graphics.FillRectangle(brush, x0, yc + 4, wb, 2);
             }
         }
         /// <summary>
@@ -595,6 +710,14 @@ namespace Djs.Tools.CovidGraphs
         #endregion
 
 
+    }
+    #endregion
+    #region DxSimpleButton
+    /// <summary>
+    /// SimpleButton
+    /// </summary>
+    public class DxSimpleButton : DXE.SimpleButton
+    {
     }
     #endregion
 }

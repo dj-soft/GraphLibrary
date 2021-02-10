@@ -161,14 +161,11 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void InitList()
         {
-            _GraphListBox = new DxListBoxControl()
-            {
-                MultiColumn = false,
-                SelectionMode = SelectionMode.One,
-                Dock = DockStyle.Fill
-                
-            };
-            _GraphListBox.Appearance.FontSizeDelta = 1;
+            LoadGraphs();
+
+            _GraphListBox = DxComponent.CreateDxListBox(DockStyle.Fill, parent: _MainSplitContainer.Panel1, selectedIndexChanged: _GraphListBox_SelectedIndexChanged, multiColumn: false, selectionMode: SelectionMode.One, itemHeightPadding: 3, reorderByDragEnabled: true);
+            _GraphListBox.DataSource = _Graphs;
+            _GraphListBox.SelectedIndex = 0;
 
 
             // var mcx = DXE.MultiColumnListBoxCreator.CreateMultiColumnListBox();
@@ -202,19 +199,6 @@ namespace Djs.Tools.CovidGraphs
             _GraphListBox.ItemAutoHeight = true;
             _GraphListBox.ItemHeight = 50;
             */
-
-            LoadGraphs();
-
-            _GraphListBox.DataSource = _Graphs;
-
-            // _GraphListBox.Items.AddRange(_Graphs.ToArray());
-            _GraphListBox.SelectedIndex = 0;
-            _GraphListBox.SelectedIndexChanged += _GraphListBox_SelectedIndexChanged;
-            _MainSplitContainer.Panel1.Controls.Add(_GraphListBox);
-
-            int fontheight = _GraphListBox.Appearance.GetFont().Height;
-            _GraphListBox.ItemAutoHeight = false;
-            _GraphListBox.ItemHeight = fontheight + 6;
         }
         /// <summary>
         /// Po změně vybraného prvku v seznamu grafů se vyvolá načtení grafu
@@ -282,20 +266,20 @@ namespace Djs.Tools.CovidGraphs
             DXB.Ribbon.RibbonPage page0 = new DXB.Ribbon.RibbonPage("GRAF");
             this.Ribbon.Pages.Add(page0);
 
-            DXB.Ribbon.RibbonPageGroup group01 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA GRAFŮ");
+            DXB.Ribbon.RibbonPageGroup group00 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA GRAFŮ");
+            page0.Groups.Add(group00);
+
+            DXB.Ribbon.RibbonPageGroup group01 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA DAT");
             page0.Groups.Add(group01);
 
-            DXB.Ribbon.RibbonPageGroup group02 = new DXB.Ribbon.RibbonPageGroup("SPRÁVA DAT");
-            page0.Groups.Add(group02);
-
-            RibbonAddButton(group01, "Přidej", "Přidá nový graf", Properties.Resources.document_new_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickNewGraph);
-            RibbonAddButton(group01, "Uprav", "Umožní změnit datové zdroje grafu: výběr obcí, výběr dat", Properties.Resources.document_properties_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditDataGraph);
-            RibbonAddButton(group01, "Vzhled grafu", "Otevře editor vzhledu grafu", Properties.Resources.document_page_setup_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditLayoutGraph);
-            RibbonAddButton(group01, "Smaž", "Smaže aktuální graf", Properties.Resources.document_close_4_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickDeleteGraph);
-            RibbonAddButton(group02, "Aktualizuj data", "Zajistí aktualizaci dat z internetu", Properties.Resources.download_3_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickWebUpdate);
-            RibbonAddButton(group02, "Značky", "Značky jsou společné, jsou vkládány do všech grafů, označují význačné časové úseky", Properties.Resources.system_switch_user_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditStrip);
-            RibbonAddButton(group02, "Ulož", "Uloží všechna aktuální data do datových souborů (Structure, Data, i kompaktního DataPack, ten lze např odeslat mailem).", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveData);
-            RibbonAddButton(group02, "Config", "Nastavení projektu", Properties.Resources.run_build_configure_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickRunConfig);
+            RibbonAddButton(group00, "Přidej", "Přidá nový graf", Properties.Resources.document_new_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickNewGraph);
+            RibbonAddButton(group00, "Uprav", "Umožní změnit datové zdroje grafu: výběr obcí, výběr dat", Properties.Resources.document_properties_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditDataGraph);
+            RibbonAddButton(group00, "Vzhled grafu", "Otevře editor vzhledu grafu", Properties.Resources.document_page_setup_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditLayoutGraph);
+            RibbonAddButton(group00, "Smaž", "Smaže aktuální graf", Properties.Resources.document_close_4_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickDeleteGraph);
+            RibbonAddButton(group01, "Aktualizuj data", "Zajistí aktualizaci dat z internetu", Properties.Resources.download_3_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickWebUpdate);
+            RibbonAddButton(group01, "Značky", "Značky jsou společné, jsou vkládány do všech grafů, označují význačné časové úseky", Properties.Resources.system_switch_user_2_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickEditStrip);
+            RibbonAddButton(group01, "Ulož", "Uloží všechna aktuální data do datových souborů (Structure, Data, i kompaktního DataPack, ten lze např odeslat mailem).", Properties.Resources.document_save_as_6_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickSaveData);
+            RibbonAddButton(group01, "Config", "Nastavení projektu", Properties.Resources.run_build_configure_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickRunConfig);
 
 
             DXB.Ribbon.RibbonPage page1 = new DXB.Ribbon.RibbonPage("VZHLED APLIKACE");
@@ -306,6 +290,18 @@ namespace Djs.Tools.CovidGraphs
 
             group10.ItemLinks.Add(new DXB.SkinDropDownButtonItem());
             group10.ItemLinks.Add(new DXB.SkinPaletteRibbonGalleryBarItem());
+
+
+            if (App.IsRunningInVisualStudio)
+            {
+                DXB.Ribbon.RibbonPage page2 = new DXB.Ribbon.RibbonPage("JINÉ TESTY");
+                this.Ribbon.Pages.Add(page2);
+
+                DXB.Ribbon.RibbonPageGroup group20 = new DXB.Ribbon.RibbonPageGroup("KOMPONENTY");
+                page2.Groups.Add(group20);
+
+                RibbonAddButton(group20, "TreeView", "Otevře okno pro testování TreeView", Properties.Resources.code_class_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickTestTreeView);
+            }
         }
         /// <summary>
         /// Do dané grupy přidá nový button podle definice
@@ -535,7 +531,7 @@ namespace Djs.Tools.CovidGraphs
             }
             StatusInfoText = text;
 
-            if (args.IsDone && this._Database != null && args.ProcessState == Data.ProcessFileState.Loaded && (args.ContentType == Data.FileContentType.Data || args.ContentType == Data.FileContentType.DataPack))
+            if (args.IsDone && this._Database != null && args.ProcessState == Data.ProcessFileState.Loaded && args.ContentHasData)
             {
                 ShowCurrentGraph();
             }
@@ -851,6 +847,16 @@ namespace Djs.Tools.CovidGraphs
         /// Pole grafů, základ pro nabídku grafů v hlavním okně
         /// </summary>
         private List<Data.GraphInfo> _Graphs;
+        #endregion
+        #region Testy
+        private void RibbonClickTestTreeView(object sender, DXB.ItemClickEventArgs e)
+        {
+            Data.App.TryRun(TryTestTreeView);
+        }
+        private void TryTestTreeView()
+        {
+            DxTestTreeForm.Run();
+        }
         #endregion
     }
 }
