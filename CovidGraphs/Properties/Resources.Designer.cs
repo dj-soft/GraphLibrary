@@ -463,6 +463,16 @@ namespace Djs.Tools.CovidGraphs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap edit_add_4_16 {
+            get {
+                object obj = ResourceManager.GetObject("edit_add_4_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap flag_black_22 {
             get {
                 object obj = ResourceManager.GetObject("flag_black_22", resourceCulture);
@@ -513,9 +523,29 @@ namespace Djs.Tools.CovidGraphs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap hourglass_16 {
+            get {
+                object obj = ResourceManager.GetObject("hourglass_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap journal_new_32 {
             get {
                 object obj = ResourceManager.GetObject("journal_new_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap list_add_3_16 {
+            get {
+                object obj = ResourceManager.GetObject("list_add_3_16", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

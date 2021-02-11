@@ -205,6 +205,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="aeskulap.ico" />
+    <None Include="Pic\hourglass_16.png" />
+    <None Include="Pic\list-add-3_16.png" />
+    <None Include="Pic\edit-add-4_16.png" />
     <None Include="Pic\flag-yellow_22.png" />
     <None Include="Pic\flag-red_22.png" />
     <None Include="Pic\flag-green_22.png" />
