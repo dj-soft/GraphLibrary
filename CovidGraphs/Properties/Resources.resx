@@ -127,6 +127,75 @@
   <data name="applications_internet_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\applications-internet_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Ball01_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball01_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball02_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball02_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball03_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball03_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball04_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball04_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball05_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball05_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball06_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball06_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball07_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball07_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball08_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball08_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball09_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball09_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball10_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball10_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball11_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball11_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball12_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball12_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball13_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball13_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball14_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball14_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball15_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball15_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball16_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball16_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball17_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball17_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball18_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball18_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball19_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball19_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball20_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball20_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball21_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball21_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball22_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball22_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball23_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Ball23_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="book_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\book-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

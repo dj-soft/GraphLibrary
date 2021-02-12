@@ -165,6 +165,24 @@ namespace Djs.Tools.CovidGraphs
             if (visible.HasValue) panel.Visible = visible.Value;
             return panel;
         }
+        public static DxSplitContainerControl CreateDxSplitContainer(Control parent = null, EventHandler splitterPositionChanged = null, DockStyle? dock = null, 
+            Orientation splitLineOrientation = Orientation.Horizontal, DXE.SplitFixedPanel? fixedPanel = null,
+            int? splitPosition = null, DXE.SplitPanelVisibility? panelVisibility = null,
+            bool? showSplitGlyph = null, DXE.Controls.BorderStyles? borderStyles = null)
+        {
+            var inst = Instance;
+
+            var container = new DxSplitContainerControl() { Horizontal = (splitLineOrientation == Orientation.Vertical) };
+            if (parent != null) parent.Controls.Add(container);
+            if (dock.HasValue) container.Dock = dock.Value;
+            container.FixedPanel = (fixedPanel ?? DXE.SplitFixedPanel.None);
+            container.SplitterPosition = (splitPosition ?? 200);
+            container.PanelVisibility = (panelVisibility ?? DXE.SplitPanelVisibility.Both);
+            if (borderStyles.HasValue) container.BorderStyle = borderStyles.Value;
+            container.ShowSplitGlyph = (showSplitGlyph.HasValue ? (showSplitGlyph.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False) : DevExpress.Utils.DefaultBoolean.Default);
+
+            return container;
+        }
         public static DxLabelControl CreateDxLabel(int x, ref int y, int w, Control parent, string text,
             LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DXE.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
             bool? visible = null, bool shiftY = false)
@@ -711,6 +729,870 @@ namespace Djs.Tools.CovidGraphs
 
 
     }
+    #endregion
+    #region DxTreeViewListSimple
+    /// <summary>
+    /// <see cref="DxTreeViewListSimple"/> : implementace TreeList pro výchozí potřeby Nephrite
+    /// </summary>
+    public class DxTreeViewListSimple : DevExpress.XtraTreeList.TreeList
+    {
+        #region Konstruktor a inicializace, privátní proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTreeViewListSimple()
+        {
+            this._LastId = 0;
+            this._NodesId = new Dictionary<int, NodePair>();
+            this._NodesKey = new Dictionary<string, NodePair>();
+            this.InitTreeView();
+        }
+        /// <summary>
+        /// Incializace komponenty Simple
+        /// </summary>
+        protected void InitTreeView()
+        {
+            this.OptionsBehavior.PopulateServiceColumns = false;
+            this._MainColumn = new DevExpress.XtraTreeList.Columns.TreeListColumn() { Name = "MainColumn", Visible = true, Width = 150, UnboundType = DevExpress.XtraTreeList.Data.UnboundColumnType.String, Caption = "Sloupec1", AllowIncrementalSearch = true, FieldName = "Text", ShowButtonMode = DevExpress.XtraTreeList.ShowButtonModeEnum.ShowForFocusedRow, ToolTip = "Tooltip pro sloupec" };
+            this.Columns.Add(this._MainColumn);
+
+            this._MainColumn.OptionsColumn.AllowEdit = false;
+            this._MainColumn.OptionsColumn.AllowSort = false;
+
+            this.OptionsBehavior.AllowExpandOnDblClick = true;
+            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsBehavior.Editable = true;
+            this.OptionsBehavior.EditingMode = DevExpress.XtraTreeList.TreeListEditingMode.Inplace;
+            this.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;             // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
+            this.OptionsBehavior.ShowToolTips = true;
+            this.OptionsBehavior.SmartMouseHover = true;
+
+            this.OptionsBehavior.AllowExpandAnimation = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsBehavior.AutoNodeHeight = true;
+            this.OptionsBehavior.AutoSelectAllInEditor = true;
+            this.OptionsBehavior.CloseEditorOnLostFocus = true;
+
+            this.OptionsNavigation.AutoMoveRowFocus = true;
+            this.OptionsNavigation.EnterMovesNextColumn = false;
+            this.OptionsNavigation.MoveOnEdit = false;
+            this.OptionsNavigation.UseTabKey = false;
+
+            this.OptionsSelection.EnableAppearanceFocusedRow = true;
+            this.OptionsSelection.EnableAppearanceHotTrackedRow = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsSelection.InvertSelection = true;
+
+            this.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;
+
+            this.NodeCellStyle += _OnNodeCellStyle;
+            this.DoubleClick += _OnDoubleClick;
+            this.KeyDown += _OnKeyDown;
+            this.ShownEditor += _OnShownEditor;
+            this.ValidatingEditor += _OnValidatingEditor;
+            this.FocusedNodeChanged += _OnFocusedNodeChanged;
+            this.BeforeExpand += _OnBeforeExpand;
+            this.AfterCollapse += _OnAfterCollapse;
+
+            this.LazyLoadNodeText = "Načítám záznamy...";
+            this.LazyLoadNodeImageName = null;
+        }
+        DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
+        private Dictionary<int, NodePair> _NodesId;
+        private Dictionary<string, NodePair> _NodesKey;
+        private int _LastId;
+        private class NodePair
+        {
+            public NodePair(DxTreeViewListSimple owner, int nodeId, NodeItemInfo nodeInfo, DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, bool isLazyChild)
+            {
+                this.NodeId = nodeId;
+                this.NodeInfo = nodeInfo;
+                this.TreeNode = treeNode;
+                this.IsLazyChild = isLazyChild;
+
+                this.INodeItem.Id = nodeId;
+                this.INodeItem.Owner = owner;
+                this.TreeNode.Tag = nodeId;
+            }
+            public void ReleasePair()
+            {
+                this.INodeItem.Id = -1;
+                this.INodeItem.Owner = null;
+                this.TreeNode.Tag = null;
+
+                this.NodeInfo = null;
+                this.TreeNode = null;
+                this.IsLazyChild = false;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return (this.NodeInfo?.ToString() ?? "<Empty>");
+            }
+            /// <summary>
+            /// Konstantní ID tohoto nodu, nemění se
+            /// </summary>
+            public int NodeId { get; private set; }
+            /// <summary>
+            /// Aktuální interní ID vizuálního nodu = <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Id"/>.
+            /// Tato hodnota se mění při odebrání nodu z TreeView. Tuto hodnotu lze tedy použít pouze v okamžiku jejího získání.
+            /// </summary>
+            public int CurrentTreeNodeId { get { return TreeNode?.Id ?? -1; } }
+            public string NodeKey { get { return NodeInfo?.NodeKey ; } }
+            public NodeItemInfo NodeInfo { get; private set; }
+            public DevExpress.XtraTreeList.Nodes.TreeListNode TreeNode { get; private set; }
+            public bool IsLazyChild { get; private set; }
+            private ITreeNodeItem INodeItem { get { return NodeInfo as ITreeNodeItem; } }
+        }
+        #endregion
+        #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 
+        /// <summary>
+        /// Nastavení specifického stylu podle konkrétního Node (FontStyle, Colors, atd)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnNodeCellStyle(object sender, DevExpress.XtraTreeList.GetCustomNodeCellStyleEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo == null) return;
+
+            if (nodeInfo.FontSizeDelta.HasValue)
+                args.Appearance.FontSizeDelta = nodeInfo.FontSizeDelta.Value;
+            if (nodeInfo.FontStyleDelta.HasValue)
+                args.Appearance.FontStyleDelta = nodeInfo.FontStyleDelta.Value;
+            if (nodeInfo.BackColor.HasValue)
+            {
+                args.Appearance.BackColor = nodeInfo.BackColor.Value;
+                args.Appearance.Options.UseBackColor = true;
+            }
+            if (nodeInfo.ForeColor.HasValue)
+            {
+                args.Appearance.ForeColor = nodeInfo.ForeColor.Value;
+                args.Appearance.Options.UseForeColor = true;
+            }
+        }
+        /// <summary>
+        /// Po fokusu do konkrétního node se nastaví jeho Editable a volá se public event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnFocusedNodeChanged(object sender, DevExpress.XtraTreeList.FocusedNodeChangedEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+
+            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.Editable);
+
+            if (nodeInfo != null)
+                this.OnNodeSelected(nodeInfo);
+        }
+        /// <summary>
+        /// Po stisku klávesy Vpravo a Vlevo se pracuje s Expanded nodů
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnKeyDown(object sender, KeyEventArgs e)
+        {
+            DevExpress.XtraTreeList.Nodes.TreeListNode node;
+            switch (e.KeyCode)
+            {
+                case Keys.Right:
+                    node = this.FocusedNode;
+                    if (node != null && node.HasChildren && !node.Expanded)
+                    {
+                        node.Expanded = true;
+                        e.Handled = true;
+                    }
+                    break;
+                case Keys.Left:
+                    node = this.FocusedNode;
+                    if (node != null)
+                    {
+                        if (node.HasChildren && node.Expanded)
+                        {
+                            node.Expanded = false;
+                            e.Handled = true;
+                        }
+                        else if (node.ParentNode != null)
+                        {
+                            this.FocusedNode = node.ParentNode;
+                            e.Handled = true;
+                        }
+                    }
+                    break;
+                case Keys.Delete:
+                    if (this.EditorHelper.ActiveEditor == null)
+                    {
+                    }
+                    break;
+            }
+        }
+        /// <summary>
+        /// Doubleclick převolá public event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnDoubleClick(object sender, EventArgs e)
+        {
+            NodeItemInfo nodeInfo = this.FocusedNodeInfo;
+            if (nodeInfo != null)
+                this.OnNodeDoubleClick(nodeInfo);
+        }
+        /// <summary>
+        /// V okamžiku zahájení editace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnShownEditor(object sender, EventArgs e)
+        {
+            if (this.EditorHelper.ActiveEditor != null)
+            {
+                this.EditorHelper.ActiveEditor.DoubleClick -= _OnEditorDoubleClick;
+                this.EditorHelper.ActiveEditor.DoubleClick += _OnEditorDoubleClick;
+            }
+
+            NodeItemInfo nodeInfo = this.FocusedNodeInfo;
+            if (nodeInfo != null)
+                this.OnActivatedEditor(nodeInfo);
+        }
+        /// <summary>
+        /// Ukončení editoru volá public event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnValidatingEditor(object sender, DevExpress.XtraEditors.Controls.BaseContainerValidateEditorEventArgs e)
+        {
+            NodeItemInfo nodeInfo = this.FocusedNodeInfo;
+            if (nodeInfo != null)
+                this.OnNodeEdited(nodeInfo, this.EditingValue);
+        }
+        /// <summary>
+        /// Doubleclick v editoru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnEditorDoubleClick(object sender, EventArgs e)
+        {
+            NodeItemInfo nodeInfo = this.FocusedNodeInfo;
+            if (nodeInfo != null)
+                this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
+        }
+        /// <summary>
+        /// Před rozbalením nodu se volá public event <see cref="NodeExpanded"/>,
+        /// a pokud node má nastaveno <see cref="NodeItemInfo.LazyLoadChilds"/> = true, pak se ovlá ještě <see cref="LazyLoadChilds"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnBeforeExpand(object sender, DevExpress.XtraTreeList.BeforeExpandEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo != null)
+            {
+                this.OnNodeExpanded(nodeInfo);                       // Zatím nevyužívám možnost zakázání Expand, kterou dává args.CanExpand...
+                if (nodeInfo.LazyLoadChilds)
+                    this.OnLazyLoadChilds(nodeInfo);
+            }
+        }
+        /// <summary>
+        /// Po zabalení nodu se volá public event <see cref="NodeCollapsed"/>,
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo != null)
+            {
+                this.OnNodeCollapsed(nodeInfo);
+            }
+        }
+        #endregion
+        #region Správa nodů (přidání, odebrání, smazání, změny)
+        /// <summary>
+        /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        /// <param name="node"></param>
+        public void AddNode(NodeItemInfo node)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(AddNode), node); return; }
+    
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            this.BeginUnboundLoad();
+            NodePair firstPair = null;
+            this._AddNode(node, ref firstPair);
+            this.EndUnboundLoad();
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+        }
+        /// <summary>
+        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// </summary>
+        /// <param name="addNodes"></param>
+        public void AddNodes(IEnumerable<NodeItemInfo> addNodes)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<NodeItemInfo>>(AddNodes), addNodes); return; }
+
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            this.BeginUnboundLoad();
+            this._RemoveAddNodes(null, addNodes);
+            this.EndUnboundLoad();
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+        }
+        /// <summary>
+        /// Přidá řadu nodů, které jsou donačteny k danému parentu. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// Nejprve najde daného parenta, a zruší z něj příznak LazyLoad (protože právě tímto načtením jsou jeho nody vyřešeny). Současně odebere "wait" node (prázdný node, simulující načítání dat).
+        /// Pak teprve přidá nové nody.
+        /// </summary>
+        /// <param name="parentKey"></param>
+        /// <param name="addNodes"></param>
+        public void AddLazyLoadNodes(string parentKey, IEnumerable<NodeItemInfo> addNodes)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<NodeItemInfo>>(AddLazyLoadNodes), parentKey, addNodes); return; }
+
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            this.BeginUnboundLoad();
+            bool isAnySelected = this._RemoveLazyLoadFromParent(parentKey);
+            var firstPair = this._RemoveAddNodes(null, addNodes);
+            if (firstPair != null && (isAnySelected || this.LazyLoadSelectFirstNode)) this.FocusedNode = firstPair.TreeNode;
+            this.EndUnboundLoad();
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+
+            this.Refresh();
+        }
+        /// <summary>
+        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// </summary>
+        /// <param name="addNodes"></param>
+        public void RemoveNodes(IEnumerable<string> removeNodeKeys)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>>(RemoveNodes), removeNodeKeys); return; }
+    
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            this.BeginUnboundLoad();
+            this._RemoveAddNodes(removeNodeKeys, null);
+            this.EndUnboundLoad();
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+        }
+        /// <summary>
+        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// </summary>
+        /// <param name="addNodes"></param>
+        public void RemoveAddNodes(IEnumerable<string> removeNodeKeys, IEnumerable<NodeItemInfo> addNodes)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>, IEnumerable<NodeItemInfo>>(RemoveAddNodes), removeNodeKeys, addNodes); return; }
+
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            this.BeginUnboundLoad();
+            this._RemoveAddNodes(removeNodeKeys, addNodes);
+            this.EndUnboundLoad();
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+        }
+        /// <summary>
+        /// Smaže všechny nodes
+        /// </summary>
+        public new void ClearNodes()
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action(ClearNodes)); return; }
+
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            this.BeginUnboundLoad();
+            _ClearNodes();
+            this.EndUnboundLoad();
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+        }
+        /// <summary>
+        /// Odebere nody ze stromu a z evidence.
+        /// Přidá více node do stromu a do evidence, neřeší blokování GUI.
+        /// Metoda vrací první vytvořený <see cref="NodePair"/>.
+        /// </summary>
+        /// <param name="node"></param>
+        private NodePair _RemoveAddNodes(IEnumerable<string> removeNodeKeys, IEnumerable<NodeItemInfo> addNodes)
+        {
+            NodePair firstPair = null;
+
+            // Remove:
+            if (removeNodeKeys != null)
+            {
+                foreach (var nodeKey in removeNodeKeys)
+                    this._RemoveNode(nodeKey);
+            }
+
+            // Add:
+            if (addNodes != null)
+            {
+                foreach (var node in addNodes)
+                    this._AddNode(node, ref firstPair);
+
+                // Expand nody: teď už by měly mít svoje Childs přítomné v TreeView:
+                foreach (var node in addNodes.Where(n => n.Expanded))
+                    this._NodesId[node.NodeId].TreeNode.Expanded = true;
+            }
+
+            return firstPair;
+        }
+        /// <summary>
+        /// Vytvoří nový jeden vizuální node podle daných dat, a přidá jej do vizuálního prvku a do interní evidence, neřeší blokování GUI
+        /// </summary>
+        /// <param name="node"></param>
+        private void _AddNode(NodeItemInfo node, ref NodePair firstPair)
+        {
+            if (node == null) return;
+
+            NodePair nodePair = _AddNodeOne(node, false);  // Daný node (z aplikace) vloží do Tree a vrátí
+            if (firstPair == null && nodePair != null)
+                firstPair = nodePair;
+
+            if (node.LazyLoadChilds)
+                _AddNodeLazyLoad(node);                    // Pokud node má nastaveno LazyLoadChilds, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
+        }
+        private void _AddNodeLazyLoad(NodeItemInfo parentNode)
+        {
+            string lazyChildKey = parentNode.NodeKey + "___«LazyLoadChildNode»___";
+            string text = this.LazyLoadNodeText ?? "Načítám...";
+            string imageName = this.LazyLoadNodeImageName;
+            NodeItemInfo lazyNode = new NodeItemInfo(lazyChildKey, parentNode.NodeKey, text, imageName: imageName, fontStyleDelta: FontStyle.Italic);
+            NodePair nodePair = _AddNodeOne(lazyNode, true);  // Daný node (z aplikace) vloží do Tree a vrátí
+        }
+        /// <summary>
+        /// Fyzické přidání jednoho node do TreeView a do evidence
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        private NodePair _AddNodeOne(NodeItemInfo nodeInfo, bool isLazyChild)
+        {
+            // 1. Vytvoříme TreeListNode:
+            int parentId = _GetCurrentTreeNodeId(nodeInfo.ParentNodeKey);
+            int imageIndex = _GetImageIndex(nodeInfo.ImageName);
+            int selectImageIndex = (!String.IsNullOrEmpty(nodeInfo.ImageNameSelected) ? _GetImageIndex(nodeInfo.ImageNameSelected) : -1);
+            if (selectImageIndex < 0) selectImageIndex = imageIndex;
+            CheckState checkState = CheckState.Unchecked;
+            var treeNode = this.AppendNode(new object[] { nodeInfo.Text }, parentId, imageIndex, selectImageIndex, -1,  checkState);
+
+            // treeNode.Expanded = node.Expanded;                  // Nyní nemá význam, protože Node ještě nemá svoje Childs. Má smysl až po přidání dalších nodů, které jsou jeho Childs. Řeší se v AddNodes().
+            // treeNode.StateImageIndex = -1;                      // Zatím nepoužívám druhou ikonu, používám ImageIndex, ta se nechá změnit podle Selected stavu
+
+            // 2. Propojíme vizuální node a datový objekt - pouze přes int ID, nikoli vzájemné reference:
+            int nodeId = ++_LastId;
+            NodePair nodePair = new NodePair(this, nodeId, nodeInfo, treeNode, isLazyChild);
+
+            // 3. Uložíme Pair do indexů podle ID a podle Key:
+            this._NodesId.Add(nodePair.NodeId, nodePair);
+            if (nodePair.NodeKey != null) this._NodesKey.Add(nodePair.NodeKey, nodePair);
+
+            return nodePair;
+        }
+        /// <summary>
+        /// Metoda najde a odebere Child prvky daného Parenta, kde tyto Child prvky jsou označeny jako <see cref="NodePair.IsLazyChild"/> = true.
+        /// Metoda vrátí true, pokud některý z odebraných prvků byl Selected.
+        /// </summary>
+        /// <param name="parentKey"></param>
+        /// <returns></returns>
+        private bool _RemoveLazyLoadFromParent(string parentKey)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(parentKey);
+            if (nodeInfo == null || !nodeInfo.LazyLoadChilds) return false;
+
+            nodeInfo.LazyLoadChilds = false;
+
+            // Najdu stávající Child nody daného Parenta a všechny je odeberu. Měl by to být pouze jeden node = simulující načítání dat, přidaný v metodě :
+            NodePair[] lazyChilds = this._NodesId.Values.Where(p => p.IsLazyChild && p.NodeInfo.ParentNodeKey == parentKey).ToArray();
+            bool isAnySelected = (lazyChilds.Length > 0 && lazyChilds.Any(p => p.TreeNode.IsSelected));
+            _RemoveAddNodes(lazyChilds.Select(p => p.NodeKey), null);
+
+            return isAnySelected;
+        }
+        /// <summary>
+        /// Smaže všechny nodes, neřeší blokování GUI
+        /// </summary>
+        private void _ClearNodes()
+        {
+            base.ClearNodes();
+
+            foreach (NodePair nodePair in this._NodesId.Values)
+                nodePair.ReleasePair();
+
+            this._NodesId.Clear();
+            this._NodesKey.Clear();
+        }
+        /// <summary>
+        /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
+        /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
+        /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
+        /// </summary>
+        /// <param name="nodeId"></param>
+        private void _RemoveNode(int nodeId)
+        {
+            if (nodeId < 0) throw new ArgumentException($"Argument 'nodeId' is negative in {CurrentClassName}.RemoveNode() method.");
+            if (!this._NodesId.TryGetValue(nodeId, out var nodePair)) throw new ArgumentException($"Node with ID = '{nodeId}' is not found in {CurrentClassName} nodes."); ;
+            _RemoveNode(nodePair);
+        }
+        /// <summary>
+        /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
+        /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
+        /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        private void _RemoveNode(string nodeKey)
+        {
+            if (nodeKey == null) throw new ArgumentException($"Argument 'nodeKey' is null in {CurrentClassName}.RemoveNode() method.");
+            if (!this._NodesKey.TryGetValue(nodeKey, out var nodePair)) throw new ArgumentException($"Node with Key = '{nodeKey}' is not found in {CurrentClassName} nodes."); ;
+            _RemoveNode(nodePair);
+        }
+        /// <summary>
+        /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
+        /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
+        /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
+        /// </summary>
+        /// <param name="node"></param>
+        private void _RemoveNode(NodePair nodePair)
+        {
+            if (nodePair == null) return;
+
+            // Odebrat z indexů:
+            if (this._NodesId.ContainsKey(nodePair.NodeId)) this._NodesId.Remove(nodePair.NodeId);
+            if (nodePair.NodeKey != null && this._NodesKey.ContainsKey(nodePair.NodeKey)) this._NodesKey.Remove(nodePair.NodeKey);
+
+            // Reference na vizuální prvek:
+            var treeNode = nodePair.TreeNode;
+
+            // Rozpadnout pár:
+            nodePair.ReleasePair();
+
+            // Odebrat z vizuálního objektu:
+            treeNode.Remove();
+        }
+        /// <summary>
+        /// Vrátí data nodu pro daný node, podle NodeId
+        /// </summary>
+        /// <param name="nodeId"></param>
+        /// <returns></returns>
+        private NodeItemInfo _GetNodeInfo(int nodeId)
+        {
+            if (nodeId >= 0 && this._NodesId.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
+            return null;
+        }
+        /// <summary>
+        /// Vrátí data nodu pro daný node, pro jeho <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Tag"/> as int
+        /// </summary>
+        /// <param name="treeNode"></param>
+        /// <returns></returns>
+        private NodeItemInfo _GetNodeInfo(DevExpress.XtraTreeList.Nodes.TreeListNode treeNode)
+        {
+            int nodeId = ((treeNode != null && treeNode.Tag is int) ? (int)treeNode.Tag : -1);
+            if (nodeId >= 0 && this._NodesId.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
+            return null;
+        }
+        /// <summary>
+        /// Vrací data nodu podle jeho klíče
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        /// <returns></returns>
+        private NodeItemInfo _GetNodeInfo(string nodeKey)
+        {
+            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.NodeInfo;
+            return null;
+        }
+        /// <summary>
+        /// Vrátí ID nodu pro daný klíč
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        /// <returns></returns>
+        private int _GetNodeId(string nodeKey)
+        {
+            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.NodeId;
+            return -1;
+        }
+        /// <summary>
+        /// Vrátí aktuální hodnotu interního ID vizuálního nodu = <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Id"/>.
+        /// Tato hodnota se mění při odebrání nodu z TreeView. Tuto hodnotu lze tedy použít pouze v okamžiku jejího získání.
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        /// <returns></returns>
+        private int _GetCurrentTreeNodeId(string nodeKey)
+        {
+            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.CurrentTreeNodeId;
+            return -1;
+        }
+        /// <summary>
+        /// Vrací index image pro dané jméno obrázku. Používá funkci <see cref="ImageIndexSearcher"/>
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        private int _GetImageIndex(string imageName)
+        {
+            return (ImageIndexSearcher != null ? ImageIndexSearcher(imageName) : -1);
+        }
+        /// <summary>
+        /// FullName aktuální třídy
+        /// </summary>
+        protected string CurrentClassName { get { return this.GetType().FullName; } }
+        #endregion
+        #region Public vlastnosti
+        /// <summary>
+        /// Funkce, která pro název ikony vrátí její index v ImageListu
+        /// </summary>
+        public Func<string, int> ImageIndexSearcher { get; set; }
+        public string LazyLoadNodeText { get; set; }
+        public string LazyLoadNodeImageName { get; set; }
+        /// <summary>
+        /// Po LazyLoad aktivovat první načtený node?
+        /// </summary>
+        public bool LazyLoadSelectFirstNode { get; set; }
+        /// <summary>
+        /// Aktuálně vybraný Node
+        /// </summary>
+        public NodeItemInfo FocusedNodeInfo { get { return _GetNodeInfo(this.FocusedNode); } }
+        /// <summary>
+        /// Najde node podle jeho klíče, pokud nenajde pak vrací false.
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        public bool TryGetNodeInfo(string nodeKey, out NodeItemInfo nodeInfo)
+        {
+            nodeInfo = null;
+            if (nodeKey == null) return false;
+            bool result = this._NodesKey.TryGetValue(nodeKey, out var nodePair);
+            nodeInfo = nodePair.NodeInfo;
+            return result;
+        }
+        /// <summary>
+        /// Pole všech nodů = třída <see cref="NodeItemInfo"/> = data o nodech
+        /// </summary>
+        public NodeItemInfo[] NodeInfos { get { return this._NodesStandard.ToArray(); } }
+        /// <summary>
+        /// Najde a vrátí pole nodů, které jsou Child nody daného klíče.
+        /// Reálně provádí Scan všech nodů.
+        /// </summary>
+        /// <param name="parentKey"></param>
+        /// <returns></returns>
+        public NodeItemInfo[] GetChildNodeInfos(string parentKey)
+        {
+            if (parentKey == null) return null;
+            return this._NodesStandard.Where(n => n.ParentNodeKey != null && n.ParentNodeKey == parentKey).ToArray();
+        }
+        /// <summary>
+        /// Obsahuje kolekci všech nodů, které nejsou IsLazyChild.
+        /// Node typu IsLazyChild je dočasně přidaný child node do těch nodů, jejichž Childs se budou načítat po rozbalení.
+        /// </summary>
+        private IEnumerable<NodeItemInfo> _NodesStandard { get { return this._NodesId.Values.Where(p => !p.IsLazyChild).Select(p => p.NodeInfo); } }
+        #endregion
+        #region Public eventy a jejich volání
+        /// <summary>
+        /// TreeView aktivoval určitý Node
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeSelected;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeSelected"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnNodeSelected(NodeItemInfo nodeInfo)
+        {
+            if (NodeSelected != null) NodeSelected(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeSelected));
+        }
+        /// <summary>
+        /// TreeView má Doubleclick na určitý Node
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeDoubleClick;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeDoubleClick"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnNodeDoubleClick(NodeItemInfo nodeInfo)
+        {
+            if (NodeDoubleClick != null) NodeDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDoubleClick));
+        }
+        /// <summary>
+        /// TreeView právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="NodeItemInfo.LazyLoadChilds"/>).
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeExpanded;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeExpanded"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnNodeExpanded(NodeItemInfo nodeInfo)
+        {
+            if (NodeExpanded != null) NodeExpanded(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeExpanded));
+        }
+        /// <summary>
+        /// TreeView právě sbaluje určitý Node.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeCollapsed;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeCollapsed"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnNodeCollapsed(NodeItemInfo nodeInfo)
+        {
+            if (NodeCollapsed != null) NodeCollapsed(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCollapsed));
+        }
+        /// <summary>
+        /// TreeView právě začíná editovat text daného node = je aktivován editor.
+        /// </summary>
+        public event DxTreeViewNodeHandler ActivatedEditor;
+        /// <summary>
+        /// Vyvolá event <see cref="ActivatedEditor"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="editedValue"></param>
+        protected virtual void OnActivatedEditor(NodeItemInfo nodeInfo)
+        {
+            if (ActivatedEditor != null) ActivatedEditor(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.ActivatedEditor));
+        }
+        /// <summary>
+        /// TreeView právě skončil editaci určitého Node.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeEdited;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeEdited"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="editedValue"></param>
+        protected virtual void OnNodeEdited(NodeItemInfo nodeInfo, object editedValue)
+        {
+            if (NodeEdited != null) NodeEdited(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeEdited, editedValue));
+        }
+        /// <summary>
+        /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
+        /// </summary>
+        public event DxTreeViewNodeHandler EditorDoubleClick;
+        /// <summary>
+        /// Vyvolá event <see cref="EditorDoubleClick"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="editedValue"></param>
+        protected virtual void OnEditorDoubleClick(NodeItemInfo nodeInfo, object editedValue)
+        {
+            if (EditorDoubleClick != null) EditorDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.EditorDoubleClick, editedValue));
+        }
+        /// <summary>
+        /// TreeView rozbaluje node, který má nastaveno načítání ze serveru : <see cref="NodeItemInfo.LazyLoadChilds"/> je true.
+        /// </summary>
+        public event DxTreeViewNodeHandler LazyLoadChilds;
+        /// <summary>
+        /// Vyvolá event <see cref="LazyLoadChilds"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnLazyLoadChilds(NodeItemInfo nodeInfo)
+        {
+            if (LazyLoadChilds != null) LazyLoadChilds(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.LazyLoadChilds));
+        }
+        #endregion
+    }
+    #region Deklarace delegátů a tříd pro eventhandlery
+    public delegate void DxTreeViewNodeHandler(object sender, DxTreeViewNodeArgs args);
+    public class DxTreeViewNodeArgs : EventArgs
+    {
+        public DxTreeViewNodeArgs(NodeItemInfo nodeInfo, TreeViewActionType action, object editedValue = null)
+        {
+            this.NodeItemInfo = nodeInfo;
+            this.Action = action;
+            this.EditedValue = editedValue;
+        }
+        public NodeItemInfo NodeItemInfo { get; private set; }
+        public TreeViewActionType Action { get; private set; }
+        public object EditedValue { get; private set; }
+    }
+    public enum TreeViewActionType
+    {
+        None,
+        NodeSelected,
+        NodeDoubleClick,
+        NodeExpanded,
+        NodeCollapsed,
+        ActivatedEditor,
+        EditorDoubleClick,
+        NodeEdited,
+        LazyLoadChilds
+    }
+    #endregion
+    #region class NodeItemInfo : Data o jednom Node
+    /// <summary>
+    /// Data o jednom Node
+    /// </summary>
+    public class NodeItemInfo : ITreeNodeItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        /// <param name="parentNodeKey"></param>
+        /// <param name="text"></param>
+        /// <param name="editable"></param>
+        /// <param name="expanded"></param>
+        /// <param name="lazyLoadChilds"></param>
+        /// <param name="imageName"></param>
+        /// <param name="imageNameSelected"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="fontSizeDelta"></param>
+        /// <param name="fontStyleDelta"></param>
+        /// <param name="backColor"></param>
+        /// <param name="foreColor"></param>
+        public NodeItemInfo(string nodeKey, string parentNodeKey, string text,
+            bool editable = false, bool expanded = false, bool lazyLoadChilds = false,
+            string imageName = null, string imageNameSelected = null, string toolTipTitle = null, string toolTipText = null,
+            int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null)
+        {
+            _Id = -1;
+            this.NodeKey = nodeKey;
+            this.ParentNodeKey = parentNodeKey;
+            this.Text = text;
+            this.Editable = editable;
+            this.Expanded = expanded;
+            this.LazyLoadChilds = lazyLoadChilds;
+            this.ImageName = imageName;
+            this.ImageNameSelected = imageNameSelected;
+            this.ToolTipTitle = toolTipTitle;
+            this.ToolTipText = toolTipText;
+            this.FontSizeDelta = fontSizeDelta;
+            this.FontStyleDelta = fontStyleDelta;
+            this.BackColor = backColor;
+            this.ForeColor = foreColor;
+        }
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        /// <summary>
+        /// ID nodu v TreeView, pokud není v TreeView pak je -1 
+        /// </summary>
+        public int NodeId { get { return _Id; } }
+        /// <summary>
+        /// String klíč nodu, musí být unique
+        /// </summary>
+        public string NodeKey { get; private set; }
+        public string ParentNodeKey { get; private set; }
+        public string Text { get; private set; }
+        public bool CanCheck { get; private set; }
+        public bool IsChecked { get; private set; }
+        public string ImageName { get; set; }
+        public string ImageNameSelected { get; set; }
+        public bool Editable { get; set; }
+        public bool Expanded { get; set; }
+        public bool LazyLoadChilds { get; set; }
+        public string ToolTipTitle { get; set; }
+        public string ToolTipText { get; set; }
+        public int? FontSizeDelta { get; set; }
+        public FontStyle? FontStyleDelta { get; set; }
+        public Color? BackColor { get; set; }
+        public Color? ForeColor { get; set; }
+
+        #region Implementace ITreeViewItemId
+        DxTreeViewListSimple ITreeNodeItem.Owner
+        {
+            get { if (_Owner != null && _Owner.TryGetTarget(out var owner)) return owner; return null; }
+            set { _Owner = (value != null ? new WeakReference<DxTreeViewListSimple>(value) : null); }
+        }
+        int ITreeNodeItem.Id { get { return _Id; } set { _Id = value; } }
+        WeakReference<DxTreeViewListSimple> _Owner;
+        int _Id;
+        #endregion
+    }
+    public interface ITreeNodeItem
+    {
+        DxTreeViewListSimple Owner { get; set; }
+        int Id { get; set; }
+    }
+    #endregion
     #endregion
     #region DxSimpleButton
     /// <summary>

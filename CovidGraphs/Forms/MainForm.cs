@@ -117,18 +117,9 @@ namespace Djs.Tools.CovidGraphs
         private void InitFrames()
         {
             int splitterPosition = Data.App.Config.MainSplitterPosition;
-            _MainSplitContainer = new DxSplitContainerControl()
-            {
-                FixedPanel = DXE.SplitFixedPanel.Panel1,
-                Horizontal = true,
-                PanelVisibility = DXE.SplitPanelVisibility.Both,
-                SplitterPosition = splitterPosition,
-                Dock = DockStyle.Fill
-            };
-            _MainSplitContainer.ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True;
-            _MainSplitContainer.SplitterPositionChanged += _SplitterPositionChanged;
-
-            this.Controls.Add(_MainSplitContainer);
+            _MainSplitContainer = DxComponent.CreateDxSplitContainer(this, _SplitterPositionChanged,
+                DockStyle.Fill, Orientation.Vertical, DXE.SplitFixedPanel.Panel1,
+                splitterPosition, DXE.SplitPanelVisibility.Both, true);
         }
         /// <summary>
         /// Inicializace objektu Ribbon a Statusbar

@@ -39,6 +39,223 @@ namespace Djs.Tools.CovidGraphs
             this.Size = new DW.Size(750, 450);
             this.StartPosition = WF.FormStartPosition.CenterScreen;
         }
+        private void CreateComponents()
+        {
+            CreateImageList();
+            CreateTreeView();
+        }
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            _TreeList.BestFitColumns();
+        }
+        private void DxTestTreeForm_Load(object sender, EventArgs e)
+        {
+            //  CreateTreeView();
+        }
+
+        private void CreateImageList()
+        {
+            _Images16 = new ImageList();
+            _Images16.Images.Add("Ball01_16", Properties.Resources.Ball01_16);
+            _Images16.Images.Add("Ball02_16", Properties.Resources.Ball02_16);
+            _Images16.Images.Add("Ball03_16", Properties.Resources.Ball03_16);
+            _Images16.Images.Add("Ball04_16", Properties.Resources.Ball04_16);
+            _Images16.Images.Add("Ball05_16", Properties.Resources.Ball05_16);
+            _Images16.Images.Add("Ball06_16", Properties.Resources.Ball06_16);
+            _Images16.Images.Add("Ball07_16", Properties.Resources.Ball07_16);
+            _Images16.Images.Add("Ball08_16", Properties.Resources.Ball08_16);
+            _Images16.Images.Add("Ball09_16", Properties.Resources.Ball09_16);
+            _Images16.Images.Add("Ball10_16", Properties.Resources.Ball10_16);
+            _Images16.Images.Add("Ball11_16", Properties.Resources.Ball11_16);
+            _Images16.Images.Add("Ball12_16", Properties.Resources.Ball12_16);
+            _Images16.Images.Add("Ball13_16", Properties.Resources.Ball13_16);
+            _Images16.Images.Add("Ball14_16", Properties.Resources.Ball14_16);
+            _Images16.Images.Add("Ball15_16", Properties.Resources.Ball15_16);
+            _Images16.Images.Add("Ball16_16", Properties.Resources.Ball16_16);
+            _Images16.Images.Add("Ball17_16", Properties.Resources.Ball17_16);
+            _Images16.Images.Add("Ball18_16", Properties.Resources.Ball18_16);
+            _Images16.Images.Add("Ball19_16", Properties.Resources.Ball19_16);
+            _Images16.Images.Add("Ball20_16", Properties.Resources.Ball20_16);
+            _Images16.Images.Add("Ball21_16", Properties.Resources.Ball21_16);
+            _Images16.Images.Add("Ball22_16", Properties.Resources.Ball22_16);
+            _Images16.Images.Add("Ball23_16", Properties.Resources.Ball23_16);
+
+            _Images16.Images.Add("edit_add_4_16", Properties.Resources.edit_add_4_16);
+            _Images16.Images.Add("list_add_3_16", Properties.Resources.list_add_3_16);
+            _Images16.Images.Add("hourglass_16", Properties.Resources.hourglass_16);
+        }
+        private int GetImageIndex(string imageName)
+        {
+            return (_Images16.Images.ContainsKey(imageName) ? _Images16.Images.IndexOfKey(imageName) : -1);
+        }
+        ImageList _Images16;
+
+
+        private void CreateTreeView()
+        {
+            _SplitContainer = DxComponent.CreateDxSplitContainer(this, null, DockStyle.Fill, Orientation.Vertical, SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
+
+            _TreeList = new DxTreeViewListSimple() { Dock = DockStyle.Fill };
+            _TreeList.SelectImageList = _Images16;
+            _TreeList.ImageIndexSearcher = GetImageIndex;
+            _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
+            _TreeList.LazyLoadNodeImageName = "hourglass_16";
+
+            _TreeList.Parent = this;
+            _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
+
+            DateTime t0 = DateTime.Now;
+            var nodes = _CreateSampleList(ItemCountType.Big);
+            DateTime t1 = DateTime.Now;
+            _TreeList.AddNodes(nodes);
+            DateTime t2 = DateTime.Now;
+
+            _TreeList.NodeSelected += _TreeList_AnyAction;
+            _TreeList.NodeDoubleClick += _TreeList_AnyAction;
+            _TreeList.NodeExpanded += _TreeList_AnyAction;
+            _TreeList.NodeCollapsed += _TreeList_AnyAction;
+            _TreeList.ActivatedEditor += _TreeList_AnyAction;
+            _TreeList.NodeEdited += _TreeList_AnyAction;
+            _TreeList.EditorDoubleClick += _TreeList_AnyAction;
+            _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
+
+            int y = 0;
+            _MemoEdit = DxComponent.CreateDxMemoEdit(0, ref y, 100, 100, this._SplitContainer.Panel2, readOnly: true);
+            _MemoEdit.Dock = DockStyle.Fill;
+            _LogId = 0;
+            _Log = "";
+
+            string line = "Počet nodů: " + nodes.Count.ToString();
+            _AddLogLine(line);
+            line = "Tvorba nodů: " + ((TimeSpan)(t1 - t0)).TotalMilliseconds.ToString("##0.000") + " ms";
+            _AddLogLine(line);
+            line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
+            _AddLogLine(line);
+        }
+
+        private void _TreeList_LazyLoadChilds(object sender, DxTreeViewNodeArgs args)
+        {
+            _TreeList_AnyAction(sender, args);
+            Data.ThreadManager.AddAction(() => _LoadChildNodesFromServerBgr(args));
+        }
+        private void _LoadChildNodesFromServerBgr(DxTreeViewNodeArgs args)
+        {
+            string parentKey = args.NodeItemInfo.NodeKey;
+            _AddLogLine($"Načítám data pro node '{parentKey}'...");
+            System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
+            bool empty = (Data.RandomText.Rand.Next(10) > 7);
+            var nodes = _CreateSampleChilds(parentKey, ItemCountType.Standard);       // A pak vyrobíme Child nody
+            _AddLogLine($"Načtena data: {nodes.Count} prvků.");
+            _TreeList.AddLazyLoadNodes(parentKey, nodes);            //  a pošleme je do TreeView.
+        }
+        private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args) { _AddLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick)); }
+        private void _AddLog(string actionName, DxTreeViewNodeArgs args, bool showValue = false)
+        {
+            string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
+            _AddLogLine($"{actionName}: Node: {args.NodeItemInfo}{value}");
+        }
+        private void _AddLogLine(string line)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<string>(_AddLogLine), line); return; }
+
+            int id = ++_LogId;
+            string log = id.ToString() + ". " + line + Environment.NewLine + _Log;
+            _Log = log;
+            _MemoEdit.Text = log;
+        }
+
+        int _InternalNodeId;
+        private List<NodeItemInfo> _CreateSampleList(ItemCountType countType = ItemCountType.Standard)
+        {
+            List<NodeItemInfo> list = new List<NodeItemInfo>();
+
+            int rootCount = GetItemCount(countType, false);
+            for (int r = 0; r < rootCount; r++)
+            {
+                bool isLazy = (Data.RandomText.Rand.Next(10) >= 5);
+                bool addChilds = !isLazy && (Data.RandomText.Rand.Next(10) >= 3);
+                bool isExpanded = (addChilds && (Data.RandomText.Rand.Next(10) >= 2));
+
+                string rootKey = "R." + (++_InternalNodeId).ToString();
+                string text = Data.RandomText.GetRandomSentence(2, 5) + (isLazy ? " [!]" : "");
+                DW.FontStyle fontStyleDelta = DW.FontStyle.Bold;
+                NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, editable: false, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
+                _FillNode(rootNode);
+                list.Add(rootNode);
+
+                if (addChilds)
+                    list.AddRange(_CreateSampleChilds(rootKey, countType));
+            }
+            return list;
+        }
+
+
+        private List<NodeItemInfo> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard)
+        {
+            List<NodeItemInfo> list = new List<NodeItemInfo>();
+
+            int childCount = GetItemCount(countType, true);
+            for (int c = 0; c < childCount; c++)
+            {
+                string childKey = "C." + (++_InternalNodeId).ToString();
+                string text = Data.RandomText.GetRandomSentence(2, 5);
+                NodeItemInfo childNode = new NodeItemInfo(childKey, parentKey, text, editable: true);
+                _FillNode(childNode);
+                list.Add(childNode);
+            }
+
+            return list;
+        }
+        private void _FillNode(NodeItemInfo node)
+        {
+            node.ToolTipTitle = Data.RandomText.GetRandomSentence(2, 5);
+            node.ToolTipText = Data.RandomText.GetRandomSentence(10, 50);
+            string imageNumb = Data.RandomText.Rand.Next(1, 24).ToString("00");
+            node.ImageName = $"Ball{imageNumb }_16"; 
+        }
+        private int GetItemCount(ItemCountType countType, bool forChilds)
+        {
+            switch (countType)
+            {
+                case ItemCountType.Empty: return 0;
+                case ItemCountType.Standard: return (forChilds ? Data.RandomText.Rand.Next(1, 12) : Data.RandomText.Rand.Next(10, 30));
+                case ItemCountType.Big: return (forChilds ? Data.RandomText.Rand.Next(40, 120) : Data.RandomText.Rand.Next(120, 400));
+            }
+            return 0;
+        }
+        private enum ItemCountType { Empty, Standard, Big }
+        DxSplitContainerControl _SplitContainer;
+        DxTreeViewListSimple _TreeList;
+        DxMemoEdit _MemoEdit;
+        string _Log;
+        int _LogId;
+        #endregion
+    }
+
+
+    #region testovací
+    public class DxTestTreeTestForm : WF.Form
+    {
+        #region Konstrukce
+        public static void Run()
+        {
+            using (DxTestTreeTestForm form = new DxTestTreeTestForm())
+            {
+                form.ShowDialog();
+            }
+        }
+        public DxTestTreeTestForm()
+        {
+            this.SetProperties();
+            this.CreateComponents();
+        }
+        private void SetProperties()
+        {
+            this.Text = "Test TreeForm";
+            this.Size = new DW.Size(750, 450);
+            this.StartPosition = WF.FormStartPosition.CenterScreen;
+        }
 
         private void CreateComponents()
         {
@@ -117,7 +334,7 @@ namespace Djs.Tools.CovidGraphs
             this.Controls.Add(treeList);               // Musí být dřív než se začne pracovat s daty!!!
             _TreeList = treeList;
 
-            treeList.AddNodes(NodeItemInfo.CreateSampleList());
+            // treeList.AddNodes(NodeItemInfo.CreateSampleList());
 
 
         }
@@ -135,7 +352,7 @@ namespace Djs.Tools.CovidGraphs
             ((System.ComponentModel.ISupportInitialize)(treeList1)).BeginInit();
             this.SuspendLayout();
 
-            treeList1.Columns.AddRange(new DevExpress.XtraTreeList.Columns.TreeListColumn[] { treeListColumn1 , treeListColumn2 });
+            treeList1.Columns.AddRange(new DevExpress.XtraTreeList.Columns.TreeListColumn[] { treeListColumn1, treeListColumn2 });
 
             treeListColumn1.OptionsColumn.AllowEdit = false;
             treeListColumn1.OptionsColumn.AllowSort = false;
@@ -143,7 +360,7 @@ namespace Djs.Tools.CovidGraphs
             treeList1.OptionsView.FocusRectStyle = DrawFocusRectStyle.RowFocus;
 
             treeList1.BeginUnboundLoad();
-            var node0 = treeList1.AppendNode(new object[] { "Node 1", "Popisek"}, -1);
+            var node0 = treeList1.AppendNode(new object[] { "Node 1", "Popisek" }, -1);
 
             var node1 = treeList1.AppendNode(new object[] { "Node 11", "Popisek" }, 0);
             var node2 = treeList1.AppendNode(new object[] { "Node 2", "Popisek" }, -1);
@@ -152,7 +369,7 @@ namespace Djs.Tools.CovidGraphs
             var node5 = treeList1.AppendNode(new object[] { "Node 3", "Popisek" }, -1);
             var node6 = treeList1.AppendNode(new object[] { "Node 31", "Popisek" }, 5);
 
-//            treeList1.SelectImageList = _Images16;                    // Odkazuje se na node.ImageIndex nebo SelectImageIndex: reprezentuje první ikonu, když prvek je/není Selected
+            //            treeList1.SelectImageList = _Images16;                    // Odkazuje se na node.ImageIndex nebo SelectImageIndex: reprezentuje první ikonu, když prvek je/není Selected
             treeList1.StateImageList = _Images16;                     // Odkazuje se na node.StateImageIndex: reprezentuje statickou ikonu u Node
 
             node0.CheckState = CheckState.Checked;
@@ -235,9 +452,9 @@ namespace Djs.Tools.CovidGraphs
 
 
 
-         //   treeList1.PopulateColumns();
-         //   treeList1.Refresh();
-         //   treeList1.ForceInitialize();
+            //   treeList1.PopulateColumns();
+            //   treeList1.Refresh();
+            //   treeList1.ForceInitialize();
 
             //The treelist automatically creates columns for the public fields found in the data source. 
             //You do not need to call the TreeList.PopulateColumns method unless the treeList1.OptionsBehavior.AutoPopulateColumns option is disabled.
@@ -434,360 +651,6 @@ namespace Djs.Tools.CovidGraphs
         */
         #endregion
     }
-
-    public class DxTreeViewListSimple : DevExpress.XtraTreeList.TreeList
-    {
-        public DxTreeViewListSimple()
-        {
-            this._NodesId = new Dictionary<int, NodeItemInfo>();
-            this._NodesKey = new Dictionary<string, NodeItemInfo>();
-            this._TreeNodesId = new Dictionary<int, TreeListNode>();
-            this.InitTreeView();
-        }
-        protected void InitTreeView()
-        { 
-            this.OptionsBehavior.PopulateServiceColumns = false;
-            this._MainColumn = new TreeListColumn() { Name = "MainColumn", Visible = true, Width = 150, UnboundType = DevExpress.XtraTreeList.Data.UnboundColumnType.String, Caption = "Sloupec1", AllowIncrementalSearch=true, FieldName = "Text", ShowButtonMode = ShowButtonModeEnum.ShowForFocusedRow, ToolTip = "Tooltip pro sloupec" };
-            this.Columns.Add(this._MainColumn);
-
-            this._MainColumn.OptionsColumn.AllowEdit = false;
-            this._MainColumn.OptionsColumn.AllowSort = false;
-
-            this.OptionsBehavior.AllowExpandOnDblClick = true;
-            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;
-            this.OptionsBehavior.Editable = true;
-            this.OptionsBehavior.EditingMode = TreeListEditingMode.Inplace;
-            this.OptionsBehavior.EditorShowMode = TreeListEditorShowMode.MouseUp;             // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
-            this.OptionsBehavior.ShowToolTips = true;
-            this.OptionsBehavior.SmartMouseHover = true;
-
-            this.OptionsBehavior.AllowExpandAnimation = DevExpress.Utils.DefaultBoolean.True;
-            this.OptionsBehavior.AutoNodeHeight = true;
-            this.OptionsBehavior.AutoSelectAllInEditor = true;
-            this.OptionsBehavior.CloseEditorOnLostFocus = true;
-
-            this.OptionsNavigation.AutoMoveRowFocus = true;
-            this.OptionsNavigation.EnterMovesNextColumn = false;
-            this.OptionsNavigation.MoveOnEdit = false;
-            this.OptionsNavigation.UseTabKey = false;
-
-            this.OptionsSelection.EnableAppearanceFocusedRow = true;
-            this.OptionsSelection.EnableAppearanceHotTrackedRow = DevExpress.Utils.DefaultBoolean.True;
-            this.OptionsSelection.InvertSelection = true;
-
-
-
-
-            // this.Appearance.Row.FontSizeDelta = 1;
-            // this.Appearance.HotTrackedRow.FontSizeDelta = -1;
-
-            // this.CreateAppearances();
-            // this.Appearance.Row.FontSizeDelta = 1;
-            // this.Appearance.SelectedRow.GradientMode = DW.Drawing2D.LinearGradientMode.Horizontal;
-
-            this.ViewStyle = TreeListViewStyle.TreeView;
-
-            this.NodeCellStyle += _OnNodeCellStyle;
-            this.DoubleClick += DxTreeViewListSimple_DoubleClick;
-            this.KeyDown += DxTreeViewListSimple_KeyDown;
-            this.KeyUp += DxTreeViewListSimple_KeyUp;
-            this.ValidatingEditor += DxTreeViewListSimple_ValidatingEditor;
-            this.FocusedNodeChanged += _OnFocusedNodeChanged;
-            this.BeforeExpand += _OnBeforeExpand;
-        }
-
-        private void DxTreeViewListSimple_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Right)
-            {
-                var node = this.FocusedNode;
-                if (node != null && node.HasChildren && !node.Expanded)
-                {
-                    node.Expanded = true;
-                    e.Handled = true;
-                }
-            }
-            if (e.KeyCode == Keys.Left)
-            {
-                var node = this.FocusedNode;
-                if (node != null)
-                {
-                    if (node.HasChildren && node.Expanded)
-                    {
-                        node.Expanded = false;
-                        e.Handled = true;
-                    }
-                    else if (node.ParentNode != null)
-                    {
-                        this.FocusedNode = node.ParentNode;
-                        e.Handled = true;
-                    }
-                }
-            }
-        }
-
-        private void DxTreeViewListSimple_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Right)
-            { }
-        }
-
-        private void DxTreeViewListSimple_DoubleClick(object sender, EventArgs e)
-        {
-            
-        }
-
-        private void DxTreeViewListSimple_ValidatingEditor(object sender, DevExpress.XtraEditors.Controls.BaseContainerValidateEditorEventArgs e)
-        {
-
-            var x = this.EditingValue;
-            var y = this.FocusedNode;
-            var z = this.FocusedNodeInfo;
-
-
-        }
-
-        public NodeItemInfo FocusedNodeInfo
-        {
-            get
-            {
-                int? nodeId = this.FocusedNode?.Id;
-                if (nodeId.HasValue && _NodesId.TryGetValue(nodeId.Value, out NodeItemInfo nodeInfo)) return nodeInfo;
-                return null;
-            }
-        }
-
-        DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
-        private Dictionary<int, NodeItemInfo> _NodesId;
-        private Dictionary<string, NodeItemInfo> _NodesKey;
-        private Dictionary<int, TreeListNode> _TreeNodesId;
-
-        private void _OnBeforeExpand(object sender, BeforeExpandEventArgs args)
-        {
-            NodeItemInfo nodeInfo = args.Node.Tag as NodeItemInfo;
-            if (nodeInfo == null) return;
-
-            if (!nodeInfo.HasChildsOnServer) return;
-
-        }
-        private void _OnNodeCellStyle(object sender, GetCustomNodeCellStyleEventArgs args)
-        {
-            NodeItemInfo nodeInfo = args.Node.Tag as NodeItemInfo;
-            if (nodeInfo == null) return;
-
-            if (nodeInfo.FontSizeDelta.HasValue)
-                args.Appearance.FontSizeDelta = nodeInfo.FontSizeDelta.Value;
-            if (nodeInfo.FontStyleDelta.HasValue)
-                args.Appearance.FontStyleDelta = nodeInfo.FontStyleDelta.Value;
-            if (nodeInfo.BackColor.HasValue)
-            {
-                args.Appearance.BackColor = nodeInfo.BackColor.Value;
-                args.Appearance.Options.UseBackColor = true;
-            }
-            if (nodeInfo.ForeColor.HasValue)
-            {
-                args.Appearance.ForeColor = nodeInfo.ForeColor.Value;
-                args.Appearance.Options.UseForeColor = true;
-            }
-        }
-
-        private void _OnFocusedNodeChanged(object sender, FocusedNodeChangedEventArgs args)
-        {
-            bool editable = false;
-            if (args.Node.Tag is NodeItemInfo node) editable = node.Editable;
-            _MainColumn.OptionsColumn.AllowEdit = editable;
-        }
-
-        /// <summary>
-        /// Funkce, která pro název ikony vrátí její index v ImageListu
-        /// </summary>
-        public Func<string, int> ImageIndexSearcher { get; set; }
-
-        public void AddNodes(IEnumerable<NodeItemInfo> nodes)
-        {
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-
-            foreach (var node in nodes)
-                this._AddNode(node);
-
-            foreach (var node in nodes.Where(n => n.Expanded))
-                this._TreeNodesId[node.NodeId].Expanded = true;
-
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
-        }
-        public void AddNode(NodeItemInfo node)
-        {
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            this._AddNode(node);
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
-        }
-        private void _AddNode(NodeItemInfo node)
-        {
-            int parentId = _GetNodeId(node.ParentNodeKey);
-            var treeNode = this.AppendNode(new object[] { node.Text }, parentId);
-            int nodeId = treeNode.Id;
-            ((IItemId)node).Id = nodeId;
-
-            treeNode.Tag = node;
-            // treeNode.Expanded = node.Expanded;                  // Nyní nemá význam
-
-            int imageIndex = GetImageIndex(node.ImageName);
-            int selectImageIndex = (!String.IsNullOrEmpty(node.ImageNameSelected) ? GetImageIndex(node.ImageNameSelected) : -1);
-            if (selectImageIndex < 0) selectImageIndex = imageIndex;
-            treeNode.ImageIndex = imageIndex;
-            treeNode.SelectImageIndex = selectImageIndex;
-
-            // treeNode.StateImageIndex = -1;  // nodeId + 2;      // Zatím nepoužívám druhou ikonu, používám ImageIndex, ta se nechá změnit podle Selected stavu
-
-            // treeNode.TreeList.ToolTipController = new DevExpress.Utils.ToolTipController();
-            this._AddNodeId(node, treeNode);
-            
-        }
-        /// <summary>
-        /// Vrací index image pro dané jméno
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <returns></returns>
-        private int GetImageIndex(string imageName)
-        {
-            return (ImageIndexSearcher != null ? ImageIndexSearcher(imageName) : -1);
-        }
-
-        public new void ClearNodes()
-        {
-            foreach (var treeNode in this._TreeNodesId.Values)
-                treeNode.Tag = null;
-            this._TreeNodesId.Clear();
-
-            base.ClearNodes();
-
-            foreach (var nodeItemInfo in this._NodesId.Values)
-                ((IItemId)nodeItemInfo).Id = -1;
-            this._NodesId.Clear();
-
-            this._NodesKey.Clear();
-        }
-        private void _AddNodeId(NodeItemInfo node, TreeListNode treeNode)
-        {
-            int nodeId = node.NodeId;
-            if (!this._NodesId.ContainsKey(nodeId)) this._NodesId.Add(nodeId, node);
-
-            string nodeKey = node.NodeKey;
-            if (nodeKey != null)
-            {
-                if (this._NodesKey.ContainsKey(nodeKey))
-                    throw new ArgumentException($"Node with key '{nodeKey}' already exists in {this.GetType().FullName}");
-
-                this._NodesKey.Add(nodeKey, node);
-            }
-
-            _TreeNodesId.Add(nodeId, treeNode);
-        }
-        private int _GetNodeId(string key)
-        {
-            if (key != null && this._NodesKey.TryGetValue(key, out var node)) return node.NodeId;
-            return -1;
-        }
-    }
-
-    public class NodeItemInfo : IItemId
-    {
-        public NodeItemInfo(string nodeKey, string parentNodeKey, string text,
-            bool editable = false, bool expanded = false, bool hasChildsOnServer = false,
-            string imageName = null, string imageNameSelected = null, string toolTipTitle = null, string toolTipText = null,
-            int? fontSizeDelta = null, DW.FontStyle? fontStyleDelta = null, DW.Color? backColor = null, DW.Color? foreColor = null)
-        {
-            this.NodeId = -1;
-            this.NodeKey = nodeKey;
-            this.ParentNodeKey = parentNodeKey;
-            this.Text = text;
-            this.Editable = editable;
-            this.Expanded = expanded;
-            this.HasChildsOnServer = hasChildsOnServer;
-            this.ImageName = imageName;
-            this.ImageNameSelected = imageNameSelected;
-            this.ToolTipTitle = toolTipTitle;
-            this.ToolTipText = toolTipText;
-            this.FontSizeDelta = fontSizeDelta;
-            this.FontStyleDelta = fontStyleDelta;
-            this.BackColor = backColor;
-            this.ForeColor = foreColor;
-        }
-        public override string ToString()
-        {
-            return this.Text;
-        }
-        public int NodeId { get; private set; }
-        public string NodeKey { get; private set; }
-        public string ParentNodeKey { get; private set; }
-        public string Text { get; private set; }
-        public string ImageName { get; set; }
-        public string ImageNameSelected { get; set; }
-        public bool Editable { get; set; }
-        public bool Expanded { get; set; }
-        public bool HasChildsOnServer { get; set; }
-        public string ToolTipTitle { get; set; }
-        public string ToolTipText { get; set; }
-        public int? FontSizeDelta { get; set; }
-        public DW.FontStyle? FontStyleDelta { get; set; }
-        public DW.Color? BackColor { get; set; }
-        public DW.Color? ForeColor { get; set; }
-        int IItemId.Id { get { return NodeId; } set { NodeId = value; } }
-        public static List<NodeItemInfo> CreateSampleList()
-        {
-            List<NodeItemInfo> list = new List<NodeItemInfo>();
-            list.Add(new NodeItemInfo("Rel:10112:L", null, "Objednávky", false, true, imageName: "book_2_16", toolTipTitle: "Objednávky", toolTipText: "Vztah 10112 zleva: Objednávky (N:M)", fontStyleDelta: DW.FontStyle.Bold));
-            list.Add(new NodeItemInfo("Rec:210.658001", "Rel:10112:L", "DO-2014-0025", true, imageName: "db_16", toolTipTitle: "Objednávka od dodavatele", toolTipText: "DO-2014-0025, Novák Jan, Chotěboř"));
-            list.Add(new NodeItemInfo("Rec:210.658002", "Rel:10112:L", "DO-2018-0198", true, imageName: "db_16", toolTipTitle: "Objednávka od dodavatele", toolTipText: "DO-2018-0198, Solnička Vladimír, Žleby"));
-            list.Add(new NodeItemInfo("New:10112:L", "Rel:10112:L", "...nový vztah", true, imageName: "edit_add_4_16", toolTipTitle: "Objednávka od dodavatele", toolTipText: "Zadejte referenci nového záznamu", fontStyleDelta: DW.FontStyle.Italic));
-            list.Add(new NodeItemInfo("Rel:10260:L", null, "Poptávky", false, true, imageName: "book_2_16", fontStyleDelta: DW.FontStyle.Bold));
-            list.Add(new NodeItemInfo("Rec:211.658012", "Rel:10260:L", "OP-2019-VCK0115", true, toolTipTitle: "Poptávka od zákazníka", toolTipText: "OP-2019-VCK0115, Jeřábková Jindřiška, Jistebnice"));
-            list.Add(new NodeItemInfo("New:10260:L", "Rel:10260:L", "...nový vztah", true, imageName: "edit_add_4_16", toolTipTitle: "Objednávka od dodavatele", toolTipText: "Zadejte referenci nového záznamu", fontStyleDelta: DW.FontStyle.Italic));
-            list.Add(new NodeItemInfo("Rel:11520:L", null, "Příjemky", false, false, imageName: "book_2_16"));
-            list.Add(new NodeItemInfo("New:11520:L", "Rel:11520:L", "...nový vztah", true, imageName: "edit_add_4_16", fontStyleDelta: DW.FontStyle.Italic));
-            list.Add(new NodeItemInfo("Rel:11560:L", null, "Výdejky", false, false, imageName: "book_2_16"));
-            list.Add(new NodeItemInfo("New:11560:L", "Rel:11560:L", "...nový vztah", true, imageName: "edit_add_4_16", fontStyleDelta: DW.FontStyle.Italic));
-            list.Add(new NodeItemInfo("Rel:12560:L", null, "OnDemandLoad", false, false, imageName: "book_2_16"));
-            list.Add(new NodeItemInfo("Load:12560:L", "Rel:12560:L", "Načítám záznamy...", false, imageName: "hourglass_16", fontStyleDelta: DW.FontStyle.Italic));
-
-            /*
-            list.Add(new NodeItemInfo(5,0,));
-            list.Add(new NodeItemInfo(6,5,));
-            list.Add(new NodeItemInfo(7,5,));
-            list.Add(new NodeItemInfo(8,5,));
-            list.Add(new NodeItemInfo(9,5,));
-            list.Add(new NodeItemInfo(10,0,));
-            list.Add(new NodeItemInfo(11,10,));
-            list.Add(new NodeItemInfo(12,10,));
-            list.Add(new NodeItemInfo(13,10,));
-            list.Add(new NodeItemInfo(14,10,));
-            list.Add(new NodeItemInfo(15,10,));
-            list.Add(new NodeItemInfo(16,0,));
-            list.Add(new NodeItemInfo(17,0,));
-            list.Add(new NodeItemInfo(18,17,));
-            list.Add(new NodeItemInfo(19,0,));
-            list.Add(new NodeItemInfo(20,19,));
-            list.Add(new NodeItemInfo(21,0,));
-            list.Add(new NodeItemInfo(22,21,));
-            */
-            return list;
-        }
-    }
-    public interface IItemId
-    {
-        int Id { get; set; }
-    }
-
-
-
-
-
-
-
     public class SalesData
     {
         static int UniqueID = 37;
@@ -852,4 +715,5 @@ namespace Djs.Tools.CovidGraphs
             return sales;
         }
     }
+    #endregion
 }
