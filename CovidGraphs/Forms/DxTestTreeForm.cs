@@ -101,6 +101,7 @@ namespace Djs.Tools.CovidGraphs
             _TreeList.ImageIndexSearcher = GetImageIndex;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
+            _TreeList.EditorShowMode = TreeListEditorShowMode.Click;
 
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!

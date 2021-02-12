@@ -1337,6 +1337,14 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         public bool LazyLoadSelectFirstNode { get; set; }
         /// <summary>
+        /// Akce, která zahájí editaci buňky
+        /// </summary>
+        public DevExpress.XtraTreeList.TreeListEditorShowMode EditorShowMode
+        {
+            get { return this.OptionsBehavior.EditorShowMode; }
+            set { this.OptionsBehavior.EditorShowMode = value; }
+        }
+        /// <summary>
         /// Aktuálně vybraný Node
         /// </summary>
         public NodeItemInfo FocusedNodeInfo { get { return _GetNodeInfo(this.FocusedNode); } }
