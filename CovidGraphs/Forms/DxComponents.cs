@@ -13,7 +13,7 @@ using DXT = DevExpress.XtraTab;
 using DXG = DevExpress.XtraGrid;
 using DC = DevExpress.XtraCharts;
 using DevExpress.XtraBars.Ribbon;
-
+using DevExpress.Utils;
 
 namespace Djs.Tools.CovidGraphs
 {
@@ -366,6 +366,13 @@ namespace Djs.Tools.CovidGraphs
             if (shiftY) y = y + simpleButton.Height + inst._DetailYSpaceText;
 
             return simpleButton;
+        }
+
+        public static ToolTipController CreateToolTipController()
+        {
+            ToolTipController toolTipController = new ToolTipController();
+
+            return toolTipController;
         }
 
         #endregion
@@ -783,6 +790,10 @@ namespace Djs.Tools.CovidGraphs
 
             this.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;
 
+            this.ToolTipController = DxComponent.CreateToolTipController();
+            this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
+
+
             this.NodeCellStyle += _OnNodeCellStyle;
             this.DoubleClick += _OnDoubleClick;
             this.KeyDown += _OnKeyDown;
@@ -844,6 +855,31 @@ namespace Djs.Tools.CovidGraphs
             public DevExpress.XtraTreeList.Nodes.TreeListNode TreeNode { get; private set; }
             public bool IsLazyChild { get; private set; }
             private ITreeNodeItem INodeItem { get { return NodeInfo as ITreeNodeItem; } }
+        }
+        #endregion
+        #region ToolTipy pro nodes
+
+
+        private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
+        {
+            if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree)
+            {
+                var hit = tree.CalcHitInfo(e.ControlMousePosition);
+                if (hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.Cell || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.SelectImage)
+                {
+                    var nodeInfo = this._GetNodeInfo(hit.Node);
+                    if (nodeInfo != null && !String.IsNullOrEmpty(nodeInfo.ToolTipText))
+                    {
+                        string toolTipText = nodeInfo.ToolTipText;
+                        string toolTipTitle = nodeInfo.ToolTipTitle ?? nodeInfo.Text;
+                        object cellInfo = new DevExpress.XtraTreeList.ViewInfo.TreeListCellToolTipInfo(hit.Node, hit.Column, null);
+                        var ttci = new DevExpress.Utils.ToolTipControlInfo(cellInfo, toolTipText, toolTipTitle);
+                        ttci.ToolTipType = ToolTipType.SuperTip;
+                        ttci.AllowHtmlText = DefaultBoolean.True;
+                        e.Info = ttci;
+                    }
+                }
+            }
         }
         #endregion
         #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 

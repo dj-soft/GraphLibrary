@@ -31,7 +31,7 @@ namespace Djs.Tools.CovidGraphs
         public DxTestTreeForm()
         {
             this.SetProperties();
-            this.CreateComponents();
+            this.CreateTreeViewComponents();
         }
         private void SetProperties()
         {
@@ -39,21 +39,16 @@ namespace Djs.Tools.CovidGraphs
             this.Size = new DW.Size(750, 450);
             this.StartPosition = WF.FormStartPosition.CenterScreen;
         }
-        private void CreateComponents()
-        {
-            CreateImageList();
-            CreateTreeView();
-        }
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
             _TreeList.BestFitColumns();
         }
-        private void DxTestTreeForm_Load(object sender, EventArgs e)
+        private void CreateTreeViewComponents()
         {
-            //  CreateTreeView();
+            CreateImageList();
+            CreateTreeView();
         }
-
         private void CreateImageList()
         {
             _Images16 = new ImageList();
@@ -90,8 +85,6 @@ namespace Djs.Tools.CovidGraphs
             return (_Images16.Images.ContainsKey(imageName) ? _Images16.Images.IndexOfKey(imageName) : -1);
         }
         ImageList _Images16;
-
-
         private void CreateTreeView()
         {
             _SplitContainer = DxComponent.CreateDxSplitContainer(this, null, DockStyle.Fill, Orientation.Vertical, SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
@@ -134,7 +127,6 @@ namespace Djs.Tools.CovidGraphs
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
             _AddLogLine(line);
         }
-
         private void _TreeList_LazyLoadChilds(object sender, DxTreeViewNodeArgs args)
         {
             _TreeList_AnyAction(sender, args);
@@ -210,7 +202,7 @@ namespace Djs.Tools.CovidGraphs
         }
         private void _FillNode(NodeItemInfo node)
         {
-            node.ToolTipTitle = Data.RandomText.GetRandomSentence(2, 5);
+            node.ToolTipTitle = null; // Data.RandomText.GetRandomSentence(2, 5);
             node.ToolTipText = Data.RandomText.GetRandomSentence(10, 50);
             string imageNumb = Data.RandomText.Rand.Next(1, 24).ToString("00");
             node.ImageName = $"Ball{imageNumb }_16"; 
