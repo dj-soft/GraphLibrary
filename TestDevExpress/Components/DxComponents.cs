@@ -768,7 +768,7 @@ namespace TestDevExpress.Components
             this._MainColumn.OptionsColumn.AllowSort = false;
 
             this.OptionsBehavior.AllowExpandOnDblClick = true;
-            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;
             this.OptionsBehavior.Editable = true;
             this.OptionsBehavior.EditingMode = DevExpress.XtraTreeList.TreeListEditingMode.Inplace;
             this.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;             // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
@@ -786,15 +786,16 @@ namespace TestDevExpress.Components
             this.OptionsNavigation.UseTabKey = false;
 
             this.OptionsSelection.EnableAppearanceFocusedRow = true;
-            this.OptionsSelection.EnableAppearanceHotTrackedRow = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True; // DevExpress.Utils.DefaultBoolean.True;
             this.OptionsSelection.InvertSelection = true;
 
             this.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;
 
+            // Tooltip:
             this.ToolTipController = DxComponent.CreateToolTipController();
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
 
-
+            // Nativní eventy:
             this.NodeCellStyle += _OnNodeCellStyle;
             this.DoubleClick += _OnDoubleClick;
             this.KeyDown += _OnKeyDown;
@@ -804,7 +805,8 @@ namespace TestDevExpress.Components
             this.BeforeExpand += _OnBeforeExpand;
             this.AfterCollapse += _OnAfterCollapse;
 
-            this.LazyLoadNodeText = "Načítám záznamy...";
+            // Preset:
+            this.LazyLoadNodeText = "...";
             this.LazyLoadNodeImageName = null;
         }
         DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
@@ -1107,19 +1109,26 @@ namespace TestDevExpress.Components
         /// Pak teprve přidá nové nody.
         /// Na konci provede Refresh.
         /// </summary>
-        /// <param name="parentKey"></param>
+        /// <param name="parentNodeId"></param>
         /// <param name="addNodes"></param>
-        public void AddLazyLoadNodes(string parentKey, IEnumerable<NodeItemInfo> addNodes)
+        public void AddLazyLoadNodes(string parentNodeId, IEnumerable<NodeItemInfo> addNodes)
         {
-            if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<NodeItemInfo>>(AddLazyLoadNodes), parentKey, addNodes); return; }
+            if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<NodeItemInfo>>(AddLazyLoadNodes), parentNodeId, addNodes); return; }
 
             using (LockGui(true))
             {
-                bool isAnySelected = this._RemoveLazyLoadFromParent(parentKey);
+                bool isAnySelected = this._RemoveLazyLoadFromParent(parentNodeId);
                 var firstPair = this._RemoveAddNodes(null, addNodes);
-                if (firstPair != null && (isAnySelected || this.LazyLoadSelectFirstNode))
+
+                var focusType = this.LazyLoadFocusNode;
+                if (firstPair != null && (isAnySelected || focusType == LazyLoadFocusNodeType.FirstChildNode))
                     this.SetFocusedNode(firstPair.TreeNode);
-                // this.FocusedNode = firstPair.TreeNode;
+                else if (focusType == LazyLoadFocusNodeType.ParentNode)
+                {
+                    var parentPair = this._GetNodePair(parentNodeId);
+                    if (parentPair != null)
+                        this.FocusedNode = parentPair.TreeNode;
+                }
             }
         }
         /// <summary>
@@ -1424,17 +1433,17 @@ namespace TestDevExpress.Components
         /// Metoda najde a odebere Child prvky daného Parenta, kde tyto Child prvky jsou označeny jako <see cref="NodePair.IsLazyChild"/> = true.
         /// Metoda vrátí true, pokud některý z odebraných prvků byl Selected.
         /// </summary>
-        /// <param name="parentKey"></param>
+        /// <param name="parentNodeId"></param>
         /// <returns></returns>
-        private bool _RemoveLazyLoadFromParent(string parentKey)
+        private bool _RemoveLazyLoadFromParent(string parentNodeId)
         {
-            NodeItemInfo nodeInfo = _GetNodeInfo(parentKey);
+            NodeItemInfo nodeInfo = _GetNodeInfo(parentNodeId);
             if (nodeInfo == null || !nodeInfo.LazyLoadChilds) return false;
 
             nodeInfo.LazyLoadChilds = false;
 
             // Najdu stávající Child nody daného Parenta a všechny je odeberu. Měl by to být pouze jeden node = simulující načítání dat, přidaný v metodě :
-            NodePair[] lazyChilds = this._NodesId.Values.Where(p => p.IsLazyChild && p.NodeInfo.ParentNodeId == parentKey).ToArray();
+            NodePair[] lazyChilds = this._NodesId.Values.Where(p => p.IsLazyChild && p.NodeInfo.ParentNodeId == parentNodeId).ToArray();
             bool isAnySelected = (lazyChilds.Length > 0 && lazyChilds.Any(p => p.TreeNode.IsSelected));
             _RemoveAddNodes(lazyChilds.Select(p => p.NodeId), null);
 
@@ -1453,17 +1462,16 @@ namespace TestDevExpress.Components
             this._NodesId.Clear();
             this._NodesKey.Clear();
         }
-
         /// <summary>
         /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
         /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
         /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
         /// </summary>
-        /// <param name="nodeId"></param>
-        private void _RemoveNode(int nodeId)
+        /// <param name="id"></param>
+        private void _RemoveNode(int id)
         {
-            if (nodeId < 0) throw new ArgumentException($"Argument 'nodeId' is negative in {CurrentClassName}.RemoveNode() method.");
-            if (!this._NodesId.TryGetValue(nodeId, out var nodePair)) throw new ArgumentException($"Node with ID = '{nodeId}' is not found in {CurrentClassName} nodes."); ;
+            if (id < 0) throw new ArgumentException($"Argument 'nodeId' is negative in {CurrentClassName}.RemoveNode() method.");
+            if (!this._NodesId.TryGetValue(id, out var nodePair)) throw new ArgumentException($"Node with ID = '{id}' is not found in {CurrentClassName} nodes."); ;
             _RemoveNode(nodePair);
         }
         /// <summary>
@@ -1471,11 +1479,11 @@ namespace TestDevExpress.Components
         /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
         /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
         /// </summary>
-        /// <param name="nodeKey"></param>
-        private void _RemoveNode(string nodeKey)
+        /// <param name="nodeId"></param>
+        private void _RemoveNode(string nodeId)
         {
-            if (nodeKey == null) throw new ArgumentException($"Argument 'nodeKey' is null in {CurrentClassName}.RemoveNode() method.");
-            if (!this._NodesKey.TryGetValue(nodeKey, out var nodePair)) throw new ArgumentException($"Node with Key = '{nodeKey}' is not found in {CurrentClassName} nodes."); ;
+            if (nodeId == null) throw new ArgumentException($"Argument 'nodeKey' is null in {CurrentClassName}.RemoveNode() method.");
+            if (!this._NodesKey.TryGetValue(nodeId, out var nodePair)) throw new ArgumentException($"Node with Key = '{nodeId}' is not found in {CurrentClassName} nodes."); ;
             _RemoveNode(nodePair);
         }
         /// <summary>
@@ -1506,9 +1514,19 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="nodeId"></param>
         /// <returns></returns>
-        private NodeItemInfo _GetNodeInfo(int nodeId)
+        private NodePair _GetNodePair(string nodeId)
         {
-            if (nodeId >= 0 && this._NodesId.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair;
+            return null;
+        }
+        /// <summary>
+        /// Vrátí data nodu pro daný node, podle NodeId
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private NodeItemInfo _GetNodeInfo(int id)
+        {
+            if (id >= 0 && this._NodesId.TryGetValue(id, out var nodePair)) return nodePair.NodeInfo;
             return null;
         }
         /// <summary>
@@ -1525,32 +1543,32 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Vrací data nodu podle jeho klíče
         /// </summary>
-        /// <param name="nodeKey"></param>
+        /// <param name="nodeId"></param>
         /// <returns></returns>
-        private NodeItemInfo _GetNodeInfo(string nodeKey)
+        private NodeItemInfo _GetNodeInfo(string nodeId)
         {
-            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.NodeInfo;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
             return null;
         }
         /// <summary>
         /// Vrátí ID nodu pro daný klíč
         /// </summary>
-        /// <param name="nodeKey"></param>
+        /// <param name="nodeId"></param>
         /// <returns></returns>
-        private int _GetNodeId(string nodeKey)
+        private int _GetNodeId(string nodeId)
         {
-            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.Id;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair.Id;
             return -1;
         }
         /// <summary>
         /// Vrátí aktuální hodnotu interního ID vizuálního nodu = <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Id"/>.
         /// Tato hodnota se mění při odebrání nodu z TreeView. Tuto hodnotu lze tedy použít pouze v okamžiku jejího získání.
         /// </summary>
-        /// <param name="nodeKey"></param>
+        /// <param name="nodeId"></param>
         /// <returns></returns>
-        private int _GetCurrentTreeNodeId(string nodeKey)
+        private int _GetCurrentTreeNodeId(string nodeId)
         {
-            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.CurrentTreeNodeId;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair.CurrentTreeNodeId;
             return -1;
         }
         /// <summary>
@@ -1588,7 +1606,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Po LazyLoad aktivovat první načtený node?
         /// </summary>
-        public bool LazyLoadSelectFirstNode { get; set; }
+        public LazyLoadFocusNodeType LazyLoadFocusNode { get; set; }
         /// <summary>
         /// Akce, která zahájí editaci buňky
         /// </summary>
@@ -1749,7 +1767,7 @@ namespace TestDevExpress.Components
         }
         #endregion
     }
-    #region Deklarace delegátů a tříd pro eventhandlery
+    #region Deklarace delegátů a tříd pro eventhandlery, další enumy
     /// <summary>
     /// Předpis pro eventhandlery
     /// </summary>
@@ -1811,6 +1829,24 @@ namespace TestDevExpress.Components
         NodeDelete,
         /// <summary>LazyLoadChilds</summary>
         LazyLoadChilds
+    }
+    /// <summary>
+    /// Který node se bude focusovat po LazyLoad child nodů?
+    /// </summary>
+    public enum LazyLoadFocusNodeType
+    {
+        /// <summary>
+        /// Žádný
+        /// </summary>
+        None,
+        /// <summary>
+        /// Parent node
+        /// </summary>
+        ParentNode,
+        /// <summary>
+        /// První Child node
+        /// </summary>
+        FirstChildNode
     }
     #endregion
     #region class NodeItemInfo : Data o jednom Node

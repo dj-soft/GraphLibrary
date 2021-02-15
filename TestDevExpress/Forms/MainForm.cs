@@ -1908,7 +1908,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.ImageIndexSearcher = GetImageIndex;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
-            _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.Click;
+            _TreeList.LazyLoadFocusNode = LazyLoadFocusNodeType.ParentNode;
+            _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
 
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
