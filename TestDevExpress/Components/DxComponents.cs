@@ -768,10 +768,10 @@ namespace TestDevExpress.Components
             this._MainColumn.OptionsColumn.AllowSort = false;
 
             this.OptionsBehavior.AllowExpandOnDblClick = true;
-            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;
+            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;                // Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
             this.OptionsBehavior.Editable = true;
             this.OptionsBehavior.EditingMode = DevExpress.XtraTreeList.TreeListEditingMode.Inplace;
-            this.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;             // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
+            this.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;    // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
             this.OptionsBehavior.ShowToolTips = true;
             this.OptionsBehavior.SmartMouseHover = true;
 
@@ -790,6 +790,10 @@ namespace TestDevExpress.Components
             this.OptionsSelection.InvertSelection = true;
 
             this.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;
+
+            // DirectX vypadá OK:
+            this.UseDirectXPaint = DefaultBoolean.True;
+            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;                // Běžně nezapínat, ale na DirectX to chodí!   Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
 
             // Tooltip:
             this.ToolTipController = DxComponent.CreateToolTipController();
