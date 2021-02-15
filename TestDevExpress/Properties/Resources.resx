@@ -1,0 +1,2104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="address_book_new_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\address-book-new(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="address_book_new_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\address-book-new-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="address_book_new_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\address-book-new-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="address_book_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\address-book-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="add_to_desktop_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\add-to-desktop(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_bottom_out_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-bottom-out(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_center_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-center-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_left_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-left(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_left_out_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-left-out(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_right_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-right-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_right_out_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-right-out(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_horizontal_top_out_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-horizontal-top-out(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_vertical_bottom_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-vertical-bottom-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_vertical_center_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-vertical-center-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="align_vertical_top_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\align-vertical-top-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="application_exit_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\application-exit(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="application_exit_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\application-exit-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="application_exit_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\application-exit-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="application_exit_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\application-exit-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="application_exit_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\application-exit-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="appointment_new_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\appointment-new(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="appointment_new_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\appointment-new-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="appointment_new_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\appointment-new-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="appointment_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\appointment-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="appointment_new_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\appointment-new-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_extract_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\archive-extract-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_extract_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\archive-extract-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_insert_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\archive-insert-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_insert_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\archive-insert-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_insert_directory_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\archive-insert-directory-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="archive_remove_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\archive-remove(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_down_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-down(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_down_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-down-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_down_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-down-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_down_double_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-down-double(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_down_double_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-down-double-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_down_double_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-down-double-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_left_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-left(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_left_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-left-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_left_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-left-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_left_double_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-left-double(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_left_double_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-left-double-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_left_double_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-left-double-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_right_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-right(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_right_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-right-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_right_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-right-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_right_double_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-right-double(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_right_double_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-right-double-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_right_double_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-right-double-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_up_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-up(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_up_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-up-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_up_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-up-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_up_double_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-up-double(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_up_double_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-up-double-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="arrow_up_double_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\arrow-up-double-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmarks_organize_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmarks-organize(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_folder_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-folder(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_folder_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-folder-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_list_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-list(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_list_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-list-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_list_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-list-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_new_list_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-new-list-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_silver_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-silver(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_toolbar_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-toolbar(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_toolbar_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-toolbar-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_toolbar_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-toolbar-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="bookmark_toolbar_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\bookmark-toolbar-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="call_start_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\call-start(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="call_stop_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\call-stop(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="character_set_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\character-set(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="checkbox_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\checkbox-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="click_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\click(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="code_block_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\code-block(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="code_class_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\code-class(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="code_context_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\code-context(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="code_function_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\code-function(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="code_variable_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\code-variable(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="colorize_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\colorize(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="colorize_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\colorize-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="color_fill_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\color-fill(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="color_picker_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\color-picker(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="color_picker_black_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\color-picker-black(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="color_picker_grey_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\color-picker-grey(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="color_picker_white_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\color-picker-white(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_shortcuts_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure-shortcuts(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="configure_toolbars_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\configure-toolbars(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="contact_new_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\contact-new(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="contact_new_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\contact-new-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="contact_new_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\contact-new-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="contact_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\contact-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dashboard_show_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dashboard-show(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_add_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_add(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_add_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_add-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_comit_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_comit(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_comit_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_comit-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_remove_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_remove(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_remove_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_remove-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_status_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_status(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_status_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_status-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_update_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_update(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="db_update_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\db_update-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="debug_step_instruction_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\debug-step-instruction(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="debug_step_into_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\debug-step-into(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="debug_step_into_instruction_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\debug-step-into-instruction(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="debug_step_out_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\debug-step-out(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="debug_step_over_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\debug-step-over(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="delete_table_col_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\delete_table_col(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="delete_table_row_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\delete_table_row(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_accept_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-accept(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_apply_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-apply(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_block_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-block(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_cancel_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-cancel(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_cancel_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-cancel-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_cancel_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-cancel-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_cancel_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-cancel-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_cancel_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-cancel-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_cancel_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-cancel-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_close_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-close(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_close_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-close-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_disable_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-disable(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_fewer_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-fewer(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_more_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-more(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_no_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-no(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_no_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-no-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_no_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-no-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-apply(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-apply-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-apply-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-apply-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-apply-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_ok_apply_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-ok-apply-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="dialog_yes_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\dialog-yes(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horizontal_center_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horizontal-center(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horizontal_equal_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horizontal-equal(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horizontal_left_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horizontal-left(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horizontal_margin_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horizontal-margin(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horizontal_right_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horizontal-right(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horizontal_x_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horizontal-x(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_horozontal_page_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-horozontal-page(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_bottom_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-bottom(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_center_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-center(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_equal_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-equal(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_margin_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-margin(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_page_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-page(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_top_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-top(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="distribute_vertical_y_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\distribute-vertical-y(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="documentation_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\documentation(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_close_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-close(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_close_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-close-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_close_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-close-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_close_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-close-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_decrypt_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-decrypt(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_decrypt_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-decrypt-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_decrypt_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-decrypt-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_decrypt_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-decrypt-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_edit_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-edit(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_encrypt_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-encrypt(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_encrypt_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-encrypt-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_encrypt_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-encrypt-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_encrypt_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-encrypt-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_export_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-export(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_export_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-export-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_export_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-export-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_export_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-export-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_import_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-import(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_import_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-import-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_new_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-new-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_folder_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-folder(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_recent_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-recent(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_recent_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-recent-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_recent_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-recent-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_open_remote_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-open-remote(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_page_setup_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-page-setup(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_preview_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-preview(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_preview_archive_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-preview-archive(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_frame_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-frame(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_frame_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-frame-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_frame_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-frame-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_frame_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-frame-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_preview_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-preview(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_preview_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-preview-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_preview_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-preview-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_preview_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-preview-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_print_preview_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-print-preview-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_properties_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-properties(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_properties_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-properties-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_properties_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-properties-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_properties_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-properties-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_quickprint_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-quickprint(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_quickprint_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-quickprint-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_quickprint_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-quickprint-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_quickprint_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-quickprint-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_quickprint_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-quickprint-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_quick_restart_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-quick_restart(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_revert_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-revert(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_revert_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-revert-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_revert_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-revert-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_revert_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-revert-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_revert_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-revert-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_all_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-all(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_as_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-as(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_as_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-as-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_as_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-as-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_as_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-as-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_as_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-as-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_save_as_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-save-as-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_send_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-send(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_sign_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-sign(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_sign_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-sign-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_sign_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\document-sign-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\download(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\download-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="download_later_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\download-later(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_arrow_back_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-arrow-back(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_arrow_down_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-arrow-down(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_arrow_forward_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-arrow-forward(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_arrow_up_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-arrow-up(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_bezier_curves_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-bezier-curves(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_blend_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-blend-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_brush_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-brush(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_circle_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-circle-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_cross_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-cross(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_donut_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-donut(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_ellipse_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-ellipse-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_eraser_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-eraser-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_fill_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-fill-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_freehand_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-freehand(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_halfcircle1_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-halfcircle1(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_halfcircle2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-halfcircle2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_halfcircle3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-halfcircle3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_halfcircle4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-halfcircle4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_line_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-line-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_path_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-path(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_polygon_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-polygon-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_polyline_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-polyline-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_rectangle_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-rectangle-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_spiral_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-spiral-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_square_inverted_corners_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-square-inverted-corners(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_star_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-star-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_text_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-text-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_triangle1_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-triangle1(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_triangle2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-triangle2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_triangle3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-triangle3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_triangle4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-triangle4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="draw_triangle_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\draw-triangle(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_add_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-add(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_add_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-add-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_add_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-add-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_add_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-add-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_bomb_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-bomb(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_history_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-history(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_history_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-history-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_history_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-history-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_list_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-list(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_locationbar_ltr_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-locationbar-ltr(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_clear_locationbar_rtl_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-clear-locationbar-rtl(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_copy_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-copy-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_cut_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-cut-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_delete_shred_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-delete-shred(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_destroy_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-destroy(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_10_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-10(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_and_replace_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-and-replace(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_and_replace_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-and-replace-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_and_replace_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-and-replace-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_mail_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-mail(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_project_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-project(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_replace_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-replace-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_find_user_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-find-user(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_group_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-group(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_guides_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-guides(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_history_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-history(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_history_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-history-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_history_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-history-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_history_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-history-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_paste_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-paste-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_redo_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-redo-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_remove_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-remove(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_remove_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-remove-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_remove_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-remove-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_rename_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-rename(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-select(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_all_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-select-all(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_all_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-select-all-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_all_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-select-all-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_select_all_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-select-all-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_shred_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-shred(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_sort_az_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-sort-az(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_text_frame_update_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-text-frame-update(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undelete_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undelete(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_undo_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-undo-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_user_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\edit-user(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="family_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\family(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="family_off_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\family-off(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="feed_subscribe_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\feed-subscribe(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="fileview_preview_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\fileview-preview(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="filter_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\filter(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_black_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-black(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_blue_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-blue(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_green_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-green(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_red_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-red(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="flag_yellow_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\flag-yellow(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_new_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-new-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="folder_sync_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\folder-sync(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="fork_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\fork(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_add_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-add-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_break_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-break-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_connect_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-connect-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_disconnect_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-disconnect-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_fill_color_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-fill-color(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_font_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-font(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_font_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-font-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_font_size_less_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-font-size-less(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_font_size_more_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-font-size-more(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_less_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-less(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_less_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-less-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_less_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-less-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_less_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-less-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_less_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-less-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_more_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-more(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_more_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-more-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_more_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-more-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_more_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-more-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_indent_more_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-indent-more-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_join_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-join-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_center_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-center(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_center_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-center-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_center_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-center-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_center_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-center-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_center_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-center-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_fill_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-fill(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_fill_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-fill-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_fill_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-fill-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_fill_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-fill-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_fill_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-fill-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-left(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-left-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-left-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-left-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-left-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_left_last_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-left-last(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_right_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-right(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_right_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-right-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_right_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-right-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_right_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-right-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_right_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-right-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_justify_right_last_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-justify-right-last(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_line_spacing_double_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-line-spacing-double(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_line_spacing_normal_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-line-spacing-normal(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_line_spacing_triple_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-line-spacing-triple(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_list_ordered_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-list-ordered(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_list_unordered_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-list-unordered(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_remove_node_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-remove-node(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_stroke_color_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-stroke-color(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_bold_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-bold(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_bold_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-bold-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_bold_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-bold-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_bold_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-bold-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_bold_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-bold-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_color_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-color(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_direction_ltr_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-direction-ltr(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_direction_ltr_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-direction-ltr-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_direction_rtl_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-direction-rtl(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_direction_rtl_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-direction-rtl-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_italic_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-italic(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_italic_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-italic-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_italic_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-italic-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_italic_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-italic-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_italic_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-italic-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_strikethrough_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-strikethrough(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_strikethrough_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-strikethrough-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_strikethrough_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-strikethrough-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_strikethrough_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-strikethrough-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_subscript_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-subscript-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_superscript_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-superscript-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_underline_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-underline(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_underline_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-underline-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_underline_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-underline-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_underline_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-underline-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_text_underline_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-text-underline-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="format_wordwrap_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\format-wordwrap(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_config_background_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-config-background(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_config_board_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-config-board(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_config_custom_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-config-custom(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_config_options_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-config-options(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_config_theme_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-config-theme(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_config_tiles_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-config-tiles(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_difficult_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-difficult(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_endturn_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-endturn(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_endturn_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-endturn-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_highscores_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-highscores(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_hint_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-hint(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="games_solve_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\games-solve(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="goto_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\goto(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_bottom_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-bottom(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_bottom_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-bottom-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_bottom_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-bottom-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_bottom_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-bottom-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_bottom_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-bottom-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_bottom_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-bottom-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_10_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-10(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_down_search_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-down-search(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_view_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-view(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_first_view_page_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-first-view-page(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_frist_view_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-frist-view(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_10_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-10(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_home_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-home-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_declaration_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-declaration(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_definition_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-definition(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_locationbar_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-locationbar(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_jump_today_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-jump-today(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_view_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last-view(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_last_view_page_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-last-view-page(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_context_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-context(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_use_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-use(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_view_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-view(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_next_view_page_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-next-view-page(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_context_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-context(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_use_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-use(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_view_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-view(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_previous_view_page_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-previous-view-page(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_top_8_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-top-8(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_10_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-10(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_7_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-7(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_9_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-9(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="go_up_search_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\go-up-search(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="halfencrypted_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\halfencrypted(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_about_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-about(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_about_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-about-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_about_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-about-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_about_kde_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-about-kde(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_about_kde_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-about-kde-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_about_kde_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-about-kde-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contents_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contents(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contents_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contents-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contents_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contents-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contents_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contents-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contents_5_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contents-5(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contextual_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contextual(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_contextual_2_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-contextual-2(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_faq_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-faq(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_hint_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\help-hint(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="help_hint_48_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions48\help-hint(48).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="homepage_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\homepage(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="hwinfo_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Actions24\hwinfo(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Menu1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Menu1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Menu2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Menu2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball01_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball01_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball02_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball02_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball03_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball03_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball04_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball04_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball05_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball05_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball06_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball06_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball07_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball07_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball08_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball08_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball09_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball09_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball10_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball10_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball11_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball11_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball12_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball12_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball13_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball13_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball14_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball14_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball15_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball15_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball16_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball16_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball17_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball17_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball18_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball18_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball19_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball19_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball20_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball20_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball21_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball21_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball22_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball22_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ball23_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\Ball23_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit_add_4_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\edit-add-4_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="hourglass_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\hourglass_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="list_add_3_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\list-add-3_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="lock_5_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\lock-5_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="msn_blocked_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\msn-blocked_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="object_locked_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\object-locked-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="object_unlocked_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Icons16\object-unlocked-2_16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+</root>
