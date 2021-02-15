@@ -6669,5 +6669,15 @@ namespace TestDevExpress.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap select_rectangular_24_ {
+            get {
+                object obj = ResourceManager.GetObject("select_rectangular_24_", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
     }
 }

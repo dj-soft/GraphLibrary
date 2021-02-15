@@ -80,12 +80,13 @@ namespace TestDevExpress.Forms
             foreach (DS.SkinContainer skin in DS.SkinManager.Default.Skins)
                 skins.Add(skin);
             skins.Sort((a, b) => String.Compare(a.SkinName, b.SkinName));
+            string initialSkinName = "Seven";
             TextItem selectedItem = null;
             foreach (DS.SkinContainer skin in skins)
             {
                 TextItem item = new TextItem() { Text = skin.SkinName, Item = skin };
                 this.SkinList.Items.Add(item);
-                if (selectedItem == null || item.Text == "DevExpress Dark Style") selectedItem = item;
+                if (selectedItem == null || item.Text == initialSkinName) selectedItem = item;
                 this.Skins.Add(skin);
             }
             this.SkinList.SelectedIndexChanged += SkinList_SelectedIndexChanged;
@@ -1949,8 +1950,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _LoadChildNodesFromServerBgr(DxTreeViewNodeArgs args)
         {
-            string parentKey = args.NodeItemInfo.NodeKey;
-            _AddLogLine($"Načítám data pro node '{parentKey}'...");
+            string parentNodeId = args.NodeItemInfo.NodeId;
+            _AddLogLine($"Načítám data pro node '{parentNodeId}'...");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
@@ -1964,9 +1965,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             // Vytvoříme ChildNodes a zobrazíme je:
             bool empty = (RandomText.Rand.Next(10) > 7);
-            var nodes = _CreateSampleChilds(parentKey, ItemCountType.Standard);       // A pak vyrobíme Child nody
+            var nodes = _CreateSampleChilds(parentNodeId, ItemCountType.Standard);       // A pak vyrobíme Child nody
             _AddLogLine($"Načtena data: {nodes.Count} prvků.");
-            _TreeList.AddLazyLoadNodes(parentKey, nodes);            //  a pošleme je do TreeView.
+            _TreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         private void _TreeList_NodeEdited(object sender, DxTreeViewNodeArgs args)
         {
@@ -1976,32 +1977,32 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private void _TreeNodeEditedBgr(DxTreeViewNodeArgs args)
         {
             var nodeInfo = args.NodeItemInfo;
-            string nodeKey = nodeInfo.NodeKey;
-            string parentKey = nodeInfo.ParentNodeKey;
+            string nodeId = nodeInfo.NodeId;
+            string parentNodeId = nodeInfo.ParentNodeId;
             string oldValue = nodeInfo.Text;
             string newValue = (args.EditedValue is string text ? text : "");
-            _AddLogLine($"Změna textu pro node '{nodeKey}': '{oldValue}' => '{newValue}'");
+            _AddLogLine($"Změna textu pro node '{nodeId}': '{oldValue}' => '{newValue}'");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
             if (String.IsNullOrEmpty(newValue))
             {   // Delete node:
                 if (nodeInfo.CanDelete)
-                    _TreeList.RemoveNode(nodeKey);
+                    _TreeList.RemoveNode(nodeId);
             }
             else if (oldValue == "")
             {   // Insert node:
                 _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
                 {   // V jednom vizuálním zámku:
-                    _TreeList.RemoveNode(node.NodeKey);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
+                    _TreeList.RemoveNode(node.NodeId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeKey, false);
+                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, false);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode);
 
                     // Přidám Blank node, ten bude opět na konci Childs:
-                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeKey, true);
+                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeId, true);
                     _TreeList.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
@@ -2022,11 +2023,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _TreeNodeDeleteBgr(DxTreeViewNodeArgs args)
         {
-            string nodeKey = args.NodeItemInfo.NodeKey;
+            string nodeId = args.NodeItemInfo.NodeId;
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
-            _TreeList.RemoveNode(nodeKey);
+            _TreeList.RemoveNode(nodeId);
         }
         private void _AddLog(string actionName, DxTreeViewNodeArgs args, bool showValue = false)
         {
