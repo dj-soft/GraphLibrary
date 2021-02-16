@@ -1928,6 +1928,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.ActivatedEditor += _TreeList_AnyAction;
             _TreeList.EditorDoubleClick += _TreeList_AnyAction;
             _TreeList.NodeEdited += _TreeList_NodeEdited;
+            _TreeList.NodeCheckedChange += _TreeList_AnyAction;
             _TreeList.NodeDelete += _TreeList_NodeDelete;
             _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
 
@@ -1944,7 +1945,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
             _AddLogLine(line);
         }
-        private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args) { _AddLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick)); }
+        private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args)
+        {
+            _AddLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick || args.Action == TreeViewActionType.NodeCheckedChange)); }
         private void _TreeList_LazyLoadChilds(object sender, DxTreeViewNodeArgs args)
         {
             _TreeList_AnyAction(sender, args);
@@ -2098,6 +2101,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             {
                 string text = RandomText.GetRandomSentence(2, 5);
                 childNode = new NodeItemInfo(childKey, parentKey, text, canEdit: true, canDelete: true);
+                childNode.CanCheck = true;
+                childNode.IsChecked = (RandomText.Rand.Next(20) > 16);
                 _FillNode(childNode);
             }
             return childNode;

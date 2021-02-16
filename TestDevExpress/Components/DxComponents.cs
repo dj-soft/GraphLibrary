@@ -805,6 +805,8 @@ namespace TestDevExpress.Components
             this.KeyDown += _OnKeyDown;
             this.ShownEditor += _OnShownEditor;
             this.ValidatingEditor += _OnValidatingEditor;
+            this.BeforeCheckNode += _OnBeforeCheckNode;
+            this.AfterCheckNode += _OnAfterCheckNode;
             this.FocusedNodeChanged += _OnFocusedNodeChanged;
             this.BeforeExpand += _OnBeforeExpand;
             this.AfterCollapse += _OnAfterCollapse;
@@ -1038,6 +1040,36 @@ namespace TestDevExpress.Components
             NodeItemInfo nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
                 this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
+        }
+        /// <summary>
+        /// Před změnou Checked stavu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnBeforeCheckNode(object sender, DevExpress.XtraTreeList.CheckNodeEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo != null)
+            {   // Podle režimu povolíme Check pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                args.CanCheck = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck));
+            }
+        }
+        /// <summary>
+        /// Po změně Checked stavu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnAfterCheckNode(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            var checkMode = this.CheckBoxMode;
+            if (nodeInfo != null && (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck)))
+            {
+                bool isChecked = args.Node.Checked;
+                nodeInfo.IsChecked = isChecked;
+                this.OnNodeCheckedChange(nodeInfo, isChecked);
+            }
         }
         /// <summary>
         /// Po klávese Delete nad nodem bez editace
@@ -1821,6 +1853,18 @@ namespace TestDevExpress.Components
             if (NodeEdited != null) NodeEdited(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeEdited, editedValue));
         }
         /// <summary>
+        /// Uživatel změnil stav Checked na prvku.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeCheckedChange;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeCheckedChange"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnNodeCheckedChange(NodeItemInfo nodeInfo, bool isChecked)
+        {
+            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, isChecked));
+        }
+        /// <summary>
         /// Uživatel dal Delete na uzlu, který se needituje.
         /// </summary>
         public event DxTreeViewNodeHandler NodeDelete;
@@ -1906,6 +1950,8 @@ namespace TestDevExpress.Components
         NodeEdited,
         /// <summary>NodeDelete</summary>
         NodeDelete,
+        /// <summary>NodeCheckedChange</summary>
+        NodeCheckedChange,
         /// <summary>LazyLoadChilds</summary>
         LazyLoadChilds
     }
