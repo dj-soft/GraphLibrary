@@ -1903,12 +1903,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _SplitContainer = DxComponent.CreateDxSplitContainer(this._TreeViewPanel, null, DockStyle.Fill, Orientation.Vertical, DevExpress.XtraEditors.SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
 
             _TreeList = new DxTreeViewListSimple() { Dock = DockStyle.Fill };
-            _TreeList.SelectImageList = _Images16;
-            _TreeList.StateImageList = _Images16;
+            _TreeList.CheckBoxMode = TreeViewCheckBoxMode.SpecifyByNode;
+            _TreeList.ImageMode = TreeViewImageMode.Image01;
+            _TreeList.ImageList = _Images16;
             _TreeList.ImageIndexSearcher = GetImageIndex;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
-            _TreeList.LazyLoadFocusNode = LazyLoadFocusNodeType.ParentNode;
+            _TreeList.LazyLoadFocusNode = TreeViewLazyLoadFocusNodeType.ParentNode;
             _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
 
             _TreeList.Parent = this;

@@ -812,6 +812,8 @@ namespace TestDevExpress.Components
             // Preset:
             this.LazyLoadNodeText = "...";
             this.LazyLoadNodeImageName = null;
+            this.CheckBoxMode = TreeViewCheckBoxMode.None;
+            this.ImageMode = TreeViewImageMode.Image0;
         }
         DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
         private Dictionary<int, NodePair> _NodesId;
@@ -1125,9 +1127,9 @@ namespace TestDevExpress.Components
                 var firstPair = this._RemoveAddNodes(null, addNodes);
 
                 var focusType = this.LazyLoadFocusNode;
-                if (firstPair != null && (isAnySelected || focusType == LazyLoadFocusNodeType.FirstChildNode))
+                if (firstPair != null && (isAnySelected || focusType == TreeViewLazyLoadFocusNodeType.FirstChildNode))
                     this.SetFocusedNode(firstPair.TreeNode);
-                else if (focusType == LazyLoadFocusNodeType.ParentNode)
+                else if (focusType == TreeViewLazyLoadFocusNodeType.ParentNode)
                 {
                     var parentPair = this._GetNodePair(parentNodeId);
                     if (parentPair != null)
@@ -1610,7 +1612,80 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Po LazyLoad aktivovat první načtený node?
         /// </summary>
-        public LazyLoadFocusNodeType LazyLoadFocusNode { get; set; }
+        public TreeViewLazyLoadFocusNodeType LazyLoadFocusNode { get; set; }
+        /// <summary>
+        /// Režim zobrazení Checkboxů. 
+        /// Výchozí je <see cref="TreeViewCheckBoxMode.None"/>
+        /// </summary>
+        public TreeViewCheckBoxMode CheckBoxMode
+        {
+            get { return _CheckBoxMode; }
+            set
+            {
+                _CheckBoxMode = value;
+                this.OptionsView.ShowCheckBoxes = (value == TreeViewCheckBoxMode.AllNodes || value == TreeViewCheckBoxMode.SpecifyByNode);
+            }
+        }
+        private TreeViewCheckBoxMode _CheckBoxMode;
+        /// <summary>
+        /// Režim kreslení ikon u nodů.
+        /// Výchozí je <see cref="TreeViewImageMode.Image0"/>.
+        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
+        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// a musí plnit jména ikon do <see cref="NodeItemInfo.ImageName0"/> atd.
+        /// </summary>
+        public TreeViewImageMode ImageMode
+        {
+            get { return _ImageMode; }
+            set { _SetImageSetting(_ImageList, value); }
+        }
+        private TreeViewImageMode _ImageMode;
+        /// <summary>
+        /// Knihovna ikon pro nody.
+        /// Výchozí je null.
+        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
+        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// a musí plnit jména ikon do <see cref="NodeItemInfo.ImageName0"/> atd.
+        /// <para/>
+        /// Nepoužívejme přímo SelectImageList ani StateImageList.
+        /// </summary>
+        public ImageList ImageList
+        {
+            get { return _ImageList; }
+            set { _SetImageSetting(value, _ImageMode); }
+        }
+        private ImageList _ImageList;
+        /// <summary>
+        /// Zajistí nastavení režimu pro ikony
+        /// </summary>
+        /// <param name="imageList"></param>
+        /// <param name="imageMode"></param>
+        private void _SetImageSetting(ImageList imageList, TreeViewImageMode imageMode)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<ImageList, TreeViewImageMode>(_SetImageSetting), imageList, imageMode); return; }
+
+            _ImageList = imageList;
+            _ImageMode = imageMode;
+            switch (imageMode)
+            {
+                case TreeViewImageMode.None:
+                    this.SelectImageList = null;
+                    this.StateImageList = null;
+                    break;
+                case TreeViewImageMode.Image0:
+                    this.SelectImageList = imageList;
+                    this.StateImageList = null;
+                    break;
+                case TreeViewImageMode.Image1:
+                    this.SelectImageList = null;
+                    this.StateImageList = imageList;
+                    break;
+                case TreeViewImageMode.Image01:
+                    this.SelectImageList = imageList;
+                    this.StateImageList = imageList;
+                    break;
+            }
+        }
         /// <summary>
         /// Akce, která zahájí editaci buňky
         /// </summary>
@@ -1837,7 +1912,7 @@ namespace TestDevExpress.Components
     /// <summary>
     /// Který node se bude focusovat po LazyLoad child nodů?
     /// </summary>
-    public enum LazyLoadFocusNodeType
+    public enum TreeViewLazyLoadFocusNodeType
     {
         /// <summary>
         /// Žádný
@@ -1851,6 +1926,46 @@ namespace TestDevExpress.Components
         /// První Child node
         /// </summary>
         FirstChildNode
+    }
+    /// <summary>
+    /// Jaké ikony bude TreeView zobrazovat - a rezervovat pro ně prostor
+    /// </summary>
+    public enum TreeViewImageMode
+    {
+        /// <summary>
+        /// Žádná ikona
+        /// </summary>
+        None,
+        /// <summary>
+        /// Pouze ikona 0, přebírá se z <see cref="NodeItemInfo.ImageName0"/> a <see cref="NodeItemInfo.ImageName0Selected"/>
+        /// </summary>
+        Image0,
+        /// <summary>
+        /// Pouze ikona 1, přebírá se z <see cref="NodeItemInfo.ImageName1"/>
+        /// </summary>
+        Image1,
+        /// <summary>
+        /// Obě ikony 0 a 1
+        /// </summary>
+        Image01
+    }
+    /// <summary>
+    /// Režim zobrazení CheckBoxů u nodu
+    /// </summary>
+    public enum TreeViewCheckBoxMode
+    {
+        /// <summary>
+        /// Nezobrazovat nikde
+        /// </summary>
+        None,
+        /// <summary>
+        /// Jednotlivě podle hodnoty <see cref="NodeItemInfo.CanCheck"/>
+        /// </summary>
+        SpecifyByNode,
+        /// <summary>
+        /// Automaticky u všech nodů
+        /// </summary>
+        AllNodes
     }
     #endregion
     #region class NodeItemInfo : Data o jednom Node
