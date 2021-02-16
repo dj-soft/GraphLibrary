@@ -14,6 +14,7 @@ using DXG = DevExpress.XtraGrid;
 using DC = DevExpress.XtraCharts;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.Utils;
+using DevExpress.XtraTreeList.Nodes;
 
 namespace Djs.Tools.CovidGraphs
 {
@@ -810,6 +811,9 @@ namespace Djs.Tools.CovidGraphs
         private Dictionary<int, NodePair> _NodesId;
         private Dictionary<string, NodePair> _NodesKey;
         private int _LastId;
+        /// <summary>
+        /// Třída obsahující jeden pár dat: vizuální plus datová
+        /// </summary>
         private class NodePair
         {
             public NodePair(DxTreeViewListSimple owner, int nodeId, NodeItemInfo nodeInfo, DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, bool isLazyChild)
@@ -865,7 +869,7 @@ namespace Djs.Tools.CovidGraphs
             if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree)
             {
                 var hit = tree.CalcHitInfo(e.ControlMousePosition);
-                if (hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.Cell || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.SelectImage)
+                if (hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.Cell || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.SelectImage || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.StateImage)
                 {
                     var nodeInfo = this._GetNodeInfo(hit.Node);
                     if (nodeInfo != null && !String.IsNullOrEmpty(nodeInfo.ToolTipText))
@@ -917,9 +921,9 @@ namespace Djs.Tools.CovidGraphs
         {
             NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
 
-            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.Editable);
+            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
 
-            if (nodeInfo != null)
+            if (nodeInfo != null && !this.IsLocked)
                 this.OnNodeSelected(nodeInfo);
         }
         /// <summary>
@@ -959,6 +963,8 @@ namespace Djs.Tools.CovidGraphs
                 case Keys.Delete:
                     if (this.EditorHelper.ActiveEditor == null)
                     {
+                        this._OnNodeDelete(this.FocusedNodeInfo);
+                        e.Handled = true;
                     }
                     break;
             }
@@ -1014,6 +1020,15 @@ namespace Djs.Tools.CovidGraphs
                 this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
         }
         /// <summary>
+        /// Po klávese Delete nad nodem bez editace
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        private void _OnNodeDelete(NodeItemInfo nodeInfo)
+        {
+            if (nodeInfo != null && nodeInfo.CanDelete)
+                this.OnNodeDelete(nodeInfo);
+        }
+        /// <summary>
         /// Před rozbalením nodu se volá public event <see cref="NodeExpanded"/>,
         /// a pokud node má nastaveno <see cref="NodeItemInfo.LazyLoadChilds"/> = true, pak se ovlá ještě <see cref="LazyLoadChilds"/>.
         /// </summary>
@@ -1024,6 +1039,7 @@ namespace Djs.Tools.CovidGraphs
             NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
             if (nodeInfo != null)
             {
+                nodeInfo.Expanded = true;
                 this.OnNodeExpanded(nodeInfo);                       // Zatím nevyužívám možnost zakázání Expand, kterou dává args.CanExpand...
                 if (nodeInfo.LazyLoadChilds)
                     this.OnLazyLoadChilds(nodeInfo);
@@ -1039,6 +1055,7 @@ namespace Djs.Tools.CovidGraphs
             NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
             if (nodeInfo != null)
             {
+                nodeInfo.Expanded = false;
                 this.OnNodeCollapsed(nodeInfo);
             }
         }
@@ -1047,36 +1064,36 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
-        /// <param name="node"></param>
-        public void AddNode(NodeItemInfo node)
+        /// <param name="nodeInfo"></param>
+        public void AddNode(NodeItemInfo nodeInfo)
         {
-            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(AddNode), node); return; }
-    
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            NodePair firstPair = null;
-            this._AddNode(node, ref firstPair);
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(AddNode), nodeInfo); return; }
+
+            using (LockGui(true))
+            {
+                NodePair firstPair = null;
+                this._AddNode(nodeInfo, ref firstPair);
+            }
         }
         /// <summary>
         /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// Na konci provede Refresh.
         /// </summary>
         /// <param name="addNodes"></param>
         public void AddNodes(IEnumerable<NodeItemInfo> addNodes)
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<NodeItemInfo>>(AddNodes), addNodes); return; }
 
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            this._RemoveAddNodes(null, addNodes);
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+            using (LockGui(true))
+            {
+                this._RemoveAddNodes(null, addNodes);
+            }
         }
         /// <summary>
         /// Přidá řadu nodů, které jsou donačteny k danému parentu. Současné nody ponechává. Lze tak přidat například jednu podvětev.
         /// Nejprve najde daného parenta, a zruší z něj příznak LazyLoad (protože právě tímto načtením jsou jeho nody vyřešeny). Současně odebere "wait" node (prázdný node, simulující načítání dat).
         /// Pak teprve přidá nové nody.
+        /// Na konci provede Refresh.
         /// </summary>
         /// <param name="parentKey"></param>
         /// <param name="addNodes"></param>
@@ -1084,57 +1101,193 @@ namespace Djs.Tools.CovidGraphs
         {
             if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<NodeItemInfo>>(AddLazyLoadNodes), parentKey, addNodes); return; }
 
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            bool isAnySelected = this._RemoveLazyLoadFromParent(parentKey);
-            var firstPair = this._RemoveAddNodes(null, addNodes);
-            if (firstPair != null && (isAnySelected || this.LazyLoadSelectFirstNode)) this.FocusedNode = firstPair.TreeNode;
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
-
-            this.Refresh();
+            using (LockGui(true))
+            {
+                bool isAnySelected = this._RemoveLazyLoadFromParent(parentKey);
+                var firstPair = this._RemoveAddNodes(null, addNodes);
+                if (firstPair != null && (isAnySelected || this.LazyLoadSelectFirstNode))
+                    this.SetFocusedNode(firstPair.TreeNode);
+                    // this.FocusedNode = firstPair.TreeNode;
+            }
         }
         /// <summary>
-        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// Selectuje daný Node
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        public void SelectNode(NodeItemInfo nodeInfo)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(SelectNode), nodeInfo); return; }
+
+            using (LockGui(true))
+            {
+                if (nodeInfo != null && nodeInfo.NodeId >= 0 && this._NodesId.TryGetValue(nodeInfo.NodeId, out var nodePair))
+                {
+                    this.SetFocusedNode(nodePair.TreeNode);
+                }
+            }
+        }
+        /// <summary>
+        /// Odebere jeden daný node, podle klíče. Na konci provede Refresh.
+        /// Pro odebrání více nodů je lepší použít <see cref="RemoveNodes(IEnumerable{string})"/>.
+        /// </summary>
+        /// <param name="addNodes"></param>
+        public void RemoveNode(string removeNodeKey)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<string>(RemoveNode), removeNodeKey); return; }
+
+            using (LockGui(true))
+            {
+                this._RemoveAddNodes(new string[] { removeNodeKey }, null);
+            }
+        }
+        /// <summary>
+        /// Odebere řadu nodů, podle klíče. Na konci provede Refresh.
         /// </summary>
         /// <param name="addNodes"></param>
         public void RemoveNodes(IEnumerable<string> removeNodeKeys)
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>>(RemoveNodes), removeNodeKeys); return; }
-    
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            this._RemoveAddNodes(removeNodeKeys, null);
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+
+            using (LockGui(true))
+            {
+                this._RemoveAddNodes(removeNodeKeys, null);
+            }
         }
         /// <summary>
-        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev. Na konci provede Refresh.
         /// </summary>
         /// <param name="addNodes"></param>
         public void RemoveAddNodes(IEnumerable<string> removeNodeKeys, IEnumerable<NodeItemInfo> addNodes)
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>, IEnumerable<NodeItemInfo>>(RemoveAddNodes), removeNodeKeys, addNodes); return; }
 
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            this._RemoveAddNodes(removeNodeKeys, addNodes);
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+            using (LockGui(true))
+            {
+                this._RemoveAddNodes(removeNodeKeys, addNodes);
+            }
         }
         /// <summary>
-        /// Smaže všechny nodes
+        /// Smaže všechny nodes. Na konci provede Refresh.
         /// </summary>
         public new void ClearNodes()
         {
             if (this.InvokeRequired) { this.Invoke(new Action(ClearNodes)); return; }
 
-            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
-            this.BeginUnboundLoad();
-            _ClearNodes();
-            this.EndUnboundLoad();
-            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+            using (LockGui(true))
+            {
+                _ClearNodes();
+            }
         }
+        /// <summary>
+        /// Zajistí refresh jednoho daného nodu. 
+        /// Pro refresh více nodů použijme <see cref="RefreshNodes(IEnumerable{NodeItemInfo})"/>!
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        public void RefreshNode(NodeItemInfo nodeInfo)
+        {
+            if (nodeInfo == null) return;
+            if (nodeInfo.NodeId < 0) throw new ArgumentException($"Cannot refresh node '{nodeInfo.NodeKey}': '{nodeInfo.Text}' if the node is not in TreeView.");
+
+            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(RefreshNode), nodeInfo); return; }
+
+            using (LockGui(true))
+            {
+                this._RefreshNode(nodeInfo);
+            }
+        }
+        /// <summary>
+        /// Zajistí refresh daných nodů.
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        public void RefreshNodes(IEnumerable<NodeItemInfo> nodes)
+        {
+            if (nodes == null) return;
+
+            if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<NodeItemInfo>>(RefreshNodes), nodes); return; }
+
+            using (LockGui(true))
+            {
+                foreach (var nodeInfo in nodes)
+                    this._RefreshNode(nodeInfo);
+            }
+        }
+        #endregion
+        #region Provádění akce v jednom zámku
+        /// <summary>
+        /// Zajistí provedení dodané akce s argumenty v GUI threadu a v jednom vizuálním zámku s jedním Refreshem na konci.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="args"></param>
+        public void RunInLock(Delegate method, params object[] args)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<Delegate, object[]>(RunInLock), method, args); return; }
+
+            using (LockGui(true))
+            {
+                method.Method.Invoke(method.Target, args);
+            }
+        }
+        /// <summary>
+        /// Po dobu using bloku zamkne GUI this controlu. Při Dispose jej odemkne a volitelně zajistí Refresh.
+        /// Pokud je metoda volána rekurzivně = v době, kdy je objekt zamčen, pak vrátí "void" zámek = vizuálně nefunkční, ale formálně korektní.
+        /// </summary>
+        /// <returns></returns>
+        protected IDisposable LockGui(bool withRefresh)
+        {
+            if (IsLocked) return new LockTreeViewGuiInfo();
+            return new LockTreeViewGuiInfo(this, withRefresh);
+        }
+        /// <summary>
+        /// Příznak, zda je objekt odemčen (false) nebo zamčen (true).
+        /// Objekt se zamkne vytvořením první instance <see cref="LockTreeViewGuiInfo"/>, 
+        /// následující vytváření i Dispose nových instancí týchž objektů již stav nezmění, 
+        /// a až Dispose posledního zámku objekt zase odemkne a volitelně provede Refresh.
+        /// </summary>
+        protected bool IsLocked;
+        /// <summary>
+        /// IDisposable objekt pro párové operace se zamknutím / odemčením GUI
+        /// </summary>
+        protected class LockTreeViewGuiInfo : IDisposable
+        {
+            public LockTreeViewGuiInfo() { }
+            public LockTreeViewGuiInfo(DxTreeViewListSimple owner, bool withRefresh)
+            {
+                if (owner != null)
+                {
+                    owner.IsLocked = true;
+                    ((System.ComponentModel.ISupportInitialize)(owner)).BeginInit();
+                    owner.BeginUnboundLoad();
+
+                    _Owner = owner;
+                    _WithRefresh = withRefresh;
+                    _FocusedNodeKey = owner.FocusedNodeInfo?.NodeKey;
+                }
+            }
+            void IDisposable.Dispose()
+            {
+                var owner = _Owner;
+                if (owner != null)
+                {
+                    owner.EndUnboundLoad();
+                    ((System.ComponentModel.ISupportInitialize)(owner)).EndInit();
+
+                    if (_WithRefresh)
+                        owner.Refresh();
+
+                    owner.IsLocked = false;
+
+                    var focusedNodeInfo = owner.FocusedNodeInfo;
+                    string oldNodeKey = _FocusedNodeKey;
+                    string newNodeKey = focusedNodeInfo?.NodeKey;
+                    if (!String.Equals(oldNodeKey, newNodeKey))
+                        owner.OnNodeSelected(focusedNodeInfo);
+                }
+            }
+            private DxTreeViewListSimple _Owner;
+            private bool _WithRefresh;
+            private string _FocusedNodeKey;
+        }
+        #region Private sféra
         /// <summary>
         /// Odebere nody ze stromu a z evidence.
         /// Přidá více node do stromu a do evidence, neřeší blokování GUI.
@@ -1168,17 +1321,17 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Vytvoří nový jeden vizuální node podle daných dat, a přidá jej do vizuálního prvku a do interní evidence, neřeší blokování GUI
         /// </summary>
-        /// <param name="node"></param>
-        private void _AddNode(NodeItemInfo node, ref NodePair firstPair)
+        /// <param name="nodeInfo"></param>
+        private void _AddNode(NodeItemInfo nodeInfo, ref NodePair firstPair)
         {
-            if (node == null) return;
+            if (nodeInfo == null) return;
 
-            NodePair nodePair = _AddNodeOne(node, false);  // Daný node (z aplikace) vloží do Tree a vrátí
+            NodePair nodePair = _AddNodeOne(nodeInfo, false);  // Daný node (z aplikace) vloží do Tree a vrátí
             if (firstPair == null && nodePair != null)
                 firstPair = nodePair;
 
-            if (node.LazyLoadChilds)
-                _AddNodeLazyLoad(node);                    // Pokud node má nastaveno LazyLoadChilds, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
+            if (nodeInfo.LazyLoadChilds)
+                _AddNodeLazyLoad(nodeInfo);                    // Pokud node má nastaveno LazyLoadChilds, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
         }
         private void _AddNodeLazyLoad(NodeItemInfo parentNode)
         {
@@ -1194,17 +1347,16 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="nodeInfo"></param>
         private NodePair _AddNodeOne(NodeItemInfo nodeInfo, bool isLazyChild)
         {
+            // Kontrola duplicity raději předem:
+            string nodeKey = nodeInfo.NodeKey;
+            if (nodeKey != null && this._NodesKey.ContainsKey(nodeKey)) throw new ArgumentException($"It is not possible to add an element because an element with the same key '{nodeKey}' already exists in the TreeView.");
+
             // 1. Vytvoříme TreeListNode:
+            object nodeData = new object[] { nodeInfo.Text };
             int parentId = _GetCurrentTreeNodeId(nodeInfo.ParentNodeKey);
-            int imageIndex = _GetImageIndex(nodeInfo.ImageName);
-            int selectImageIndex = (!String.IsNullOrEmpty(nodeInfo.ImageNameSelected) ? _GetImageIndex(nodeInfo.ImageNameSelected) : -1);
-            if (selectImageIndex < 0) selectImageIndex = imageIndex;
-            CheckState checkState = CheckState.Unchecked;
-            var treeNode = this.AppendNode(new object[] { nodeInfo.Text }, parentId, imageIndex, selectImageIndex, -1,  checkState);
-
-            // treeNode.Expanded = node.Expanded;                  // Nyní nemá význam, protože Node ještě nemá svoje Childs. Má smysl až po přidání dalších nodů, které jsou jeho Childs. Řeší se v AddNodes().
-            // treeNode.StateImageIndex = -1;                      // Zatím nepoužívám druhou ikonu, používám ImageIndex, ta se nechá změnit podle Selected stavu
-
+            var treeNode = this.AppendNode(nodeData, parentId);
+            _FillTreeNode(treeNode, nodeInfo, false);
+           
             // 2. Propojíme vizuální node a datový objekt - pouze přes int ID, nikoli vzájemné reference:
             int nodeId = ++_LastId;
             NodePair nodePair = new NodePair(this, nodeId, nodeInfo, treeNode, isLazyChild);
@@ -1214,6 +1366,35 @@ namespace Djs.Tools.CovidGraphs
             if (nodePair.NodeKey != null) this._NodesKey.Add(nodePair.NodeKey, nodePair);
 
             return nodePair;
+        }
+        /// <summary>
+        /// Refresh jednoho Node
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        private void _RefreshNode(NodeItemInfo nodeInfo)
+        {
+            if (nodeInfo != null && nodeInfo.NodeKey != null && this._NodesKey.TryGetValue(nodeInfo.NodeKey, out var nodePair))
+            {
+                _FillTreeNode(nodePair.TreeNode, nodePair.NodeInfo, true);
+            }
+        }
+        /// <summary>
+        /// Do daného <see cref="TreeListNode"/> vepíše všechny potřebné informace z datového <see cref="NodeItemInfo"/>.
+        /// Jde o: text, stav zaškrtnutí, ikony, rozbalení nodu.
+        /// </summary>
+        /// <param name="treeNode"></param>
+        /// <param name="nodeInfo"></param>
+        /// <param name="canExpand"></param>
+        private void _FillTreeNode(TreeListNode treeNode, NodeItemInfo nodeInfo, bool canExpand)
+        {
+            treeNode.SetValue(0, nodeInfo.Text);
+            treeNode.Checked = nodeInfo.CanCheck && nodeInfo.IsChecked;
+            int imageIndex = _GetImageIndex(nodeInfo.ImageName0, -1);
+            treeNode.ImageIndex = imageIndex;                                                      // ImageIndex je vlevo, a může se změnit podle stavu Seleted
+            treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageName0Selected, imageIndex);   // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
+            treeNode.StateImageIndex = _GetImageIndex(nodeInfo.ImageName1, -1);                    // StateImageIndex je vpravo, a nereaguje na stav Selected
+
+            if (canExpand) treeNode.Expanded = nodeInfo.Expanded;                                  // Expanded se nastavuje pouze z Refreshe (tam má smysl), ale ne při tvorbě (tam ještě nemáme ChildNody)
         }
         /// <summary>
         /// Metoda najde a odebere Child prvky daného Parenta, kde tyto Child prvky jsou označeny jako <see cref="NodePair.IsLazyChild"/> = true.
@@ -1248,6 +1429,7 @@ namespace Djs.Tools.CovidGraphs
             this._NodesId.Clear();
             this._NodesKey.Clear();
         }
+      
         /// <summary>
         /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
         /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
@@ -1351,17 +1533,22 @@ namespace Djs.Tools.CovidGraphs
         /// Vrací index image pro dané jméno obrázku. Používá funkci <see cref="ImageIndexSearcher"/>
         /// </summary>
         /// <param name="imageName"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
-        private int _GetImageIndex(string imageName)
+        private int _GetImageIndex(string imageName, int defaultValue)
         {
-            return (ImageIndexSearcher != null ? ImageIndexSearcher(imageName) : -1);
+            int value = -1;
+            if (!String.IsNullOrEmpty(imageName) && ImageIndexSearcher != null) value = ImageIndexSearcher(imageName);
+            if (value < 0 && defaultValue >= 0) value = defaultValue;
+            return value;
         }
         /// <summary>
         /// FullName aktuální třídy
         /// </summary>
         protected string CurrentClassName { get { return this.GetType().FullName; } }
         #endregion
-        #region Public vlastnosti
+        #endregion
+        #region Public vlastnosti, kolekce nodů, vyhledání nodu podle klíče, vyhledání child nodů
         /// <summary>
         /// Funkce, která pro název ikony vrátí její index v ImageListu
         /// </summary>
@@ -1482,6 +1669,19 @@ namespace Djs.Tools.CovidGraphs
             if (ActivatedEditor != null) ActivatedEditor(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.ActivatedEditor));
         }
         /// <summary>
+        /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
+        /// </summary>
+        public event DxTreeViewNodeHandler EditorDoubleClick;
+        /// <summary>
+        /// Vyvolá event <see cref="EditorDoubleClick"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="editedValue"></param>
+        protected virtual void OnEditorDoubleClick(NodeItemInfo nodeInfo, object editedValue)
+        {
+            if (EditorDoubleClick != null) EditorDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.EditorDoubleClick, editedValue));
+        }
+        /// <summary>
         /// TreeView právě skončil editaci určitého Node.
         /// </summary>
         public event DxTreeViewNodeHandler NodeEdited;
@@ -1495,17 +1695,17 @@ namespace Djs.Tools.CovidGraphs
             if (NodeEdited != null) NodeEdited(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeEdited, editedValue));
         }
         /// <summary>
-        /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
+        /// Uživatel dal Delete na uzlu, který se needituje.
         /// </summary>
-        public event DxTreeViewNodeHandler EditorDoubleClick;
+        public event DxTreeViewNodeHandler NodeDelete;
         /// <summary>
-        /// Vyvolá event <see cref="EditorDoubleClick"/>
+        /// Vyvolá event <see cref="NodeDelete"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="editedValue"></param>
-        protected virtual void OnEditorDoubleClick(NodeItemInfo nodeInfo, object editedValue)
+        protected virtual void OnNodeDelete(NodeItemInfo nodeInfo)
         {
-            if (EditorDoubleClick != null) EditorDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.EditorDoubleClick, editedValue));
+            if (NodeDelete != null) NodeDelete(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDelete));
         }
         /// <summary>
         /// TreeView rozbaluje node, který má nastaveno načítání ze serveru : <see cref="NodeItemInfo.LazyLoadChilds"/> je true.
@@ -1545,6 +1745,7 @@ namespace Djs.Tools.CovidGraphs
         ActivatedEditor,
         EditorDoubleClick,
         NodeEdited,
+        NodeDelete,
         LazyLoadChilds
     }
     #endregion
@@ -1560,7 +1761,8 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="nodeKey"></param>
         /// <param name="parentNodeKey"></param>
         /// <param name="text"></param>
-        /// <param name="editable"></param>
+        /// <param name="canEdit"></param>
+        /// <param name="canDelete"></param>
         /// <param name="expanded"></param>
         /// <param name="lazyLoadChilds"></param>
         /// <param name="imageName"></param>
@@ -1572,19 +1774,21 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="backColor"></param>
         /// <param name="foreColor"></param>
         public NodeItemInfo(string nodeKey, string parentNodeKey, string text,
-            bool editable = false, bool expanded = false, bool lazyLoadChilds = false,
-            string imageName = null, string imageNameSelected = null, string toolTipTitle = null, string toolTipText = null,
+            bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyLoadChilds = false,
+            string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
             int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null)
         {
             _Id = -1;
             this.NodeKey = nodeKey;
             this.ParentNodeKey = parentNodeKey;
             this.Text = text;
-            this.Editable = editable;
+            this.CanEdit = canEdit;
+            this.CanDelete = canDelete;
             this.Expanded = expanded;
             this.LazyLoadChilds = lazyLoadChilds;
-            this.ImageName = imageName;
-            this.ImageNameSelected = imageNameSelected;
+            this.ImageName0 = imageName;
+            this.ImageName0Selected = imageNameSelected;
+            this.ImageName1 = imageNameStatic;
             this.ToolTipTitle = toolTipTitle;
             this.ToolTipText = toolTipText;
             this.FontSizeDelta = fontSizeDelta;
@@ -1597,43 +1801,148 @@ namespace Djs.Tools.CovidGraphs
             return this.Text;
         }
         /// <summary>
-        /// ID nodu v TreeView, pokud není v TreeView pak je -1 
+        /// ID nodu v TreeView, pokud není v TreeView pak je -1 . Toto ID je přiděleno v rámci <see cref="DxTreeViewListSimple"/> a po dobu přítomnosti nodu v TreeView se nemění.
+        /// Pokud node bude odstraněn z Treeiew, pak hodnota <see cref="NodeId"/> bude -1, stejně tak jako v době něž bude do TreeView přidán.
         /// </summary>
         public int NodeId { get { return _Id; } }
         /// <summary>
-        /// String klíč nodu, musí být unique
+        /// String klíč nodu, musí být unique přes všechny Nodes!
+        /// Po vytvoření nelze změnit.
         /// </summary>
         public string NodeKey { get; private set; }
+        /// <summary>
+        /// Klíč parent uzlu.
+        /// Po vytvoření nelze změnit.
+        /// </summary>
         public string ParentNodeKey { get; private set; }
-        public string Text { get; private set; }
-        public bool CanCheck { get; private set; }
-        public bool IsChecked { get; private set; }
-        public string ImageName { get; set; }
-        public string ImageNameSelected { get; set; }
-        public bool Editable { get; set; }
+        /// <summary>
+        /// Text uzlu.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// Node zobrazuje zaškrtávátko.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        public bool CanCheck { get; set; }
+        /// <summary>
+        /// Node je zaškrtnutý.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        public bool IsChecked { get; set; }
+        /// <summary>
+        /// Ikona základní, ta může reagovat na stav Selected (pak bude zobrazena ikona <see cref="ImageName0Selected"/>), zobrazuje se vlevo.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        public string ImageName0 { get; set; }
+        /// <summary>
+        /// Ikona ve stavu Node.IsSelected, zobrazuje se místo ikony <see cref="ImageName0"/>), zobrazuje se vlevo.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        public string ImageName0Selected { get; set; }
+        /// <summary>
+        /// Ikona statická, ta nereaguje na stav Selected, zobrazuje se vpravo od ikony <see cref="ImageName0"/>.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        public string ImageName1 { get; set; }
+        /// <summary>
+        /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeViewListSimple.NodeEdited"/>.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se po výběru konkrétního Node v TreeView a aplikuje se na něj.
+        /// </summary>
+        public bool CanEdit { get; set; }
+        /// <summary>
+        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeViewListSimple.NodeDelete"/>
+        /// </summary>
+        public bool CanDelete { get; set; }
+        /// <summary>
+        /// Node je otevřený.
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
         public bool Expanded { get; set; }
+        /// <summary>
+        /// Node bude mít Child prvky, ale zatím nejsou dodány. Node bude zobrazovat rozbalovací ikonu a jeden node s textem "Načítám data...", viz <see cref="DxTreeViewListSimple.LazyLoadNodeText"/>.
+        /// Ikonu nastavíme v <see cref="DxTreeViewListSimple.LazyLoadNodeImageName"/>. Otevřením tohoto nodu se vyvolá event <see cref="DxTreeViewListSimple.LazyLoadChilds"/>.
+        /// Třída <see cref="DxTreeViewListSimple"/> si sama obhospodařuje tento "LazyLoadChildNode": vytváří jej a následně jej i odebírá.
+        /// Aktivace tohoto nodu není hlášena jako event, node nelze editovat ani smazat uživatelem.
+        /// </summary>
         public bool LazyLoadChilds { get; set; }
+        /// <summary>
+        /// Titulek tooltipu. Pokud bude null, pak se převezme <see cref="Text"/>, což je optimální z hlediska orientace uživatele.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování ToolTipu.
+        /// </summary>
         public string ToolTipTitle { get; set; }
+        /// <summary>
+        /// Text tooltipu.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování ToolTipu.
+        /// </summary>
         public string ToolTipText { get; set; }
+        /// <summary>
+        /// Relativní velikost písma.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// </summary>
         public int? FontSizeDelta { get; set; }
+        /// <summary>
+        /// Změna stylu písma.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// </summary>
         public FontStyle? FontStyleDelta { get; set; }
+        /// <summary>
+        /// Explicitní barva pozadí prvku.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// </summary>
         public Color? BackColor { get; set; }
+        /// <summary>
+        /// Explicitní barva písma prvku.
+        /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// </summary>
         public Color? ForeColor { get; set; }
-
+        /// <summary>
+        /// Pokud je node již umístěn v TreeView, pak tato metoda zajistí jeho refresh = promítne vizuální hodnoty do controlu
+        /// </summary>
+        public void Refresh()
+        {
+            var owner = Owner;
+            if (owner != null)
+                owner.RefreshNode(this);
+        }
         #region Implementace ITreeViewItemId
         DxTreeViewListSimple ITreeNodeItem.Owner
         {
-            get { if (_Owner != null && _Owner.TryGetTarget(out var owner)) return owner; return null; }
+            get { return Owner; }
             set { _Owner = (value != null ? new WeakReference<DxTreeViewListSimple>(value) : null); }
         }
         int ITreeNodeItem.Id { get { return _Id; } set { _Id = value; } }
+        /// <summary>
+        /// Owner = TreeView, ve kterém je this prvek zobrazen. Může být null.
+        /// </summary>
+        protected DxTreeViewListSimple Owner { get { if (_Owner != null && _Owner.TryGetTarget(out var owner)) return owner; return null; } }
         WeakReference<DxTreeViewListSimple> _Owner;
         int _Id;
         #endregion
     }
+    /// <summary>
+    /// Interface pro interní práci s <see cref="NodeItemInfo"/> ze strany <see cref="DxTreeViewListSimple"/>
+    /// </summary>
     public interface ITreeNodeItem
     {
+        /// <summary>
+        /// Aktuální vlastník nodu
+        /// </summary>
         DxTreeViewListSimple Owner { get; set; }
+        /// <summary>
+        /// ID přidělené nodu v době, kdy je členem <see cref="DxTreeViewListSimple"/>
+        /// </summary>
         int Id { get; set; }
     }
     #endregion

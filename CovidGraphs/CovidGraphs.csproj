@@ -37,69 +37,69 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DevExpress.BonusSkins.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.BonusSkins.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.BonusSkins.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Charts.Designer.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Charts.Designer.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Charts.Designer.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Charts.v20.1.Core">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Charts.v20.1.Core.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Charts.v20.1.Core.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.CodeConverter.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.CodeConverter.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.CodeConverter.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Data.Desktop.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Data.Desktop.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Data.Desktop.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Data.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Data.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Data.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Dialogs.v20.1.Core">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Dialogs.v20.1.Core.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Dialogs.v20.1.Core.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Images.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Images.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Images.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Utils.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Utils.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Utils.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Utils.v20.1.UI">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.Utils.v20.1.UI.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.Utils.v20.1.UI.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraBars.v20.1, Version=20.1.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraBars.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraBars.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraCharts.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraCharts.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraCharts.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraCharts.v20.1.Extensions">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraCharts.v20.1.Extensions.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraCharts.v20.1.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraCharts.v20.1.UI">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraCharts.v20.1.UI.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraCharts.v20.1.UI.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraCharts.v20.1.Wizard">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraCharts.v20.1.Wizard.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraCharts.v20.1.Wizard.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraEditors.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraEditors.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraEditors.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraGrid.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraGrid.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraGrid.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraLayout.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraLayout.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraLayout.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraNavBar.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraNavBar.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraNavBar.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraTreeList.v20.1, Version=20.1.4.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraTreeList.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraTreeList.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraTreeMap.v20.1">
-      <HintPath>..\..\DevExpress.20.1\DevExpress.XtraTreeMap.v20.1.dll</HintPath>
+      <HintPath>..\..\DevExpressDll\DX20.1\DevExpress.XtraTreeMap.v20.1.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -206,6 +206,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="aeskulap.ico" />
+    <None Include="Pic\object-unlocked-2_16.png" />
+    <None Include="Pic\object-locked-2_16.png" />
+    <None Include="Pic\msn-blocked_16.png" />
+    <None Include="Pic\lock-5_16.png" />
     <None Include="Pic\Ball23_16.png" />
     <None Include="Pic\Ball22_16.png" />
     <None Include="Pic\Ball21_16.png" />

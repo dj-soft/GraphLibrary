@@ -44,6 +44,8 @@ namespace Djs.Tools.CovidGraphs
             base.OnShown(e);
             _TreeList.BestFitColumns();
         }
+
+
         private void CreateTreeViewComponents()
         {
             CreateImageList();
@@ -78,6 +80,10 @@ namespace Djs.Tools.CovidGraphs
 
             _Images16.Images.Add("edit_add_4_16", Properties.Resources.edit_add_4_16);
             _Images16.Images.Add("list_add_3_16", Properties.Resources.list_add_3_16);
+            _Images16.Images.Add("lock_5_16", Properties.Resources.lock_5_16);
+            _Images16.Images.Add("object_locked_2_16", Properties.Resources.object_locked_2_16);
+            _Images16.Images.Add("object_unlocked_2_16", Properties.Resources.object_unlocked_2_16);
+            _Images16.Images.Add("msn_blocked_16", Properties.Resources.msn_blocked_16);
             _Images16.Images.Add("hourglass_16", Properties.Resources.hourglass_16);
         }
         private int GetImageIndex(string imageName)
@@ -91,6 +97,7 @@ namespace Djs.Tools.CovidGraphs
 
             _TreeList = new DxTreeViewListSimple() { Dock = DockStyle.Fill };
             _TreeList.SelectImageList = _Images16;
+            _TreeList.StateImageList = _Images16;
             _TreeList.ImageIndexSearcher = GetImageIndex;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
@@ -110,8 +117,9 @@ namespace Djs.Tools.CovidGraphs
             _TreeList.NodeExpanded += _TreeList_AnyAction;
             _TreeList.NodeCollapsed += _TreeList_AnyAction;
             _TreeList.ActivatedEditor += _TreeList_AnyAction;
-            _TreeList.NodeEdited += _TreeList_AnyAction;
             _TreeList.EditorDoubleClick += _TreeList_AnyAction;
+            _TreeList.NodeEdited += _TreeList_NodeEdited;
+            _TreeList.NodeDelete += _TreeList_NodeDelete;
             _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
 
             int y = 0;
@@ -127,6 +135,7 @@ namespace Djs.Tools.CovidGraphs
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
             _AddLogLine(line);
         }
+        private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args) { _AddLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick)); }
         private void _TreeList_LazyLoadChilds(object sender, DxTreeViewNodeArgs args)
         {
             _TreeList_AnyAction(sender, args);
@@ -136,13 +145,83 @@ namespace Djs.Tools.CovidGraphs
         {
             string parentKey = args.NodeItemInfo.NodeKey;
             _AddLogLine($"Načítám data pro node '{parentKey}'...");
+
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
+
+            // Upravíme hodnoty v otevřeném nodu:
+            string text = args.NodeItemInfo.Text;
+            if (text.EndsWith(" ..."))
+            {
+                args.NodeItemInfo.Text = text.Substring(0, text.Length - 4);
+                args.NodeItemInfo.Refresh();
+            }
+
+            // Vytvoříme ChildNodes a zobrazíme je:
             bool empty = (Data.RandomText.Rand.Next(10) > 7);
             var nodes = _CreateSampleChilds(parentKey, ItemCountType.Standard);       // A pak vyrobíme Child nody
             _AddLogLine($"Načtena data: {nodes.Count} prvků.");
             _TreeList.AddLazyLoadNodes(parentKey, nodes);            //  a pošleme je do TreeView.
         }
-        private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args) { _AddLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick)); }
+        private void _TreeList_NodeEdited(object sender, DxTreeViewNodeArgs args)
+        {
+            _TreeList_AnyAction(sender, args);
+            Data.ThreadManager.AddAction(() => _TreeNodeEditedBgr(args));
+        }
+        private void _TreeNodeEditedBgr(DxTreeViewNodeArgs args)
+        {
+            var nodeInfo = args.NodeItemInfo;
+            string nodeKey = nodeInfo.NodeKey;
+            string parentKey = nodeInfo.ParentNodeKey;
+            string oldValue = nodeInfo.Text;
+            string newValue = (args.EditedValue is string text ? text : "");
+            _AddLogLine($"Změna textu pro node '{nodeKey}': '{oldValue}' => '{newValue}'");
+
+            System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
+
+            if (String.IsNullOrEmpty(newValue))
+            {   // Delete node:
+                if (nodeInfo.CanDelete)
+                    _TreeList.RemoveNode(nodeKey);
+            }
+            else if (oldValue == "")
+            {   // Insert node:
+                _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
+                {   // V jednom vizuálním zámku:
+                    _TreeList.RemoveNode(node.NodeKey);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
+
+                    // Přidám nový node pro konkrétní text = jakoby záznam:
+                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeKey, false);
+                    newNode.Text = newValue;
+                    _TreeList.AddNode(newNode);
+
+                    // Přidám Blank node, ten bude opět na konci Childs:
+                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeKey, true);
+                    _TreeList.AddNode(blankNode);
+
+                    // Aktivuji editovaný node:
+                    _TreeList.SelectNode(newNode);
+                }
+                ), nodeInfo);
+            }
+            else
+            {   // Edited node:
+                args.NodeItemInfo.Text = newValue + " [OK]";
+                args.NodeItemInfo.Refresh();
+            }
+        }
+        private void _TreeList_NodeDelete(object sender, DxTreeViewNodeArgs args)
+        {
+            _TreeList_AnyAction(sender, args);
+            Data.ThreadManager.AddAction(() => _TreeNodeDeleteBgr(args));
+        }
+        private void _TreeNodeDeleteBgr(DxTreeViewNodeArgs args)
+        {
+            string nodeKey = args.NodeItemInfo.NodeKey;
+
+            System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
+
+            _TreeList.RemoveNode(nodeKey);
+        }
         private void _AddLog(string actionName, DxTreeViewNodeArgs args, bool showValue = false)
         {
             string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
@@ -157,7 +236,6 @@ namespace Djs.Tools.CovidGraphs
             _Log = log;
             _MemoEdit.Text = log;
         }
-
         int _InternalNodeId;
         private List<NodeItemInfo> _CreateSampleList(ItemCountType countType = ItemCountType.Standard)
         {
@@ -171,9 +249,9 @@ namespace Djs.Tools.CovidGraphs
                 bool isExpanded = (addChilds && (Data.RandomText.Rand.Next(10) >= 2));
 
                 string rootKey = "R." + (++_InternalNodeId).ToString();
-                string text = Data.RandomText.GetRandomSentence(2, 5) + (isLazy ? " [!]" : "");
+                string text = Data.RandomText.GetRandomSentence(2, 5) + (isLazy ? " ..." : "");
                 DW.FontStyle fontStyleDelta = DW.FontStyle.Bold;
-                NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, editable: false, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
+                NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
                 _FillNode(rootNode);
                 list.Add(rootNode);
 
@@ -182,30 +260,49 @@ namespace Djs.Tools.CovidGraphs
             }
             return list;
         }
-
-
         private List<NodeItemInfo> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard)
         {
             List<NodeItemInfo> list = new List<NodeItemInfo>();
 
             int childCount = GetItemCount(countType, true);
+            bool addEditable = (Data.RandomText.Rand.Next(20) >= 8);
+            if (addEditable) childCount++;
             for (int c = 0; c < childCount; c++)
             {
-                string childKey = "C." + (++_InternalNodeId).ToString();
-                string text = Data.RandomText.GetRandomSentence(2, 5);
-                NodeItemInfo childNode = new NodeItemInfo(childKey, parentKey, text, editable: true);
-                _FillNode(childNode);
-                list.Add(childNode);
+                bool isBlankNode = (addEditable && c == (childCount - 1));
+                list.Add(_CreateChildNode(parentKey, isBlankNode));
             }
-
             return list;
+        }
+        private NodeItemInfo _CreateChildNode(string parentKey, bool isBlankNode)
+        {
+            string childKey = "C." + (++_InternalNodeId).ToString();
+            NodeItemInfo childNode = null;
+            if (isBlankNode)
+            {
+                string text = "";
+                childNode = new NodeItemInfo(childKey, parentKey, text, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
+                childNode.ToolTipText = "Zadejte referenci nového prvku";
+                childNode.ImageName1 = "list_add_3_16";
+            }
+            else
+            {
+                string text = Data.RandomText.GetRandomSentence(2, 5);
+                childNode = new NodeItemInfo(childKey, parentKey, text, canEdit: true, canDelete: true);
+                _FillNode(childNode);
+            }
+            return childNode;
         }
         private void _FillNode(NodeItemInfo node)
         {
+            if (Data.RandomText.Rand.Next(20) >= 15)
+                node.ImageName0 = "object_locked_2_16";
+
+            string imageNumb = Data.RandomText.Rand.Next(1, 24).ToString("00");
+            node.ImageName1 = $"Ball{imageNumb }_16";
+
             node.ToolTipTitle = null; // Data.RandomText.GetRandomSentence(2, 5);
             node.ToolTipText = Data.RandomText.GetRandomSentence(10, 50);
-            string imageNumb = Data.RandomText.Rand.Next(1, 24).ToString("00");
-            node.ImageName = $"Ball{imageNumb }_16"; 
         }
         private int GetItemCount(ItemCountType countType, bool forChilds)
         {
