@@ -799,15 +799,18 @@ namespace TestDevExpress.Components
             this.ToolTipController = DxComponent.CreateToolTipController();
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
 
-            // Nativní eventy:
+            // Eventy pro podporu TreeView (vykreslení nodu, atd):
             this.NodeCellStyle += _OnNodeCellStyle;
-            this.DoubleClick += _OnDoubleClick;
+            this.CustomDrawNodeCheckBox += _OnCustomDrawNodeCheckBox;
             this.KeyDown += _OnKeyDown;
+
+            // Nativní eventy:
+            this.FocusedNodeChanged += _OnFocusedNodeChanged;
+            this.DoubleClick += _OnDoubleClick;
             this.ShownEditor += _OnShownEditor;
             this.ValidatingEditor += _OnValidatingEditor;
             this.BeforeCheckNode += _OnBeforeCheckNode;
             this.AfterCheckNode += _OnAfterCheckNode;
-            this.FocusedNodeChanged += _OnFocusedNodeChanged;
             this.BeforeExpand += _OnBeforeExpand;
             this.AfterCollapse += _OnAfterCollapse;
 
@@ -908,7 +911,119 @@ namespace TestDevExpress.Components
             }
         }
         #endregion
-        #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 
+        #region Řízení specifického vykreslení TreeNodu podle jeho nastavení: font, barvy, checkbox, atd
+        /// <summary>
+        /// Vytvoří new instanci pro řízení vzhledu TreeView
+        /// </summary>
+        /// <returns></returns>
+        protected override DevExpress.XtraTreeList.ViewInfo.TreeListViewInfo CreateViewInfo()
+        {
+            if (CurrentViewInfo == null)
+                CurrentViewInfo = new DxTreeViewViewInfo(this);
+            return CurrentViewInfo;
+        }
+        /// <summary>
+        /// Při Dispose uvolním svůj lokální <see cref="CurrentViewInfo"/>
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (CurrentViewInfo != null)
+            {
+                CurrentViewInfo.Dispose();
+                CurrentViewInfo = null;
+            }
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Instance pro řízení vzhledu TreeView
+        /// </summary>
+        protected DxTreeViewViewInfo CurrentViewInfo;
+        /// <summary>
+        /// Potomek pro řízení vzhledu s ohledem na [ne]vykreslení CheckBoxů
+        /// </summary>
+        protected class DxTreeViewViewInfo : DevExpress.XtraTreeList.ViewInfo.TreeListViewInfo, IDisposable
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="treeList"></param>
+            public DxTreeViewViewInfo(DxTreeViewListSimple treeList) : base(treeList)
+            {
+                _Owner = treeList;
+            }
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            public new void Dispose()
+            {
+                _Owner = null;
+                base.Dispose();
+            }
+            private DxTreeViewListSimple _Owner;
+            /// <summary>
+            /// Vrátí šířku pro CheckBox pro daný node
+            /// </summary>
+            /// <param name="node"></param>
+            /// <returns></returns>
+            protected override int GetActualCheckBoxWidth(TreeListNode node)
+            {
+                bool canCheckNode = _Owner.IsNodeCheckable(node);
+                if (!canCheckNode) return 0;
+                return base.GetActualCheckBoxWidth(node);
+            }
+        }
+        /// <summary>
+        /// Volá se před Check node
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="prevState"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        protected override DevExpress.XtraTreeList.CheckNodeEventArgs RaiseBeforeCheckNode(DevExpress.XtraTreeList.Nodes.TreeListNode node, System.Windows.Forms.CheckState prevState, System.Windows.Forms.CheckState state)
+        {
+            DevExpress.XtraTreeList.CheckNodeEventArgs e = base.RaiseBeforeCheckNode(node, prevState, state);
+            e.CanCheck = IsNodeCheckable(e.Node);
+            return e;
+        }
+        /// <summary>
+        /// Volá se před vykreslením Checkboxu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void RaiseCustomDrawNodeCheckBox(DevExpress.XtraTreeList.CustomDrawNodeCheckBoxEventArgs e)
+        {
+            bool canCheckNode = IsNodeCheckable(e.Node);
+            if (canCheckNode)
+                return;
+            e.ObjectArgs.State = DevExpress.Utils.Drawing.ObjectState.Disabled;
+            e.Handled = true;
+
+            base.RaiseCustomDrawNodeCheckBox(e);
+        }
+        /// <summary>
+        /// Vrací true, pokud daný node je možno zobrazit s CheckBoxem
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        protected bool IsNodeCheckable(TreeListNode node)
+        {
+            return IsNodeCheckable(_GetNodeInfo(node));
+        }
+        /// <summary>
+        /// Vrací true, pokud daný node je možno zobrazit s CheckBoxem
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        protected bool IsNodeCheckable(NodeItemInfo nodeInfo)
+        {
+            bool isCheckable = true;
+            if (nodeInfo != null)
+            {   // Podle režimu povolíme Check pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                isCheckable = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck));
+            }
+            return isCheckable;
+        }
         /// <summary>
         /// Nastavení specifického stylu podle konkrétního Node (FontStyle, Colors, atd)
         /// </summary>
@@ -935,18 +1050,19 @@ namespace TestDevExpress.Components
             }
         }
         /// <summary>
-        /// Po fokusu do konkrétního node se nastaví jeho Editable a volá se public event
+        /// Specifika krteslení CheckBox pro nodes
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _OnFocusedNodeChanged(object sender, DevExpress.XtraTreeList.FocusedNodeChangedEventArgs args)
+        private void _OnCustomDrawNodeCheckBox(object sender, DevExpress.XtraTreeList.CustomDrawNodeCheckBoxEventArgs args)
         {
             NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
-
-            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
-
-            if (nodeInfo != null && !this.IsLocked)
-                this.OnNodeSelected(nodeInfo);
+            if (nodeInfo != null)
+            {   // Podle režimu povolíme Check pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                bool canCheck = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck));
+                args.Handled = !canCheck;
+            }
         }
         /// <summary>
         /// Po stisku klávesy Vpravo a Vlevo se pracuje s Expanded nodů
@@ -990,6 +1106,22 @@ namespace TestDevExpress.Components
                     }
                     break;
             }
+        }
+        #endregion
+        #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 
+        /// <summary>
+        /// Po fokusu do konkrétního node se nastaví jeho Editable a volá se public event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnFocusedNodeChanged(object sender, DevExpress.XtraTreeList.FocusedNodeChangedEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+
+            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
+
+            if (nodeInfo != null && !this.IsLocked)
+                this.OnNodeSelected(nodeInfo);
         }
         /// <summary>
         /// Doubleclick převolá public event
