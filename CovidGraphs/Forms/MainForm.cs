@@ -126,7 +126,7 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void InitRibbons()
         {
-            this.Ribbon = new DXB.Ribbon.RibbonControl();
+            this.Ribbon = new DxRibbonControl();
             this.Ribbon.Items.Clear();
 
             this.StatusBar = new DXB.Ribbon.RibbonStatusBar();

@@ -206,6 +206,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="aeskulap.ico" />
+    <None Include="Pic\Home - 6_128.png" />
+    <None Include="Pic\Home - 5_128.png" />
+    <None Include="Pic\Home - 4_128.png" />
+    <None Include="Pic\Home - 3_128.png" />
+    <None Include="Pic\Home - 2_128.png" />
+    <None Include="Pic\Home - 1_128.png" />
     <None Include="Pic\object-unlocked-2_16.png" />
     <None Include="Pic\object-locked-2_16.png" />
     <None Include="Pic\msn-blocked_16.png" />

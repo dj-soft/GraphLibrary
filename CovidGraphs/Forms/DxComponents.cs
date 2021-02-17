@@ -1955,4 +1955,76 @@ namespace Djs.Tools.CovidGraphs
     {
     }
     #endregion
+    #region DxRibbon
+    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl
+    {
+        public DxRibbonControl()
+        {
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            this.PaintImage(e);
+        }
+
+        private void PaintImage(PaintEventArgs e)
+        {
+            Rectangle clientBounds = this.ClientRectangle;
+            var innerBounds = GetInnerBounds();
+            Rectangle imageBounds = new Rectangle(clientBounds.Width - 60, innerBounds.Y + 4, 48, 48);
+            e.Graphics.DrawImage(Properties.Resources.Home___3_128, imageBounds);
+        }
+        /// <summary>
+        /// Určí a vrátí prostor, v němž se reálně nacházejí buttony a další prvky uvnitř Ribbonu.
+        /// Řeší tedy aktuální skin, vzhled, umístění Ribbonu (on někdy zastává funkci Titlebar okna) atd.
+        /// </summary>
+        /// <param name="itemCount"></param>
+        /// <returns></returns>
+        private Rectangle GetInnerBounds(int itemCount = 50)
+        {
+            if (itemCount < 5) itemCount = 5;
+            int c = 0;
+            int l = 0;
+            int t = 0;
+            int r = 0;
+            int b = 0;
+            foreach (RibbonPage page in this.Pages)
+            {
+                foreach (RibbonPageGroup group in page.Groups)
+                {
+                    foreach (var itemLink in group.ItemLinks)
+                    {
+                        if (itemLink is DevExpress.XtraBars.BarButtonItemLink link)
+                        {
+                            var bounds = link.Bounds;             // Bounds = relativně v Ribbonu, ScreenBounds = absolutně v monitoru
+                            if (bounds.Left > 0 && bounds.Top > 0 && bounds.Width > 0 && bounds.Height > 0)
+                            {
+                                if (c == 0)
+                                {
+                                    l = bounds.Left;
+                                    t = bounds.Top;
+                                    r = bounds.Right;
+                                    b = bounds.Bottom;
+                                }
+                                else
+                                {
+                                    if (bounds.Left < l) l = bounds.Left;
+                                    if (bounds.Top < t) t = bounds.Top;
+                                    if (bounds.Right > r) r = bounds.Right;
+                                    if (bounds.Bottom > b) b = bounds.Bottom;
+                                }
+                                c++;
+
+                                if (c > itemCount) break;
+                            }
+                        }
+                    }
+                    if (c > itemCount) break;
+                }
+                if (c > itemCount) break;
+            }
+            return Rectangle.FromLTRB(l, t, r, b);
+        }
+    }
+    #endregion
 }
