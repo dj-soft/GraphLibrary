@@ -2488,4 +2488,5 @@ namespace TestDevExpress.Components
         }
         #endregion
     }
-    #endregion}
+    #endregion
+}
