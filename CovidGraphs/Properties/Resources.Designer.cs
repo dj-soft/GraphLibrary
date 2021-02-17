@@ -453,9 +453,39 @@ namespace Djs.Tools.CovidGraphs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap card_128 {
+            get {
+                object obj = ResourceManager.GetObject("card_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap cellphone_128 {
+            get {
+                object obj = ResourceManager.GetObject("cellphone_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap code_class_32 {
             get {
                 object obj = ResourceManager.GetObject("code_class_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap community_128 {
+            get {
+                object obj = ResourceManager.GetObject("community_128", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -626,6 +656,16 @@ namespace Djs.Tools.CovidGraphs.Properties {
         internal static System.Drawing.Bitmap db_update_2_16 {
             get {
                 object obj = ResourceManager.GetObject("db_update_2_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Docked_at_New_York_Pier_128 {
+            get {
+                object obj = ResourceManager.GetObject("Docked_at_New_York_Pier_128", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -833,6 +873,16 @@ namespace Djs.Tools.CovidGraphs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Kitty {
+            get {
+                object obj = ResourceManager.GetObject("Kitty", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap list_add_3_16 {
             get {
                 object obj = ResourceManager.GetObject("list_add_3_16", resourceCulture);
@@ -893,6 +943,36 @@ namespace Djs.Tools.CovidGraphs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap picture_128 {
+            get {
+                object obj = ResourceManager.GetObject("picture_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap pleasance_128 {
+            get {
+                object obj = ResourceManager.GetObject("pleasance_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ringtone_128 {
+            get {
+                object obj = ResourceManager.GetObject("ringtone_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap run_build_configure_32 {
             get {
                 object obj = ResourceManager.GetObject("run_build_configure_32", resourceCulture);
@@ -926,6 +1006,16 @@ namespace Djs.Tools.CovidGraphs.Properties {
         internal static System.Drawing.Bitmap system_switch_user_2_32 {
             get {
                 object obj = ResourceManager.GetObject("system_switch_user_2_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap xmas_100 {
+            get {
+                object obj = ResourceManager.GetObject("xmas_100", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

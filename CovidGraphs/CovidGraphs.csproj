@@ -206,6 +206,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="aeskulap.ico" />
+    <None Include="Pic\xmas_100.png" />
+    <None Include="Pic\Kitty.png" />
+    <None Include="Pic\ringtone_128.png" />
+    <None Include="Pic\pleasance_128.png" />
+    <None Include="Pic\picture_128.png" />
+    <None Include="Pic\community_128.png" />
+    <None Include="Pic\cellphone_128.png" />
+    <None Include="Pic\card_128.png" />
+    <None Include="Pic\Docked at New York Pier_128.png" />
     <None Include="Pic\Home - 6_128.png" />
     <None Include="Pic\Home - 5_128.png" />
     <None Include="Pic\Home - 4_128.png" />

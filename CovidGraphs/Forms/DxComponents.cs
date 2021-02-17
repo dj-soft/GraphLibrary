@@ -1956,6 +1956,9 @@ namespace Djs.Tools.CovidGraphs
     }
     #endregion
     #region DxRibbon
+    /// <summary>
+    /// Potomek Ribbonu
+    /// </summary>
     public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl
     {
         public DxRibbonControl()
@@ -1964,15 +1967,15 @@ namespace Djs.Tools.CovidGraphs
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            this.PaintImage(e);
+            this.PaintImageRight(e);
         }
-
-        private void PaintImage(PaintEventArgs e)
+        #region Souřadnice oblasti Ribbonu kde jsou aktuálně buttony
+        /// <summary>
+        /// Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
+        /// </summary>
+        public Rectangle ButtonsBounds
         {
-            Rectangle clientBounds = this.ClientRectangle;
-            var innerBounds = GetInnerBounds();
-            Rectangle imageBounds = new Rectangle(clientBounds.Width - 60, innerBounds.Y + 4, 48, 48);
-            e.Graphics.DrawImage(Properties.Resources.Home___3_128, imageBounds);
+            get { return GetInnerBounds(50); }
         }
         /// <summary>
         /// Určí a vrátí prostor, v němž se reálně nacházejí buttony a další prvky uvnitř Ribbonu.
@@ -2023,8 +2026,58 @@ namespace Djs.Tools.CovidGraphs
                 }
                 if (c > itemCount) break;
             }
+
+            Rectangle clientBounds = this.ClientRectangle;
+            int cr = clientBounds.Right - 6;
+            if (r < cr) r = cr; 
             return Rectangle.FromLTRB(l, t, r, b);
         }
+        #endregion
+        #region Ikonka vpravo
+        /// <summary>
+        /// Ikona vpravo pro velký Ribbon
+        /// </summary>
+        public Image ImageRightFull { get { return _ImageRightFull; } set { _ImageRightFull = value; this.Refresh(); } }
+        private Image _ImageRightFull;
+        /// <summary>
+        /// Ikona vpravo pro malý Ribbon
+        /// </summary>
+        public Image ImageRightMini { get { return _ImageRightMini; } set { _ImageRightMini = value; this.Refresh(); } }
+        private Image _ImageRightMini;
+        /// <summary>
+        /// Vykreslí ikonu vpravo
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintImageRight(PaintEventArgs e)
+        {
+            bool isSmallRibbon = (this.CommandLayout == CommandLayout.Simplified);
+            Image image = GetImageRight(isSmallRibbon);
+            if (image == null) return;
+            Size imageNativeSize = image.Size;
+            if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
+
+            Rectangle buttonsBounds = ButtonsBounds;
+            int imageHeight = (isSmallRibbon ? 24 : 48);
+            float ratio = (float)imageNativeSize.Width / (float)imageNativeSize.Height;
+            int imageWidth = (int)(ratio * (float)imageHeight);
+
+            Rectangle imageBounds = new Rectangle(buttonsBounds.Right - 6 - imageWidth, buttonsBounds.Y + 4, imageWidth, imageHeight);
+            e.Graphics.DrawImage(image, imageBounds);
+        }
+        /// <summary>
+        /// Metoda vrátí vhodný obrázek pro obrázek vpravo pro aktuální velikost. 
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="isSmallRibbon"></param>
+        /// <returns></returns>
+        private Image GetImageRight(bool isSmallRibbon)
+        {
+            if (!isSmallRibbon && _ImageRightFull != null) return _ImageRightFull;
+            if (isSmallRibbon && _ImageRightMini != null) return _ImageRightMini;
+            if (_ImageRightFull != null) return _ImageRightFull;
+            return _ImageRightMini;
+        }
+        #endregion
     }
     #endregion
 }

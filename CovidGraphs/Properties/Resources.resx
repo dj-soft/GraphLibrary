@@ -361,6 +361,18 @@
   <data name="system_switch_user_2_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\system-switch_user-2_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="card_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\card_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="cellphone_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\cellphone_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="community_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\community_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Docked_at_New_York_Pier_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Docked at New York Pier_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Home___1_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\Home - 1_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -378,5 +390,20 @@
   </data>
   <data name="Home___6_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\Home - 6_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="picture_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\picture_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="pleasance_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\pleasance_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ringtone_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\ringtone_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Kitty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Kitty.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="xmas_100" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\xmas_100.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
