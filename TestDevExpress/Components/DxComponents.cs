@@ -1653,8 +1653,8 @@ namespace TestDevExpress.Components
         private void _RemoveNode(string nodeId)
         {
             if (nodeId == null) throw new ArgumentException($"Argument 'nodeKey' is null in {CurrentClassName}.RemoveNode() method.");
-            if (!this._NodesKey.TryGetValue(nodeId, out var nodePair)) throw new ArgumentException($"Node with Key = '{nodeId}' is not found in {CurrentClassName} nodes."); ;
-            _RemoveNode(nodePair);
+            if (this._NodesKey.TryGetValue(nodeId, out var nodePair))          // Nebudu hlásit Exception při smazání neexistujícího nodu, může k tomu dojít při multithreadu...
+                _RemoveNode(nodePair);
         }
         /// <summary>
         /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
@@ -2357,4 +2357,135 @@ namespace TestDevExpress.Components
     {
     }
     #endregion
-}
+    #region DxRibbonControl
+    /// <summary>
+    /// Potomek Ribbonu
+    /// </summary>
+    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxRibbonControl()
+        {
+        }
+        /// <summary>
+        /// Vykreslení
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            this.PaintImageRight(e);
+        }
+        #region Souřadnice oblasti Ribbonu kde jsou aktuálně buttony
+        /// <summary>
+        /// Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
+        /// </summary>
+        public Rectangle ButtonsBounds
+        {
+            get { return GetInnerBounds(50); }
+        }
+        /// <summary>
+        /// Určí a vrátí prostor, v němž se reálně nacházejí buttony a další prvky uvnitř Ribbonu.
+        /// Řeší tedy aktuální skin, vzhled, umístění Ribbonu (on někdy zastává funkci Titlebar okna) atd.
+        /// </summary>
+        /// <param name="itemCount"></param>
+        /// <returns></returns>
+        private Rectangle GetInnerBounds(int itemCount = 50)
+        {
+            if (itemCount < 5) itemCount = 5;
+            int c = 0;
+            int l = 0;
+            int t = 0;
+            int r = 0;
+            int b = 0;
+            foreach (RibbonPage page in this.Pages)
+            {
+                foreach (RibbonPageGroup group in page.Groups)
+                {
+                    foreach (var itemLink in group.ItemLinks)
+                    {
+                        if (itemLink is DevExpress.XtraBars.BarButtonItemLink link)
+                        {
+                            var bounds = link.Bounds;             // Bounds = relativně v Ribbonu, ScreenBounds = absolutně v monitoru
+                            if (bounds.Left > 0 && bounds.Top > 0 && bounds.Width > 0 && bounds.Height > 0)
+                            {
+                                if (c == 0)
+                                {
+                                    l = bounds.Left;
+                                    t = bounds.Top;
+                                    r = bounds.Right;
+                                    b = bounds.Bottom;
+                                }
+                                else
+                                {
+                                    if (bounds.Left < l) l = bounds.Left;
+                                    if (bounds.Top < t) t = bounds.Top;
+                                    if (bounds.Right > r) r = bounds.Right;
+                                    if (bounds.Bottom > b) b = bounds.Bottom;
+                                }
+                                c++;
+
+                                if (c > itemCount) break;
+                            }
+                        }
+                    }
+                    if (c > itemCount) break;
+                }
+                if (c > itemCount) break;
+            }
+
+            Rectangle clientBounds = this.ClientRectangle;
+            int cr = clientBounds.Right - 6;
+            if (r < cr) r = cr;
+            return Rectangle.FromLTRB(l, t, r, b);
+        }
+        #endregion
+        #region Ikonka vpravo
+        /// <summary>
+        /// Ikona vpravo pro velký Ribbon
+        /// </summary>
+        public Image ImageRightFull { get { return _ImageRightFull; } set { _ImageRightFull = value; this.Refresh(); } }
+        private Image _ImageRightFull;
+        /// <summary>
+        /// Ikona vpravo pro malý Ribbon
+        /// </summary>
+        public Image ImageRightMini { get { return _ImageRightMini; } set { _ImageRightMini = value; this.Refresh(); } }
+        private Image _ImageRightMini;
+        /// <summary>
+        /// Vykreslí ikonu vpravo
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintImageRight(PaintEventArgs e)
+        {
+            bool isSmallRibbon = (this.CommandLayout == CommandLayout.Simplified);
+            Image image = GetImageRight(isSmallRibbon);
+            if (image == null) return;
+            Size imageNativeSize = image.Size;
+            if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
+
+            Rectangle buttonsBounds = ButtonsBounds;
+            int imageHeight = (isSmallRibbon ? 24 : 48);
+            float ratio = (float)imageNativeSize.Width / (float)imageNativeSize.Height;
+            int imageWidth = (int)(ratio * (float)imageHeight);
+
+            Rectangle imageBounds = new Rectangle(buttonsBounds.Right - 6 - imageWidth, buttonsBounds.Y + 4, imageWidth, imageHeight);
+            e.Graphics.DrawImage(image, imageBounds);
+        }
+        /// <summary>
+        /// Metoda vrátí vhodný obrázek pro obrázek vpravo pro aktuální velikost. 
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="isSmallRibbon"></param>
+        /// <returns></returns>
+        private Image GetImageRight(bool isSmallRibbon)
+        {
+            if (!isSmallRibbon && _ImageRightFull != null) return _ImageRightFull;
+            if (isSmallRibbon && _ImageRightMini != null) return _ImageRightMini;
+            if (_ImageRightFull != null) return _ImageRightFull;
+            return _ImageRightMini;
+        }
+        #endregion
+    }
+    #endregion}

@@ -2233,5 +2233,26 @@
   <ItemGroup>
     <None Include="Images\Actions24\select-rectangular%2824%29.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Czech-Republic.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 4.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 5.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Home - 6.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

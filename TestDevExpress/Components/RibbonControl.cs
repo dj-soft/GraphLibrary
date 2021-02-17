@@ -98,7 +98,18 @@ namespace TestDevExpress
         {
             base.OnCustomizeRibbon();
         }
-
+        protected override void OnPaintBackground(PaintEventArgs pevent)
+        {
+            base.OnPaintBackground(pevent);
+            // pevent.Graphics.DrawImage(Properties.Resources.help_hint_48_, new PointF(480f, 4f));
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            Rectangle ribbonBounds = this.ClientRectangle;
+            Rectangle imageBounds = new Rectangle(ribbonBounds.Width - 60, ribbonBounds.Y + 28, 48, 48);
+            e.Graphics.DrawImage(Properties.Resources.Home___3, imageBounds);
+        }
         private void RibbonControl_ApplicationButtonClick(object sender, EventArgs e)
         {
             ShowInfo("ApplicationButtonClick");
