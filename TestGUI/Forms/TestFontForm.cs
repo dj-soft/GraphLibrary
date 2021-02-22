@@ -72,7 +72,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             FontMeasureParams parameters = new FontMeasureParams() { Origin = new Point(0, 0), LineHeightRatio = 1.00f, WrapWord = true, Width = bounds.Width - 6, Multiline = true };
             var characters = FontManagerInfo.GetCharInfo(text, e.Graphics, fontInfo, parameters);
             foreach (var character in characters)
-                character.DrawText(e.Graphics, fontInfo, bounds, textShift, backColor: GetBackColor(character), fontColor: GetFontColor(character));
+                character.DrawBackgroundAndText(e.Graphics, fontInfo, bounds, textShift, backColor: GetBackColor(character), fontColor: GetFontColor(character));
         }
         private Color? GetBackColor(CharPositionInfo character)
         {
