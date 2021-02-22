@@ -90,7 +90,7 @@ namespace Asol.Tools.WorkScheduler.DataForm
             int[] textWidths = new int[] { 120, 120, 180, 140, 220, 120, 160, 100, 80, 200 };
             #endregion
 
-            Styles.CurrentType = StyleType.DarkFlat;
+            Styles.CurrentType = StyleType.Dark3D;
 
             Styles.TextBox.BorderType = BorderType.SoftDoublePlain;
             Styles.TextBox.BorderType = BorderType.SingleInteractiveHalf;

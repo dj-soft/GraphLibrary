@@ -215,12 +215,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="focusedFunc">Funkce, vracející hodnotu Focused, pokud bude null použije se <paramref name="mouseDownFunc"/></param>
         /// <param name="mouseDragFunc">Funkce, vracející hodnotu MouseDrag, pokud bude null použije se <paramref name="mouseDownFunc"/></param>
         /// <returns></returns>
-        protected T GetByState<T>(GInteractiveState interactiveState, Func<T> enabledFunc, Func<T> disabledFunc, Func<T> mouseOnFunc, Func<T> mouseDownFunc, Func<T> focusedFunc = null, Func<T> mouseDragFunc = null)
+        protected T GetByState<T>(GInteractiveState interactiveState, 
+            Func<T> enabledFunc, Func<T> disabledFunc, Func<T> mouseOnFunc, Func<T> mouseDownFunc, Func<T> focusedFunc = null, Func<T> mouseDragFunc = null)
         {   // Pořadí řádků odpovídá logice očekávání uživatele, a prioritě stavů mezi sebou:
             if (interactiveState.HasFlag(GInteractiveState.Disabled)) return disabledFunc();
             if (interactiveState.HasFlag(GInteractiveState.ReadOnly)) return disabledFunc();
-            if (interactiveState.HasFlag(GInteractiveState.Focused)) return (focusedFunc != null ? focusedFunc() : mouseDownFunc());
             if (interactiveState.HasFlag(GInteractiveState.FlagDrag)) return (mouseDragFunc != null ? mouseDragFunc() : mouseDownFunc());
+            if (interactiveState.HasFlag(GInteractiveState.Focused)) return (focusedFunc != null ? focusedFunc() : mouseDownFunc());
             if (interactiveState.HasFlag(GInteractiveState.FlagDown)) return mouseDownFunc();
             if (interactiveState.HasFlag(GInteractiveState.MouseOver)) return mouseOnFunc();
             return enabledFunc();
@@ -436,6 +437,17 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance <see cref="ModifierStyle"/> ve stylech (<see cref="Styles"/>), které obsahuje výchozí hodnoty pro tuto instanci pro hodnoty získávané třídou <see cref="ModifierStyle"/> ve třídách potomků.
+        /// Typicky: výchozí barvu písma pro textbox nastavujeme do property <see cref="Styles.TextBox"/>.<see cref="LabelStyle.TextColor"/>, 
+        /// ale protože barvu písma vyhodnocuje fyzicky třída <see cref="LabelStyle"/>, pak tato třída musí vědět, ze které instance v <see cref="Styles"/> má brát výchozí hodnotu.
+        /// <para/>
+        /// Proto třída <see cref="ModifierStyle"/> v property <see cref="StyleModifier"/> vrací instanci <see cref="Styles.Modifier"/>, 
+        /// ale potomci (například <see cref="TextBoxStyle"/>) v této property vrací svoji instanci potomka (například <see cref="Styles.TextBox"/>), protože z této instance se bude brát patřičná hodnota.
+        /// </summary>
+        protected virtual ModifierStyle StyleModifier { get { return Styles.Modifier; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -514,17 +526,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 Border3DColorDark = Color.Transparent;
             }
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance <see cref="ModifierStyle"/> ve stylech (<see cref="Styles"/>), které obsahuje výchozí hodnoty pro tuto instanci pro hodnoty získávané třídou <see cref="ModifierStyle"/> ve třídách potomků.
-        /// Typicky: výchozí barvu písma pro textbox nastavujeme do property <see cref="Styles.TextBox"/>.<see cref="LabelStyle.TextColor"/>, 
-        /// ale protože barvu písma vyhodnocuje fyzicky třída <see cref="LabelStyle"/>, pak tato třída musí vědět, ze které instance v <see cref="Styles"/> má brát výchozí hodnotu.
-        /// <para/>
-        /// Proto třída <see cref="ModifierStyle"/> v property <see cref="StyleModifier"/> vrací instanci <see cref="Styles.Modifier"/>, 
-        /// ale potomci (například <see cref="TextBoxStyle"/>) v této property vrací svoji instanci potomka (například <see cref="Styles.TextBox"/>), protože z této instance se bude brát patřičná hodnota.
-        /// </summary>
-        protected virtual ModifierStyle StyleModifier { get { return Styles.Modifier; } }
         #endregion
         #region Defaultní hodnoty
         /// <summary>Defaultní barva pro <see cref="Effect3DEnabled"/></summary>
@@ -618,6 +619,20 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="FontStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="FontStyle"/> používá pro svoje vlastní property (například <see cref="FontStyle.FontLabel"/>) instanci uloženou v <see cref="Styles.Label"/>.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="LabelStyle"/>),
+        /// tedy například <see cref="FontStyle.FontLabel"/>, byly načtený z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// </summary>
+        protected virtual FontStyle StyleFont { get { return Styles.Font; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -634,20 +649,6 @@ namespace Asol.Tools.WorkScheduler.Components
             FontToolTipTitle = DefaultFontToolTipTitle;
             FontToolTipText = DefaultFontToolTipText;
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance konkrétní třídy (zde <see cref="FontStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
-        /// Tedy typicky třída <see cref="FontStyle"/> používá pro svoje vlastní property (například <see cref="FontStyle.FontLabel"/>) instanci uloženou v <see cref="Styles.Label"/>.
-        /// <para/>
-        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="LabelStyle"/>),
-        /// tedy například <see cref="FontStyle.FontLabel"/>, byly načtený z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
-        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
-        /// <para/>
-        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
-        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
-        /// </summary>
-        protected virtual FontStyle StyleFont { get { return Styles.Font; } }
         #endregion
         #region Defaultní hodnoty
         /// <summary>Defaultní instance pro <see cref="FontLabel"/></summary>
@@ -712,6 +713,17 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance <see cref="ToolTipStyle"/> ve stylech (<see cref="Styles"/>), které obsahuje výchozí hodnoty pro tuto instanci pro hodnoty získávané třídou <see cref="LabelStyle"/> ve třídách potomků.
+        /// Typicky: výchozí barvu písma pro textbox nastavujeme do property <see cref="Styles.TextBox"/>.<see cref="LabelStyle.TextColor"/>, 
+        /// ale protože barvu písma vyhodnocuje fyzicky třída <see cref="LabelStyle"/>, pak tato třída musí vědět, ze které instance v <see cref="Styles"/> má brát výchozí hodnotu.
+        /// <para/>
+        /// Proto třída <see cref="LabelStyle"/> v property <see cref="StyleToolTip"/> vrací instanci <see cref="Styles.Label"/>, 
+        /// ale potomci (například <see cref="TextBoxStyle"/>) v této property vrací svoji instanci potomka (například <see cref="Styles.TextBox"/>), protože z této instance se bude brát patřičná hodnota.
+        /// </summary>
+        protected virtual ToolTipStyle StyleToolTip { get { return Styles.ToolTip; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -744,17 +756,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance <see cref="ToolTipStyle"/> ve stylech (<see cref="Styles"/>), které obsahuje výchozí hodnoty pro tuto instanci pro hodnoty získávané třídou <see cref="LabelStyle"/> ve třídách potomků.
-        /// Typicky: výchozí barvu písma pro textbox nastavujeme do property <see cref="Styles.TextBox"/>.<see cref="LabelStyle.TextColor"/>, 
-        /// ale protože barvu písma vyhodnocuje fyzicky třída <see cref="LabelStyle"/>, pak tato třída musí vědět, ze které instance v <see cref="Styles"/> má brát výchozí hodnotu.
-        /// <para/>
-        /// Proto třída <see cref="LabelStyle"/> v property <see cref="StyleToolTip"/> vrací instanci <see cref="Styles.Label"/>, 
-        /// ale potomci (například <see cref="TextBoxStyle"/>) v této property vrací svoji instanci potomka (například <see cref="Styles.TextBox"/>), protože z této instance se bude brát patřičná hodnota.
-        /// </summary>
-        protected virtual ToolTipStyle StyleToolTip { get { return Styles.ToolTip; } }
         #endregion
         #region Defaultní hodnoty
         /// <summary>Defaultní hodnota pro <see cref="Font"/></summary>
@@ -803,6 +804,20 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="LabelStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="LabelStyle"/> používá pro svoje vlastní property (například <see cref="LabelStyle.TextColor"/>) instanci uloženou v <see cref="Styles.Label"/>.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="LabelStyle"/>),
+        /// tedy například <see cref="LabelStyle.TextColor"/>, byly načtený z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// </summary>
+        protected virtual LabelStyle StyleLabel { get { return Styles.Label; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -829,20 +844,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance konkrétní třídy (zde <see cref="LabelStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
-        /// Tedy typicky třída <see cref="LabelStyle"/> používá pro svoje vlastní property (například <see cref="LabelStyle.TextColor"/>) instanci uloženou v <see cref="Styles.Label"/>.
-        /// <para/>
-        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="LabelStyle"/>),
-        /// tedy například <see cref="LabelStyle.TextColor"/>, byly načtený z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
-        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
-        /// <para/>
-        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
-        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
-        /// </summary>
-        protected virtual LabelStyle StyleLabel { get { return Styles.Label; } }
         #endregion
         #region Defaultní hodnoty
         /// <summary>Defaultní hodnota pro <see cref="Font"/></summary>
@@ -938,6 +939,26 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="TextBorderStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="TextBorderStyle"/> používá pro svoje vlastní property (například <see cref="TextBorderStyle.BackColor"/>) instanci uloženou v <see cref="Styles"/>.???.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="TextBorderStyle"/>),
+        /// tedy například <see cref="TextBorderStyle.BackColor"/>, byly načteny z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// <para/>
+        /// Tato konkrétní třída <see cref="TextBorderStyle"/> se přímo nevyužívá, je abstraktní, proto předepisuje tuto property jako abstract, musí ji vyplnit potomek a vracet svoji základní instanci.
+        /// </summary>
+        protected abstract TextBorderStyle StyleTextBorder { get; }
+        /// <summary>
+        /// Zde sděluji svému předkovi <see cref="LabelStyle"/>, ze které instance <see cref="Styles"/> má čerpat svoje základní hodnoty.
+        /// </summary>
+        protected override LabelStyle StyleLabel { get { return StyleTextBorder; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -976,26 +997,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance konkrétní třídy (zde <see cref="TextBorderStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
-        /// Tedy typicky třída <see cref="TextBorderStyle"/> používá pro svoje vlastní property (například <see cref="TextBorderStyle.BackColor"/>) instanci uloženou v <see cref="Styles"/>.???.
-        /// <para/>
-        /// Nicméně potomci zdejší třídy (například <see cref="TextBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="TextBorderStyle"/>),
-        /// tedy například <see cref="TextBorderStyle.BackColor"/>, byly načteny z "jejich" instance = <see cref="Styles.TextBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
-        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
-        /// <para/>
-        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
-        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
-        /// <para/>
-        /// Tato konkrétní třída <see cref="TextBorderStyle"/> se přímo nevyužívá, je abstraktní, proto předepisuje tuto property jako abstract, musí ji vyplnit potomek a vracet svoji základní instanci.
-        /// </summary>
-        protected abstract TextBorderStyle StyleTextBorder { get; }
-        /// <summary>
-        /// Zde sděluji svému předkovi <see cref="LabelStyle"/>, ze které instance <see cref="Styles"/> má čerpat svoje základní hodnoty.
-        /// </summary>
-        protected override LabelStyle StyleLabel { get { return StyleTextBorder; } }
         #endregion
         #region Defaultní hodnoty: vlastní i overrides
         /// <summary>Defaultní hodnota pro <see cref="BackColor"/></summary>
@@ -1042,12 +1043,31 @@ namespace Asol.Tools.WorkScheduler.Components
         Color ITextBorderStyle.BorderColorMouseOn { get { return GetValue<Color>(() => BorderColorMouseOn, () => Parent?.BorderColorMouseOn, () => StyleTextBorder.BorderColorMouseOn, () => DefaultBorderColorMouseOn); } }
         Color ITextBorderStyle.BorderColorMouseDown { get { return GetValue<Color>(() => BorderColorMouseDown, () => Parent?.BorderColorMouseDown, () => StyleTextBorder.BorderColorMouseDown, () => DefaultBorderColorMouseDown); } }
 
-        Color ITextBorderStyle.GetBackColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((ITextBorderStyle)this).BackColor, () => ((ITextBorderStyle)this).BackColorDisabled, () => ((ITextBorderStyle)this).BackColorMouseOn, () => ((ITextBorderStyle)this).BackColorMouseDown); }
-        Color ITextBorderStyle.GetTextColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((ILabelStyle)this).TextColor, () => ((ITextBorderStyle)this).TextColorDisabled, () => ((ITextBorderStyle)this).TextColorMouseOn, () => ((ITextBorderStyle)this).TextColorMouseDown); }
-        Color ITextBorderStyle.GetBorderColor(GInteractiveState interactiveState) { return GetByState<Color>(interactiveState, () => ((ITextBorderStyle)this).BorderColor, () => ((ITextBorderStyle)this).BorderColorDisabled, () => ((ITextBorderStyle)this).BorderColorMouseOn, () => ((ITextBorderStyle)this).BorderColorMouseDown); }
-
         BorderType ITextBorderStyle.BorderType { get { return GetValue<BorderType>(() => BorderType, () => Parent?.BorderType, () => StyleTextBorder.BorderType, () => DefaultBorderType); } }
         int ITextBorderStyle.TextMargin { get { return Align(GetValue<int>(() => TextMargin, () => Parent?.TextMargin, () => StyleTextBorder.TextMargin, () => DefaultTextMargin), 0, MaxTextMargin); } }
+
+        Color ITextBorderStyle.GetBackColor(GInteractiveState interactiveState) { return GetBackColor(interactiveState); }
+        Color ITextBorderStyle.GetTextColor(GInteractiveState interactiveState) { return GetTextColor(interactiveState); }
+        Color ITextBorderStyle.GetBorderColor(GInteractiveState interactiveState) { return GetBorderColor(interactiveState); }
+
+        /// <summary>
+        /// Potomek vrací aktuální barvu Back podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected abstract Color GetBackColor(GInteractiveState interactiveState);
+        /// <summary>
+        /// Potomek vrací aktuální barvu Text podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected abstract Color GetTextColor(GInteractiveState interactiveState);
+        /// <summary>
+        /// Potomek vrací aktuální barvu Border podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected abstract Color GetBorderColor(GInteractiveState interactiveState);
         #endregion
     }
     #endregion
@@ -1099,6 +1119,24 @@ namespace Asol.Tools.WorkScheduler.Components
 
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
+        #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="TextBoxStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="TextBoxStyle"/> používá pro svoje vlastní property (například <see cref="TextBoxStyle.TextColorSelectedText"/>) instanci uloženou v <see cref="Styles.TextBox"/>.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="ComboBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="TextBoxStyle"/>),
+        /// tedy například <see cref="TextBoxStyle.TextColorSelectedText"/>, byly načteny z "jejich" instance = <see cref="Styles.ComboBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// </summary>
+        protected virtual TextBoxStyle StyleTextBox { get { return Styles.TextBox; } }
+        /// <summary>
+        /// Zde sděluji svému předkovi <see cref="TextBorderStyle"/>, ze které instance <see cref="Styles"/> má čerpat svoje základní hodnoty.
+        /// </summary>
+        protected override TextBorderStyle StyleTextBorder { get { return StyleTextBox; } }
         #endregion
         #region Předdefinované styly
         /// <summary>
@@ -1171,24 +1209,6 @@ namespace Asol.Tools.WorkScheduler.Components
             CursorBlinkingOn = DefaultCursorBlinkingOn;
         }
         #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance konkrétní třídy (zde <see cref="TextBoxStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
-        /// Tedy typicky třída <see cref="TextBoxStyle"/> používá pro svoje vlastní property (například <see cref="TextBoxStyle.TextColorSelectedText"/>) instanci uloženou v <see cref="Styles.TextBox"/>.
-        /// <para/>
-        /// Nicméně potomci zdejší třídy (například <see cref="ComboBoxStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="TextBoxStyle"/>),
-        /// tedy například <see cref="TextBoxStyle.TextColorSelectedText"/>, byly načteny z "jejich" instance = <see cref="Styles.ComboBox"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
-        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
-        /// <para/>
-        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
-        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
-        /// </summary>
-        protected virtual TextBoxStyle StyleTextBox { get { return Styles.TextBox; } }
-        /// <summary>
-        /// Zde sděluji svému předkovi <see cref="TextBorderStyle"/>, ze které instance <see cref="Styles"/> má čerpat svoje základní hodnoty.
-        /// </summary>
-        protected override TextBorderStyle StyleTextBorder { get { return StyleTextBox; } }
-        #endregion
         #region Defaultní hodnoty: vlastní i overrides
         /// <summary>Defaultní barva pozadí, pro textbox ve stavu Warning.</summary>
         protected virtual Color DefaultBackColorWarning { get { return Color.FromArgb(255, 192, 192); } }
@@ -1245,6 +1265,37 @@ namespace Asol.Tools.WorkScheduler.Components
         Color ITextBoxStyle.CursorColor { get { return GetValue<Color>(() => CursorColor, () => Parent?.CursorColor, () => StyleTextBox.CursorColor, () => DefaultCursorColor); } }
         int ITextBoxStyle.CursorBlinkingCycle { get { return GetValue<int>(() => CursorBlinkingCycle, () => Parent?.CursorBlinkingCycle, () => StyleTextBox.CursorBlinkingCycle, () => DefaultCursorBlinkingCycle); } }
         int ITextBoxStyle.CursorBlinkingOn { get { return GetValue<int>(() => CursorBlinkingOn, () => Parent?.CursorBlinkingOn, () => StyleTextBox.CursorBlinkingOn, () => DefaultCursorBlinkingOn); } }
+
+        /// <summary>
+        /// Potomek vrací aktuální barvu Back podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected override Color GetBackColor(GInteractiveState interactiveState)
+        {
+            ITextBorderStyle style = this as ITextBorderStyle;
+            return GetByState<Color>(interactiveState, () => style.BackColor, () => style.BackColorDisabled, () => style.BackColorMouseOn, () => style.BackColorMouseDown);
+        }
+        /// <summary>
+        /// Potomek vrací aktuální barvu Text podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected override Color GetTextColor(GInteractiveState interactiveState)
+        {
+            ITextBorderStyle style = this as ITextBorderStyle;
+            return GetByState<Color>(interactiveState, () => style.TextColor, () => style.TextColorDisabled, () => style.TextColorMouseOn, () => style.TextColorMouseDown);
+        }
+        /// <summary>
+        /// Potomek vrací aktuální barvu Border podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected override Color GetBorderColor(GInteractiveState interactiveState)
+        {
+            ITextBorderStyle style = this as ITextBorderStyle;
+            return GetByState<Color>(interactiveState, () => style.BorderColor, () => style.BorderColorDisabled, () => style.BorderColorMouseOn, () => style.BorderColorMouseDown);
+        }
         #endregion
     }
     #endregion
@@ -1263,7 +1314,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true tehdy, když this instance obsahuje alespoň jednu nenulovou hodnotu. Tedy typicky: return (this.Color.HasValue || ...);
         /// </summary>
         protected override bool HasValue { get { return (base.HasValue ||
-                    RoundCorner.HasValue || FontModifierFocused != null || TextAlignment.HasValue); } }
+                    BackColorPressed.HasValue || RoundCorner.HasValue || FontModifierFocused != null || TextAlignment.HasValue); } }
+        /// <summary>
+        /// Barva pozadí pro zmáčknutý button.
+        /// U obyčejných buttonů se použije jen při MouseDown, u CheckBoxButtonů pak po celou dobu, kdy je Checked.
+        /// </summary>
+        public Color? BackColorPressed { get; set; }
         /// <summary>
         /// Počet pixelů zaobleného rohu, default 0
         /// </summary>
@@ -1279,63 +1335,6 @@ namespace Asol.Tools.WorkScheduler.Components
 
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
-        #endregion
-        #region Předdefinované styly
-        /// <summary>
-        /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
-        /// Metoda je volána pouze v základní instanci (kde <see cref="ItemStyle.IsStyleInstance"/> je true).
-        /// </summary>
-        /// <param name="styleType"></param>
-        protected override void ActivateStyle(StyleType styleType)
-        {
-            base.ActivateStyle(styleType);
-            FontModifierFocused = DefaultFontModifierFocused;
-            TextAlignment = DefaultTextAlignment;
-
-            switch (styleType)
-            {
-                case StyleType.System:
-                    RoundCorner = DefaultRoundCorner;
-                    // Další property již nastavila base metoda ze zdejších override defaultů...
-                    break;
-                case StyleType.Light3D:
-                case StyleType.LightFlat:
-                    RoundCorner = 0;
-                    BackColor = Color.FromArgb(192, 192, 192);
-                    BackColorDisabled = Color.FromArgb(160, 160, 160);
-                    BackColorMouseOn = Color.FromArgb(214, 214, 214);
-                    BackColorMouseDown = Color.FromArgb(128, 128, 128);
-                    TextColor = Color.Black;
-                    TextColorDisabled = Color.FromArgb(64, 64, 64);
-                    TextColorMouseOn = Color.Black;
-                    TextColorMouseDown = Color.Black;
-                    BorderColor = Color.FromArgb(64, 64, 64);
-                    BorderColorDisabled = Color.FromArgb(96, 96, 96);
-                    BorderColorMouseOn = Color.FromArgb(64, 64, 64);
-                    BorderColorMouseDown = Color.FromArgb(64, 64, 64);
-                    BorderType = (styleType == StyleType.Light3D ? Components.BorderType.Single : Components.BorderType.Soft);
-                    TextMargin = 1;
-                    break;
-                case StyleType.Dark3D:
-                case StyleType.DarkFlat:
-                    RoundCorner = 0;
-                    BackColor = Color.FromArgb(24, 24, 24);
-                    BackColorDisabled = Color.FromArgb(48, 48, 48);
-                    BackColorMouseOn = Color.FromArgb(32, 32, 32);
-                    BackColorMouseDown = Color.FromArgb(16, 16, 16);
-                    TextColor = Color.White;
-                    TextColorDisabled = Color.FromArgb(224, 224, 224);
-                    TextColorMouseOn = Color.White;
-                    TextColorMouseDown = Color.White;
-                    BorderColor = Color.FromArgb(64, 64, 64);
-                    BorderColorDisabled = Color.FromArgb(96, 96, 96);
-                    BorderColorMouseOn = Color.FromArgb(64, 64, 64);
-                    BorderColorMouseDown = Color.FromArgb(64, 64, 64);
-                    BorderType = (styleType == StyleType.Dark3D ? Components.BorderType.Single : Components.BorderType.Soft);
-                    TextMargin = 1;
-                    break;
-            }
-        }
         #endregion
         #region Protected: Přechody stylů mezi předkem a potomkem
         /// <summary>
@@ -1355,7 +1354,69 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected override TextBorderStyle StyleTextBorder { get { return StyleButton; } }
         #endregion
+        #region Předdefinované styly
+        /// <summary>
+        /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
+        /// Metoda je volána pouze v základní instanci (kde <see cref="ItemStyle.IsStyleInstance"/> je true).
+        /// </summary>
+        /// <param name="styleType"></param>
+        protected override void ActivateStyle(StyleType styleType)
+        {
+            base.ActivateStyle(styleType);
+            FontModifierFocused = DefaultFontModifierFocused;
+            TextAlignment = DefaultTextAlignment;
+
+            switch (styleType)
+            {
+                case StyleType.System:
+                    BackColorPressed = DefaultBackColorPressed;
+                    RoundCorner = DefaultRoundCorner;
+                    // Další property již nastavila base metoda ze zdejších override defaultů...
+                    break;
+                case StyleType.Light3D:
+                case StyleType.LightFlat:
+                    BackColorPressed = Color.FromArgb(144, 160, 144);
+                    RoundCorner = 0;
+                    BackColor = Color.FromArgb(192, 192, 192);
+                    BackColorDisabled = Color.FromArgb(160, 160, 160);
+                    BackColorMouseOn = Color.FromArgb(214, 214, 214);
+                    BackColorMouseDown = Color.FromArgb(128, 128, 128);
+                    TextColor = Color.Black;
+                    TextColorDisabled = Color.FromArgb(64, 64, 64);
+                    TextColorMouseOn = Color.Black;
+                    TextColorMouseDown = Color.Black;
+                    BorderColor = Color.FromArgb(64, 64, 64);
+                    BorderColorDisabled = Color.FromArgb(96, 96, 96);
+                    BorderColorMouseOn = Color.FromArgb(64, 64, 64);
+                    BorderColorMouseDown = Color.FromArgb(64, 64, 64);
+                    BorderType = (styleType == StyleType.Light3D ? Components.BorderType.Single3D : Components.BorderType.SoftSinglePlain);
+                    TextMargin = 1;
+                    break;
+                case StyleType.Dark3D:
+                case StyleType.DarkFlat:
+                    RoundCorner = 0;
+                    BackColorPressed = Color.FromArgb(64, 72, 64);
+                    BackColor = Color.FromArgb(24, 24, 24);
+                    BackColorDisabled = Color.FromArgb(48, 48, 48);
+                    BackColorMouseOn = Color.FromArgb(32, 32, 32);
+                    BackColorMouseDown = Color.FromArgb(16, 16, 16);
+                    TextColor = Color.White;
+                    TextColorDisabled = Color.FromArgb(224, 224, 224);
+                    TextColorMouseOn = Color.White;
+                    TextColorMouseDown = Color.White;
+                    BorderColor = Color.FromArgb(56, 56, 56);
+                    BorderColorDisabled = Color.FromArgb(33, 33, 33);
+                    BorderColorMouseOn = Color.FromArgb(119, 117, 77);
+                    BorderColorMouseDown = Color.FromArgb(192, 192, 192);
+                    BorderType = (styleType == StyleType.Dark3D ? Components.BorderType.Single3D : Components.BorderType.SoftSinglePlain);
+                    TextMargin = 1;
+                    break;
+            }
+        }
+        #endregion
         #region Defaultní hodnoty: vlastní i overrides
+        /// <summary>Defaultní hodnota pro <see cref="BackColorPressed"/>.</summary>
+        protected virtual Color DefaultBackColorPressed { get { return SystemColors.AppWorkspace; } }
         /// <summary>Defaultní hodnota pro <see cref="RoundCorner"/>.</summary>
         protected virtual int DefaultRoundCorner { get { return 0; } }
         /// <summary>Defaultní hodnota pro <see cref="FontModifierFocused"/>.</summary>
@@ -1391,14 +1452,52 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override BorderType DefaultBorderType { get { return Components.BorderType.Single; } }
         /// <summary>Defaultní hodnota pro <see cref="TextBorderStyle.TextMargin"/></summary>
         protected override int DefaultTextMargin { get { return 1; } }
-
         /// <summary>Defaultní hodnota pro <see cref="LabelStyle.TextColor"/></summary>
         protected override Color DefaultTextColor { get { return SystemColors.ControlText; } }
         #endregion
         #region Implementace interface
+        Color IButtonStyle.BackColorPressed { get; }
         int IButtonStyle.RoundCorner { get { return GetValue<int>(() => RoundCorner, () => Parent?.RoundCorner, () => StyleButton.RoundCorner, () => DefaultRoundCorner); } }
         FontInfo IButtonStyle.FontFocused { get { return GetFontInfo(() => Font, () => FontModifierFocused, () => Parent?.Font, () => Parent?.FontModifierFocused, () => StyleButton.Font, () => StyleButton.FontModifierFocused, DefaultFont, DefaultFontModifierFocused); } }
         ContentAlignment IButtonStyle.TextAlignment { get { return GetValue<ContentAlignment>(() => TextAlignment, () => Parent?.TextAlignment, () => StyleButton.TextAlignment, () => DefaultTextAlignment); } }
+
+        /// <summary>
+        /// Potomek vrací aktuální barvu Back podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected override Color GetBackColor(GInteractiveState interactiveState)
+        {
+            // Poznámky:
+            //  1. Button, pokud je IsChecked, tak do interactiveState nastavuje bit GInteractiveState.FlagDrag.
+            //       Metoda GetByState() na tento bit reaguje téměř prioritně (vyšší prioritu mají jen bity Disabled a ReadOnly),
+            //       a pro bit FlagDrag vrací hodnotu z funkce mouseDragFunc() nebo mouseDownFunc().
+            //       Takže do funkce mouseDragFunc() dáme barvu BackColorPressed.
+            //  2. Metoda GetByState() pro stav GInteractiveState.Focused vrací hodnotu z funkce focusedFunc() nebo mouseDownFunc().
+            //       Pro Button ale nechceme, aby pouhý Focus vypadal jako MouseDown, takže do funkce focusedFunc() dáme barvu BackColorMouseOn.
+            IButtonStyle style = this as IButtonStyle;
+            return GetByState<Color>(interactiveState, () => style.BackColor, () => style.BackColorDisabled, () => style.BackColorMouseOn, () => style.BackColorMouseDown, () => style.BackColorMouseOn, () => style.BackColorPressed);
+        }
+        /// <summary>
+        /// Potomek vrací aktuální barvu Text podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected override Color GetTextColor(GInteractiveState interactiveState)
+        {
+            IButtonStyle style = this as IButtonStyle;
+            return GetByState<Color>(interactiveState, () => style.TextColor, () => style.TextColorDisabled, () => style.TextColorMouseOn, () => style.TextColorMouseDown, () => style.TextColorMouseOn, () => style.TextColorMouseDown);
+        }
+        /// <summary>
+        /// Potomek vrací aktuální barvu Border podle aktuálního interaktivního stavu
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <returns></returns>
+        protected override Color GetBorderColor(GInteractiveState interactiveState)
+        {
+            IButtonStyle style = this as IButtonStyle;
+            return GetByState<Color>(interactiveState, () => style.BorderColor, () => style.BorderColorDisabled, () => style.BorderColorMouseOn, () => style.BorderColorMouseDown, () => style.BorderColorMouseOn, () => style.BorderColorMouseDown);
+        }
         #endregion
     }
     #endregion
@@ -1479,6 +1578,20 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="PanelStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="PanelStyle"/> používá pro svoje vlastní property (například <see cref="PanelStyle.BackColor"/>) instanci uloženou v <see cref="Styles.Panel"/>.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="JinyPanel"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="PanelStyle"/>),
+        /// tedy například <see cref="PanelStyle.BackColor"/>, byly načteny z "jejich" instance = <see cref="Styles.JinyPanel"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// </summary>
+        protected virtual PanelStyle StylePanel { get { return Styles.Panel; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -1528,20 +1641,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance konkrétní třídy (zde <see cref="PanelStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
-        /// Tedy typicky třída <see cref="PanelStyle"/> používá pro svoje vlastní property (například <see cref="PanelStyle.BackColor"/>) instanci uloženou v <see cref="Styles.Panel"/>.
-        /// <para/>
-        /// Nicméně potomci zdejší třídy (například <see cref="JinyPanel"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="PanelStyle"/>),
-        /// tedy například <see cref="PanelStyle.BackColor"/>, byly načteny z "jejich" instance = <see cref="Styles.JinyPanel"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
-        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
-        /// <para/>
-        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
-        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
-        /// </summary>
-        protected virtual PanelStyle StylePanel { get { return Styles.Panel; } }
         #endregion
         #region Defaultní hodnoty: vlastní i overrides
         /// <summary>Defaultní hodnota pro <see cref="PanelStyle.BackColor"/></summary>
@@ -1659,6 +1758,20 @@ namespace Asol.Tools.WorkScheduler.Components
         // Další property: přidat do interface, přidat do this.HasValue + do ActivateStyle() + do defaultních hodnot + do implementace interface
 
         #endregion
+        #region Protected: Přechody stylů mezi předkem a potomkem
+        /// <summary>
+        /// Instance konkrétní třídy (zde <see cref="ScrollBarStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
+        /// Tedy typicky třída <see cref="ScrollBarStyle"/> používá pro svoje vlastní property (například <see cref="ScrollBarStyle.ScrollColorInactive"/>) instanci uloženou v <see cref="Styles.ScrollBar"/>.
+        /// <para/>
+        /// Nicméně potomci zdejší třídy (například <see cref="SmartScrollBarStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="ScrollBarStyle"/>),
+        /// tedy například <see cref="ScrollBarStyle.ScrollColorInactive"/>, byly načteny z "jejich" instance = <see cref="Styles.SmartScrollBar"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
+        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
+        /// <para/>
+        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
+        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
+        /// </summary>
+        protected virtual ScrollBarStyle StyleScrollBar { get { return Styles.ScrollBar; } }
+        #endregion
         #region Předdefinované styly
         /// <summary>
         /// Potomek v této metodě nastaví svoje explicitní hodnoty pro daný vizuální styl.
@@ -1704,20 +1817,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        #endregion
-        #region Protected: Přechody stylů mezi předkem a potomkem
-        /// <summary>
-        /// Instance konkrétní třídy (zde <see cref="ScrollBarStyle"/>) pro určení výchozích hodnot pro svoje property používá základní společnou instanci, uloženou ve ve stylech (<see cref="Styles"/>).
-        /// Tedy typicky třída <see cref="ScrollBarStyle"/> používá pro svoje vlastní property (například <see cref="ScrollBarStyle.ScrollColorInactive"/>) instanci uloženou v <see cref="Styles.ScrollBar"/>.
-        /// <para/>
-        /// Nicméně potomci zdejší třídy (například <see cref="SmartScrollBarStyle"/>) budou chtít, aby tyto hodnoty, které načítá třída předka (<see cref="ScrollBarStyle"/>),
-        /// tedy například <see cref="ScrollBarStyle.ScrollColorInactive"/>, byly načteny z "jejich" instance = <see cref="Styles.SmartScrollBar"/>, protože tam je logicky ukládá uživatel, a mohou se lišit.
-        /// Typicky se liší barva pozadí TextBoxu od barvy pozadí Buttonu, atd.
-        /// <para/>
-        /// Proto každá třída deklaruje protected virtual property, která má vracet konkrétní instanci ze <see cref="Styles"/>, která obsahuje odpovídající hodnoty.
-        /// Potomek tuto property přepisuje, a vrací svoji vlastní základní instanci. Tím předek čte "moje" hodnoty namísto "svých vlastních".
-        /// </summary>
-        protected virtual ScrollBarStyle StyleScrollBar { get { return Styles.ScrollBar; } }
         #endregion
         #region Defaultní hodnoty
         /// <summary>Defaultní hodnota pro <see cref="ScrollSizeInactive"/></summary>
@@ -2042,6 +2141,11 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface IButtonStyle : ITextBorderStyle
     {
         /// <summary>
+        /// Barva pozadí pro zmáčknutý button.
+        /// U obyčejných buttonů se použije jen při MouseDown, u CheckBoxButtonů pak po celou dobu kdy je Checked.
+        /// </summary>
+        Color BackColorPressed { get; }
+        /// <summary>
         /// Počet pixelů zaobleného rohu, default 0
         /// </summary>
         int RoundCorner { get; }
@@ -2256,6 +2360,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Dvojpixelový měkký
         /// </summary>
         SoftDoublePlain = Double | Soft,
+        /// <summary>
+        /// Jednopixelový s ostrými kraji, s 3D efektem "nahoru", interaktivní
+        /// </summary>
+        Single3D = Single | Effect3DUp | Effect3DInteractive,
 
         /// <summary>
         /// Jednopixelový tvrdý, polo interaktivní = v neaktivním stavu je poloprůhledný
