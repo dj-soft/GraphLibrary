@@ -905,7 +905,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Vykreslení textu na pozici
         /// <summary>
-        /// Vykreslí aktuální znak do dané grafiky
+        /// Vykreslí aktuální znak do dané grafiky.
+        /// Je vhodné nejprve vykreslit barvu pozadí pod všechny znaky a teprve poté kreslit všechny znaky, kvůli přesahům fontu do sousedního políčka.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="fontInfo"></param>
@@ -920,7 +921,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="backBrush"></param>
         /// <param name="fontColor"></param>
         /// <param name="fontBrush"></param>
-        public void DrawText(Graphics graphics, FontInfo fontInfo, Rectangle textBounds, Point? textShift, Color? backColor = null, Brush backBrush = null, Color? fontColor = null, Brush fontBrush = null)
+        public void DrawBackgroundAndText(Graphics graphics, FontInfo fontInfo, Rectangle textBounds, Point? textShift, Color? backColor = null, Brush backBrush = null, Color? fontColor = null, Brush fontBrush = null)
         {
             // Posun souřadnic znaku (ty jsou uloženy v koordinátech 0/0) do souřadnic absolutních - včetně akceptování hodnoty Shiftu:
             Point offset = textBounds.Location;
@@ -944,6 +945,71 @@ namespace Asol.Tools.WorkScheduler.Components
                 var brush = (fontBrush != null ? fontBrush : Skin.Brush(fontColor.Value));
                 PointF fontLocation = this.TextLocation.Value.Add(offset);
                 graphics.DrawString(this.TextVisible, fontInfo.Font, brush, fontLocation, FontManagerInfo.EditorStringFormat);
+            }
+        }
+        /// <summary>
+        /// Vykreslí pouze aktuální znak do dané grafiky. Bez pozadí.
+        /// Je vhodné nejprve vykreslit barvu pozadí pod všechny znaky a teprve poté kreslit všechny znaky, kvůli přesahům fontu do sousedního políčka.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="fontInfo"></param>
+        /// <param name="textBounds">Absolutní souřadnice okénka pro vypsání textu</param>
+        /// <param name="textShift">Posun textu vůči počátku prostoru <paramref name="textBounds"/> = scrollování.
+        /// Posunutí obsahu textu proti souřadnici.
+        /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
+        /// Tedy: pokud je <paramref name="textShift"/> = (25, 0), pak v TextBoxu bude zobrazen první řádek (Y=0), ale až např. čtvrtý znak, jehož X = 25.
+        /// Poznámka: souřadnice v <paramref name="textShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
+        /// </param>
+        /// <param name="fontColor"></param>
+        /// <param name="fontBrush"></param>
+        public void DrawText(Graphics graphics, FontInfo fontInfo, Rectangle textBounds, Point? textShift, Color? fontColor = null, Brush fontBrush = null)
+        {
+            // Posun souřadnic znaku (ty jsou uloženy v koordinátech 0/0) do souřadnic absolutních - včetně akceptování hodnoty Shiftu:
+            Point offset = textBounds.Location;
+            if (textShift.HasValue && !textShift.Value.IsEmpty) offset = offset.Sub(textShift.Value);
+
+            // Prostor znaku - jednak pro kreslení pozadí, jednak pro test viditelnosti = který znak není ani trochu vidět, nebude se ani trochu kreslit:
+            Rectangle backBounds = this.TextBounds.Add(offset);
+            if (!textBounds.IntersectsWith(backBounds)) return;
+
+            // Znak:
+            if (this.IsDrawText && (fontColor.HasValue || fontBrush != null))
+            {
+                var brush = (fontBrush != null ? fontBrush : Skin.Brush(fontColor.Value));
+                PointF fontLocation = this.TextLocation.Value.Add(offset);
+                graphics.DrawString(this.TextVisible, fontInfo.Font, brush, fontLocation, FontManagerInfo.EditorStringFormat);
+            }
+        }
+        /// <summary>
+        /// Vykreslí pozadí pod znak (typicky pod znaky Selected nebo jinak zvýrazněné).
+        /// Je vhodné nejprve vykreslit barvu pozadí pod všechny znaky a teprve poté kreslit všechny znaky, kvůli přesahům fontu do sousedního políčka.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="textBounds">Absolutní souřadnice okénka pro vypsání textu</param>
+        /// <param name="textShift">Posun textu vůči počátku prostoru <paramref name="textBounds"/> = scrollování.
+        /// Posunutí obsahu textu proti souřadnici.
+        /// Zde je uložena souřadnice relativního bodu v textu, který je zobrazen v levém horním rohu textovho okénka.
+        /// Tedy: pokud je <paramref name="textShift"/> = (25, 0), pak v TextBoxu bude zobrazen první řádek (Y=0), ale až např. čtvrtý znak, jehož X = 25.
+        /// Poznámka: souřadnice v <paramref name="textShift"/> by neměly být záporné, protože pak by obsah textu byl zobrazen odsunutý doprava/dolů.
+        /// </param>
+        /// <param name="backColor"></param>
+        /// <param name="backBrush"></param>
+        public void DrawBackground(Graphics graphics, Rectangle textBounds, Point? textShift, Color? backColor = null, Brush backBrush = null)
+        {
+            // Posun souřadnic znaku (ty jsou uloženy v koordinátech 0/0) do souřadnic absolutních - včetně akceptování hodnoty Shiftu:
+            Point offset = textBounds.Location;
+            if (textShift.HasValue && !textShift.Value.IsEmpty) offset = offset.Sub(textShift.Value);
+
+            // Prostor znaku - jednak pro kreslení pozadí, jednak pro test viditelnosti = který znak není ani trochu vidět, nebude se ani trochu kreslit:
+            Rectangle backBounds = this.TextBounds.Add(offset);
+            if (!textBounds.IntersectsWith(backBounds)) return;
+
+            // Pozadí:
+            if (backColor.HasValue || backBrush != null)
+            {
+                var brush = (backBrush != null ? backBrush : Skin.Brush(backColor.Value));
+                using (Painter.GraphicsUseSharp(graphics))
+                    graphics.FillRectangle(brush, backBounds);
             }
         }
         /// <summary>

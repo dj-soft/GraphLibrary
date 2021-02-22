@@ -323,10 +323,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 bool hasSelectionRange = (selectionRange != null && selectionRange.Size != 0);
                 using (Painter.GraphicsUseText(drawArgs.Graphics, textBounds))
                 {
+                    // Nejprve všechny pozadí, a pak všechny znaky (to kvůli přesahu fontu do sousedního políčka):
                     foreach (var charPosition in CharPositions)
                     {
                         bool isSelected = (hasSelectionRange && selectionRange.Contains(charPosition.Index, false));
-                        charPosition.DrawText(graphics, fontInfo, textBounds, textShift, backColor: (!isSelected ? backColorStd : backColorSel), fontColor: (!isSelected ? fontColorStd : fontColorSel));
+                        charPosition.DrawBackground(graphics, textBounds, textShift, backColor: (!isSelected ? backColorStd : backColorSel));
+                    }
+                    foreach (var charPosition in CharPositions)
+                    {
+                        bool isSelected = (hasSelectionRange && selectionRange.Contains(charPosition.Index, false));
+                        charPosition.DrawText(graphics, fontInfo, textBounds, textShift, fontColor: (!isSelected ? fontColorStd : fontColorSel));
                     }
                     DrawCursor(drawArgs);                                      // Vykreslím kurzor
                 }
@@ -337,9 +343,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 using (Painter.GraphicsUseText(drawArgs.Graphics, textBounds))
                 {
                     foreach (var charPosition in CharPositions)
-                    {
-                        charPosition.DrawText(graphics, fontInfo, textBounds, textShift, backColor: backColorStd, fontColor: fontColorStd);
-                    }
+                        charPosition.DrawBackground(graphics, textBounds, textShift, backColor: backColorStd);
+                    foreach (var charPosition in CharPositions)
+                        charPosition.DrawText(graphics, fontInfo, textBounds, textShift, fontColor: fontColorStd);
                 }
             }
         }
