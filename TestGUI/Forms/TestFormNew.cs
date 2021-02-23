@@ -15,6 +15,7 @@ using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
+    [IsMainForm("Testy komponent atd", MainFormMode.Default, 200)]
     public partial class TestFormNew : Form
     {
         public TestFormNew()
@@ -61,6 +62,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._Track.Layout.Orientation = Orientation.Horizontal;
             this.GControl.AddItem(this._Track);
 
+            this._TestPersistenceButton = new Components.Button() { Bounds = new Rectangle(210, 65, 150, 30), Text = "Persistor" };
+            this._TestPersistenceButton.ButtonClick += _TestPersistenceButton_ButtonClick;
+            this.GControl.AddItem(this._TestPersistenceButton);
+
             this._TabContainer = new TabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };
             Components.ScrollBar dataControl;
             dataControl = new Components.ScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(0, 1000), Value = new DecimalNRange(160, 260), BackColor = Color.LightCyan, Tag = "Přepínací ScrollBar na straně 1" };
@@ -72,6 +77,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.AddItem(this._TabContainer);
             
             this.ControlsPosition();
+        }
+        private void _TestPersistenceButton_ButtonClick(object sender, EventArgs e)
+        {
+            TestData testData0 = new TestData();
+            var testDataP = Noris.LCS.Base.WorkScheduler.Persist.Serialize(testData0);
+            TestData testData1 = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(testDataP) as TestData;
+
+            var testDataN = Noris.LCS.Base.WorkScheduler.Persist.Serialize(testData0, Noris.LCS.Base.WorkScheduler.PersistArgs.DotNetFwSerializer);
+            TestData testData2 = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(testDataN) as TestData;
+
+            TestList testList0 = new TestList();
+            var testListP = Noris.LCS.Base.WorkScheduler.Persist.Serialize(testList0);
+            TestList testList1 = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(testListP) as TestList;
+
+            var testListN = Noris.LCS.Base.WorkScheduler.Persist.Serialize(testList0, Noris.LCS.Base.WorkScheduler.PersistArgs.DotNetFwSerializerCompressed);
+            TestList testList2 = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(testListN) as TestList;
         }
         private void _TabHeaderH_TabItemPaintBackGround(object sender, PaintEventArgs e)
         {
@@ -138,6 +159,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private Components.TrackBar _Track;
         private TabContainer _TabContainer;
 
+        private Asol.Tools.WorkScheduler.Components.Button _TestPersistenceButton;
+
         protected void ControlsPosition()
         {
             Size size = this.GControl.Size;
@@ -170,6 +193,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int scrollWidth = Components.ScrollBar.DefaultSystemBarWidth;
 
             this._Track.Bounds = new Rectangle(20, axisBottom + 5, 150, 30);
+            this._TestPersistenceButton.Bounds = new Rectangle(200, axisBottom + 5, 150, 30);
 
             // Datový prostor:
             int areaTop = axisBottom + 40;
@@ -191,5 +215,42 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this._TabContainer.Bounds = new Rectangle(dataArea.X, dataArea.Y, dataArea.Width - 2, dataArea.Height - 2);
             }
         }
+    }
+
+    [Serializable]
+    public class TestItem
+    {
+        public override string ToString()
+        {
+            return $"Id: {Id}; Text: {Text}";
+        }
+        public int Id { get; set; }
+        public string Text { get; set; }
+    }
+    [Serializable]
+    public class TestData
+    {
+        public TestData()
+        {
+            Description = "TestData";
+            TestItems = new List<TestItem>();
+            TestItems.Add(new TestItem() { Id = 12, Text = "12aaa" });
+            TestItems.Add(new TestItem() { Id = 24, Text = "24bbb" });
+
+        }
+        public string Description { get; set; }
+        public List<TestItem> TestItems { get; set; }
+    }
+
+    [Serializable]
+    public class TestList : List<TestItem>
+    {
+        public TestList()
+        {
+            Description = "TestList";
+            this.Add(new TestItem() { Id = 12, Text = "12aaa" });
+            this.Add(new TestItem() { Id = 24, Text = "24bbb" });
+        }
+        public string Description { get; set; }
     }
 }
