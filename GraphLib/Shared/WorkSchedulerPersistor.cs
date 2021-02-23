@@ -121,11 +121,24 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             if (source == null) return null;
             PersistArgs parameters = PersistArgs.Default;
-            if (source.Trim().StartsWith(PersistArgs.XmlStringHeader)) parameters.XmlContent = source;  // XML obsah
-            else if (source.Contains("\\")) parameters.XmlFile = source;       // Soubor (obsahuje adresáře)
-            else parameters.DataContent = source;                              // ZIP obsah (ten neobsahuje lomítka)
+            if (XmlPersist.IsPersistSerial(source)) parameters.XmlContent = source;                // XML obsah
+            else if (XmlPersist.IsDotNetFwSerial(source)) parameters.DotNetFwContent = source;     // .NET FW Serializer
+            else if (source.Contains("\\")) parameters.XmlFile = source;                           // Jméno souboru (obsahuje adresáře)
+            else parameters.DataContent = source;                                                  // ZIP obsah (ten neobsahuje lomítka)
             return parameters;
         }
+        /// <summary>
+        /// Vrátí true, pokud dodaný string pochází z Persist Serializeru
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static bool IsPersistSerial(string source) { return XmlPersist.IsPersistSerial(source); }
+        /// <summary>
+        /// Vrátí true, pokud dodaný string pochází z .NET FW Serializeru
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static bool IsDotNetFwSerial(string source) { return XmlPersist.IsDotNetFwSerial(source); }
         #endregion
     }
     #endregion
@@ -207,6 +220,31 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         /// <summary>
+        /// Parametry pro serializaci pomocí <see cref="System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>
+        /// </summary>
+        public static PersistArgs DotNetFwSerializer
+        {
+            get
+            {
+                PersistArgs args = new PersistArgs();
+                args.UseDotNetFwSerializer = true;
+                return args;
+            }
+        }
+        /// <summary>
+        /// Parametry pro serializaci pomocí <see cref="System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>, s komprimací výsledku
+        /// </summary>
+        public static PersistArgs DotNetFwSerializerCompressed
+        {
+            get
+            {
+                PersistArgs args = new PersistArgs();
+                args.UseDotNetFwSerializer = true;
+                args.CompressMode = XmlCompressMode.Compress;
+                return args;
+            }
+        }
+        /// <summary>
         /// Nastavení pro zápis XML
         /// </summary>
         public XmlWriterSettings WriterSettings { get; set; }
@@ -220,6 +258,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string XmlContent { get; set; }
         /// <summary>
+        /// Obsah dat ze serializeru .NET
+        /// </summary>
+        public string DotNetFwContent { get; set; }
+        /// <summary>
         /// Serializovaná data.
         /// Zde mohou být data v komprimované podobě.
         /// Do této property se při deserializaci mají ukládat data zvenku (tj. i ze souboru), zde proběhne jejich detekce a případná dekomprimace do property <see cref="XmlContent"/>.
@@ -231,6 +273,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Možnosti jsou <see cref="Version100"/> nebo <see cref="Version200"/>.
         /// </summary>
         public string Version { get; set; }
+        /// <summary>
+        /// Použít pro serializaci třídy <see cref="System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/> ?
+        /// </summary>
+        public bool UseDotNetFwSerializer { get; set; }
         /// <summary>
         /// Je povoleno ukládat vhodná data do Heap?
         /// Výchozí hodnota = false. Pokud aplikace chce používat, musí explicitně povolit.
@@ -2118,6 +2164,21 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// <returns></returns>
         private string _Serialize(object data, PersistArgs parameters)
         {
+            if (!parameters.UseDotNetFwSerializer)
+                return _SerializePersist(data, parameters);
+            else
+                return _SerializeDotNetFW(data, parameters);
+        }
+        /// <summary>
+        /// Serializuje daný objekt s danými parametry.
+        /// Použije techniku <see cref="XmlPersist"/>.
+        /// Výstupem je XML string.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private string _SerializePersist(object data, PersistArgs parameters)
+        { 
             TraceInfo("PrepareAdapter.Start");
             this.PreparePersistAdapter(parameters.Version);
             TraceInfo("PrepareAdapter.Done");
@@ -2128,11 +2189,6 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             TraceInfo("SerializeData.Start");
             this.PersistAdapter.Save(data, parameters, xDoc);
             TraceInfo("SerializeData.Done");
-
-            //parameters.WriterSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
-            //parameters.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
-            //parameters.WriterSettings.OmitXmlDeclaration = false;
-            //parameters.WriterSettings.WriteEndDocumentOnClose = true;
 
             TraceInfo("WriteString.Start");
             StringBuilder sb = new StringBuilder();
@@ -2150,6 +2206,20 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
         /// <param name="parameters"></param>
         /// <returns></returns>
         private object _Deserialize(PersistArgs parameters)
+        {
+            if (!String.IsNullOrEmpty(parameters.XmlContent))
+                return _DeserializePersist(parameters);
+            else if (!String.IsNullOrEmpty(parameters.DotNetFwContent))
+                return _DeserializeDotNetFw(parameters);
+
+            return null;
+        }
+        /// <summary>
+        /// Provede deerializaci pomocí XmlPersist
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private object _DeserializePersist(PersistArgs parameters)
         {
             parameters.DeserializeStatus = XmlDeserializeStatus.Processing;
 
@@ -2240,12 +2310,111 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
             if (String.IsNullOrEmpty(parameters.XmlContent) && !String.IsNullOrEmpty(parameters.DataContent))
             {
                 string dataContent = parameters.DataContent;
-                if (dataContent.Trim().StartsWith(PersistArgs.XmlStringHeader, StringComparison.InvariantCultureIgnoreCase))
+                if (XmlPersist.IsPersistSerial(dataContent))
                     parameters.XmlContent = dataContent;
+                else if (XmlPersist.IsDotNetFwSerial(dataContent))
+                    parameters.DotNetFwContent = dataContent;
                 else
-                    // Máme data, ale nezačínají tak, jak by měla (""), zkusíme provést dekomprimaci:
-                    parameters.XmlContent = TryDecompress(dataContent);
+                {   // Máme data, ale nezačínají tak, jak by měla (správné záhlaví), zkusíme provést dekomprimaci:
+                    string content = TryDecompress(dataContent);
+                    if (content != null)
+                    {
+                        if (XmlPersist.IsPersistSerial(content))
+                            parameters.XmlContent = content;
+                        else if (XmlPersist.IsDotNetFwSerial(content))
+                            parameters.DotNetFwContent = content;
+                    }
+                }
             }
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný string pochází z Persist Serializeru
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static bool IsPersistSerial(string source)
+        {
+            if (String.IsNullOrEmpty(source) || source.Length < 16) return false;
+            bool isPersistSerial = (source.Trim().StartsWith(PersistArgs.XmlStringHeader, StringComparison.InvariantCultureIgnoreCase));
+            return isPersistSerial;
+        }
+        #endregion
+        #region .NET Serialize
+        /// <summary>
+        /// Vrátí true, pokud dodaný string pochází z .NET FW Serializeru
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static bool IsDotNetFwSerial(string source)
+        {
+            if (String.IsNullOrEmpty(source) || source.Length < 16) return false;
+
+            bool isDotNet = source.StartsWith("AAEAAAD/////AQAAAAAAAAA");
+            return isDotNet;
+        }
+        /// <summary>
+        /// Serializuje daný objekt s danými parametry.
+        /// Použije techniku  <see cref="System.Runtime.Serialization.Formatters.Binary.BinaryFormatter"/>.
+        /// Výstupem je XML string.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private string _SerializeDotNetFW(object data, PersistArgs parameters)
+        {
+            TraceInfo("SerializeDotNet.Start");
+            StringBuilder sb = new StringBuilder();
+            using (System.IO.MemoryStream ms = new MemoryStream())
+            {
+                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();        // není IDisposable
+                formatter.Serialize(ms, data);
+                TraceInfo("SerializeDotNet.Done");
+                // sb.Append(Encoding.UTF8.GetString(ms.ToArray()));
+                sb.Append(System.Convert.ToBase64String(ms.ToArray()));
+                ms.Close();
+            }
+            TraceInfo("WriteString.Done");
+
+            return sb.ToString();
+        }
+        /// <summary>
+        /// Provede deserializaci pomocí .NET FW
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private object _DeserializeDotNetFw(PersistArgs parameters)
+        {
+            if (String.IsNullOrEmpty(parameters.DotNetFwContent))
+            {
+                parameters.DeserializeStatus = XmlDeserializeStatus.NotInput;
+                return null;
+            }
+
+            object data = null;
+            TraceInfo("DeserializeDotNet.PrepareStream");
+            parameters.DeserializeStatus = XmlDeserializeStatus.Processing;
+            try
+            {
+                // byte[] content = Encoding.UTF8.GetBytes(parameters.DotNetFwContent);
+                byte[] content = System.Convert.FromBase64String(parameters.DotNetFwContent);
+                using (System.IO.MemoryStream ms = new MemoryStream(content))
+                {
+                    TraceInfo("DeserializeDotNet.Start");
+                    System.Runtime.Serialization.Formatters.Binary.BinaryFormatter formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();        // není IDisposable
+                    data = formatter.Deserialize(ms);
+                    ms.Close();
+                }
+                TraceInfo("DeserializeDotNet.Done");
+                parameters.DeserializeStatus = XmlDeserializeStatus.Done;
+            }
+            catch (Exception exc)
+            {
+                TraceInfo("DeserializeDotNet.Error " + exc.Message);
+                parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatPersistent;
+                return null;
+            }
+
+            return data;
         }
         #endregion
         #region class ArrayIndices
