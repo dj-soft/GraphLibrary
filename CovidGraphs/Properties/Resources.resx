@@ -400,10 +400,25 @@
   <data name="ringtone_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\ringtone_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Covid19a_64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Covid19a_64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Covid19b_64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Covid19b_64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Covid19c_64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Covid19c_64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Covid19d_64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\Covid19d_64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Kitty" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\Kitty.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="xmas_100" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\xmas_100.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="straw_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\straw_32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

@@ -117,6 +117,25 @@ namespace Djs.Tools.CovidGraphs.Data
             this._Series.RemoveAt(index);
         }
         #endregion
+        #region Podpora pro exporty
+        /// <summary>
+        /// Obsahuje vhodné jméno pro export grafu.
+        /// Obsahuje adresář (Screenshot), ten existuje. Obsahuje jméno grafu (platné pro jméno souboru) a suffix = dnešní den.
+        /// Neobsahuje tečku ani příponu, tu dodá exportér.
+        /// </summary>
+        public string ScreenshotFileName
+        {
+            get
+            {
+                DateTime now = DateTime.Now;
+                string suffix = now.ToString("yyyy-MM-dd");
+                string name = CreateValidFileName(this.Title, "") + "~" + suffix;
+                string path = PathScreenshots;
+                if (!System.IO.Directory.Exists(path)) System.IO.Directory.CreateDirectory(path);
+                return Path.Combine(path, name);
+            }
+        }
+        #endregion
         #region Static načtení celého seznamu grafů z config adresáře, tvorba sample grafů
         /// <summary>
         /// Načte data grafů z daného adresáře
@@ -632,6 +651,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Adresář pro standardní načítání a ukládání pracovních dat
         /// </summary>
         protected static string PathData { get { return System.IO.Path.Combine(App.ConfigPath, "Charts"); } }
+        /// <summary>
+        /// Adresář pro standardní export screenshotů
+        /// </summary>
+        protected static string PathScreenshots { get { return System.IO.Path.Combine(App.ConfigPath, "Screenshots"); } }
 
         /// <summary>
         /// Metoda zajistí uložení jména souboru do this instance.
@@ -1357,7 +1380,17 @@ STRIPES V OSE Y = pro číslo R :
         /// </summary>
         public GraphSerieInfo()
         {
+            this.FillDefaultValues();
+        }
+        protected void FillDefaultValues()
+        {
             ValueType = DataValueType.CurrentCount;
+            this.IsAnalyticSerie = false;
+            this.AnalyseEntityLevel = EntityType.Mesto;
+            this.AnalyseLowestCount = 2;
+            this.AnalyseHighestCount = 4;
+            this.AnalyseAddRootResult = false;
+            this.AnalyseTimeLastDays = 14;
         }
         /// <summary>
         /// Parent graf
@@ -1390,6 +1423,30 @@ STRIPES V OSE Y = pro číslo R :
         /// Filtovat data podle velikosti obcí: načítat jen z obcí, jejichž Počet obyvatel je menší než tato hodnota
         /// </summary>
         public int? FiltrPocetObyvatelDo { get; set; }
+        /// <summary>
+        /// true pokud this položka je analytická, viz properties "Analytic..."
+        /// </summary>
+        public bool IsAnalyticSerie { get; set; }
+        /// <summary>
+        /// Analyzovat data určité úrovně
+        /// </summary>
+        public EntityType AnalyseEntityLevel { get; set; }
+        /// <summary>
+        /// Do výsledku zahrnout tento počet nejnižších hodnot
+        /// </summary>
+        public int AnalyseLowestCount { get; set; }
+        /// <summary>
+        /// Do výsledku zahrnout tento počet nejvyšších hodnot
+        /// </summary>
+        public int AnalyseHighestCount { get; set; }
+        /// <summary>
+        /// Do výsledku zahrnout výsledky výchozí entity (jakožto střed)
+        /// </summary>
+        public bool AnalyseAddRootResult { get; set; }
+        /// <summary>
+        /// Analyzovat tento počet dní ode dneška do minulosti
+        /// </summary>
+        public int AnalyseTimeLastDays { get; set; }
         /// <summary>
         /// Barva čáry explicitně zadaná
         /// </summary>
@@ -1465,6 +1522,26 @@ STRIPES V OSE Y = pro číslo R :
                 case ChartSeriesFiltrPocetDo:
                     this.FiltrPocetObyvatelDo = GetValue(text, (int?)0);
                     break;
+
+                case ChartSeriesIsAnalyticSerie:
+                    this.IsAnalyticSerie = GetValue(text, false);
+                    break;
+                case ChartSeriesAnalyseEntityLevel:
+                    this.AnalyseEntityLevel = GetValueEnum<EntityType>(text, EntityType.Mesto);
+                    break;
+                case ChartSeriesAnalyseLowestCount:
+                    this.AnalyseLowestCount = GetValue(text, 2);
+                    break;
+                case ChartSeriesAnalyseHighestCount:
+                    this.AnalyseHighestCount = GetValue(text, 4);
+                    break;
+                case ChartSeriesAnalyseAddRootResult:
+                    this.AnalyseAddRootResult = GetValue(text, false);
+                    break;
+                case ChartSeriesAnalyseTimeLastDays:
+                    this.AnalyseTimeLastDays = GetValue(text, 14);
+                    break;
+
                 case ChartSeriesLineColor:
                     this.LineColor = GetValue(text, (System.Drawing.Color?)null);
                     break;
@@ -1482,10 +1559,22 @@ STRIPES V OSE Y = pro číslo R :
             stream.WriteLine(CreateLine(ChartSeriesTitle, GetSerial(this.Title)));
             stream.WriteLine(CreateLine(ChartSeriesEntityCode, GetSerial(this.EntityFullCode)));
             stream.WriteLine(CreateLine(ChartSeriesValueType, GetSerialEnum(this.ValueType)));
+
             if (this.FiltrPocetObyvatelOd.HasValue)
                 stream.WriteLine(CreateLine(ChartSeriesFiltrPocetOd, GetSerial(this.FiltrPocetObyvatelOd)));
             if (this.FiltrPocetObyvatelDo.HasValue)
                 stream.WriteLine(CreateLine(ChartSeriesFiltrPocetDo, GetSerial(this.FiltrPocetObyvatelDo)));
+
+            if (this.IsAnalyticSerie)
+            {
+                stream.WriteLine(CreateLine(ChartSeriesIsAnalyticSerie, GetSerial(this.IsAnalyticSerie)));
+                stream.WriteLine(CreateLine(ChartSeriesAnalyseEntityLevel, GetSerialEnum<EntityType>(this.AnalyseEntityLevel)));
+                stream.WriteLine(CreateLine(ChartSeriesAnalyseLowestCount, GetSerial(this.AnalyseLowestCount)));
+                stream.WriteLine(CreateLine(ChartSeriesAnalyseHighestCount, GetSerial(this.AnalyseHighestCount)));
+                stream.WriteLine(CreateLine(ChartSeriesAnalyseAddRootResult, GetSerial(this.AnalyseAddRootResult)));
+                stream.WriteLine(CreateLine(ChartSeriesAnalyseTimeLastDays, GetSerial(this.AnalyseTimeLastDays)));
+            }
+
             if (this.LineColor.HasValue)
                 stream.WriteLine(CreateLine(ChartSeriesLineColor, GetSerial(this.LineColor)));
             if (this.LineThickness.HasValue)
@@ -1498,9 +1587,18 @@ STRIPES V OSE Y = pro číslo R :
         private const string ChartSeriesValueType = GraphInfo.ChartSeriesPrefix + "ValueType";
         private const string ChartSeriesFiltrPocetOd = GraphInfo.ChartSeriesPrefix + "FiltrPocetOd";
         private const string ChartSeriesFiltrPocetDo = GraphInfo.ChartSeriesPrefix + "FiltrPocetDo";
+
+        private const string ChartSeriesIsAnalyticSerie = GraphInfo.ChartSeriesPrefix + "IsAnalyticSerie";
+        private const string ChartSeriesAnalyseEntityLevel = GraphInfo.ChartSeriesPrefix + "AnalyseEntityLevel";
+        private const string ChartSeriesAnalyseLowestCount = GraphInfo.ChartSeriesPrefix + "AnalyseLowestCount";
+        private const string ChartSeriesAnalyseHighestCount = GraphInfo.ChartSeriesPrefix + "AnalyseHighestCount";
+        private const string ChartSeriesAnalyseAddRootResult = GraphInfo.ChartSeriesPrefix + "AnalyseAddRootResult";
+        private const string ChartSeriesAnalyseTimeLastDays = GraphInfo.ChartSeriesPrefix + "AnalyseTimeLastDays";
+
         private const string ChartSeriesLineColor = GraphInfo.ChartSeriesPrefix + "LineColor";
         private const string ChartSeriesLineThickness = GraphInfo.ChartSeriesPrefix + "LineThickness";
         private const string ChartSeriesLineDashStyle = GraphInfo.ChartSeriesPrefix + "LineDashStyle";
+
         #endregion
         #region Načtení dat grafu pro tuto sérii z databáze
         /// <summary>
@@ -1514,14 +1612,80 @@ STRIPES V OSE Y = pro číslo R :
             var entity = database.GetEntity(fullCode);
             if (entity is null) return;
 
-            var result = database.GetResult(entity, this.ValueType, this.ValueTypeInfo, graphData.DateBegin, graphData.DateEnd, this.FiltrPocetObyvatelOd, this.FiltrPocetObyvatelDo);
-            var column = graphData.AddColumn(this, entity);
+            if (!this.IsAnalyticSerie)
+                this.LoadDataSimple(entity, database, graphData);
+            else
+                this.LoadDataAnalytic(entity, database, graphData);
+        }
+        /// <summary>
+        /// Načte data Simple = nikoli analytická
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="graphData"></param>
+        private void LoadDataSimple(DatabaseInfo.EntityInfo entity, DatabaseInfo database, GraphData graphData)
+        {
+            var result = database.GetResultSimple(entity, this.ValueType, this.ValueTypeInfo, graphData.DateBegin, graphData.DateEnd, this.FiltrPocetObyvatelOd, this.FiltrPocetObyvatelDo);
+            this.AddDataResult(result, graphData, false);
+        }
+        /// <summary>
+        /// Načte analytická data = více serií
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="graphData"></param>
+        private void LoadDataAnalytic(DatabaseInfo.EntityInfo entity, DatabaseInfo database, GraphData graphData)
+        {
+            EntityType analyseEntityLevel = this.AnalyseEntityLevel;
+            int lowestCount = this.AnalyseLowestCount;
+            bool addRootResult = this.AnalyseAddRootResult;
+            int highestCount = this.AnalyseHighestCount;
+            int lastDays = this.AnalyseTimeLastDays;
+            if (lastDays < 3) lastDays = 3;
+            if (lastDays > 100) lastDays = 100;
+            DateTime analyseEnd = graphData.DateEnd ?? DateTime.Now.Date.AddDays(+1);
+            DateTime analyseBegin = analyseEnd.AddDays(-lastDays);
+
+            var results = database.GetResultsAnalytic(entity, this.ValueType, analyseEntityLevel,
+                highestCount, addRootResult, lowestCount, analyseBegin, analyseEnd,
+                graphData.DateBegin, graphData.DateEnd, this.FiltrPocetObyvatelOd, this.FiltrPocetObyvatelDo);
+
+            foreach (var result in results)
+                this.AddDataResult(result, graphData, true);
+        }
+        /// <summary>
+        /// Do výsledných dat grafu vloží jednu serii z daného výsledku
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="graphData"></param>
+        private void AddDataResult(ResultSetInfo result, GraphData graphData, bool isAnalytic)
+        {
+            var column = graphData.AddColumn(this, result.Entity, isAnalytic);
             if (result != null)
             {
                 foreach (var item in result.Results)
                     graphData.AddCell(item.Date, column, item.Value);
                 graphData.AddCount(result.ScanRecordCount, result.LoadRecordCount, result.ShowRecordCount);
             }
+        }
+        /// <summary>
+        /// Vrátí defaultní titulek pro danou entitu a typ hodnoty
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="valueType"></param>
+        /// <returns></returns>
+        internal static string GetDefaultTitle(DatabaseInfo.EntityInfo entity, DataValueType valueType)
+        {
+            DataValueTypeInfo valueTypeInfo = DataValueTypeInfo.CreateFor(valueType);
+            return GetDefaultTitle(entity, valueTypeInfo);
+        }
+        /// <summary>
+        /// Vrátí defaultní titulek pro danou entitu a typ hodnoty
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="valueTypeInfo"></param>
+        /// <returns></returns>
+        internal static string GetDefaultTitle(DatabaseInfo.EntityInfo entity, DataValueTypeInfo valueTypeInfo)
+        {
+            return $"{entity.Nazev}, {valueTypeInfo.ShortText}";
         }
         #endregion
         #region Kontroly
@@ -1954,11 +2118,11 @@ STRIPES V OSE Y = pro číslo R :
         /// Poslední zobrazené datum
         /// </summary>
         public DateTime? DateEnd { get; set; }
-        public GraphColumn AddColumn(GraphSerieInfo serie, DatabaseInfo.EntityInfo entity)
+        public GraphColumn AddColumn(GraphSerieInfo serie, DatabaseInfo.EntityInfo entity, bool isAnalytic)
         {
             int index = ColumnId++;
             string columnNameData = "column" + index.ToString();
-            GraphColumn column = new GraphColumn(this, index, columnNameData, serie, entity);
+            GraphColumn column = new GraphColumn(this, index, columnNameData, serie, entity, isAnalytic);
             this._Columns.AddOrUpdate(index, column);
             return column;
         }
@@ -2106,14 +2270,39 @@ STRIPES V OSE Y = pro číslo R :
     /// </summary>
     public class GraphColumn
     {
-        public GraphColumn(GraphData graphData, int columnIndex, string columnNameData, GraphSerieInfo graphSerie, DatabaseInfo.EntityInfo dataEntity)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graphData"></param>
+        /// <param name="columnIndex"></param>
+        /// <param name="columnNameData"></param>
+        /// <param name="graphSerie"></param>
+        /// <param name="dataEntity"></param>
+        /// <param name="isAnalytic"></param>
+        public GraphColumn(GraphData graphData, int columnIndex, string columnNameData, GraphSerieInfo graphSerie, DatabaseInfo.EntityInfo dataEntity, bool isAnalytic)
         {
             this.GraphData = graphData;
-            Index = columnIndex;
-            ColumnNameData = columnNameData;
+            this.Index = columnIndex;
+            this.ColumnNameData = columnNameData;
+            this.IsAnalyticColumn = isAnalytic;
             this.GraphSerie = graphSerie;
             this.DataEntity = dataEntity;
+            this.Title = (isAnalytic ? GetAnalyticTitle(graphSerie, dataEntity) : this.GraphSerie.Title);
         }
+        /// <summary>
+        /// Vrátí titulek analytické serie grafu
+        /// </summary>
+        /// <param name="graphSerie"></param>
+        /// <param name="dataEntity"></param>
+        /// <returns></returns>
+        private string GetAnalyticTitle(GraphSerieInfo graphSerie, DatabaseInfo.EntityInfo dataEntity)
+        {
+            return GraphSerieInfo.GetDefaultTitle(dataEntity, graphSerie.ValueTypeInfo);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"Column[{Index}]: {ColumnNameData} = \"{Title}\"";
@@ -2132,7 +2321,8 @@ STRIPES V OSE Y = pro číslo R :
         /// Reference na entitu (okres, obec, atd)
         /// </summary>
         public DatabaseInfo.EntityInfo DataEntity { get; private set; }
-        public string Title { get { return this.GraphSerie.Title; } }
+        public bool IsAnalyticColumn { get; private set; }
+        public string Title { get; private set; }
         public string Description { get; set; }
         public string EntityFullCode { get { return this.DataEntity.FullCode; } }
         public string EntityName { get { return this.DataEntity.Nazev; } }

@@ -206,6 +206,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="aeskulap.ico" />
+    <None Include="Pic\straw_32.png" />
+    <None Include="Pic\Covid19d_64.png" />
+    <None Include="Pic\Covid19c_64.png" />
+    <None Include="Pic\Covid19b_64.png" />
+    <None Include="Pic\Covid19a_64.png" />
     <None Include="Pic\xmas_100.png" />
     <None Include="Pic\Kitty.png" />
     <None Include="Pic\ringtone_128.png" />

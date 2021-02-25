@@ -126,10 +126,13 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private void InitRibbons()
         {
-            var ribbon = new DxRibbonControl();
-            ribbon.ImageRightFull = Properties.Resources.Kitty;
-            ribbon.Items.Clear();
-            this.Ribbon = ribbon;
+            _DxRibbonControl = new DxRibbonControl();
+            _DxRibbonControl.PaintImageRightBefore += Ribbon_PaintImageRightBefore;
+            _DxRibbonControl.Items.Clear();
+            this.Ribbon = _DxRibbonControl;
+            _RibbonLastChangeTime = DateTime.Now.AddDays(-1);
+            _RibbonCurrentImageIndex = -1;
+            _RibbonImages = new Image[] { Properties.Resources.Covid19a_64, Properties.Resources.Covid19b_64, Properties.Resources.Covid19c_64, Properties.Resources.Covid19d_64 };
 
             this.StatusBar = new DXB.Ribbon.RibbonStatusBar();
             this.StatusBar.Ribbon = this.Ribbon;
@@ -140,6 +143,26 @@ namespace Djs.Tools.CovidGraphs
             this.Controls.Add(this.Ribbon);
             this.Controls.Add(this.StatusBar);
         }
+        /// <summary>
+        /// Před vykreslením obrázku v Ribbonu vpravo. Zde je možnost obrázek změnit.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Ribbon_PaintImageRightBefore(object sender, PaintEventArgs e)
+        {
+            TimeSpan ribbonTime = DateTime.Now - _RibbonLastChangeTime;
+            if (_DxRibbonControl.ImageRightFull != null && ribbonTime.TotalMinutes < 5) return;
+            int count = (_RibbonImages != null ? _RibbonImages.Length : -1);
+            if (count > 0)
+            {
+                _RibbonCurrentImageIndex = ((_RibbonCurrentImageIndex + 1) % count);
+                _DxRibbonControl.ImageRightFull = _RibbonImages[_RibbonCurrentImageIndex];
+            }
+            _RibbonLastChangeTime = DateTime.Now;
+        }
+        int _RibbonCurrentImageIndex;
+        DateTime _RibbonLastChangeTime;
+        Image[] _RibbonImages;
         /// <summary>
         /// Po změně pozice splitteru v hlavním splitpanelu se uloží pozice splitteru do konfigurace
         /// </summary>
@@ -213,6 +236,7 @@ namespace Djs.Tools.CovidGraphs
             };
             _MainSplitContainer.Panel2.Controls.Add(_ChartControl);
         }
+        DxRibbonControl _DxRibbonControl;
         DXB.BarStaticItem _StatusInfoTextItem;
         DXE.Repository.RepositoryItemProgressBar _StatusProgressBar;
         DXB.BarEditItem _StatusProgressEdit;
@@ -294,6 +318,7 @@ namespace Djs.Tools.CovidGraphs
                 page2.Groups.Add(group20);
 
                 RibbonAddButton(group20, "TreeView", "Otevře okno pro testování TreeView", Properties.Resources.code_class_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickTestTreeView);
+                RibbonAddButton(group20, "Analýza dat", "V databázi vyhledá mezní hodnoty pomocí analýzy", Properties.Resources.straw_32, DXB.Ribbon.RibbonItemStyles.Large, RibbonClickAnalytics);
             }
         }
         /// <summary>
@@ -350,6 +375,24 @@ namespace Djs.Tools.CovidGraphs
         {
             Data.App.TryRun(TryRunConfig);
         }
+
+        private void RibbonClickAnalytics(object sender, DXB.ItemClickEventArgs e)
+        {
+            if (this._Database == null) return;
+
+            DatabaseInfo.EntityInfo entityCz = this._Database.GetEntity("CZ");
+            DateTime now = DateTime.Now.Date;
+            DateTime analyseBegin = now.AddDays(-6d);
+            DateTime analyseEnd = now.AddDays(1d);
+
+            DateTime start = DateTime.Now;
+            var result = this._Database.GetResultsAnalytic(entityCz, DataValueType.NewCount7DaySumRelativeAvg, EntityType.Obec,
+                4, true, 2, analyseBegin, analyseEnd);
+            DateTime end = DateTime.Now;
+            var time = end - start;
+            var seconds = time.TotalSeconds;
+        }
+
         private void StatusFillItems()
         {
             _StatusInfoTextItem = new DXB.BarStaticItem() { Caption = "Stavový řádek" };
@@ -593,6 +636,9 @@ namespace Djs.Tools.CovidGraphs
 
             CurrentGraphData.FinaliseShowGraph();
             this.ShowLoadGraphDataResult(CurrentGraphData);
+
+            string name = graph.ScreenshotFileName + ".png";
+            _ChartControl.ExportToImage(name, System.Drawing.Imaging.ImageFormat.Png);
         }
         private bool TryShowChartLayoutBySource(ShowChartSourceType source)
         {

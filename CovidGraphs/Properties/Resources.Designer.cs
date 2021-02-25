@@ -553,6 +553,46 @@ namespace Djs.Tools.CovidGraphs.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Covid19a_64 {
+            get {
+                object obj = ResourceManager.GetObject("Covid19a_64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Covid19b_64 {
+            get {
+                object obj = ResourceManager.GetObject("Covid19b_64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Covid19c_64 {
+            get {
+                object obj = ResourceManager.GetObject("Covid19c_64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Covid19d_64 {
+            get {
+                object obj = ResourceManager.GetObject("Covid19d_64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap db_16 {
             get {
                 object obj = ResourceManager.GetObject("db_16", resourceCulture);
@@ -986,6 +1026,16 @@ namespace Djs.Tools.CovidGraphs.Properties {
         internal static System.Drawing.Bitmap run_build_file_32 {
             get {
                 object obj = ResourceManager.GetObject("run_build_file_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap straw_32 {
+            get {
+                object obj = ResourceManager.GetObject("straw_32", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

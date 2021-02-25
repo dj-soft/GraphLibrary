@@ -1202,7 +1202,7 @@ Teprve pak klikněte na tlačítko '{_SeriesListAddButton.Text}', budou přidán
             {
                 var entity = newSerieKey.Item1;
                 var valueType = newSerieKey.Item2;
-                string title = entity.Nazev + ", " + valueType.ShortText;
+                string title = GraphSerieInfo.GetDefaultTitle(entity, valueType);
                 GraphSerieInfo serie = new GraphSerieInfo() { Title = title, EntityFullCode = entity.FullCode, ValueType = valueType.Value };
                 this.CurrentGraphInfo.AddSerie(serie);
                 AddSerieToSeriesList(serie);
@@ -1300,38 +1300,106 @@ Zrušit úpravy vzhledu?";
         #region Detaily jednoho řádku (Panel, obsahuje Texty a Comboboxy)
         private WF.Control CreateControlForSeriesDetail()
         {
-            _SeriesDetailPanel = new DXE.PanelControl() { Dock = DockStyle.Fill, BorderStyle = DXE.Controls.BorderStyles.NoBorder };
+            _SeriesDetailPanel = DxComponent.CreateDxPanel(dock: DockStyle.Fill);
 
             int y = DetailYFirst;
             _SeriesDetailTitleLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 600, _SeriesDetailPanel, "Název datové řady");
             _SeriesDetailValueInfoLabel = DxComponent.CreateDxLabel(DetailXLabel + 610, ref y, 250, _SeriesDetailPanel, "Informace o datech", shiftY: true);
 
-            _SeriesDetailTitleText = DxComponent.CreateDxTextEdit(DetailXLabel, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
-            _SeriesDetailValueInfoText = DxComponent.CreateDxMemoEdit(DetailXLabel + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailTitleText = DxComponent.CreateDxTextEdit(DetailXText, ref y, 600, _SeriesDetailPanel, _SeriesValueChanged);
+            _SeriesDetailValueInfoText = DxComponent.CreateDxMemoEdit(DetailXText + 610, ref y, 250, 50, _SeriesDetailPanel, readOnly: true, tabStop: false);
                 
             y = _SeriesDetailTitleText.Bounds.Bottom + DetailYSpaceText;
 
             _SeriesDetailEntityLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Okres/město");
             _SeriesDetailValueTypeLabel = DxComponent.CreateDxLabel(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, "Druh zobrazených dat", shiftY: true);
 
-            _SeriesDetailEntityText = DxComponent.CreateDxTextEdit(DetailXLabel, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
-            _SeriesDetailValueTypeText = DxComponent.CreateDxTextEdit(DetailXLabel + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailEntityText = DxComponent.CreateDxTextEdit(DetailXText, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
+            _SeriesDetailValueTypeText = DxComponent.CreateDxTextEdit(DetailXText + 305, ref y, 295, _SeriesDetailPanel, readOnly: true, tabStop: false);
 
             y = _SeriesDetailValueTypeText.Bottom;
             _SeriesDetailValueInfoText.Height = (y - _SeriesDetailValueInfoText.Top);
             y += DetailYSpaceText;
 
             _SeriesDetailPocetOdDoLabel = DxComponent.CreateDxLabel(DetailXLabel, ref y, 295, _SeriesDetailPanel, "Výběr obcí dle počtu obyvatel OD-DO:", shiftY: true);
+            _SeriesDetailPocetOdText = DxComponent.CreateDxSpinEdit(DetailXText, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailPocetDoText = DxComponent.CreateDxSpinEdit(DetailXText + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
 
+            y = _SeriesDetailPocetDoText.Bounds.Bottom + DxComponent.DetailYSpaceText + 6;
 
-            _SeriesDetailPocetOdText = DxComponent.CreateDxSpinEdit(DetailXLabel, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
-            _SeriesDetailPocetDoText = DxComponent.CreateDxSpinEdit(DetailXLabel + 120, ref y, 110, _SeriesDetailPanel, _SeriesValueChanged, minValue: 0m, maxValue: 10000000000m, increment: 100m, mask: "### ### ### ###", spinStyles: DXE.Controls.SpinStyles.Vertical);
+            _SeriesDetailAnalyticTitle = DxComponent.CreateDxLabel(DetailXLabel + 15, ref y, 600, _SeriesDetailPanel, "Analytický rozpad: vyhledá ve zvoleném území (v zemi) její části (okresy, města) s nejvyšší a nejnižší danou hodnotou.", LabelStyleType.Title, shiftY: true);
 
+            _SeriesDetailAnalyticCheckBox = DxComponent.CreateDxCheckEdit(DetailXText, ref y, 150, _SeriesDetailPanel, "Provádět analýzu", _SeriesAnalyticCheckChanged, DXE.Controls.CheckBoxStyle.SvgToggle1, toolTipTitle: "Provádět analýzu", toolTipText: "Při aktivní analýze budou do grafu vloženy údaje o několika obcích s nejvyšší a nejnižší zvolenou hodnotou.");
+            _SeriesDetailAnalyticEntityLabel = DxComponent.CreateDxLabel(DetailXText + 158, ref y, 90, _SeriesDetailPanel, "Úroveň detailů:", visible: false, useLabelTextOffset: true);
+            _SeriesDetailAnalyticEntityCombo = DxComponent.CreateDxImageComboBox(DetailXText + 240, ref y, 85, _SeriesDetailPanel, _SeriesValueChanged, AnalyticEntityComboItems, visible: false, toolTipTitle: "Úroveň detailů", toolTipText: "Vyhledá jednotlivé obce/okresy/kraje v rámci zadaného celku, a vyhodnotí jejich data a porovná je mezi sebou.");
+            _SeriesDetailAnalyticLowestCountLabel = DxComponent.CreateDxLabel(DetailXText + 338, ref y, 95, _SeriesDetailPanel, "Počet nejmenších:", visible: false, useLabelTextOffset: true);
+            _SeriesDetailAnalyticLowestCountText = DxComponent.CreateDxSpinEdit(DetailXText + 435, ref y, 60, _SeriesDetailPanel, _SeriesValueChanged, 0, 12, 1, mask: "##0", visible: false, toolTipTitle: "Zobrazit počet nejmenších hodnot:", toolTipText: "Z nalezených údajů vybere uvedený počet, které mají nejmenší hodnoty");
+            _SeriesDetailAnalyticHighestCountLabel = DxComponent.CreateDxLabel(DetailXText + 503, ref y, 95, _SeriesDetailPanel, "Počet největších:", visible: false, useLabelTextOffset: true);
+            _SeriesDetailAnalyticHighestCountText = DxComponent.CreateDxSpinEdit(DetailXText + 600, ref y, 60, _SeriesDetailPanel, _SeriesValueChanged, 0, 12, 1, mask: "##0", visible: false, toolTipTitle: "Zobrazit počet největších hodnot:", toolTipText: "Z nalezených údajů vybere uvedený počet, které mají největší hodnoty, a tento počet dat pak zobrazí v grafu.");
+            _SeriesDetailAnalyticLastDaysCountLabel = DxComponent.CreateDxLabel(DetailXText + 685, ref y, 85, _SeriesDetailPanel, "Analyzuj dny:", visible: false, useLabelTextOffset: true);
+            _SeriesDetailAnalyticLastDaysCountText = DxComponent.CreateDxSpinEdit(DetailXText + 770, ref y, 60, _SeriesDetailPanel, _SeriesValueChanged, 3, 100, 1, mask: "##0", visible: false, toolTipTitle: "Analyzuj data za poslední dny:", toolTipText: "Z dat vybraných obcí analyzuje pouze data z posledních několika dnů, kde vybere nejmenší a největší hodnoty. Ty pak porovná s jinými obcemi za shodné období.");
 
             _GraphSeriesDetailHeight = y + 12;
 
-
             return _SeriesDetailPanel;
+        }
+        private static string AnalyticEntityComboItems
+        {
+            get
+            {
+                return "Kraje\tOkresy\tMěsta\tObce\tVesnice";
+            }
+        }
+        private static int GetAnalyticEntityIndex(EntityType entityType)
+        {
+            switch (entityType)
+            {
+                case EntityType.Kraj: return 0;
+                case EntityType.Okres: return 1;
+                case EntityType.Mesto: return 2;
+                case EntityType.Obec: return 3;
+                case EntityType.Vesnice: return 4;
+            }
+            return -1;
+        }
+        private static EntityType GetAnalyticEntityValue(int selectedIndex)
+        {
+            switch (selectedIndex)
+            {
+                case 0: return EntityType.Kraj;
+                case 1: return EntityType.Okres;
+                case 2: return EntityType.Mesto;
+                case 3: return EntityType.Obec;
+                case 4: return EntityType.Vesnice;
+            }
+            return EntityType.None;
+        }
+        /// <summary>
+        /// Po změně hodnoty <see cref="_SeriesDetailAnalyticCheckBox"/>.Checked
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SeriesAnalyticCheckChanged(object sender, EventArgs e)
+        {
+            SeriesDetailStore();
+            ContainChanges = true;
+            ContainSerieChanges = true;
+            SeriesDetailAnalyticShow(_SeriesDetailAnalyticCheckBox.Checked);
+        }
+        /// <summary>
+        /// Nastaví Visible na detaily serie podle hodnoty <see cref="GraphSerieInfo.IsAnalyticSerie"/>
+        /// </summary>
+        private void SeriesDetailAnalyticShow(bool? isAnalyticSerie = null)
+        {
+            bool isVisible = (isAnalyticSerie.HasValue ? isAnalyticSerie.Value : (CurrentSerieInfo?.IsAnalyticSerie ?? false));
+            _SeriesDetailAnalyticEntityLabel.Visible = isVisible;
+            _SeriesDetailAnalyticEntityCombo.Visible = isVisible;
+            _SeriesDetailAnalyticLowestCountLabel.Visible = isVisible;
+            _SeriesDetailAnalyticLowestCountText.Visible = isVisible;
+            _SeriesDetailAnalyticHighestCountLabel.Visible = isVisible;
+            _SeriesDetailAnalyticHighestCountText.Visible = isVisible;
+            _SeriesDetailAnalyticLastDaysCountLabel.Visible = isVisible;
+            _SeriesDetailAnalyticLastDaysCountText.Visible = isVisible;
         }
         /// <summary>
         /// Po změně jakéhokoli údaje v hlavičce se uloží data z GUI do datového objektu grafu
@@ -1362,8 +1430,15 @@ Zrušit úpravy vzhledu?";
             _SeriesDetailPocetOdText.Value = serie?.FiltrPocetObyvatelOd ?? 0;
             _SeriesDetailPocetDoText.Value = serie?.FiltrPocetObyvatelDo ?? 0;
 
+            _SeriesDetailAnalyticCheckBox.Checked = serie?.IsAnalyticSerie ?? false;
+            _SeriesDetailAnalyticEntityCombo.SelectedIndex = GetAnalyticEntityIndex(serie?.AnalyseEntityLevel ?? EntityType.Mesto);
+            _SeriesDetailAnalyticLowestCountText.Value = serie?.AnalyseLowestCount ?? 2;
+            _SeriesDetailAnalyticHighestCountText.Value = serie?.AnalyseHighestCount ?? 4;
+            _SeriesDetailAnalyticLastDaysCountText.Value = serie?.AnalyseTimeLastDays ?? 14;
 
             _DataRefreshRunning = oldDRR;
+
+            SeriesDetailAnalyticShow();
         }
         /// <summary>
         /// Uloží data aktuální položky z GUI do datového objektu
@@ -1378,12 +1453,14 @@ Zrušit úpravy vzhledu?";
             serie.Title = _SeriesDetailTitleText.Text;
             serie.FiltrPocetObyvatelOd = (_SeriesDetailPocetOdText.Value > 0m ? (int?)_SeriesDetailPocetOdText.Value : (int?)null);
             serie.FiltrPocetObyvatelDo = (_SeriesDetailPocetDoText.Value > 0m ? (int?)_SeriesDetailPocetDoText.Value : (int?)null);
-
-
+            serie.IsAnalyticSerie = _SeriesDetailAnalyticCheckBox.Checked;
+            serie.AnalyseEntityLevel = GetAnalyticEntityValue(_SeriesDetailAnalyticEntityCombo.SelectedIndex);
+            serie.AnalyseLowestCount = (int)_SeriesDetailAnalyticLowestCountText.Value;
+            serie.AnalyseAddRootResult = false;
+            serie.AnalyseHighestCount = (int)_SeriesDetailAnalyticHighestCountText.Value;
+            serie.AnalyseTimeLastDays = (int)_SeriesDetailAnalyticLastDaysCountText.Value;
 
             _SeriesListGridView.RefreshData();
-//             _SeriesListGrid.RefreshDataSource();
-
         }
         /// <summary>
         /// Serie grafu, aktuálně zobrazení v Gridu, její data jsou zobrazena v poli SeriesDetail.
@@ -1391,18 +1468,29 @@ Zrušit úpravy vzhledu?";
         /// Teoreticky to může být null.
         /// </summary>
         private GraphSerieInfo CurrentSerieInfo;
-        DXE.PanelControl _SeriesDetailPanel;
-        DXE.LabelControl _SeriesDetailTitleLabel;
-        DXE.TextEdit _SeriesDetailTitleText;
-        DXE.LabelControl _SeriesDetailEntityLabel;
-        DXE.TextEdit _SeriesDetailEntityText;
-        DXE.LabelControl _SeriesDetailValueTypeLabel;
-        DXE.TextEdit _SeriesDetailValueTypeText;
-        DXE.LabelControl _SeriesDetailValueInfoLabel;
-        DXE.MemoEdit _SeriesDetailValueInfoText;
-        DXE.LabelControl _SeriesDetailPocetOdDoLabel;
-        DXE.SpinEdit _SeriesDetailPocetOdText;
-        DXE.SpinEdit _SeriesDetailPocetDoText;
+        DxPanelControl _SeriesDetailPanel;
+        DxLabelControl _SeriesDetailTitleLabel;
+        DxTextEdit _SeriesDetailTitleText;
+        DxLabelControl _SeriesDetailEntityLabel;
+        DxTextEdit _SeriesDetailEntityText;
+        DxLabelControl _SeriesDetailValueTypeLabel;
+        DxTextEdit _SeriesDetailValueTypeText;
+        DxLabelControl _SeriesDetailValueInfoLabel;
+        DxMemoEdit _SeriesDetailValueInfoText;
+        DxLabelControl _SeriesDetailPocetOdDoLabel;
+        DxSpinEdit _SeriesDetailPocetOdText;
+        DxSpinEdit _SeriesDetailPocetDoText;
+        DxLabelControl _SeriesDetailAnalyticTitle;
+        DxCheckEdit _SeriesDetailAnalyticCheckBox;
+        DxLabelControl _SeriesDetailAnalyticEntityLabel;
+        DxImageComboBoxEdit _SeriesDetailAnalyticEntityCombo;
+        DxLabelControl _SeriesDetailAnalyticLowestCountLabel;
+        DxSpinEdit _SeriesDetailAnalyticLowestCountText;
+        DxLabelControl _SeriesDetailAnalyticHighestCountLabel;
+        DxSpinEdit _SeriesDetailAnalyticHighestCountText;
+        DxLabelControl _SeriesDetailAnalyticLastDaysCountLabel;
+        DxSpinEdit _SeriesDetailAnalyticLastDaysCountText;
+
         #endregion
         #region Generátory controlů
         /*

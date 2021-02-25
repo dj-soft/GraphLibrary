@@ -93,6 +93,7 @@ namespace Djs.Tools.CovidGraphs
             _DetailYFirst = 9;
             _DetailYHeightLabel = 19;
             _DetailYHeightText = 22;
+            _DetailYOffsetLabelText = 5;
             _DetailYSpaceLabel = 2;
             _DetailYSpaceText = 3;
             _DetailXMargin = 6;
@@ -124,6 +125,7 @@ namespace Djs.Tools.CovidGraphs
         public static int DetailYFirst { get { return Instance._DetailYFirst; } }
         public static int DetailYHeightLabel { get { return Instance._DetailYHeightLabel; } }
         public static int DetailYHeightText { get { return Instance._DetailYHeightText; } }
+        public static int DetailYOffsetLabelText { get { return Instance._DetailYOffsetLabelText; } }
         public static int DetailYSpaceLabel { get { return Instance._DetailYSpaceLabel; } }
         public static int DetailYSpaceText { get { return Instance._DetailYSpaceText; } }
         public static int DetailXMargin { get { return Instance._DetailXMargin; } }
@@ -141,6 +143,7 @@ namespace Djs.Tools.CovidGraphs
         private int _DetailYFirst;
         private int _DetailYHeightLabel;
         private int _DetailYHeightText;
+        private int _DetailYOffsetLabelText;
         private int _DetailYSpaceLabel;
         private int _DetailYSpaceText;
         private int _DetailXMargin;
@@ -186,11 +189,12 @@ namespace Djs.Tools.CovidGraphs
         }
         public static DxLabelControl CreateDxLabel(int x, ref int y, int w, Control parent, string text,
             LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DXE.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
-            bool? visible = null, bool shiftY = false)
+            bool? visible = null, bool useLabelTextOffset = false, bool shiftY = false)
         {
             var inst = Instance;
 
-            var label = new DxLabelControl() { Bounds = new Rectangle(x, y, w, inst._DetailYHeightLabel), Text = text };
+            int yOffset = (useLabelTextOffset ? inst._DetailYOffsetLabelText : 0);
+            var label = new DxLabelControl() { Bounds = new Rectangle(x, y + yOffset, w, inst._DetailYHeightLabel), Text = text };
             label.StyleController = (styleType == LabelStyleType.Title ? inst._TitleStyle : (styleType == LabelStyleType.Info ? inst._InfoStyle : inst._LabelStyle));
             if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
             if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
@@ -201,7 +205,7 @@ namespace Djs.Tools.CovidGraphs
             if (visible.HasValue) label.Visible = visible.Value;
 
             if (parent != null) parent.Controls.Add(label);
-            if (shiftY) y = y + label.Height + inst._DetailYSpaceLabel;
+            if (shiftY) y = label.Bounds.Bottom + inst._DetailYSpaceLabel;
 
             return label;
         }
@@ -230,6 +234,7 @@ namespace Djs.Tools.CovidGraphs
             return textEdit;
         }
         public static DxMemoEdit CreateDxMemoEdit(int x, ref int y, int w, int h, Control parent, EventHandler textChanged = null,
+            string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -240,6 +245,8 @@ namespace Djs.Tools.CovidGraphs
             if (readOnly.HasValue) memoEdit.ReadOnly = readOnly.Value;
             if (tabStop.HasValue) memoEdit.TabStop = tabStop.Value;
 
+            memoEdit.SetToolTip(toolTipTitle, toolTipText);
+
             if (textChanged != null) memoEdit.TextChanged += textChanged;
             if (parent != null) parent.Controls.Add(memoEdit);
             if (shiftY) y = y + memoEdit.Height + inst._DetailYSpaceText;
@@ -247,6 +254,7 @@ namespace Djs.Tools.CovidGraphs
             return memoEdit;
         }
         public static DxImageComboBoxEdit CreateDxImageComboBox(int x, ref int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
+            string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -263,6 +271,9 @@ namespace Djs.Tools.CovidGraphs
                 for (int i = 0; i < items.Length; i++)
                     comboBox.Properties.Items.Add(items[i], i, 0);
             }
+
+            comboBox.SetToolTip(toolTipTitle, toolTipText);
+
             if (selectedIndexChanged != null) comboBox.SelectedIndexChanged += selectedIndexChanged;
             if (parent != null) parent.Controls.Add(comboBox);
             if (shiftY) y = y + comboBox.Height + inst._DetailYSpaceText;
@@ -270,6 +281,7 @@ namespace Djs.Tools.CovidGraphs
         }
         public static DxSpinEdit CreateDxSpinEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
             decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DXE.Controls.SpinStyles? spinStyles = null,
+            string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -292,6 +304,8 @@ namespace Djs.Tools.CovidGraphs
             }
             if (spinStyles.HasValue) spinEdit.Properties.SpinStyle = spinStyles.Value;
 
+            spinEdit.SetToolTip(toolTipTitle, toolTipText);
+
             if (valueChanged != null) spinEdit.ValueChanged += valueChanged;
             if (parent != null) parent.Controls.Add(spinEdit);
             if (shiftY) y = y + spinEdit.Height + inst._DetailYSpaceText;
@@ -299,6 +313,7 @@ namespace Djs.Tools.CovidGraphs
         }
         public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DXE.Controls.CheckBoxStyle? checkBoxStyle = null, DXE.Controls.BorderStyles? borderStyles = null,
+            string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -312,6 +327,8 @@ namespace Djs.Tools.CovidGraphs
             if (checkBoxStyle.HasValue) checkEdit.Properties.CheckBoxOptions.Style = checkBoxStyle.Value;
             if (borderStyles.HasValue) checkEdit.BorderStyle = borderStyles.Value;
 
+            checkEdit.SetToolTip(toolTipTitle ?? text, toolTipText);
+
             if (checkedChanged != null) checkEdit.CheckedChanged += checkedChanged;
             if (parent != null) parent.Controls.Add(checkEdit);
             if (shiftY) y = y + checkEdit.Height + inst._DetailYSpaceText;
@@ -320,6 +337,7 @@ namespace Djs.Tools.CovidGraphs
         }
         public static DxListBoxControl CreateDxListBox(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? tabStop = null)
         {
             int y = 0;
@@ -327,10 +345,12 @@ namespace Djs.Tools.CovidGraphs
             int h = height ?? 0;
             return CreateDxListBox(0, ref y, w, h, parent, selectedIndexChanged,
                 multiColumn, selectionMode, itemHeightPadding, reorderByDragEnabled,
+                toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
@@ -345,6 +365,8 @@ namespace Djs.Tools.CovidGraphs
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
 
+            listBox.SetToolTip(toolTipTitle, toolTipText);
+
             if (selectedIndexChanged != null) listBox.SelectedIndexChanged += selectedIndexChanged;
             if (parent != null) parent.Controls.Add(listBox);
             if (shiftY) y = y + listBox.Height + inst._DetailYSpaceText;
@@ -352,7 +374,8 @@ namespace Djs.Tools.CovidGraphs
             return listBox;
         }
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
-            bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+              string toolTipTitle = null, string toolTipText = null,
+          bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
 
@@ -362,20 +385,30 @@ namespace Djs.Tools.CovidGraphs
             if (visible.HasValue) simpleButton.Visible = visible.Value;
             if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
 
+            simpleButton.SetToolTip(toolTipTitle ?? text, toolTipText);
+
             if (click != null) simpleButton.Click += click;
             if (parent != null) parent.Controls.Add(simpleButton);
             if (shiftY) y = y + simpleButton.Height + inst._DetailYSpaceText;
 
             return simpleButton;
         }
-
         public static ToolTipController CreateToolTipController()
         {
             ToolTipController toolTipController = new ToolTipController();
 
             return toolTipController;
         }
+        public static SuperToolTip CreateDxSuperTip(string title, string text)
+        {
+            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text)) return null;
 
+            var superTip = new DevExpress.Utils.SuperToolTip();
+            if (title != null) superTip.Items.AddTitle(title);
+            superTip.Items.Add(text);
+
+            return superTip;
+        }
         #endregion
     }
     #endregion
@@ -435,28 +468,20 @@ namespace Djs.Tools.CovidGraphs
         {
             EnterMoveNextControl = true;
         }
+        #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
         /// <param name="title"></param>
-        public void SetToolTip(string text)
-        {
-            this.SetToolTip(null, text);
-        }
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
         /// <param name="title"></param>
-        public void SetToolTip(string title, string text)
-        {
-            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text)) return;
-
-            this.SuperTip = new DevExpress.Utils.SuperToolTip();
-            if (title != null) this.SuperTip.Items.AddTitle(title);
-            this.SuperTip.Items.Add(text);
-        }
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
     }
     #endregion
     #region DxMemoEdit
@@ -464,28 +489,90 @@ namespace Djs.Tools.CovidGraphs
     /// MemoEdit
     /// </summary>
     public class DxMemoEdit : DXE.MemoEdit
-    { }
+    {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
+
+    }
     #endregion
     #region DxImageComboBoxEdit
     /// <summary>
     /// ImageComboBoxEdit
     /// </summary>
     public class DxImageComboBoxEdit : DXE.ImageComboBoxEdit
-    { }
+    {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
+
+    }
     #endregion
     #region DxSpinEdit
     /// <summary>
     /// SpinEdit
     /// </summary>
     public class DxSpinEdit : DXE.SpinEdit
-    { }
+    {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
+    }
     #endregion
     #region DxCheckEdit
     /// <summary>
     /// CheckEdit
     /// </summary>
     public class DxCheckEdit : DXE.CheckEdit
-    { }
+    {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
+    }
     #endregion
     #region DxListBoxControl
     /// <summary>
@@ -734,6 +821,20 @@ namespace Djs.Tools.CovidGraphs
             return bounds;
         }
         #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
 
 
     }
@@ -793,7 +894,6 @@ namespace Djs.Tools.CovidGraphs
 
             this.ToolTipController = DxComponent.CreateToolTipController();
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
-
 
             this.NodeCellStyle += _OnNodeCellStyle;
             this.DoubleClick += _OnDoubleClick;
@@ -1953,6 +2053,20 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxSimpleButton : DXE.SimpleButton
     {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
     }
     #endregion
     #region DxRibbon
@@ -1967,7 +2081,7 @@ namespace Djs.Tools.CovidGraphs
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            this.PaintImageRight(e);
+            this.PaintAfter(e);
         }
         #region Souřadnice oblasti Ribbonu kde jsou aktuálně buttony
         /// <summary>
@@ -2048,8 +2162,10 @@ namespace Djs.Tools.CovidGraphs
         /// Vykreslí ikonu vpravo
         /// </summary>
         /// <param name="e"></param>
-        private void PaintImageRight(PaintEventArgs e)
+        private void PaintAfter(PaintEventArgs e)
         {
+            OnPaintImageRightBefore(e);
+
             bool isSmallRibbon = (this.CommandLayout == CommandLayout.Simplified);
             Image image = GetImageRight(isSmallRibbon);
             if (image == null) return;
@@ -2063,6 +2179,8 @@ namespace Djs.Tools.CovidGraphs
 
             Rectangle imageBounds = new Rectangle(buttonsBounds.Right - 6 - imageWidth, buttonsBounds.Y + 4, imageWidth, imageHeight);
             e.Graphics.DrawImage(image, imageBounds);
+
+            OnPaintImageRightAfter(e);
         }
         /// <summary>
         /// Metoda vrátí vhodný obrázek pro obrázek vpravo pro aktuální velikost. 
@@ -2077,6 +2195,28 @@ namespace Djs.Tools.CovidGraphs
             if (_ImageRightFull != null) return _ImageRightFull;
             return _ImageRightMini;
         }
+        /// <summary>
+        /// Provede se před vykreslením obrázku vpravo v ribbonu
+        /// </summary>
+        protected virtual void OnPaintImageRightBefore(PaintEventArgs e)
+        {
+            PaintImageRightBefore?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se před vykreslením obrázku vpravo v ribbonu
+        /// </summary>
+        public event EventHandler<PaintEventArgs> PaintImageRightBefore;
+        /// <summary>
+        /// Provede se po vykreslení obrázku vpravo v ribbonu
+        /// </summary>
+        protected virtual void OnPaintImageRightAfter(PaintEventArgs e)
+        {
+            PaintImageRightAfter?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se po vykreslení obrázku vpravo v ribbonu
+        /// </summary>
+        public event EventHandler<PaintEventArgs> PaintImageRightAfter;
         #endregion
     }
     #endregion

@@ -1510,25 +1510,40 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         #endregion
         #endregion
-        #region Získání dat za určitou úroveň
-        public ResultSetInfo GetResult(string fullCode, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
+        #region Získání exaktních dat za určitou entitu
+        /// <summary>
+        /// Získá a vrátí exaktní data za danou entitu
+        /// </summary>
+        /// <param name="entity">Pro kterou entitu máme hledat data. Entitu lze snadno najít pomocí <see cref="GetEntity(string)"./></param>
+        /// <param name="valueType">Jaký datový typ získat pro analýzy</param>
+        /// <param name="dataTypeInfo">Info o datovém typu, může být null</param>
+        /// <param name="begin">Počátek dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="end">Konec dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="pocetOd">Filtr na počet obyvatel na nejnižší úrovni, od</param>
+        /// <param name="pocetDo">Filtr na počet obyvatel na nejnižší úrovni, do</param>
+        /// <returns></returns>
+        public ResultSetInfo GetResultSimple(EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
-            return _GetResult(fullCode, null, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
+            return _GetResultSimple(entity, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
         }
-        public ResultSetInfo GetResult(EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
-        {
-            return _GetResult(null, entity, valueType, dataTypeInfo, begin, end, pocetOd, pocetDo);
-        }
-        private ResultSetInfo _GetResult(string fullCode, EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
+        /// <summary>
+        /// Získá a vrátí exaktní data za danou entitu
+        /// </summary>
+        /// <param name="entity">Pro kterou entitu máme hledat data. Entitu lze snadno najít pomocí <see cref="GetEntity(string)"./></param>
+        /// <param name="valueType">Jaký datový typ získat pro analýzy</param>
+        /// <param name="dataTypeInfo">Info o datovém typu, může být null</param>
+        /// <param name="begin">Počátek dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="end">Konec dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="pocetOd">Filtr na počet obyvatel na nejnižší úrovni, od</param>
+        /// <param name="pocetDo">Filtr na počet obyvatel na nejnižší úrovni, do</param>
+        /// <returns></returns>
+        private ResultSetInfo _GetResultSimple(EntityInfo entity, DataValueType valueType, DataValueTypeInfo dataTypeInfo = null, DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
             if (dataTypeInfo == null) dataTypeInfo = DataValueTypeInfo.CreateFor(valueType);
             _PrepareSourceTimeRange(dataTypeInfo, begin, end, out DateTime? sourceBegin, out DateTime? sourceEnd);
             ResultSetInfo resultSet = null;
             lock (this.InterLock)
             {
-                if (entity == null && fullCode != null)
-                    entity = GetEntity(fullCode);
-
                 if (entity != null)
                 {
                     SearchInfoArgs args = new SearchInfoArgs(entity, valueType, dataTypeInfo, begin, end, sourceBegin, sourceEnd, pocetOd, pocetDo);
@@ -1842,6 +1857,274 @@ namespace Djs.Tools.CovidGraphs.Data
             return true;
         }
         #endregion
+        #region Získání analytických dat za určitou entitu
+        /// <summary>
+        /// Získá a vrátí sadu analytických dat za danou entitu
+        /// </summary>
+        /// <param name="rootEntity">V jaké výchozí entitě analyzovat její Child prvky (typicky celá Česká republika = "CZ"). Lze ji snadno najít pomocí <see cref="GetEntity(string)"./></param>
+        /// <param name="valueType">Jaký datový typ získat pro analýzy</param>
+        /// <param name="analyseEntityLevel">Jaké entity analyzovat (například "Vyhledáme obce v Pardubickém kraji..." pak rootFullCode = Kraj Pardubice, a analyseEntityLevel = Obec)</param>
+        /// <param name="highestCount">Kolik prvků vracet s nalezenou nejvyšší hodnotou</param>
+        /// <param name="lowestCount">Kolik prvků vracet s nalezenou nejnižší hodnotou</param>
+        /// <param name="addRootResult">Do výsledku přidat i sumární data za Root entitu (tj. vždy, bez analýzy)</param>
+        /// <param name="analyseBegin">Počáteční datum pro analytické vyhodnocení hodnot = například: načteme data (pro zobrazení) za poslední 4 měsíce, ale analýzu provádíme za poslední dva týdny</param>
+        /// <param name="analyseEnd">Koncové datum pro analytické vyhodnocení hodnot = například: načteme data (pro zobrazení) za poslední 4 měsíce, ale analýzu provádíme za poslední dva týdny</param>
+        /// <param name="begin">Počátek dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="end">Konec dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="pocetOd">Filtr na počet obyvatel na nejnižší úrovni, od</param>
+        /// <param name="pocetDo">Filtr na počet obyvatel na nejnižší úrovni, do</param>
+        /// <returns></returns>
+        public ResultSetInfo[] GetResultsAnalytic(EntityInfo rootEntity, DataValueType valueType, EntityType analyseEntityLevel, 
+            int highestCount, bool addRootResult, int lowestCount, DateTime analyseBegin, DateTime analyseEnd,
+            DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
+        {
+            return _GetResultsAnalytic(rootEntity, valueType, analyseEntityLevel,
+                highestCount, addRootResult, lowestCount, analyseBegin, analyseEnd,
+                begin, end, pocetOd, pocetDo);
+        }
+        /// <summary>
+        /// Získá a vrátí sadu analytických dat za danou entitu
+        /// </summary>
+        /// <param name="rootEntity">V jaké výchozí entitě analyzovat její Child prvky (typicky celá Česká republika = "CZ"). Lze ji snadno najít pomocí <see cref="GetEntity(string)"./></param>
+        /// <param name="valueType">Jaký datový typ získat pro analýzy</param>
+        /// <param name="analyseEntityLevel">Jaké entity analyzovat (například "Vyhledáme obce v Pardubickém kraji..." pak rootFullCode = Kraj Pardubice, a analyseEntityLevel = Obec)</param>
+        /// <param name="highestCount">Kolik prvků vracet s nalezenou nejvyšší hodnotou</param>
+        /// <param name="lowestCount">Kolik prvků vracet s nalezenou nejnižší hodnotou</param>
+        /// <param name="addRootResult">Do výsledku přidat i sumární data za Root entitu (tj. vždy, bez analýzy)</param>
+        /// <param name="analyseBegin">Počáteční datum pro analytické vyhodnocení hodnot = například: načteme data (pro zobrazení) za poslední 4 měsíce, ale analýzu provádíme za poslední dva týdny</param>
+        /// <param name="analyseEnd">Koncové datum pro analytické vyhodnocení hodnot = například: načteme data (pro zobrazení) za poslední 4 měsíce, ale analýzu provádíme za poslední dva týdny</param>
+        /// <param name="begin">Počátek dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="end">Konec dat, která budou zobrazována (to ale není datum analýzy)</param>
+        /// <param name="pocetOd">Filtr na počet obyvatel na nejnižší úrovni, od</param>
+        /// <param name="pocetDo">Filtr na počet obyvatel na nejnižší úrovni, do</param>
+        /// <returns></returns>
+        private ResultSetInfo[] _GetResultsAnalytic(EntityInfo rootEntity, DataValueType valueType, EntityType analyseEntityLevel,
+            int highestCount, bool addRootResult, int lowestCount, DateTime analyseBegin, DateTime analyseEnd,
+            DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
+        {
+            if (rootEntity == null) throw new ArgumentNullException($"DatabaseInfo.GetResultsAnalytic() : chyba, zadaná rootEntity je null.");
+            if (highestCount < 0 || lowestCount < 0) throw new ArgumentNullException($"DatabaseInfo.GetResultsAnalytic() : chyba, počet highestCount nebo lowestCount je záporný. Může být 0 a kladný.");
+
+            List<ResultSetInfo> analyseResult = new List<ResultSetInfo>();
+
+            if (lowestCount > 20) lowestCount = 12;
+            if (highestCount > 20) highestCount = 12;
+            int analyseCount = lowestCount + highestCount;
+            if (analyseCount == 0)
+            {   // Nebudeme dělat analýzu:
+                if (addRootResult)
+                    analyseResult.Add(_GetResultSimple(rootEntity, valueType, null, begin, end, pocetOd, pocetDo));
+                return analyseResult.ToArray();
+            }
+
+            // Jdeme na analýzu:
+            List<AnalyseInfo> analyseInfos = new List<AnalyseInfo>();
+            EntityInfo[] entities = rootEntity.GetChildsOfType(analyseEntityLevel);
+            foreach (EntityInfo entity in entities)
+            {
+                ResultSetInfo result = _GetResultSimple(entity, valueType, null, begin, end, pocetOd, pocetDo);
+                AnalyseInfo analyseInfo = AnalyseInfo.CreateAnalyse(result, analyseBegin, analyseEnd);
+                if (analyseInfo != null)                   // Null je vráceno tehdy, když v zadaném období (analyseBegin, analyseEnd) nebyla nalezena data.
+                    analyseInfo.AddToListByCondition(analyseInfos, highestCount, lowestCount);
+            }
+
+            // Sestavíme výsledek:
+            if (addRootResult)
+                analyseResult.Add(_GetResultSimple(rootEntity, valueType, null, begin, end, pocetOd, pocetDo));
+            analyseResult.AddRange(analyseInfos.Select(ai => ai.ResultSet));
+            analyseResult.Sort(ResultSetInfo.CompareByEntityText);
+
+            // Hotovo
+            return analyseResult.ToArray();
+        }
+        /// <summary>
+        /// Analyzuje danou sadu hodnot: v daném časovém úseku vyhledá záznamy a vyhodnotí jejich Value, vrací jejich Min a Max hodnotu.
+        /// </summary>
+        /// <param name="resultSet"></param>
+        /// <param name="analyseBegin"></param>
+        /// <param name="analyseEnd"></param>
+        /// <param name="valueMin"></param>
+        /// <param name="valueMax"></param>
+        /// <returns></returns>
+        private bool _AnalyseOneResult(ResultSetInfo resultSet, DateTime analyseBegin, DateTime analyseEnd, out decimal valueMin, out decimal valueMax)
+        {
+            bool hasData = false;
+            valueMin = 0m;
+            valueMax = 0m;
+
+            foreach (var resultInfo in resultSet.Results.Where(r => r.Date >= analyseBegin && r.Date < analyseEnd))
+            {
+                decimal value = resultInfo.Value;
+                if (!hasData)
+                {
+                    valueMin = value;
+                    valueMax = value;
+                    hasData = true;
+                }
+                else
+                {
+                    if (value < valueMin) valueMin = value;
+                    if (value > valueMax) valueMax = value;
+                }
+            }
+
+            return hasData;
+        }
+        /// <summary>
+        /// Třída pro provádění analýzy výsledků (hledání hodnot Min a Max v daném období) a pro střádání pole výsledků s daným počtem Lowest a Highest hodnot
+        /// </summary>
+        private class AnalyseInfo
+        {
+            /// <summary>
+            /// Provede analýzu jedné řady dat (najde Min a Max v daném období)
+            /// </summary>
+            /// <param name="resultSet"></param>
+            /// <param name="analyseBegin"></param>
+            /// <param name="analyseEnd"></param>
+            /// <returns></returns>
+            internal static AnalyseInfo CreateAnalyse(ResultSetInfo resultSet, DateTime analyseBegin, DateTime analyseEnd)
+            {
+                if (resultSet.Entity.PocetObyvatel <= 0) return null;
+
+                bool hasData = false;
+                decimal valueMin = 0m;
+                decimal valueMax = 0m;
+
+                foreach (var resultInfo in resultSet.Results.Where(r => r.Date >= analyseBegin && r.Date < analyseEnd))
+                {
+                    decimal value = resultInfo.Value;
+                    if (!hasData)
+                    {
+                        valueMin = value;
+                        valueMax = value;
+                        hasData = true;
+                    }
+                    else
+                    {
+                        if (value < valueMin) valueMin = value;
+                        if (value > valueMax) valueMax = value;
+                    }
+                }
+                if (!hasData) return null;
+
+                return new AnalyseInfo(resultSet, valueMin, valueMax);
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="resultSet"></param>
+            /// <param name="valueMin"></param>
+            /// <param name="valueMax"></param>
+            private AnalyseInfo(ResultSetInfo resultSet, decimal valueMin, decimal valueMax)
+            {
+                this.ResultSet = resultSet;
+                this.ValueMin = valueMin;
+                this.ValueMax = valueMax;
+            }
+            public override string ToString()
+            {
+                return $"{ResultSet.Entity.Text}: ValueMin={this.ValueMin}, ValueMax:{this.ValueMax}, OrderMin:{_OrderMin}, OrderMax:{_OrderMax}";
+            }
+            internal ResultSetInfo ResultSet { get; private set; }
+            internal decimal ValueMin { get; private set; }
+            internal decimal ValueMax { get; private set; }
+            /// <summary>
+            /// Do daného Listu možná přidá this prvek, pokud tam patří.
+            /// </summary>
+            /// <param name="analyseInfos"></param>
+            /// <param name="highestCount"></param>
+            /// <param name="lowestCount"></param>
+            internal void AddToListByCondition(List<AnalyseInfo> analyseInfos, int highestCount, int lowestCount)
+            {
+                int count = analyseInfos.Count;
+                if (count == 0)
+                {
+                    analyseInfos.Add(this);
+                    return;
+                }
+
+                // David: Asi by šlo vymyslet sofistikovanější řešení, než je to zdejší: 
+                //            máme tady dvojí List.Sort a potom dvakrát Scan setříděného lsitu, ukládání pořadí OrderMin a OrderMax,
+                //            a následně pak Remove nevyhoujících prvků a pak Add nového prvku.
+                //  Ale:   1. Před jedním každým voláním této metody proběhl rozsáhlý kus kódu, kde se scanuje řádově tisíc raw dat, kde se dělají součty za jedno datum,
+                //         2. Pak se nad těmi sečtenými daty (v počtu dní analyzovaného úseku, tedy řádově 100 - 500) provádí dva až čtyři agregátní výpočty,
+                //            => tedy provedlo se dost jiné práce
+                //         3. A navíc dodaný List analyseInfos z principu má nanejvýš 24 položek (je omezeno highestCount i lowestCount na nejvýše 12 + 12 položek).
+                //         4. Takže časový poměr zdejší metody (pro max 24 položek Listu) vůči předchozímu kódu (tisíce a stovky záznamů) nestojí za nějaké speciální algoritmy výpočtů.
+                //            => a zdejší algoritmus je poměrně čitelný, udržitelný a blbuvzdorný. 
+                //               A navíc dělá přesně to co je požadováno na nejrůznějších vstupních datech.
+
+                // 1. Najdu svoji vlastní pozici ve směru od nejmenší ValueMin:
+                if (count > 1) analyseInfos.Sort(CompareMinAsc);
+                this._OrderMin = null;
+                int orderMin = 0;
+                foreach (var iMin in analyseInfos)
+                {   // Procházím seznam v pořadí od nejmenší hodnoty ValueMin směrem k větším:
+                    orderMin++;
+                    if (this.ValueMin < iMin.ValueMin && !this._OrderMin.HasValue)
+                    {
+                        this._OrderMin = orderMin;
+                        orderMin++;
+                    }
+                    iMin._OrderMin = orderMin;
+                }
+                if (!this._OrderMin.HasValue) this._OrderMin = count + 1;
+
+                // 2. Najdu svoji vlastní pozici ve směru od největší ValueMax:
+                if (count > 1) analyseInfos.Sort(CompareMaxDesc);
+                this._OrderMax = null;
+                int orderMax = 0;
+                foreach (var iMax in analyseInfos)
+                {   // Procházím seznam v pořadí od největší hodnoty ValueMax směrem k menším:
+                    orderMax++;
+                    if (this.ValueMax > iMax.ValueMax && !this._OrderMax.HasValue)
+                    {
+                        this._OrderMax = orderMax;
+                        orderMax++;
+                    }
+                    iMax._OrderMax = orderMax;
+                }
+                if (!this._OrderMax.HasValue) this._OrderMax = count + 1;
+
+                // 3. Pokud moje pozice není taková, abych patřil do výsledného seznamu, tak skončím:
+                if (!this._ValidForResult(highestCount, lowestCount)) return;
+                //   ... pokud jsem tady, pak do výsledného seznamu patřím.
+
+                // 4. Pokud nyní jsou v seznamu položky, které do něj nepatří, pak je vyhodíme:
+                analyseInfos.RemoveAll(ai => !ai._ValidForResult(highestCount, lowestCount));
+
+                // Přidám se do seznamu a hotovo:
+                analyseInfos.Add(this);
+            }
+            /// <summary>
+            /// Vrací true, pokud moje pořadí Min nebo Max mi dává právo být v seznamu s daným počtem nejnižších Min nebo nejvyšších Max hodnot
+            /// </summary>
+            /// <param name="highestCount"></param>
+            /// <param name="lowestCount"></param>
+            /// <returns></returns>
+            private bool _ValidForResult(int highestCount, int lowestCount)
+            {
+                return (this._OrderMin <= lowestCount || this._OrderMax <= highestCount);
+            }
+
+            private int? _OrderMin;
+            private int? _OrderMax;
+            /// <summary>
+            /// Komparátor ValueMin ASC
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            private static int CompareMinAsc(AnalyseInfo a, AnalyseInfo b) { return a.ValueMin.CompareTo(b.ValueMin); }
+            /// <summary>
+            /// Komparátor ValueMin ASC
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            private static int CompareMaxDesc(AnalyseInfo a, AnalyseInfo b) { return b.ValueMax.CompareTo(a.ValueMax); }
+        }
+        #endregion
         #region Vyhledání entit podle názvu a prefixu a Wildcards
         /// <summary>
         /// Metoda vyhledá v databázi obce (a jiné celky) odpovídající danému textu.
@@ -1874,7 +2157,12 @@ namespace Djs.Tools.CovidGraphs.Data
             result.Sort((a, b) => String.Compare(a.Nazev, b.Nazev, StringComparison.CurrentCultureIgnoreCase));
             return result.ToArray();
         }
-
+        /// <summary>
+        /// Detekuje prefix zadaný do vyhledávacího textu.
+        /// Pokud je např. zadaný text = "okres: Jičín", pak detekuje prefix "okres:", metoda vrátí <see cref="EntityType.Okres"/> a v ref parametru zůstane "Jičín".
+        /// </summary>
+        /// <param name="searchNazev"></param>
+        /// <returns></returns>
         private EntityType? SearchGetPrefixEntity(ref string searchNazev)
         {
             EntityType? result = null;
@@ -1887,7 +2175,14 @@ namespace Djs.Tools.CovidGraphs.Data
             if (TrySearchGetPrefixEntityOne(ref searchNazev, SearchPrefixObec, EntityType.Obec, ref result)) return result;
             return null;
         }
-
+        /// <summary>
+        /// Detekuje přítomnost daného prefixu, a vyřeší ji (určí hodnotu do out parametru, text zkrátí o prefxi, a vrací true).
+        /// </summary>
+        /// <param name="searchNazev"></param>
+        /// <param name="prefix"></param>
+        /// <param name="entity"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
         private bool TrySearchGetPrefixEntityOne(ref string searchNazev, string prefix, EntityType entity, ref EntityType? result)
         {
             if (!searchNazev.StartsWith(prefix, StringComparison.CurrentCultureIgnoreCase)) return false;
@@ -2388,6 +2683,40 @@ namespace Djs.Tools.CovidGraphs.Data
                     this.ChildDict.Values.ForEachExec(c => c.SearchEntities(args));
             }
             /// <summary>
+            /// Vrátí pole entit daného typu, které jsou některé moje Childs (včetně this), a volitelně vyhovují filtru.
+            /// </summary>
+            /// <param name="entityType"></param>
+            /// <param name="filter"></param>
+            /// <returns></returns>
+            internal EntityInfo[] GetChildsOfType(EntityType entityType, Func<EntityInfo, bool> filter = null)
+            {
+                List<EntityInfo> entities = new List<EntityInfo>();
+                this.AddChildsOfType(entityType, filter, entities);
+                return entities.ToArray();
+            }
+
+            private void AddChildsOfType(EntityType entityType, Func<EntityInfo, bool> filter, List<EntityInfo> entities)
+            {
+                // Využívám Int32 hodnoty enumu, kde logixky vyšší entita (např. Země = 2) má menší numerickou hodnotu než nižší (např. Město = 5):
+                int diff = ((int)entityType) - ((int)this.Entity);
+
+                // Pokud např. hledáme Okres (=4), a já jsem Město (=5), pak diff = (4 - 5) = -1, záporná hodnota, a tak rovnou skončíme. Nehledáme ani mě ani moje Childs:
+                if (diff < 0) return;
+
+                // Hledaná úroveň je ta moje:
+                if (diff == 0)
+                {
+                    if (filter == null || filter(this))
+                        entities.Add(this);
+                    return;
+                }
+
+                // Hledáme některou nižší úroveň:
+                if (this.HasChilds)
+                    this.ChildDict.Values.ForEachExec(c => c.AddChildsOfType(entityType, filter, entities));
+            }
+
+            /// <summary>
             /// Oddělovač složek v plném kódu entity
             /// </summary>
             public const string EntityDelimiter = ".";
@@ -2574,9 +2903,7 @@ namespace Djs.Tools.CovidGraphs.Data
             public int PocetFC { get; private set; }
             public int PocetFS { get; private set; }
             public int PocetCelkem { get; private set; }
-
         }
-
         public abstract class ItemInfo
         { }
         #endregion
@@ -2615,7 +2942,7 @@ namespace Djs.Tools.CovidGraphs.Data
             this.PocetObyvatel = 0;
             this.PocetOd = pocetOd;
             this.PocetDo = pocetDo;
-            this.ResultSet = new ResultSetInfo();
+            this.ResultSet = new ResultSetInfo(entity, valueType);
         }
         /// <summary>
         /// Výchozí entita hledání
@@ -2713,12 +3040,44 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public ResultSetInfo()
+        public ResultSetInfo(DatabaseInfo.EntityInfo entity, DataValueType valueType)
         {
+            this.Entity = entity;
+            this.EntityText = Entity?.Text ?? "";
+            this.ValueType = valueType;
             this.ScanRecordCount = 0;
             this.LoadRecordCount = 0;
             this.WorkingDict = new Dictionary<int, ResultInfo>();
-
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{Entity.Text}, {ValueType}";
+        }
+        /// <summary>
+        /// Entita, pro kterou jsou tyto výsledky nalezeny
+        /// </summary>
+        public DatabaseInfo.EntityInfo Entity { get; private set; }
+        /// <summary>
+        /// Hodnota, kterou tyto výsledky vyjadřují
+        /// </summary>
+        public DataValueType ValueType { get; private set; }
+        /// <summary>
+        /// Text entity
+        /// </summary>
+        protected string EntityText;
+        /// <summary>
+        /// Třídění podle <see cref="Entity"/>.Text
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        internal static int CompareByEntityText(ResultSetInfo a, ResultSetInfo b)
+        {
+            return String.Compare(a.EntityText, b.EntityText, StringComparison.CurrentCultureIgnoreCase);
         }
         /// <summary>
         /// Počet všech záznamů, které prošly vyhledáváním
@@ -2845,8 +3204,41 @@ namespace Djs.Tools.CovidGraphs.Data
     }
     #endregion
     #region Obecný přístup k datům entity (země, kraj, okres, město, obec, ves)
-  
-    public enum EntityType { None, World, Zeme, Kraj, Okres, Mesto, Obec, Vesnice }
+    /// <summary>
+    /// Druh entity
+    /// </summary>
+    public enum EntityType : int
+    {
+        None = 0,
+        /// <summary>
+        /// Celá planeta = součet všech dat, nejvyší level v roce 2021
+        /// </summary>
+        World,
+        /// <summary>
+        /// Země = Česká republika, Německo, Polsko
+        /// </summary>
+        Zeme,
+        /// <summary>
+        /// Kraj = Pardubický, anebo spolková země v Německu = Bavorsko, Braniborsko atd, anebo Městské státy = Berlín, Brémy
+        /// </summary>
+        Kraj,
+        /// <summary>
+        /// Okres = Chrudim, Kolín
+        /// </summary>
+        Okres,
+        /// <summary>
+        /// Město = obec s rozšířenou působností, takové jsou v okrese 2 až 4 = Hlinsko
+        /// </summary>
+        Mesto,
+        /// <summary>
+        /// Obec = malé městečko, které spravuje 1-2 okolní vesničky = Nasavrky
+        /// </summary>
+        Obec,
+        /// <summary>
+        /// Nejmenší celek = Holetín
+        /// </summary>
+        Vesnice
+    }
     public class ProcessFileInfo
     {
         public ProcessFileInfo(string fileName)
