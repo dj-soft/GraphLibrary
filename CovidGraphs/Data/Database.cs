@@ -1840,6 +1840,7 @@ namespace Djs.Tools.CovidGraphs.Data
             resultList = args.ResultSet.WorkingDict.Values.Where(v => ComplyInfoByDate(v.Date, begin, end, last)).ToList();
             resultList.Sort((a, b) => a.Date.CompareTo(b.Date));
             args.ResultSet.Results = resultList.ToArray();
+            args.ResultSet.ValueLast = (resultList.Count > 0 ? resultList[resultList.Count - 1].Value : 0m);
         }
         /// <summary>
         /// Vrátí true, pokud dané datum <paramref name="infoDate"/> vyhovuje daným mezím
@@ -1938,46 +1939,13 @@ namespace Djs.Tools.CovidGraphs.Data
                 analyseResult.Add(result);
             }
             analyseResult.AddRange(analyseInfos.Select(ai => ai.ResultSet));
-            analyseResult.Sort(ResultSetInfo.CompareByEntityText);
+            analyseResult.Sort(ResultSetInfo.CompareByValueLastDesc);   // nebo podle názvu obce: ResultSetInfo.CompareByEntityText
 
             // Dořešíme nápočty: ponecháme Load a Scan počet, ale počet Show nastavíme jen jako součet z výsledných prvků:
             counts.ShowRecordCount = (analyseResult.Count > 0 ? analyseResult.Select(r => r.ShowRecordCount).Sum() : 0);
 
             // Hotovo
             return (analyseResult.ToArray(), counts);
-        }
-        /// <summary>
-        /// Analyzuje danou sadu hodnot: v daném časovém úseku vyhledá záznamy a vyhodnotí jejich Value, vrací jejich Min a Max hodnotu.
-        /// </summary>
-        /// <param name="resultSet"></param>
-        /// <param name="analyseBegin"></param>
-        /// <param name="analyseEnd"></param>
-        /// <param name="valueMin"></param>
-        /// <param name="valueMax"></param>
-        /// <returns></returns>
-        private bool _AnalyseOneResult(ResultSetInfo resultSet, DateTime analyseBegin, DateTime analyseEnd, out decimal valueMin, out decimal valueMax)
-        {
-            bool hasData = false;
-            valueMin = 0m;
-            valueMax = 0m;
-
-            foreach (var resultInfo in resultSet.Results.Where(r => r.Date >= analyseBegin && r.Date < analyseEnd))
-            {
-                decimal value = resultInfo.Value;
-                if (!hasData)
-                {
-                    valueMin = value;
-                    valueMax = value;
-                    hasData = true;
-                }
-                else
-                {
-                    if (value < valueMin) valueMin = value;
-                    if (value > valueMax) valueMax = value;
-                }
-            }
-
-            return hasData;
         }
         /// <summary>
         /// Třída pro provádění analýzy výsledků (hledání hodnot Min a Max v daném období) a pro střádání pole výsledků s daným počtem Lowest a Highest hodnot
@@ -2311,7 +2279,8 @@ namespace Djs.Tools.CovidGraphs.Data
             return "X";
         }
         /// <summary>
-        /// Vrátí uživatelsky použitelný text pro danou entitu
+        /// Vrátí uživatelsky použitelný text pro danou entitu.
+        /// Vrací text ve tvaru: "Nasavrky (obec, 26 440 obyv., okr. Chrudim)"
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
@@ -2335,11 +2304,26 @@ namespace Djs.Tools.CovidGraphs.Data
             return text;
         }
         /// <summary>
+        /// Vrací popisek entity do titulku grafu.
+        /// Vrací text ve tvaru: "Nasavrky (26 440 obyv.)"
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        private static string GetEntityTitleText(EntityInfo entity)
+        {
+            string entityName = GetEntityName(entity.Entity);
+            string pocet = entity.PocetObyvatel.ToString("### ### ### ##0").Trim();
+            string obyv = " obyv.";
+            if (entity.FullCode.StartsWith("CZ.CZ010")) obyv = " pražáků";          // EasterEggs!     "CZ.CZ010.CZ0100" = okres Praha, "CZ.CZ010" = kraj Praha
+            string text = $"{entity.Nazev} ({pocet}{obyv})";
+            return text;
+        }
+        /// <summary>
         /// Vrátí uživatelský text druhu entity
         /// </summary>
         /// <param name="entityType"></param>
         /// <returns></returns>
-        private static string GetEntityName(EntityType entityType)
+        internal static string GetEntityName(EntityType entityType)
         {
             switch (entityType)
             {
@@ -2467,9 +2451,15 @@ namespace Djs.Tools.CovidGraphs.Data
             /// </summary>
             protected Dictionary<int, DataInfo> CachedDataDict { get; private set; }
             /// <summary>
-            /// Uživatelský text popisující this entitu
+            /// Uživatelský text popisující this entitu.
+            /// Vrací text ve tvaru: "Nasavrky (obec, 26 440 obyv., okr. Chrudim)"
             /// </summary>
             public string Text { get { return GetEntityText(this); } }
+            /// <summary>
+            /// Uživatelský text popisující zkráceně this entitu.
+            /// Vrací text ve tvaru: "Nasavrky (26 440 obyv.)"
+            /// </summary>
+            public string TextTitle { get { return GetEntityTitleText(this); } }
             /// <summary>
             /// Kód entity, používá se do <see cref="FullCode"/>
             /// </summary>
@@ -3079,16 +3069,6 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         protected string EntityText;
         /// <summary>
-        /// Třídění podle <see cref="Entity"/>.Text
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        internal static int CompareByEntityText(ResultSetInfo a, ResultSetInfo b)
-        {
-            return String.Compare(a.EntityText, b.EntityText, StringComparison.CurrentCultureIgnoreCase);
-        }
-        /// <summary>
         /// Počet všech záznamů, které prošly vyhledáváním
         /// </summary>
         public int ScanRecordCount { get; set; }
@@ -3109,6 +3089,40 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Čisté pole výstupních záznamů, filtrované dle data.
         /// </summary>
         public ResultInfo[] Results { get; set; }
+        /// <summary>
+        /// Poslední hodnota = hodnota Value ze záznamu z <see cref="Results"/> s nejvyšším datumem. Určuje se v procesu zpracování dat.
+        /// </summary>
+        public decimal ValueLast { get; set; }
+        /// <summary>
+        /// Třídění podle <see cref="Entity"/>.Text
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        internal static int CompareByEntityText(ResultSetInfo a, ResultSetInfo b)
+        {
+            return String.Compare(a.EntityText, b.EntityText, StringComparison.CurrentCultureIgnoreCase);
+        }
+        /// <summary>
+        /// Komparátor podle ValueLast ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByValueLastAsc(ResultSetInfo a, ResultSetInfo b)
+        {
+            return a.ValueLast.CompareTo(b.ValueLast);
+        }
+        /// <summary>
+        /// Komparátor podle ValueLast DESC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareByValueLastDesc(ResultSetInfo a, ResultSetInfo b)
+        {
+            return b.ValueLast.CompareTo(a.ValueLast);
+        }
         /// <summary>
         /// Přidá další hodnotu
         /// </summary>

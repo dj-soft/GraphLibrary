@@ -1347,7 +1347,12 @@ Zrušit úpravy vzhledu?";
         {
             get
             {
-                return "Kraje\tOkresy\tMěsta\tObce\tVesnice";
+                string tab = "\t";
+                return DatabaseInfo.GetEntityName(EntityType.Kraj) + tab +
+                       DatabaseInfo.GetEntityName(EntityType.Okres) + tab +
+                       DatabaseInfo.GetEntityName(EntityType.Mesto) + tab +
+                       DatabaseInfo.GetEntityName(EntityType.Obec) + tab +
+                       DatabaseInfo.GetEntityName(EntityType.Vesnice);
             }
         }
         private static int GetAnalyticEntityIndex(EntityType entityType)

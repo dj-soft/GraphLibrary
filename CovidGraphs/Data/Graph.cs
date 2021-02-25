@@ -809,11 +809,17 @@ namespace Djs.Tools.CovidGraphs.Data
             currDiagram = currDiagram.Replace("{{STRIPS}}", currStrips);
             currDiagram = currDiagram.Replace("{{AXISY_ALIGNMENT}}", this.ChartAxisYRight ? "Alignment=\"Far\" " : "");
 
+            string currToolTip = DefaultLayoutToolTip;
+
+            string currCrossHair = DefaultLayoutCrossHair1;
+
             string currLayout = DefaultLayoutMain;
             currLayout = currLayout.Replace("{{SERIES}}", currSeries);
             currLayout = currLayout.Replace("{{LEGEND}}", currLegend);
             currLayout = currLayout.Replace("{{TITLES}}", currTitles);
             currLayout = currLayout.Replace("{{DIAGRAM}}", currDiagram);
+            currLayout = currLayout.Replace("{{TOOLTIP}}", currToolTip);
+            currLayout = currLayout.Replace("{{CROSSHAIR}}", currCrossHair);
 
             return currLayout;
         }
@@ -872,6 +878,8 @@ namespace Djs.Tools.CovidGraphs.Data
 {{LEGEND}}
 {{TITLES}}
 {{DIAGRAM}}
+{{TOOLTIP}}
+{{CROSSHAIR}}
   </Chart>
 </ChartXmlSerializer>";
                 settings = settings.Replace("'", "\"");
@@ -974,6 +982,32 @@ namespace Djs.Tools.CovidGraphs.Data
               <Options GradientMode='BottomToTop' Color2='242, 242, 242' TypeNameSerializable='RectangleGradientFillOptions' />
             </FillStyle>
           </Item1>
+";
+                settings = settings.Replace("'", "\"");
+                return settings;
+            }
+        }
+        protected static string DefaultLayoutToolTip
+        {
+            get
+            {
+                string settings = @"    <ToolTipOptions ShowForSeries='true' />
+";
+                settings = settings.Replace("'", "\"");
+                return settings;
+            }
+        }
+        /// <summary>
+        /// CrossHair verze 1
+        /// </summary>
+        protected static string DefaultLayoutCrossHair1
+        {
+            get
+            {
+                string settings = @"    <CrosshairOptions ShowValueLabels='true' CrosshairLabelMode='ShowForNearestSeries' ShowArgumentLine='false' ShowValueLine='true' ArgumentLineColor='222, 57, 205' ValueLineColor='222, 57, 205' GroupHeaderPattern='{A:d. MMMM yyyy}, {TV}' ShowOutOfRangePoints='false' ValueSelectionMode='ValueRange' ContentShowMode='Label' LinesMode='Auto'>
+      <ArgumentLineStyle DashStyle='Dot' />
+      <ValueLineStyle DashStyle='Dot' />
+    </CrosshairOptions>
 ";
                 settings = settings.Replace("'", "\"");
                 return settings;
@@ -1375,6 +1409,7 @@ STRIPES V OSE Y = pro číslo R :
     /// </summary>
     public class GraphSerieInfo : DataSerializable
     {
+        #region Konstruktor a základní data o serii
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -1472,6 +1507,7 @@ STRIPES V OSE Y = pro číslo R :
                 return style.Value.ToString();
             }
         }
+        #endregion
         #region Načtení ze souboru a uložení definice této serie do souboru
         public static GraphSerieInfo LoadFromStream(StringReader stream, GraphInfo.FileVersion fileVersion, ref string line)
         {
@@ -1691,7 +1727,7 @@ STRIPES V OSE Y = pro číslo R :
         /// <returns></returns>
         internal static string GetDefaultTitle(DatabaseInfo.EntityInfo entity, DataValueTypeInfo valueTypeInfo)
         {
-            return $"{entity.Nazev}, {valueTypeInfo.ShortText}";
+            return $"{entity.TextTitle}, {valueTypeInfo.ShortText}";
         }
         #endregion
         #region Kontroly
