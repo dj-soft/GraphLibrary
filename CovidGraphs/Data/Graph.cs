@@ -1648,14 +1648,19 @@ STRIPES V OSE Y = pro číslo R :
                 highestCount, addRootResult, lowestCount, analyseBegin, analyseEnd,
                 graphData.DateBegin, graphData.DateEnd, this.FiltrPocetObyvatelOd, this.FiltrPocetObyvatelDo);
 
-            foreach (var result in results)
+            // Výsledná data grafů:
+            foreach (var result in results.Item1)
                 this.AddDataResult(result, graphData, true);
+
+            // Výsledné nápočty:
+            graphData.AddCounts(results.Item2);
         }
         /// <summary>
         /// Do výsledných dat grafu vloží jednu serii z daného výsledku
         /// </summary>
         /// <param name="result"></param>
         /// <param name="graphData"></param>
+        /// <param name="isAnalytic"></param>
         private void AddDataResult(ResultSetInfo result, GraphData graphData, bool isAnalytic)
         {
             var column = graphData.AddColumn(this, result.Entity, isAnalytic);
@@ -1663,7 +1668,8 @@ STRIPES V OSE Y = pro číslo R :
             {
                 foreach (var item in result.Results)
                     graphData.AddCell(item.Date, column, item.Value);
-                graphData.AddCount(result.ScanRecordCount, result.LoadRecordCount, result.ShowRecordCount);
+                if (!isAnalytic)
+                    graphData.AddCounts(result);
             }
         }
         /// <summary>
@@ -2097,6 +2103,10 @@ STRIPES V OSE Y = pro číslo R :
     /// </summary>
     public class GraphData
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graphInfo"></param>
         public GraphData(GraphInfo graphInfo)
         {
             this.GraphInfo = graphInfo;
@@ -2189,9 +2199,7 @@ STRIPES V OSE Y = pro číslo R :
             this.LoadTimeBegin = DateTime.Now;
             this.LoadTimeEnd = null;
             this.ShowTimeEnd = null;
-            this.ScanRecordCount = 0;
-            this.LoadRecordCount = 0;
-            this.ShowRecordCount = 0;
+            this.GraphScanCounts = new GraphScanCountsInfo();
         }
         /// <summary>
         /// Čas zahájení načítání dat
@@ -2206,44 +2214,38 @@ STRIPES V OSE Y = pro číslo R :
         /// </summary>
         public DateTime? ShowTimeEnd { get; private set; }
         /// <summary>
+        /// Nápočty dat z analýzy
+        /// </summary>
+        public GraphScanCountsInfo GraphScanCounts { get; private set; }
+        /// <summary>
         /// Počet sekund načítání dat, textem
         /// </summary>
         public string LoadSecondsText { get { return (LoadTimeEnd.HasValue ? ((TimeSpan)(LoadTimeEnd.Value - LoadTimeBegin)).TotalSeconds.ToString("### ##0.000").Trim() + " sec": "???"); } }
         /// <summary>
-        /// Počet záznamů prověřovaných, zda vyhoví filtru, textem
+        /// Přidá další počty načtených dat
         /// </summary>
-        public string ScanRecordCountText { get { return ScanRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <param name="counts"></param>
+        public void AddCounts(GraphScanCountsInfo counts)
+        {
+            this.GraphScanCounts.Add(counts);
+        }
         /// <summary>
-        /// Počet záznamů prověřovaných, zda vyhoví filtru
+        /// Přidá další počty načtených dat
         /// </summary>
-        public int ScanRecordCount { get; private set; }
-        /// <summary>
-        /// Počet záznamů načtených podle filtru, textem
-        /// </summary>
-        public string LoadRecordCountText { get { return LoadRecordCount.ToString("### ### ### ##0").Trim(); } }
-        /// <summary>
-        /// Počet záznamů načtených podle filtru
-        /// </summary>
-        public int LoadRecordCount { get; private set; }
-        /// <summary>
-        /// Počet záznamů určených k zobrazení v grafu, textem
-        /// </summary>
-        public string ShowRecordCountText { get { return ShowRecordCount.ToString("### ### ### ##0").Trim(); } }
-        /// <summary>
-        /// Počet záznamů určených k zobrazení v grafu
-        /// </summary>
-        public int ShowRecordCount { get; private set; }
+        /// <param name="result"></param>
+        public void AddCounts(ResultSetInfo result)
+        {
+            this.GraphScanCounts.Add(result);
+        }
         /// <summary>
         /// Přidá další počty načtených dat
         /// </summary>
         /// <param name="scanCount"></param>
         /// <param name="loadCount"></param>
         /// <param name="showCount"></param>
-        public void AddCount(int scanCount, int loadCount, int showCount)
+        public void AddCounts(int scanCount, int loadCount, int showCount)
         {
-            if (scanCount > 0) ScanRecordCount += scanCount;
-            if (loadCount > 0) LoadRecordCount += loadCount;
-            if (showCount > 0) ShowRecordCount += showCount;
+            this.GraphScanCounts.Add(scanCount, loadCount, showCount);
         }
         /// <summary>
         /// Volá se po dokončení načítání dat grafu, jen kvůli měření času
@@ -2264,6 +2266,63 @@ STRIPES V OSE Y = pro číslo R :
             this.ShowTimeEnd = DateTime.Now;
         }
         #endregion
+    }
+    /// <summary>
+    /// Nápočty množství dat
+    /// </summary>
+    public class GraphScanCountsInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GraphScanCountsInfo()
+        {
+            Clear();
+        }
+        public void Clear()
+        {
+            this.ScanRecordCount = 0;
+            this.LoadRecordCount = 0;
+            this.ShowRecordCount = 0;
+        }
+        public void Add(GraphScanCountsInfo counts)
+        {
+            if (counts != null) this.Add(counts.ScanRecordCount, counts.LoadRecordCount, counts.ShowRecordCount);
+        }
+        public void Add(ResultSetInfo result)
+        {
+            if (result != null) this.Add(result.ScanRecordCount, result.LoadRecordCount, result.ShowRecordCount);
+        }
+        public void Add(int scanCount, int loadCount, int showCount)
+        {
+            if (scanCount > 0) ScanRecordCount += scanCount;
+            if (loadCount > 0) LoadRecordCount += loadCount;
+            if (showCount > 0) ShowRecordCount += showCount;
+        }
+        /// <summary>
+        /// Počet záznamů prověřovaných, zda vyhoví filtru, textem
+        /// </summary>
+        public string ScanRecordCountText { get { return ScanRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů prověřovaných, zda vyhoví filtru
+        /// </summary>
+        public int ScanRecordCount { get; set; }
+        /// <summary>
+        /// Počet záznamů načtených podle filtru, textem
+        /// </summary>
+        public string LoadRecordCountText { get { return LoadRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů načtených podle filtru
+        /// </summary>
+        public int LoadRecordCount { get; set; }
+        /// <summary>
+        /// Počet záznamů určených k zobrazení v grafu, textem
+        /// </summary>
+        public string ShowRecordCountText { get { return ShowRecordCount.ToString("### ### ### ##0").Trim(); } }
+        /// <summary>
+        /// Počet záznamů určených k zobrazení v grafu
+        /// </summary>
+        public int ShowRecordCount { get; set; }
     }
     /// <summary>
     /// Jeden sloupec, reprezentuje jednu serii grafu

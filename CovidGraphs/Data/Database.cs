@@ -1874,7 +1874,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="pocetOd">Filtr na počet obyvatel na nejnižší úrovni, od</param>
         /// <param name="pocetDo">Filtr na počet obyvatel na nejnižší úrovni, do</param>
         /// <returns></returns>
-        public ResultSetInfo[] GetResultsAnalytic(EntityInfo rootEntity, DataValueType valueType, EntityType analyseEntityLevel, 
+        public (ResultSetInfo[], GraphScanCountsInfo) GetResultsAnalytic(EntityInfo rootEntity, DataValueType valueType, EntityType analyseEntityLevel, 
             int highestCount, bool addRootResult, int lowestCount, DateTime analyseBegin, DateTime analyseEnd,
             DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
@@ -1898,7 +1898,7 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="pocetOd">Filtr na počet obyvatel na nejnižší úrovni, od</param>
         /// <param name="pocetDo">Filtr na počet obyvatel na nejnižší úrovni, do</param>
         /// <returns></returns>
-        private ResultSetInfo[] _GetResultsAnalytic(EntityInfo rootEntity, DataValueType valueType, EntityType analyseEntityLevel,
+        private (ResultSetInfo[], GraphScanCountsInfo) _GetResultsAnalytic(EntityInfo rootEntity, DataValueType valueType, EntityType analyseEntityLevel,
             int highestCount, bool addRootResult, int lowestCount, DateTime analyseBegin, DateTime analyseEnd,
             DateTime? begin = null, DateTime? end = null, int? pocetOd = null, int? pocetDo = null)
         {
@@ -1906,6 +1906,7 @@ namespace Djs.Tools.CovidGraphs.Data
             if (highestCount < 0 || lowestCount < 0) throw new ArgumentNullException($"DatabaseInfo.GetResultsAnalytic() : chyba, počet highestCount nebo lowestCount je záporný. Může být 0 a kladný.");
 
             List<ResultSetInfo> analyseResult = new List<ResultSetInfo>();
+            GraphScanCountsInfo counts = new GraphScanCountsInfo();
 
             if (lowestCount > 20) lowestCount = 12;
             if (highestCount > 20) highestCount = 12;
@@ -1914,7 +1915,7 @@ namespace Djs.Tools.CovidGraphs.Data
             {   // Nebudeme dělat analýzu:
                 if (addRootResult)
                     analyseResult.Add(_GetResultSimple(rootEntity, valueType, null, begin, end, pocetOd, pocetDo));
-                return analyseResult.ToArray();
+                return (analyseResult.ToArray(), counts);
             }
 
             // Jdeme na analýzu:
@@ -1923,6 +1924,7 @@ namespace Djs.Tools.CovidGraphs.Data
             foreach (EntityInfo entity in entities)
             {
                 ResultSetInfo result = _GetResultSimple(entity, valueType, null, begin, end, pocetOd, pocetDo);
+                counts.Add(result);                        // Nápočty všech prvků a prvků scanovaných
                 AnalyseInfo analyseInfo = AnalyseInfo.CreateAnalyse(result, analyseBegin, analyseEnd);
                 if (analyseInfo != null)                   // Null je vráceno tehdy, když v zadaném období (analyseBegin, analyseEnd) nebyla nalezena data.
                     analyseInfo.AddToListByCondition(analyseInfos, highestCount, lowestCount);
@@ -1930,12 +1932,19 @@ namespace Djs.Tools.CovidGraphs.Data
 
             // Sestavíme výsledek:
             if (addRootResult)
-                analyseResult.Add(_GetResultSimple(rootEntity, valueType, null, begin, end, pocetOd, pocetDo));
+            {
+                ResultSetInfo result = _GetResultSimple(rootEntity, valueType, null, begin, end, pocetOd, pocetDo);
+                counts.Add(result);                        // Nápočty všech prvků a prvků scanovaných
+                analyseResult.Add(result);
+            }
             analyseResult.AddRange(analyseInfos.Select(ai => ai.ResultSet));
             analyseResult.Sort(ResultSetInfo.CompareByEntityText);
 
+            // Dořešíme nápočty: ponecháme Load a Scan počet, ale počet Show nastavíme jen jako součet z výsledných prvků:
+            counts.ShowRecordCount = (analyseResult.Count > 0 ? analyseResult.Select(r => r.ShowRecordCount).Sum() : 0);
+
             // Hotovo
-            return analyseResult.ToArray();
+            return (analyseResult.ToArray(), counts);
         }
         /// <summary>
         /// Analyzuje danou sadu hodnot: v daném časovém úseku vyhledá záznamy a vyhodnotí jejich Value, vrací jejich Min a Max hodnotu.
