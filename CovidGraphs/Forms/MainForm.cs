@@ -155,7 +155,11 @@ namespace Djs.Tools.CovidGraphs
             int count = (_RibbonImages != null ? _RibbonImages.Length : -1);
             if (count > 0)
             {
-                _RibbonCurrentImageIndex = ((_RibbonCurrentImageIndex + 1) % count);
+                if (_RibbonCurrentImageIndex < 0)
+                    _RibbonCurrentImageIndex = ((new Random()).Next(0, count));
+                else
+                    _RibbonCurrentImageIndex = ((_RibbonCurrentImageIndex + 1) % count);
+
                 _DxRibbonControl.ImageRightFull = _RibbonImages[_RibbonCurrentImageIndex];
             }
             _RibbonLastChangeTime = DateTime.Now;
