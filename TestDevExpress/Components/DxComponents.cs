@@ -412,6 +412,146 @@ namespace TestDevExpress.Components
         #endregion
     }
     #endregion
+    #region class DrawingExtensions : Extensions metody pro grafické třídy (z namespace System.Drawing)
+    /// <summary>
+    /// Extensions metody pro grafické třídy (z namespace System.Drawing)
+    /// </summary>
+    public static class DrawingExtensions
+    {
+        /// <summary>
+        /// Vrátí IDisposable blok, který na svém počátku (při vyvolání této metody) provede control?.Parent.SuspendLayout(), 
+        /// a na konci bloku (při Dispose) provede control?.Parent.ResumeLayout(false)
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static IDisposable ScopeSuspendParentLayout(this Control control)
+        {
+            return new UsingScope(
+            (s) =>
+            {   // OnBegin (Constructor):
+                Control parent = control?.Parent;
+                if (parent != null && !parent.IsDisposed)
+                {
+                    parent.SuspendLayout();
+                }
+                s.UserData = parent;
+            },
+            (s) =>
+            {   // OnEnd (Dispose):
+                Control parent = s.UserData as Control;
+                if (parent != null && !parent.IsDisposed)
+                {
+                    parent.ResumeLayout(false);
+                }
+                s.UserData = null;
+            }
+            );
+        }
+        /// <summary>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato metoda <see cref="IsSetVisible(Control)"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static bool IsSetVisible(this Control control)
+        {
+            if (control is null) return false;
+            var getState = control.GetType().GetMethod("GetState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.NonPublic);
+            if (getState is null) return false;
+            object visible = getState.Invoke(control, new object[] { (int)0x02  /*STATE_VISIBLE*/  });
+            return (visible is bool ? (bool)visible : false);
+        }
+        /// <summary>
+        /// Vrátí nejbližšího Parenta požadovaného typu pro this control.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static T SearchForParentOfType<T>(this Control control) where T : Control
+        {
+            Control item = control?.Parent;                // Tímhle řádkem zajistím, že nebudu vracet vstupní objekt, i kdyby byl požadovaného typu = protože hledám Parenta, nikoli sebe.
+            while (item != null)
+            {
+                if (item is T result) return result;
+                item = item.Parent;
+            }
+            return null;
+        }
+        #region Invoke to GUI: run, get, set
+        /// <summary>
+        /// Metoda provede danou akci v GUI threadu
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="action"></param>
+        public static void RunInGui(this Control control, Action action)
+        {
+            if (control.InvokeRequired)
+                control.Invoke(action);
+            else
+                action();
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu z GUI prvku, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="control"></param>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static T GetGuiValue<T>(this Control control, Func<T> reader)
+        {
+            if (control.InvokeRequired)
+                return (T)control.Invoke(reader);
+            else
+                return reader();
+        }
+        /// <summary>
+        /// Metoda vloží do GUI prvku danou hodnotu, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="control"></param>
+        /// <param name="writer"></param>
+        /// <param name="value"></param>
+        public static void SetGuiValue<T>(this Control control, Action<T> writer, T value)
+        {
+            if (control.InvokeRequired)
+                control.Invoke(writer, value);
+            else
+                writer(value);
+        }
+        #endregion
+    }
+    #endregion
+    #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.   { DAJ 2019-12-18 }
+    /// <summary>
+    /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
+    /// </summary>
+    internal class UsingScope : IDisposable
+    {
+        /// <summary>
+        /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
+        /// </summary>
+        /// <param name="onBegin">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro uložení dat, budou k dispozici v akci <paramref name="onEnd"/></param>
+        /// <param name="onEnd">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro čtení dat uložených v akci <paramref name="onBegin"/></param>
+        public UsingScope(Action<UsingScope> onBegin, Action<UsingScope> onEnd)
+        {
+            _OnEnd = onEnd;
+            onBegin?.Invoke(this);
+        }
+        private Action<UsingScope> _OnEnd;
+        void IDisposable.Dispose()
+        {
+            _OnEnd?.Invoke(this);
+            _OnEnd = null;
+        }
+        /// <summary>
+        /// Libovolná data.
+        /// Typicky jsou vloženy v akci OnBegin, a v akci OnEnd jsou načteny. Výchozí hodnota je null.
+        /// </summary>
+        public object UserData { get; set; }
+    }
+    #endregion
     #region Enumy
     /// <summary>
     /// Styl použitý pro Label
@@ -444,7 +584,19 @@ namespace TestDevExpress.Components
     /// PanelControl
     /// </summary>
     public class DxPanelControl : DXE.PanelControl
-    { }
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+    }
     #endregion
     #region DxLabelControl
     /// <summary>
@@ -452,10 +604,25 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxLabelControl : DXE.LabelControl
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxLabelControl()
         {
             BorderStyle = DXE.Controls.BorderStyles.NoBorder;
         }
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+
     }
     #endregion
     #region DxLabelControl
@@ -464,16 +631,29 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxTextEdit : DXE.TextEdit
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxTextEdit()
         {
             EnterMoveNextControl = true;
         }
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -490,12 +670,22 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxMemoEdit : DXE.MemoEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -512,12 +702,22 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxImageComboBoxEdit : DXE.ImageComboBoxEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -534,12 +734,22 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxSpinEdit : DXE.SpinEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -556,12 +766,22 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxCheckEdit : DXE.CheckEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -578,6 +798,9 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxListBoxControl : DXE.ListBoxControl
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxListBoxControl()
         {
             ReorderByDragEnabled = false;
@@ -611,7 +834,17 @@ namespace TestDevExpress.Components
             }
         }
         private int _ItemHeightPadding = 0;
-
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region Overrides
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -824,7 +1057,6 @@ namespace TestDevExpress.Components
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -983,9 +1215,23 @@ namespace TestDevExpress.Components
             private ITreeNodeItem INodeItem { get { return NodeInfo as ITreeNodeItem; } }
         }
         #endregion
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTipy pro nodes
-
-
+        /// <summary>
+        /// Připraví ToolTip pro aktuální Node
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
         {
             if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree)
@@ -1065,8 +1311,8 @@ namespace TestDevExpress.Components
             /// <returns></returns>
             protected override int GetActualCheckBoxWidth(TreeListNode node)
             {
-                bool canCheckNode = _Owner.IsNodeCheckable(node);
-                if (!canCheckNode) return 0;
+                bool showSpace = _Owner.NeedNodeShowCheckBoxSpace(node);
+                if (!showSpace) return 0;
                 return base.GetActualCheckBoxWidth(node);
             }
         }
@@ -1098,7 +1344,35 @@ namespace TestDevExpress.Components
             base.RaiseCustomDrawNodeCheckBox(e);
         }
         /// <summary>
-        /// Vrací true, pokud daný node je možno zobrazit s CheckBoxem
+        /// Vrátí true, pokud daný node má zobrazovat prostor pro CheckBox.
+        /// To je tehdy, když daný node má reálně zobrazovat CheckBox (<see cref="NodeItemInfo.CanCheck"/> = true),
+        /// anebo má definováno že má daný prostor alokovat (<see cref="NodeItemInfo.AddVoidCheckSpace"/> = true).
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        protected bool NeedNodeShowCheckBoxSpace(TreeListNode node)
+        {
+            return NeedNodeShowCheckBoxSpace(_GetNodeInfo(node));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný node má zobrazovat prostor pro CheckBox.
+        /// To je tehdy, když daný node má reálně zobrazovat CheckBox (<see cref="NodeItemInfo.CanCheck"/> = true),
+        /// anebo má definováno že má daný prostor alokovat (<see cref="NodeItemInfo.AddVoidCheckSpace"/> = true).
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        protected bool NeedNodeShowCheckBoxSpace(NodeItemInfo nodeInfo)
+        {
+            bool showSpace = true;
+            if (nodeInfo != null)
+            {   // Podle režimu zobrazíme prostor CheckBoxu pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                showSpace = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && (nodeInfo.CanCheck || nodeInfo.AddVoidCheckSpace)));
+            }
+            return showSpace;
+        }
+        /// <summary>
+        /// Vrací true, pokud daný node má zobrazovat CheckBox
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
@@ -1107,7 +1381,7 @@ namespace TestDevExpress.Components
             return IsNodeCheckable(_GetNodeInfo(node));
         }
         /// <summary>
-        /// Vrací true, pokud daný node je možno zobrazit s CheckBoxem
+        /// Vrací true, pokud daný node má zobrazovat CheckBox
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <returns></returns>
@@ -1346,14 +1620,15 @@ namespace TestDevExpress.Components
         /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         /// <param name="nodeInfo"></param>
-        public void AddNode(NodeItemInfo nodeInfo)
+        /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
+        public void AddNode(NodeItemInfo nodeInfo, int? atIndex = null)
         {
-            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(AddNode), nodeInfo); return; }
+            if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo, int?>(AddNode), nodeInfo, atIndex); return; }
 
             using (LockGui(true))
             {
                 NodePair firstPair = null;
-                this._AddNode(nodeInfo, ref firstPair);
+                this._AddNode(nodeInfo, ref firstPair, atIndex);
             }
         }
         /// <summary>
@@ -1607,7 +1882,7 @@ namespace TestDevExpress.Components
             if (addNodes != null)
             {
                 foreach (var node in addNodes)
-                    this._AddNode(node, ref firstPair);
+                    this._AddNode(node, ref firstPair, null);
 
                 // Expand nody: teď už by měly mít svoje Childs přítomné v TreeView:
                 foreach (var node in addNodes.Where(n => n.Expanded))
@@ -1621,31 +1896,33 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="nodeInfo">Data pro tvorbu nodu</param>
         /// <param name="firstPair">Ref první vytvořený pár</param>
-        private void _AddNode(NodeItemInfo nodeInfo, ref NodePair firstPair)
+        /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
+        private void _AddNode(NodeItemInfo nodeInfo, ref NodePair firstPair, int? atIndex)
         {
             if (nodeInfo == null) return;
 
-            NodePair nodePair = _AddNodeOne(nodeInfo, false);  // Daný node (z aplikace) vloží do Tree a vrátí
+            NodePair nodePair = _AddNodeOne(nodeInfo, false, atIndex);         // Daný node (z aplikace) vloží do Tree a vrátí
             if (firstPair == null && nodePair != null)
                 firstPair = nodePair;
 
             if (nodeInfo.LazyLoadChilds)
-                _AddNodeLazyLoad(nodeInfo);                    // Pokud node má nastaveno LazyLoadChilds, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
+                _AddNodeLazyLoad(nodeInfo);                                    // Pokud node má nastaveno LazyLoadChilds, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
         }
         private void _AddNodeLazyLoad(NodeItemInfo parentNode)
         {
             string lazyChildId = parentNode.NodeId + "___«LazyLoadChildNode»___";
             string text = this.LazyLoadNodeText ?? "Načítám...";
             string imageName = this.LazyLoadNodeImageName;
-            NodeItemInfo lazyNode = new NodeItemInfo(lazyChildId, parentNode.NodeId, text, imageName: imageName, fontStyleDelta: FontStyle.Italic);
-            NodePair nodePair = _AddNodeOne(lazyNode, true);  // Daný node (z aplikace) vloží do Tree a vrátí
+            NodeItemInfo lazyNode = new NodeItemInfo(lazyChildId, parentNode.NodeId, text, nodeType: NodeItemType.OnExpandLoading, imageName: imageName, fontStyleDelta: FontStyle.Italic);
+            NodePair nodePair = _AddNodeOne(lazyNode, true, null);             // Daný node (z aplikace) vloží do Tree a vrátí
         }
         /// <summary>
         /// Fyzické přidání jednoho node do TreeView a do evidence
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="isLazyChild"></param>
-        private NodePair _AddNodeOne(NodeItemInfo nodeInfo, bool isLazyChild)
+        /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
+        private NodePair _AddNodeOne(NodeItemInfo nodeInfo, bool isLazyChild, int? atIndex)
         {
             // Kontrola duplicity raději předem:
             string nodeId = nodeInfo.NodeId;
@@ -1655,6 +1932,10 @@ namespace TestDevExpress.Components
             object nodeData = new object[] { nodeInfo.Text };
             int parentId = _GetCurrentTreeNodeId(nodeInfo.ParentNodeId);
             var treeNode = this.AppendNode(nodeData, parentId);
+
+            if (atIndex.HasValue)
+                this.SetNodeIndex(treeNode, atIndex.Value);
+
             _FillTreeNode(treeNode, nodeInfo, false);
 
             // 2. Propojíme vizuální node a datový objekt - pouze přes int ID, nikoli vzájemné reference:
@@ -2089,6 +2370,7 @@ namespace TestDevExpress.Components
         /// Vyvolá event <see cref="NodeCheckedChange"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
+        /// <param name="isChecked"></param>
         protected virtual void OnNodeCheckedChange(NodeItemInfo nodeInfo, bool isChecked)
         {
             if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, isChecked));
@@ -2255,6 +2537,7 @@ namespace TestDevExpress.Components
         /// <param name="nodeId"></param>
         /// <param name="parentNodeId"></param>
         /// <param name="text"></param>
+        /// <param name="nodeType"></param>
         /// <param name="canEdit"></param>
         /// <param name="canDelete"></param>
         /// <param name="expanded"></param>
@@ -2269,7 +2552,7 @@ namespace TestDevExpress.Components
         /// <param name="backColor"></param>
         /// <param name="foreColor"></param>
         public NodeItemInfo(string nodeId, string parentNodeId, string text,
-            bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyLoadChilds = false,
+            NodeItemType nodeType = NodeItemType.DefaultText, bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyLoadChilds = false,
             string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
             int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null)
         {
@@ -2277,6 +2560,7 @@ namespace TestDevExpress.Components
             this.NodeId = nodeId;
             this.ParentNodeId = parentNodeId;
             this.Text = text;
+            this.NodeType = nodeType;
             this.CanEdit = canEdit;
             this.CanDelete = canDelete;
             this.Expanded = expanded;
@@ -2299,6 +2583,7 @@ namespace TestDevExpress.Components
         {
             return this.Text;
         }
+        public NodeItemType NodeType { get; private set; }
         /// <summary>
         /// ID nodu v TreeView, pokud není v TreeView pak je -1 . Toto ID je přiděleno v rámci <see cref="DxTreeViewListSimple"/> a po dobu přítomnosti nodu v TreeView se nemění.
         /// Pokud node bude odstraněn z Treeiew, pak hodnota <see cref="Id"/> bude -1, stejně tak jako v době něž bude do TreeView přidán.
@@ -2326,6 +2611,11 @@ namespace TestDevExpress.Components
         /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public bool CanCheck { get; set; }
+        /// <summary>
+        /// Node má zobrazovat prostor pro zaškrtávátko, i když node sám zaškrtávátko nezobrazuje.
+        /// Je to proto, aby nody nacházející se v jedné řadě pod sebou byly "svisle zarovnané" i když některé zaškrtávátko mají, a jiné nemají.
+        /// </summary>
+        public bool AddVoidCheckSpace { get; set; }
         /// <summary>
         /// Node je zaškrtnutý.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
@@ -2444,6 +2734,18 @@ namespace TestDevExpress.Components
         /// </summary>
         int Id { get; set; }
     }
+    /// <summary>
+    /// Typ uzlu
+    /// </summary>
+    public enum NodeItemType
+    {
+        None = 0,
+        DefaultText,
+        BlankAtFirstPosition,
+        BlankAtLastPosition,
+        OnExpandLoading,
+        OnDoubleClickLoadNext
+    }
     #endregion
     #endregion
     #region DxSimpleButton
@@ -2452,12 +2754,22 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxSimpleButton : DXE.SimpleButton
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="title"></param>
         public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -2468,15 +2780,317 @@ namespace TestDevExpress.Components
         #endregion
     }
     #endregion
+    #region DxChartControl
+    /// <summary>
+    /// Přímý potomek <see cref="DevExpress.XtraCharts.ChartControl"/> pro použití v ASOL.Nephrite
+    /// </summary>
+    internal class DxChartControl : DevExpress.XtraCharts.ChartControl
+    {
+        #region Support pro práci s grafem
+        /// <summary>
+        /// XML definice vzhledu grafu (Layout), aktuálně načtený z komponenty
+        /// </summary>
+        public string ChartXmlLayout
+        {
+            get { return GetGuiValue<string>(() => this._GetChartXmlLayout()); }
+            set { SetGuiValue<string>(v => this._SetChartXmlLayout(v), value); }
+        }
+        /// <summary>
+        /// Reference na data zobrazená v grafu
+        /// </summary>
+        public object ChartDataSource
+        {
+            get { return GetGuiValue<object>(() => this._GetChartDataSource()); }
+            set { SetGuiValue<object>(v => this._SetChartDataSource(v), value); }
+        }
+        /// <summary>
+        /// Vloží do grafu layout, a současně data, v jednom kroku
+        /// </summary>
+        /// <param name="xmlLayout">XML definice vzhledu grafu</param>
+        /// <param name="dataSource">Tabulka s daty, zdroj dat grafu</param>
+        public void SetChartXmlLayoutAndDataSource(string xmlLayout, object dataSource)
+        {
+            _ValidChartXmlLayout = xmlLayout;              // Uloží se požadovaný text definující layout
+            _ChartDataSource = dataSource;                 // Uloží se WeakReference
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Zajistí editaci grafu pomocí Wizarda DevExpress
+        /// </summary>
+        public void ShowChartWizard()
+        {
+            if (!IsChartWorking)
+                throw new InvalidOperationException($"V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.");
+
+            bool valid = DxChartDesigner.DesignChart(this, "Upravte graf...", true, false);
+
+            // Wizard pracuje nad naším controlem, veškeré změny ve Wizardu provedené se ihned promítají do našeho grafu.
+            // Pokud uživatel dal OK, chceme změny uložit i do příště,
+            // pokud ale dal Cancel, pak změny chceme zahodit a vracíme se k původnímu layoutu:
+            if (valid)
+            {
+                string newLayout = _GetLayoutFromControl();
+                _ValidChartXmlLayout = newLayout;
+                OnChartXmlLayoutEdited();
+            }
+            else
+            {
+                _RestoreChartXmlLayout();
+            }
+        }
+        protected virtual void OnChartXmlLayoutEdited()
+        {
+            ChartXmlLayoutEdited?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost, kdy uživatel změnil data (vyvoláno metodou <see cref="ShowChartWizard"/>), a v designeru uložil změnu dat.
+        /// V tuto chvíli je již nový layout k dispozici v <see cref="ChartXmlLayout"/>.
+        /// </summary>
+        public event EventHandler ChartXmlLayoutEdited;
+        #endregion
+        #region private práce s layoutem a daty
+        /// <summary>
+        /// Vloží do grafu layout, ponechává data
+        /// </summary>
+        /// <param name="xmlLayout">XML definice vzhledu grafu</param>
+        private void _SetChartXmlLayout(string xmlLayout)
+        {
+            _ValidChartXmlLayout = xmlLayout;              // Uloží se požadovaný text definující layout
+            var dataSource = _ChartDataSource;             // Načteme z WeakReference
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Vrátí XML layout načtený přímo z grafu
+        /// </summary>
+        /// <returns></returns>
+        private string _GetChartXmlLayout()
+        {
+            return _GetLayoutFromControl();
+        }
+        /// <summary>
+        /// Vloží do grafu dříve platný layout (uložený v metodě <see cref="_SetChartXmlLayout(string)"/>), ponechává data.
+        /// </summary>
+        private void _RestoreChartXmlLayout()
+        {
+            var dataSource = _ChartDataSource;             // Tabulka z WeakReference
+            string xmlLayout = _ValidChartXmlLayout;       // Uložený layout
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Vloží do grafu data, ponechává layout (může dojít k chybě)
+        /// </summary>
+        /// <param name="dataSource">Tabulka s daty, zdroj dat grafu</param>
+        private void _SetChartDataSource(object dataSource)
+        {
+            _ChartDataSource = dataSource;                 // Uloží se WeakReference
+            string xmlLayout = _ValidChartXmlLayout;       // Uložený layout
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Vrátí data grafu
+        /// </summary>
+        /// <returns></returns>
+        private object _GetChartDataSource()
+        {
+            return _ChartDataSource;
+        }
+        /// <summary>
+        /// Do grafu korektně vloží data i layout, ve správném pořadí.
+        /// Pozor: tato metoda neukládá dodané objekty do lokálních proměnných <see cref="_ValidChartXmlLayout"/> a <see cref="_ChartDataSource"/>, pouze do controlu grafu!
+        /// </summary>
+        /// <param name="dataSource"></param>
+        /// <param name="xmlLayout"></param>
+        private void _SetChartXmlLayoutAndDataSource(string xmlLayout, object dataSource)
+        {
+            // Tato sekvence je důležitá, jinak dojde ke zbytečným chybám:
+            _SetLayoutToControl("");
+            try
+            {
+                if (!String.IsNullOrEmpty(xmlLayout))
+                    _SetLayoutToControl(xmlLayout);
+            }
+            finally
+            {   // Datový zdroj do this uložím i po chybě, abych mohl i po vložení chybného layoutu otevřít editor:
+                this.DataSource = dataSource;
+            }
+        }
+        /// <summary>
+        /// Fyzicky načte a vrátí Layout z aktuálního grafu
+        /// </summary>
+        /// <returns></returns>
+        private string _GetLayoutFromControl()
+        {
+            string layout = null;
+            if (IsChartValid)
+            {
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                {
+                    this.SaveToStream(ms);
+                    layout = Encoding.UTF8.GetString(ms.GetBuffer());
+                }
+            }
+            return layout;
+        }
+        /// <summary>
+        /// Vloží daný string jako Layout do grafu. 
+        /// Neřeší try catch, to má řešit volající včetně ošetření chyby.
+        /// POZOR: tato metoda odpojí datový zdroj, proto je třeba po jejím skončení znovu vložit zdroj do _ChartControl.DataSource !
+        /// </summary>
+        /// <param name="layout"></param>
+        private void _SetLayoutToControl(string layout)
+        {
+            if (IsChartValid)
+            {
+                byte[] buffer = (!String.IsNullOrEmpty(layout) ? Encoding.UTF8.GetBytes(layout) : new byte[0]);
+                if (buffer.Length > 0)
+                {
+                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream(buffer))
+                        this.LoadFromStream(ms);     // Pozor, zahodí data !!!
+                }
+                else
+                {
+                    this.Series.Clear();
+                    this.Legends.Clear();
+                    this.Titles.Clear();
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud graf je platný (není null a není Disposed) 
+        /// </summary>
+        public bool IsChartValid { get { return (!this.IsDisposed); } }
+        /// <summary>
+        /// Obsahuje true, pokud graf je platný (není null a není Disposed) a obsahuje data (má datový zdroj)
+        /// </summary>
+        public bool IsChartWorking { get { return (IsChartValid && this.DataSource != null); } }
+        /// <summary>
+        /// Offline uložený layout grafu, který byl setovaný zvenku; používá se při refreshi dat pro nové vložení stávajícího layoutu do grafu. 
+        /// Při public čtení layoutu se nevrací tento string, ale fyzicky se načte aktuálně použitý layout z grafu.
+        /// </summary>
+        private string _ValidChartXmlLayout;
+        /// <summary>
+        /// Reference na tabulku s daty grafu, nebo null
+        /// </summary>
+        private object _ChartDataSource
+        {
+            get
+            {
+                var wr = _ChartDataSourceWR;
+                return ((wr != null && wr.TryGetTarget(out var table)) ? table : null);
+            }
+            set
+            {
+                _ChartDataSourceWR = ((value != null) ? new WeakReference<object>(value) : null);
+            }
+        }
+        /// <summary>
+        /// WeakReference na tabulku s daty grafu
+        /// </summary>
+        private WeakReference<object> _ChartDataSourceWR;
+        #endregion
+        #region ASOL standardní rozšíření
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+        #region Invoke to GUI: run, get, set
+        /// <summary>
+        /// Metoda provede danou akci v GUI threadu
+        /// </summary>
+        /// <param name="action"></param>
+        protected void RunInGui(Action action)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(action);
+            else
+                action();
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu z GUI prvku, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        protected T GetGuiValue<T>(Func<T> reader)
+        {
+            if (this.InvokeRequired)
+                return (T)this.Invoke(reader);
+            else
+                return reader();
+        }
+        /// <summary>
+        /// Metoda vloží do GUI prvku danou hodnotu, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="writer"></param>
+        /// <param name="value"></param>
+        protected void SetGuiValue<T>(Action<T> writer, T value)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(writer, value);
+            else
+                writer(value);
+        }
+        #endregion
+    }
+    #endregion
+    #region ChartDesigner
+    /// <summary>
+    /// Přímý potomek <see cref="DevExpress.XtraCharts.Designer.ChartDesigner"/> pro editaci definice grafu
+    /// </summary>
+    internal class DxChartDesigner : DevExpress.XtraCharts.Designer.ChartDesigner
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="chart"></param>
+        public DxChartDesigner(object chart) : base(chart) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <param name="designerHost"></param>
+        public DxChartDesigner(object chart, System.ComponentModel.Design.IDesignerHost designerHost) : base(chart, designerHost) { }
+        /// <summary>
+        /// Zobrazí designer pro daný graf, a vrátí true = OK
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <param name="caption"></param>
+        /// <param name="showActualData"></param>
+        /// <param name="topMost"></param>
+        /// <returns></returns>
+        public static bool DesignChart(object chart, string caption, bool showActualData, bool topMost)
+        {
+            DxChartDesigner chartDesigner = new DxChartDesigner(chart);
+            chartDesigner.Caption = caption;
+            chartDesigner.ShowActualData = showActualData;
+            var result = chartDesigner.ShowDialog(topMost);
+            return (result == DialogResult.OK);
+        }
+    }
+    #endregion
     #region DxRibbon
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
     public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxRibbonControl()
         {
         }
+        /// <summary>
+        /// Vykreslení controlu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);

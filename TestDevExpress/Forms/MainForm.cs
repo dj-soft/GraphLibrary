@@ -1851,10 +1851,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             CreateTreeViewComponents();
         }
-
-
         private void CreateTreeViewComponents()
         {
+            _NewNodePosition = NewNodePositionType.First;
             CreateImageList();
             CreateTreeView();
         }
@@ -1892,6 +1891,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _Images16.Images.Add("object_unlocked_2_16", Properties.Resources.object_unlocked_2_16);
             _Images16.Images.Add("msn_blocked_16", Properties.Resources.msn_blocked_16);
             _Images16.Images.Add("hourglass_16", Properties.Resources.hourglass_16);
+            _Images16.Images.Add("move_task_down_16", Properties.Resources.move_task_down_16);
+
+
         }
         private int GetImageIndex(string imageName)
         {
@@ -1922,11 +1924,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             DateTime t2 = DateTime.Now;
 
             _TreeList.NodeSelected += _TreeList_AnyAction;
-            _TreeList.NodeDoubleClick += _TreeList_AnyAction;
+            _TreeList.NodeDoubleClick += _TreeList_DoubleClick;
             _TreeList.NodeExpanded += _TreeList_AnyAction;
             _TreeList.NodeCollapsed += _TreeList_AnyAction;
             _TreeList.ActivatedEditor += _TreeList_AnyAction;
-            _TreeList.EditorDoubleClick += _TreeList_AnyAction;
+            _TreeList.EditorDoubleClick += _TreeList_DoubleClick;
             _TreeList.NodeEdited += _TreeList_NodeEdited;
             _TreeList.NodeCheckedChange += _TreeList_AnyAction;
             _TreeList.NodeDelete += _TreeList_NodeDelete;
@@ -1990,24 +1992,40 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
+            var newPosition = _NewNodePosition;
+            bool isBlankNode = (oldValue == "" && (newPosition == NewNodePositionType.First || newPosition == NewNodePositionType.Last));
             if (String.IsNullOrEmpty(newValue))
             {   // Delete node:
                 if (nodeInfo.CanDelete)
                     _TreeList.RemoveNode(nodeId);
             }
-            else if (oldValue == "")
-            {   // Insert node:
+            else if (nodeInfo.NodeType == NodeItemType.BlankAtFirstPosition) // isBlankNode && newPosition == NewNodePositionType.First)
+            {   // Insert new node, a NewPosition je First = je první (jako Green):
+                _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
+                {   // V jednom vizuálním zámku:
+                    node.Text = "";                                 // Z prvního node odeberu jeho text, aby zase vypadal jako nový node
+                    node.Refresh();
+
+                    // Přidám nový node pro konkrétní text = jakoby záznam:
+                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, NodeItemType.DefaultText);
+                    newNode.Text = newValue;
+                    _TreeList.AddNode(newNode, 1);
+                }
+                ), nodeInfo);
+            }
+            else if (isBlankNode && newPosition == NewNodePositionType.Last)
+            {   // Insert new node, a NewPosition je Last = na konci:
                 _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
                 {   // V jednom vizuálním zámku:
                     _TreeList.RemoveNode(node.NodeId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, false);
+                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, NodeItemType.DefaultText);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode);
 
                     // Přidám Blank node, ten bude opět na konci Childs:
-                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeId, true);
+                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeId, NodeItemType.BlankAtLastPosition);
                     _TreeList.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
@@ -2019,6 +2037,31 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             {   // Edited node:
                 args.NodeItemInfo.Text = newValue + " [OK]";
                 args.NodeItemInfo.Refresh();
+            }
+        }
+        private void _TreeList_DoubleClick(object sender, DxTreeViewNodeArgs args)
+        {
+            _TreeList_AnyAction(sender, args);
+            ThreadManager.AddAction(() => _TreeNodeDoubleClickBgr(args));
+        }
+        private void _TreeNodeDoubleClickBgr(DxTreeViewNodeArgs args)
+        {
+            System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
+
+            if (args.NodeItemInfo.NodeType == NodeItemType.OnDoubleClickLoadNext)
+            {
+                _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
+                {   // V jednom vizuálním zámku:
+                    _TreeList.RemoveNode(node.NodeId);              // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
+
+                    var newNodes = _CreateSampleChilds(node.ParentNodeId, ItemCountType.Standard, false, true);
+                    _TreeList.AddNodes(newNodes);
+
+                    // Aktivuji první přidaný node:
+                    if (newNodes.Count > 0)
+                        _TreeList.SelectNode(newNodes[0]);
+                }
+               ), args.NodeItemInfo);
             }
         }
         private void _TreeList_NodeDelete(object sender, DxTreeViewNodeArgs args)
@@ -2063,7 +2106,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
                 string rootKey = "R." + (++_InternalNodeId).ToString();
                 string text = RandomText.GetRandomSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
-                NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
+                NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
                 _FillNode(rootNode);
                 list.Add(rootNode);
 
@@ -2072,38 +2115,59 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             return list;
         }
-        private List<NodeItemInfo> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard)
+        private List<NodeItemInfo> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard, bool canAddEditable = true, bool canAddShowNext = true)
         {
             List<NodeItemInfo> list = new List<NodeItemInfo>();
 
+            var newPosition = _NewNodePosition;
             int childCount = GetItemCount(countType, true);
-            bool addEditable = (RandomText.Rand.Next(20) >= 8);
+            int lastIndex = childCount - 1;
+            bool addEditable = canAddEditable && (RandomText.Rand.Next(20) >= 8);
+            bool addShowNext = canAddShowNext && (childCount < 25 && (RandomText.Rand.Next(20) >= 4));
             if (addEditable) childCount++;
             for (int c = 0; c < childCount; c++)
             {
-                bool isBlankNode = (addEditable && c == (childCount - 1));
-                list.Add(_CreateChildNode(parentKey, isBlankNode));
+                NodeItemType nodeType = ((addEditable && newPosition == NewNodePositionType.First && c == 0) ? NodeItemType.BlankAtFirstPosition :
+                                        ((addEditable && newPosition == NewNodePositionType.Last && c == lastIndex) ? NodeItemType.BlankAtLastPosition : NodeItemType.DefaultText));
+                list.Add(_CreateChildNode(parentKey, nodeType));
             }
+            if (addShowNext)
+            {
+                list.Add(_CreateChildNode(parentKey, NodeItemType.OnDoubleClickLoadNext));
+            }
+
             return list;
         }
-        private NodeItemInfo _CreateChildNode(string parentKey, bool isBlankNode)
+        private NodeItemInfo _CreateChildNode(string parentKey, NodeItemType nodeType)
         {
             string childKey = "C." + (++_InternalNodeId).ToString();
+            string text = "";
             NodeItemInfo childNode = null;
-            if (isBlankNode)
+            switch (nodeType)
             {
-                string text = "";
-                childNode = new NodeItemInfo(childKey, parentKey, text, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
-                childNode.ToolTipText = "Zadejte referenci nového prvku";
-                childNode.ImageName1 = "list_add_3_16";
-            }
-            else
-            {
-                string text = RandomText.GetRandomSentence(2, 5);
-                childNode = new NodeItemInfo(childKey, parentKey, text, canEdit: true, canDelete: true);
-                childNode.CanCheck = true;
-                childNode.IsChecked = (RandomText.Rand.Next(20) > 16);
-                _FillNode(childNode);
+                case NodeItemType.BlankAtFirstPosition:
+                case NodeItemType.BlankAtLastPosition:
+                    text = "";
+                    childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
+                    childNode.AddVoidCheckSpace = true;
+                    childNode.ToolTipText = "Zadejte referenci nového prvku";
+                    childNode.ImageName0 = "list_add_3_16";
+                    break;
+                case NodeItemType.OnDoubleClickLoadNext:
+                    text = "Načíst další záznamy";
+                    childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
+                    childNode.FontStyleDelta = FontStyle.Italic;
+                    childNode.AddVoidCheckSpace = true;
+                    childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
+                    childNode.ImageName0 = "move_task_down_16";
+                    break;
+                case NodeItemType.DefaultText:
+                    text = RandomText.GetRandomSentence(2, 5);
+                    childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
+                    childNode.CanCheck = true;
+                    childNode.IsChecked = (RandomText.Rand.Next(20) > 16);
+                    _FillNode(childNode);
+                    break;
             }
             return childNode;
         }
@@ -2134,6 +2198,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         DxMemoEdit _MemoEdit;
         string _Log;
         int _LogId;
+        NewNodePositionType _NewNodePosition;
+        private enum NewNodePositionType { None, First, Last }
         #endregion
         #region Random
         Random Rand;

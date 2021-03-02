@@ -2254,5 +2254,8 @@
   <ItemGroup>
     <None Include="Images\ImagesBig\Home - 6.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Icons16\move_task_down_16.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
