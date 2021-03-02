@@ -153,7 +153,7 @@ namespace Djs.Tools.CovidGraphs
         private int _DefaultButtonHeight;
         #endregion
         #region Factory metody
-        public static DxPanelControl CreateDxPanel(Control parent = null, 
+        public static DxPanelControl CreateDxPanel(Control parent = null,
             DockStyle? dock = null, DXE.Controls.BorderStyles? borderStyles = null,
             int? width = null, int? height = null,
             bool? visible = null)
@@ -169,7 +169,7 @@ namespace Djs.Tools.CovidGraphs
             if (visible.HasValue) panel.Visible = visible.Value;
             return panel;
         }
-        public static DxSplitContainerControl CreateDxSplitContainer(Control parent = null, EventHandler splitterPositionChanged = null, DockStyle? dock = null, 
+        public static DxSplitContainerControl CreateDxSplitContainer(Control parent = null, EventHandler splitterPositionChanged = null, DockStyle? dock = null,
             Orientation splitLineOrientation = Orientation.Horizontal, DXE.SplitFixedPanel? fixedPanel = null,
             int? splitPosition = null, DXE.SplitPanelVisibility? panelVisibility = null,
             bool? showSplitGlyph = null, DXE.Controls.BorderStyles? borderStyles = null)
@@ -361,7 +361,7 @@ namespace Djs.Tools.CovidGraphs
             if (multiColumn.HasValue) listBox.MultiColumn = multiColumn.Value;
             if (selectionMode.HasValue) listBox.SelectionMode = selectionMode.Value;
             if (itemHeightPadding.HasValue) listBox.ItemHeightPadding = itemHeightPadding.Value;
-            if (reorderByDragEnabled.HasValue) listBox.ReorderByDragEnabled= reorderByDragEnabled.Value;
+            if (reorderByDragEnabled.HasValue) listBox.ReorderByDragEnabled = reorderByDragEnabled.Value;
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
 
@@ -412,6 +412,144 @@ namespace Djs.Tools.CovidGraphs
         #endregion
     }
     #endregion
+    #region class DrawingExtensions : Extensions metody pro grafické třídy (z namespace System.Drawing)
+    /// <summary>
+    /// Extensions metody pro grafické třídy (z namespace System.Drawing)
+    /// </summary>
+    public static class DrawingExtensions
+    {
+        /// <summary>
+        /// Vrátí IDisposable blok, který na svém počátku (při vyvolání této metody) provede control?.Parent.SuspendLayout(), 
+        /// a na konci bloku (při Dispose) provede control?.Parent.ResumeLayout(false)
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static IDisposable ScopeSuspendParentLayout(this Control control)
+        {
+            return new UsingScope(
+            (s) =>
+            {   // OnBegin (Constructor):
+                Control parent = control?.Parent;
+                if (parent != null && !parent.IsDisposed)
+                {
+                    parent.SuspendLayout();
+                }
+                s.UserData = parent;
+            },
+            (s) =>
+            {   // OnEnd (Dispose):
+                Control parent = s.UserData as Control;
+                if (parent != null && !parent.IsDisposed)
+                {
+                    parent.ResumeLayout(false);
+                }
+                s.UserData = null;
+            }
+            );
+        }
+        /// <summary>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato metoda <see cref="IsSetVisible(Control)"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static bool IsSetVisible(this Control control)
+        {
+            if (control is null) return false;
+            var getState = control.GetType().GetMethod("GetState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.NonPublic);
+            if (getState is null) return false;
+            object visible = getState.Invoke(control, new object[] { (int)0x02  /*STATE_VISIBLE*/  });
+            return (visible is bool ? (bool)visible : false);
+        }
+        /// <summary>
+        /// Vrátí nejbližšího Parenta požadovaného typu pro this control.
+        /// Používá se typicky pro nalezení nejbližší <see cref="DynamicPage"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static T SearchForParentOfType<T>(this Control control) where T : Control
+        {
+            Control item = control?.Parent;                // Tímhle řádkem zajistím, že nebudu vracet vstupní objekt, i kdyby byl požadovaného typu = protože hledám Parenta, nikoli sebe.
+            while (item != null)
+            {
+                if (item is T result) return result;
+                item = item.Parent;
+            }
+            return null;
+        }
+        #region Invoke to GUI: run, get, set
+        /// <summary>
+        /// Metoda provede danou akci v GUI threadu
+        /// </summary>
+        /// <param name="action"></param>
+        public static void RunInGui(this Control control, Action action)
+        {
+            if (control.InvokeRequired)
+                control.Invoke(action);
+            else
+                action();
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu z GUI prvku, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static T GetGuiValue<T>(this Control control, Func<T> reader)
+        {
+            if (control.InvokeRequired)
+                return (T)control.Invoke(reader);
+            else
+                return reader();
+        }
+        /// <summary>
+        /// Metoda vloží do GUI prvku danou hodnotu, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="writer"></param>
+        /// <param name="value"></param>
+        public static void SetGuiValue<T>(this Control control, Action<T> writer, T value)
+        {
+            if (control.InvokeRequired)
+                control.Invoke(writer, value);
+            else
+                writer(value);
+        }
+        #endregion
+    }
+    #endregion
+    #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.   { DAJ 2019-12-18 }
+    /// <summary>
+    /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
+    /// </summary>
+    internal class UsingScope : IDisposable
+    {
+        /// <summary>
+        /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
+        /// </summary>
+        /// <param name="onBegin">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro uložení dat, budou k dispozici v akci <paramref name="onEnd"/></param>
+        /// <param name="onEnd">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro čtení dat uložených v akci <paramref name="onBegin"/></param>
+        public UsingScope(Action<UsingScope> onBegin, Action<UsingScope> onEnd)
+        {
+            _OnEnd = onEnd;
+            onBegin?.Invoke(this);
+        }
+        private Action<UsingScope> _OnEnd;
+        void IDisposable.Dispose()
+        {
+            _OnEnd?.Invoke(this);
+            _OnEnd = null;
+        }
+        /// <summary>
+        /// Libovolná data.
+        /// Typicky jsou vloženy v akci OnBegin, a v akci OnEnd jsou načteny. Výchozí hodnota je null.
+        /// </summary>
+        public object UserData { get; set; }
+    }
+    #endregion
     #region Enumy
     /// <summary>
     /// Styl použitý pro Label
@@ -444,7 +582,19 @@ namespace Djs.Tools.CovidGraphs
     /// PanelControl
     /// </summary>
     public class DxPanelControl : DXE.PanelControl
-    { }
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+    }
     #endregion
     #region DxLabelControl
     /// <summary>
@@ -456,6 +606,18 @@ namespace Djs.Tools.CovidGraphs
         {
             BorderStyle = DXE.Controls.BorderStyles.NoBorder;
         }
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+
     }
     #endregion
     #region DxLabelControl
@@ -468,6 +630,17 @@ namespace Djs.Tools.CovidGraphs
         {
             EnterMoveNextControl = true;
         }
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -490,6 +663,17 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxMemoEdit : DXE.MemoEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -504,7 +688,6 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
-
     }
     #endregion
     #region DxImageComboBoxEdit
@@ -513,6 +696,17 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxImageComboBoxEdit : DXE.ImageComboBoxEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -527,7 +721,6 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
-
     }
     #endregion
     #region DxSpinEdit
@@ -536,6 +729,17 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxSpinEdit : DXE.SpinEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -558,6 +762,17 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxCheckEdit : DXE.CheckEdit
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -613,7 +828,17 @@ namespace Djs.Tools.CovidGraphs
             }
         }
         private int _ItemHeightPadding = 0;
-
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region Overrides
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -835,8 +1060,6 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
-
-
     }
     #endregion
     #region DxTreeViewListSimple
@@ -869,10 +1092,10 @@ namespace Djs.Tools.CovidGraphs
             this._MainColumn.OptionsColumn.AllowSort = false;
 
             this.OptionsBehavior.AllowExpandOnDblClick = true;
-            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;                // Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
             this.OptionsBehavior.Editable = true;
             this.OptionsBehavior.EditingMode = DevExpress.XtraTreeList.TreeListEditingMode.Inplace;
-            this.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;             // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
+            this.OptionsBehavior.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;    // Kdy se zahájí editace (kurzor)? MouseUp: docela hezké; MouseDownFocused: po MouseDown ve stavu Focused (až na druhý klik)
             this.OptionsBehavior.ShowToolTips = true;
             this.OptionsBehavior.SmartMouseHover = true;
 
@@ -887,25 +1110,39 @@ namespace Djs.Tools.CovidGraphs
             this.OptionsNavigation.UseTabKey = false;
 
             this.OptionsSelection.EnableAppearanceFocusedRow = true;
-            this.OptionsSelection.EnableAppearanceHotTrackedRow = DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True; // DevExpress.Utils.DefaultBoolean.True;
             this.OptionsSelection.InvertSelection = true;
 
             this.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;
 
+            // DirectX vypadá OK:
+            this.UseDirectXPaint = DefaultBoolean.True;
+            this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;                // Běžně nezapínat, ale na DirectX to chodí!   Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
+
+            // Tooltip:
             this.ToolTipController = DxComponent.CreateToolTipController();
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
 
+            // Eventy pro podporu TreeView (vykreslení nodu, atd):
             this.NodeCellStyle += _OnNodeCellStyle;
-            this.DoubleClick += _OnDoubleClick;
+            this.CustomDrawNodeCheckBox += _OnCustomDrawNodeCheckBox;
             this.KeyDown += _OnKeyDown;
+
+            // Nativní eventy:
+            this.FocusedNodeChanged += _OnFocusedNodeChanged;
+            this.DoubleClick += _OnDoubleClick;
             this.ShownEditor += _OnShownEditor;
             this.ValidatingEditor += _OnValidatingEditor;
-            this.FocusedNodeChanged += _OnFocusedNodeChanged;
+            this.BeforeCheckNode += _OnBeforeCheckNode;
+            this.AfterCheckNode += _OnAfterCheckNode;
             this.BeforeExpand += _OnBeforeExpand;
             this.AfterCollapse += _OnAfterCollapse;
 
-            this.LazyLoadNodeText = "Načítám záznamy...";
+            // Preset:
+            this.LazyLoadNodeText = "...";
             this.LazyLoadNodeImageName = null;
+            this.CheckBoxMode = TreeViewCheckBoxMode.None;
+            this.ImageMode = TreeViewImageMode.Image0;
         }
         DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
         private Dictionary<int, NodePair> _NodesId;
@@ -916,9 +1153,9 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         private class NodePair
         {
-            public NodePair(DxTreeViewListSimple owner, int nodeId, NodeItemInfo nodeInfo, DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, bool isLazyChild)
+            public NodePair(DxTreeViewListSimple owner, int nodeId, NodeItemInfo nodeInfo, TreeListNode treeNode, bool isLazyChild)
             {
-                this.NodeId = nodeId;
+                this.Id = nodeId;
                 this.NodeInfo = nodeInfo;
                 this.TreeNode = treeNode;
                 this.IsLazyChild = isLazyChild;
@@ -948,22 +1185,48 @@ namespace Djs.Tools.CovidGraphs
             /// <summary>
             /// Konstantní ID tohoto nodu, nemění se
             /// </summary>
-            public int NodeId { get; private set; }
+            public int Id { get; private set; }
             /// <summary>
             /// Aktuální interní ID vizuálního nodu = <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Id"/>.
             /// Tato hodnota se mění při odebrání nodu z TreeView. Tuto hodnotu lze tedy použít pouze v okamžiku jejího získání.
             /// </summary>
             public int CurrentTreeNodeId { get { return TreeNode?.Id ?? -1; } }
-            public string NodeKey { get { return NodeInfo?.NodeKey ; } }
+            /// <summary>
+            /// Klíč nodu, string
+            /// </summary>
+            public string NodeId { get { return NodeInfo?.NodeId; } }
+            /// <summary>
+            /// Datový objekt
+            /// </summary>
             public NodeItemInfo NodeInfo { get; private set; }
-            public DevExpress.XtraTreeList.Nodes.TreeListNode TreeNode { get; private set; }
+            /// <summary>
+            /// Vizuální objekt
+            /// </summary>
+            public TreeListNode TreeNode { get; private set; }
+            /// <summary>
+            /// Tento prvek je zaveden jako LazyChild = reprezetuje fakt, že reálné Child nody budou teprve donačteny.
+            /// </summary>
             public bool IsLazyChild { get; private set; }
             private ITreeNodeItem INodeItem { get { return NodeInfo as ITreeNodeItem; } }
         }
         #endregion
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTipy pro nodes
-
-
+        /// <summary>
+        /// Připraví ToolTip pro aktuální Node
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
         {
             if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree)
@@ -986,7 +1249,119 @@ namespace Djs.Tools.CovidGraphs
             }
         }
         #endregion
-        #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 
+        #region Řízení specifického vykreslení TreeNodu podle jeho nastavení: font, barvy, checkbox, atd
+        /// <summary>
+        /// Vytvoří new instanci pro řízení vzhledu TreeView
+        /// </summary>
+        /// <returns></returns>
+        protected override DevExpress.XtraTreeList.ViewInfo.TreeListViewInfo CreateViewInfo()
+        {
+            if (CurrentViewInfo == null)
+                CurrentViewInfo = new DxTreeViewViewInfo(this);
+            return CurrentViewInfo;
+        }
+        /// <summary>
+        /// Při Dispose uvolním svůj lokální <see cref="CurrentViewInfo"/>
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (CurrentViewInfo != null)
+            {
+                CurrentViewInfo.Dispose();
+                CurrentViewInfo = null;
+            }
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Instance pro řízení vzhledu TreeView
+        /// </summary>
+        protected DxTreeViewViewInfo CurrentViewInfo;
+        /// <summary>
+        /// Potomek pro řízení vzhledu s ohledem na [ne]vykreslení CheckBoxů
+        /// </summary>
+        protected class DxTreeViewViewInfo : DevExpress.XtraTreeList.ViewInfo.TreeListViewInfo, IDisposable
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="treeList"></param>
+            public DxTreeViewViewInfo(DxTreeViewListSimple treeList) : base(treeList)
+            {
+                _Owner = treeList;
+            }
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            public new void Dispose()
+            {
+                _Owner = null;
+                base.Dispose();
+            }
+            private DxTreeViewListSimple _Owner;
+            /// <summary>
+            /// Vrátí šířku pro CheckBox pro daný node
+            /// </summary>
+            /// <param name="node"></param>
+            /// <returns></returns>
+            protected override int GetActualCheckBoxWidth(TreeListNode node)
+            {
+                bool canCheckNode = _Owner.IsNodeCheckable(node);
+                if (!canCheckNode) return 0;
+                return base.GetActualCheckBoxWidth(node);
+            }
+        }
+        /// <summary>
+        /// Volá se před Check node
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="prevState"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        protected override DevExpress.XtraTreeList.CheckNodeEventArgs RaiseBeforeCheckNode(DevExpress.XtraTreeList.Nodes.TreeListNode node, System.Windows.Forms.CheckState prevState, System.Windows.Forms.CheckState state)
+        {
+            DevExpress.XtraTreeList.CheckNodeEventArgs e = base.RaiseBeforeCheckNode(node, prevState, state);
+            e.CanCheck = IsNodeCheckable(e.Node);
+            return e;
+        }
+        /// <summary>
+        /// Volá se před vykreslením Checkboxu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void RaiseCustomDrawNodeCheckBox(DevExpress.XtraTreeList.CustomDrawNodeCheckBoxEventArgs e)
+        {
+            bool canCheckNode = IsNodeCheckable(e.Node);
+            if (canCheckNode)
+                return;
+            e.ObjectArgs.State = DevExpress.Utils.Drawing.ObjectState.Disabled;
+            e.Handled = true;
+
+            base.RaiseCustomDrawNodeCheckBox(e);
+        }
+        /// <summary>
+        /// Vrací true, pokud daný node je možno zobrazit s CheckBoxem
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        protected bool IsNodeCheckable(TreeListNode node)
+        {
+            return IsNodeCheckable(_GetNodeInfo(node));
+        }
+        /// <summary>
+        /// Vrací true, pokud daný node je možno zobrazit s CheckBoxem
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        protected bool IsNodeCheckable(NodeItemInfo nodeInfo)
+        {
+            bool isCheckable = true;
+            if (nodeInfo != null)
+            {   // Podle režimu povolíme Check pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                isCheckable = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck));
+            }
+            return isCheckable;
+        }
         /// <summary>
         /// Nastavení specifického stylu podle konkrétního Node (FontStyle, Colors, atd)
         /// </summary>
@@ -1013,18 +1388,19 @@ namespace Djs.Tools.CovidGraphs
             }
         }
         /// <summary>
-        /// Po fokusu do konkrétního node se nastaví jeho Editable a volá se public event
+        /// Specifika krteslení CheckBox pro nodes
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _OnFocusedNodeChanged(object sender, DevExpress.XtraTreeList.FocusedNodeChangedEventArgs args)
+        private void _OnCustomDrawNodeCheckBox(object sender, DevExpress.XtraTreeList.CustomDrawNodeCheckBoxEventArgs args)
         {
             NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
-
-            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
-
-            if (nodeInfo != null && !this.IsLocked)
-                this.OnNodeSelected(nodeInfo);
+            if (nodeInfo != null)
+            {   // Podle režimu povolíme Check pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                bool canCheck = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck));
+                args.Handled = !canCheck;
+            }
         }
         /// <summary>
         /// Po stisku klávesy Vpravo a Vlevo se pracuje s Expanded nodů
@@ -1068,6 +1444,22 @@ namespace Djs.Tools.CovidGraphs
                     }
                     break;
             }
+        }
+        #endregion
+        #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 
+        /// <summary>
+        /// Po fokusu do konkrétního node se nastaví jeho Editable a volá se public event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnFocusedNodeChanged(object sender, DevExpress.XtraTreeList.FocusedNodeChangedEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+
+            _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
+
+            if (nodeInfo != null && !this.IsLocked)
+                this.OnNodeSelected(nodeInfo);
         }
         /// <summary>
         /// Doubleclick převolá public event
@@ -1120,6 +1512,36 @@ namespace Djs.Tools.CovidGraphs
                 this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
         }
         /// <summary>
+        /// Před změnou Checked stavu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnBeforeCheckNode(object sender, DevExpress.XtraTreeList.CheckNodeEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo != null)
+            {   // Podle režimu povolíme Check pro daný Node:
+                var checkMode = this.CheckBoxMode;
+                args.CanCheck = (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck));
+            }
+        }
+        /// <summary>
+        /// Po změně Checked stavu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnAfterCheckNode(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
+        {
+            NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
+            var checkMode = this.CheckBoxMode;
+            if (nodeInfo != null && (checkMode == TreeViewCheckBoxMode.AllNodes || (checkMode == TreeViewCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck)))
+            {
+                bool isChecked = args.Node.Checked;
+                nodeInfo.IsChecked = isChecked;
+                this.OnNodeCheckedChange(nodeInfo, isChecked);
+            }
+        }
+        /// <summary>
         /// Po klávese Delete nad nodem bez editace
         /// </summary>
         /// <param name="nodeInfo"></param>
@@ -1149,7 +1571,7 @@ namespace Djs.Tools.CovidGraphs
         /// Po zabalení nodu se volá public event <see cref="NodeCollapsed"/>,
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <param name="args"></param>
         private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
         {
             NodeItemInfo nodeInfo = _GetNodeInfo(args.Node);
@@ -1195,19 +1617,26 @@ namespace Djs.Tools.CovidGraphs
         /// Pak teprve přidá nové nody.
         /// Na konci provede Refresh.
         /// </summary>
-        /// <param name="parentKey"></param>
+        /// <param name="parentNodeId"></param>
         /// <param name="addNodes"></param>
-        public void AddLazyLoadNodes(string parentKey, IEnumerable<NodeItemInfo> addNodes)
+        public void AddLazyLoadNodes(string parentNodeId, IEnumerable<NodeItemInfo> addNodes)
         {
-            if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<NodeItemInfo>>(AddLazyLoadNodes), parentKey, addNodes); return; }
+            if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<NodeItemInfo>>(AddLazyLoadNodes), parentNodeId, addNodes); return; }
 
             using (LockGui(true))
             {
-                bool isAnySelected = this._RemoveLazyLoadFromParent(parentKey);
+                bool isAnySelected = this._RemoveLazyLoadFromParent(parentNodeId);
                 var firstPair = this._RemoveAddNodes(null, addNodes);
-                if (firstPair != null && (isAnySelected || this.LazyLoadSelectFirstNode))
+
+                var focusType = this.LazyLoadFocusNode;
+                if (firstPair != null && (isAnySelected || focusType == TreeViewLazyLoadFocusNodeType.FirstChildNode))
                     this.SetFocusedNode(firstPair.TreeNode);
-                    // this.FocusedNode = firstPair.TreeNode;
+                else if (focusType == TreeViewLazyLoadFocusNodeType.ParentNode)
+                {
+                    var parentPair = this._GetNodePair(parentNodeId);
+                    if (parentPair != null)
+                        this.FocusedNode = parentPair.TreeNode;
+                }
             }
         }
         /// <summary>
@@ -1220,7 +1649,7 @@ namespace Djs.Tools.CovidGraphs
 
             using (LockGui(true))
             {
-                if (nodeInfo != null && nodeInfo.NodeId >= 0 && this._NodesId.TryGetValue(nodeInfo.NodeId, out var nodePair))
+                if (nodeInfo != null && nodeInfo.Id >= 0 && this._NodesId.TryGetValue(nodeInfo.Id, out var nodePair))
                 {
                     this.SetFocusedNode(nodePair.TreeNode);
                 }
@@ -1230,7 +1659,7 @@ namespace Djs.Tools.CovidGraphs
         /// Odebere jeden daný node, podle klíče. Na konci provede Refresh.
         /// Pro odebrání více nodů je lepší použít <see cref="RemoveNodes(IEnumerable{string})"/>.
         /// </summary>
-        /// <param name="addNodes"></param>
+        /// <param name="removeNodeKey"></param>
         public void RemoveNode(string removeNodeKey)
         {
             if (this.InvokeRequired) { this.Invoke(new Action<string>(RemoveNode), removeNodeKey); return; }
@@ -1243,7 +1672,7 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Odebere řadu nodů, podle klíče. Na konci provede Refresh.
         /// </summary>
-        /// <param name="addNodes"></param>
+        /// <param name="removeNodeKeys"></param>
         public void RemoveNodes(IEnumerable<string> removeNodeKeys)
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>>(RemoveNodes), removeNodeKeys); return; }
@@ -1256,6 +1685,7 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev. Na konci provede Refresh.
         /// </summary>
+        /// <param name="removeNodeKeys"></param>
         /// <param name="addNodes"></param>
         public void RemoveAddNodes(IEnumerable<string> removeNodeKeys, IEnumerable<NodeItemInfo> addNodes)
         {
@@ -1286,7 +1716,7 @@ namespace Djs.Tools.CovidGraphs
         public void RefreshNode(NodeItemInfo nodeInfo)
         {
             if (nodeInfo == null) return;
-            if (nodeInfo.NodeId < 0) throw new ArgumentException($"Cannot refresh node '{nodeInfo.NodeKey}': '{nodeInfo.Text}' if the node is not in TreeView.");
+            if (nodeInfo.Id < 0) throw new ArgumentException($"Cannot refresh node '{nodeInfo.NodeId}': '{nodeInfo.Text}' if the node is not in TreeView.");
 
             if (this.InvokeRequired) { this.Invoke(new Action<NodeItemInfo>(RefreshNode), nodeInfo); return; }
 
@@ -1298,7 +1728,7 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Zajistí refresh daných nodů.
         /// </summary>
-        /// <param name="nodeInfo"></param>
+        /// <param name="nodes"></param>
         public void RefreshNodes(IEnumerable<NodeItemInfo> nodes)
         {
             if (nodes == null) return;
@@ -1349,7 +1779,15 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         protected class LockTreeViewGuiInfo : IDisposable
         {
+            /// <summary>
+            /// Konstruktor pro "vnořený" zámek, který nic neprovádí
+            /// </summary>
             public LockTreeViewGuiInfo() { }
+            /// <summary>
+            /// Konstruktor standardní
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="withRefresh"></param>
             public LockTreeViewGuiInfo(DxTreeViewListSimple owner, bool withRefresh)
             {
                 if (owner != null)
@@ -1360,7 +1798,7 @@ namespace Djs.Tools.CovidGraphs
 
                     _Owner = owner;
                     _WithRefresh = withRefresh;
-                    _FocusedNodeKey = owner.FocusedNodeInfo?.NodeKey;
+                    _FocusedNodeId = owner.FocusedNodeInfo?.NodeId;
                 }
             }
             void IDisposable.Dispose()
@@ -1377,15 +1815,15 @@ namespace Djs.Tools.CovidGraphs
                     owner.IsLocked = false;
 
                     var focusedNodeInfo = owner.FocusedNodeInfo;
-                    string oldNodeKey = _FocusedNodeKey;
-                    string newNodeKey = focusedNodeInfo?.NodeKey;
-                    if (!String.Equals(oldNodeKey, newNodeKey))
+                    string oldNodeId = _FocusedNodeId;
+                    string newNodeId = focusedNodeInfo?.NodeId;
+                    if (!String.Equals(oldNodeId, newNodeId))
                         owner.OnNodeSelected(focusedNodeInfo);
                 }
             }
             private DxTreeViewListSimple _Owner;
             private bool _WithRefresh;
-            private string _FocusedNodeKey;
+            private string _FocusedNodeId;
         }
         #region Private sféra
         /// <summary>
@@ -1393,7 +1831,8 @@ namespace Djs.Tools.CovidGraphs
         /// Přidá více node do stromu a do evidence, neřeší blokování GUI.
         /// Metoda vrací první vytvořený <see cref="NodePair"/>.
         /// </summary>
-        /// <param name="node"></param>
+        /// <param name="removeNodeKeys"></param>
+        /// <param name="addNodes"></param>
         private NodePair _RemoveAddNodes(IEnumerable<string> removeNodeKeys, IEnumerable<NodeItemInfo> addNodes)
         {
             NodePair firstPair = null;
@@ -1413,7 +1852,7 @@ namespace Djs.Tools.CovidGraphs
 
                 // Expand nody: teď už by měly mít svoje Childs přítomné v TreeView:
                 foreach (var node in addNodes.Where(n => n.Expanded))
-                    this._NodesId[node.NodeId].TreeNode.Expanded = true;
+                    this._NodesId[node.Id].TreeNode.Expanded = true;
             }
 
             return firstPair;
@@ -1421,7 +1860,8 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Vytvoří nový jeden vizuální node podle daných dat, a přidá jej do vizuálního prvku a do interní evidence, neřeší blokování GUI
         /// </summary>
-        /// <param name="nodeInfo"></param>
+        /// <param name="nodeInfo">Data pro tvorbu nodu</param>
+        /// <param name="firstPair">Ref první vytvořený pár</param>
         private void _AddNode(NodeItemInfo nodeInfo, ref NodePair firstPair)
         {
             if (nodeInfo == null) return;
@@ -1435,35 +1875,36 @@ namespace Djs.Tools.CovidGraphs
         }
         private void _AddNodeLazyLoad(NodeItemInfo parentNode)
         {
-            string lazyChildKey = parentNode.NodeKey + "___«LazyLoadChildNode»___";
+            string lazyChildId = parentNode.NodeId + "___«LazyLoadChildNode»___";
             string text = this.LazyLoadNodeText ?? "Načítám...";
             string imageName = this.LazyLoadNodeImageName;
-            NodeItemInfo lazyNode = new NodeItemInfo(lazyChildKey, parentNode.NodeKey, text, imageName: imageName, fontStyleDelta: FontStyle.Italic);
+            NodeItemInfo lazyNode = new NodeItemInfo(lazyChildId, parentNode.NodeId, text, imageName: imageName, fontStyleDelta: FontStyle.Italic);
             NodePair nodePair = _AddNodeOne(lazyNode, true);  // Daný node (z aplikace) vloží do Tree a vrátí
         }
         /// <summary>
         /// Fyzické přidání jednoho node do TreeView a do evidence
         /// </summary>
         /// <param name="nodeInfo"></param>
+        /// <param name="isLazyChild"></param>
         private NodePair _AddNodeOne(NodeItemInfo nodeInfo, bool isLazyChild)
         {
             // Kontrola duplicity raději předem:
-            string nodeKey = nodeInfo.NodeKey;
-            if (nodeKey != null && this._NodesKey.ContainsKey(nodeKey)) throw new ArgumentException($"It is not possible to add an element because an element with the same key '{nodeKey}' already exists in the TreeView.");
+            string nodeId = nodeInfo.NodeId;
+            if (nodeId != null && this._NodesKey.ContainsKey(nodeId)) throw new ArgumentException($"It is not possible to add an element because an element with the same key '{nodeId}' already exists in the TreeView.");
 
             // 1. Vytvoříme TreeListNode:
             object nodeData = new object[] { nodeInfo.Text };
-            int parentId = _GetCurrentTreeNodeId(nodeInfo.ParentNodeKey);
+            int parentId = _GetCurrentTreeNodeId(nodeInfo.ParentNodeId);
             var treeNode = this.AppendNode(nodeData, parentId);
             _FillTreeNode(treeNode, nodeInfo, false);
-           
+
             // 2. Propojíme vizuální node a datový objekt - pouze přes int ID, nikoli vzájemné reference:
-            int nodeId = ++_LastId;
-            NodePair nodePair = new NodePair(this, nodeId, nodeInfo, treeNode, isLazyChild);
+            int id = ++_LastId;
+            NodePair nodePair = new NodePair(this, id, nodeInfo, treeNode, isLazyChild);
 
             // 3. Uložíme Pair do indexů podle ID a podle Key:
-            this._NodesId.Add(nodePair.NodeId, nodePair);
-            if (nodePair.NodeKey != null) this._NodesKey.Add(nodePair.NodeKey, nodePair);
+            this._NodesId.Add(nodePair.Id, nodePair);
+            if (nodePair.NodeId != null) this._NodesKey.Add(nodePair.NodeId, nodePair);
 
             return nodePair;
         }
@@ -1473,7 +1914,7 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="nodeInfo"></param>
         private void _RefreshNode(NodeItemInfo nodeInfo)
         {
-            if (nodeInfo != null && nodeInfo.NodeKey != null && this._NodesKey.TryGetValue(nodeInfo.NodeKey, out var nodePair))
+            if (nodeInfo != null && nodeInfo.NodeId != null && this._NodesKey.TryGetValue(nodeInfo.NodeId, out var nodePair))
             {
                 _FillTreeNode(nodePair.TreeNode, nodePair.NodeInfo, true);
             }
@@ -1500,19 +1941,19 @@ namespace Djs.Tools.CovidGraphs
         /// Metoda najde a odebere Child prvky daného Parenta, kde tyto Child prvky jsou označeny jako <see cref="NodePair.IsLazyChild"/> = true.
         /// Metoda vrátí true, pokud některý z odebraných prvků byl Selected.
         /// </summary>
-        /// <param name="parentKey"></param>
+        /// <param name="parentNodeId"></param>
         /// <returns></returns>
-        private bool _RemoveLazyLoadFromParent(string parentKey)
+        private bool _RemoveLazyLoadFromParent(string parentNodeId)
         {
-            NodeItemInfo nodeInfo = _GetNodeInfo(parentKey);
+            NodeItemInfo nodeInfo = _GetNodeInfo(parentNodeId);
             if (nodeInfo == null || !nodeInfo.LazyLoadChilds) return false;
 
             nodeInfo.LazyLoadChilds = false;
 
             // Najdu stávající Child nody daného Parenta a všechny je odeberu. Měl by to být pouze jeden node = simulující načítání dat, přidaný v metodě :
-            NodePair[] lazyChilds = this._NodesId.Values.Where(p => p.IsLazyChild && p.NodeInfo.ParentNodeKey == parentKey).ToArray();
+            NodePair[] lazyChilds = this._NodesId.Values.Where(p => p.IsLazyChild && p.NodeInfo.ParentNodeId == parentNodeId).ToArray();
             bool isAnySelected = (lazyChilds.Length > 0 && lazyChilds.Any(p => p.TreeNode.IsSelected));
-            _RemoveAddNodes(lazyChilds.Select(p => p.NodeKey), null);
+            _RemoveAddNodes(lazyChilds.Select(p => p.NodeId), null);
 
             return isAnySelected;
         }
@@ -1529,44 +1970,43 @@ namespace Djs.Tools.CovidGraphs
             this._NodesId.Clear();
             this._NodesKey.Clear();
         }
-      
+        /// <summary>
+        /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
+        /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
+        /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
+        /// </summary>
+        /// <param name="id"></param>
+        private void _RemoveNode(int id)
+        {
+            if (id < 0) throw new ArgumentException($"Argument 'nodeId' is negative in {CurrentClassName}.RemoveNode() method.");
+            if (!this._NodesId.TryGetValue(id, out var nodePair)) throw new ArgumentException($"Node with ID = '{id}' is not found in {CurrentClassName} nodes."); ;
+            _RemoveNode(nodePair);
+        }
         /// <summary>
         /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
         /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
         /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
         /// </summary>
         /// <param name="nodeId"></param>
-        private void _RemoveNode(int nodeId)
+        private void _RemoveNode(string nodeId)
         {
-            if (nodeId < 0) throw new ArgumentException($"Argument 'nodeId' is negative in {CurrentClassName}.RemoveNode() method.");
-            if (!this._NodesId.TryGetValue(nodeId, out var nodePair)) throw new ArgumentException($"Node with ID = '{nodeId}' is not found in {CurrentClassName} nodes."); ;
-            _RemoveNode(nodePair);
+            if (nodeId == null) throw new ArgumentException($"Argument 'nodeKey' is null in {CurrentClassName}.RemoveNode() method.");
+            if (this._NodesKey.TryGetValue(nodeId, out var nodePair))          // Nebudu hlásit Exception při smazání neexistujícího nodu, může k tomu dojít při multithreadu...
+                _RemoveNode(nodePair);
         }
         /// <summary>
         /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
         /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
         /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
         /// </summary>
-        /// <param name="nodeKey"></param>
-        private void _RemoveNode(string nodeKey)
-        {
-            if (nodeKey == null) throw new ArgumentException($"Argument 'nodeKey' is null in {CurrentClassName}.RemoveNode() method.");
-            if (!this._NodesKey.TryGetValue(nodeKey, out var nodePair)) throw new ArgumentException($"Node with Key = '{nodeKey}' is not found in {CurrentClassName} nodes."); ;
-            _RemoveNode(nodePair);
-        }
-        /// <summary>
-        /// Odebere jeden node ze stromu a z evidence, neřeší blokování GUI.
-        /// Klíčem je string, který se jako unikátní ID používá v aplikačních datech.
-        /// Tato metoda si podle stringu najde int ID i záznamy v evidenci.
-        /// </summary>
-        /// <param name="node"></param>
+        /// <param name="nodePair"></param>
         private void _RemoveNode(NodePair nodePair)
         {
             if (nodePair == null) return;
 
             // Odebrat z indexů:
-            if (this._NodesId.ContainsKey(nodePair.NodeId)) this._NodesId.Remove(nodePair.NodeId);
-            if (nodePair.NodeKey != null && this._NodesKey.ContainsKey(nodePair.NodeKey)) this._NodesKey.Remove(nodePair.NodeKey);
+            if (this._NodesId.ContainsKey(nodePair.Id)) this._NodesId.Remove(nodePair.Id);
+            if (nodePair.NodeId != null && this._NodesKey.ContainsKey(nodePair.NodeId)) this._NodesKey.Remove(nodePair.NodeId);
 
             // Reference na vizuální prvek:
             var treeNode = nodePair.TreeNode;
@@ -1582,9 +2022,19 @@ namespace Djs.Tools.CovidGraphs
         /// </summary>
         /// <param name="nodeId"></param>
         /// <returns></returns>
-        private NodeItemInfo _GetNodeInfo(int nodeId)
+        private NodePair _GetNodePair(string nodeId)
         {
-            if (nodeId >= 0 && this._NodesId.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair;
+            return null;
+        }
+        /// <summary>
+        /// Vrátí data nodu pro daný node, podle NodeId
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private NodeItemInfo _GetNodeInfo(int id)
+        {
+            if (id >= 0 && this._NodesId.TryGetValue(id, out var nodePair)) return nodePair.NodeInfo;
             return null;
         }
         /// <summary>
@@ -1601,32 +2051,32 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Vrací data nodu podle jeho klíče
         /// </summary>
-        /// <param name="nodeKey"></param>
+        /// <param name="nodeId"></param>
         /// <returns></returns>
-        private NodeItemInfo _GetNodeInfo(string nodeKey)
+        private NodeItemInfo _GetNodeInfo(string nodeId)
         {
-            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.NodeInfo;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
             return null;
         }
         /// <summary>
         /// Vrátí ID nodu pro daný klíč
         /// </summary>
-        /// <param name="nodeKey"></param>
+        /// <param name="nodeId"></param>
         /// <returns></returns>
-        private int _GetNodeId(string nodeKey)
+        private int _GetNodeId(string nodeId)
         {
-            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.NodeId;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair.Id;
             return -1;
         }
         /// <summary>
         /// Vrátí aktuální hodnotu interního ID vizuálního nodu = <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Id"/>.
         /// Tato hodnota se mění při odebrání nodu z TreeView. Tuto hodnotu lze tedy použít pouze v okamžiku jejího získání.
         /// </summary>
-        /// <param name="nodeKey"></param>
+        /// <param name="nodeId"></param>
         /// <returns></returns>
-        private int _GetCurrentTreeNodeId(string nodeKey)
+        private int _GetCurrentTreeNodeId(string nodeId)
         {
-            if (nodeKey != null && this._NodesKey.TryGetValue(nodeKey, out var nodePair)) return nodePair.CurrentTreeNodeId;
+            if (nodeId != null && this._NodesKey.TryGetValue(nodeId, out var nodePair)) return nodePair.CurrentTreeNodeId;
             return -1;
         }
         /// <summary>
@@ -1653,12 +2103,91 @@ namespace Djs.Tools.CovidGraphs
         /// Funkce, která pro název ikony vrátí její index v ImageListu
         /// </summary>
         public Func<string, int> ImageIndexSearcher { get; set; }
+        /// <summary>
+        /// Text (lokalizovaný) pro text uzlu, který reprezentuje "LazyLoadChild", např. něco jako "Načítám data..."
+        /// </summary>
         public string LazyLoadNodeText { get; set; }
+        /// <summary>
+        /// Název ikony uzlu, který reprezentuje "LazyLoadChild", např. něco jako přesýpací hodiny...
+        /// </summary>
         public string LazyLoadNodeImageName { get; set; }
         /// <summary>
         /// Po LazyLoad aktivovat první načtený node?
         /// </summary>
-        public bool LazyLoadSelectFirstNode { get; set; }
+        public TreeViewLazyLoadFocusNodeType LazyLoadFocusNode { get; set; }
+        /// <summary>
+        /// Režim zobrazení Checkboxů. 
+        /// Výchozí je <see cref="TreeViewCheckBoxMode.None"/>
+        /// </summary>
+        public TreeViewCheckBoxMode CheckBoxMode
+        {
+            get { return _CheckBoxMode; }
+            set
+            {
+                _CheckBoxMode = value;
+                this.OptionsView.ShowCheckBoxes = (value == TreeViewCheckBoxMode.AllNodes || value == TreeViewCheckBoxMode.SpecifyByNode);
+            }
+        }
+        private TreeViewCheckBoxMode _CheckBoxMode;
+        /// <summary>
+        /// Režim kreslení ikon u nodů.
+        /// Výchozí je <see cref="TreeViewImageMode.Image0"/>.
+        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
+        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// a musí plnit jména ikon do <see cref="NodeItemInfo.ImageName0"/> atd.
+        /// </summary>
+        public TreeViewImageMode ImageMode
+        {
+            get { return _ImageMode; }
+            set { _SetImageSetting(_ImageList, value); }
+        }
+        private TreeViewImageMode _ImageMode;
+        /// <summary>
+        /// Knihovna ikon pro nody.
+        /// Výchozí je null.
+        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
+        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// a musí plnit jména ikon do <see cref="NodeItemInfo.ImageName0"/> atd.
+        /// <para/>
+        /// Nepoužívejme přímo SelectImageList ani StateImageList.
+        /// </summary>
+        public ImageList ImageList
+        {
+            get { return _ImageList; }
+            set { _SetImageSetting(value, _ImageMode); }
+        }
+        private ImageList _ImageList;
+        /// <summary>
+        /// Zajistí nastavení režimu pro ikony
+        /// </summary>
+        /// <param name="imageList"></param>
+        /// <param name="imageMode"></param>
+        private void _SetImageSetting(ImageList imageList, TreeViewImageMode imageMode)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action<ImageList, TreeViewImageMode>(_SetImageSetting), imageList, imageMode); return; }
+
+            _ImageList = imageList;
+            _ImageMode = imageMode;
+            switch (imageMode)
+            {
+                case TreeViewImageMode.None:
+                    this.SelectImageList = null;
+                    this.StateImageList = null;
+                    break;
+                case TreeViewImageMode.Image0:
+                    this.SelectImageList = imageList;
+                    this.StateImageList = null;
+                    break;
+                case TreeViewImageMode.Image1:
+                    this.SelectImageList = null;
+                    this.StateImageList = imageList;
+                    break;
+                case TreeViewImageMode.Image01:
+                    this.SelectImageList = imageList;
+                    this.StateImageList = imageList;
+                    break;
+            }
+        }
         /// <summary>
         /// Akce, která zahájí editaci buňky
         /// </summary>
@@ -1698,7 +2227,7 @@ namespace Djs.Tools.CovidGraphs
         public NodeItemInfo[] GetChildNodeInfos(string parentKey)
         {
             if (parentKey == null) return null;
-            return this._NodesStandard.Where(n => n.ParentNodeKey != null && n.ParentNodeKey == parentKey).ToArray();
+            return this._NodesStandard.Where(n => n.ParentNodeId != null && n.ParentNodeId == parentKey).ToArray();
         }
         /// <summary>
         /// Obsahuje kolekci všech nodů, které nejsou IsLazyChild.
@@ -1763,7 +2292,6 @@ namespace Djs.Tools.CovidGraphs
         /// Vyvolá event <see cref="ActivatedEditor"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        /// <param name="editedValue"></param>
         protected virtual void OnActivatedEditor(NodeItemInfo nodeInfo)
         {
             if (ActivatedEditor != null) ActivatedEditor(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.ActivatedEditor));
@@ -1795,6 +2323,18 @@ namespace Djs.Tools.CovidGraphs
             if (NodeEdited != null) NodeEdited(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeEdited, editedValue));
         }
         /// <summary>
+        /// Uživatel změnil stav Checked na prvku.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeCheckedChange;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeCheckedChange"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        protected virtual void OnNodeCheckedChange(NodeItemInfo nodeInfo, bool isChecked)
+        {
+            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, isChecked));
+        }
+        /// <summary>
         /// Uživatel dal Delete na uzlu, který se needituje.
         /// </summary>
         public event DxTreeViewNodeHandler NodeDelete;
@@ -1802,7 +2342,6 @@ namespace Djs.Tools.CovidGraphs
         /// Vyvolá event <see cref="NodeDelete"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        /// <param name="editedValue"></param>
         protected virtual void OnNodeDelete(NodeItemInfo nodeInfo)
         {
             if (NodeDelete != null) NodeDelete(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDelete));
@@ -1821,32 +2360,128 @@ namespace Djs.Tools.CovidGraphs
         }
         #endregion
     }
-    #region Deklarace delegátů a tříd pro eventhandlery
+    #region Deklarace delegátů a tříd pro eventhandlery, další enumy
+    /// <summary>
+    /// Předpis pro eventhandlery
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
     public delegate void DxTreeViewNodeHandler(object sender, DxTreeViewNodeArgs args);
+    /// <summary>
+    /// Argument pro eventhandlery
+    /// </summary>
     public class DxTreeViewNodeArgs : EventArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="action"></param>
+        /// <param name="editedValue"></param>
         public DxTreeViewNodeArgs(NodeItemInfo nodeInfo, TreeViewActionType action, object editedValue = null)
         {
             this.NodeItemInfo = nodeInfo;
             this.Action = action;
             this.EditedValue = editedValue;
         }
+        /// <summary>
+        /// Data o aktuálním nodu
+        /// </summary>
         public NodeItemInfo NodeItemInfo { get; private set; }
+        /// <summary>
+        /// Druh akce
+        /// </summary>
         public TreeViewActionType Action { get; private set; }
+        /// <summary>
+        /// Editovaná hodnota, je vyplněna pouze pro akce <see cref="TreeViewActionType.NodeEdited"/> a <see cref="TreeViewActionType.EditorDoubleClick"/>
+        /// </summary>
         public object EditedValue { get; private set; }
     }
+    /// <summary>
+    /// Akce která proběhla v TreeList
+    /// </summary>
     public enum TreeViewActionType
     {
+        /// <summary>None</summary>
         None,
+        /// <summary>NodeSelected</summary>
         NodeSelected,
+        /// <summary>NodeDoubleClick</summary>
         NodeDoubleClick,
+        /// <summary>NodeExpanded</summary>
         NodeExpanded,
+        /// <summary>NodeCollapsed</summary>
         NodeCollapsed,
+        /// <summary>ActivatedEditor</summary>
         ActivatedEditor,
+        /// <summary>EditorDoubleClick</summary>
         EditorDoubleClick,
+        /// <summary>NodeEdited</summary>
         NodeEdited,
+        /// <summary>NodeDelete</summary>
         NodeDelete,
+        /// <summary>NodeCheckedChange</summary>
+        NodeCheckedChange,
+        /// <summary>LazyLoadChilds</summary>
         LazyLoadChilds
+    }
+    /// <summary>
+    /// Který node se bude focusovat po LazyLoad child nodů?
+    /// </summary>
+    public enum TreeViewLazyLoadFocusNodeType
+    {
+        /// <summary>
+        /// Žádný
+        /// </summary>
+        None,
+        /// <summary>
+        /// Parent node
+        /// </summary>
+        ParentNode,
+        /// <summary>
+        /// První Child node
+        /// </summary>
+        FirstChildNode
+    }
+    /// <summary>
+    /// Jaké ikony bude TreeView zobrazovat - a rezervovat pro ně prostor
+    /// </summary>
+    public enum TreeViewImageMode
+    {
+        /// <summary>
+        /// Žádná ikona
+        /// </summary>
+        None,
+        /// <summary>
+        /// Pouze ikona 0, přebírá se z <see cref="NodeItemInfo.ImageName0"/> a <see cref="NodeItemInfo.ImageName0Selected"/>
+        /// </summary>
+        Image0,
+        /// <summary>
+        /// Pouze ikona 1, přebírá se z <see cref="NodeItemInfo.ImageName1"/>
+        /// </summary>
+        Image1,
+        /// <summary>
+        /// Obě ikony 0 a 1
+        /// </summary>
+        Image01
+    }
+    /// <summary>
+    /// Režim zobrazení CheckBoxů u nodu
+    /// </summary>
+    public enum TreeViewCheckBoxMode
+    {
+        /// <summary>
+        /// Nezobrazovat nikde
+        /// </summary>
+        None,
+        /// <summary>
+        /// Jednotlivě podle hodnoty <see cref="NodeItemInfo.CanCheck"/>
+        /// </summary>
+        SpecifyByNode,
+        /// <summary>
+        /// Automaticky u všech nodů
+        /// </summary>
+        AllNodes
     }
     #endregion
     #region class NodeItemInfo : Data o jednom Node
@@ -1858,8 +2493,8 @@ namespace Djs.Tools.CovidGraphs
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="nodeKey"></param>
-        /// <param name="parentNodeKey"></param>
+        /// <param name="nodeId"></param>
+        /// <param name="parentNodeId"></param>
         /// <param name="text"></param>
         /// <param name="canEdit"></param>
         /// <param name="canDelete"></param>
@@ -1867,20 +2502,21 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="lazyLoadChilds"></param>
         /// <param name="imageName"></param>
         /// <param name="imageNameSelected"></param>
+        /// <param name="imageNameStatic"></param>
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
         /// <param name="fontSizeDelta"></param>
         /// <param name="fontStyleDelta"></param>
         /// <param name="backColor"></param>
         /// <param name="foreColor"></param>
-        public NodeItemInfo(string nodeKey, string parentNodeKey, string text,
+        public NodeItemInfo(string nodeId, string parentNodeId, string text,
             bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyLoadChilds = false,
             string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
             int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null)
         {
             _Id = -1;
-            this.NodeKey = nodeKey;
-            this.ParentNodeKey = parentNodeKey;
+            this.NodeId = nodeId;
+            this.ParentNodeId = parentNodeId;
             this.Text = text;
             this.CanEdit = canEdit;
             this.CanDelete = canDelete;
@@ -1896,25 +2532,29 @@ namespace Djs.Tools.CovidGraphs
             this.BackColor = backColor;
             this.ForeColor = foreColor;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
         }
         /// <summary>
         /// ID nodu v TreeView, pokud není v TreeView pak je -1 . Toto ID je přiděleno v rámci <see cref="DxTreeViewListSimple"/> a po dobu přítomnosti nodu v TreeView se nemění.
-        /// Pokud node bude odstraněn z Treeiew, pak hodnota <see cref="NodeId"/> bude -1, stejně tak jako v době něž bude do TreeView přidán.
+        /// Pokud node bude odstraněn z Treeiew, pak hodnota <see cref="Id"/> bude -1, stejně tak jako v době něž bude do TreeView přidán.
         /// </summary>
-        public int NodeId { get { return _Id; } }
+        public int Id { get { return _Id; } }
         /// <summary>
         /// String klíč nodu, musí být unique přes všechny Nodes!
         /// Po vytvoření nelze změnit.
         /// </summary>
-        public string NodeKey { get; private set; }
+        public string NodeId { get; private set; }
         /// <summary>
         /// Klíč parent uzlu.
         /// Po vytvoření nelze změnit.
         /// </summary>
-        public string ParentNodeKey { get; private set; }
+        public string ParentNodeId { get; private set; }
         /// <summary>
         /// Text uzlu.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
@@ -2053,6 +2693,17 @@ namespace Djs.Tools.CovidGraphs
     /// </summary>
     public class DxSimpleButton : DXE.SimpleButton
     {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -2067,6 +2718,301 @@ namespace Djs.Tools.CovidGraphs
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
+    }
+    #endregion
+    #region DxChartControl
+    /// <summary>
+    /// Přímý potomek <see cref="DevExpress.XtraCharts.ChartControl"/> pro použití v ASOL.Nephrite
+    /// </summary>
+    internal class DxChartControl : DevExpress.XtraCharts.ChartControl
+    {
+        #region Support pro práci s grafem
+        /// <summary>
+        /// XML definice vzhledu grafu (Layout), aktuálně načtený z komponenty
+        /// </summary>
+        public string ChartXmlLayout
+        {
+            get { return GetGuiValue<string>(() => this._GetChartXmlLayout()); }
+            set { SetGuiValue<string>(v => this._SetChartXmlLayout(v), value); }
+        }
+        /// <summary>
+        /// Reference na data zobrazená v grafu
+        /// </summary>
+        public object ChartDataSource
+        {
+            get { return GetGuiValue<object>(() => this._GetChartDataSource()); }
+            set { SetGuiValue<object>(v => this._SetChartDataSource(v), value); }
+        }
+        /// <summary>
+        /// Vloží do grafu layout, a současně data, v jednom kroku
+        /// </summary>
+        /// <param name="xmlLayout">XML definice vzhledu grafu</param>
+        /// <param name="dataSource">Tabulka s daty, zdroj dat grafu</param>
+        public void SetChartXmlLayoutAndDataSource(string xmlLayout, object dataSource)
+        {
+            _ValidChartXmlLayout = xmlLayout;              // Uloží se požadovaný text definující layout
+            _ChartDataSource = dataSource;                 // Uloží se WeakReference
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Zajistí editaci grafu pomocí Wizarda DevExpress
+        /// </summary>
+        public void ShowChartWizard()
+        {
+            if (!IsChartWorking)
+                throw new InvalidOperationException($"V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.");
+
+            bool valid = DxChartDesigner.DesignChart(this, "Upravte graf...", true, false);
+
+            // Wizard pracuje nad naším controlem, veškeré změny ve Wizardu provedené se ihned promítají do našeho grafu.
+            // Pokud uživatel dal OK, chceme změny uložit i do příště,
+            // pokud ale dal Cancel, pak změny chceme zahodit a vracíme se k původnímu layoutu:
+            if (valid)
+            {
+                string newLayout = _GetLayoutFromControl();
+                _ValidChartXmlLayout = newLayout;
+                OnChartXmlLayoutEdited();
+            }
+            else
+            {
+                _RestoreChartXmlLayout();
+            }
+        }
+        protected virtual void OnChartXmlLayoutEdited()
+        {
+            ChartXmlLayoutEdited?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost, kdy uživatel změnil data (vyvoláno metodou <see cref="ShowChartWizard"/>), a v designeru uložil změnu dat.
+        /// V tuto chvíli je již nový layout k dispozici v <see cref="ChartXmlLayout"/>.
+        /// </summary>
+        public event EventHandler ChartXmlLayoutEdited;
+        #endregion
+        #region private práce s layoutem a daty
+        /// <summary>
+        /// Vloží do grafu layout, ponechává data
+        /// </summary>
+        /// <param name="xmlLayout">XML definice vzhledu grafu</param>
+        private void _SetChartXmlLayout(string xmlLayout)
+        {
+            _ValidChartXmlLayout = xmlLayout;              // Uloží se požadovaný text definující layout
+            var dataSource = _ChartDataSource;             // Načteme z WeakReference
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Vrátí XML layout načtený přímo z grafu
+        /// </summary>
+        /// <returns></returns>
+        private string _GetChartXmlLayout()
+        {
+            return _GetLayoutFromControl();
+        }
+        /// <summary>
+        /// Vloží do grafu dříve platný layout (uložený v metodě <see cref="_SetChartXmlLayout(string)"/>), ponechává data.
+        /// </summary>
+        private void _RestoreChartXmlLayout()
+        {
+            var dataSource = _ChartDataSource;             // Tabulka z WeakReference
+            string xmlLayout = _ValidChartXmlLayout;       // Uložený layout
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Vloží do grafu data, ponechává layout (může dojít k chybě)
+        /// </summary>
+        /// <param name="dataSource">Tabulka s daty, zdroj dat grafu</param>
+        private void _SetChartDataSource(object dataSource)
+        {
+            _ChartDataSource = dataSource;                 // Uloží se WeakReference
+            string xmlLayout = _ValidChartXmlLayout;       // Uložený layout
+            _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
+        }
+        /// <summary>
+        /// Vrátí data grafu
+        /// </summary>
+        /// <returns></returns>
+        private object _GetChartDataSource()
+        {
+            return _ChartDataSource;
+        }
+        /// <summary>
+        /// Do grafu korektně vloží data i layout, ve správném pořadí.
+        /// Pozor: tato metoda neukládá dodané objekty do lokálních proměnných <see cref="_ValidChartXmlLayout"/> a <see cref="_ChartDataSource"/>, pouze do controlu grafu!
+        /// </summary>
+        /// <param name="dataSource"></param>
+        /// <param name="xmlLayout"></param>
+        private void _SetChartXmlLayoutAndDataSource(string xmlLayout, object dataSource)
+        {
+            // Tato sekvence je důležitá, jinak dojde ke zbytečným chybám:
+            _SetLayoutToControl("");
+            try
+            {
+                if (!String.IsNullOrEmpty(xmlLayout))
+                    _SetLayoutToControl(xmlLayout);
+            }
+            finally
+            {   // Datový zdroj do this uložím i po chybě, abych mohl i po vložení chybného layoutu otevřít editor:
+                this.DataSource = dataSource;
+            }
+        }
+        /// <summary>
+        /// Fyzicky načte a vrátí Layout z aktuálního grafu
+        /// </summary>
+        /// <returns></returns>
+        private string _GetLayoutFromControl()
+        {
+            string layout = null;
+            if (IsChartValid)
+            {
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                {
+                    this.SaveToStream(ms);
+                    layout = Encoding.UTF8.GetString(ms.GetBuffer());
+                }
+            }
+            return layout;
+        }
+        /// <summary>
+        /// Vloží daný string jako Layout do grafu. 
+        /// Neřeší try catch, to má řešit volající včetně ošetření chyby.
+        /// POZOR: tato metoda odpojí datový zdroj, proto je třeba po jejím skončení znovu vložit zdroj do _ChartControl.DataSource !
+        /// </summary>
+        /// <param name="layout"></param>
+        private void _SetLayoutToControl(string layout)
+        {
+            if (IsChartValid)
+            {
+                byte[] buffer = (!String.IsNullOrEmpty(layout) ? Encoding.UTF8.GetBytes(layout) : new byte[0]);
+                if (buffer.Length > 0)
+                {
+                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream(buffer))
+                        this.LoadFromStream(ms);     // Pozor, zahodí data !!!
+                }
+                else
+                {
+                    this.Series.Clear();
+                    this.Legends.Clear();
+                    this.Titles.Clear();
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud graf je platný (není null a není Disposed) 
+        /// </summary>
+        public bool IsChartValid { get { return (!this.IsDisposed); } }
+        /// <summary>
+        /// Obsahuje true, pokud graf je platný (není null a není Disposed) a obsahuje data (má datový zdroj)
+        /// </summary>
+        public bool IsChartWorking { get { return (IsChartValid && this.DataSource != null); } }
+        /// <summary>
+        /// Offline uložený layout grafu, který byl setovaný zvenku; používá se při refreshi dat pro nové vložení stávajícího layoutu do grafu. 
+        /// Při public čtení layoutu se nevrací tento string, ale fyzicky se načte aktuálně použitý layout z grafu.
+        /// </summary>
+        private string _ValidChartXmlLayout;
+        /// <summary>
+        /// Reference na tabulku s daty grafu, nebo null
+        /// </summary>
+        private object _ChartDataSource
+        {
+            get
+            {
+                var wr = _ChartDataSourceWR;
+                return ((wr != null && wr.TryGetTarget(out var table)) ? table : null);
+            }
+            set
+            {
+                _ChartDataSourceWR = ((value != null) ? new WeakReference<object>(value) : null);
+            }
+        }
+        /// <summary>
+        /// WeakReference na tabulku s daty grafu
+        /// </summary>
+        private WeakReference<object> _ChartDataSourceWR;
+        #endregion
+        #region ASOL standardní rozšíření
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+        #region Invoke to GUI: run, get, set
+        /// <summary>
+        /// Metoda provede danou akci v GUI threadu
+        /// </summary>
+        /// <param name="action"></param>
+        protected void RunInGui(Action action)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(action);
+            else
+                action();
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu z GUI prvku, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        protected T GetGuiValue<T>(Func<T> reader)
+        {
+            if (this.InvokeRequired)
+                return (T)this.Invoke(reader);
+            else
+                return reader();
+        }
+        /// <summary>
+        /// Metoda vloží do GUI prvku danou hodnotu, zajistí si invokaci GUI threadu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="writer"></param>
+        /// <param name="value"></param>
+        protected void SetGuiValue<T>(Action<T> writer, T value)
+        {
+            if (this.InvokeRequired)
+                this.Invoke(writer, value);
+            else
+                writer(value);
+        }
+        #endregion
+    }
+    #endregion
+    #region DxChartDesigner
+    /// <summary>
+    /// Přímý potomek <see cref="DevExpress.XtraCharts.Designer.ChartDesigner"/> pro editaci definice grafu
+    /// </summary>
+    internal class DxChartDesigner : DevExpress.XtraCharts.Designer.ChartDesigner
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="chart"></param>
+        public DxChartDesigner(object chart) : base(chart) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <param name="designerHost"></param>
+        public DxChartDesigner(object chart, System.ComponentModel.Design.IDesignerHost designerHost) : base(chart, designerHost) { }
+        /// <summary>
+        /// Zobrazí designer pro daný graf, a vrátí true = OK
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <param name="caption"></param>
+        /// <param name="showActualData"></param>
+        /// <param name="topMost"></param>
+        /// <returns></returns>
+        public static bool DesignChart(object chart, string caption, bool showActualData, bool topMost)
+        {
+            DxChartDesigner chartDesigner = new DxChartDesigner(chart);
+            chartDesigner.Caption = caption;
+            chartDesigner.ShowActualData = showActualData;
+            var result = chartDesigner.ShowDialog(topMost);
+            return (result == DialogResult.OK);
+        }
     }
     #endregion
     #region DxRibbon
@@ -2143,7 +3089,7 @@ namespace Djs.Tools.CovidGraphs
 
             Rectangle clientBounds = this.ClientRectangle;
             int cr = clientBounds.Right - 6;
-            if (r < cr) r = cr; 
+            if (r < cr) r = cr;
             return Rectangle.FromLTRB(l, t, r, b);
         }
         #endregion

@@ -143,7 +143,7 @@ namespace Djs.Tools.CovidGraphs
         }
         private void _LoadChildNodesFromServerBgr(DxTreeViewNodeArgs args)
         {
-            string parentKey = args.NodeItemInfo.NodeKey;
+            string parentKey = args.NodeItemInfo.NodeId;
             _AddLogLine($"Načítám data pro node '{parentKey}'...");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
@@ -170,8 +170,8 @@ namespace Djs.Tools.CovidGraphs
         private void _TreeNodeEditedBgr(DxTreeViewNodeArgs args)
         {
             var nodeInfo = args.NodeItemInfo;
-            string nodeKey = nodeInfo.NodeKey;
-            string parentKey = nodeInfo.ParentNodeKey;
+            string nodeKey = nodeInfo.NodeId;
+            string parentKey = nodeInfo.ParentNodeId;
             string oldValue = nodeInfo.Text;
             string newValue = (args.EditedValue is string text ? text : "");
             _AddLogLine($"Změna textu pro node '{nodeKey}': '{oldValue}' => '{newValue}'");
@@ -187,15 +187,15 @@ namespace Djs.Tools.CovidGraphs
             {   // Insert node:
                 _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
                 {   // V jednom vizuálním zámku:
-                    _TreeList.RemoveNode(node.NodeKey);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
+                    _TreeList.RemoveNode(node.NodeId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeKey, false);
+                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, false);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode);
 
                     // Přidám Blank node, ten bude opět na konci Childs:
-                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeKey, true);
+                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeId, true);
                     _TreeList.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
@@ -216,7 +216,7 @@ namespace Djs.Tools.CovidGraphs
         }
         private void _TreeNodeDeleteBgr(DxTreeViewNodeArgs args)
         {
-            string nodeKey = args.NodeItemInfo.NodeKey;
+            string nodeKey = args.NodeItemInfo.NodeId;
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 

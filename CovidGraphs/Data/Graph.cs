@@ -1004,7 +1004,7 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             get
             {
-                string settings = @"    <CrosshairOptions ShowValueLabels='true' CrosshairLabelMode='ShowForNearestSeries' ShowArgumentLine='false' ShowValueLine='true' ArgumentLineColor='222, 57, 205' ValueLineColor='222, 57, 205' GroupHeaderPattern='{A:d. MMMM yyyy}, {TV}' ShowOutOfRangePoints='false' ValueSelectionMode='ValueRange' ContentShowMode='Label' LinesMode='Auto'>
+                string settings = @"    <CrosshairOptions ShowValueLabels='true' CrosshairLabelMode='ShowForNearestSeries' ShowArgumentLine='false' ShowValueLine='true' ArgumentLineColor='222, 57, 205' ValueLineColor='222, 57, 205' GroupHeaderPattern='{A:dddd d. MMMM yyyy}, {TV}' ShowOutOfRangePoints='false' ValueSelectionMode='ValueRange' ContentShowMode='Label' LinesMode='Auto'>
       <ArgumentLineStyle DashStyle='Dot' />
       <ValueLineStyle DashStyle='Dot' />
     </CrosshairOptions>

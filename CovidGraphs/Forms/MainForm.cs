@@ -88,7 +88,10 @@ namespace Djs.Tools.CovidGraphs
 
             DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged += DevExpress_StyleChanged;
 
-            Data.Localization.Enabled = true;
+
+            Data.DxLocalizator.RegisterLocalizingStrings = true;
+            Data.DxLocalizator.HighlightNonTranslated = true;
+            Data.DxLocalizator.Enabled = true;
         }
         /// <summary>
         /// Po změně SKinu uživatelem se uloží do konfigurace
