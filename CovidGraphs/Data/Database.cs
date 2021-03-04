@@ -116,6 +116,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case FileContentType.CovidObce1:
                 case FileContentType.CovidObce2:
+                case FileContentType.CovidObce3:
                     _CovidInfo = null;
                     _World.Clear(FileContentType.Data);
                     _DataContentTime = null;
@@ -167,6 +168,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case FileContentType.CovidObce1:
                 case FileContentType.CovidObce2:
+                case FileContentType.CovidObce3:
                     isData = true;
                     _CovidInfo = processInfo;
                     break;
@@ -334,7 +336,7 @@ namespace Djs.Tools.CovidGraphs.Data
         {
             if (String.IsNullOrEmpty(file)) throw new ArgumentException($"Database.Import() : není zadán vstupní soubor.");
             if (!IO.File.Exists(file)) throw new ArgumentException($"Database.Import() : zadaný vstupní soubor {file} neexistuje.");
-            ProcessFileInfo loadInfo = new ProcessFileInfo(file);
+            ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.LocalFile, file);
             loadInfo.ProgressAction = progress;
             using (var stream = new DZipFileReader(file, CompressMode.ByContent))
             {
@@ -361,7 +363,7 @@ namespace Djs.Tools.CovidGraphs.Data
         private void _LoadContent(byte[] content, Action<ProgressArgs> progress = null)
         {
             if (content == null || content.Length == 0) throw new ArgumentException($"Database.Load() : není zadán vstupní obsah dat.");
-            ProcessFileInfo loadInfo = new ProcessFileInfo("Content");
+            ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.BinaryContent, "Content");
             loadInfo.ProgressAction = progress;
             using (var stream = new DZipFileReader(content))
             {
@@ -404,49 +406,72 @@ namespace Djs.Tools.CovidGraphs.Data
             switch (processInfo.ProcessState)
             {
                 case ProcessFileState.Open:
-                    if (line.StartsWith(StructureHeaderExpected, StringComparison.CurrentCultureIgnoreCase))
-                        processInfo.ContentType = FileContentType.Structure;
-                    else if (line.StartsWith(DataHeaderExpected, StringComparison.CurrentCultureIgnoreCase))
-                        processInfo.ContentType = FileContentType.Data;
-                    else if(line.StartsWith(DataPackHeaderExpected, StringComparison.CurrentCultureIgnoreCase))
-                        processInfo.ContentType = FileContentType.DataPack;
-                    else if (String.Equals(line, Covid1HeaderExpected, StringComparison.CurrentCultureIgnoreCase))
-                        processInfo.ContentType = FileContentType.CovidObce1;
-                    else if (String.Equals(line, Covid2HeaderExpected, StringComparison.CurrentCultureIgnoreCase))
-                        processInfo.ContentType = FileContentType.CovidObce2;
-                    else if (String.Equals(line, PocetHeaderExpected, StringComparison.CurrentCultureIgnoreCase))
-                        processInfo.ContentType = FileContentType.PocetObyvatel;
-                    else
-                        throw new FormatException($"Database.Load() : zadaný vstupní soubor {processInfo.FileName} nemá odpovídající záhlaví (úvodní řádek).");
+                    processInfo.ContentType = _LoadDetectContentTypeByHeader(line, processInfo);
                     this._CheckDataContent(processInfo);
                     processInfo.ProcessState = ProcessFileState.Loading;
                     this.ClearData(processInfo.ContentType);
                     break;
 
                 case ProcessFileState.Loading:
-                    switch (processInfo.ContentType)
-                    {
-                        case FileContentType.Structure:
-                            _LoadLineStructure(processInfo, line);
-                            break;
-                        case FileContentType.Data:
-                            _LoadLineData(processInfo, line);
-                            break;
-                        case FileContentType.DataPack:
-                            _LoadLineDataPack(processInfo, line);
-                            break;
-                        case FileContentType.CovidObce1:
-                            _LoadLineCovid1(processInfo, line);
-                            break;
-                        case FileContentType.CovidObce2:
-                            _LoadLineCovid2(processInfo, line);
-                            break;
-                        case FileContentType.PocetObyvatel:
-                            _LoadLinePocet(processInfo, line);
-                            break;
-                    }
+                    this._LoadContentByType(line, processInfo);
                     break;
             }
+        }
+        /// <summary>
+        /// Najde a vrátí fullname souboru na některém z adresářů, nejnovější.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="path1"></param>
+        /// <param name="path2"></param>
+        /// <returns></returns>
+        private string SearchFile(string fileName, string path1, string path2)
+        {
+            string fileNamePack = IO.Path.ChangeExtension(fileName, StandardPackExtension);
+
+            // Přednost má nejnovější existující soubor, ze souborů v prvním nebo v druhém adresáři, otevřený nebo zipovaný formát:
+            IO.FileInfo file = null;
+            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path1, fileName)));
+            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path1, fileNamePack)));
+            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path2, fileName)));
+            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path2, fileNamePack)));
+
+            return file?.FullName;
+        }
+        /// <summary>
+        /// Vrátí lepší soubor z daných dvou (=existující a novější)
+        /// </summary>
+        /// <param name="fileA"></param>
+        /// <param name="fileB"></param>
+        /// <returns></returns>
+        private IO.FileInfo SearchBestFile(IO.FileInfo fileA, IO.FileInfo fileB)
+        {
+            bool existsA = (fileA != null && fileA.Exists);
+            bool existsB = (fileB != null && fileB.Exists);
+            if (!existsA && !existsB) return null;
+            if (existsA && !existsB) return fileA;
+            if (!existsA && existsB) return fileB;
+            return (fileA.LastWriteTimeUtc >= fileB.LastWriteTimeUtc ? fileA : fileB);
+        }
+        #endregion
+        #region Autodetekce a načítání datových souborů různých typů
+        /// <summary>
+        /// Podle titulkového řádku rozpozná obsah souboru
+        /// </summary>
+        /// <param name="header"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        private FileContentType _LoadDetectContentTypeByHeader(string header, ProcessFileInfo processInfo)
+        {
+            if (header.StartsWith(StructureHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Structure;
+            if (header.StartsWith(DataHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Data;
+            if (header.StartsWith(DataPackHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.DataPack;
+            if (String.Equals(header, Covid1HeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.CovidObce1;
+            if (String.Equals(header, Covid2HeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.CovidObce2;
+            if (String.Equals(header, Covid3HeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.CovidObce3;
+            if (String.Equals(header, PocetHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.PocetObyvatel;
+
+            string name = IO.Path.GetFileName(processInfo.FileName);
+            throw new FormatException($"Database.Load() : zadaný vstupní soubor {name} nemá odpovídající záhlaví (úvodní řádek).");
         }
         /// <summary>
         /// Metoda prověří stav databáze před načítáním obsahu daného souboru
@@ -457,10 +482,43 @@ namespace Djs.Tools.CovidGraphs.Data
             switch (processInfo.ContentType)
             {
                 case FileContentType.CovidObce2:
+                case FileContentType.CovidObce3:
                     if (this._Vesnice == null || this._Vesnice.Count == 0)
                     {
-                        throw new InvalidOperationException($"Nelze načítat data typu {FileContentType.CovidObce2} do databáze, která nemá načtenou strukturu obcí.");
+                        throw new InvalidOperationException($"Nelze načítat data typu {processInfo.ContentType} do databáze, která nemá načtenou strukturu obcí.");
                     }
+                    break;
+            }
+        }
+        /// <summary>
+        /// Načte řádek s daty, druh dat je již detekován
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="processInfo"></param>
+        private void _LoadContentByType(string line, ProcessFileInfo processInfo)
+        {
+            switch (processInfo.ContentType)
+            {
+                case FileContentType.Structure:
+                    _LoadLineStructure(processInfo, line);
+                    break;
+                case FileContentType.Data:
+                    _LoadLineData(processInfo, line);
+                    break;
+                case FileContentType.DataPack:
+                    _LoadLineDataPack(processInfo, line);
+                    break;
+                case FileContentType.CovidObce1:
+                    _LoadLineCovid1(processInfo, line);
+                    break;
+                case FileContentType.CovidObce2:
+                    _LoadLineCovid2(processInfo, line);
+                    break;
+                case FileContentType.CovidObce3:
+                    _LoadLineCovid3(processInfo, line);
+                    break;
+                case FileContentType.PocetObyvatel:
+                    _LoadLinePocet(processInfo, line);
                     break;
             }
         }
@@ -501,7 +559,7 @@ namespace Djs.Tools.CovidGraphs.Data
                         int infoCurrentCount = GetInt32(items[3]);
                         int infoKey = infoDate.GetDateKey();
                         currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                        bool hasValidData = (infoNewCount != 0);
+                        bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
                         _RegisterMaxContentTime(infoDate, hasValidData);
                     }
                     break;
@@ -565,26 +623,12 @@ namespace Djs.Tools.CovidGraphs.Data
                     int infoCurrentCount = GetInt32(items[3]);
                     int infoKey = infoDate.GetDateKey();
                     currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                    bool hasValidData = (infoNewCount != 0);
+                    bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
                     _RegisterMaxContentTime(infoDate, hasValidData);
                     break;
             }
 
             loadInfo.RecordCount += 1;
-        }
-        /// <summary>
-        /// Metoda v případě potřeby vytvoří new instanci <see cref="ProcessFileCurrentInfo"/> do <see cref="ProcessFileInfo.CurrentInfo"/>, a vrátí ji.
-        /// </summary>
-        /// <param name="loadInfo"></param>
-        /// <returns></returns>
-        private ProcessFileCurrentInfo _LoadGetCurrentInfo(ProcessFileInfo loadInfo)
-        {
-            if (loadInfo.CurrentInfo == null)
-            {   // Výchozí pozice je vždy nastavena na náš World:
-                loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
-                loadInfo.CurrentInfo.World = _World;
-            }
-            return loadInfo.CurrentInfo;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce1"/>
@@ -614,7 +658,7 @@ namespace Djs.Tools.CovidGraphs.Data
             int currentCount = GetInt32(items[13]);
             int key = infoDate.GetDateKey();
             DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
-            bool hasValidData = (newCount != 0);
+            bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
             _RegisterMaxContentTime(infoDate, hasValidData);
 
             loadInfo.RecordCount += 1;
@@ -626,7 +670,27 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="line"></param>
         private void _LoadLineCovid2(ProcessFileInfo loadInfo, string line)
         {
-            // Verze 2 obsahuje 4 úrovně: Kraj - Okres - Město - Obec - Vesnice
+            _LoadLineCovid23(loadInfo, line, Covid2ItemCountExpected);
+        }
+        /// <summary>
+        /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce3"/>
+        /// </summary>
+        /// <param name="loadInfo"></param>
+        /// <param name="line"></param>
+        private void _LoadLineCovid3(ProcessFileInfo loadInfo, string line)
+        {
+            // Verze 3 obsahuje totéž co verze 2, pouze má navíc sloupce: ",nove_pripady_65,nove_pripady_7_dni,nove_pripade_14_dni"
+            // Zatím je nenačítám, takže použiju načítadlo společné pro verzi 2 a 3:
+            _LoadLineCovid23(loadInfo, line, Covid3ItemCountExpected);
+        }
+        /// <summary>
+        /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce2"/> nebo <see cref="FileContentType.CovidObce3"/>
+        /// </summary>
+        /// <param name="loadInfo"></param>
+        /// <param name="line"></param>
+        private void _LoadLineCovid23(ProcessFileInfo loadInfo, string line, int itemCountExpected)
+        {
+            // Verze 2 i 3 obsahuje 4 úrovně: Kraj - Okres - Město - Obec - Vesnice
             // Příklad řádku se všemi úrovněmi pro verzi 1:
             // neděle;2020-03-01;CZ053;Pardubický kraj;CZ0531;Chrudim;5304;Chrudim;53043;Chrudim;571164;Chrudim;0;0
             // Tentýž řádek ve verzi 2:
@@ -637,7 +701,7 @@ namespace Djs.Tools.CovidGraphs.Data
             // a zde budeme načítat pouze kód Vesnice, tu dohledáme v indexu, a do ní vepíšeme data Info:
             line = line.Replace("\"", "");
             string[] items = line.Split(',');
-            if (items.Length != Covid2ItemCountExpected) return;
+            if (items.Length != itemCountExpected) return;
 
             string vesniceKod = items[8];        // 571164
             if (!this._Vesnice.TryGetValue(vesniceKod, out EntityInfo vesnice))
@@ -653,7 +717,7 @@ namespace Djs.Tools.CovidGraphs.Data
             int currentCount = GetInt32(items[11]);
             int key = infoDate.GetDateKey();
             DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
-            bool hasValidData = (newCount != 0);
+            bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
             _RegisterMaxContentTime(infoDate, hasValidData);
 
             loadInfo.RecordCount += 1;
@@ -695,39 +759,18 @@ namespace Djs.Tools.CovidGraphs.Data
             loadInfo.RecordCount += 1;
         }
         /// <summary>
-        /// Najde a vrátí fullname souboru na některém z adresářů, nejnovější.
+        /// Metoda v případě potřeby vytvoří new instanci <see cref="ProcessFileCurrentInfo"/> do <see cref="ProcessFileInfo.CurrentInfo"/>, a vrátí ji.
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="path1"></param>
-        /// <param name="path2"></param>
+        /// <param name="loadInfo"></param>
         /// <returns></returns>
-        private string SearchFile(string fileName, string path1, string path2)
+        private ProcessFileCurrentInfo _LoadGetCurrentInfo(ProcessFileInfo loadInfo)
         {
-            string fileNamePack = IO.Path.ChangeExtension(fileName, StandardPackExtension);
-
-            // Přednost má nejnovější existující soubor, ze souborů v prvním nebo v druhém adresáři, otevřený nebo zipovaný formát:
-            IO.FileInfo file = null;
-            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path1, fileName)));
-            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path1, fileNamePack)));
-            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path2, fileName)));
-            file = SearchBestFile(file, new IO.FileInfo(IO.Path.Combine(path2, fileNamePack)));
-
-            return file?.FullName;
-        }
-        /// <summary>
-        /// Vrátí lepší soubor z daných dvou (=existující a novější)
-        /// </summary>
-        /// <param name="fileA"></param>
-        /// <param name="fileB"></param>
-        /// <returns></returns>
-        private IO.FileInfo SearchBestFile(IO.FileInfo fileA, IO.FileInfo fileB)
-        {
-            bool existsA = (fileA != null && fileA.Exists);
-            bool existsB = (fileB != null && fileB.Exists);
-            if (!existsA && !existsB) return null;
-            if (existsA && !existsB) return fileA;
-            if (!existsA && existsB) return fileB;
-            return (fileA.LastWriteTimeUtc >= fileB.LastWriteTimeUtc ? fileA : fileB);
+            if (loadInfo.CurrentInfo == null)
+            {   // Výchozí pozice je vždy nastavena na náš World:
+                loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
+                loadInfo.CurrentInfo.World = _World;
+            }
+            return loadInfo.CurrentInfo;
         }
         #endregion
         #region WebUpdate : aktualizace dat z internetu
@@ -762,9 +805,9 @@ namespace Djs.Tools.CovidGraphs.Data
         private void _WebUpdateAsync(Action<ProgressArgs> progress = null)
         {
             string url = StandardWebObce2UpdateUrl;
-            ProcessFileInfo updateInfo = new ProcessFileInfo(url);
+            ProcessFileInfo updateInfo = new ProcessFileInfo(DataMediumType.WebUrl, url);
             updateInfo.ProgressAction = progress;
-            updateInfo.ContentType = FileContentType.CovidObce2;
+            updateInfo.ContentType = FileContentType.CovidObce3;
             updateInfo.ProcessState = ProcessFileState.WebDownloading;
 
             State = StateType.Downloading;
@@ -922,7 +965,7 @@ namespace Djs.Tools.CovidGraphs.Data
             lock (this.InterLock)
             {
                 State = StateType.SavingFile;
-                ProcessFileInfo saveInfo = new ProcessFileInfo(file);
+                ProcessFileInfo saveInfo = new ProcessFileInfo(DataMediumType.LocalFile, file);
                 saveInfo.ProgressAction = args.Progress;
                 saveInfo.ContentType = contentType;
                 saveInfo.ProcessState = ProcessFileState.Saving;
@@ -1144,6 +1187,8 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const int Covid1ItemCountExpected = 14;
         protected const string Covid2HeaderExpected = "den,datum,kraj_nuts_kod,kraj_nazev,okres_lau_kod,okres_nazev,orp_kod,orp_nazev,obec_kod,obec_nazev,nove_pripady,aktivni_pripady";
         protected const int Covid2ItemCountExpected = 12;
+        protected const string Covid3HeaderExpected = "den,datum,kraj_nuts_kod,kraj_nazev,okres_lau_kod,okres_nazev,orp_kod,orp_nazev,obec_kod,obec_nazev,nove_pripady,aktivni_pripady,nove_pripady_65,nove_pripady_7_dni,nove_pripade_14_dni";
+        protected const int Covid3ItemCountExpected = 15;
         protected const string PocetHeaderExpected = ";kraj;mesto;kod_obce;nazev_obce;muzi;muzi15;zeny;zeny15;celkem;celkem15";
         protected const int PocetItemCountExpected = 11;
         protected const string VoidEntityCode = "0";
@@ -3264,8 +3309,9 @@ namespace Djs.Tools.CovidGraphs.Data
     }
     public class ProcessFileInfo
     {
-        public ProcessFileInfo(string fileName)
+        public ProcessFileInfo(DataMediumType medium, string fileName)
         {
+            Medium = medium;
             FileName = fileName;
             ContentType = FileContentType.None;
             StartTime = DateTime.Now;
@@ -3276,7 +3322,7 @@ namespace Djs.Tools.CovidGraphs.Data
             Position = 0L;
             RecordCount = 0;
         }
-
+        public DataMediumType Medium { get; set; }
         public string FileName { get; set; }
         public Action<ProgressArgs> ProgressAction { get; set; }
         public FileContentType ContentType { get; set; }
@@ -3298,10 +3344,38 @@ namespace Djs.Tools.CovidGraphs.Data
                 switch (this.ProcessState)
                 {
                     case ProcessFileState.Loading:
-                        description = "Načítám soubor, obsahující ";
+                        switch (this.Medium)
+                        {
+                            case DataMediumType.LocalFile:
+                                description = "Načítám soubor, obsahující ";
+                                break;
+                            case DataMediumType.BinaryContent:
+                                description = "Zpracovávám data, obsahující ";
+                                break;
+                            case DataMediumType.WebUrl:
+                                description = "Stahuji soubor, obsahující ";
+                                break;
+                            default:
+                                description = "Zpracovávám data, obsahující ";
+                                break;
+                        }
                         break;
                     case ProcessFileState.Loaded:
-                        description = "Načten soubor, obsahující ";
+                        switch (this.Medium)
+                        {
+                            case DataMediumType.LocalFile:
+                                description = "Načten soubor, obsahující ";
+                                break;
+                            case DataMediumType.BinaryContent:
+                                description = "Zpracována data, obsahující ";
+                                break;
+                            case DataMediumType.WebUrl:
+                                description = "Stahužen soubor, obsahující ";
+                                break;
+                            default:
+                                description = "Zpracována data, obsahující ";
+                                break;
+                        }
                         break;
                     case ProcessFileState.Saving:
                         description = "Ukládám soubor, obsahující ";
@@ -3336,6 +3410,9 @@ namespace Djs.Tools.CovidGraphs.Data
                     case FileContentType.CovidObce2:
                         description += "veřejná data verze 2 ";
                         break;
+                    case FileContentType.CovidObce3:
+                        description += "veřejná data verze 3 ";
+                        break;
                     case FileContentType.PocetObyvatel:
                         description += "počty obyvatel ";
                         break;
@@ -3346,6 +3423,16 @@ namespace Djs.Tools.CovidGraphs.Data
                 return description.Trim();
             }
         }
+    }
+    /// <summary>
+    /// Zdrojové médium s daty
+    /// </summary>
+    public enum DataMediumType
+    {
+        None,
+        BinaryContent,
+        LocalFile,
+        WebUrl
     }
     public class ProcessFileCurrentInfo
     {
@@ -3385,7 +3472,7 @@ namespace Djs.Tools.CovidGraphs.Data
             get
             {
                 var contentType = this.ContentType;
-                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2);
+                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2 || contentType == FileContentType.CovidObce3);
             }
         }
     }
@@ -3415,7 +3502,8 @@ namespace Djs.Tools.CovidGraphs.Data
         DataPack,
         PocetObyvatel,
         CovidObce1,
-        CovidObce2
+        CovidObce2,
+        CovidObce3
     }
     #endregion
     #region DataVisualInfo
