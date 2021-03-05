@@ -858,7 +858,20 @@ namespace Djs.Tools.CovidGraphs.Data
 
             // Zdejší metoda běží v Main threadu (to je dané WebClientem), ale my chceme zpracování dat provést v Background threadu, kvůli GUI:
             var content = e.Result;
-            ThreadManager.AddAction(() => _WebUpdateCompletedProcessData(content, updateInfo));
+            if (this._IsValidDownloadData(content, updateInfo))
+                ThreadManager.AddAction(() => _WebUpdateCompletedProcessData(content, updateInfo));
+        }
+        private bool _IsValidDownloadData(byte[] content, ProcessFileInfo updateInfo)
+        {
+            string message = null;
+            if (content.Length < 1000000)
+                message = "Pozor, data získaná z internetu nejsou platná, jsou příliš malá.";
+            else if (updateInfo.ContentType == FileContentType.CovidObce3 && content.Length < 10000000)
+                message = "Pozor, data získaná z internetu nejsou platná, na očekávaná data 'CovidObce3' jsou příliš malá.";
+
+            if (message == null) return true;
+            App.ShowError(message);
+            return false;
         }
         private void _WebUpdateCompletedProcessData(byte[] content, ProcessFileInfo updateInfo)
         {
