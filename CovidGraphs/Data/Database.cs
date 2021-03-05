@@ -555,7 +555,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     if (currentInfo.Vesnice != null)
                     {
                         DateTime infoDate = GetDate(items[1]);
-                        if (IsValidDate(infoDate))
+                        if (IsValidDate(infoDate, loadInfo))
                         {
                             int infoNewCount = GetInt32(items[2]);
                             int infoCurrentCount = GetInt32(items[3]);
@@ -622,7 +622,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case HeaderInfo:
                     DateTime infoDate = GetDate(items[1]);
-                    if (IsValidDate(infoDate))
+                    if (IsValidDate(infoDate, loadInfo))
                     {
                         int infoNewCount = GetInt32(items[2]);
                         int infoCurrentCount = GetInt32(items[3]);
@@ -660,7 +660,7 @@ namespace Djs.Tools.CovidGraphs.Data
             this._Vesnice.AddIfNotContains(items[10], vesnice);
 
             DateTime infoDate = GetDate(items[1]);
-            if (IsValidDate(infoDate))
+            if (IsValidDate(infoDate, loadInfo))
             {
                 int newCount = GetInt32(items[12]);
                 int currentCount = GetInt32(items[13]);
@@ -722,7 +722,7 @@ namespace Djs.Tools.CovidGraphs.Data
             }
 
             DateTime infoDate = GetDate(items[1]);
-            if (IsValidDate(infoDate))
+            if (IsValidDate(infoDate, loadInfo))
             {
                 int newCount = GetInt32(items[10]);
                 int currentCount = GetInt32(items[11]);
@@ -1275,7 +1275,7 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const int Covid1ItemCountExpected = 14;
         protected const string Covid2HeaderExpected = "den,datum,kraj_nuts_kod,kraj_nazev,okres_lau_kod,okres_nazev,orp_kod,orp_nazev,obec_kod,obec_nazev,nove_pripady,aktivni_pripady";
         protected const int Covid2ItemCountExpected = 12;
-        protected const string Covid3HeaderExpected = "den,datum,kraj_nuts_kod,kraj_nazev,okres_lau_kod,okres_nazev,orp_kod,orp_nazev,obec_kod,obec_nazev,nove_pripady,aktivni_pripady,nove_pripady_65,nove_pripady_7_dni,nove_pripade_14_dni";
+        protected const string Covid3HeaderExpected = "den,datum,kraj_nuts_kod,kraj_nazev,okres_lau_kod,okres_nazev,orp_kod,orp_nazev,obec_kod,obec_nazev,nove_pripady,aktivni_pripady,nove_pripady_65,nove_pripady_7_dni,nove_pripady_14_dni";
         protected const int Covid3ItemCountExpected = 15;
         protected const string PocetHeaderExpected = ";kraj;mesto;kod_obce;nazev_obce;muzi;muzi15;zeny;zeny15;celkem;celkem15";
         protected const int PocetItemCountExpected = 11;
@@ -1822,13 +1822,14 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="daysCount">Počet dní započítaných</param>
         private void ProcessResultAggrLastAnyDaySum(SearchInfoArgs args, int daysBefore, int daysCount)
         {
+            DateTime currentDate = DateTime.Now.Date;
             var data = args.ResultDict;
             int[] keys = data.Keys.ToArray();
             foreach (int key in keys)
             {
                 var result = data[key];
                 result.TempValue = 0m;
-                if (IsValidDate(result.Date))
+                if (IsValidDate(result.Date, currentDate))
                 {
                     DateTime date = result.Date.AddDays(daysBefore);     // První datum pro sumu do dne 18.1.2021 (pondělí) je minulé úterý 12.1.2021
                     DateTime end = date.AddDays(daysCount);              // End je datum, které se už počítat nebude = 12.1. + 7 = 19.1.2021
@@ -1999,8 +2000,21 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="dateTime"></param>
         /// <returns></returns>
-        private static bool IsValidDate(DateTime dateTime)
+        private static bool IsValidDate(DateTime dateTime, ProcessFileInfo processFileInfo) //DateTime currentDate
         {
+            return IsValidDate(dateTime, processFileInfo.CurrentDate);
+        }
+        /// <summary>
+        /// Vrátí true pokud dané datum je platné, tj. obsahuje rok 2000 - 2050
+        /// </summary>
+        /// <param name="dateTime"></param>
+        /// <returns></returns>
+        private static bool IsValidDate(DateTime dateTime, DateTime currentDate)
+        {
+            // Časová platnost:
+            if (dateTime >= currentDate) return false;
+
+            // Formální platnost:
             int year = dateTime.Year;
             return (year >= 2000 || year <= 2050);
         }
@@ -3413,10 +3427,12 @@ namespace Djs.Tools.CovidGraphs.Data
     {
         public ProcessFileInfo(DataMediumType medium, string fileName)
         {
+            DateTime now = DateTime.Now;
             Medium = medium;
             FileName = fileName;
             ContentType = FileContentType.None;
-            StartTime = DateTime.Now;
+            CurrentDate = now.Date;
+            StartTime = now;
             LastProgressTime = DateTime.MinValue;
             DoneTime = DateTime.MinValue;
             Length = 0L;
@@ -3426,6 +3442,10 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         public DataMediumType Medium { get; set; }
         public string FileName { get; set; }
+        /// <summary>
+        /// Dnešní datum bez času. Načítaná data musí mít datum menší, protože dnešní data nejsou kompletní a nebudeme s nimi pracovat.
+        /// </summary>
+        public DateTime CurrentDate { get; private set; }
         public Action<ProgressArgs> ProgressAction { get; set; }
         public FileContentType ContentType { get; set; }
         public DateTime StartTime { get; set; }
