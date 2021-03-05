@@ -555,12 +555,15 @@ namespace Djs.Tools.CovidGraphs.Data
                     if (currentInfo.Vesnice != null)
                     {
                         DateTime infoDate = GetDate(items[1]);
-                        int infoNewCount = GetInt32(items[2]);
-                        int infoCurrentCount = GetInt32(items[3]);
-                        int infoKey = infoDate.GetDateKey();
-                        currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                        bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
-                        _RegisterMaxContentTime(infoDate, hasValidData);
+                        if (IsValidDate(infoDate))
+                        {
+                            int infoNewCount = GetInt32(items[2]);
+                            int infoCurrentCount = GetInt32(items[3]);
+                            int infoKey = infoDate.GetDateKey();
+                            currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
+                            bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
+                            _RegisterMaxContentTime(infoDate, hasValidData);
+                        }
                     }
                     break;
             }
@@ -619,12 +622,15 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case HeaderInfo:
                     DateTime infoDate = GetDate(items[1]);
-                    int infoNewCount = GetInt32(items[2]);
-                    int infoCurrentCount = GetInt32(items[3]);
-                    int infoKey = infoDate.GetDateKey();
-                    currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                    bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
-                    _RegisterMaxContentTime(infoDate, hasValidData);
+                    if (IsValidDate(infoDate))
+                    {
+                        int infoNewCount = GetInt32(items[2]);
+                        int infoCurrentCount = GetInt32(items[3]);
+                        int infoKey = infoDate.GetDateKey();
+                        currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
+                        bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
+                        _RegisterMaxContentTime(infoDate, hasValidData);
+                    }
                     break;
             }
 
@@ -654,14 +660,17 @@ namespace Djs.Tools.CovidGraphs.Data
             this._Vesnice.AddIfNotContains(items[10], vesnice);
 
             DateTime infoDate = GetDate(items[1]);
-            int newCount = GetInt32(items[12]);
-            int currentCount = GetInt32(items[13]);
-            int key = infoDate.GetDateKey();
-            DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
-            bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
-            _RegisterMaxContentTime(infoDate, hasValidData);
+            if (IsValidDate(infoDate))
+            {
+                int newCount = GetInt32(items[12]);
+                int currentCount = GetInt32(items[13]);
+                int key = infoDate.GetDateKey();
+                DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
+                bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
+                _RegisterMaxContentTime(infoDate, hasValidData);
 
-            loadInfo.RecordCount += 1;
+                loadInfo.RecordCount += 1;
+            }
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce2"/>
@@ -713,14 +722,17 @@ namespace Djs.Tools.CovidGraphs.Data
             }
 
             DateTime infoDate = GetDate(items[1]);
-            int newCount = GetInt32(items[10]);
-            int currentCount = GetInt32(items[11]);
-            int key = infoDate.GetDateKey();
-            DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
-            bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
-            _RegisterMaxContentTime(infoDate, hasValidData);
+            if (IsValidDate(infoDate))
+            {
+                int newCount = GetInt32(items[10]);
+                int currentCount = GetInt32(items[11]);
+                int key = infoDate.GetDateKey();
+                DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
+                bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
+                _RegisterMaxContentTime(infoDate, hasValidData);
 
-            loadInfo.RecordCount += 1;
+                loadInfo.RecordCount += 1;
+            }
         }
         /// <summary>
         /// Zaeviduje maximální datum s daty
@@ -861,22 +873,25 @@ namespace Djs.Tools.CovidGraphs.Data
             if (this._IsValidDownloadData(content, updateInfo))
                 ThreadManager.AddAction(() => _WebUpdateCompletedProcessData(content, updateInfo));
         }
-        private bool _IsValidDownloadData(byte[] content, ProcessFileInfo updateInfo)
-        {
-            string message = null;
-            if (content.Length < 1000000)
-                message = "Pozor, data získaná z internetu nejsou platná, jsou příliš malá.";
-            else if (updateInfo.ContentType == FileContentType.CovidObce3 && content.Length < 10000000)
-                message = "Pozor, data získaná z internetu nejsou platná, na očekávaná data 'CovidObce3' jsou příliš malá.";
-
-            if (message == null) return true;
-            App.ShowError(message);
-            return false;
-        }
+        /// <summary>
+        /// Provádí se po downloadu a po prověření dat z internetu: zazálohuje dodaná data z internetu, načte je do databáze, databázi prověří a případně rollbackuje.
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="updateInfo"></param>
         private void _WebUpdateCompletedProcessData(byte[] content, ProcessFileInfo updateInfo)
         {
             this.BackupContent(content, updateInfo);
             this.Load(content, updateInfo.ProgressAction);
+            if (!_IsValidDataAfterUpdate(out string errorMessage))
+            {
+                // Nelze dát : this.LoadStandardDataAsync(updateInfo.ProgressAction); protože to načte lokální data a jde znovu na Download!!!
+                // Zavoláme async _LoadStandardDataFile(), tam se načítají jen olokální data:
+                ThreadManager.AddAction(() => _LoadStandardDataFile(updateInfo.ProgressAction));
+
+                string message = "Pozor, data získaná z internetu neobsahují platné informace a budou zahozena.\r\nProblém: " + errorMessage;
+                App.ShowError(message);
+                return;
+            }
             this.SaveStandardData(false, true, updateInfo.ProgressAction);
         }
         /// <summary>
@@ -897,6 +912,66 @@ namespace Djs.Tools.CovidGraphs.Data
                 }
             }
             catch (Exception exc) { }
+        }
+        /// <summary>
+        /// Zlehka ověří data stažená z internetu, zda vypadají OK
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="updateInfo"></param>
+        /// <returns></returns>
+        private bool _IsValidDownloadData(byte[] content, ProcessFileInfo updateInfo)
+        {
+            string message = null;
+            if (content.Length < 1000000)
+                message = "Pozor, data získaná z internetu nejsou platná, jsou příliš malá.";
+            else if (updateInfo.ContentType == FileContentType.CovidObce3 && content.Length < 10000000)
+                message = "Pozor, data získaná z internetu nejsou platná, na očekávaná data 'CovidObce3' jsou příliš malá.";
+
+            if (message == null) return true;
+            App.ShowError(message);
+            return false;
+        }
+        /// <summary>
+        /// Prověří data v databázi, zda jsou OK.
+        /// Používá se po downloadu a aplikaci dat z internetu.
+        /// </summary>
+        /// <param name="errorMessage"></param>
+        /// <returns></returns>
+        private bool _IsValidDataAfterUpdate(out string errorMessage)
+        {
+            errorMessage = null;
+
+            // Získám data z databáze za jeden okres, za minulý měsíc, a vyhodnotím zda obsahuje přiměřené hodnoty:
+            string entityCode = "CZ.CZ053.CZ0531";               // Okres Chrudim
+            var entity = GetEntity(entityCode);
+            if (entity == null)
+            {
+                errorMessage = "V datech není nalezen testovací okres Chrudim.";
+                return false;
+            }
+
+            DateTime now = DateTime.Now;
+            DateTime end = new DateTime(now.Year, now.Month, 1);
+            DateTime begin = end.AddMonths(-1);
+            var result = this.GetResultSimple(entity, DataValueType.NewCount, begin: begin, end: end);
+            if (result == null || result.Results == null)
+            {
+                errorMessage = "V datech testovacího okresu Chrudim nejsou k dispozici výsledky.";
+                return false;
+            }
+            if (result.Results.Length < 25)
+            {
+                errorMessage = $"V datech testovacího okresu Chrudim nejsou k dispozici výsledky za celý minulý měsíc, obsahuje jen {result.Results.Length} denních hodnot.";
+                return false;
+            }
+            decimal maxValue = result.Results.Select(r => r.Value).Max();
+            if (maxValue < 2m)
+            {
+                errorMessage = $"V datech testovacího okresu Chrudim nejsou k dispozici výsledky za celý minulý měsíc, hodnoty nových případů jsou menší než 2.";
+                return false;
+            }
+
+            return true;
         }
         #endregion
         #region Save : ukládání do interního formátu
@@ -1752,21 +1827,25 @@ namespace Djs.Tools.CovidGraphs.Data
             foreach (int key in keys)
             {
                 var result = data[key];
-                DateTime date = result.Date.AddDays(daysBefore);     // První datum pro sumu do dne 18.1.2021 (pondělí) je minulé úterý 12.1.2021
-                DateTime end = date.AddDays(daysCount);              // End je datum, které se už počítat nebude = 12.1. + 7 = 19.1.2021
-                int count = 0;
-                decimal sum = 0m;
-                while (date < end)
-                {   // V tomto cyklu najdu přinejmenším jeden platný záznam = a to "result" = ten "cílový":
-                    int avgKey = date.GetDateKey();
-                    if (data.TryGetValue(avgKey, out var source))
-                    {
-                        count++;
-                        sum += source.Value;
+                result.TempValue = 0m;
+                if (IsValidDate(result.Date))
+                {
+                    DateTime date = result.Date.AddDays(daysBefore);     // První datum pro sumu do dne 18.1.2021 (pondělí) je minulé úterý 12.1.2021
+                    DateTime end = date.AddDays(daysCount);              // End je datum, které se už počítat nebude = 12.1. + 7 = 19.1.2021
+                    int count = 0;
+                    decimal sum = 0m;
+                    while (date < end)
+                    {   // V tomto cyklu najdu přinejmenším jeden platný záznam = a to "result" = ten "cílový":
+                        int avgKey = date.GetDateKey();
+                        if (data.TryGetValue(avgKey, out var source))
+                        {
+                            count++;
+                            sum += source.Value;
+                        }
+                        date = date.AddDays(1d);
                     }
-                    date = date.AddDays(1d);
+                    result.TempValue = sum;
                 }
-                result.TempValue = sum;
             }
             // Na závěr vložím TempValue do Value:
             args.Results.ForEachExec(r => r.Value = r.TempValue);
@@ -1914,6 +1993,16 @@ namespace Djs.Tools.CovidGraphs.Data
             if (end.HasValue && infoDate >= end.Value) return false;
             if (last.HasValue && infoDate > last.Value) return false;
             return true;
+        }
+        /// <summary>
+        /// Vrátí true pokud dané datum je platné, tj. obsahuje rok 2000 - 2050
+        /// </summary>
+        /// <param name="dateTime"></param>
+        /// <returns></returns>
+        private static bool IsValidDate(DateTime dateTime)
+        {
+            int year = dateTime.Year;
+            return (year >= 2000 || year <= 2050);
         }
         #endregion
         #region Získání analytických dat za určitou entitu
