@@ -207,17 +207,13 @@ namespace Djs.Tools.CovidGraphs.Data
         private ProcessFileInfo _LastWebDownloadInfo;
         #endregion
         #region Load : načítání
-        public void LoadStandardDataAsync(Action<ProgressArgs> progress = null)
-        {
-            ThreadManager.AddAction(() => _LoadStandardData(progress));
-        }
         /// <summary>
         /// Prvotní načtení dat, ze standardních souborů
         /// </summary>
         /// <param name="progress"></param>
-        public void LoadStandardData(Action<ProgressArgs> progress = null)
+        public void LoadStandardDataAsync(Action<ProgressArgs> progress = null)
         {
-            App.TryRun(() => _LoadStandardData(progress));
+            ThreadManager.AddAction(() => _LoadStandardData(progress));
         }
         /// <summary>
         /// Provede standardní načtení dat, včetně WebUpdate
@@ -885,13 +881,14 @@ namespace Djs.Tools.CovidGraphs.Data
             if (!_IsValidDataAfterUpdate(out string errorMessage))
             {
                 // Nelze dát : this.LoadStandardDataAsync(updateInfo.ProgressAction); protože to načte lokální data a jde znovu na Download!!!
-                // Zavoláme async _LoadStandardDataFile(), tam se načítají jen olokální data:
+                // Zavoláme async _LoadStandardDataFile(), tam se načítají jen lokální data:
                 ThreadManager.AddAction(() => _LoadStandardDataFile(updateInfo.ProgressAction));
 
                 string message = "Pozor, data získaná z internetu neobsahují platné informace a budou zahozena.\r\nProblém: " + errorMessage;
                 App.ShowError(message);
                 return;
             }
+            // App.Config.LastWebUpdateTime = DateTime.Now;
             this.SaveStandardData(false, true, updateInfo.ProgressAction);
         }
         /// <summary>
@@ -2499,7 +2496,7 @@ namespace Djs.Tools.CovidGraphs.Data
             return entityType.ToString();
         }
         #endregion
-        #region Třídy dat
+        #region Třídy dat: EntityInfo, PocetObyvatelInfo, DataInfo
         /// <summary>
         /// Místní entita (Země, kraj, okres, město, obec, vesnice).
         /// Obsahuje svoje popisná data (kód, název), počet obyvatel, svůj typ, parenta (nadřízený uzel), svoje data, svoje podřízenéí prvky.
@@ -3017,16 +3014,10 @@ namespace Djs.Tools.CovidGraphs.Data
                     case FileContentType.DataPack:
                         stream.WriteLine($"{HeaderInfo};{DateKey};{NewCount};{CurrentCount}");
                         break;
-
                 }
             }
             public int NewCount { get; private set; }
             public int CurrentCount { get; private set; }
-            public void AddData1(int newCount, int currentCount)
-            {
-                this.NewCount += newCount;
-                this.CurrentCount += currentCount;
-            }
         }
         public class Pocet : ItemInfo
         {
@@ -3066,9 +3057,6 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         public abstract class ItemInfo
         { }
-        #endregion
-        #region Třída pro progress ProgressArgs
-
         #endregion
     }
     #region Třídy pro výsledky analýzy
@@ -3423,6 +3411,19 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         Vesnice
     }
+    /// <summary>
+    /// Třída pro sekvenční zpracování dat (Load, Update, Save...)
+    /// </summary>
+    public class ProcessQueueInfo
+    {
+        public ProcessQueueInfo(Action<ProgressArgs> progressAction)
+        {
+            this.ProgressAction = progressAction;
+            this._ActionsQueue = new Queue<ProcessFileInfo>();
+        }
+        private Queue<ProcessFileInfo> _ActionsQueue;
+        public Action<ProgressArgs> ProgressAction { get; set; }
+    }
     public class ProcessFileInfo
     {
         public ProcessFileInfo(DataMediumType medium, string fileName)
@@ -3599,6 +3600,20 @@ namespace Djs.Tools.CovidGraphs.Data
         }
     }
     /// <summary>
+    /// Obsah souboru
+    /// </summary>
+    public enum FileContentType
+    {
+        None,
+        Structure,
+        Data,
+        DataPack,
+        PocetObyvatel,
+        CovidObce1,
+        CovidObce2,
+        CovidObce3
+    }
+    /// <summary>
     /// Stav zpracování souboru
     /// </summary>
     public enum ProcessFileState
@@ -3612,20 +3627,6 @@ namespace Djs.Tools.CovidGraphs.Data
         WebDownloading,
         WebDownloaded,
         Invalid
-    }
-    /// <summary>
-    /// Obsah souboru
-    /// </summary>
-    public enum FileContentType
-    {
-        None,
-        Structure,
-        Data,
-        DataPack,
-        PocetObyvatel,
-        CovidObce1,
-        CovidObce2,
-        CovidObce3
     }
     #endregion
     #region DataVisualInfo
