@@ -523,7 +523,7 @@ namespace Djs.Tools.CovidGraphs
             StatusInfoText = "Načítáme data...";
 
             this._Database = new Data.DatabaseInfo();
-            this._Database.LoadStandardDataAsync(DatabaseShowProgress);
+            this._Database.LoadInitialData(DatabaseShowProgress);
         }
         /// <summary>
         /// Zkusí aktualizovat databázi
@@ -535,7 +535,7 @@ namespace Djs.Tools.CovidGraphs
             if (!this._Database.IsReady)
                 throw new InvalidOperationException("Nelze aktualizovat databázi, dosud není připravena. Počkejte několik sekund...");
 
-            this._Database.WebUpdateAsync(DatabaseShowProgress);
+            this._Database.WebUpdate(DatabaseShowProgress);
         }
         /// <summary>
         /// Zkusí uložit databázi do DataPacku
@@ -547,8 +547,8 @@ namespace Djs.Tools.CovidGraphs
             if (!this._Database.IsReady)
                 throw new InvalidOperationException("Nelze uložit databázi, dosud není připravena. Počkejte několik sekund...");
 
-            this._Database.SaveStandardData(true, true, DatabaseShowProgress);
-            this._Database.SaveDataPackData(DatabaseShowProgress);
+            FileContentType[] fileTypes = new FileContentType[] { FileContentType.Structure, FileContentType.Data, FileContentType.DataPack };
+            this._Database.SaveStandardData(fileTypes, saveFormat: SaveFormat.Pack, progress: DatabaseShowProgress);
         }
         /// <summary>
         /// Progress práce s databází

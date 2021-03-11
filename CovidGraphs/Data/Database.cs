@@ -211,92 +211,13 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Prvotní načtení dat, ze standardních souborů
         /// </summary>
         /// <param name="progress"></param>
-        public void LoadStandardDataAsync(Action<ProgressArgs> progress = null)
+        public void LoadInitialData(Action<ProgressArgs> progress = null)
         {
-            ThreadManager.AddAction(() => _LoadStandardData(progress));
-        }
-        /// <summary>
-        /// Provede standardní načtení dat, včetně WebUpdate
-        /// </summary>
-        /// <param name="progress"></param>
-        private void _LoadStandardData(Action<ProgressArgs> progress = null)
-        {
-            _LoadStandardDataFile(progress);
-            _LoadStandardDataWebUpdate(progress);
-        }
-        /// <summary>
-        /// Provede standardní načtení dat ze souborů, bez webové aktualizace
-        /// </summary>
-        /// <param name="progress"></param>
-        private void _LoadStandardDataFile(Action<ProgressArgs> progress = null)
-        {
-            this.Clear();
-
-            string standardDataPath = PathData;            // Tady jsou data ukládaná docela standardně
-            string applicationDataPath = App.AppDataPath;  // Tady jsou data distribuovaná spolu s aplikací, ale sem se neukládají
-
-            // 1. Standardní varianta: Struktura + Data:
-            string structureFile = SearchFile(StandardStructureFileName, standardDataPath, applicationDataPath);
-            string dataFile = SearchFile(StandardDataFileName, standardDataPath, applicationDataPath);
-            if (structureFile != null && dataFile != null)
-            {
-                Load(structureFile, progress);
-                Load(dataFile, progress);
-                return;
-            }
-
-            // 2. Záložní varianta: DataPack (vše v jednom), typicky první poinstalační spuštění:
-            string dataPackFile = SearchFile(StandardDataPackFileName, standardDataPath, applicationDataPath);
-            if (dataPackFile != null)
-            {
-                Load(dataPackFile, progress);
-                _SaveStandardDataSet(progress);
-                return;
-            }
-
-            // 3. Z plných webových dat (počet obyvatel + první verze Obce, obsahující kompletní strukturu):
-            string pocetFile = SearchFile(StandardWebPocetFileName, standardDataPath, applicationDataPath);
-            string webObce1File = SearchFile(StandardWebObce1FileName, standardDataPath, applicationDataPath);
-            if (dataPackFile != null && webObce1File != null)
-            {
-                Load(pocetFile, progress);
-                Load(webObce1File, progress);
-                _SaveStandardDataSet(progress);
-                return;
-            }
-
-            // 4. Z kombinovaných dat (struktura obcí + druhá verze Obce, obsahující NE-kompletní strukturu):
-            string webObce2File = SearchFile(StandardWebObce2FileName, standardDataPath, applicationDataPath);
-            if (structureFile != null && webObce2File != null)
-            {
-                Load(structureFile, progress);
-                Load(webObce2File, progress);
-                _SaveStandardDataSet(progress);
-                return;
-            }
-        }
-        /// <summary>
-        /// Uloží standardní data set = Structure + Data
-        /// </summary>
-        /// <param name="progress"></param>
-        private void _SaveStandardDataSet(Action<ProgressArgs> progress = null)
-        {
-            SaveDataArgs saveArgs = new SaveDataArgs() { Packed = SaveFormat.Pack, BackupOldFileMode = BackupMode.OneForDay, Progress = progress };
-
-            saveArgs.ContentType = FileContentType.Structure;
-            _SaveStandardData(saveArgs);
-
-            saveArgs.ContentType = FileContentType.Data;
-            _SaveStandardData(saveArgs);
-        }
-        /// <summary>
-        /// Zajistí aktualizaci dat z internetu, pokud je vhodná
-        /// </summary>
-        /// <param name="progress"></param>
-        private void _LoadStandardDataWebUpdate(Action<ProgressArgs> progress = null)
-        {
-            if (this.WebUpdateIsNeed)
-                this.WebUpdateAsync(progress);
+            ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.ClearAll));
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.LoadInitial));
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUpdate));
+            _DoProcessAsync(processQueue);
         }
         /// <summary>
         /// Importuje data z daného souboru.
@@ -308,8 +229,9 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="progress"></param>
         public void Load(string file, Action<ProgressArgs> progress = null)
         {
-            App.TryRun(() => _LoadFile(file, progress));
-            State = StateType.Ready;
+            ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.LoadFile, file));
+            _DoProcessAsync(processQueue);
         }
         /// <summary>
         /// Importuje data z daného souboru.
@@ -321,46 +243,46 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="progress"></param>
         public void Load(byte[] content, Action<ProgressArgs> progress = null)
         {
-            App.TryRun(() => _LoadContent(content, progress));
+            ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.LoadContent, content));
+            _DoProcessAsync(processQueue);
         }
         /// <summary>
         /// Načte obsah daného souboru, detekuje a zpracuje jej
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="progress"></param>
-        private void _LoadFile(string file, Action<ProgressArgs> progress = null)
+        /// <param name="processQueue"></param>
+        private void _LoadFile(ProcessQueueInfo processQueue)
         {
-            if (String.IsNullOrEmpty(file)) throw new ArgumentException($"Database.Import() : není zadán vstupní soubor.");
-            if (!IO.File.Exists(file)) throw new ArgumentException($"Database.Import() : zadaný vstupní soubor {file} neexistuje.");
-            ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.LocalFile, file);
-            loadInfo.ProgressAction = progress;
-            using (var stream = new DZipFileReader(file, CompressMode.ByContent))
+            if (processQueue == null || processQueue.CurrentAction == null) return;
+
+            ProcessQueueItem action = processQueue.CurrentAction;
+            string fileName = action.File;
+            if (String.IsNullOrEmpty(fileName)) throw new ArgumentException($"Database.Import() : není zadán vstupní soubor.");
+            if (!IO.File.Exists(fileName)) throw new ArgumentException($"Database.Import() : zadaný vstupní soubor {fileName} neexistuje.");
+            ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.LocalFile, fileName);
+            loadInfo.ProgressAction = processQueue.ProgressAction;
+
+            using (var stream = new DZipFileReader(fileName, CompressMode.ByContent))
             {
                 _LoadStream(stream, loadInfo);
                 stream.Close();
             }
         }
         /// <summary>
-        /// Vrátí true, pokud daný soubor má být komprimovaný (podle přípony / podle obsahu)
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="byContent"></param>
-        /// <returns></returns>
-        private bool _DetectCompressFile(string file, bool byContent)
-        {
-            string extension = IO.Path.GetExtension(file);
-            return (String.Equals(extension, StandardPackExtension, StringComparison.InvariantCultureIgnoreCase));
-        }
-        /// <summary>
         /// Načte obsah daného bufferu, detekuje a zpracuje jej
         /// </summary>
         /// <param name="content"></param>
         /// <param name="progress"></param>
-        private void _LoadContent(byte[] content, Action<ProgressArgs> progress = null)
+        private void _LoadContent(ProcessQueueInfo processQueue)
         {
+            if (processQueue == null || processQueue.CurrentAction == null) return;
+
+            ProcessQueueItem action = processQueue.CurrentAction;
+            byte[] content = action.Content;
             if (content == null || content.Length == 0) throw new ArgumentException($"Database.Load() : není zadán vstupní obsah dat.");
             ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.BinaryContent, "Content");
-            loadInfo.ProgressAction = progress;
+            loadInfo.ProgressAction = processQueue.ProgressAction;
+
             using (var stream = new DZipFileReader(content))
             {
                 _LoadStream(stream, loadInfo);
@@ -783,6 +705,16 @@ namespace Djs.Tools.CovidGraphs.Data
         #endregion
         #region WebUpdate : aktualizace dat z internetu
         /// <summary>
+        /// Provede aktualizaci dat z internetu. Asynchronní metoda, vrátí řízení ihned, v průběhu downloadu a po jeho dokončení se volá daná akce Progress.
+        /// </summary>
+        /// <param name="progress"></param>
+        public void WebUpdate(Action<ProgressArgs> progress = null)
+        {
+            ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUpdate));
+            _DoProcessAsync(processQueue);
+        }
+        /// <summary>
         /// Obsahuje true, pokud je vhodný čas na aktualizaci dat z internetu
         /// </summary>
         public bool WebUpdateIsNeed
@@ -795,36 +727,87 @@ namespace Djs.Tools.CovidGraphs.Data
                 int diff = ((TimeSpan)(now.Date - content.Date)).Days;              // Kolik dní jsou stará data? 0=dnešní, 1=včerejší, 2=předvčerejší, ...
                 if (diff <= 0) return false;                                        // Pokud data jsou dnešní (bez ohledu na čas dat, a čas aktuální), pak není třeba dělat download
                 if (diff > 1) return true;                                          // Předvčerejší data: stáhněme nová
-                return (now.TimeOfDay >= StandardWebUpdateTime);                    // Data jsou právě včerejší: nová stáhneme jen tehdy, když je aktuální čas větší než čas, kdy se data na webu aktualizují
+                return (now.TimeOfDay >= StandardWebUpdateTimeCzV2WebObce);                    // Data jsou právě včerejší: nová stáhneme jen tehdy, když je aktuální čas větší než čas, kdy se data na webu aktualizují
             }
         }
         /// <summary>
-        /// Provede aktualizaci dat z internetu. Asynchronní metoda, vrátí řízení ihned, v průběhu downloadu a po jeho dokončení se volá daná akce Progress.
+        /// Metoda zjistí, které datové sady je třeba stáhnout z internetu a zařadí je do fronty
         /// </summary>
-        /// <param name="progress"></param>
-        public void WebUpdateAsync(Action<ProgressArgs> progress = null)
+        /// <param name="processQueue"></param>
+        /// <returns></returns>
+        private void _WebDownloadUpdate(ProcessQueueInfo processQueue)
         {
-            App.TryRun(() => _WebUpdateAsync(progress));
+            DateTime? lastTimeCzWebObce = App.Config.UserDataGet(ConfigUserDataTimeCzV2WebObce, (DateTime?)null);
+            if (_WebUpdateIsTimeForUpload(lastTimeCzWebObce, StandardWebUpdateTimeCzV2WebObce))
+                processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2WebObce));
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud je vhodné provést download dat z webu, když poslední stahování dat bylo v daném čase, a hodina aktualizace je zadaná.
+        /// </summary>
+        /// <param name="lastDateTime"></param>
+        /// <param name="updateTime"></param>
+        /// <returns></returns>
+        private bool _WebUpdateIsTimeForUpload(DateTime? lastDateTime, TimeSpan updateTime)
+        {
+            if (!lastDateTime.HasValue) return true;
+
+            DateTime now = DateTime.Now;
+            DateTime nowDate = now.Date;
+            TimeSpan nowTime = now.TimeOfDay;
+
+            // Čas, kdy měla proběhnout poslední aktualizace dat na webu: pokud aktuální čas je větší, pak dnešní aktualizace, jinak včerejší:
+            DateTime lastUpdate = ((nowTime > updateTime) ? (nowDate + updateTime) : (nowDate.AddDays(-1d) + updateTime));
+
+            return (lastDateTime.Value < lastUpdate);
         }
         /// <summary>
         /// Provede aktualizaci z internetu
         /// </summary>
-        /// <param name="progress"></param>
-        private void _WebUpdateAsync(Action<ProgressArgs> progress = null)
+        /// <param name="processQueue"></param>
+        private bool _WebDownloadUrl(ProcessQueueInfo processQueue)
         {
-            string url = StandardWebObce2UpdateUrl;
-            ProcessFileInfo updateInfo = new ProcessFileInfo(DataMediumType.WebUrl, url);
-            updateInfo.ProgressAction = progress;
+            if (processQueue == null || processQueue.CurrentAction == null) return false;
+
+            ProcessQueueItem action = processQueue.CurrentAction;
+
+            action.File = _WebDownloadGetUrl(action);
+
+            ProcessFileInfo updateInfo = new ProcessFileInfo(DataMediumType.WebUrl, action.File);
             updateInfo.ContentType = FileContentType.CovidObce3;
             updateInfo.ProcessState = ProcessFileState.WebDownloading;
+            updateInfo.ProgressAction = processQueue.ProgressAction;
+            action.ProcessFile = updateInfo;
 
             State = StateType.Downloading;
             using (System.Net.WebClient wc = new System.Net.WebClient())
             {
-                wc.DownloadProgressChanged += _WebUpdate_DownloadProgressChanged;
-                wc.DownloadDataCompleted += _WebUpdate_DownloadDataCompleted;
-                Uri uri = new Uri(url);
-                wc.DownloadDataAsync(uri, updateInfo);
+                wc.DownloadProgressChanged += _WebClient_DownloadProgressChanged;
+                wc.DownloadDataCompleted += _WebClient_DownloadDataCompleted;
+                Uri uri = new Uri(action.File);
+                wc.DownloadDataAsync(uri, action);
+            }
+
+            return true;               // Rozběhla se asynchronní akce => vrátíme true.
+        }
+        /// <summary>
+        /// Vrátí URL pro danou akci
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        private string _WebDownloadGetUrl(ProcessQueueItem action)
+        {
+            if (!String.IsNullOrEmpty(action.File)) return action.File;
+            if (!action.FileType.HasValue) return null;
+
+            FileContentType contentType = action.FileType.Value;
+            switch (contentType)
+            {
+                case FileContentType.CovidObce1:
+                case FileContentType.CovidObce2:
+                case FileContentType.CovidObce3:
+                    return StandardUpdateUrlCzV2WebObce;
+                default:
+                    throw new ArgumentException($"Nelze z internetu aktualizovat data typu: {contentType}.");
             }
         }
         /// <summary>
@@ -832,10 +815,11 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _WebUpdate_DownloadProgressChanged(object sender, System.Net.DownloadProgressChangedEventArgs e)
+        private void _WebClient_DownloadProgressChanged(object sender, System.Net.DownloadProgressChangedEventArgs e)
         {
-            // Sem přijde řízení po každých cca 16 kB
-            ProcessFileInfo updateInfo = e.UserState as ProcessFileInfo;
+            // Sem přijde řízení po každých cca 16 kB:
+            if (!(e.UserState is ProcessQueueItem action)) return;
+            ProcessFileInfo updateInfo = action.ProcessFile;
 
             if (updateInfo.Length != e.TotalBytesToReceive)
                 updateInfo.Length = e.TotalBytesToReceive;
@@ -848,8 +832,27 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _WebUpdate_DownloadDataCompleted(object sender, System.Net.DownloadDataCompletedEventArgs e)
+        private void _WebClient_DownloadDataCompleted(object sender, System.Net.DownloadDataCompletedEventArgs e)
         {   // Sem přijde řízení po jakémkoli způsobu dokončení přenosu (OK, error, cancel)
+            State = StateType.Ready;
+
+            if (!(e.UserState is ProcessQueueItem action)) return;
+            if (action == null) return;
+
+            _WebDownloadDataCompleted(e, action);
+
+            // Restart fronty po doběhnutí downloadu jednoho souboru: pokud máme download data, pak jsou ve frontě na první pozici a fronta vyvolá metodu _WebDownloadDone():
+            // Proč "restart"? Protože spuštění downloadu v metodě _WebDownloadUrl() se provedlo asynchronně, a provádění fronty akcí se pak zrušilo (metoda _DoProcessDownloadUrl() vrátila false, a process loop skončila).
+            // Takže nyní vezmeme frontu akcí ProcessQueue a znovu ji spustíme, asynchronně = na pozadí, a pojedou tam veškeré další operace.
+            _DoProcessAsync(action.ProcessQueue);
+        }
+        /// <summary>
+        /// Po doběhnutí downloadu zpracuje jeho chyby, nebo získá načtená data a insertuje je do fronty pro další zpracování
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="action"></param>
+        private void _WebDownloadDataCompleted(System.Net.DownloadDataCompletedEventArgs e, ProcessQueueItem action)
+        {
             if (e.Cancelled) return;
             if (e.Error != null)
             {
@@ -857,46 +860,65 @@ namespace Djs.Tools.CovidGraphs.Data
                 return;
             }
 
-            ProcessFileInfo updateInfo = e.UserState as ProcessFileInfo;
+            ProcessFileInfo updateInfo = action.ProcessFile;
             if (updateInfo == null)
-                throw new InvalidOperationException($"Po dokončení downloadu dat nelze provést zpracování, není předán 'ProcessFileInfo updateInfo'.");
+            {
+                Data.App.ShowError($"Po dokončení downloadu dat nelze provést zpracování, nebyl předán objekt 'ProcessFileInfo updateInfo'.");
+                return;
+            }
 
+            // Zdejší metoda běží v Main threadu (to je dané WebClientem), pro následující akce je to OK:
             this.StoreProcessFileResults(updateInfo);
             _CallProgress(updateInfo, force: true, isDone: true);
 
-            // Zdejší metoda běží v Main threadu (to je dané WebClientem), ale my chceme zpracování dat provést v Background threadu, kvůli GUI:
+            // Zpracování načtených dat ale chceme provést v threadu OnBackground, proto tuto akci vložíme na začátek do fronty akcí:
             var content = e.Result;
-            if (this._IsValidDownloadData(content, updateInfo))
-                ThreadManager.AddAction(() => _WebUpdateCompletedProcessData(content, updateInfo));
+            ProcessQueueInfo processQueue = action.ProcessQueue;
+            processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.DownloadDone, content) { ProcessFile = updateInfo });
         }
         /// <summary>
         /// Provádí se po downloadu a po prověření dat z internetu: zazálohuje dodaná data z internetu, načte je do databáze, databázi prověří a případně rollbackuje.
         /// </summary>
         /// <param name="content"></param>
         /// <param name="updateInfo"></param>
-        private void _WebUpdateCompletedProcessData(byte[] content, ProcessFileInfo updateInfo)
+        private void _WebDownloadDone(ProcessQueueInfo processQueue)
         {
-            this.BackupContent(content, updateInfo);
-            this.Load(content, updateInfo.ProgressAction);
-            if (!_IsValidDataAfterUpdate(out string errorMessage))
-            {
-                // Nelze dát : this.LoadStandardDataAsync(updateInfo.ProgressAction); protože to načte lokální data a jde znovu na Download!!!
-                // Zavoláme async _LoadStandardDataFile(), tam se načítají jen lokální data:
-                ThreadManager.AddAction(() => _LoadStandardDataFile(updateInfo.ProgressAction));
+            if (processQueue == null || processQueue.CurrentAction == null) return;
 
-                string message = "Pozor, data získaná z internetu neobsahují platné informace a budou zahozena.\r\nProblém: " + errorMessage;
-                App.ShowError(message);
+            ProcessQueueItem action = processQueue.CurrentAction;
+            byte[] content = action.Content;
+            ProcessFileInfo updateInfo = action.ProcessFile;
+
+            if (!this._IsValidDownloadData(content, updateInfo))
+            {
+                processQueue.AddMessage($"Data načtená z internetu ({updateInfo.ContentType}) nejsou zřejmě v pořádku, byla odmítnuta.");
                 return;
             }
-            // App.Config.LastWebUpdateTime = DateTime.Now;
-            this.SaveStandardData(false, true, updateInfo.ProgressAction);
+
+            this._BackupContentToFile(content, updateInfo);
+
+            processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.LoadContent, content));
+            _DoProcessOneAction(processQueue);
+
+            if (_IsValidDataAfterUpdate(out string errorMessage))
+            {   // Načtená data jsou OK: uložím si datum načtení, a uložíme data do souboru Data:
+                App.Config.UserDataAdd(ConfigUserDataTimeCzV2WebObce, DateTime.Now);
+
+                processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data) { SaveFileFormat = SaveFormat.Pack, SaveFileBackupMode = BackupMode.OneForDay });
+            }
+            else
+            {   // Po chybě při načítání dat: zajistíme restore dat (Clear + LoadInitial), a chybovou hlášku:
+                processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.ClearAll), new ProcessQueueItem(ProcessActionType.LoadInitial));
+
+                processQueue.AddMessage($"Data načtená z internetu ({updateInfo.ContentType}) neobsahují platné informace a budou zahozena.\r\nProblém: {errorMessage}.");
+            }
         }
         /// <summary>
         /// Daný obsah uloží jako zálohu 
         /// </summary>
         /// <param name="content"></param>
         /// <param name="updateInfo"></param>
-        private void BackupContent(byte[] content, ProcessFileInfo updateInfo)
+        private void _BackupContentToFile(byte[] content, ProcessFileInfo updateInfo)
         {
             try
             {
@@ -970,37 +992,103 @@ namespace Djs.Tools.CovidGraphs.Data
 
             return true;
         }
+
+        protected const string ConfigUserDataTimeCzV2WebObce = "DownloadTimeCzV2WebObce";
+        protected const string StandardUpdateUrlCzV2WebObce = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
+        /// <summary>
+        /// Čas, kdy je aktualizována webová databáze. Obsahuje hodiny a minuty, typicky 8:15.
+        /// </summary>
+        protected static TimeSpan StandardWebUpdateTimeCzV2WebObce { get { return TimeSpan.FromHours(8.25d); } }
+
         #endregion
         #region Save : ukládání do interního formátu
-        public void SaveStandardData(bool withStructure, bool backupData, Action<ProgressArgs> progress = null)
+        /// <summary>
+        /// Uloží sadu souborů dle požadavku do standardního umístění (volající nemůže specifikovat, kam se mají soubory ukládat).
+        /// </summary>
+        /// <param name="fileTypes"></param>
+        /// <param name="saveFormat"></param>
+        /// <param name="backupMode"></param>
+        /// <param name="progress"></param>
+        public void SaveStandardData(IEnumerable<FileContentType> fileTypes , SaveFormat saveFormat = SaveFormat.Pack, BackupMode backupMode = BackupMode.OneForDay, Action<ProgressArgs> progress = null)
         {
-            State = StateType.SavingFile;
-            SaveDataArgs args = new SaveDataArgs() { Packed = SaveFormat.Pack, Progress = progress };
-            if (withStructure)
-            {
-                args.ContentType = FileContentType.Structure;
-                App.TryRun(() => _SaveStandardData(args));
-            }
-            args.ContentType = FileContentType.Data;
-            App.TryRun(() => _SaveStandardData(args));
-            State = StateType.Ready;
+            ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
+            foreach (var fileType in fileTypes)
+                processQueue.AddActions(new ProcessQueueItem(ProcessActionType.SaveFile, fileType) { SaveFileFormat = saveFormat, SaveFileBackupMode = backupMode });
+            App.TryRun(() => _DoProcess(processQueue));
         }
-        public void SaveDataPackData(Action<ProgressArgs> progress = null)
+        /// <summary>
+        /// Uloží data do souboru v interním formátu
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="progress"></param>
+        public void Save(FileContentType contentType, string file, SaveFormat saveFormat = SaveFormat.Pack, BackupMode backupMode = BackupMode.OneForDay, Action<ProgressArgs> progress = null)
         {
-            SaveDataArgs args = new SaveDataArgs() { ContentType = FileContentType.DataPack, Packed = SaveFormat.Pack, Progress = progress };
-            App.TryRun(() => _SaveStandardData(args));
+            ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.SaveFile, contentType) { File = file, SaveFileFormat = saveFormat, SaveFileBackupMode = backupMode });
+            App.TryRun(() => _DoProcess(processQueue));
         }
-        private void _SaveStandardData(SaveDataArgs args)
+        /// <summary>
+        /// Zajistí uložení dat dle požadavku. Zajistí i zálohování stávajícího souboru.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="args"></param>
+        private void _SaveDataFile(ProcessQueueInfo processQueue)
         {
-            string file = GetSaveFileName(args);
-            _Save(file, args);
-        }
-        protected string GetSaveFileName(SaveDataArgs args)
-        {
-            if (!String.IsNullOrEmpty(args.FileName)) return args.FileName;
+            ProcessQueueItem action = processQueue.CurrentAction;
 
+            if (action == null || !action.FileType.HasValue)
+                throw new ArgumentException($"Databáze nemá dodané podklady pro ukládání: není dodaná akce, nebo neobsahuje typ souboru.");
+
+            FileContentType contentType = action.FileType.Value;
+            if (!(contentType == FileContentType.Structure || contentType == FileContentType.Data || contentType == FileContentType.DataPack))
+                throw new ArgumentException($"Databáze může ukládat pouze data typu {FileContentType.Structure}, {FileContentType.Data} nebo {FileContentType.DataPack}. Nelze uložit data typu {contentType}.");
+
+            string fileName = _SaveDataGetFileName(action);
+
+            string path = IO.Path.GetDirectoryName(fileName);
+            if (!System.IO.Directory.Exists(path)) System.IO.Directory.CreateDirectory(path);
+
+            _SaveDataBackupOldFile(fileName, action);
+
+            lock (this.InterLock)
+            {
+                try
+                {
+                    State = StateType.SavingFile;
+                    ProcessFileInfo saveInfo = new ProcessFileInfo(DataMediumType.LocalFile, fileName);
+                    saveInfo.ProgressAction = processQueue.ProgressAction;
+                    saveInfo.ContentType = contentType;
+                    saveInfo.ProcessState = ProcessFileState.Saving;
+                    action.ProcessFile = saveInfo;
+
+                    using (var stream = new DZipFileWriter(fileName, CompressMode.ByName, false))
+                    {
+                        _SaveFileHeader(saveInfo, stream);
+                        _SaveFileProperties(saveInfo, stream);
+                        _World.Save(saveInfo, stream);
+                    }
+                    this.StoreProcessFileResults(saveInfo);
+                    _CallProgress(saveInfo, force: true, isDone: true);
+                }
+                finally
+                {
+                    State = StateType.Ready;
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí reálné jméno souboru pro ukládání dat
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        private string _SaveDataGetFileName(ProcessQueueItem action)
+        {
+            if (!String.IsNullOrEmpty(action.File)) return action.File;
+            if (!action.FileType.HasValue) return null;
+
+            FileContentType contentType = action.FileType.Value;
             string name = null;
-            switch (args.ContentType)
+            switch (contentType)
             {
                 case FileContentType.Structure:
                     name = StandardStructureFileName;
@@ -1012,67 +1100,25 @@ namespace Djs.Tools.CovidGraphs.Data
                     name = StandardDataPackFileName;
                     break;
                 default:
-                    throw new ArgumentException($"Nelze uložit data typu: {args.ContentType}.");
+                    throw new ArgumentException($"Nelze uložit data typu: {contentType}.");
             }
-            if (args.Packed == SaveFormat.Pack)
+            if (action.SaveFileFormat.HasValue && action.SaveFileFormat.Value == SaveFormat.Pack)
                 name = IO.Path.ChangeExtension(name, StandardPackExtension);
-            else if (args.Packed == SaveFormat.Zip)
+            else if (action.SaveFileFormat.HasValue && action.SaveFileFormat.Value == SaveFormat.Zip)
                 name = IO.Path.ChangeExtension(name, ".zip");
             string fullName = IO.Path.Combine(PathData, name);
             return fullName;
-        }
-        /// <summary>
-        /// Uloží data do souboru v interním formátu
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="progress"></param>
-        public void Save(string file, FileContentType contentType, Action<ProgressArgs> progress = null)
-        {
-            SaveDataArgs args = new SaveDataArgs() { ContentType = contentType, Progress = progress };
-            App.TryRun(() => _Save(file, args));
-        }
-        /// <summary>
-        /// Zajistí uložení dat dle požadavku. Zajistí i zálohování stávajícího souboru.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="args"></param>
-        private void _Save(string file, SaveDataArgs args)
-        {
-            FileContentType contentType = args.ContentType;
-            if (!(contentType == FileContentType.Structure || contentType == FileContentType.Data || contentType == FileContentType.DataPack))
-                throw new ArgumentException($"Databáze může ukládat pouze data typu {FileContentType.Structure}, {FileContentType.Data} nebo {FileContentType.DataPack}. Nelze uložit data typu {contentType}.");
-
-            string path = IO.Path.GetDirectoryName(file);
-            if (!System.IO.Directory.Exists(path)) System.IO.Directory.CreateDirectory(path);
-
-            _SaveBackup(file, args);
-
-            lock (this.InterLock)
-            {
-                State = StateType.SavingFile;
-                ProcessFileInfo saveInfo = new ProcessFileInfo(DataMediumType.LocalFile, file);
-                saveInfo.ProgressAction = args.Progress;
-                saveInfo.ContentType = contentType;
-                saveInfo.ProcessState = ProcessFileState.Saving;
-                using (var stream = new DZipFileWriter(file, CompressMode.ByName, false))
-                {
-                    _SaveFileHeader(saveInfo, stream);
-                    _SaveFileProperties(saveInfo, stream);
-                    _World.Save(saveInfo, stream);
-                }
-                this.StoreProcessFileResults(saveInfo);
-                _CallProgress(saveInfo, force: true, isDone: true);
-                State = StateType.Ready;
-            }
         }
         /// <summary>
         /// Zajistí zálohování existujícího souboru daného jména podle požadavku.
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="args"></param>
-        private void _SaveBackup(string fileName, SaveDataArgs args)
+        private void _SaveDataBackupOldFile(string fileName, ProcessQueueItem action)
         {
-            var mode = args.BackupOldFileMode;
+            if (action == null || !action.SaveFileBackupMode.HasValue) return;
+
+            var mode = action.SaveFileBackupMode.Value;
             if (mode == BackupMode.None || mode == BackupMode.Overwrite) return;
 
             IO.FileInfo fileInfo = new IO.FileInfo(fileName);
@@ -1172,29 +1218,186 @@ namespace Djs.Tools.CovidGraphs.Data
             public SaveFormat Packed { get; set; }
             public Action<ProgressArgs> Progress { get; set; }
         }
+        #endregion
+        #region Fronta procesů (Load, Update, Save...): jejich zpracování
         /// <summary>
-        /// Režim zálohování při ukládání
+        /// Zpracuje jednotlivé akce zadané ve frontě akcí.
+        /// Tato metoda zajistí spuštění fronty asynchronně = na pozadí.
         /// </summary>
-        public enum BackupMode
+        /// <param name="processQueue"></param>
+        private void _DoProcessAsync(ProcessQueueInfo processQueue)
         {
-            /// <summary>
-            /// Nezadáno, použije se <see cref="Overwrite"/>
-            /// </summary>
-            None,
-            /// <summary>
-            /// Vždy přepsat starší soubor
-            /// </summary>
-            Overwrite,
-            /// <summary>
-            /// Zachovat jeden soubor za jeden den: pokud cílový soubor existuje, pak zajistíme že dostane suffix podle jeho dne
-            /// </summary>
-            OneForDay,
-            /// <summary>
-            /// Vždy zálohovat (i více souborů za jeden den)
-            /// </summary>
-            AllFiles
+            ThreadManager.AddAction(() => _DoProcess(processQueue));
         }
-        public enum SaveFormat { Csv, Pack, Zip }
+        /// <summary>
+        /// Zpracuje jednotlivé akce zadané ve frontě akcí.
+        /// Fronta je dynamická, a každé provedení jedné akce ji může změnit.
+        /// </summary>
+        /// <param name="processQueue"></param>
+        private void _DoProcess(ProcessQueueInfo processQueue)
+        {
+            if (processQueue == null) return;
+
+            while (!processQueue.IsEmpty)
+            {
+                bool enableNextStep = _DoProcessOneAction(processQueue);
+                if (!enableNextStep) break;
+            }
+
+            if (processQueue.HasMessages)
+                App.ShowWarning(text: processQueue.Messages);
+        }
+        /// <summary>
+        /// Z fronty akcí v procesu získá další akci, první na řadě, a zajistí její provedení.
+        /// </summary>
+        /// <param name="processQueue"></param>
+        /// <returns></returns>
+        private bool _DoProcessOneAction(ProcessQueueInfo processQueue)
+        {
+            var action = processQueue.GetAction();
+            if (action == null) return true;
+            bool enableNextStep = true;
+            switch (action.ActionType)
+            {
+                case ProcessActionType.ClearAll:
+                    enableNextStep = _DoProcessClearAll(processQueue);
+                    break;
+                case ProcessActionType.LoadInitial:
+                    enableNextStep = _DoProcessLoadInitial(processQueue);
+                    break;
+                case ProcessActionType.LoadFile:
+                    enableNextStep = _DoProcessLoadFile(processQueue);
+                    break;
+                case ProcessActionType.LoadContent:
+                    enableNextStep = _DoProcessLoadContent(processQueue);
+                    break;
+                case ProcessActionType.DownloadUpdate:
+                    enableNextStep = _DoProcessDownloadUpdate(processQueue);
+                    break;
+                case ProcessActionType.DownloadUrl:
+                    enableNextStep = _DoProcessDownloadUrl(processQueue);
+                    break;
+                case ProcessActionType.DownloadDone:
+                    enableNextStep = _DoProcessDownloadDone(processQueue);
+                    break;
+                case ProcessActionType.SaveFile:
+                    enableNextStep = _DoProcessSaveFile(processQueue);
+                    break;
+            }
+            return enableNextStep;
+        }
+        /// <summary>
+        /// Provede kompletní Clear dat
+        /// </summary>
+        /// <param name="progress"></param>
+        private bool _DoProcessClearAll(ProcessQueueInfo processQueue)
+        {
+            this.Clear();
+            return true;
+        }
+        /// <summary>
+        /// Najde soubory, z nichž se budou načítat data. Soubory a navazující akce přidá do fronty.
+        /// </summary>
+        /// <param name="progress"></param>
+        private bool _DoProcessLoadInitial(ProcessQueueInfo processQueue)
+        {
+
+            string standardDataPath = PathData;            // Tady jsou data ukládaná docela standardně
+            string applicationDataPath = App.AppDataPath;  // Tady jsou data distribuovaná spolu s aplikací, ale sem se neukládají
+
+            string structureFile = null;
+            string dataFile = null;
+            string dataPackFile = null;
+            string pocetFile = null;
+            string webObce1File = null;
+            string webObce2File = null;
+
+            // Připravíme si sekvenci akcí typu LoadFile a SaveFile, které provedem ihned po doběhnutí this akce:
+            List<ProcessQueueItem> loadActions = new List<ProcessQueueItem>();
+
+            if (loadActions.Count == 0)
+            {   // 1. Standardní varianta: Struktura + Data:
+                structureFile = SearchFile(StandardStructureFileName, standardDataPath, applicationDataPath);
+                dataFile = SearchFile(StandardDataFileName, standardDataPath, applicationDataPath);
+                if (structureFile != null && dataFile != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, structureFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, dataFile));
+                }
+            }
+
+            if (loadActions.Count == 0)
+            {   // 2. Záložní varianta: DataPack (vše v jednom), typicky první poinstalační spuštění:
+                dataPackFile = SearchFile(StandardDataPackFileName, standardDataPath, applicationDataPath);
+                if (dataPackFile != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, dataPackFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
+                }
+            }
+
+            if (loadActions.Count == 0)
+            {   // 3. Z plných webových dat (počet obyvatel + první verze Obce, obsahující kompletní strukturu):
+                pocetFile = SearchFile(StandardWebPocetFileName, standardDataPath, applicationDataPath);
+                webObce1File = SearchFile(StandardWebObce1FileName, standardDataPath, applicationDataPath);
+                if (pocetFile != null && webObce1File != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, pocetFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, webObce1File));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
+                }
+            }
+
+            if (loadActions.Count == 0)
+            {   // 4. Z kombinovaných dat (struktura obcí + druhá verze Obce, obsahující NE-kompletní strukturu):
+                webObce2File = SearchFile(StandardWebObce2FileName, standardDataPath, applicationDataPath);
+                if (structureFile != null && webObce2File != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, pocetFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, webObce2File));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
+                }
+            }
+
+            processQueue.InsertActions(loadActions.ToArray());
+            return true;
+        }
+
+        private bool _DoProcessLoadFile(ProcessQueueInfo processQueue)
+        {
+            this._LoadFile(processQueue);
+            return true;
+        }
+        private bool _DoProcessLoadContent(ProcessQueueInfo processQueue)
+        {
+            this._LoadContent(processQueue);
+            return true;
+        }
+        private bool _DoProcessDownloadUpdate(ProcessQueueInfo processQueue)
+        {
+            this._WebDownloadUpdate(processQueue);
+            return true;
+        }
+        private bool _DoProcessDownloadUrl(ProcessQueueInfo processQueue)
+        {
+            bool isAsyncRun = this._WebDownloadUrl(processQueue);
+            return !isAsyncRun;       // Pokud metoda _WebDownloadUrl() spustila download asynchronně, vrátila true. V tuto chvíli nesmíme pokračovat ve zpracování dalších akcí fronty, to rozeběhne event DownloadCompleted. Vracíme false.
+        }
+
+        private bool _DoProcessDownloadDone(ProcessQueueInfo processQueue)
+        {
+            this._WebDownloadDone(processQueue);
+            return true;
+        }
+        private bool _DoProcessSaveFile(ProcessQueueInfo processQueue)
+        {
+            _SaveDataFile(processQueue);
+            return true;
+        }
+       
         #endregion
         #region Privátní podpora: adresáře, jména standardních souborů, hlavičkové konstanty v souborech, konverzní metody
         /// <summary>
@@ -1259,11 +1462,6 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const string StandardBackupdownloadFileName = "LastDownload" + StandardPackExtension;
         protected const string StandardPackExtension = ".pack";
 
-        protected const string StandardWebObce2UpdateUrl = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
-        /// <summary>
-        /// Čas, kdy je aktualizována webová databáze. Obsahuje hodiny a minuty, typicky 8:15.
-        /// </summary>
-        protected static TimeSpan StandardWebUpdateTime { get { return TimeSpan.FromHours(8.25d); } }
 
         protected const string StructureHeaderExpected = "H;Structure;BestInCovid;V1;";
         protected const string DataHeaderExpected = "H;Data;BestInCovid;V1;";
@@ -3419,10 +3617,193 @@ namespace Djs.Tools.CovidGraphs.Data
         public ProcessQueueInfo(Action<ProgressArgs> progressAction)
         {
             this.ProgressAction = progressAction;
-            this._ActionsQueue = new Queue<ProcessFileInfo>();
+            this.CurrentAction = null;
+            this._ActionsList = new List<ProcessQueueItem>();
+            this._MessageList = new List<string>();
         }
-        private Queue<ProcessFileInfo> _ActionsQueue;
+        private List<ProcessQueueItem> _ActionsList;
+        private List<string> _MessageList;
+        public override string ToString()
+        {
+            return (this.IsEmpty ? "Empty Queue" : this._ActionsList.Count.ToString() + " actions");
+        }
+        /// <summary>
+        /// true pokud je fronta prázdná
+        /// </summary>
+        public bool IsEmpty { get { return _ActionsList.Count == 0; } }
         public Action<ProgressArgs> ProgressAction { get; set; }
+        /// <summary>
+        /// Dané akce vloží na začátek fronty, před akce které ve frontě již jsou.
+        /// Vložené akce (parametr) budou tedy ve frontě na první pozici, v tom pořadí v jakém jsou předány.
+        /// </summary>
+        /// <param name="actions"></param>
+        internal void InsertActions(params ProcessQueueItem[] actions)
+        {
+            foreach (var action in actions)
+                action.ProcessQueue = this;
+
+            List<ProcessQueueItem> actionList = new List<ProcessQueueItem>(actions);
+            actionList.AddRange(this._ActionsList);
+            this._ActionsList = actionList;
+        }
+        /// <summary>
+        /// Přidá dané akce na konec fronty.
+        /// </summary>
+        /// <param name="actions"></param>
+        internal void AddActions(params ProcessQueueItem[] actions)
+        {
+            foreach (var action in actions)
+                action.ProcessQueue = this;
+
+            this._ActionsList.AddRange(actions);
+        }
+        internal ProcessQueueItem GetAction()
+        {
+            ProcessQueueItem action = null;
+            lock (_ActionsList)
+            {
+                if (_ActionsList.Count > 0)
+                {
+                    action = _ActionsList[0];
+                    _ActionsList.RemoveAt(0);
+                }
+            }
+            CurrentAction = action;
+            return action;
+        }
+        /// <summary>
+        /// true pokud existuje alespoň jedna zpráva, pak má smysl řešit Messages
+        /// </summary>
+        internal bool HasMessages
+        {
+            get
+            {
+                return (this._MessageList.Count > 0);
+            }
+        }
+        internal string Messages
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var message in this._MessageList)
+                {
+                    sb.AppendLine(message);
+                    sb.AppendLine();
+                }
+                return sb.ToString();
+            }
+        }
+        internal void AddMessage(string message)
+        {
+            if (!String.IsNullOrEmpty(message))
+                this._MessageList.Add(message);
+        }
+
+        /// <summary>
+        /// Aktuálně prováděná akce. Je nastavena v metodě <see cref="GetAction"/>, a od té doby je zde dostupná.
+        /// </summary>
+        internal ProcessQueueItem CurrentAction { get; private set; }
+    }
+    /// <summary>
+    /// Jedna akce ve frontě akcí <see cref="ProcessQueueInfo"/>
+    /// </summary>
+    public class ProcessQueueItem
+    {
+        public ProcessQueueItem(ProcessActionType actionType)
+        {
+            this.ActionType = actionType;
+            this.File = null;
+            this.FileType = null;
+            this.Content = null;
+            this.SaveFileFormat = null;
+            this.SaveFileBackupMode = null;
+            this.ProcessFile = null;
+        }
+        public ProcessQueueItem(ProcessActionType actionType, string file) : this(actionType)
+        {
+            this.ActionType = actionType;
+            this.File = file;
+        }
+        public ProcessQueueItem(ProcessActionType actionType, FileContentType fileType) : this(actionType)
+        {
+            this.ActionType = actionType;
+            this.FileType = fileType;
+        }
+        public ProcessQueueItem(ProcessActionType actionType, byte[] content) : this(actionType)
+        {
+            this.ActionType = actionType;
+            this.Content = content;
+        }
+        public override string ToString()
+        {
+            string text = this.ActionType.ToString();
+            if (this.File != null)
+                text += "; File: " + this.File;
+            else if (this.FileType.HasValue)
+                text += "; FileType: " + this.FileType.Value.ToString();
+            else if (this.Content != null)
+                text += "; Content: " + this.Content.Length.ToString("### ### ### ##0").Trim() + " Bytes";
+
+            return text;
+        }
+        public ProcessQueueInfo ProcessQueue { get; set; }
+        public ProcessActionType ActionType { get; private set; }
+        public string File { get; set; }
+        public FileContentType? FileType { get; set; }
+        public byte[] Content { get; private set; }
+        public SaveFormat? SaveFileFormat { get; set; }
+        /// <summary>
+        /// Jak zálohovat existující soubor (přejmenovat starší před tím, než se uloží nový)
+        /// </summary>
+        public BackupMode? SaveFileBackupMode { get; set; }
+        public ProcessFileInfo ProcessFile { get; set; }
+
+    }
+    /// <summary>
+    /// Druh akce, která má být provedena
+    /// </summary>
+    public enum ProcessActionType
+    {
+        /// <summary>
+        /// Žádná
+        /// </summary>
+        None,
+        /// <summary>
+        /// Smazání všech dat v databázi
+        /// </summary>
+        ClearAll,
+        /// <summary>
+        /// Úvodní načtení dat = vyhledání souborů na disku a zadání jednotlivých akcí <see cref="LoadFile"/> na konkrétní soubory do fronty,
+        /// plus případně <see cref="SaveFile"/> pro uložení provozních dat
+        /// </summary>
+        LoadInitial,
+        /// <summary>
+        /// Načtení jednoho konkrétního souboru z disku
+        /// </summary>
+        LoadFile,
+        /// <summary>
+        /// Načtení dat dodaných jako byte[] Content
+        /// </summary>
+        LoadContent,
+        /// <summary>
+        /// Zajištění aktualizace z internetu = prověření data posledního načtení jednotlivých datových sad a zadání akcí typu <see cref="DownloadUrl"/> pro jednotlivé URL adresy
+        /// </summary>
+        DownloadUpdate,
+        /// <summary>
+        /// Zahájení stahování jednoho souboru z jedné URL adresy. Pozor, tato akce proběhne asynchronně (=vlastnost komponenty),
+        /// tedy následující akce ve frontě nemohou být prováděny po doběhnutí této akce, ale pokračování zpracování fronty je restartováno v události DownloadComplete.
+        /// Akce <see cref="DownloadUrl"/> tedy po nastartování downloadu insertuje do fronty (na první pozici) akci navazující = <see cref="DownloadDone"/>.
+        /// </summary>
+        DownloadUrl,
+        /// <summary>
+        /// Akce prováděná po úspěšném dokončení downloadu
+        /// </summary>
+        DownloadDone,
+        /// <summary>
+        /// Uložit jeden soubor
+        /// </summary>
+        SaveFile
     }
     public class ProcessFileInfo
     {
@@ -3627,6 +4008,34 @@ namespace Djs.Tools.CovidGraphs.Data
         WebDownloading,
         WebDownloaded,
         Invalid
+    }
+    public enum SaveFormat
+    {
+        Csv,
+        Pack,
+        Zip
+    }
+    /// <summary>
+    /// Režim zálohování při ukládání
+    /// </summary>
+    public enum BackupMode
+    {
+        /// <summary>
+        /// Nezadáno, použije se <see cref="Overwrite"/>
+        /// </summary>
+        None,
+        /// <summary>
+        /// Vždy přepsat starší soubor
+        /// </summary>
+        Overwrite,
+        /// <summary>
+        /// Zachovat jeden soubor za jeden den: pokud cílový soubor existuje, pak zajistíme že dostane suffix podle jeho dne
+        /// </summary>
+        OneForDay,
+        /// <summary>
+        /// Vždy zálohovat (i více souborů za jeden den)
+        /// </summary>
+        AllFiles
     }
     #endregion
     #region DataVisualInfo

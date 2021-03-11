@@ -162,7 +162,17 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         private static WF.DialogResult _ShowMessage(WF.IWin32Window owner, string text, string caption, WF.MessageBoxButtons buttons, WF.MessageBoxIcon icon, WF.MessageBoxDefaultButton defaultButton)
         {
-            return WF.MessageBox.Show(owner, text, caption, buttons, icon, defaultButton);
+            WF.DialogResult result;
+            if (owner != null && owner is WF.Form mainForm && mainForm != null && mainForm.InvokeRequired)
+            {
+                result = (WF.DialogResult)mainForm.Invoke(new Func<WF.IWin32Window, string, string, WF.MessageBoxButtons, WF.MessageBoxIcon, WF.MessageBoxDefaultButton, WF.DialogResult>(_ShowMessage),
+                    owner, text, caption, buttons, icon, defaultButton);
+            }
+            else
+            {
+                result = WF.MessageBox.Show(owner, text, caption, buttons, icon, defaultButton);
+            }
+            return result;
         }
         public static string AppTitle { get { return "Database"; } }
         protected static WF.Form GetMainForm()
