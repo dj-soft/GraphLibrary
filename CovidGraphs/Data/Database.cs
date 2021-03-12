@@ -77,14 +77,21 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public void Clear()
         {
-            ClearData(FileContentType.Structure);
-            ClearData(FileContentType.Data);
-            ClearData(FileContentType.DataPack);
-            ClearData(FileContentType.CovidObce1);
-            ClearData(FileContentType.PocetObyvatel);
+            _ClearAll(null);
+        }
+        /// <summary>
+        /// Smaže veškerá data uvnitř této databáze
+        /// </summary>
+        private void _ClearAll(ProcessQueueInfo processQueue)
+        {
+            _ClearData(FileContentType.Structure);
+            _ClearData(FileContentType.Data);
+            _ClearData(FileContentType.DataPack);
+            _ClearData(FileContentType.CovidObce1);
+            _ClearData(FileContentType.PocetObyvatel);
             State = StateType.Empty;
         }
-        private void ClearData(FileContentType contentType)
+        private void _ClearData(FileContentType contentType)
         {
             switch (contentType)
             {
@@ -127,6 +134,9 @@ namespace Djs.Tools.CovidGraphs.Data
                     _PocetInfo = null;
                     _Pocet.Clear();
                     _HasData = false;
+                    break;
+                case FileContentType.Umrti:
+                    _World.Clear(FileContentType.Umrti);
                     break;
             }
         }
@@ -175,6 +185,9 @@ namespace Djs.Tools.CovidGraphs.Data
                 case FileContentType.PocetObyvatel:
                     _PocetInfo = processInfo;
                     break;
+                case FileContentType.Umrti:
+
+                    break;
             }
             processInfo.ProcessState = _GetFinalStateAfter(processInfo.ProcessState);
 
@@ -216,7 +229,7 @@ namespace Djs.Tools.CovidGraphs.Data
             ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
             processQueue.AddActions(new ProcessQueueItem(ProcessActionType.ClearAll));
             processQueue.AddActions(new ProcessQueueItem(ProcessActionType.LoadInitial));
-            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUpdate));
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUpdateNew));
             _DoProcessAsync(processQueue);
         }
         /// <summary>
@@ -246,6 +259,74 @@ namespace Djs.Tools.CovidGraphs.Data
             ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
             processQueue.AddActions(new ProcessQueueItem(ProcessActionType.LoadContent, content));
             _DoProcessAsync(processQueue);
+        }
+        /// <summary>
+        /// Najde soubory, z nichž se budou načítat data. Soubory a navazující akce přidá do fronty.
+        /// </summary>
+        /// <param name="progress"></param>
+        private void _LoadInitial(ProcessQueueInfo processQueue)
+        {
+            string standardDataPath = PathData;            // Tady jsou data ukládaná docela standardně
+            string applicationDataPath = App.AppDataPath;  // Tady jsou data distribuovaná spolu s aplikací, ale sem se neukládají
+
+            string structureFile = null;
+            string dataFile = null;
+            string dataPackFile = null;
+            string pocetFile = null;
+            string webObce1File = null;
+            string webObce2File = null;
+
+            // Připravíme si sekvenci akcí typu LoadFile a SaveFile, které provedem ihned po doběhnutí this akce:
+            List<ProcessQueueItem> loadActions = new List<ProcessQueueItem>();
+
+            if (loadActions.Count == 0)
+            {   // 1. Standardní varianta: Struktura + Data:
+                structureFile = SearchFile(StandardStructureFileName, standardDataPath, applicationDataPath);
+                dataFile = SearchFile(StandardDataFileName, standardDataPath, applicationDataPath);
+                if (structureFile != null && dataFile != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, structureFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, dataFile));
+                }
+            }
+
+            if (loadActions.Count == 0)
+            {   // 2. Záložní varianta: DataPack (vše v jednom), typicky první poinstalační spuštění:
+                dataPackFile = SearchFile(StandardDataPackFileName, standardDataPath, applicationDataPath);
+                if (dataPackFile != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, dataPackFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
+                }
+            }
+
+            if (loadActions.Count == 0)
+            {   // 3. Z plných webových dat (počet obyvatel + první verze Obce, obsahující kompletní strukturu):
+                pocetFile = SearchFile(StandardWebPocetFileName, standardDataPath, applicationDataPath);
+                webObce1File = SearchFile(StandardWebObce1FileName, standardDataPath, applicationDataPath);
+                if (pocetFile != null && webObce1File != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, pocetFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, webObce1File));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
+                }
+            }
+
+            if (loadActions.Count == 0)
+            {   // 4. Z kombinovaných dat (struktura obcí + druhá verze Obce, obsahující NE-kompletní strukturu):
+                webObce2File = SearchFile(StandardWebObce2FileName, standardDataPath, applicationDataPath);
+                if (structureFile != null && webObce2File != null)
+                {
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, pocetFile));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, webObce2File));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
+                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
+                }
+            }
+
+            processQueue.InsertActions(loadActions.ToArray());
         }
         /// <summary>
         /// Načte obsah daného souboru, detekuje a zpracuje jej
@@ -327,7 +408,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     processInfo.ContentType = _LoadDetectContentTypeByHeader(line, processInfo);
                     this._CheckDataContent(processInfo);
                     processInfo.ProcessState = ProcessFileState.Loading;
-                    this.ClearData(processInfo.ContentType);
+                    this._ClearData(processInfo.ContentType);
                     break;
 
                 case ProcessFileState.Loading:
@@ -387,6 +468,7 @@ namespace Djs.Tools.CovidGraphs.Data
             if (String.Equals(header, Covid2HeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.CovidObce2;
             if (String.Equals(header, Covid3HeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.CovidObce3;
             if (String.Equals(header, PocetHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.PocetObyvatel;
+            if (String.Equals(header, UmrtiHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Umrti;
 
             string name = IO.Path.GetFileName(processInfo.FileName);
             throw new FormatException($"Database.Load() : zadaný vstupní soubor {name} nemá odpovídající záhlaví (úvodní řádek).");
@@ -401,6 +483,7 @@ namespace Djs.Tools.CovidGraphs.Data
             {
                 case FileContentType.CovidObce2:
                 case FileContentType.CovidObce3:
+                case FileContentType.Umrti:
                     if (this._Vesnice == null || this._Vesnice.Count == 0)
                     {
                         throw new InvalidOperationException($"Nelze načítat data typu {processInfo.ContentType} do databáze, která nemá načtenou strukturu obcí.");
@@ -437,6 +520,9 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case FileContentType.PocetObyvatel:
                     _LoadLinePocet(processInfo, line);
+                    break;
+                case FileContentType.Umrti:
+                    _LoadLineUmrti(processInfo, line);
                     break;
             }
         }
@@ -689,6 +775,23 @@ namespace Djs.Tools.CovidGraphs.Data
             loadInfo.RecordCount += 1;
         }
         /// <summary>
+        /// Načte řádek dat ve struktuře <see cref="FileContentType.Umrti"/>
+        /// </summary>
+        /// <param name="loadInfo"></param>
+        /// <param name="line"></param>
+        private void _LoadLineUmrti(ProcessFileInfo loadInfo, string line)
+        {
+            string[] items = line.Split(',');
+            if (items.Length < 5) return;
+
+            string fullCode = "CZ." + items[3] + "." + items[4];
+            EntityInfo entity = GetEntity(fullCode);
+
+            if (entity != null)
+                entity.AddOrCreateData(0, null);
+
+        }
+        /// <summary>
         /// Metoda v případě potřeby vytvoří new instanci <see cref="ProcessFileCurrentInfo"/> do <see cref="ProcessFileInfo.CurrentInfo"/>, a vrátí ji.
         /// </summary>
         /// <param name="loadInfo"></param>
@@ -711,7 +814,7 @@ namespace Djs.Tools.CovidGraphs.Data
         public void WebUpdate(Action<ProgressArgs> progress = null)
         {
             ProcessQueueInfo processQueue = new ProcessQueueInfo(progress);
-            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUpdate));
+            processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUpdateAll));
             _DoProcessAsync(processQueue);
         }
         /// <summary>
@@ -727,7 +830,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 int diff = ((TimeSpan)(now.Date - content.Date)).Days;              // Kolik dní jsou stará data? 0=dnešní, 1=včerejší, 2=předvčerejší, ...
                 if (diff <= 0) return false;                                        // Pokud data jsou dnešní (bez ohledu na čas dat, a čas aktuální), pak není třeba dělat download
                 if (diff > 1) return true;                                          // Předvčerejší data: stáhněme nová
-                return (now.TimeOfDay >= StandardWebUpdateTimeCzV2WebObce);                    // Data jsou právě včerejší: nová stáhneme jen tehdy, když je aktuální čas větší než čas, kdy se data na webu aktualizují
+                return (now.TimeOfDay >= StandardUpdateTimeWebCzV2);                    // Data jsou právě včerejší: nová stáhneme jen tehdy, když je aktuální čas větší než čas, kdy se data na webu aktualizují
             }
         }
         /// <summary>
@@ -735,13 +838,14 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="processQueue"></param>
         /// <returns></returns>
-        private void _WebDownloadUpdate(ProcessQueueInfo processQueue)
+        private void _WebDownloadUpdate(ProcessQueueInfo processQueue, bool forceAll)
         {
-            DateTime? lastTimeCzWebObce = App.Config.UserDataGet(ConfigUserDataTimeCzV2WebObce, (DateTime?)null);
-            if (_WebUpdateIsTimeForUpload(lastTimeCzWebObce, StandardWebUpdateTimeCzV2WebObce))
-                processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2WebObce));
+            if (forceAll || _WebUpdateIsTimeForUpload(ConfigUserDataTimeDownloadCzV2Obce, StandardUpdateTimeWebCzV2))
+                processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2Obce) { FileType = FileContentType.CovidObce3, WebUpdateTimeConfigName = ConfigUserDataTimeDownloadCzV2Obce, WebUpdateMinAcceptSize = 20000000 });
 
-     //       processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2Umrti));
+            if (forceAll || _WebUpdateIsTimeForUpload(ConfigUserDataTimeDownloadCzV2Umrti , StandardUpdateTimeWebCzV2))
+                processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2Umrti) { FileType = FileContentType.Umrti, WebUpdateTimeConfigName = ConfigUserDataTimeDownloadCzV2Umrti , WebUpdateMinAcceptSize = 1000 });
+
         }
         /// <summary>
         /// Metoda vrátí true, pokud je vhodné provést download dat z webu, když poslední stahování dat bylo v daném čase, a hodina aktualizace je zadaná.
@@ -749,18 +853,29 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="lastDateTime"></param>
         /// <param name="updateTime"></param>
         /// <returns></returns>
-        private bool _WebUpdateIsTimeForUpload(DateTime? lastDateTime, TimeSpan updateTime)
+        private bool _WebUpdateIsTimeForUpload(string configName, TimeSpan standardUpdateTime)
         {
-            if (!lastDateTime.HasValue) return true;
+            DateTime? lastUpdateTime = App.Config.UserDataGet(configName, (DateTime?)null);
+            return _WebUpdateIsTimeForUpload(lastUpdateTime, standardUpdateTime);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud je vhodné provést download dat z webu, když poslední stahování dat bylo v daném čase, a hodina aktualizace je zadaná.
+        /// </summary>
+        /// <param name="lastUpdateTime"></param>
+        /// <param name="standardUpdateTime"></param>
+        /// <returns></returns>
+        private bool _WebUpdateIsTimeForUpload(DateTime? lastUpdateTime, TimeSpan standardUpdateTime)
+        {
+            if (!lastUpdateTime.HasValue) return true;
 
             DateTime now = DateTime.Now;
             DateTime nowDate = now.Date;
             TimeSpan nowTime = now.TimeOfDay;
 
             // Čas, kdy měla proběhnout poslední aktualizace dat na webu: pokud aktuální čas je větší, pak dnešní aktualizace, jinak včerejší:
-            DateTime lastUpdate = ((nowTime > updateTime) ? (nowDate + updateTime) : (nowDate.AddDays(-1d) + updateTime));
+            DateTime lastUpdate = ((nowTime > standardUpdateTime) ? (nowDate + standardUpdateTime) : (nowDate.AddDays(-1d) + standardUpdateTime));
 
-            return (lastDateTime.Value < lastUpdate);
+            return (lastUpdateTime.Value < lastUpdate);
         }
         /// <summary>
         /// Provede aktualizaci z internetu
@@ -775,7 +890,7 @@ namespace Djs.Tools.CovidGraphs.Data
             action.File = _WebDownloadGetUrl(action);
 
             ProcessFileInfo updateInfo = new ProcessFileInfo(DataMediumType.WebUrl, action.File);
-            updateInfo.ContentType = FileContentType.CovidObce3;
+            updateInfo.ContentType = action.FileType ?? FileContentType.None;
             updateInfo.ProcessState = ProcessFileState.WebDownloading;
             updateInfo.ProgressAction = processQueue.ProgressAction;
             action.ProcessFile = updateInfo;
@@ -807,7 +922,9 @@ namespace Djs.Tools.CovidGraphs.Data
                 case FileContentType.CovidObce1:
                 case FileContentType.CovidObce2:
                 case FileContentType.CovidObce3:
-                    return StandardUpdateUrlCzV2WebObce;
+                    return StandardUpdateUrlCzV2Obce;
+                case FileContentType.Umrti:
+                    return StandardUpdateUrlCzV2Umrti;
                 default:
                     throw new ArgumentException($"Nelze z internetu aktualizovat data typu: {contentType}.");
             }
@@ -876,7 +993,7 @@ namespace Djs.Tools.CovidGraphs.Data
             // Zpracování načtených dat ale chceme provést v threadu OnBackground, proto tuto akci vložíme na začátek do fronty akcí:
             var content = e.Result;
             ProcessQueueInfo processQueue = action.ProcessQueue;
-            processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.DownloadDone, content) { ProcessFile = updateInfo });
+            processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.DownloadDone, content) { ProcessFile = updateInfo, WebUpdateTimeConfigName = action.WebUpdateTimeConfigName, WebUpdateMinAcceptSize = action.WebUpdateMinAcceptSize });
         }
         /// <summary>
         /// Provádí se po downloadu a po prověření dat z internetu: zazálohuje dodaná data z internetu, načte je do databáze, databázi prověří a případně rollbackuje.
@@ -891,7 +1008,7 @@ namespace Djs.Tools.CovidGraphs.Data
             byte[] content = action.Content;
             ProcessFileInfo updateInfo = action.ProcessFile;
 
-            if (!this._IsValidDownloadData(content, updateInfo))
+            if (!this._IsValidDownloadData(content, action))
             {
                 processQueue.AddMessage($"Data načtená z internetu ({updateInfo.ContentType}) nejsou zřejmě v pořádku, byla odmítnuta.");
                 return;
@@ -900,16 +1017,18 @@ namespace Djs.Tools.CovidGraphs.Data
             this._BackupContentToFile(content, updateInfo);
 
             processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.LoadContent, content));
-            _DoProcessOneAction(processQueue);
+            _DoProcessOneAction(processQueue);                                 // Pozor, od této chvíle je v processQueue.CurrentAction akce LoadContent, kdežto v action je uchována akce DownloadDone!
 
             if (_IsValidDataAfterUpdate(out string errorMessage))
             {   // Načtená data jsou OK: uložím si datum načtení, a uložíme data do souboru Data:
-                App.Config.UserDataAdd(ConfigUserDataTimeCzV2WebObce, DateTime.Now);
+                App.Config.UserDataAdd(action.WebUpdateTimeConfigName, DateTime.Now);
 
                 processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data) { SaveFileFormat = SaveFormat.Pack, SaveFileBackupMode = BackupMode.OneForDay });
             }
             else
             {   // Po chybě při načítání dat: zajistíme restore dat (Clear + LoadInitial), a chybovou hlášku:
+                // Tím se vrátíme k posledně uloženému stavu dat.
+                // V případě vícenásobného update z internetu (více stahování) a chybě někde uprostřed se tímto principem vracíme ke stavu z předchozího update.
                 processQueue.InsertActions(new ProcessQueueItem(ProcessActionType.ClearAll), new ProcessQueueItem(ProcessActionType.LoadInitial));
 
                 processQueue.AddMessage($"Data načtená z internetu ({updateInfo.ContentType}) neobsahují platné informace a budou zahozena.\r\nProblém: {errorMessage}.");
@@ -940,17 +1059,16 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <param name="content"></param>
         /// <param name="updateInfo"></param>
         /// <returns></returns>
-        private bool _IsValidDownloadData(byte[] content, ProcessFileInfo updateInfo)
+        private bool _IsValidDownloadData(byte[] content, ProcessQueueItem action)
         {
-            string message = null;
-            if (content.Length < 1000000)
-                message = "Pozor, data získaná z internetu nejsou platná, jsou příliš malá.";
-            else if (updateInfo.ContentType == FileContentType.CovidObce3 && content.Length < 10000000)
-                message = "Pozor, data získaná z internetu nejsou platná, na očekávaná data 'CovidObce3' jsou příliš malá.";
-
-            if (message == null) return true;
-            App.ShowError(message);
-            return false;
+            bool isValid = true;
+            if (action.WebUpdateMinAcceptSize.HasValue && action.WebUpdateMinAcceptSize.Value > 0 && content.Length < action.WebUpdateMinAcceptSize.Value)
+            {
+                ProcessFileInfo updateInfo = action.ProcessFile;
+                action.ProcessQueue.AddMessage($"Data typu {action.FileType} načtená z internetu jsou příliš malá a nebudou použita. Načteno: {content.Length}, očekáváno nejméně: {action.WebUpdateMinAcceptSize.Value}.");
+                isValid = false;
+            }
+            return isValid;
         }
         /// <summary>
         /// Prověří data v databázi, zda jsou OK.
@@ -995,14 +1113,16 @@ namespace Djs.Tools.CovidGraphs.Data
             return true;
         }
 
-        protected const string ConfigUserDataTimeCzV2WebObce = "DownloadTimeCzV2WebObce";
-        protected const string StandardUpdateUrlCzV2WebObce = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
-        protected const string StandardUpdateUrlCzV2Umrti = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/umrti.csv";
-
         /// <summary>
         /// Čas, kdy je aktualizována webová databáze. Obsahuje hodiny a minuty, typicky 8:15.
         /// </summary>
-        protected static TimeSpan StandardWebUpdateTimeCzV2WebObce { get { return TimeSpan.FromHours(8.25d); } }
+        protected static TimeSpan StandardUpdateTimeWebCzV2 { get { return TimeSpan.FromHours(8.25d); } }
+
+        protected const string ConfigUserDataTimeDownloadCzV2Obce = "DownloadTimeCzV2WebObce";
+        protected const string StandardUpdateUrlCzV2Obce = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
+        protected const string ConfigUserDataTimeDownloadCzV2Umrti = "DownloadTimeCzV2WebUmrti";
+        protected const string StandardUpdateUrlCzV2Umrti = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/umrti.csv";
+
 
         #endregion
         #region Save : ukládání do interního formátu
@@ -1264,19 +1384,22 @@ namespace Djs.Tools.CovidGraphs.Data
             switch (action.ActionType)
             {
                 case ProcessActionType.ClearAll:
-                    enableNextStep = _DoProcessClearAll(processQueue);
+                    this._ClearAll(processQueue);
                     break;
                 case ProcessActionType.LoadInitial:
-                    enableNextStep = _DoProcessLoadInitial(processQueue);
+                    _LoadInitial(processQueue);
                     break;
                 case ProcessActionType.LoadFile:
-                    enableNextStep = _DoProcessLoadFile(processQueue);
+                    this._LoadFile(processQueue);
                     break;
                 case ProcessActionType.LoadContent:
-                    enableNextStep = _DoProcessLoadContent(processQueue);
+                    this._LoadContent(processQueue);
                     break;
-                case ProcessActionType.DownloadUpdate:
-                    enableNextStep = _DoProcessDownloadUpdate(processQueue);
+                case ProcessActionType.DownloadUpdateAll:
+                    this._WebDownloadUpdate(processQueue, true);
+                    break;
+                case ProcessActionType.DownloadUpdateNew:
+                    enableNextStep = _DoProcessDownloadUpdateNew(processQueue);
                     break;
                 case ProcessActionType.DownloadUrl:
                     enableNextStep = _DoProcessDownloadUrl(processQueue);
@@ -1290,99 +1413,16 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             return enableNextStep;
         }
-        /// <summary>
-        /// Provede kompletní Clear dat
-        /// </summary>
-        /// <param name="progress"></param>
-        private bool _DoProcessClearAll(ProcessQueueInfo processQueue)
+
+
+        private bool _DoProcessDownloadUpdateAll(ProcessQueueInfo processQueue)
         {
-            this.Clear();
+            this._WebDownloadUpdate(processQueue, true);
             return true;
         }
-        /// <summary>
-        /// Najde soubory, z nichž se budou načítat data. Soubory a navazující akce přidá do fronty.
-        /// </summary>
-        /// <param name="progress"></param>
-        private bool _DoProcessLoadInitial(ProcessQueueInfo processQueue)
+        private bool _DoProcessDownloadUpdateNew(ProcessQueueInfo processQueue)
         {
-
-            string standardDataPath = PathData;            // Tady jsou data ukládaná docela standardně
-            string applicationDataPath = App.AppDataPath;  // Tady jsou data distribuovaná spolu s aplikací, ale sem se neukládají
-
-            string structureFile = null;
-            string dataFile = null;
-            string dataPackFile = null;
-            string pocetFile = null;
-            string webObce1File = null;
-            string webObce2File = null;
-
-            // Připravíme si sekvenci akcí typu LoadFile a SaveFile, které provedem ihned po doběhnutí this akce:
-            List<ProcessQueueItem> loadActions = new List<ProcessQueueItem>();
-
-            if (loadActions.Count == 0)
-            {   // 1. Standardní varianta: Struktura + Data:
-                structureFile = SearchFile(StandardStructureFileName, standardDataPath, applicationDataPath);
-                dataFile = SearchFile(StandardDataFileName, standardDataPath, applicationDataPath);
-                if (structureFile != null && dataFile != null)
-                {
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, structureFile));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, dataFile));
-                }
-            }
-
-            if (loadActions.Count == 0)
-            {   // 2. Záložní varianta: DataPack (vše v jednom), typicky první poinstalační spuštění:
-                dataPackFile = SearchFile(StandardDataPackFileName, standardDataPath, applicationDataPath);
-                if (dataPackFile != null)
-                {
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, dataPackFile));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
-                }
-            }
-
-            if (loadActions.Count == 0)
-            {   // 3. Z plných webových dat (počet obyvatel + první verze Obce, obsahující kompletní strukturu):
-                pocetFile = SearchFile(StandardWebPocetFileName, standardDataPath, applicationDataPath);
-                webObce1File = SearchFile(StandardWebObce1FileName, standardDataPath, applicationDataPath);
-                if (pocetFile != null && webObce1File != null)
-                {
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, pocetFile));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, webObce1File));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
-                }
-            }
-
-            if (loadActions.Count == 0)
-            {   // 4. Z kombinovaných dat (struktura obcí + druhá verze Obce, obsahující NE-kompletní strukturu):
-                webObce2File = SearchFile(StandardWebObce2FileName, standardDataPath, applicationDataPath);
-                if (structureFile != null && webObce2File != null)
-                {
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, pocetFile));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.LoadFile, webObce2File));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Structure));
-                    loadActions.Add(new ProcessQueueItem(ProcessActionType.SaveFile, FileContentType.Data));
-                }
-            }
-
-            processQueue.InsertActions(loadActions.ToArray());
-            return true;
-        }
-
-        private bool _DoProcessLoadFile(ProcessQueueInfo processQueue)
-        {
-            this._LoadFile(processQueue);
-            return true;
-        }
-        private bool _DoProcessLoadContent(ProcessQueueInfo processQueue)
-        {
-            this._LoadContent(processQueue);
-            return true;
-        }
-        private bool _DoProcessDownloadUpdate(ProcessQueueInfo processQueue)
-        {
-            this._WebDownloadUpdate(processQueue);
+            this._WebDownloadUpdate(processQueue, false);
             return true;
         }
         private bool _DoProcessDownloadUrl(ProcessQueueInfo processQueue)
@@ -1478,6 +1518,9 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const int Covid3ItemCountExpected = 15;
         protected const string PocetHeaderExpected = ";kraj;mesto;kod_obce;nazev_obce;muzi;muzi15;zeny;zeny15;celkem;celkem15";
         protected const int PocetItemCountExpected = 11;
+        protected const string UmrtiHeaderExpected = "datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod";
+        protected const int UmrtiItemCountExpected = 5;
+       
         protected const string VoidEntityCode = "0";
 
         protected const string HeaderDataProperties = "C";
@@ -3723,6 +3766,8 @@ namespace Djs.Tools.CovidGraphs.Data
             this.SaveFileFormat = null;
             this.SaveFileBackupMode = null;
             this.ProcessFile = null;
+            this.WebUpdateTimeConfigName = null;
+            this.WebUpdateMinAcceptSize = null;
         }
         public ProcessQueueItem(ProcessActionType actionType, string file) : this(actionType)
         {
@@ -3762,6 +3807,14 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         public BackupMode? SaveFileBackupMode { get; set; }
         public ProcessFileInfo ProcessFile { get; set; }
+        /// <summary>
+        /// Název konfigurace, kam se ukládá datum posledního úspěšného WebUpdate
+        /// </summary>
+        public string WebUpdateTimeConfigName { get; set; }
+        /// <summary>
+        /// Nejmenší platná / akceptovatelná velikost souboru. Pokud bude staženo menší množství dat, nebudou se akceptovat.
+        /// </summary>
+        public int? WebUpdateMinAcceptSize { get; set; }
 
     }
     /// <summary>
@@ -3791,9 +3844,13 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         LoadContent,
         /// <summary>
+        /// Zajištění aktualizace z internetu = načte všechny dostupné soubory, bez ohledu na datum poslední aktualizace.
+        /// </summary>
+        DownloadUpdateAll,
+        /// <summary>
         /// Zajištění aktualizace z internetu = prověření data posledního načtení jednotlivých datových sad a zadání akcí typu <see cref="DownloadUrl"/> pro jednotlivé URL adresy
         /// </summary>
-        DownloadUpdate,
+        DownloadUpdateNew,
         /// <summary>
         /// Zahájení stahování jednoho souboru z jedné URL adresy. Pozor, tato akce proběhne asynchronně (=vlastnost komponenty),
         /// tedy následující akce ve frontě nemohou být prováděny po doběhnutí této akce, ale pokračování zpracování fronty je restartováno v události DownloadComplete.
@@ -3924,6 +3981,9 @@ namespace Djs.Tools.CovidGraphs.Data
                     case FileContentType.PocetObyvatel:
                         description += "počty obyvatel ";
                         break;
+                    case FileContentType.Umrti:
+                        description += "počty zemřelých ";
+                        break;
                     default:
                         description += "soubor typu " + this.ContentType.ToString();
                         break;
@@ -3980,7 +4040,7 @@ namespace Djs.Tools.CovidGraphs.Data
             get
             {
                 var contentType = this.ContentType;
-                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2 || contentType == FileContentType.CovidObce3);
+                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2 || contentType == FileContentType.CovidObce3 || contentType == FileContentType.Umrti);
             }
         }
     }
@@ -3996,7 +4056,8 @@ namespace Djs.Tools.CovidGraphs.Data
         PocetObyvatel,
         CovidObce1,
         CovidObce2,
-        CovidObce3
+        CovidObce3,
+        Umrti
     }
     /// <summary>
     /// Stav zpracování souboru
