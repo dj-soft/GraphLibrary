@@ -740,6 +740,8 @@ namespace Djs.Tools.CovidGraphs.Data
             DateTime? lastTimeCzWebObce = App.Config.UserDataGet(ConfigUserDataTimeCzV2WebObce, (DateTime?)null);
             if (_WebUpdateIsTimeForUpload(lastTimeCzWebObce, StandardWebUpdateTimeCzV2WebObce))
                 processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2WebObce));
+
+     //       processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2Umrti));
         }
         /// <summary>
         /// Metoda vrátí true, pokud je vhodné provést download dat z webu, když poslední stahování dat bylo v daném čase, a hodina aktualizace je zadaná.
@@ -995,6 +997,8 @@ namespace Djs.Tools.CovidGraphs.Data
 
         protected const string ConfigUserDataTimeCzV2WebObce = "DownloadTimeCzV2WebObce";
         protected const string StandardUpdateUrlCzV2WebObce = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
+        protected const string StandardUpdateUrlCzV2Umrti = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/umrti.csv";
+
         /// <summary>
         /// Čas, kdy je aktualizována webová databáze. Obsahuje hodiny a minuty, typicky 8:15.
         /// </summary>
