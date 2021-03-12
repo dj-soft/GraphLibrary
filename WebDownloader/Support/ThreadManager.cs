@@ -208,9 +208,201 @@ namespace Djs.Tools.WebDownloader.Support
             Instance._AddAction(actionInfo);
             return actionInfo;
         }
+
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// <para/>
+        /// Požadovaná akce je zařazena k vykonání v aktuálním threadu po doběhnutí aktuální akce. Slouží tedy ke zřetězení akcí, pro synchronní provedení.
+        /// Tedy např. nyní běží akce 1 (určitá metoda výkonného kódu vyvolaná v rámci <see cref="ThreadManager"/>). 
+        /// V jejím rámci zjistíme, že potřebujeme provést akci 2, nebo akce 2,3,4... poté, kdy dokončíme naši akci. Přidáme je tedy postupně pomocí <see cref="ThreadManager.EnqueueAction(Action, Action)"/>.
+        /// Samozřejmě bychom tyto další akce mohli zavolat přímo - na našem konci, 
+        /// ale pro běžící kód to znamená určitou reorganizaci, střádání parametrů a tvoření "vlastní fronty" požadavků a parametrů.
+        /// Zdejší metoda nabízí řešení tohoto požadavku.
+        /// <para/>
+        /// Rozdíl mezi <see cref="AddAction(Action, Action)"/> a <see cref="ThreadManager.EnqueueAction(Action, Action)"/> je tedy zřejmý:
+        /// První verze zařadí požadavek do zcela asynchronní fronty, kdy provedení požadované akce může začít asynchronně v podstatě ihned (když je volný thread) 
+        /// anebo až dlouhou dobu po zadání požadavku (když není volný thread, a existuje mnoho nevyřízených požadaků.
+        /// Druhá verze zajistí, že požadavek bude zpracován ihned po dokončení aktuální akce, nikdy ne dřív, a nebude čekat na cizí nesouvisející požadavky. 
+        /// Tedy takové cizí požadavky předběhne.
+        /// <para/>
+        /// Pomocí metody <see cref="ThreadManager.EnqueueAction(Action, Action)"/> je možno zařadit do fronty více požadovaných akcí, ty pak budou prováděny synchronně (jedna za druhou)
+        /// v tom pořadí, v jakém byly zadány, nepřerušovaně od jiných požadavků, všechny ve stejném threadu.
+        /// <para/>
+        /// Pozor, pokud je metoda volána mimo běh výkonného threadu, pak je požadavek zařazen do běžné fronty požadavků = nesynchronních!
+        /// Tento stav lze detekovat pomocí property <see cref="IsInAnyWorkingThread"/>.
+        /// </summary>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDone"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(Action actionRun, Action actionDone = null)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, actionRun, null, null, actionDone, null, null);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(Action actionRun, Action<object[]> actionDoneArgs, params object[] doneArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, actionRun, null, null, null, actionDoneArgs, doneArguments);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(Action<object[]> actionRunArgs, params object[] runArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, null, actionRunArgs, runArguments, null, null, null);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="actionDone"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(Action<object[]> actionRunArgs, Action actionDone, params object[] runArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, null, actionRunArgs, runArguments, actionDone, null, null);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(Action<object[]> actionRunArgs, object[] runArguments, Action<object[]> actionDoneArgs, object[] doneArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(null, null, actionRunArgs, runArguments, null, actionDoneArgs, doneArguments);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDone"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(string name, Action actionRun, Action actionDone = null)
+        {
+            ActionInfo actionInfo = new ActionInfo(name, actionRun, null, null, actionDone, null, null);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRun"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(string name, Action actionRun, Action<object[]> actionDoneArgs, params object[] doneArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(name, actionRun, null, null, null, actionDoneArgs, doneArguments);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(string name, Action<object[]> actionRunArgs, params object[] runArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(name, null, actionRunArgs, runArguments, null, null, null);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="actionDone"></param>
+        /// <param name="runArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(string name, Action<object[]> actionRunArgs, Action actionDone, params object[] runArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(name, null, actionRunArgs, runArguments, actionDone, null, null);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+        /// <summary>
+        /// Přidá do fronty ke zpracování na pozadí požadavek na provedení dané akce.
+        /// Řízení z této metody se vrátí ihned, dle testů je řízení vráceno za 40 mikrosekund.
+        /// Požadovaná akce je zařazena do fronty ostatních akcí, kde způsobně čeká na svoje provedení.
+        /// Akce je z fronty vyzvednuta ihned, jakmile je k dispozici volné vlákno běžící na pozadí, ve kterém tato akce poběží.
+        /// Pokud je k dispozici takové volné vlákno okamžitě, pak daná akce bude prováděna ihned po jejím zadání, 
+        /// dle testů je vstup do dané výkonné metody (v threadu na pozadí) proveden cca 60 mikrosekund po vložení požadavku na akci, 
+        /// ale pozor - někdy může být thread na pozadí spuštěn ještě dříve, než se vrátí řízení z této metody!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="actionRunArgs"></param>
+        /// <param name="runArguments"></param>
+        /// <param name="actionDoneArgs"></param>
+        /// <param name="doneArguments"></param>
+        /// <returns></returns>
+        public static IActionInfo EnqueueAction(string name, Action<object[]> actionRunArgs, object[] runArguments, Action<object[]> actionDoneArgs, object[] doneArguments)
+        {
+            ActionInfo actionInfo = new ActionInfo(name, null, actionRunArgs, runArguments, null, actionDoneArgs, doneArguments);
+            Instance._EnqueueAction(actionInfo);
+            return actionInfo;
+        }
+
+
+        // EnqueueAction
+
+
         /// <summary>
         /// Obsahuje true, pokud aktuálně běžící kód běží ve vláknu, které je spravováno jako vlákno pro spouštěné akce.
         /// Tedy, pokud tuto hodnotu čteme z vlákna provádějícího akci, obsahuje true, z jiných vláken obsahuje false.
+        /// <para/>
+        /// Pokud je tato hodnota true, pak je smysluplné používat metodu <see cref="ThreadManager.EnqueueAction(Action, Action)"/>, protože dojde k reálnému zřetězení akcí.
+        /// Pokud je false, pak <see cref="ThreadManager.EnqueueAction(Action, Action)"/> nemá význam, provede totéž co <see cref="ThreadManager.AddAction(Action, Action)(Action, Action)"/>.
         /// </summary>
         public static bool IsInAnyWorkingThread { get { return Instance.__IsInAnyWorkingThread; } }
         /// <summary>
@@ -319,6 +511,20 @@ namespace Djs.Tools.WebDownloader.Support
             __ActionAcceptedSignal.WaitOne(1);                       // Tenhle signál posílá metoda pro čtení akcí i pro získání threadu. Oběma metodám jsme poslali signál a nyní se provádějí.
 
             if (__LogActive) App.AddLog(__Source, $"Add {actionInfo}; Done.");
+        }
+        /// <summary>
+        /// Přidá danou akci do fronty za běžící akce v aktuálním threadu.
+        /// Pokud aktuální thread zrovna nic neprovádí, pak přidá danou akci do standardní fronty.
+        /// </summary>
+        /// <param name="actionInfo"></param>
+        private void _EnqueueAction(ActionInfo actionInfo)
+        {
+            bool isEnqueued = false;
+            if (__TryGetCurrentThread(out var currentThreadWrap) && currentThreadWrap.IsRunning)
+                isEnqueued = currentThreadWrap.EnqueueAction(actionInfo);
+
+            if (!isEnqueued)
+                _AddAction(actionInfo);
         }
         /// <summary>
         /// Smyčka vlákna, které je dispečerem spouštění akcí.
@@ -529,12 +735,22 @@ namespace Djs.Tools.WebDownloader.Support
         /// </summary>
         private const string __ActionDispatcherName = "ActionDispatcherThread";
         #endregion
-        #region class ActionInfo : obálka jedné akce ve frontě
+        #region class ActionInfo : obálka jedné akce ve frontě, včetně funkcionality
         /// <summary>
         /// Informace k jedné uložené akci
         /// </summary>
         protected class ActionInfo : IActionInfo
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="name"></param>
+            /// <param name="actionRun"></param>
+            /// <param name="actionRunArgs"></param>
+            /// <param name="runArguments"></param>
+            /// <param name="actionDone"></param>
+            /// <param name="actionDoneArgs"></param>
+            /// <param name="doneArguments"></param>
             public ActionInfo(string name, Action actionRun, Action<object[]> actionRunArgs, object[] runArguments, Action actionDone, Action<object[]> actionDoneArgs, object[] doneArguments)
             {
                 _ActionName = name;
@@ -607,10 +823,17 @@ namespace Djs.Tools.WebDownloader.Support
             /// </summary>
             public void Run()
             {
-                try
+                lock (this)
                 {
+                    var currentState = this._ActionState;
+                    if (currentState == ThreadActionState.Running || currentState == ThreadActionState.Completed)
+                        throw new InvalidOperationException($"ThreadManager error: attempt to run Action in state {currentState}.");
                     this.WorkingThread = Thread.CurrentThread;
                     this.ActionState = ThreadActionState.Running;
+                }
+
+                try
+                {
 
                     if (this.ActionRun != null) this.ActionRun();
                     else if (this.ActionRunArgs != null) this.ActionRunArgs(this.RunArguments);
@@ -621,6 +844,7 @@ namespace Djs.Tools.WebDownloader.Support
                 catch (Exception exc)
                 {
                     App.AddLog(exc);
+                    // Zviditelnit chybu z běhu akce:
                 }
                 finally
                 {
@@ -632,7 +856,7 @@ namespace Djs.Tools.WebDownloader.Support
             }
             private void _ActionCompleted()
             {
-                this.Owner.ActionCompleted(this);
+                this.Owner?.ActionCompleted(this);
             }
             /// <summary>
             /// Metoda zazvoní na všechny zvonečky (signály), které chtějí probudit po změně našeho stavu
@@ -981,6 +1205,7 @@ namespace Djs.Tools.WebDownloader.Support
                 __DisponibleFrom = DateTime.UtcNow;
                 __End = false;
                 __Name = name;
+                __ActionQueue = new Queue<ActionInfo>();
                 __Thread = new Thread(__Loop) { IsBackground = true, Name = name, Priority = ThreadPriority.BelowNormal };
                 __Thread.Start();
             }
@@ -1005,7 +1230,7 @@ namespace Djs.Tools.WebDownloader.Support
             private DateTime __DisponibleFrom;
             private Thread __Thread;
             private string __Name;
-            private volatile ActionInfo __ActionInfo;
+            private volatile Queue<ActionInfo> __ActionQueue;
             public string Name { get { return __Name; } }
             /// <summary>
             /// Název SOURCE do logu
@@ -1064,7 +1289,7 @@ namespace Djs.Tools.WebDownloader.Support
                     if (state != ThreadWrapState.Allocated)
                         throw new InvalidOperationException($"ThreadWrap.RunAction error: invalid state for AddAction in thread {this}.");
 
-                    __ActionInfo = actionInfo;
+                    __ActionQueue.Enqueue(actionInfo);
                     __State = ThreadWrapState.WaitToRun;
                 }
                 finally
@@ -1130,19 +1355,19 @@ namespace Djs.Tools.WebDownloader.Support
             /// </summary>
             private void _TryRunAction()
             {
-                ActionInfo actionInfo = null;
                 bool needRun = false;
                 bool lockTaken = false;
                 try
-                {   // Pod zámkem načtu požadované akce, vyhodnotím a nastavím stav Working:
+                {   // Pod zámkem zjistím stav a přítomnou akci, vyhodnotím a nastavím stav Working:
                     __Lock.Enter(ref lockTaken);
 
-                    actionInfo = __ActionInfo;
-                    needRun = actionInfo?.IsValid ?? false;
-                    if (needRun)
-                        __State = ThreadWrapState.Working;
-
-                    __ActionInfo = null;
+                    if (__ActionQueue.Count > 0)
+                    {
+                        ActionInfo actionInfo = __ActionQueue.Peek();
+                        needRun = actionInfo?.IsValid ?? false;
+                        if (needRun)
+                            __State = ThreadWrapState.Working;
+                    }
                 }
                 finally
                 {
@@ -1154,9 +1379,7 @@ namespace Djs.Tools.WebDownloader.Support
                 {   // Běh aplikační akce probíhá už bez zámku:
                     try
                     {
-                        if (__LogActive) App.AddLog(__Source, $"{this} : Run {actionInfo}");
-                        actionInfo.Run();
-                        if (__LogActive) App.AddLog(__Source, $"{this} : Done {actionInfo}");
+                        _RunActionsQueue();
                     }
                     catch (Exception exc) { App.AddLog(exc); }
                     finally
@@ -1167,6 +1390,130 @@ namespace Djs.Tools.WebDownloader.Support
                         AfterThreadDisponible();
                     }
                 }
+            }
+            /// <summary>
+            /// Spustí frontu akcí (do které průběžně mohou přibývat další akce).
+            /// Neřeší změny stavu. Při získání akce z fronty používá Lock.
+            /// </summary>
+            /// <param name="actionInfo"></param>
+            private void _RunActionsQueue()
+            {
+                while (!__End)
+                {
+                    ActionInfo actionInfo = _DequeueActionLock();
+                    if (actionInfo == null) break;
+                    if (actionInfo.IsValid)
+                    {
+                        if (__LogActive) App.AddLog(__Source, $"{this} : Run {actionInfo}");
+                        actionInfo.Run();
+                        if (__LogActive) App.AddLog(__Source, $"{this} : Done {actionInfo}");
+                    }
+                }
+            }
+            /// <summary>
+            /// Přidá danou akci do fronty za běžící akce v aktuálním threadu.
+            /// Pokud tento thread zrovna nic neprovádí, pak vrátí false.
+            /// </summary>
+            /// <param name="actionInfo"></param>
+            public bool EnqueueAction(ActionInfo actionInfo)
+            {
+                if (actionInfo == null || !actionInfo.IsValid)
+                    throw new InvalidOperationException("Invalid action to ThreadManager.AddAction: no Action, or not method Run nor RunArgs!");
+
+                bool isEnqueued = false;
+                bool lockTaken = false;
+                try
+                {
+                    __Lock.Enter(ref lockTaken);
+
+                    var state = __State;
+                    isEnqueued = (state == ThreadWrapState.Working);
+                    if (isEnqueued)
+                        __ActionQueue.Enqueue(actionInfo);
+                }
+                finally
+                {
+                    if (lockTaken)
+                        __Lock.Exit();
+                }
+
+                return isEnqueued;
+            }
+            /// <summary>
+            /// Přidá danou akci do fronty za běžící akce v aktuálním threadu.
+            /// Pokud tento thread zrovna nic neprovádí, pak akci zařadí do fronty a odstartuje akci.
+            /// </summary>
+            /// <param name="actionInfo"></param>
+            public void AddOrEnqueueAction(ActionInfo actionInfo)
+            {
+                if (actionInfo == null || !actionInfo.IsValid)
+                    throw new InvalidOperationException("Invalid action to ThreadManager.AddAction: no Action, or not method Run nor RunArgs!");
+
+                bool sendSignal = false;
+                bool lockTaken = false;
+                try
+                {
+                    __Lock.Enter(ref lockTaken);
+
+                    var state = __State;
+                    sendSignal = (state == ThreadWrapState.None || state == ThreadWrapState.Disponible || state == ThreadWrapState.Allocated || state == ThreadWrapState.WaitToRun);
+                    __ActionQueue.Enqueue(actionInfo);
+                    if (sendSignal)
+                    {
+                        __State = ThreadWrapState.WaitToRun;
+                        __Semaphore.Set();                   // Požádáme thread na pozadí o vykonání akce.
+                    }
+                }
+                finally
+                {
+                    if (lockTaken)
+                        __Lock.Exit();
+                }
+
+                if (sendSignal)
+                    __Semaphore.Set();                   // Požádáme thread na pozadí o vykonání akce.
+            }
+            /// <summary>
+            /// Metoda dá zámek, v něm vloží danou akci do fronty, a zámek uvolní.
+            /// Nemění stav ani neposílá signály.
+            /// </summary>
+            /// <param name="actionInfo"></param>
+            protected void _EnqueueActionLock(ActionInfo actionInfo)
+            {
+                bool lockTaken = false;
+                try
+                {
+                    __Lock.Enter(ref lockTaken);
+                    __ActionQueue.Enqueue(actionInfo);
+                }
+                finally
+                {
+                    if (lockTaken)
+                        __Lock.Exit();
+                }
+            }
+            /// <summary>
+            /// Metoda dá zámek, v něm zkusí získat akci z fronty, a zámek uvolní.
+            /// Nemění stav ani neposílá signály.
+            /// Výstupem může být null když nejsou akce.
+            /// </summary>
+            /// <returns></returns>
+            protected ActionInfo _DequeueActionLock()
+            {
+                ActionInfo actionInfo = null;
+                bool lockTaken = false;
+                try
+                {
+                    __Lock.Enter(ref lockTaken);
+                    if (__ActionQueue.Count > 0)
+                        actionInfo = __ActionQueue.Dequeue();
+                }
+                finally
+                {
+                    if (lockTaken)
+                        __Lock.Exit();
+                }
+                return actionInfo;
             }
             protected bool IsEnding { get { var s = __State; return (__End || s == ThreadWrapState.Abort); } }
             protected void AfterThreadDisponible()
@@ -1199,7 +1546,7 @@ namespace Djs.Tools.WebDownloader.Support
             /// </summary>
             void IDisposable.Dispose()
             {
-                __ActionInfo = null;
+                __ActionQueue.Clear();
             }
             #endregion
             #region Support
@@ -1475,7 +1822,10 @@ namespace Djs.Tools.WebDownloader.Support
     #endregion
     #region interface IActionInfo
     /// <summary>
-    /// Deklarace prvků, které jsou k dispozici na akci ke zpracování
+    /// <see cref="IActionInfo"/> : vlastnosti, které nabízí Akce zpracování pro veřejné používání z okolního aplikačního kódu.
+    /// Aplikační kód může zjistit, v jakém stavu akce je, může si počkat na změnu stavu (s využitím mezithreadového signálu o změně stavu).
+    /// Ale nemůže stav změnit. Akce má název <see cref="Name"/>, který jí přidělila aplikace při jejím vytvoření (jako parametr).
+    /// Akce nějakou dobu čeká ve frontě na zpracování, pak je spuštěna, běží, doběhne a skončí - to je uvedeno ve <see cref="State"/>
     /// </summary>
     public interface IActionInfo
     {
@@ -1597,6 +1947,11 @@ namespace Djs.Tools.WebDownloader.Tests
 
         */
 
+        /// <summary>
+        /// Test, který provádí zpracování sady akcí,  
+        /// a) občas provede čekání po nějakou konstantní dobu
+        /// b) občas provede čekání na doběhnutí VŠECH akcí
+        /// </summary>
         [TestMethod]
         public void TestThreadManagerMultiRun()
         {
@@ -1660,7 +2015,11 @@ namespace Djs.Tools.WebDownloader.Tests
             try { System.Windows.Forms.Clipboard.SetText(text); }
             catch (Exception) { }
         }
-
+        /// <summary>
+        /// Test, který provádí zpracování sady akcí,  
+        /// a) občas provede čekání na doběhnutí několika konkrétních akcí ThreadManager.WaitToActionsDone(actions);
+        /// b) občas provede čekání na doběhnutí VŠECH akcí
+        /// </summary>
         [TestMethod]
         public void TestThreadManagerWaitActions()
         {
@@ -1730,6 +2089,12 @@ namespace Djs.Tools.WebDownloader.Tests
             try { System.Windows.Forms.Clipboard.SetText(text); }
             catch (Exception) { }
         }
+        /// <summary>
+        /// Výkonná metoda testu.
+        /// Nejprve provede komplexní výpočty trigonometrických funkcí = simulace zátěže,
+        /// a poté pokud metoda sama je Master, tak do ThreadManagera přidá požadavek na asynchronní výkon Slave akce (opět zdejší metoda, ale v režimu Slave).
+        /// </summary>
+        /// <param name="arguments"></param>
         private void _TestDataOneAction(object[] arguments)
         {
             int number = (int)arguments[0];
@@ -1767,6 +2132,125 @@ namespace Djs.Tools.WebDownloader.Tests
 
             App.AddLog(source, $"Dokončení akce");
         }
+
+        /// <summary>
+        /// Test, který provádí zpracování sady akcí,  
+        /// a) občas provede čekání na doběhnutí několika konkrétních akcí ThreadManager.WaitToActionsDone(actions);
+        /// b) občas provede čekání na doběhnutí VŠECH akcí
+        /// </summary>
+        [TestMethod]
+        public void TestThreadManagerQueueActions()
+        {
+            Thread.CurrentThread.Name = "MainThread";
+
+            System.Windows.Forms.Clipboard.Clear();
+
+            // ThreadManager.MaxThreadCount = 8;
+            SignalFactory.UseMonitor = false;                         // false = AutoResetEvent (lepší)
+            ThreadManager.LogActive = true;
+            // ThreadManager.LogActive = false;                      // Pro testy výkonu aktivovat řádek = zakázat velké logování
+
+            Rand = new Random();
+
+            string source = nameof(TestThreadManagerQueueActions);
+            App.AddLog(source, $"Start aplikace", "MaxThreadCount = " + ThreadManager.MaxThreadCount, "SignalType = " + (SignalFactory.UseMonitor ? "Monitor" : "AutoResetEvent"));
+
+            int actionCount = 500;
+
+            // actionCount = 20000;                                  // Pro testy výkonu aktivovat řádek = testovat pro 20000 cyklů Main
+            List<IActionInfo> actions = new List<IActionInfo>();
+            try
+            {
+                for (int r = 1; r <= actionCount; r++)
+                {
+                    bool actionToList = ((r % 5) == 0);
+                    bool actionToSync = ((r % 49) == 0);
+                    bool actionToWait = ((r % 150) == 0);
+                    string code = (actionToList ? "List" : (actionToSync ? "Sync" : (actionToWait ? "Wait" : "Std")));
+                    string name = $"{r}{code}";
+                    var runStart = App.CurrentTime;
+                    App.AddLog(source, $"Spouštíme akci {name}");
+                    var action = ThreadManager.AddAction(name, _TestDataOneQueueAction, r, code, runStart);
+                    var runTime = App.GetElapsedTime(runStart, ElapsedTimeType.Microseconds, 0);
+                    App.AddLog(source, $"Spuštěna akce {name}", runTime);
+
+                    if (actionToList) actions.Add(action);
+                    if (actionToSync)
+                    {
+                        App.AddLog(source, $"Počkáme na doběhnutí synchronizovaných akcí 'List'...");
+                        ThreadManager.WaitToActionsDone(actions);
+                        App.AddLog(source, $"Pokračujeme");
+                    }
+
+                    if (actionToWait)
+                    {
+                        App.AddLog(source, $"Počkáme na doběhnutí všech akcí...");
+                        ThreadManager.WaitToAllActionsDone();
+                        App.AddLog(source, $"Pokračujeme");
+                    }
+                }
+            }
+
+            catch (Exception exc)
+            {
+                App.AddLog(exc);
+            }
+            finally
+            {
+                App.AddLog(source, $"Počkáme na doběhnutí všech akcí...");
+                ThreadManager.WaitToAllActionsDone();
+                App.AddLog(source, $"Konec aplikace");
+            }
+
+            var text = App.LogText;
+
+            try { System.Windows.Forms.Clipboard.SetText(text); }
+            catch (Exception) { }
+        }
+        /// <summary>
+        /// Výkonná metoda testu.
+        /// Nejprve provede komplexní výpočty trigonometrických funkcí = simulace zátěže,
+        /// a poté pokud metoda sama je Master, tak do ThreadManagera přidá požadavek na zřetězený (Queue) výkon Slave akce (opět zdejší metoda, ale v režimu Slave).
+        /// </summary>
+        /// <param name="arguments"></param>
+        private void _TestDataOneQueueAction(object[] arguments)
+        {
+            int number = (int)arguments[0];
+            string code = (string)arguments[1];
+            long requestStart = (long)arguments[2];
+            var requestDelay = App.GetElapsedTime(requestStart, ElapsedTimeType.Microseconds, 0);
+
+            string name = $"{number}/{code}";
+
+            int estimatedTime = Rand.Next(400, 2000);               // Cílový čas v mikrosekundách
+            int count = 100 * estimatedTime / 8;                    // 100 cyklů = 8 mikrosecs
+
+            string source = $"ThreadManagerTests_{name}";
+            App.AddLog(source, $"Zahájení výpočtů", requestDelay);
+            var startTime = App.CurrentTime;
+
+            for (int t = 0; t < count; t++)
+            {
+                double a = Math.Cos(0.45d * Math.PI);
+                double b = Math.Sin(0.45d * Math.PI);
+            }
+            var realTime = App.GetElapsedTime(startTime, ElapsedTimeType.Microseconds, 0);
+            App.AddLog(source, $"Dokončení výpočtů", realTime);
+
+            if (code != "Queue")
+            {
+                string subCode = "Queue";
+                string subName = $"{number}/{subCode}";
+                var runStart = App.CurrentTime;
+                App.AddLog(source, $"Spouštíme akci {subName}");
+                ThreadManager.EnqueueAction(subName, _TestDataOneQueueAction, number, subCode, runStart);
+                var runTime = App.GetElapsedTime(runStart, ElapsedTimeType.Microseconds, 0);
+                App.AddLog(source, $"Spuštěna akce {subName}", runTime);
+            }
+
+            App.AddLog(source, $"Dokončení akce");
+        }
+
         private Random Rand;
     }
 }

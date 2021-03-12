@@ -152,7 +152,7 @@ namespace Djs.Tools.WebDownloader.Download
             this._RangeToTxt = new WebNumeric(0, 999999999999L, new Rectangle(x + 126, y, 120, 24), ref tabIndex);
             y += this._RangeToTxt.Height + 1;
             this._StepLbl = new WebLabel("Přírůstek na jeden cyklus:", new Rectangle(7, y + 4, w, 16), ref tabIndex);
-            this._StepTxt = new WebNumeric(0, 999999999999L, new Rectangle(x, y, 120, 24), ref tabIndex);
+            this._StepTxt = new WebNumeric(-999999L, 999999L, new Rectangle(x, y, 120, 24), ref tabIndex);
             y += this._StepTxt.Height + 1;
 
             // this.MinimumSize = new Size(520, y+6);

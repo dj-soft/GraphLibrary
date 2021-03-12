@@ -58,6 +58,7 @@
     <Compile Include="Download\Common.cs" />
     <Compile Include="Download\DirClean.cs" />
     <Compile Include="Download\Downloader.cs" />
+    <Compile Include="Download\Regex.cs" />
     <Compile Include="Download\WebAdress.cs" />
     <Compile Include="Download\WebItem.cs" />
     <Compile Include="Download\WebNumericItem.cs" />
