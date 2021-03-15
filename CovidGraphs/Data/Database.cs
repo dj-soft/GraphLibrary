@@ -342,10 +342,10 @@ namespace Djs.Tools.CovidGraphs.Data
             if (!IO.File.Exists(fileName)) throw new ArgumentException($"Database.Import() : zadaný vstupní soubor {fileName} neexistuje.");
             ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.LocalFile, fileName);
             loadInfo.ProgressAction = processQueue.ProgressAction;
-
+            action.ProcessFile = loadInfo;
             using (var stream = new DZipFileReader(fileName, CompressMode.ByContent))
             {
-                _LoadStream(stream, loadInfo);
+                _LoadStream(stream, action);
                 stream.Close();
             }
         }
@@ -363,10 +363,10 @@ namespace Djs.Tools.CovidGraphs.Data
             if (content == null || content.Length == 0) throw new ArgumentException($"Database.Load() : není zadán vstupní obsah dat.");
             ProcessFileInfo loadInfo = new ProcessFileInfo(DataMediumType.BinaryContent, "Content");
             loadInfo.ProgressAction = processQueue.ProgressAction;
-
+            action.ProcessFile = loadInfo;
             using (var stream = new DZipFileReader(content))
             {
-                _LoadStream(stream, loadInfo);
+                _LoadStream(stream, action);
                 stream.Close();
             }
         }
@@ -374,9 +374,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Načte data dodané v daném streamu (ten může pocházet ze souboru, ze zipu, z paměti...)
         /// </summary>
         /// <param name="stream"></param>
-        /// <param name="loadInfo"></param>
-        private void _LoadStream(DZipFileReader stream, ProcessFileInfo loadInfo)
+        /// <param name="action"></param>
+        private void _LoadStream(DZipFileReader stream, ProcessQueueItem action)
         {
+            ProcessFileInfo loadInfo = action.ProcessFile;
             lock (this.InterLock)
             {
                 State = StateType.LoadingFile;
@@ -385,7 +386,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 while (!stream.IsEnd)
                 {
                     string line = stream.ReadLine();
-                    _LoadLine(line, loadInfo);
+                    _LoadLine(line, action);
                     _CallProgress(loadInfo, position: stream.Position);
                 }
                 this.StoreProcessFileResults(loadInfo);
@@ -398,21 +399,22 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="line"></param>
         /// <param name="processInfo"></param>
-        private void _LoadLine(string line, ProcessFileInfo processInfo)
+        private void _LoadLine(string line, ProcessQueueItem action)
         {
+            ProcessFileInfo processInfo = action.ProcessFile;
             if (String.IsNullOrEmpty(line)) return;
             line = line.Trim();
             switch (processInfo.ProcessState)
             {
                 case ProcessFileState.Open:
-                    processInfo.ContentType = _LoadDetectContentTypeByHeader(line, processInfo);
-                    this._CheckDataContent(processInfo);
+                    processInfo.ContentType = _LoadDetectContentTypeByHeader(line, action);
+                    this._CheckDataContent(action);
                     processInfo.ProcessState = ProcessFileState.Loading;
                     this._ClearData(processInfo.ContentType);
                     break;
 
                 case ProcessFileState.Loading:
-                    this._LoadContentByType(line, processInfo);
+                    this._LoadContentByType(line, action);
                     break;
             }
         }
@@ -457,10 +459,12 @@ namespace Djs.Tools.CovidGraphs.Data
         /// Podle titulkového řádku rozpozná obsah souboru
         /// </summary>
         /// <param name="header"></param>
-        /// <param name="fileName"></param>
+        /// <param name="action"></param>
         /// <returns></returns>
-        private FileContentType _LoadDetectContentTypeByHeader(string header, ProcessFileInfo processInfo)
+        private FileContentType _LoadDetectContentTypeByHeader(string header, ProcessQueueItem action)
         {
+            ProcessFileInfo processInfo = action.ProcessFile;
+
             if (header.StartsWith(StructureHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Structure;
             if (header.StartsWith(DataHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Data;
             if (header.StartsWith(DataPackHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.DataPack;
@@ -476,9 +480,10 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Metoda prověří stav databáze před načítáním obsahu daného souboru
         /// </summary>
-        /// <param name="processInfo"></param>
-        private void _CheckDataContent(ProcessFileInfo processInfo)
+        /// <param name="action"></param>
+        private void _CheckDataContent(ProcessQueueItem action)
         {
+            ProcessFileInfo processInfo = action.ProcessFile;
             switch (processInfo.ContentType)
             {
                 case FileContentType.CovidObce2:
@@ -496,33 +501,33 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="line"></param>
         /// <param name="processInfo"></param>
-        private void _LoadContentByType(string line, ProcessFileInfo processInfo)
+        private void _LoadContentByType(string line, ProcessQueueItem action)
         {
-            switch (processInfo.ContentType)
+            switch (action.ProcessFile.ContentType)
             {
                 case FileContentType.Structure:
-                    _LoadLineStructure(processInfo, line);
+                    _LoadLineStructure(line, action);
                     break;
                 case FileContentType.Data:
-                    _LoadLineData(processInfo, line);
+                    _LoadLineData(line, action);
                     break;
                 case FileContentType.DataPack:
-                    _LoadLineDataPack(processInfo, line);
+                    _LoadLineDataPack(line, action);
                     break;
                 case FileContentType.CovidObce1:
-                    _LoadLineCovid1(processInfo, line);
+                    _LoadLineCovid1(line, action);
                     break;
                 case FileContentType.CovidObce2:
-                    _LoadLineCovid2(processInfo, line);
+                    _LoadLineCovid2(line, action);
                     break;
                 case FileContentType.CovidObce3:
-                    _LoadLineCovid3(processInfo, line);
+                    _LoadLineCovid3(line, action);
                     break;
                 case FileContentType.PocetObyvatel:
-                    _LoadLinePocet(processInfo, line);
+                    _LoadLinePocet(line, action);
                     break;
                 case FileContentType.Umrti:
-                    _LoadLineUmrti(processInfo, line);
+                    _LoadLineUmrti(line, action);
                     break;
             }
         }
@@ -531,21 +536,21 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineStructure(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineStructure(string line, ProcessQueueItem action)
         {
-            _LoadLineDataPack(loadInfo, line);
+            _LoadLineDataPack(line, action);
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.Data"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineData(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineData(string line, ProcessQueueItem action)
         {
             string[] items = line.Split(';');
             if (items.Length < 3) return;
 
-            ProcessFileCurrentInfo currentInfo = _LoadGetCurrentInfo(loadInfo);
+            ProcessFileCurrentInfo currentInfo = _LoadGetCurrentInfo(action);
 
             string header = items[0];
             switch (header)
@@ -559,7 +564,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     if (currentInfo.Vesnice != null)
                     {
                         DateTime infoDate = GetDate(items[1]);
-                        if (IsValidDate(infoDate, loadInfo))
+                        if (IsValidDate(infoDate, action))
                         {
                             int infoNewCount = GetInt32(items[2]);
                             int infoCurrentCount = GetInt32(items[3]);
@@ -572,20 +577,20 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
             }
 
-            loadInfo.RecordCount += 1;
+            action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.DataPack"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineDataPack(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineDataPack(string line, ProcessQueueItem action)
         {
             string[] items = line.Split(';');
             int count = items.Length;
             if (count < 3) return;
 
-            ProcessFileCurrentInfo currentInfo = _LoadGetCurrentInfo(loadInfo);
+            ProcessFileCurrentInfo currentInfo = _LoadGetCurrentInfo(action);
 
             string header = items[0];
             string code = items[1];
@@ -626,7 +631,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case HeaderInfo:
                     DateTime infoDate = GetDate(items[1]);
-                    if (IsValidDate(infoDate, loadInfo))
+                    if (IsValidDate(infoDate, action))
                     {
                         int infoNewCount = GetInt32(items[2]);
                         int infoCurrentCount = GetInt32(items[3]);
@@ -638,14 +643,14 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
             }
 
-            loadInfo.RecordCount += 1;
+            action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce1"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineCovid1(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineCovid1(string line, ProcessQueueItem action)
         {
             // Verze 1 obsahuje 5 úrovní: Kraj - Okres - Město - Obec - Vesnice
             // Příklad řádku se všemi úrovněmi:
@@ -664,7 +669,7 @@ namespace Djs.Tools.CovidGraphs.Data
             this._Vesnice.AddIfNotContains(items[10], vesnice);
 
             DateTime infoDate = GetDate(items[1]);
-            if (IsValidDate(infoDate, loadInfo))
+            if (IsValidDate(infoDate, action))
             {
                 int newCount = GetInt32(items[12]);
                 int currentCount = GetInt32(items[13]);
@@ -673,7 +678,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
                 _RegisterMaxContentTime(infoDate, hasValidData);
 
-                loadInfo.RecordCount += 1;
+                action.ProcessFile.RecordCount += 1;
             }
         }
         /// <summary>
@@ -681,27 +686,27 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineCovid2(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineCovid2(string line, ProcessQueueItem action)
         {
-            _LoadLineCovid23(loadInfo, line, Covid2ItemCountExpected);
+            _LoadLineCovid23(line, action, Covid2ItemCountExpected);
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce3"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineCovid3(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineCovid3(string line, ProcessQueueItem action)
         {
             // Verze 3 obsahuje totéž co verze 2, pouze má navíc sloupce: ",nove_pripady_65,nove_pripady_7_dni,nove_pripade_14_dni"
             // Zatím je nenačítám, takže použiju načítadlo společné pro verzi 2 a 3:
-            _LoadLineCovid23(loadInfo, line, Covid3ItemCountExpected);
+            _LoadLineCovid23(line, action, Covid3ItemCountExpected);
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce2"/> nebo <see cref="FileContentType.CovidObce3"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineCovid23(ProcessFileInfo loadInfo, string line, int itemCountExpected)
+        private void _LoadLineCovid23(string line, ProcessQueueItem action, int itemCountExpected)
         {
             // Verze 2 i 3 obsahuje 4 úrovně: Kraj - Okres - Město - Obec - Vesnice
             // Příklad řádku se všemi úrovněmi pro verzi 1:
@@ -722,11 +727,12 @@ namespace Djs.Tools.CovidGraphs.Data
                 string okresNazev = items[5];
                 string mestoNazev = items[7];
                 string vesniceNazev = items[9];
-                throw new KeyNotFoundException($"Ve vstupních datech je uvedena obec {vesniceKod}: {vesniceNazev}, patřící do města {mestoNazev} (okres {okresNazev}), ale tuto obec nemáme načtenou ve struktuře obcí.");
+                action.ProcessQueue.AddMessage($"Ve vstupních datech {action.ProcessFile.ContentType} je uvedena obec {vesniceKod}: {vesniceNazev}, patřící do města {mestoNazev} (okres {okresNazev}), ale tuto obec nemáme načtenou ve struktuře obcí.");
+                return;
             }
 
             DateTime infoDate = GetDate(items[1]);
-            if (IsValidDate(infoDate, loadInfo))
+            if (IsValidDate(infoDate, action))
             {
                 int newCount = GetInt32(items[10]);
                 int currentCount = GetInt32(items[11]);
@@ -735,27 +741,15 @@ namespace Djs.Tools.CovidGraphs.Data
                 bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
                 _RegisterMaxContentTime(infoDate, hasValidData);
 
-                loadInfo.RecordCount += 1;
+                action.ProcessFile.RecordCount += 1;
             }
-        }
-        /// <summary>
-        /// Zaeviduje maximální datum s daty
-        /// </summary>
-        /// <param name="infoDate"></param>
-        private void _RegisterMaxContentTime(DateTime infoDate, bool hasValidData)
-        {
-            if (!_DataContentTime.HasValue || infoDate > _DataContentTime.Value)
-                _DataContentTime = infoDate;
-
-            if (hasValidData && (!_LastValidDataDate.HasValue || infoDate > _LastValidDataDate.Value))
-                _LastValidDataDate = infoDate;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.PocetObyvatel"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLinePocet(ProcessFileInfo loadInfo, string line)
+        private void _LoadLinePocet(string line, ProcessQueueItem action)
         {
             // ;kraj;mesto;kod_obce;nazev_obce;muzi;muzi15;zeny;zeny15;celkem;celkem15
             // ;Pardubický;Chrudim;571164;Chrudim;10 899;9 192;11 720;10 164;22 619;19 356
@@ -772,23 +766,31 @@ namespace Djs.Tools.CovidGraphs.Data
             PocetObyvatelInfo pocet = new PocetObyvatelInfo(pocetMuziCelkem, pocetMuziNad15, pocetZenyCelkem, pocetZenyNad15);
             this._Pocet.AddOrUpdate(kod, pocet);
 
-            loadInfo.RecordCount += 1;
+            action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.Umrti"/>
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <param name="line"></param>
-        private void _LoadLineUmrti(ProcessFileInfo loadInfo, string line)
+        private void _LoadLineUmrti(string line, ProcessQueueItem action)
         {
+            // Struktura: "datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod"
+            //              0     1   2       3             4
             string[] items = line.Split(',');
             if (items.Length < 5) return;
 
-            string fullCode = "CZ." + items[3] + "." + items[4];
+            string fullCode = "CZ." + items[3] + "." + items[4];               // CZ.KRAJ.OKRES
             EntityInfo entity = GetEntity(fullCode);
+            if (entity == null)
+            {
+                action.ProcessQueue.AddMessage($"Ve vstupních datech {action.ProcessFile.ContentType} je uvedena informace pro entitu {fullCode}, ale tuto entitu nemáme načtenou ve struktuře obcí.");
+                return;
+            }
 
-            if (entity != null)
-                entity.AddOrCreateData(0, null);
+            DateTime infoDate = GetDate(items[0]);
+
+            //    entity.AddOrCreateData(0, null);
 
         }
         /// <summary>
@@ -796,14 +798,27 @@ namespace Djs.Tools.CovidGraphs.Data
         /// </summary>
         /// <param name="loadInfo"></param>
         /// <returns></returns>
-        private ProcessFileCurrentInfo _LoadGetCurrentInfo(ProcessFileInfo loadInfo)
+        private ProcessFileCurrentInfo _LoadGetCurrentInfo(ProcessQueueItem action)
         {
-            if (loadInfo.CurrentInfo == null)
+            var processInfo = action.ProcessFile;
+            if (processInfo.CurrentInfo == null)
             {   // Výchozí pozice je vždy nastavena na náš World:
-                loadInfo.CurrentInfo = new ProcessFileCurrentInfo();
-                loadInfo.CurrentInfo.World = _World;
+                processInfo.CurrentInfo = new ProcessFileCurrentInfo();
+                processInfo.CurrentInfo.World = _World;
             }
-            return loadInfo.CurrentInfo;
+            return processInfo.CurrentInfo;
+        }
+        /// <summary>
+        /// Zaeviduje maximální datum s daty
+        /// </summary>
+        /// <param name="infoDate"></param>
+        private void _RegisterMaxContentTime(DateTime infoDate, bool hasValidData)
+        {
+            if (!_DataContentTime.HasValue || infoDate > _DataContentTime.Value)
+                _DataContentTime = infoDate;
+
+            if (hasValidData && (!_LastValidDataDate.HasValue || infoDate > _LastValidDataDate.Value))
+                _LastValidDataDate = infoDate;
         }
         #endregion
         #region WebUpdate : aktualizace dat z internetu
@@ -1381,67 +1396,45 @@ namespace Djs.Tools.CovidGraphs.Data
             var action = processQueue.GetAction();
             if (action == null) return true;
             bool enableNextStep = true;
-            switch (action.ActionType)
+            try
             {
-                case ProcessActionType.ClearAll:
-                    this._ClearAll(processQueue);
-                    break;
-                case ProcessActionType.LoadInitial:
-                    _LoadInitial(processQueue);
-                    break;
-                case ProcessActionType.LoadFile:
-                    this._LoadFile(processQueue);
-                    break;
-                case ProcessActionType.LoadContent:
-                    this._LoadContent(processQueue);
-                    break;
-                case ProcessActionType.DownloadUpdateAll:
-                    this._WebDownloadUpdate(processQueue, true);
-                    break;
-                case ProcessActionType.DownloadUpdateNew:
-                    enableNextStep = _DoProcessDownloadUpdateNew(processQueue);
-                    break;
-                case ProcessActionType.DownloadUrl:
-                    enableNextStep = _DoProcessDownloadUrl(processQueue);
-                    break;
-                case ProcessActionType.DownloadDone:
-                    enableNextStep = _DoProcessDownloadDone(processQueue);
-                    break;
-                case ProcessActionType.SaveFile:
-                    enableNextStep = _DoProcessSaveFile(processQueue);
-                    break;
+                switch (action.ActionType)
+                {
+                    case ProcessActionType.ClearAll:
+                        this._ClearAll(processQueue);
+                        break;
+                    case ProcessActionType.LoadInitial:
+                        _LoadInitial(processQueue);
+                        break;
+                    case ProcessActionType.LoadFile:
+                        this._LoadFile(processQueue);
+                        break;
+                    case ProcessActionType.LoadContent:
+                        this._LoadContent(processQueue);
+                        break;
+                    case ProcessActionType.DownloadUpdateAll:
+                        this._WebDownloadUpdate(processQueue, true);
+                        break;
+                    case ProcessActionType.DownloadUpdateNew:
+                        this._WebDownloadUpdate(processQueue, false);
+                        break;
+                    case ProcessActionType.DownloadUrl:
+                        enableNextStep = !this._WebDownloadUrl(processQueue);  // Tato akce pravděpodobně vrátí false => nepokračovat v dalších akcích (to pro přechod do jiného threadu: download probíhá asynchronně). V tuto chvíli nesmíme pokračovat ve zpracování dalších akcí fronty, frontu rozeběhne až event DownloadCompleted. Vracíme false.
+                        break;
+                    case ProcessActionType.DownloadDone:
+                        this._WebDownloadDone(processQueue);
+                        break;
+                    case ProcessActionType.SaveFile:
+                        this._SaveDataFile(processQueue);
+                        break;
+                }
+            }
+            catch (Exception exc)
+            {
+                processQueue.AddMessage($"Při zpracování akce {action.ActionType} došlo k chybě {exc}.");
             }
             return enableNextStep;
         }
-
-
-        private bool _DoProcessDownloadUpdateAll(ProcessQueueInfo processQueue)
-        {
-            this._WebDownloadUpdate(processQueue, true);
-            return true;
-        }
-        private bool _DoProcessDownloadUpdateNew(ProcessQueueInfo processQueue)
-        {
-            this._WebDownloadUpdate(processQueue, false);
-            return true;
-        }
-        private bool _DoProcessDownloadUrl(ProcessQueueInfo processQueue)
-        {
-            bool isAsyncRun = this._WebDownloadUrl(processQueue);
-            return !isAsyncRun;       // Pokud metoda _WebDownloadUrl() spustila download asynchronně, vrátila true. V tuto chvíli nesmíme pokračovat ve zpracování dalších akcí fronty, to rozeběhne event DownloadCompleted. Vracíme false.
-        }
-
-        private bool _DoProcessDownloadDone(ProcessQueueInfo processQueue)
-        {
-            this._WebDownloadDone(processQueue);
-            return true;
-        }
-        private bool _DoProcessSaveFile(ProcessQueueInfo processQueue)
-        {
-            _SaveDataFile(processQueue);
-            return true;
-        }
-       
         #endregion
         #region Privátní podpora: adresáře, jména standardních souborů, hlavičkové konstanty v souborech, konverzní metody
         /// <summary>
@@ -2240,9 +2233,18 @@ namespace Djs.Tools.CovidGraphs.Data
         /// <summary>
         /// Vrátí true pokud dané datum je platné, tj. obsahuje rok 2000 - 2050
         /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        private static bool IsValidDate(DateTime dateTime, ProcessQueueItem action)
+        {
+            return IsValidDate(dateTime, action.ProcessFile.CurrentDate);
+        }
+        /// <summary>
+        /// Vrátí true pokud dané datum je platné, tj. obsahuje rok 2000 - 2050
+        /// </summary>
         /// <param name="dateTime"></param>
         /// <returns></returns>
-        private static bool IsValidDate(DateTime dateTime, ProcessFileInfo processFileInfo) //DateTime currentDate
+        private static bool IsValidDate(DateTime dateTime, ProcessFileInfo processFileInfo)
         {
             return IsValidDate(dateTime, processFileInfo.CurrentDate);
         }
@@ -3062,7 +3064,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     bool isValidPocetObyvatel = true;
                     // Filtr na Počet obyvatel se aplikuje pouze na nejnižší úrovni entit (=tam, kde nemám Childs).
                     // Pokud bych měl lokální data (HasLocalData) a současně měl Childs (HasChilds), pak svoje lokální data budu akceptovat i bez filtru na počet obyvatel,
-                    //  šlo by totiž o nějaké jiné informace než ty standardně filtrované počtem obyvatel (typicky: počet volných lůžek, uváděný na úrovni Okresu).
+                    //  šlo by totiž o nějaké jiné informace než ty standardně filtrované počtem obyvatel (typicky: počet zemřelých, uváděný na úrovni Okresu: tam nemá význam filtrovat dle velikosti obce).
                     if (!HasChilds)
                         isValidPocetObyvatel = args.IsValidPocetObyvatel(this.PocetObyvatel);
 
@@ -3518,7 +3520,8 @@ namespace Djs.Tools.CovidGraphs.Data
             return b.ValueLast.CompareTo(a.ValueLast);
         }
         /// <summary>
-        /// Přidá další hodnotu
+        /// Přidá další hodnotu.
+        /// Sumarizuje hodnoty za shodné datum: pokud přidám pro jedno datum více hodnot, budou v daném dni sečteny.
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="sourceType"></param>
