@@ -1967,6 +1967,8 @@ STRIPES V OSE Y = pro číslo R :
         /// Zdroj: CurrentCount
         /// </summary>
         SourceCurrentCount = 0x00000002,
+        SourceNewDeath = 0x00000004,
+        SourceNewVaxine = 0x00000008,
 
         // Případný další zdroj přidej i dole do CommonSources!
 
@@ -2077,6 +2079,12 @@ STRIPES V OSE Y = pro číslo R :
         //  public static DataValueTypeInfo[] CreateAll()
         //  public static bool TryCreateFor(DataValueType valueType, out DataValueTypeInfo result)
         // Protože tam se generují uživatelské nabídky hodnot a jejich detaily.
+    }
+    public enum DataGenderType
+    {
+        NotSpecified,
+        Male,
+        Female
     }
     /// <summary>
     /// Vhodný typ osy Y

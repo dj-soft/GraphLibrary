@@ -566,11 +566,13 @@ namespace Djs.Tools.CovidGraphs.Data
                         DateTime infoDate = GetDate(items[1]);
                         if (IsValidDate(infoDate, action))
                         {
-                            int infoNewCount = GetInt32(items[2]);
-                            int infoCurrentCount = GetInt32(items[3]);
-                            int infoKey = infoDate.GetDateKey();
-                            currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                            bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
+                            int key = infoDate.GetDateKey();
+                            var info = currentInfo.Vesnice.AddOrCreateInfo(infoDate, key);
+                            int newCount = GetInt32(items[2]);
+                            info.AddData(DataValueType.SourceNewCount, newCount);
+                            int currentCount = GetInt32(items[3]);
+                            info.AddData(DataValueType.SourceCurrentCount, currentCount);
+                            bool hasValidData = (newCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
                             _RegisterMaxContentTime(infoDate, hasValidData);
                         }
                     }
@@ -633,11 +635,13 @@ namespace Djs.Tools.CovidGraphs.Data
                     DateTime infoDate = GetDate(items[1]);
                     if (IsValidDate(infoDate, action))
                     {
-                        int infoNewCount = GetInt32(items[2]);
-                        int infoCurrentCount = GetInt32(items[3]);
-                        int infoKey = infoDate.GetDateKey();
-                        currentInfo.Info = currentInfo.Vesnice.AddOrCreateData(infoKey, () => new DataInfo(currentInfo.Vesnice, infoDate, infoNewCount, infoCurrentCount));
-                        bool hasValidData = (infoNewCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
+                        int key = infoDate.GetDateKey();
+                        var info = currentInfo.Vesnice.AddOrCreateInfo(infoDate, key);
+                        int newCount = GetInt32(items[2]);
+                        info.AddData(DataValueType.SourceNewCount, newCount);
+                        int currentCount = GetInt32(items[3]);
+                        info.AddData(DataValueType.SourceCurrentCount, currentCount);
+                        bool hasValidData = (newCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
                         _RegisterMaxContentTime(infoDate, hasValidData);
                     }
                     break;
@@ -671,15 +675,17 @@ namespace Djs.Tools.CovidGraphs.Data
             DateTime infoDate = GetDate(items[1]);
             if (IsValidDate(infoDate, action))
             {
-                int newCount = GetInt32(items[12]);
-                int currentCount = GetInt32(items[13]);
                 int key = infoDate.GetDateKey();
-                DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
+                var info = vesnice.AddOrCreateInfo(infoDate, key);
+                int newCount = GetInt32(items[12]);
+                info.AddData(DataValueType.SourceNewCount, newCount);
+                int currentCount = GetInt32(items[13]);
+                info.AddData(DataValueType.SourceCurrentCount, currentCount);
                 bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
                 _RegisterMaxContentTime(infoDate, hasValidData);
-
-                action.ProcessFile.RecordCount += 1;
             }
+
+            action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.CovidObce2"/>
@@ -734,15 +740,17 @@ namespace Djs.Tools.CovidGraphs.Data
             DateTime infoDate = GetDate(items[1]);
             if (IsValidDate(infoDate, action))
             {
-                int newCount = GetInt32(items[10]);
-                int currentCount = GetInt32(items[11]);
                 int key = infoDate.GetDateKey();
-                DataInfo info = vesnice.AddOrCreateData(key, () => new DataInfo(vesnice, infoDate, newCount, currentCount));
+                var info = vesnice.AddOrCreateInfo(infoDate, key);
+                int newCount = GetInt32(items[10]);
+                info.AddData(DataValueType.SourceNewCount, newCount);
+                int currentCount = GetInt32(items[11]);
+                info.AddData(DataValueType.SourceCurrentCount, currentCount);
                 bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
                 _RegisterMaxContentTime(infoDate, hasValidData);
-
-                action.ProcessFile.RecordCount += 1;
             }
+
+            action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
         /// Načte řádek dat ve struktuře <see cref="FileContentType.PocetObyvatel"/>
@@ -789,9 +797,17 @@ namespace Djs.Tools.CovidGraphs.Data
             }
 
             DateTime infoDate = GetDate(items[0]);
+            if (IsValidDate(infoDate, action))
+            {
+                int key = infoDate.GetDateKey();
+                var info = entity.AddOrCreateInfo(infoDate, key);
+                int age = GetInt32(items[1]);
+                string poh = items[2].Trim().ToUpper();
+                DataGenderType gender = (poh == "M" ? DataGenderType.Male : ((poh == "F" || poh == "Z") ? DataGenderType.Female : DataGenderType.Male));
+                info.AddData(DataValueType.SourceNewDeath, 1, gender, age, 1);
+            }
 
-            //    entity.AddOrCreateData(0, null);
-
+            action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
         /// Metoda v případě potřeby vytvoří new instanci <see cref="ProcessFileCurrentInfo"/> do <see cref="ProcessFileInfo.CurrentInfo"/>, a vrátí ji.
@@ -1358,7 +1374,7 @@ namespace Djs.Tools.CovidGraphs.Data
             public Action<ProgressArgs> Progress { get; set; }
         }
         #endregion
-        #region Fronta procesů (Load, Update, Save...): jejich zpracování
+        #region Fronta procesů (jednotlivé akce: Load, Update, Save...) - jejich zpracování
         /// <summary>
         /// Zpracuje jednotlivé akce zadané ve frontě akcí.
         /// Tato metoda zajistí spuštění fronty asynchronně = na pozadí.
@@ -2971,22 +2987,55 @@ namespace Djs.Tools.CovidGraphs.Data
                 }
                 return result;
             }
+            ///// <summary>
+            ///// Přidá nový prvek Info = reálná informace na této úrovni. Lze přidat do jakékoli úrovně.
+            ///// </summary>
+            ///// <param name="key"></param>
+            ///// <param name="creator"></param>
+            ///// <returns></returns>
+            //public virtual DataInfo AddOrCreateData(int key, Func<DataInfo> creator)
+            //{
+            //    DataInfo result;
+            //    if (this.LocalDataDict == null) this.LocalDataDict = new Dictionary<int, DataInfo>();
+            //    if (!this.LocalDataDict.TryGetValue(key, out result))
+            //    {
+            //        result = creator();
+            //        this.LocalDataDict.Add(key, result);
+            //    }
+            //    return result;
+            //}
             /// <summary>
             /// Přidá nový prvek Info = reálná informace na této úrovni. Lze přidat do jakékoli úrovně.
             /// </summary>
             /// <param name="key"></param>
             /// <param name="creator"></param>
             /// <returns></returns>
-            public virtual DataInfo AddOrCreateData(int key, Func<DataInfo> creator)
+            public virtual DataInfo AddOrCreateInfo(DateTime infoDate, int key)
             {
                 DataInfo result;
                 if (this.LocalDataDict == null) this.LocalDataDict = new Dictionary<int, DataInfo>();
                 if (!this.LocalDataDict.TryGetValue(key, out result))
                 {
-                    result = creator();
+                    result = new DataInfo(this, infoDate);
                     this.LocalDataDict.Add(key, result);
                 }
                 return result;
+            }
+            /// <summary>
+            /// Přidá nová data
+            /// </summary>
+            /// <param name="infoDate"></param>
+            /// <param name="key"></param>
+            /// <param name="valueType"></param>
+            /// <param name="value"></param>
+            /// <param name="gender"></param>
+            /// <param name="ageFrom"></param>
+            /// <param name="ageTo"></param>
+            /// <param name="specKey"></param>
+            public virtual void AddData(DateTime infoDate, int key, DataValueType valueType, int value, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
+            {
+                DataInfo result = AddOrCreateInfo(infoDate, key);
+                result.AddData(valueType, value, gender, ageFrom, ageTo, specKey);
             }
             public virtual void Clear(FileContentType contentType)
             {
@@ -3001,10 +3050,17 @@ namespace Djs.Tools.CovidGraphs.Data
                         this.ChildDict = null;
                     }
                 }
-                if (HasLocalData && (contentType == FileContentType.Data || contentType == FileContentType.DataPack))
+                if (HasLocalData)
                 {
-                    this.LocalDataDict.Clear();
-                    this.LocalDataDict = null;
+                    if (contentType == FileContentType.Data || contentType == FileContentType.DataPack)
+                    {
+                        this.LocalDataDict.Clear();
+                        this.LocalDataDict = null;
+                    }
+                    else
+                    {
+                        this.LocalDataDict.Values.ForEachExec(d => d.Clear(contentType));
+                    }
                 }
             }
             public virtual void Save(ProcessFileInfo saveInfo, DZipFileWriter stream)
@@ -3231,6 +3287,7 @@ namespace Djs.Tools.CovidGraphs.Data
             {
                 this.Parent = parent;
                 this.Date = date;
+                this._Items = new List<DataItem>();
                 this.NewCount = 0;
                 this.CurrentCount = 0;
             }
@@ -3245,12 +3302,16 @@ namespace Djs.Tools.CovidGraphs.Data
             {
                 return Text;
             }
+            /// <summary>
+            /// Úložiště dat
+            /// </summary>
+            private List<DataItem> _Items;
             public string Text { get { return $"Datum: {(Date.ToString("dd.MM.yyyy"))}; NewCount: {NewCount}; CurrentCount: {CurrentCount}; Parent: {Parent.Text}"; } }
             public EntityInfo Parent { get; private set; }
             public DatabaseInfo Database { get { return Parent.Database; } }
             public DateTime Date { get; private set; }
             public int DateKey { get { return Date.GetDateKey(); } }
-            public int DateKeyShort { get { return this.Date.GetDateKeyShort(); } }
+            protected int DateKeyShort { get { return this.Date.GetDateKeyShort(); } }
             public void Save(ProcessFileInfo saveInfo, DZipFileWriter stream)
             {
                 switch (saveInfo.ContentType)
@@ -3265,6 +3326,47 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             public int NewCount { get; private set; }
             public int CurrentCount { get; private set; }
+            /// <summary>
+            /// Přidá nová data
+            /// </summary>
+            /// <param name="valueType"></param>
+            /// <param name="value"></param>
+            /// <param name="gender"></param>
+            /// <param name="ageFrom"></param>
+            /// <param name="ageTo"></param>
+            /// <param name="specKey"></param>
+            public virtual void AddData(DataValueType valueType, int value, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
+            {
+                switch (valueType)
+                {
+                    case DataValueType.SourceNewCount:
+                        this.NewCount += value;
+                        break;
+                    case DataValueType.SourceCurrentCount:
+                        this.CurrentCount += value;
+                        break;
+                }
+            }
+            /// <summary>
+            /// Smaže data daného typu
+            /// </summary>
+            /// <param name="contentType"></param>
+            public virtual void Clear(FileContentType contentType)
+            { }
+            public virtual void AddResult()
+            {
+                // qqq;
+            }
+
+        }
+        public class DataItem
+        {
+            public DataValueType ValueType { get; private set; }
+            public int Value { get; private set; }
+            public DataGenderType Gender { get; private set; }
+            public int AgeFrom { get; private set; }
+            public int AgeTo { get; private set; }
+            public string SpecKey { get; private set; }
         }
         public class Pocet : ItemInfo
         {
@@ -3421,6 +3523,8 @@ namespace Djs.Tools.CovidGraphs.Data
         public void AddDataToResult(DatabaseInfo.DataInfo data)
         {
             this.ResultSet.ScanRecordCount++;                                                      // Statistika
+
+            // qqq;
 
             if (this.SourceBegin.HasValue && data.Date < this.SourceBegin.Value) return;
             if (this.SourceEnd.HasValue && data.Date >= this.SourceEnd.Value) return;
