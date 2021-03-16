@@ -132,6 +132,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case FileContentType.PocetObyvatel:
                     _PocetInfo = null;
+                    _World.Clear(FileContentType.PocetObyvatel);
                     _Pocet.Clear();
                     _HasData = false;
                     break;
@@ -569,9 +570,9 @@ namespace Djs.Tools.CovidGraphs.Data
                             int key = infoDate.GetDateKey();
                             var info = currentInfo.Vesnice.AddOrCreateInfo(infoDate, key);
                             int newCount = GetInt32(items[2]);
-                            info.AddData(DataValueType.SourceNewCount, newCount);
+                            info.AddData(newCount, DataValueType.SourceNewCount);
                             int currentCount = GetInt32(items[3]);
-                            info.AddData(DataValueType.SourceCurrentCount, currentCount);
+                            info.AddData(currentCount, DataValueType.SourceCurrentCount);
                             bool hasValidData = (newCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
                             _RegisterMaxContentTime(infoDate, hasValidData);
                         }
@@ -638,9 +639,9 @@ namespace Djs.Tools.CovidGraphs.Data
                         int key = infoDate.GetDateKey();
                         var info = currentInfo.Vesnice.AddOrCreateInfo(infoDate, key);
                         int newCount = GetInt32(items[2]);
-                        info.AddData(DataValueType.SourceNewCount, newCount);
+                        info.AddData(newCount, DataValueType.SourceNewCount);
                         int currentCount = GetInt32(items[3]);
-                        info.AddData(DataValueType.SourceCurrentCount, currentCount);
+                        info.AddData(currentCount, DataValueType.SourceCurrentCount);
                         bool hasValidData = (newCount != 0 && currentInfo.Vesnice.PocetObyvatel != 0);
                         _RegisterMaxContentTime(infoDate, hasValidData);
                     }
@@ -678,9 +679,9 @@ namespace Djs.Tools.CovidGraphs.Data
                 int key = infoDate.GetDateKey();
                 var info = vesnice.AddOrCreateInfo(infoDate, key);
                 int newCount = GetInt32(items[12]);
-                info.AddData(DataValueType.SourceNewCount, newCount);
+                info.AddData(newCount, DataValueType.SourceNewCount);
                 int currentCount = GetInt32(items[13]);
-                info.AddData(DataValueType.SourceCurrentCount, currentCount);
+                info.AddData(currentCount, DataValueType.SourceCurrentCount);
                 bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
                 _RegisterMaxContentTime(infoDate, hasValidData);
             }
@@ -743,9 +744,9 @@ namespace Djs.Tools.CovidGraphs.Data
                 int key = infoDate.GetDateKey();
                 var info = vesnice.AddOrCreateInfo(infoDate, key);
                 int newCount = GetInt32(items[10]);
-                info.AddData(DataValueType.SourceNewCount, newCount);
+                info.AddData(newCount, DataValueType.SourceNewCount);
                 int currentCount = GetInt32(items[11]);
-                info.AddData(DataValueType.SourceCurrentCount, currentCount);
+                info.AddData(currentCount, DataValueType.SourceCurrentCount);
                 bool hasValidData = (newCount != 0 && vesnice.PocetObyvatel != 0);
                 _RegisterMaxContentTime(infoDate, hasValidData);
             }
@@ -804,7 +805,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 int age = GetInt32(items[1]);
                 string poh = items[2].Trim().ToUpper();
                 DataGenderType gender = (poh == "M" ? DataGenderType.Male : ((poh == "F" || poh == "Z") ? DataGenderType.Female : DataGenderType.Male));
-                info.AddData(DataValueType.SourceNewDeath, 1, gender, age, 1);
+                info.AddData(1, DataValueType.SourceNewDeath, gender, age, 1);
             }
 
             action.ProcessFile.RecordCount += 1;
@@ -2935,6 +2936,14 @@ namespace Djs.Tools.CovidGraphs.Data
             /// </summary>
             public int PocetObyvatel { get { return PocetObyv.Pocet; } }
             /// <summary>
+            /// Vynuluje svůj Počet obyvatel. Provádí se před načtením platných dat.
+            /// </summary>
+            private void _ClearPocetObyvatel()
+            {
+                _PocetObyv = null;
+                IsPocetObyvLoaded = false;
+            }
+            /// <summary>
             /// Najde a vrátí entitu s daným kódem, kde první část kódu hledá ve svých Childs.
             /// </summary>
             /// <param name="fullCode"></param>
@@ -3026,16 +3035,16 @@ namespace Djs.Tools.CovidGraphs.Data
             /// </summary>
             /// <param name="infoDate"></param>
             /// <param name="key"></param>
-            /// <param name="valueType"></param>
             /// <param name="value"></param>
+            /// <param name="valueType"></param>
             /// <param name="gender"></param>
             /// <param name="ageFrom"></param>
             /// <param name="ageTo"></param>
             /// <param name="specKey"></param>
-            public virtual void AddData(DateTime infoDate, int key, DataValueType valueType, int value, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
+            public virtual void AddData(DateTime infoDate, int key, int value, DataValueType valueType, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
             {
                 DataInfo result = AddOrCreateInfo(infoDate, key);
-                result.AddData(valueType, value, gender, ageFrom, ageTo, specKey);
+                result.AddData(value, valueType, gender, ageFrom, ageTo, specKey);
             }
             public virtual void Clear(FileContentType contentType)
             {
@@ -3049,6 +3058,10 @@ namespace Djs.Tools.CovidGraphs.Data
                         this.ChildDict.Clear();
                         this.ChildDict = null;
                     }
+                }
+                if (contentType == FileContentType.PocetObyvatel)
+                {
+                    this._ClearPocetObyvatel();
                 }
                 if (HasLocalData)
                 {
@@ -3324,20 +3337,46 @@ namespace Djs.Tools.CovidGraphs.Data
                         break;
                 }
             }
+            /// <summary>
+            /// Počet nově nemocných v tomto dni, bez dalších detailů
+            /// </summary>
             public int NewCount { get; private set; }
+            /// <summary>
+            /// Počet aktuálně nemocných v tomto dni, bez dalších detailů
+            /// </summary>
             public int CurrentCount { get; private set; }
+            /// <summary>
+            /// Počet nově zemřelých v tomto dni, bez dalších detailů
+            /// </summary>
+            public int DeathCount { get; private set; }
+            /// <summary>
+            /// Počet vakcinovaných v tomto dni, bez dalších detailů
+            /// </summary>
+            public int NewVaxine { get; private set; }
             /// <summary>
             /// Přidá nová data
             /// </summary>
-            /// <param name="valueType"></param>
+            /// <param name="infoDate"></param>
+            /// <param name="key"></param>
             /// <param name="value"></param>
+            /// <param name="valueType"></param>
             /// <param name="gender"></param>
             /// <param name="ageFrom"></param>
             /// <param name="ageTo"></param>
             /// <param name="specKey"></param>
-            public virtual void AddData(DataValueType valueType, int value, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
+            public void AddData(int value, DataValueType valueType, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
             {
-                switch (valueType)
+                this.AddData(value, new ItemDetailSpecification(valueType, gender, ageFrom, ageTo, specKey));
+            }
+            /// <summary>
+            /// Přidá nová data
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="itemDetail"></param>
+            public void AddData(int value, ItemDetailSpecification itemDetail)
+            {
+                // a) do sumářů, odkud se budou data brát "rychle" = pokud nebude dán další filtr:
+                switch (itemDetail.ValueType)
                 {
                     case DataValueType.SourceNewCount:
                         this.NewCount += value;
@@ -3345,6 +3384,24 @@ namespace Djs.Tools.CovidGraphs.Data
                     case DataValueType.SourceCurrentCount:
                         this.CurrentCount += value;
                         break;
+                    case DataValueType.SourceNewDeath:
+                        this.DeathCount += value;
+                        break;
+                    case DataValueType.SourceNewVaxine:
+                        this.NewVaxine += value;
+                        break;
+                }
+
+                // Do detailů, pro získání detailních informací (věk zemřelých, typ vakcíny, atd):
+                if (value != 0 && itemDetail.IsDetail)
+                {
+                    DataItem dataItem = this._Items.FirstOrDefault(i => i.IsValidForAdd(itemDetail));
+                    if (dataItem == null)
+                    {
+                        dataItem = new DataItem(itemDetail);
+                        this._Items.Add(dataItem);
+                    }
+                    dataItem.AddValue(value);
                 }
             }
             /// <summary>
@@ -3361,12 +3418,45 @@ namespace Djs.Tools.CovidGraphs.Data
         }
         public class DataItem
         {
-            public DataValueType ValueType { get; private set; }
+            public DataItem(ItemDetailSpecification itemDetail)
+            {
+                this.Value = 0;
+                this.ValueType = itemDetail.ValueType;
+                this.Gender = itemDetail.Gender;
+                this.AgeFrom = itemDetail.AgeFrom;
+                this.AgeTo = itemDetail.AgeTo;
+                this.SpecKey = itemDetail.SpecKey;
+            }
+            public override string ToString()
+            {
+                return $"{ValueType}: {Value}; Gender: {Gender}; Age from: {AgeFrom}; Age to: {AgeTo}.";
+            }
             public int Value { get; private set; }
+            public DataValueType ValueType { get; private set; }
             public DataGenderType Gender { get; private set; }
             public int AgeFrom { get; private set; }
             public int AgeTo { get; private set; }
             public string SpecKey { get; private set; }
+            internal void AddValue(int value)
+            {
+                this.Value += value;
+            }
+            #region Support
+            /// <summary>
+            /// Vrátí true, pokud this objekt přesně vyhovuje dané podmínce. Pokud ano, pak do this instance bude možno přidat (přičíst) novou hodnotu do <see cref="Value"/>.
+            /// Pokud nevyhovuje, bude založena nová instance.
+            /// </summary>
+            /// <param name="itemDetail"></param>
+            /// <returns></returns>
+            internal bool IsValidForAdd(ItemDetailSpecification itemDetail)
+            {
+                return (this.ValueType == itemDetail.ValueType &&
+                        this.Gender == itemDetail.Gender &&
+                        this.AgeFrom == itemDetail.AgeFrom &&
+                        this.AgeTo == itemDetail.AgeTo &&
+                        String.Equals(this.SpecKey, itemDetail.SpecKey));
+            }
+            #endregion
         }
         public class Pocet : ItemInfo
         {
@@ -3409,6 +3499,38 @@ namespace Djs.Tools.CovidGraphs.Data
         #endregion
     }
     #region Třídy pro výsledky analýzy
+    public class ItemDetailSpecification
+    {
+        public ItemDetailSpecification()
+        {
+            ValueType = DataValueType.None;
+            Gender = DataGenderType.NotSpecified;
+            AgeFrom = 0;
+            AgeTo = 0;
+            SpecKey = null;
+        }
+        public ItemDetailSpecification(DataValueType valueType, DataGenderType gender = DataGenderType.NotSpecified, int ageFrom = 0, int ageTo = 0, string specKey = null)
+        {
+            ValueType = valueType;
+            Gender = gender;
+            AgeFrom = ageFrom;
+            AgeTo = ageTo;
+            SpecKey = specKey;
+        }
+        public override string ToString()
+        {
+            return $"ValueType: {ValueType}; Gender: {Gender}; Age from: {AgeFrom}; Age to: {AgeTo}; SpecKey: {SpecKey}";
+        }
+        public DataValueType ValueType { get; set; }
+        public DataGenderType Gender { get; set; }
+        public int AgeFrom { get; set; }
+        public int AgeTo { get; set; }
+        public string SpecKey { get; set; }
+        /// <summary>
+        /// Obsahuje true tehdy, když obsažená data mají nondefaultní hodnotu (krom <see cref="ValueType"/>, tam se hodnota očekává, a její nastavení tedy samo o sobě není detailní informací).
+        /// </summary>
+        public bool IsDetail { get { return (Gender != DataGenderType.NotSpecified || AgeFrom < AgeTo || SpecKey != null); } }
+    }
     /// <summary>
     /// Argument pro hledání dat grafů
     /// </summary>
