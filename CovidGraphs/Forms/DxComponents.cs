@@ -93,7 +93,7 @@ namespace Djs.Tools.CovidGraphs
             _DetailYFirst = 9;
             _DetailYHeightLabel = 19;
             _DetailYHeightText = 22;
-            _DetailYOffsetLabelText = 5;
+            _DetailYOffsetLabelText = 4;
             _DetailYSpaceLabel = 2;
             _DetailYSpaceText = 3;
             _DetailXMargin = 6;

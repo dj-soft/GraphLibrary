@@ -649,6 +649,8 @@ namespace Djs.Tools.CovidGraphs
             {
                 string name = graph.ScreenshotFileName + ".png";
                 _ChartControl.ExportToImage(name, System.Drawing.Imaging.ImageFormat.Png);
+                name = System.IO.Path.ChangeExtension(name, ".svg");
+                _ChartControl.ExportToSvg(name);
             }
         }
         private bool TryShowChartLayoutBySource(ShowChartSourceType source)

@@ -1771,6 +1771,11 @@ STRIPES V OSE Y = pro číslo R :
             result.Add(DataValueTypeInfo.CreateFor(DataValueType.RZero));
             result.Add(DataValueTypeInfo.CreateFor(DataValueType.RZeroAvg));
 
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewDeath));
+
+            result.Add(DataValueTypeInfo.CreateFor(DataValueType.NewVaxine));
+
+
             return result.ToArray();
         }
         /// <summary>
@@ -1786,7 +1791,7 @@ STRIPES V OSE Y = pro číslo R :
             throw new KeyNotFoundException($"Nelze vytvořit data {nameof(DataValueTypeInfo)} pro valueType = {valueType}, není vytvořen segment kódu.");
         }
         /// <summary>
-        /// Statický konstruktor
+        /// Statický konstruktor, pouze pro platné finální typy
         /// </summary>
         /// <param name="valueType"></param>
         /// <returns></returns>
@@ -1798,24 +1803,28 @@ STRIPES V OSE Y = pro číslo R :
                     result = new DataValueTypeInfo(valueType, "Denní počet nových případů", "nové za den",
                         "Neupravený počet nově nalezených případů", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        false, false, false,
                         0, 0);
                     return true;
                 case DataValueType.NewCountAvg:
                     result = new DataValueTypeInfo(valueType, "Průměrný denní přírůstek", "nové za den, průměr",
                         "Počet nově nalezených případů, týdenní průměr", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        false, false, false,
                         -8, +4);
                     return true;
                 case DataValueType.NewCountRelative:
                     result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100tis obyvatel", "nové za den / 100T",
                         "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
+                        false, false, false,
                         0, 0);
                     return true;
                 case DataValueType.NewCountRelativeAvg:
                     result = new DataValueTypeInfo(valueType, "Relativní přírůstek na 100t, zprůměrovaný", "nové za den, průměr / 100T",
                         "Počet nově nalezených případů, přepočtený na 100 000 obyvatel, týdenní průměr", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        false, false, false,
                         -8, +4);
                     return true;
 
@@ -1823,6 +1832,7 @@ STRIPES V OSE Y = pro číslo R :
                     result = new DataValueTypeInfo(valueType, "Součet za posledních 7 dní", "nové za týden",
                         "Počet nově nalezených případů, sečtený za posledních 7 dní", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        false, false, false,
                         -7, 0);
                     return true;
                 case DataValueType.NewCount7DaySumAvg:
@@ -1830,18 +1840,21 @@ STRIPES V OSE Y = pro číslo R :
                         new DataValueTypeInfo(valueType, "Součet za posledních 7 dní, průměrovaný", "nové za týden, průměr",
                         "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        false, false, false,
                         -14, +4);
                     return true;
                 case DataValueType.NewCount7DaySumRelative:
                     result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel", "nové za týden / 100T",
                         "Počet nově nalezených případů, sečtený za posledních 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
+                        false, false, false,
                         -7, 0);
                     return true;
                 case DataValueType.NewCount7DaySumRelativeAvg:
                     result = new DataValueTypeInfo(valueType, "Součet za týden na 100tis obyvatel, průměrovaný", "nové za týden, průměr / 100T",
                         "Počet nově nalezených případů, sečtený za posledních 7 dní, průměrovaný, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        false, false, false,
                         -14, +4);
                     return true;
 
@@ -1849,39 +1862,62 @@ STRIPES V OSE Y = pro číslo R :
                     result = new DataValueTypeInfo(valueType, "Aktuální stav případů", "aktuální stav",
                         "Aktuální počet pozitivních osob", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
+                        false, false, false,
                         0, 0);
                     return true;
                 case DataValueType.CurrentCountAvg:
                     result = new DataValueTypeInfo(valueType, "Aktuální stav, průměr za 7 dní", "aktuální stav, průměr",
                         "Aktuální počet pozitivních osob, průměr za 7 dní", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
-                         -7, +4);
+                        false, false, false,
+                        -7, +4);
                     return true;
                 case DataValueType.CurrentCountRelative:
                     result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel", "aktuální stav / 100T",
                         "Aktuální počet pozitivních osob, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Dash,
+                        false, false, false,
                         0, 0);
                     return true;
                 case DataValueType.CurrentCountRelativeAvg:
                     result = new DataValueTypeInfo(valueType, "Aktuální stav případů na 100tis obyvatel, průměr za 7 dní", "aktuální stav, průměr / 100T", 
                         "Aktuální počet pozitivních osob, průměr za 7 dní, přepočtený na 100 000 obyvatel, vhodné k porovnání různých regionů", 
                         GraphSerieAxisType.BigValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        false, false, false,
                         -7, +4);
                     return true;
 
                 case DataValueType.RZero:
-                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "číslo R0", 
-                        "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny", 
+                    result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0", "číslo R0",
+                        "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny",
                         GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Dot,
-                        -6, 0);
+                        false, false, false,
+                        -14, 0);
                     return true;
                 case DataValueType.RZeroAvg:
                     result = new DataValueTypeInfo(valueType, "Reprodukční číslo R0, průměr za 7dní", "číslo R0, průměr",
                         "Reprodukční číslo = poměr počtu nových případů (průměrný za 7 dní) vůči počtu nových případů (průměrnému) před pěti dny, kdy výsledek je zprůměrovaný za 7 dní", 
                         GraphSerieAxisType.SmallValuesLinear, EntityType.Vesnice, LineDashStyleType.Solid,
+                        false, false, false,
                         -14, +4);
                     return true;
+
+                case DataValueType.NewDeath:
+                    result = new DataValueTypeInfo(valueType, "Denní počet zemřelých", "zemřelí za den",
+                        "Neupravený počet zemřelých osob",
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Okres, LineDashStyleType.Dot,
+                        false, false, false,
+                        0, 0);
+                    return true;
+
+                case DataValueType.NewVaxine:
+                    result = new DataValueTypeInfo(valueType, "Denní počet očkovaných", "očkovaní za den",
+                        "Neupravený počet očkovaných osob",
+                        GraphSerieAxisType.BigValuesLinear, EntityType.Kraj, LineDashStyleType.Dot,
+                        false, false, false,
+                        0, 0);
+                    return true;
+
             }
             result = null;
             return false;
@@ -1901,6 +1937,7 @@ STRIPES V OSE Y = pro číslo R :
         /// <param name="icon"></param>
         private DataValueTypeInfo(DataValueType value, string text, string shortText, string toolTip, 
             GraphSerieAxisType axisType, EntityType entityType, LineDashStyleType suggestedDashStyle,
+            bool allowFilterGender = false, bool allowFilterAge = false, bool allowFilterSpecKey = false,
             int? dateOffsetBefore = null, int? dateOffsetAfter = null, System.Drawing.Image icon = null)
             : base(value, text, toolTip, icon)
         {
@@ -1909,6 +1946,9 @@ STRIPES V OSE Y = pro číslo R :
             this.AxisType = axisType;
             this.EntityType = entityType;
             this.SuggestedDashStyle = suggestedDashStyle;
+            this.AllowFilterGender = allowFilterGender;
+            this.AllowFilterAge = allowFilterAge;
+            this.AllowFilterSpecKey = allowFilterSpecKey;
             this.DateOffsetBefore = dateOffsetBefore;
             this.DateOffsetAfter = dateOffsetAfter;
         }
@@ -1929,6 +1969,18 @@ STRIPES V OSE Y = pro číslo R :
         /// Data tohoto typu lze číst i z vyšších entit, ale ne z nižších: pokud např. určitý údaj je jen za okresy, nelze jej číst z obcí.
         /// </summary>
         public EntityType EntityType { get; protected set; }
+        /// <summary>
+        /// Umožní filtrovat podle pohlaví
+        /// </summary>
+        public bool AllowFilterGender { get; protected set; }
+        /// <summary>
+        /// Umožní filtrovat podle věku
+        /// </summary>
+        public bool AllowFilterAge { get; protected set; }
+        /// <summary>
+        /// Umožní filtrovat podle specifického klíče (typ vakcíny například)
+        /// </summary>
+        public bool AllowFilterSpecKey { get; protected set; }
         /// <summary>
         /// Vhodný styl čáry, použije se ale jen když se v jednom grafu sejde více stylů.
         /// Pokud v jednom grafu bude jen jeden typ, pak se použije Full.
@@ -1967,31 +2019,42 @@ STRIPES V OSE Y = pro číslo R :
         /// Zdroj: CurrentCount
         /// </summary>
         SourceCurrentCount = 0x00000002,
+        /// <summary>
+        /// Zdroj: Death
+        /// </summary>
         SourceNewDeath = 0x00000004,
+        /// <summary>
+        /// Zdroj: Vaxine
+        /// </summary>
         SourceNewVaxine = 0x00000008,
 
         // Případný další zdroj přidej i dole do CommonSources!
 
         /// <summary>
+        /// V rámci dialogu nabídnou zadání detailních podmínek (pohlaví, věk, SpecKey)
+        /// Tento agregát se aplikuje jako přípravný = jako první v řadě, ještě před <see cref="AggrCoefficient5Days"/> nebo <see cref="AggrCoefficient7Days"/>.
+        /// </summary>
+        AcceptDetailConditions = 0x00000100,
+
+        /// <summary>
         /// Aggregate: Průměr minulých 7 dní = za minulých 6 dní plus aktuální den (průměr: součet reálných dnů děleno počtem reálných dnů).
         /// Tento agregát se aplikuje jako přípravný = jako první v řadě, ještě před <see cref="AggrCoefficient5Days"/> nebo <see cref="AggrCoefficient7Days"/>.
         /// </summary>
-        AggrPrepareLast7DayAverage = 0x00000100,
-
+        AggrPrepareLast7DayAverage = 0x00001000,
         /// <summary>
         /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 5 dny (Den[X] / Den[X-5]) = standardně uváděné číslo R0.
         /// Tuto hodnotu je nutno povinně kombinovat s <see cref="AggrPrepareLast7DayAverage"/>, aby výsledky byly korektní. Samotná hodnota <see cref="AggrCoefficient5Days"/> ale <see cref="AggrPrepareLast7DayAverage"/> neprovádí.
         /// <para/>
         /// Tento agregát nelze kombinovat s <see cref="AggrCoefficient7Days"/>, při zkombinování se použije pouze <see cref="AggrCoefficient5Days"/>.
         /// </summary>
-        AggrCoefficient5Days = 0x00001000,
+        AggrCoefficient5Days = 0x00002000,
         /// <summary>
         /// Aggregate: Poměr hodnoty daného dne ku hodnotě před 7 dny (Den[X] / Den[X-7]).
         /// Tuto hodnotu je nutno povinně kombinovat s <see cref="AggrPrepareLast7DayAverage"/>, aby výsledky byly korektní. Samotná hodnota <see cref="AggrCoefficient7Days"/> ale <see cref="AggrPrepareLast7DayAverage"/> neprovádí.
         /// <para/>
         /// Tento agregát nelze kombinovat s <see cref="AggrCoefficient5Days"/>, při zkombinování se použije pouze <see cref="AggrCoefficient5Days"/>.
         /// </summary>
-        AggrCoefficient7Days = 0x00002000,
+        AggrCoefficient7Days = 0x00004000,
 
         /// <summary>
         /// Aggregate: Součet minulých 7 dní = za minulých 6 dní plus aktuální den
@@ -2052,7 +2115,7 @@ STRIPES V OSE Y = pro číslo R :
         /// <summary>
         /// Maska všech zdrojů
         /// </summary>
-        CommonSources = SourceNewCount | SourceCurrentCount,
+        CommonSources = SourceNewCount | SourceCurrentCount | SourceNewDeath | SourceNewVaxine,
 
         // Orientační poznámka: procesy probíhají v pořadí jednotlivých bitů, tedy tak jako jsou zde uvedeny jednotlivé základní hodnoty.
         // Při skládání finálních hodnot (následující segment) se bere ohled na fyzické pořadí bitů;
@@ -2073,7 +2136,17 @@ STRIPES V OSE Y = pro číslo R :
         CurrentCountRelative = SourceCurrentCount | AggrRelativeTo100K | Round0D,
         CurrentCountRelativeAvg = SourceCurrentCount | AggrStd7DayAverage | AggrRelativeTo100K | Round0D,
         RZero = SourceNewCount | AggrPrepareLast7DayAverage | AggrCoefficient5Days | Round2D,
-        RZeroAvg = SourceNewCount | AggrPrepareLast7DayAverage | AggrCoefficient5Days | AggrStd7DayAverage | Round2D
+        RZeroAvg = SourceNewCount | AggrPrepareLast7DayAverage | AggrCoefficient5Days | AggrStd7DayAverage | Round2D,
+
+        NewDeath = SourceNewDeath | Round0D,
+        NewDeathAvg = SourceNewDeath | AggrStd7DayAverage | Round0D,
+        NewDeathRelative = SourceNewDeath | AggrRelativeTo100K | Round0D,
+        NewDeathRelativeAvg = SourceNewDeath | AggrStd7DayAverage | AggrRelativeTo100K | Round0D,
+
+        NewVaxine = SourceNewVaxine | Round0D,
+        NewVaxineAvg = SourceNewVaxine | AggrStd7DayAverage | Round0D,
+        NewVaxineRelative = SourceNewVaxine | AggrRelativeTo100K | Round0D,
+        NewVaxineRelativeAvg = SourceNewVaxine | AggrStd7DayAverage | AggrRelativeTo100K | Round0D,
 
         // Po přidání další finální hodnoty ji přidej i do metod:
         //  public static DataValueTypeInfo[] CreateAll()
