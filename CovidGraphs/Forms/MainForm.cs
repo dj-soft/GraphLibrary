@@ -644,8 +644,12 @@ namespace Djs.Tools.CovidGraphs
             CurrentGraphData.FinaliseShowGraph();
             this.ShowLoadGraphDataResult(CurrentGraphData);
 
-            string name = graph.ScreenshotFileName + ".png";
-            _ChartControl.ExportToImage(name, System.Drawing.Imaging.ImageFormat.Png);
+            Size size = _ChartControl.Size;
+            if (size.Width >= 100 && size.Height >= 100)
+            {
+                string name = graph.ScreenshotFileName + ".png";
+                _ChartControl.ExportToImage(name, System.Drawing.Imaging.ImageFormat.Png);
+            }
         }
         private bool TryShowChartLayoutBySource(ShowChartSourceType source)
         {

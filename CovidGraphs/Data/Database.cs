@@ -139,6 +139,9 @@ namespace Djs.Tools.CovidGraphs.Data
                 case FileContentType.Umrti:
                     _World.Clear(FileContentType.Umrti);
                     break;
+                case FileContentType.Vaxine:
+                    _World.Clear(FileContentType.Vaxine);
+                    break;
             }
         }
         /// <summary>
@@ -187,7 +190,7 @@ namespace Djs.Tools.CovidGraphs.Data
                     _PocetInfo = processInfo;
                     break;
                 case FileContentType.Umrti:
-
+                case FileContentType.Vaxine:
                     break;
             }
             processInfo.ProcessState = _GetFinalStateAfter(processInfo.ProcessState);
@@ -474,6 +477,7 @@ namespace Djs.Tools.CovidGraphs.Data
             if (String.Equals(header, Covid3HeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.CovidObce3;
             if (String.Equals(header, PocetHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.PocetObyvatel;
             if (String.Equals(header, UmrtiHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Umrti;
+            if (String.Equals(header, VaxineHeaderExpected, StringComparison.CurrentCultureIgnoreCase)) return FileContentType.Vaxine;
 
             string name = IO.Path.GetFileName(processInfo.FileName);
             throw new FormatException($"Database.Load() : zadaný vstupní soubor {name} nemá odpovídající záhlaví (úvodní řádek).");
@@ -490,6 +494,7 @@ namespace Djs.Tools.CovidGraphs.Data
                 case FileContentType.CovidObce2:
                 case FileContentType.CovidObce3:
                 case FileContentType.Umrti:
+                case FileContentType.Vaxine:
                     if (this._Vesnice == null || this._Vesnice.Count == 0)
                     {
                         throw new InvalidOperationException($"Nelze načítat data typu {processInfo.ContentType} do databáze, která nemá načtenou strukturu obcí.");
@@ -529,6 +534,9 @@ namespace Djs.Tools.CovidGraphs.Data
                     break;
                 case FileContentType.Umrti:
                     _LoadLineUmrti(line, action);
+                    break;
+                case FileContentType.Vaxine:
+                    _LoadLineVaxine(line, action);
                     break;
             }
         }
@@ -811,6 +819,83 @@ namespace Djs.Tools.CovidGraphs.Data
             action.ProcessFile.RecordCount += 1;
         }
         /// <summary>
+        /// Načte řádek dat ve struktuře <see cref="FileContentType.Vaxine"/>
+        /// </summary>
+        /// <param name="loadInfo"></param>
+        /// <param name="line"></param>
+        private void _LoadLineVaxine(string line, ProcessQueueItem action)
+        {
+            // Struktura: "datum,vakcina,kraj_nuts_kod,kraj_nazev,vekova_skupina,prvnich_davek,druhych_davek,celkem_davek"
+            //             0     1       2             3          4              5             6             7
+            // Sample:    "2021-02-22,"COVID-19 Vaccine AstraZeneca",CZ080,"Moravskoslezský kraj",40-44,1,0,1"
+            string[] items = line.Split(',');
+            if (items.Length < 8) return;
+
+            string fullCode = "CZ." + items[2];            // CZ.KRAJ
+            EntityInfo entity = GetEntity(fullCode);
+            if (entity == null)
+            {
+                action.ProcessQueue.AddMessage($"Ve vstupních datech {action.ProcessFile.ContentType} je uvedena informace pro entitu {fullCode}, ale tuto entitu nemáme načtenou ve struktuře obcí.");
+                return;
+            }
+
+            DateTime infoDate = GetDate(items[0]);
+            if (IsValidDate(infoDate, action))
+            {
+                int key = infoDate.GetDateKey();
+                var info = entity.AddOrCreateInfo(infoDate, key);
+                string specKey = GetString(items[1]);
+                _ParseAgeRange(items[4], out int ageFrom, out int ageTo);
+                int value1 = GetInt32(items[5]);
+                info.AddData(value1, DataValueType.SourceNewVaxine, DataGenderType.NotSpecified, ageFrom, ageTo, "1. " + specKey);
+                int value2 = GetInt32(items[6]);
+                info.AddData(value2, DataValueType.SourceNewVaxine, DataGenderType.NotSpecified, ageFrom, ageTo, "2. " + specKey);
+            }
+
+            action.ProcessFile.RecordCount += 1;
+        }
+        /// <summary>
+        /// Z dodaného textu oddělí číslice, typicky: "30-39" rozdělí na ageFrom = 30; ageTo = 40
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="ageFrom"></param>
+        /// <param name="ageTo"></param>
+        protected static void _ParseAgeRange(string text, out int ageFrom, out int ageTo)
+        {
+            ageFrom = 0;
+            ageTo = 0;
+            if (String.IsNullOrEmpty(text)) return;
+
+            if (_PartSplitters == null)
+                _PartSplitters = "-,×÷/+".ToCharArray();
+            char[] splitters = _PartSplitters;
+            bool containsSeparator = (text.IndexOfAny(splitters) >= 0);
+            string[] parts = text.Split(splitters);
+            int target = 0;
+            foreach (var part in parts)
+            {
+                if (String.IsNullOrEmpty(part) || !Int32.TryParse(part, out int value)) continue;
+                if (value < 0) continue;
+                switch (target)
+                {
+                    case 0:
+                        ageFrom = value;
+                        target = 1;
+                        break;
+                    case 1:
+                        if (value > ageFrom)
+                            ageTo = value;
+                        target = 2;
+                        break;
+                }
+                if (target == 2) break;
+            }
+            if (!containsSeparator) ageTo = ageFrom + 1;             // Pokud není obsažen oddělovač (tj. máme text ve formě "35", pak vracíme ageFrom = 35; ageTo = 36;
+            else if (ageTo < ageFrom) ageTo = 999;                   // Je tam oddělovač, ale hodnota ageTo není daná nebo je malá: vracíme ageTo = unlimited = 999;
+            else ageTo = ageTo + 1;                                  // oddělovač, a ageTo je dáno a je rovno nebo vyšší než ageFrom: převádíme z lidského pojmu (do 39) do počítačového pojmu (věk < 40)
+        }
+        private static char[] _PartSplitters = null;
+        /// <summary>
         /// Metoda v případě potřeby vytvoří new instanci <see cref="ProcessFileCurrentInfo"/> do <see cref="ProcessFileInfo.CurrentInfo"/>, a vrátí ji.
         /// </summary>
         /// <param name="loadInfo"></param>
@@ -878,6 +963,8 @@ namespace Djs.Tools.CovidGraphs.Data
             if (forceAll || _WebUpdateIsTimeForUpload(ConfigUserDataTimeDownloadCzV2Umrti , StandardUpdateTimeWebCzV2))
                 processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2Umrti) { FileType = FileContentType.Umrti, WebUpdateTimeConfigName = ConfigUserDataTimeDownloadCzV2Umrti , WebUpdateMinAcceptSize = 1000 });
 
+            if (forceAll || _WebUpdateIsTimeForUpload(ConfigUserDataTimeDownloadCzV2Vaxine, StandardUpdateTimeWebCzV2))
+                processQueue.AddActions(new ProcessQueueItem(ProcessActionType.DownloadUrl, StandardUpdateUrlCzV2Vaxine) { FileType = FileContentType.Vaxine, WebUpdateTimeConfigName = ConfigUserDataTimeDownloadCzV2Vaxine, WebUpdateMinAcceptSize = 1000 });
         }
         /// <summary>
         /// Metoda vrátí true, pokud je vhodné provést download dat z webu, když poslední stahování dat bylo v daném čase, a hodina aktualizace je zadaná.
@@ -957,6 +1044,8 @@ namespace Djs.Tools.CovidGraphs.Data
                     return StandardUpdateUrlCzV2Obce;
                 case FileContentType.Umrti:
                     return StandardUpdateUrlCzV2Umrti;
+                case FileContentType.Vaxine:
+                    return StandardUpdateUrlCzV2Vaxine;
                 default:
                     throw new ArgumentException($"Nelze z internetu aktualizovat data typu: {contentType}.");
             }
@@ -1154,7 +1243,8 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const string StandardUpdateUrlCzV2Obce = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/obce.csv";
         protected const string ConfigUserDataTimeDownloadCzV2Umrti = "DownloadTimeCzV2WebUmrti";
         protected const string StandardUpdateUrlCzV2Umrti = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/umrti.csv";
-
+        protected const string ConfigUserDataTimeDownloadCzV2Vaxine = "DownloadTimeCzV2WebVaxine";
+        protected const string StandardUpdateUrlCzV2Vaxine = @"https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/ockovani.csv";
 
         #endregion
         #region Save : ukládání do interního formátu
@@ -1530,7 +1620,9 @@ namespace Djs.Tools.CovidGraphs.Data
         protected const int PocetItemCountExpected = 11;
         protected const string UmrtiHeaderExpected = "datum,vek,pohlavi,kraj_nuts_kod,okres_lau_kod";
         protected const int UmrtiItemCountExpected = 5;
-       
+        protected const string VaxineHeaderExpected = "datum,vakcina,kraj_nuts_kod,kraj_nazev,vekova_skupina,prvnich_davek,druhych_davek,celkem_davek";
+        protected const int VaxineItemCountExpected = 8;
+
         protected const string VoidEntityCode = "0";
 
         protected const string HeaderDataProperties = "C";
@@ -1569,6 +1661,15 @@ namespace Djs.Tools.CovidGraphs.Data
             if (text.Contains(FixSpaceChar)) text = text.Replace(FixSpaceChar.ToString(), "");
             if (Int32.TryParse(text, out int value)) return value;
             return 0;
+        }
+        protected static string GetString(string text)
+        {
+            if (text == null) return "";
+            string test = text.Trim();
+            int length = test.Length;
+            if (length >= 2 && test[0] == '"' && test[length - 1] == '"')
+                return test.Substring(1, length - 2);
+            return text;
         }
         protected const char SpaceChar = (char)32;
         protected const char FixSpaceChar = (char)160;
@@ -3319,7 +3420,21 @@ namespace Djs.Tools.CovidGraphs.Data
             /// Úložiště dat
             /// </summary>
             private List<DataItem> _Items;
-            public string Text { get { return $"Datum: {(Date.ToString("dd.MM.yyyy"))}; NewCount: {NewCount}; CurrentCount: {CurrentCount}; Parent: {Parent.Text}"; } }
+            public string Text
+            {
+                get
+                {
+                    string text = "Datum: " + Date.ToString("dd.MM.yyyy");
+                    if (NewCount != 0) text += $"; NewCount: {NewCount}";
+                    if (CurrentCount != 0) text += $"; CurrentCount: {CurrentCount}";
+                    if (DeathCount != 0) text += $"; DeathCount: {DeathCount}";
+                    if (NewVaxine != 0) text += $"; NewVaxine: {NewVaxine}";
+                    if (_Items.Count > 0) text += $"; Items: {_Items.Count }";
+                    text += $"; Parent: {Parent.Text }";
+
+                    return text;
+                }
+            }
             public EntityInfo Parent { get; private set; }
             public DatabaseInfo Database { get { return Parent.Database; } }
             public DateTime Date { get; private set; }
@@ -3429,7 +3544,16 @@ namespace Djs.Tools.CovidGraphs.Data
             }
             public override string ToString()
             {
-                return $"{ValueType}: {Value}; Gender: {Gender}; Age from: {AgeFrom}; Age to: {AgeTo}.";
+                string text = $"{ValueType}: {Value}";
+                if (Gender != DataGenderType.NotSpecified) text += $"; Gender: {Gender}";
+                if (AgeTo > 0)
+                {
+                    text += $"; Age: {AgeFrom}";
+                    if (AgeTo > 900) text += "+";
+                    else if (AgeTo > (AgeFrom + 1)) text += "-" + (AgeTo - 1).ToString();
+                }
+                if (SpecKey != null) text += "; SpecKey: " + SpecKey;
+                return text;
             }
             public int Value { get; private set; }
             public DataValueType ValueType { get; private set; }
@@ -4213,6 +4337,9 @@ namespace Djs.Tools.CovidGraphs.Data
                     case FileContentType.Umrti:
                         description += "počty zemřelých ";
                         break;
+                    case FileContentType.Vaxine:
+                        description += "počet aplikovaných vakcín";
+                        break;
                     default:
                         description += "soubor typu " + this.ContentType.ToString();
                         break;
@@ -4269,7 +4396,7 @@ namespace Djs.Tools.CovidGraphs.Data
             get
             {
                 var contentType = this.ContentType;
-                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2 || contentType == FileContentType.CovidObce3 || contentType == FileContentType.Umrti);
+                return (contentType == FileContentType.Data || contentType == FileContentType.DataPack || contentType == FileContentType.CovidObce1 || contentType == FileContentType.CovidObce2 || contentType == FileContentType.CovidObce3 || contentType == FileContentType.Umrti || contentType == FileContentType.Vaxine);
             }
         }
     }
@@ -4286,7 +4413,8 @@ namespace Djs.Tools.CovidGraphs.Data
         CovidObce1,
         CovidObce2,
         CovidObce3,
-        Umrti
+        Umrti,
+        Vaxine
     }
     /// <summary>
     /// Stav zpracování souboru
