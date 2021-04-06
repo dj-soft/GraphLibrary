@@ -66,6 +66,7 @@ namespace TestDevExpress.Components
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
             _AddTopButton = CreateDxButton("Otevřít další NAHOŘE", LayoutPosition.Top);
 
+            ShowVisibleButton();
 
             Random rand = new Random();
             int r = rand.Next(160, 240);
@@ -79,7 +80,67 @@ namespace TestDevExpress.Components
             //this.Appearance.BackColor2 = this.MyColor2;
             //this.Appearance.Options.UseBackColor = true;
             //this.LookAndFeel.UseDefaultLookAndFeel = false;
+
         }
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.SetVisibleButtons(false, true);
+        }
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+
+            Point mousePoint = this.PointToClient(WF.Control.MousePosition);
+            bool isMouseOnPanel = this.ClientRectangle.Contains(mousePoint);             // MouseLeave: myš mohla odejít i na naše Child controly, ale pak se nejedná o opuštění našeho controlu.
+            this.SetVisibleButtons(false, isMouseOnPanel);
+        }
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+            this.SetVisibleButtons(true, true);
+        }
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+            this.SetVisibleButtons(true, false);
+        }
+        protected override void OnGotFocus(EventArgs e)
+        {
+            base.OnGotFocus(e);
+            this.SetVisibleButtons(true, true);
+        }
+        protected override void OnLostFocus(EventArgs e)
+        {
+            base.OnLostFocus(e);
+            this.SetVisibleButtons(true, false);
+        }
+        protected void ResetVisibleButtons()
+        {
+            this._HasFocus = false;
+            this._HasMouse = false;
+            ShowVisibleButton();
+        }
+        protected void SetVisibleButtons(bool keyboardFocus, bool visible)
+        {
+            if (keyboardFocus)
+                this._HasFocus = visible;
+            else
+                this._HasMouse = visible;
+            ShowVisibleButton();
+        }
+        protected void ShowVisibleButton()
+        {
+            bool isVisible = this._HasFocus || this._HasMouse;
+            _CloseButton.Visible = isVisible;
+            _AddRightButton.Visible = isVisible;
+            _AddBottomButton.Visible = isVisible;
+            _AddLeftButton.Visible = isVisible;
+            _AddTopButton.Visible = isVisible;
+        }
+        private bool _HasFocus = false;
+        private bool _HasMouse = false;
+
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -153,7 +214,14 @@ namespace TestDevExpress.Components
             else
             {
                 int size = ((position == LayoutPosition.Left || position == LayoutPosition.Right) ? ButtonSize.Width * 4 : ButtonSize.Height * 6);
-                LayoutPanel.AddControl(new LayoutTestPanel(), this, position, currentSize: size);
+                LayoutTestPanel newPanel = new LayoutTestPanel();
+
+                float ratio = 0.4f;
+                LayoutPanel.AddControl(newPanel, this, position, currentSizeRatio: ratio);          // currentSize: size);
+                this.ResetVisibleButtons();
+                newPanel.SetVisibleButtons(true, true);
+                newPanel._CloseButton.Focus();
+                newPanel.SetVisibleButtons(true, true);
             }
         }
     }

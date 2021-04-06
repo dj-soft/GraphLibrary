@@ -80,11 +80,13 @@ namespace TestDevExpress.Components
         /// <param name="position"></param>
         /// <param name="previousSize">Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)</param>
         /// <param name="currentSize"></param>
-        public void AddControl(WF.Control control, WF.Control previousControl, LayoutPosition position, int? previousSize = null, int? currentSize = null)
+        /// <param name="previousSizeRatio"></param>
+        /// <param name="currentSizeRatio"></param>
+        public void AddControl(WF.Control control, WF.Control previousControl, LayoutPosition position, int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
             if (control == null) return;
 
-            AddControlParams parameters = new AddControlParams() { Position = position, PreviousSize = previousSize, CurrentSize = currentSize };
+            AddControlParams parameters = new AddControlParams() { Position = position, PreviousSize = previousSize, CurrentSize = currentSize, PreviousSizeRatio = previousSizeRatio, CurrentSizeRatio = currentSizeRatio };
             int prevIndex = _GetIndexOfControl(previousControl);
             if (prevIndex < 0)
                 _AddControlDefault(control, parameters);
@@ -306,6 +308,21 @@ namespace TestDevExpress.Components
             {
                 if (parameters.NewPanelIsPanel2) return parameters.PreviousSize.Value;
                 if (parameters.NewPanelIsPanel1) return (size - parameters.PreviousSize.Value);
+            }
+
+            if (parameters.CurrentSizeRatio.HasValue && parameters.CurrentSizeRatio.Value > 0f)
+            {
+                float ratio = (parameters.CurrentSizeRatio.Value < 1f ? parameters.CurrentSizeRatio.Value : 1f);
+                float fsize = (float)size;
+                if (parameters.NewPanelIsPanel1) return (int)(ratio * fsize);
+                if (parameters.NewPanelIsPanel2) return (int)((1f - ratio) * fsize);
+            }
+            if (parameters.PreviousSizeRatio.HasValue && parameters.PreviousSizeRatio.Value > 0f)
+            {
+                float ratio = (parameters.PreviousSizeRatio.Value < 1f ? parameters.PreviousSizeRatio.Value : 1f);
+                float fsize = (float)size;
+                if (parameters.NewPanelIsPanel2) return (int)(ratio * fsize);
+                if (parameters.NewPanelIsPanel1) return (int)((1f - ratio) * fsize);
             }
 
             return size / 2;
@@ -629,6 +646,14 @@ namespace TestDevExpress.Components
             /// Nastavit tuto velikost v pixelech pro Current control, null = neřešit (dá 50%)
             /// </summary>
             public int? CurrentSize { get; set; }
+            /// <summary>
+            /// Nastavit tuto velikost v poměru k celku pro Previous control, null = neřešit (dá 50%)
+            /// </summary>
+            public float? PreviousSizeRatio { get; set; }
+            /// <summary>
+            /// Nastavit tuto velikost v poměru k celku pro Current control, null = neřešit (dá 50%)
+            /// </summary>
+            public float? CurrentSizeRatio { get; set; }
             /// <summary>
             /// Obsahuje true pokud panely jsou uspořádány horizontálně (Left a/nebo Right), tj. oddělovač je svislý
             /// </summary>
