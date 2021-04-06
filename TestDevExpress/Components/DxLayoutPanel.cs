@@ -92,6 +92,15 @@ namespace TestDevExpress.Components
                 _AddControlNear(control, prevIndex, parameters);
         }
         /// <summary>
+        /// Najde daný control ve své evidenci, a pokud tam je, pak jej odebere a jeho prostor uvolní pro nejbližšího souseda.
+        /// </summary>
+        /// <param name="control"></param>
+        public void RemoveControl(WF.Control control)
+        {
+            int index = _GetIndexOfControl(control);
+            _RemoveControl(index);
+        }
+        /// <summary>
         /// Přidá nový control na vhodné místo.
         /// Není určen Near control (tj. vedle kterého controlu má být nový umístěn).
         /// Typicky se používá pro první control, ten se vkládá přímo do this jako jediný.
@@ -154,15 +163,6 @@ namespace TestDevExpress.Components
             parent.Controls.Add(control);
             ControlParentInfo pair = new ControlParentInfo(parent, control);
             _Controls.Add(pair);
-        }
-        /// <summary>
-        /// Najde daný control ve své evidenci, a pokud tam je, pak jej odebere a jeho prostor uvolní pro nejbližšího souseda.
-        /// </summary>
-        /// <param name="control"></param>
-        public void RemoveControl(WF.Control control)
-        {
-            int index = _GetIndexOfControl(control);
-            _RemoveControl(index);
         }
         /// <summary>
         /// Odebere daný control z parenta (vizuálně) i z evidence (datově)
@@ -383,26 +383,24 @@ namespace TestDevExpress.Components
             if (sender is DXE.SplitContainerControl splitContainer)
             {
                 UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
-                OnSplitterPositionChanged(pair);
+                OnSplitterPositionChanged(pair.CreateSplitterChangedArgs());
             }
         }
         /// <summary>
         /// Provede se po změně pozice splitteru
         /// </summary>
-        /// <param name="pair"></param>
-        protected virtual void OnSplitterPositionChanged(UserControlPair pair)
+        /// <param name="args"></param>
+        protected virtual void OnSplitterPositionChanged(DxLayoutPanelSplitterChangedArgs args)
         {
-            if (SplitterPositionChanged != null)
-                SplitterPositionChanged(this, pair.CreateSplitterChangedArgs());
+            SplitterPositionChanged?.Invoke(this, args);
         }
         /// <summary>
         /// Provede se po změně orientace splitteru
         /// </summary>
-        /// <param name="pair"></param>
-        protected virtual void OnSplitterOrientationChanged(UserControlPair pair)
+        /// <param name="args"></param>
+        protected virtual void OnSplitterOrientationChanged(DxLayoutPanelSplitterChangedArgs args)
         {
-            if (SplitterOrientationChanged != null)
-                SplitterOrientationChanged(this, pair.CreateSplitterChangedArgs());
+            SplitterOrientationChanged?.Invoke(this, args);
         }
         /// <summary>
         /// MouseDown: odchytí pravou myš a zobrazí řídící menu
@@ -420,8 +418,12 @@ namespace TestDevExpress.Components
                     this._SplitContainerShowContextMenu(splitContainer, mousePoint);
                 }
             }
-
         }
+        /// <summary>
+        /// Zobrazí kontextové menu pro splitter: Horizontální / Vertikální
+        /// </summary>
+        /// <param name="splitContainer"></param>
+        /// <param name="mousePoint"></param>
         private void _SplitContainerShowContextMenu(DXE.SplitContainerControl splitContainer, Point mousePoint)
         {
             UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
@@ -433,8 +435,12 @@ namespace TestDevExpress.Components
             absolutePoint.X = (absolutePoint.X < 20 ? 0 : absolutePoint.X - 20);
             absolutePoint.Y = (absolutePoint.Y < 10 ? 0 : absolutePoint.Y - 10);
             menu.ShowPopup(BarManager, absolutePoint);
-
         }
+        /// <summary>
+        /// Vytvoří a vrátí kontextovém menu pro splitter: Horizontální / Vertikální
+        /// </summary>
+        /// <param name="pair"></param>
+        /// <returns></returns>
         private DXB.PopupMenu _CreateContextMenu(UserControlPair pair)
         {
             DXB.PopupMenu menu = new DXB.PopupMenu
@@ -464,7 +470,11 @@ namespace TestDevExpress.Components
 
             return menu;
         }
-
+        /// <summary>
+        /// Po kliknutí na položku kontextového menu pro splitter: Horizontální / Vertikální
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ContextMenuItemClick(object sender, DXB.ItemClickEventArgs e)
         {
             UserControlPair pair = e.Item.Tag as UserControlPair;
@@ -491,10 +501,12 @@ namespace TestDevExpress.Components
             if (pair == null || pair.SplitContainer.Horizontal == horizontal) return;
 
             pair.SplitContainer.Horizontal = horizontal;
-            OnSplitterOrientationChanged(pair);
+
+            DxLayoutPanelSplitterChangedArgs args = pair.CreateSplitterChangedArgs();
+            OnSplitterOrientationChanged(args);
         }
         /// <summary>
-        /// BarManager
+        /// BarManager, OnDemand
         /// </summary>
         protected DXB.BarManager BarManager
         {
@@ -508,10 +520,11 @@ namespace TestDevExpress.Components
         private DXB.BarManager _BarManager;
         private void _InitializeBarManager()
         {
-            DXB.BarManager barManager = new DXB.BarManager();
-            barManager.Form = this;
-
-            barManager.ToolTipController = new DevExpress.Utils.ToolTipController();
+            DXB.BarManager barManager = new DXB.BarManager
+            {
+                Form = this,
+                ToolTipController = new DevExpress.Utils.ToolTipController()
+            };
             barManager.ToolTipController.AddClientControl(this);
 
             barManager.ToolTipController.ShowShadow = true;
@@ -530,7 +543,7 @@ namespace TestDevExpress.Components
             _BarManager = barManager;
         }
         #endregion
-        #region Třídy ControlParentPair (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu)
+        #region Třídy ControlParentPair (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
         /// <summary>
         /// Třída obsahující WeakReference na 
         /// </summary>
@@ -690,7 +703,7 @@ namespace TestDevExpress.Components
         /// <param name="control2"></param>
         /// <param name="splitterOrientation"></param>
         /// <param name="splitterPosition"></param>
-        public DxLayoutPanelSplitterChangedArgs (WF.Control control1, WF.Control control2, WF.Orientation splitterOrientation, int splitterPosition)
+        public DxLayoutPanelSplitterChangedArgs(WF.Control control1, WF.Control control2, WF.Orientation splitterOrientation, int splitterPosition)
         {
             this.Control1 = control1;
             this.Control2 = control2;
@@ -698,11 +711,11 @@ namespace TestDevExpress.Components
             this.SplitterPosition = splitterPosition;
         }
         /// <summary>
-        /// První control v Panel1
+        /// První control v Panel1 (ten vlevo nebo nahoře)
         /// </summary>
         public WF.Control Control1 { get; private set; }
         /// <summary>
-        /// První control v Panel2
+        /// První control v Panel2 (ten vpravo nebo dole)
         /// </summary>
         public WF.Control Control2 { get; private set; }
         /// <summary>
@@ -712,10 +725,8 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Pozice splitteru
         /// </summary>
-        public int SplitterPosition { get; private set; }
-
+        public int SplitterPosition { get; set; }
     }
-
     /// <summary>
     /// Pozice, kam budeme přidávat nový control vzhledem ke stávajícímu controlu
     /// </summary>
