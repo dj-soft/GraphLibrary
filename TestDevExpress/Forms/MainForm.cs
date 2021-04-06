@@ -47,7 +47,7 @@ namespace TestDevExpress.Forms
             InitEditors();             // 8
             InitTreeView();            // 9
 
-            ActivatePage(9);
+            ActivatePage(8);
         }
         private void InitData()
         {
@@ -1751,6 +1751,19 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 250, 20), Text = "" };
             _EditorsPanel.Controls.Add(_TokenInfoLabel);
+
+            _OpenLayoutFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 37, 190, 50), Text = "Otevři LayoutForm" };
+            _OpenLayoutFormButton.Click += _OpenLayoutFormButton_Click;
+            _EditorsPanel.Controls.Add(_OpenLayoutFormButton);
+        }
+
+        private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
+        {
+            LayoutForm form = new LayoutForm(true);
+            form.Text = "Test řízení LayoutPanel";
+            // form.AddControl(new LayoutTestPanel() { CloseButtonVisible = false });        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
+            form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
+            form.Show();
         }
 
         private void _TokenAddButtonGreen_Click(object sender, EventArgs e)
@@ -1845,6 +1858,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.SimpleButton _TokenAddButtonDaj;
         private DevExpress.XtraEditors.TokenEdit _TokenEdit;
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
+        private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
         #endregion
         #region TreeView
         protected void InitTreeView()
@@ -1904,7 +1918,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             _SplitContainer = DxComponent.CreateDxSplitContainer(this._TreeViewPanel, null, DockStyle.Fill, Orientation.Vertical, DevExpress.XtraEditors.SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
 
-            _TreeList = new DxTreeViewListSimple() { Dock = DockStyle.Fill };
+            _TreeList = new DxTreeViewList() { Dock = DockStyle.Fill };
             _TreeList.CheckBoxMode = TreeViewCheckBoxMode.SpecifyByNode;
             _TreeList.ImageMode = TreeViewImageMode.Image01;
             _TreeList.ImageList = _Images16;
@@ -2194,7 +2208,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private enum ItemCountType { Empty, Standard, Big }
         DxSplitContainerControl _SplitContainer;
-        DxTreeViewListSimple _TreeList;
+        DxTreeViewList _TreeList;
         DxMemoEdit _MemoEdit;
         string _Log;
         int _LogId;

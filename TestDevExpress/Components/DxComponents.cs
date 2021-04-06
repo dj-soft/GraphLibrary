@@ -1067,17 +1067,293 @@ namespace TestDevExpress.Components
         #endregion
     }
     #endregion
-    #region DxTreeViewListSimple
+    #region DxTreeViewList
     /// <summary>
-    /// <see cref="DxTreeViewListSimple"/> : implementace TreeList pro výchozí potřeby Nephrite
+    /// Komponenta typu Panel, která v sobě obsahuje <see cref="DxTreeViewListNative"/>.
     /// </summary>
-    public class DxTreeViewListSimple : DevExpress.XtraTreeList.TreeList
+    public class DxTreeViewList : DxPanelControl
+    {
+        #region Konstruktor a vlastní proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTreeViewList()
+        {
+            _TreeViewListNative = new DxTreeViewListNative() { Dock = DockStyle.Fill };
+            _RegisterEventHandlers();
+            this.Controls.Add(_TreeViewListNative);
+            this.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
+        }
+        private DxTreeViewListNative _TreeViewListNative;
+        #endregion
+        #region Vlastnosti DxTreeViewListNative
+        /// <summary>
+        /// Funkce, která pro název ikony vrátí její index v ImageListu
+        /// </summary>
+        public Func<string, int> ImageIndexSearcher { get { return _TreeViewListNative.ImageIndexSearcher; } set { _TreeViewListNative.ImageIndexSearcher = value; } }
+        /// <summary>
+        /// Text (lokalizovaný) pro text uzlu, který reprezentuje "LazyLoadChild", např. něco jako "Načítám data..."
+        /// </summary>
+        public string LazyLoadNodeText { get { return _TreeViewListNative.LazyLoadNodeText; } set { _TreeViewListNative.LazyLoadNodeText = value; } }
+        /// <summary>
+        /// Název ikony uzlu, který reprezentuje "LazyLoadChild", např. něco jako přesýpací hodiny...
+        /// </summary>
+        public string LazyLoadNodeImageName { get { return _TreeViewListNative.LazyLoadNodeImageName; } set { _TreeViewListNative.LazyLoadNodeImageName = value; } }
+        /// <summary>
+        /// Po LazyLoad aktivovat první načtený node?
+        /// </summary>
+        public TreeViewLazyLoadFocusNodeType LazyLoadFocusNode { get { return _TreeViewListNative.LazyLoadFocusNode; } set { _TreeViewListNative.LazyLoadFocusNode = value; } }
+        /// <summary>
+        /// Režim zobrazení Checkboxů. 
+        /// Výchozí je <see cref="TreeViewCheckBoxMode.None"/>
+        /// </summary>
+        public TreeViewCheckBoxMode CheckBoxMode { get { return _TreeViewListNative.CheckBoxMode; } set { _TreeViewListNative.CheckBoxMode = value; } }
+        /// <summary>
+        /// Režim kreslení ikon u nodů.
+        /// Výchozí je <see cref="TreeViewImageMode.Image0"/>.
+        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
+        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// a musí plnit jména ikon do <see cref="NodeItemInfo.ImageName0"/> atd.
+        /// </summary>
+        public TreeViewImageMode ImageMode { get { return _TreeViewListNative.ImageMode; } set { _TreeViewListNative.ImageMode = value; } }
+        /// <summary>
+        /// Knihovna ikon pro nody.
+        /// Výchozí je null.
+        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
+        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// a musí plnit jména ikon do <see cref="NodeItemInfo.ImageName0"/> atd.
+        /// <para/>
+        /// Nepoužívejme přímo SelectImageList ani StateImageList.
+        /// </summary>
+        public ImageList ImageList { get { return _TreeViewListNative.ImageList; } set { _TreeViewListNative.ImageList = value; } }
+        /// <summary>
+        /// Akce, která zahájí editaci buňky
+        /// </summary>
+        public DevExpress.XtraTreeList.TreeListEditorShowMode EditorShowMode { get { return _TreeViewListNative.EditorShowMode; } set { _TreeViewListNative.EditorShowMode = value; } }
+        #endregion
+        #region Nody DxTreeViewListNative: aktivní node, kolekce nodů, vyhledání, přidání, odebrání
+        /// <summary>
+        /// Aktuálně vybraný Node
+        /// </summary>
+        public NodeItemInfo FocusedNodeInfo { get { return _TreeViewListNative.FocusedNodeInfo; } }
+        /// <summary>
+        /// Najde node podle jeho klíče, pokud nenajde pak vrací false.
+        /// </summary>
+        /// <param name="nodeKey"></param>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        public bool TryGetNodeInfo(string nodeKey, out NodeItemInfo nodeInfo) { return _TreeViewListNative.TryGetNodeInfo(nodeKey, out nodeInfo); }
+        /// <summary>
+        /// Pole všech nodů = třída <see cref="NodeItemInfo"/> = data o nodech
+        /// </summary>
+        public NodeItemInfo[] NodeInfos { get { return _TreeViewListNative.NodeInfos; } }
+        /// <summary>
+        /// Najde a vrátí pole nodů, které jsou Child nody daného klíče.
+        /// Reálně provádí Scan všech nodů.
+        /// </summary>
+        /// <param name="parentKey"></param>
+        /// <returns></returns>
+        public NodeItemInfo[] GetChildNodeInfos(string parentKey) { return _TreeViewListNative.GetChildNodeInfos(parentKey); }
+        /// <summary>
+        /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{NodeItemInfo})"/>.
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
+        public void AddNode(NodeItemInfo nodeInfo, int? atIndex = null) { _TreeViewListNative.AddNode(nodeInfo, atIndex); }
+        /// <summary>
+        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// Na konci provede Refresh.
+        /// </summary>
+        /// <param name="addNodes"></param>
+        public void AddNodes(IEnumerable<NodeItemInfo> addNodes) { _TreeViewListNative.AddNodes(addNodes); }
+        /// <summary>
+        /// Přidá řadu nodů, které jsou donačteny k danému parentu. Současné nody ponechává. Lze tak přidat například jednu podvětev.
+        /// Nejprve najde daného parenta, a zruší z něj příznak LazyLoad (protože právě tímto načtením jsou jeho nody vyřešeny). Současně odebere "wait" node (prázdný node, simulující načítání dat).
+        /// Pak teprve přidá nové nody.
+        /// Na konci provede Refresh.
+        /// </summary>
+        /// <param name="parentNodeId"></param>
+        /// <param name="addNodes"></param>
+        public void AddLazyLoadNodes(string parentNodeId, IEnumerable<NodeItemInfo> addNodes) { _TreeViewListNative.AddLazyLoadNodes(parentNodeId, addNodes); }
+        /// <summary>
+        /// Selectuje daný Node
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        public void SelectNode(NodeItemInfo nodeInfo) { _TreeViewListNative.SelectNode(nodeInfo); }
+        /// <summary>
+        /// Odebere jeden daný node, podle klíče. Na konci provede Refresh.
+        /// Pro odebrání více nodů je lepší použít <see cref="RemoveNodes(IEnumerable{string})"/>.
+        /// </summary>
+        /// <param name="removeNodeKey"></param>
+        public void RemoveNode(string removeNodeKey) { _TreeViewListNative.RemoveNode(removeNodeKey); }
+        /// <summary>
+        /// Odebere řadu nodů, podle klíče. Na konci provede Refresh.
+        /// </summary>
+        /// <param name="removeNodeKeys"></param>
+        public void RemoveNodes(IEnumerable<string> removeNodeKeys) { _TreeViewListNative.RemoveNodes(removeNodeKeys); }
+        /// <summary>
+        /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev. Na konci provede Refresh.
+        /// </summary>
+        /// <param name="removeNodeKeys"></param>
+        /// <param name="addNodes"></param>
+        public void RemoveAddNodes(IEnumerable<string> removeNodeKeys, IEnumerable<NodeItemInfo> addNodes) { _TreeViewListNative.RemoveAddNodes(removeNodeKeys, addNodes); }
+        /// <summary>
+        /// Smaže všechny nodes. Na konci provede Refresh.
+        /// </summary>
+        public void ClearNodes() { _TreeViewListNative.ClearNodes(); }
+        /// <summary>
+        /// Zajistí refresh jednoho daného nodu. 
+        /// Pro refresh více nodů použijme <see cref="RefreshNodes(IEnumerable{NodeItemInfo})"/>!
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        public void RefreshNode(NodeItemInfo nodeInfo) { _TreeViewListNative.RefreshNode(nodeInfo); }
+        /// <summary>
+        /// Zajistí refresh daných nodů.
+        /// </summary>
+        /// <param name="nodes"></param>
+        public void RefreshNodes(IEnumerable<NodeItemInfo> nodes) { _TreeViewListNative.RefreshNodes(nodes); }
+
+        #endregion
+        #region Eventy a další akce DxTreeViewListNative
+        /// <summary>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_TreeViewListNative"/>
+        /// </summary>
+        private void _RegisterEventHandlers()
+        {
+            _TreeViewListNative.NodeSelected += _TreeViewListNative_NodeSelected;
+            _TreeViewListNative.NodeDoubleClick += _TreeViewListNative_NodeDoubleClick;
+            _TreeViewListNative.NodeExpanded += _TreeViewListNative_NodeExpanded;
+            _TreeViewListNative.NodeCollapsed += _TreeViewListNative_NodeCollapsed;
+            _TreeViewListNative.ActivatedEditor += _TreeViewListNative_ActivatedEditor;
+            _TreeViewListNative.EditorDoubleClick += _TreeViewListNative_EditorDoubleClick;
+            _TreeViewListNative.NodeEdited += _TreeViewListNative_NodeEdited;
+            _TreeViewListNative.NodeCheckedChange += _TreeViewListNative_NodeCheckedChange;
+            _TreeViewListNative.NodeDelete += _TreeViewListNative_NodeDelete;
+            _TreeViewListNative.LazyLoadChilds += _TreeViewListNative_LazyLoadChilds;
+        }
+        private void _TreeViewListNative_NodeSelected(object sender, DxTreeViewNodeArgs args) { this.OnNodeSelected(args); this.NodeSelected?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeDoubleClick(object sender, DxTreeViewNodeArgs args) { this.OnNodeDoubleClick(args); this.NodeDoubleClick?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeExpanded(object sender, DxTreeViewNodeArgs args) { this.OnNodeExpanded(args); this.NodeExpanded?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeCollapsed(object sender, DxTreeViewNodeArgs args) { this.OnNodeCollapsed(args); this.NodeCollapsed?.Invoke(this, args); }
+        private void _TreeViewListNative_ActivatedEditor(object sender, DxTreeViewNodeArgs args) { this.OnActivatedEditor(args); this.ActivatedEditor?.Invoke(this, args); }
+        private void _TreeViewListNative_EditorDoubleClick(object sender, DxTreeViewNodeArgs args) { this.OnEditorDoubleClick(args); this.EditorDoubleClick?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeEdited(object sender, DxTreeViewNodeArgs args) { this.OnNodeEdited(args); this.NodeEdited?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeCheckedChange(object sender, DxTreeViewNodeArgs args) { this.OnNodeCheckedChange(args); this.NodeCheckedChange?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeDelete(object sender, DxTreeViewNodeArgs args) { this.OnNodeDelete(args); this.NodeDelete?.Invoke(this, args); }
+        private void _TreeViewListNative_LazyLoadChilds(object sender, DxTreeViewNodeArgs args) { this.OnLazyLoadChilds(args); this.LazyLoadChilds?.Invoke(this, args); }
+
+        /// <summary>
+        /// TreeView aktivoval určitý Node
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeSelected;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeSelected"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeSelected(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView má Doubleclick na určitý Node
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeDoubleClick;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeDoubleClick"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeDoubleClick(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="NodeItemInfo.LazyLoadChilds"/>).
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeExpanded;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeExpanded"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeExpanded(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView právě sbaluje určitý Node.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeCollapsed;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeCollapsed"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeCollapsed(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView právě začíná editovat text daného node = je aktivován editor.
+        /// </summary>
+        public event DxTreeViewNodeHandler ActivatedEditor;
+        /// <summary>
+        /// Vyvolá event <see cref="ActivatedEditor"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnActivatedEditor(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
+        /// </summary>
+        public event DxTreeViewNodeHandler EditorDoubleClick;
+        /// <summary>
+        /// Vyvolá event <see cref="EditorDoubleClick"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnEditorDoubleClick(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView právě skončil editaci určitého Node.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeEdited;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeEdited"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeEdited(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// Uživatel změnil stav Checked na prvku.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeCheckedChange;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeCheckedChange"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeCheckedChange(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// Uživatel dal Delete na uzlu, který se needituje.
+        /// </summary>
+        public event DxTreeViewNodeHandler NodeDelete;
+        /// <summary>
+        /// Vyvolá event <see cref="NodeDelete"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeDelete(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView rozbaluje node, který má nastaveno načítání ze serveru : <see cref="NodeItemInfo.LazyLoadChilds"/> je true.
+        /// </summary>
+        public event DxTreeViewNodeHandler LazyLoadChilds;
+        /// <summary>
+        /// Vyvolá event <see cref="LazyLoadChilds"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnLazyLoadChilds(DxTreeViewNodeArgs args) { }
+
+        /// <summary>
+        /// Zajistí provedení dodané akce s argumenty v GUI threadu a v jednom vizuálním zámku s jedním Refreshem na konci.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="args"></param>
+        public void RunInLock(Delegate method, params object[] args) { _TreeViewListNative.RunInLock(method, args); }
+        #endregion
+    }
+    #endregion
+    #region DxTreeViewListNative
+    /// <summary>
+    /// <see cref="DxTreeViewListNative"/> : potomek <see cref="DevExpress.XtraTreeList.TreeList"/> s podporou pro použití v Greenu.
+    /// Nemá se používat přímo, má se používat <see cref="DxTreeViewList"/>.
+    /// </summary>
+    public class DxTreeViewListNative : DevExpress.XtraTreeList.TreeList
     {
         #region Konstruktor a inicializace, privátní proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxTreeViewListSimple()
+        public DxTreeViewListNative()
         {
             this._LastId = 0;
             this._NodesId = new Dictionary<int, NodePair>();
@@ -1131,6 +1407,7 @@ namespace TestDevExpress.Components
             // Eventy pro podporu TreeView (vykreslení nodu, atd):
             this.NodeCellStyle += _OnNodeCellStyle;
             this.CustomDrawNodeCheckBox += _OnCustomDrawNodeCheckBox;
+            this.PreviewKeyDown += _PreviewKeyDown;
             this.KeyDown += _OnKeyDown;
 
             // Nativní eventy:
@@ -1158,7 +1435,7 @@ namespace TestDevExpress.Components
         /// </summary>
         private class NodePair
         {
-            public NodePair(DxTreeViewListSimple owner, int nodeId, NodeItemInfo nodeInfo, TreeListNode treeNode, bool isLazyChild)
+            public NodePair(DxTreeViewListNative owner, int nodeId, NodeItemInfo nodeInfo, TreeListNode treeNode, bool isLazyChild)
             {
                 this.Id = nodeId;
                 this.NodeInfo = nodeInfo;
@@ -1291,7 +1568,7 @@ namespace TestDevExpress.Components
             /// Konstruktor
             /// </summary>
             /// <param name="treeList"></param>
-            public DxTreeViewViewInfo(DxTreeViewListSimple treeList) : base(treeList)
+            public DxTreeViewViewInfo(DxTreeViewListNative treeList) : base(treeList)
             {
                 _Owner = treeList;
             }
@@ -1303,7 +1580,7 @@ namespace TestDevExpress.Components
                 _Owner = null;
                 base.Dispose();
             }
-            private DxTreeViewListSimple _Owner;
+            private DxTreeViewListNative _Owner;
             /// <summary>
             /// Vrátí šířku pro CheckBox pro daný node
             /// </summary>
@@ -1435,6 +1712,21 @@ namespace TestDevExpress.Components
                 args.Handled = !canCheck;
             }
         }
+        #endregion
+        #region Interní události a jejich zpracování : Klávesa, Focus, DoubleClick, Editor, Specifika vykreslení, Expand, 
+
+        private void _PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            //if (e.KeyCode == Keys.ShiftKey || e.KeyCode == Keys.ControlKey) return;
+
+            //switch (e.KeyData)
+            //{
+            //    case Keys.Down | Keys.Control:
+            //    case Keys.Up | Keys.Control:
+            //        e.IsInputKey = true;
+            //        break;
+            //}
+        }
         /// <summary>
         /// Po stisku klávesy Vpravo a Vlevo se pracuje s Expanded nodů
         /// </summary>
@@ -1443,7 +1735,7 @@ namespace TestDevExpress.Components
         private void _OnKeyDown(object sender, KeyEventArgs e)
         {
             DevExpress.XtraTreeList.Nodes.TreeListNode node;
-            switch (e.KeyCode)
+            switch (e.KeyData)
             {
                 case Keys.Right:
                     node = this.FocusedNode;
@@ -1470,16 +1762,44 @@ namespace TestDevExpress.Components
                     }
                     break;
                 case Keys.Delete:
-                    if (this.EditorHelper.ActiveEditor == null)
-                    {
+                    if (!IsActiveEditor)
+                    {   // Mimo editor reagujeme na Delete jako DeleteNode:
                         this._OnNodeDelete(this.FocusedNodeInfo);
                         e.Handled = true;
                     }
                     break;
+                case Keys.Up | Keys.Control:
+                    if (!IsActiveEditor)
+                    {   // Mimo editor: najedeme na první Node v naší úrovni:
+                        node = this.FocusedNode;
+                        if (node != null && node.ParentNode != null)
+                        {
+                            var newNode = node.ParentNode.FirstNode;
+                            if (newNode != null)
+                            {
+                                this.FocusedNode = newNode;
+                                e.Handled = true;
+                            }
+                        }
+                    }
+                    break;
+                case Keys.Down | Keys.Control:
+                    if (!IsActiveEditor)
+                    {   // Mimo editor: najedeme na poslední Node v naší úrovni:
+                        node = this.FocusedNode;
+                        if (node != null && node.ParentNode != null)
+                        {
+                            var newNode = node.ParentNode.LastNode;
+                            if (newNode != null)
+                            {
+                                this.FocusedNode = newNode;
+                                e.Handled = true;
+                            }
+                        }
+                    }
+                    break;
             }
         }
-        #endregion
-        #region Interní události a jejich zpracování : Klávesa, DoubleClick, Editor, Specifika vykreslení, Expand, 
         /// <summary>
         /// Po fokusu do konkrétního node se nastaví jeho Editable a volá se public event
         /// </summary>
@@ -1512,7 +1832,7 @@ namespace TestDevExpress.Components
         /// <param name="e"></param>
         private void _OnShownEditor(object sender, EventArgs e)
         {
-            if (this.EditorHelper.ActiveEditor != null)
+            if (this.IsActiveEditor)
             {
                 this.EditorHelper.ActiveEditor.DoubleClick -= _OnEditorDoubleClick;
                 this.EditorHelper.ActiveEditor.DoubleClick += _OnEditorDoubleClick;
@@ -1614,6 +1934,10 @@ namespace TestDevExpress.Components
                 this.OnNodeCollapsed(nodeInfo);
             }
         }
+        /// <summary>
+        /// Obsahuje true pokud je zrovna aktivní editor textu v nodu
+        /// </summary>
+        private bool IsActiveEditor { get { return (this.EditorHelper.ActiveEditor != null); } }
         #endregion
         #region Správa nodů (přidání, odebrání, smazání, změny)
         /// <summary>
@@ -1822,7 +2146,7 @@ namespace TestDevExpress.Components
             /// </summary>
             /// <param name="owner"></param>
             /// <param name="withRefresh"></param>
-            public LockTreeViewGuiInfo(DxTreeViewListSimple owner, bool withRefresh)
+            public LockTreeViewGuiInfo(DxTreeViewListNative owner, bool withRefresh)
             {
                 if (owner != null)
                 {
@@ -1855,7 +2179,7 @@ namespace TestDevExpress.Components
                         owner.OnNodeSelected(focusedNodeInfo);
                 }
             }
-            private DxTreeViewListSimple _Owner;
+            private DxTreeViewListNative _Owner;
             private bool _WithRefresh;
             private string _FocusedNodeId;
         }
@@ -2585,7 +2909,7 @@ namespace TestDevExpress.Components
         }
         public NodeItemType NodeType { get; private set; }
         /// <summary>
-        /// ID nodu v TreeView, pokud není v TreeView pak je -1 . Toto ID je přiděleno v rámci <see cref="DxTreeViewListSimple"/> a po dobu přítomnosti nodu v TreeView se nemění.
+        /// ID nodu v TreeView, pokud není v TreeView pak je -1 . Toto ID je přiděleno v rámci <see cref="DxTreeViewListNative"/> a po dobu přítomnosti nodu v TreeView se nemění.
         /// Pokud node bude odstraněn z Treeiew, pak hodnota <see cref="Id"/> bude -1, stejně tak jako v době něž bude do TreeView přidán.
         /// </summary>
         public int Id { get { return _Id; } }
@@ -2602,13 +2926,13 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Text uzlu.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public string Text { get; set; }
         /// <summary>
         /// Node zobrazuje zaškrtávátko.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public bool CanCheck { get; set; }
         /// <summary>
@@ -2619,46 +2943,46 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Node je zaškrtnutý.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public bool IsChecked { get; set; }
         /// <summary>
         /// Ikona základní, ta může reagovat na stav Selected (pak bude zobrazena ikona <see cref="ImageName0Selected"/>), zobrazuje se vlevo.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public string ImageName0 { get; set; }
         /// <summary>
         /// Ikona ve stavu Node.IsSelected, zobrazuje se místo ikony <see cref="ImageName0"/>), zobrazuje se vlevo.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public string ImageName0Selected { get; set; }
         /// <summary>
         /// Ikona statická, ta nereaguje na stav Selected, zobrazuje se vpravo od ikony <see cref="ImageName0"/>.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public string ImageName1 { get; set; }
         /// <summary>
-        /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeViewListSimple.NodeEdited"/>.
+        /// Uživatel může editovat text tohoto node, po ukončení editace je vyvolána událost <see cref="DxTreeViewListNative.NodeEdited"/>.
         /// Změnu této hodnoty není nutno refreshovat, načítá se po výběru konkrétního Node v TreeView a aplikuje se na něj.
         /// </summary>
         public bool CanEdit { get; set; }
         /// <summary>
-        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeViewListSimple.NodeDelete"/>
+        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeViewListNative.NodeDelete"/>
         /// </summary>
         public bool CanDelete { get; set; }
         /// <summary>
         /// Node je otevřený.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
-        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListSimple.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{NodeItemInfo})"/>.
         /// </summary>
         public bool Expanded { get; set; }
         /// <summary>
-        /// Node bude mít Child prvky, ale zatím nejsou dodány. Node bude zobrazovat rozbalovací ikonu a jeden node s textem "Načítám data...", viz <see cref="DxTreeViewListSimple.LazyLoadNodeText"/>.
-        /// Ikonu nastavíme v <see cref="DxTreeViewListSimple.LazyLoadNodeImageName"/>. Otevřením tohoto nodu se vyvolá event <see cref="DxTreeViewListSimple.LazyLoadChilds"/>.
-        /// Třída <see cref="DxTreeViewListSimple"/> si sama obhospodařuje tento "LazyLoadChildNode": vytváří jej a následně jej i odebírá.
+        /// Node bude mít Child prvky, ale zatím nejsou dodány. Node bude zobrazovat rozbalovací ikonu a jeden node s textem "Načítám data...", viz <see cref="DxTreeViewListNative.LazyLoadNodeText"/>.
+        /// Ikonu nastavíme v <see cref="DxTreeViewListNative.LazyLoadNodeImageName"/>. Otevřením tohoto nodu se vyvolá event <see cref="DxTreeViewListNative.LazyLoadChilds"/>.
+        /// Třída <see cref="DxTreeViewListNative"/> si sama obhospodařuje tento "LazyLoadChildNode": vytváří jej a následně jej i odebírá.
         /// Aktivace tohoto nodu není hlášena jako event, node nelze editovat ani smazat uživatelem.
         /// </summary>
         public bool LazyLoadChilds { get; set; }
@@ -2675,25 +2999,25 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Relativní velikost písma.
         /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListNative"/>.Refresh();
         /// </summary>
         public int? FontSizeDelta { get; set; }
         /// <summary>
         /// Změna stylu písma.
         /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListNative"/>.Refresh();
         /// </summary>
         public FontStyle? FontStyleDelta { get; set; }
         /// <summary>
         /// Explicitní barva pozadí prvku.
         /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListNative"/>.Refresh();
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
         /// Explicitní barva písma prvku.
         /// Změnu této hodnoty není nutno refreshovat, načítá se odtud v okamžiku zobrazování každého Node.
-        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListSimple"/>.Refresh();
+        /// Je možno vynutit Refresh vizuální vrstvy TreeView metodou <see cref="DxTreeViewListNative"/>.Refresh();
         /// </summary>
         public Color? ForeColor { get; set; }
         /// <summary>
@@ -2706,31 +3030,31 @@ namespace TestDevExpress.Components
                 owner.RefreshNode(this);
         }
         #region Implementace ITreeViewItemId
-        DxTreeViewListSimple ITreeNodeItem.Owner
+        DxTreeViewListNative ITreeNodeItem.Owner
         {
             get { return Owner; }
-            set { _Owner = (value != null ? new WeakReference<DxTreeViewListSimple>(value) : null); }
+            set { _Owner = (value != null ? new WeakReference<DxTreeViewListNative>(value) : null); }
         }
         int ITreeNodeItem.Id { get { return _Id; } set { _Id = value; } }
         /// <summary>
         /// Owner = TreeView, ve kterém je this prvek zobrazen. Může být null.
         /// </summary>
-        protected DxTreeViewListSimple Owner { get { if (_Owner != null && _Owner.TryGetTarget(out var owner)) return owner; return null; } }
-        WeakReference<DxTreeViewListSimple> _Owner;
+        protected DxTreeViewListNative Owner { get { if (_Owner != null && _Owner.TryGetTarget(out var owner)) return owner; return null; } }
+        WeakReference<DxTreeViewListNative> _Owner;
         int _Id;
         #endregion
     }
     /// <summary>
-    /// Interface pro interní práci s <see cref="NodeItemInfo"/> ze strany <see cref="DxTreeViewListSimple"/>
+    /// Interface pro interní práci s <see cref="NodeItemInfo"/> ze strany <see cref="DxTreeViewListNative"/>
     /// </summary>
     public interface ITreeNodeItem
     {
         /// <summary>
         /// Aktuální vlastník nodu
         /// </summary>
-        DxTreeViewListSimple Owner { get; set; }
+        DxTreeViewListNative Owner { get; set; }
         /// <summary>
-        /// ID přidělené nodu v době, kdy je členem <see cref="DxTreeViewListSimple"/>
+        /// ID přidělené nodu v době, kdy je členem <see cref="DxTreeViewListNative"/>
         /// </summary>
         int Id { get; set; }
     }

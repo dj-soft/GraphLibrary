@@ -156,6 +156,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Components\DxComponents.cs" />
+    <Compile Include="Components\DxLayoutPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\LayoutForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Components\RandomText.cs" />
     <Compile Include="Components\ThreadManager.cs" />
     <Compile Include="Forms\GraphForm.cs">
