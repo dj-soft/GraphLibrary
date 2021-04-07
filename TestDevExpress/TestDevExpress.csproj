@@ -159,6 +159,12 @@
     <Compile Include="Components\DxLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Components\DxRibbon.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\DxTreeView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\LayoutForm.cs">
       <SubType>Form</SubType>
     </Compile>
