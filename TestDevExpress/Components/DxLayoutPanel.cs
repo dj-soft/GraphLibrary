@@ -268,7 +268,7 @@ namespace TestDevExpress.Components
         /// <returns></returns>
         private DXE.SplitContainerControl _CreateNewContainer(AddControlParams parameters, out DXE.SplitGroupPanel currentControlPanel, out DXE.SplitGroupPanel newControlPanel)
         {
-            var container = new DXE.SplitContainerControl() { Dock = WF.DockStyle.Fill };
+            var container = new DxSplitContainerControl() { Dock = WF.DockStyle.Fill };
 
             // parametry:
             container.IsSplitterFixed = parameters.IsSplitterFixed;
@@ -279,7 +279,7 @@ namespace TestDevExpress.Components
             // Horizontální panely (když se nový otevírá vlevo nebo vpravo):
             container.Horizontal = parameters.IsHorizontal;
 
-            // Panely, do nichž se budou vkládat současný a nová control:
+            // Panely, do nichž se budou vkládat současný a nový control:
             bool newPositionIs2 = parameters.NewPanelIsPanel2;
             currentControlPanel = (newPositionIs2 ? container.Panel1 : container.Panel2);
             newControlPanel = (newPositionIs2 ? container.Panel2 : container.Panel1);

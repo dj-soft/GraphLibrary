@@ -15,6 +15,8 @@ using DC = DevExpress.XtraCharts;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.Utils;
 using DevExpress.XtraTreeList.Nodes;
+using DevExpress.XtraEditors;
+using DevExpress.Utils.Drawing;
 
 namespace TestDevExpress.Components
 {
@@ -577,7 +579,8 @@ namespace TestDevExpress.Components
     /// SplitContainerControl
     /// </summary>
     public class DxSplitContainerControl : DXE.SplitContainerControl
-    { }
+    {
+    }
     #endregion
     #region DxPanelControl
     /// <summary>
