@@ -124,19 +124,57 @@ namespace TestDevExpress.Components
         /// Styl pro Input prvky
         /// </summary>
         public static DevExpress.XtraEditors.StyleController InputStyle { get { return Instance._InputStyle; } }
-
+        /// <summary>
+        /// Odsazení labelu od levého okraje X
+        /// </summary>
         public static int DetailXLabel { get { return Instance._DetailXLabel; } }
+        /// <summary>
+        /// Odsazení textu od levého okraje X
+        /// </summary>
         public static int DetailXText { get { return Instance._DetailXText; } }
+        /// <summary>
+        /// Odsazení prvního prvku od horního okraje Y
+        /// </summary>
         public static int DetailYFirst { get { return Instance._DetailYFirst; } }
+        /// <summary>
+        /// Výchozí hodnota výšky labelu
+        /// </summary>
         public static int DetailYHeightLabel { get { return Instance._DetailYHeightLabel; } }
+        /// <summary>
+        /// Výchozí hodnota výšky textu
+        /// </summary>
         public static int DetailYHeightText { get { return Instance._DetailYHeightText; } }
+        /// <summary>
+        /// Posun labelu vůči textu v ose Y pro zarovnané úpatí textu
+        /// </summary>
         public static int DetailYOffsetLabelText { get { return Instance._DetailYOffsetLabelText; } }
+        /// <summary>
+        /// Odsazení labelu dalšího řádku od předešlého textu
+        /// </summary>
         public static int DetailYSpaceLabel { get { return Instance._DetailYSpaceLabel; } }
+        /// <summary>
+        /// Odsazení textu řádku od předešlého labelu
+        /// </summary>
         public static int DetailYSpaceText { get { return Instance._DetailYSpaceText; } }
+        /// <summary>
+        /// Okraj v ose X
+        /// </summary>
         public static int DetailXMargin { get { return Instance._DetailXMargin; } }
+        /// <summary>
+        /// Okraj v ose Y
+        /// </summary>
         public static int DetailYMargin { get { return Instance._DetailYMargin; } }
+        /// <summary>
+        /// Defaultní výška panelu s buttony
+        /// </summary>
         public static int DefaultButtonPanelHeight { get { return Instance._DefaultButtonPanelHeight; } }
+        /// <summary>
+        /// Defaultní šířka buttonu
+        /// </summary>
         public static int DefaultButtonWidth { get { return Instance._DefaultButtonWidth; } }
+        /// <summary>
+        /// Defaultní výška buttonu
+        /// </summary>
         public static int DefaultButtonHeight { get { return Instance._DefaultButtonHeight; } }
 
         private DevExpress.XtraEditors.StyleController _TitleStyle;
@@ -192,6 +230,14 @@ namespace TestDevExpress.Components
 
             return container;
         }
+        public static DxLabelControl CreateDxLabel(int x, int y, int w, Control parent, string text,
+            LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
+            bool? visible = null, bool useLabelTextOffset = false)
+        {
+            return CreateDxLabel(x, ref y, w, parent, text,
+                styleType, wordWrap, autoSizeMode, hAlignment,
+                visible, useLabelTextOffset, false);
+        }
         public static DxLabelControl CreateDxLabel(int x, ref int y, int w, Control parent, string text,
             LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
             bool? visible = null, bool useLabelTextOffset = false, bool shiftY = false)
@@ -213,6 +259,16 @@ namespace TestDevExpress.Components
             if (shiftY) y = label.Bounds.Bottom + inst._DetailYSpaceLabel;
 
             return label;
+        }
+        public static DxTextEdit CreateDxTextEdit(int x, int y, int w, Control parent, EventHandler textChanged = null,
+            DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxTextEdit(x, ref y, w, parent, textChanged,
+                maskType, editMask, useMaskAsDisplayFormat,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
         }
         public static DxTextEdit CreateDxTextEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
             DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
@@ -238,6 +294,14 @@ namespace TestDevExpress.Components
             if (shiftY) y = y + textEdit.Height + inst._DetailYSpaceText;
             return textEdit;
         }
+        public static DxMemoEdit CreateDxMemoEdit(int x, int y, int w, int h, Control parent, EventHandler textChanged = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxMemoEdit(x, ref y, w, h, parent, textChanged,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
+        }
         public static DxMemoEdit CreateDxMemoEdit(int x, ref int y, int w, int h, Control parent, EventHandler textChanged = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
@@ -257,6 +321,14 @@ namespace TestDevExpress.Components
             if (shiftY) y = y + memoEdit.Height + inst._DetailYSpaceText;
 
             return memoEdit;
+        }
+        public static DxImageComboBoxEdit CreateDxImageComboBox(int x, int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxImageComboBox(x, ref y, w, parent, selectedIndexChanged, itemsTabbed,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
         }
         public static DxImageComboBoxEdit CreateDxImageComboBox(int x, ref int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -283,6 +355,16 @@ namespace TestDevExpress.Components
             if (parent != null) parent.Controls.Add(comboBox);
             if (shiftY) y = y + comboBox.Height + inst._DetailYSpaceText;
             return comboBox;
+        }
+        public static DxSpinEdit CreateDxSpinEdit(int x, int y, int w, Control parent, EventHandler valueChanged = null,
+            decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DevExpress.XtraEditors.Controls.SpinStyles? spinStyles = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxSpinEdit(x, ref y, w, parent, valueChanged,
+                minValue, maxValue, increment, mask, spinStyles,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
         }
         public static DxSpinEdit CreateDxSpinEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
             decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DevExpress.XtraEditors.Controls.SpinStyles? spinStyles = null,
