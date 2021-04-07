@@ -82,7 +82,8 @@ namespace TestDevExpress.Components
         /// <param name="currentSize"></param>
         /// <param name="previousSizeRatio"></param>
         /// <param name="currentSizeRatio"></param>
-        public void AddControl(WF.Control control, WF.Control previousControl, LayoutPosition position, int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
+        public void AddControl(WF.Control control, WF.Control previousControl, LayoutPosition position, 
+            int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
             if (control == null) return;
 
@@ -297,12 +298,14 @@ namespace TestDevExpress.Components
         /// <returns></returns>
         private int GetSplitterPosition(Size parentSize, AddControlParams parameters)
         {
+            // Celková velikost v pixelech podle orientace:
             int size = (parameters.IsHorizontal ? parentSize.Width : parentSize.Height);
 
+            // Pixelová hodnota - pro CurrentPanel nebo PreviousPanel:
             if (parameters.CurrentSize.HasValue && parameters.CurrentSize.Value > 0)
             {
-                if (parameters.NewPanelIsPanel1) return parameters.CurrentSize.Value;
-                if (parameters.NewPanelIsPanel2) return (size - parameters.CurrentSize.Value);
+                if (parameters.NewPanelIsPanel1) return parameters.CurrentSize.Value;              // Pokud CurrentPanel je Panel1 (Left nebo Top), pak SplitterPosition je přímo hodnota
+                if (parameters.NewPanelIsPanel2) return (size - parameters.CurrentSize.Value);     // ... velikost pro pro Panel2: SplitterPosition definuje ten druhý panel (počítáme Fixed = Panel1)
             }
             if (parameters.PreviousSize.HasValue && parameters.PreviousSize.Value > 0)
             {
@@ -310,6 +313,7 @@ namespace TestDevExpress.Components
                 if (parameters.NewPanelIsPanel1) return (size - parameters.PreviousSize.Value);
             }
 
+            // Ratio hodnota = poměr z celé veliikosti panelu:
             if (parameters.CurrentSizeRatio.HasValue && parameters.CurrentSizeRatio.Value > 0f)
             {
                 float ratio = (parameters.CurrentSizeRatio.Value < 1f ? parameters.CurrentSizeRatio.Value : 1f);
