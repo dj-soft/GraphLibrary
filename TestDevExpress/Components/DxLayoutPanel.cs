@@ -1,19 +1,25 @@
-﻿using System;
+﻿// Supervisor: David Janáček, od 01.02.2021
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
+using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DXB = DevExpress.XtraBars;
-using DXE = DevExpress.XtraEditors;
-using WF = System.Windows.Forms;
+
+using System.Windows.Forms;
+using System.Drawing;
+
+using DevExpress.Utils;
 
 namespace TestDevExpress.Components
 {
     /// <summary>
     /// Panel, který vkládá controly do svých rámečků se Splittery
     /// </summary>
-    public class DxLayoutPanel : DXE.PanelControl
+    public class DxLayoutPanel : DevExpress.XtraEditors.PanelControl
     {
         #region Public prvky
         /// <summary>
@@ -21,8 +27,7 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutPanel()
         {
-            this.BorderStyle = DXE.Controls.BorderStyles.NoBorder;
-            // this._RootContainer = null;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this._Controls = new List<ControlParentInfo>();
         }
         /// <summary>
@@ -30,7 +35,7 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="control"></param>
         /// <returns></returns>
-        public static DxLayoutPanel SearchParentLayoutPanel(WF.Control control)
+        public static DxLayoutPanel SearchParentLayoutPanel(Control control)
         {
             int timeout = 50;
             while (control != null && (--timeout) > 0)
@@ -43,11 +48,11 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Pole všech uživatelských controlů (neobsahuje tedy SplitContainery). Pole je lineární, nezohledňuje aktuální rozložení.
         /// </summary>
-        public WF.Control[] AllControls { get { return _GetAllControls(); } }
+        public Control[] AllControls { get { return _GetAllControls(); } }
         /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// </summary>
-        public event EventHandler<TEventArgs<WF.Control>> UserControlRemoved;
+        public event EventHandler<TEventArgs<Control>> UserControlRemoved;
         /// <summary>
         /// Vyvolá se po odebrání posledního controlu.
         /// </summary>
@@ -67,7 +72,7 @@ namespace TestDevExpress.Components
         /// Typicky se používá pro první control, ale může být použita pro kterýkoli další. Pak se přidá za posledně přidaný doprava.
         /// </summary>
         /// <param name="control"></param>
-        public void AddControl(WF.Control control)
+        public void AddControl(Control control)
         {
             if (control == null) return;
             _AddControlDefault(control, AddControlParams.Default);
@@ -82,7 +87,7 @@ namespace TestDevExpress.Components
         /// <param name="currentSize"></param>
         /// <param name="previousSizeRatio"></param>
         /// <param name="currentSizeRatio"></param>
-        public void AddControl(WF.Control control, WF.Control previousControl, LayoutPosition position, 
+        public void AddControl(Control control, Control previousControl, LayoutPosition position, 
             int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
             if (control == null) return;
@@ -98,7 +103,7 @@ namespace TestDevExpress.Components
         /// Najde daný control ve své evidenci, a pokud tam je, pak jej odebere a jeho prostor uvolní pro nejbližšího souseda.
         /// </summary>
         /// <param name="control"></param>
-        public void RemoveControl(WF.Control control)
+        public void RemoveControl(Control control)
         {
             int index = _GetIndexOfControl(control);
             _RemoveControl(index);
@@ -111,7 +116,7 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="control"></param>
         /// <param name="parameters"></param>
-        private void _AddControlDefault(WF.Control control, AddControlParams parameters)
+        private void _AddControlDefault(Control control, AddControlParams parameters)
         {
             int count = _Controls.Count;
             if (count == 0)
@@ -130,20 +135,20 @@ namespace TestDevExpress.Components
         /// <param name="control"></param>
         /// <param name="nearIndex"></param>
         /// <param name="parameters"></param>
-        private void _AddControlNear(WF.Control control, int nearIndex, AddControlParams parameters)
+        private void _AddControlNear(Control control, int nearIndex, AddControlParams parameters)
         {
             // 1. Prvek s indexem [parentIndex] obsahuje control, vedle kterého budeme přidávat nově dodaný control
             ControlParentInfo nearInfo = _Controls[nearIndex];
-            WF.Control parent = nearInfo.Parent;
+            Control parent = nearInfo.Parent;
 
             // 2. Tento control tedy odebereme z jeho dosavadního parenta:
-            WF.Control nearControl = nearInfo.Control;
+            Control nearControl = nearInfo.Control;
             int idx = parent.Controls.IndexOf(nearControl);
             if (idx >= 0)
                 parent.Controls.RemoveAt(idx);
 
             // 3. Do toho parenta vložíme místo controlu nový SplitterContainer a určíme panely pro stávající control a pro nový prvek (Panel1 a Panel2, podle parametru):
-            DXE.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, out DXE.SplitGroupPanel currentControlPanel, out DXE.SplitGroupPanel newControlPanel);
+            DevExpress.XtraEditors.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel);
             parent.Controls.Add(newSplitContainer);
             newSplitContainer.SplitterPosition = GetSplitterPosition(parent.ClientSize, parameters);         // Až po vložení do Parenta
             newSplitContainer.SplitterMoved += _SplitterMoved;                                               // Až po nastavení pozice
@@ -160,9 +165,9 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="control"></param>
         /// <param name="parent"></param>
-        private void _AddControlTo(WF.Control control, WF.Control parent)
+        private void _AddControlTo(Control control, Control parent)
         {
-            control.Dock = WF.DockStyle.Fill;
+            control.Dock = DockStyle.Fill;
             parent.Controls.Add(control);
             ControlParentInfo pair = new ControlParentInfo(parent, control);
             _Controls.Add(pair);
@@ -186,14 +191,14 @@ namespace TestDevExpress.Components
                 OnUserControlRemoved(removeControl);
 
                 // 2. Zjistíme, zda jeho parent je Panel1 nebo Panel2 z určitého SplitContaineru (najdeme SplitContainer a párový Panel) => pak najdeme párový Control a přemístíme jej nahoru:
-                if (_IsParentSplitPanel(parent, out DXE.SplitContainerControl splitContainer, out DXE.SplitGroupPanel pairPanel))
+                if (_IsParentSplitPanel(parent, out DevExpress.XtraEditors.SplitContainerControl splitContainer, out DevExpress.XtraEditors.SplitGroupPanel pairPanel))
                 {
                     // 2a. Najdeme data o párovém panelu:
                     int pairIndex = _Controls.FindIndex(i => i.ContainsParent(pairPanel));
                     if (pairIndex < 0)
                     {   // Párový panel NEOBSAHUJE nijaký UserControl, měl by tedy obsahovat jiný SplitContainer, který obsahuje dva panely, v každém jeden UserControl.
                         // Najdeme tedy tento párový SplitContainer a přemístíme jej z pairPanel do splitContainer.Parent, a splitContainer (nyní už prázdný) jako takový zrušíme:
-                        DXE.SplitContainerControl pairContainer = pairPanel.Controls.OfType<DXE.SplitContainerControl>().FirstOrDefault();
+                        DevExpress.XtraEditors.SplitContainerControl pairContainer = pairPanel.Controls.OfType<DevExpress.XtraEditors.SplitContainerControl>().FirstOrDefault();
                         if (pairContainer != null)
                         {   // Našli jsme SplitContainerControl v sousedním panelu:
                             // Odebereme jej:
@@ -247,9 +252,9 @@ namespace TestDevExpress.Components
         /// Vrátí pole všech uživatelských controlů (neobsahuje tedy SplitContainery). Pole je lineární, nezohledňuje aktuální rozložení.
         /// </summary>
         /// <returns></returns>
-        private WF.Control[] _GetAllControls()
+        private Control[] _GetAllControls()
         {
-            List<WF.Control> controls = new List<WF.Control>();
+            List<Control> controls = new List<Control>();
             foreach (var controlPair in _Controls)
             {
                 var control = controlPair.Control;
@@ -259,16 +264,16 @@ namespace TestDevExpress.Components
             return controls.ToArray();
         }
         /// <summary>
-        /// Metoda vytvoří a vrátí nový <see cref="DXE.SplitContainerControl"/>.
+        /// Metoda vytvoří a vrátí nový <see cref="DevExpress.XtraEditors.SplitContainerControl"/>.
         /// Současně určí (out parametry) panely, kam se má vložit stávající control a kam nový control, podle pozice v parametru <see cref="AddControlParams.Position"/>.
         /// </summary>
         /// <param name="parameters"></param>
         /// <param name="currentControlPanel"></param>
         /// <param name="newControlPanel"></param>
         /// <returns></returns>
-        private DXE.SplitContainerControl _CreateNewContainer(AddControlParams parameters, out DXE.SplitGroupPanel currentControlPanel, out DXE.SplitGroupPanel newControlPanel)
+        private DevExpress.XtraEditors.SplitContainerControl _CreateNewContainer(AddControlParams parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel)
         {
-            var container = new DxSplitContainerControl() { Dock = WF.DockStyle.Fill };
+            var container = new DxSplitContainerControl() { Dock = DockStyle.Fill };
 
             // parametry:
             container.IsSplitterFixed = parameters.IsSplitterFixed;
@@ -279,7 +284,7 @@ namespace TestDevExpress.Components
             // Horizontální panely (když se nový otevírá vlevo nebo vpravo):
             container.Horizontal = parameters.IsHorizontal;
 
-            // Panely, do nichž se budou vkládat současný a nový control:
+            // Panely, do nichž se budou vkládat současný a nová control:
             bool newPositionIs2 = parameters.NewPanelIsPanel2;
             currentControlPanel = (newPositionIs2 ? container.Panel1 : container.Panel2);
             newControlPanel = (newPositionIs2 ? container.Panel2 : container.Panel1);
@@ -332,20 +337,20 @@ namespace TestDevExpress.Components
             return size / 2;
         }
         /// <summary>
-        /// Metoda určí, zda dodaný <paramref name="parent"/> je jedním z panelů (<see cref="DXE.SplitGroupPanel"/>) nějakého <see cref="DXE.SplitContainerControl"/>.
-        /// Pokud ano, pak do out parametrů vloží ten <see cref="DXE.SplitContainerControl"/> a párový panel (Pokud na vstupu je Panel1, pak <paramref name="pairPanel"/> bude Panel2, a naopak), a vrátí true.
+        /// Metoda určí, zda dodaný <paramref name="parent"/> je jedním z panelů (<see cref="DevExpress.XtraEditors.SplitGroupPanel"/>) nějakého <see cref="DevExpress.XtraEditors.SplitContainerControl"/>.
+        /// Pokud ano, pak do out parametrů vloží ten <see cref="DevExpress.XtraEditors.SplitContainerControl"/> a párový panel (Pokud na vstupu je Panel1, pak <paramref name="pairPanel"/> bude Panel2, a naopak), a vrátí true.
         /// </summary>
         /// <param name="parent"></param>
         /// <param name="splitContainer"></param>
         /// <param name="pairPanel"></param>
         /// <returns></returns>
-        private bool _IsParentSplitPanel(WF.Control parent, out DXE.SplitContainerControl splitContainer, out DXE.SplitGroupPanel pairPanel)
+        private bool _IsParentSplitPanel(Control parent, out DevExpress.XtraEditors.SplitContainerControl splitContainer, out DevExpress.XtraEditors.SplitGroupPanel pairPanel)
         {
             splitContainer = null;
             pairPanel = null;
-            if (!(parent is DXE.SplitGroupPanel parentPanel)) return false;
+            if (!(parent is DevExpress.XtraEditors.SplitGroupPanel parentPanel)) return false;
 
-            if (!(parentPanel.Parent is DXE.SplitContainerControl scc)) return false;
+            if (!(parentPanel.Parent is DevExpress.XtraEditors.SplitContainerControl scc)) return false;
             splitContainer = scc;
 
             if (Object.ReferenceEquals(splitContainer.Panel1, parent))
@@ -367,7 +372,7 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="control"></param>
         /// <returns></returns>
-        private int _GetIndexOfControl(WF.Control control)
+        private int _GetIndexOfControl(Control control)
         {
             if (control == null || _Controls.Count == 0) return - 1;
             return _Controls.FindIndex(c => c.ContainsControl(control));
@@ -382,9 +387,9 @@ namespace TestDevExpress.Components
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// Zavolá event <see cref="UserControlRemoved"/>.
         /// </summary>
-        protected virtual void OnUserControlRemoved(WF.Control control)
+        protected virtual void OnUserControlRemoved(Control control)
         {
-            UserControlRemoved?.Invoke(this, new TEventArgs<WF.Control>(control));
+            UserControlRemoved?.Invoke(this, new TEventArgs<Control>(control));
         }
         /// <summary>
         /// Vyvolá se po odebrání posledního controlu.
@@ -401,7 +406,7 @@ namespace TestDevExpress.Components
         /// <param name="e"></param>
         private void _SplitterMoved(object sender, EventArgs e)
         {
-            if (sender is DXE.SplitContainerControl splitContainer)
+            if (sender is DevExpress.XtraEditors.SplitContainerControl splitContainer)
             {
                 UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
                 OnSplitterPositionChanged(pair.CreateSplitterChangedArgs());
@@ -428,9 +433,9 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _SplitContainerMouseDown(object sender, WF.MouseEventArgs e)
+        private void _SplitContainerMouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == WF.MouseButtons.Right && sender is DXE.SplitContainerControl splitContainer)
+            if (e.Button == MouseButtons.Right && sender is DevExpress.XtraEditors.SplitContainerControl splitContainer)
             {
                 var splitterBounds = splitContainer.SplitterBounds;
                 var mousePoint = e.Location;
@@ -445,11 +450,11 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="splitContainer"></param>
         /// <param name="mousePoint"></param>
-        private void _SplitContainerShowContextMenu(DXE.SplitContainerControl splitContainer, Point mousePoint)
+        private void _SplitContainerShowContextMenu(DevExpress.XtraEditors.SplitContainerControl splitContainer, Point mousePoint)
         {
             UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
 
-            DXB.PopupMenu menu = _CreateContextMenu(pair);
+            DevExpress.XtraBars.PopupMenu menu = _CreateContextMenu(pair);
             BarManager.SetPopupContextMenu(this, menu);
 
             Point absolutePoint = splitContainer.PointToScreen(mousePoint);
@@ -462,51 +467,66 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="pair"></param>
         /// <returns></returns>
-        private DXB.PopupMenu _CreateContextMenu(UserControlPair pair)
+        private DevExpress.XtraBars.PopupMenu _CreateContextMenu(UserControlPair pair)
         {
-            DXB.PopupMenu menu = new DXB.PopupMenu
+            DevExpress.XtraBars.PopupMenu menu = new DevExpress.XtraBars.PopupMenu
             {
                 DrawMenuSideStrip = DevExpress.Utils.DefaultBoolean.True,
                 DrawMenuRightIndent = DevExpress.Utils.DefaultBoolean.True,
-                MenuDrawMode = DXB.MenuDrawMode.SmallImagesText,
+                MenuDrawMode = DevExpress.XtraBars.MenuDrawMode.SmallImagesText,
                 Name = "menu"
             };
 
-            menu.AddItem(new DXB.BarHeaderItem() { Caption = "Orientace" });
+            menu.AddItem(new DevExpress.XtraBars.BarHeaderItem() { Caption = _ContextMenuTitleText });
 
             bool isHorizontal = (pair.SplitContainer.Horizontal);
 
-            DXB.BarCheckItem itemH = new DXB.BarCheckItem(_BarManager) { Name = "Horizontal", Caption = "Vedle sebe", Hint = "Panely vlevo a vpravo, oddělovač je svislý", Glyph = TestDevExpress.Properties.Resources.distribute_horizontal_margin_24_, Tag = pair, Checked = isHorizontal };
+            DevExpress.XtraBars.BarCheckItem itemH = new DevExpress.XtraBars.BarCheckItem(_BarManager) { Name = _ContextMenuHorizontalName, Caption = _ContextMenuHorizontalText, Hint = _ContextMenuHorizontalToolTip, Glyph = _ContextMenuHorizontalGlyph, Tag = pair, Checked = isHorizontal };
+            itemH.ItemAppearance.Normal.FontStyleDelta = (isHorizontal ? FontStyle.Bold : FontStyle.Regular);
             itemH.ItemClick += _ContextMenuItemClick;
             menu.AddItem(itemH);
 
-            DXB.BarCheckItem itemV = new DXB.BarCheckItem(_BarManager) { Name = "Vertical", Caption = "Pod sebou", Hint = "Panely nahoře a dole, oddělovač je vodorovný", Glyph = TestDevExpress.Properties.Resources.distribute_vertical_margin_24_, Tag = pair, Checked = !isHorizontal };
+            DevExpress.XtraBars.BarCheckItem itemV = new DevExpress.XtraBars.BarCheckItem(_BarManager) { Name = _ContextMenuVerticalName, Caption = _ContextMenuVerticalText, Hint = _ContextMenuVerticalToolTip, Glyph = _ContextMenuVerticalGlyph, Tag = pair, Checked = !isHorizontal };
+            itemV.ItemAppearance.Normal.FontStyleDelta = (!isHorizontal ? FontStyle.Bold : FontStyle.Regular);
             itemV.ItemClick += _ContextMenuItemClick;
             menu.AddItem(itemV);
 
-            var closeBtn = new DXB.BarButtonItem(_BarManager, "Zavřít") { Name = "Close", Glyph = TestDevExpress.Properties.Resources.dialog_no_2_24_ };
+            var closeBtn = new DevExpress.XtraBars.BarButtonItem(_BarManager, _ContextMenuCloseText) { Name = _ContextMenuCloseName, Hint = _ContextMenuCloseToolTip, Glyph = _ContextMenuCloseGlyph };
             closeBtn.ItemClick += _ContextMenuItemClick;
             menu.AddItem(closeBtn);
             closeBtn.Links[0].BeginGroup = true;
 
             return menu;
         }
+        private string _ContextMenuTitleText { get { return "Orientace"; } }
+        private const string _ContextMenuHorizontalName = "Horizontal";
+        private string _ContextMenuHorizontalText { get { return "Vedle sebe"; } }
+        private string _ContextMenuHorizontalToolTip { get { return "Panely vlevo a vpravo, oddělovač je svislý"; } }
+        private Image _ContextMenuHorizontalGlyph { get { return TestDevExpress.Properties.Resources.distribute_horizontal_margin_24_; } }
+        private const string _ContextMenuVerticalName = "Vertical";
+        private string _ContextMenuVerticalText { get { return "Pod sebou"; } }
+        private string _ContextMenuVerticalToolTip { get { return "Panely nahoře a dole, oddělovač je vodorovný"; } }
+        private Image _ContextMenuVerticalGlyph { get { return TestDevExpress.Properties.Resources.distribute_vertical_margin_24_; } }
+        private const string _ContextMenuCloseName = "Vertical";
+        private string _ContextMenuCloseText { get { return "Zavřít"; } }
+        private string _ContextMenuCloseToolTip { get { return "Zavře nabídku bez změny vzhledu"; } }
+        private Image _ContextMenuCloseGlyph { get { return TestDevExpress.Properties.Resources.dialog_no_2_24_; } }
         /// <summary>
         /// Po kliknutí na položku kontextového menu pro splitter: Horizontální / Vertikální
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ContextMenuItemClick(object sender, DXB.ItemClickEventArgs e)
+        private void _ContextMenuItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             UserControlPair pair = e.Item.Tag as UserControlPair;
             bool hasPair = (pair != null);
             switch (e.Item.Name)
             {
-                case "Horizontal":
+                case _ContextMenuHorizontalName:
                     if (hasPair)
                         _SetOrientation(pair, true);
                     break;
-                case "Vertical":
+                case _ContextMenuVerticalName:
                     if (hasPair)
                         _SetOrientation(pair, false);
                     break;
@@ -529,7 +549,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// BarManager, OnDemand
         /// </summary>
-        protected DXB.BarManager BarManager
+        protected DevExpress.XtraBars.BarManager BarManager
         {
             get
             {
@@ -538,10 +558,10 @@ namespace TestDevExpress.Components
                 return _BarManager;
             }
         }
-        private DXB.BarManager _BarManager;
+        private DevExpress.XtraBars.BarManager _BarManager;
         private void _InitializeBarManager()
         {
-            DXB.BarManager barManager = new DXB.BarManager
+            DevExpress.XtraBars.BarManager barManager = new DevExpress.XtraBars.BarManager
             {
                 Form = this,
                 ToolTipController = new DevExpress.Utils.ToolTipController()
@@ -570,13 +590,13 @@ namespace TestDevExpress.Components
         /// </summary>
         private class ControlParentInfo
         {
-            public ControlParentInfo(WF.Control parent, WF.Control control)
+            public ControlParentInfo(Control parent, Control control)
             {
-                _Parent = new WeakReference<WF.Control>(parent);
-                _Control = new WeakReference<WF.Control>(control);
+                _Parent = new WeakReference<Control>(parent);
+                _Control = new WeakReference<Control>(control);
             }
-            private WeakReference<WF.Control> _Parent;
-            private WeakReference<WF.Control> _Control;
+            private WeakReference<Control> _Parent;
+            private WeakReference<Control> _Control;
             /// <summary>
             /// Vizualizace
             /// </summary>
@@ -590,7 +610,7 @@ namespace TestDevExpress.Components
             /// </summary>
             /// <param name="testParent"></param>
             /// <returns></returns>
-            public bool ContainsParent(WF.Control testParent)
+            public bool ContainsParent(Control testParent)
             {
                 var myParent = this.Parent;
                 return (testParent != null && myParent != null && Object.ReferenceEquals(myParent, testParent));
@@ -600,7 +620,7 @@ namespace TestDevExpress.Components
             /// </summary>
             /// <param name="testControl"></param>
             /// <returns></returns>
-            public bool ContainsControl(WF.Control testControl)
+            public bool ContainsControl(Control testControl)
             {
                 var myControl = this.Control;
                 return (testControl != null && myControl != null && Object.ReferenceEquals(myControl, testControl));
@@ -608,11 +628,11 @@ namespace TestDevExpress.Components
             /// <summary>
             /// Parent prvek
             /// </summary>
-            public WF.Control Parent { get { return (_Parent.TryGetTarget(out var parent) ? parent : null); } set { _Parent = (value != null ? new WeakReference<WF.Control>(value) : null); } }
+            public Control Parent { get { return (_Parent.TryGetTarget(out var parent) ? parent : null); } set { _Parent = (value != null ? new WeakReference<Control>(value) : null); } }
             /// <summary>
             /// Vlastní control
             /// </summary>
-            public WF.Control Control { get { return (_Control.TryGetTarget(out var control) ? control : null); } }
+            public Control Control { get { return (_Control.TryGetTarget(out var control) ? control : null); } }
         }
         /// <summary>
         /// Parametry pro přidání controlu
@@ -627,7 +647,7 @@ namespace TestDevExpress.Components
                 Position = LayoutPosition.Right;
                 IsSplitterFixed = false;
                 FixedSize = null;
-                FixedPanel = DXE.SplitFixedPanel.Panel1;
+                FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1;
                 MinSize = 100;
             }
             /// <summary>
@@ -641,7 +661,7 @@ namespace TestDevExpress.Components
             public bool IsSplitterFixed { get; set; }
             public int? FixedSize { get; set; }
             public int MinSize { get; set; }
-            public DXE.SplitFixedPanel FixedPanel { get; set; }
+            public DevExpress.XtraEditors.SplitFixedPanel FixedPanel { get; set; }
             /// <summary>
             /// Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)
             /// </summary>
@@ -681,12 +701,12 @@ namespace TestDevExpress.Components
             /// </summary>
             /// <param name="splitContainer"></param>
             /// <returns></returns>
-            public static UserControlPair CreateForContainer(DXE.SplitContainerControl splitContainer)
+            public static UserControlPair CreateForContainer(DevExpress.XtraEditors.SplitContainerControl splitContainer)
             {
                 if (splitContainer == null) return null;
-                WF.Control control1 = splitContainer.Panel1.Controls.Count > 0 ? splitContainer.Panel1.Controls[0] : null;
-                WF.Control control2 = splitContainer.Panel2.Controls.Count > 0 ? splitContainer.Panel2.Controls[0] : null;
-                WF.Orientation splitterOrietnation = splitContainer.Horizontal ? WF.Orientation.Vertical : WF.Orientation.Horizontal;
+                Control control1 = splitContainer.Panel1.Controls.Count > 0 ? splitContainer.Panel1.Controls[0] : null;
+                Control control2 = splitContainer.Panel2.Controls.Count > 0 ? splitContainer.Panel2.Controls[0] : null;
+                Orientation splitterOrietnation = splitContainer.Horizontal ? Orientation.Vertical : Orientation.Horizontal;
                 return new UserControlPair() { SplitContainer = splitContainer, Control1 = control1, Control2 = control2, SplitterOrientation = splitterOrietnation };
             }
             private UserControlPair()
@@ -694,19 +714,19 @@ namespace TestDevExpress.Components
             /// <summary>
             /// Container, kterého se data týkají
             /// </summary>
-            public DXE.SplitContainerControl SplitContainer { get; private set; }
+            public DevExpress.XtraEditors.SplitContainerControl SplitContainer { get; private set; }
             /// <summary>
             /// První control v Panel1
             /// </summary>
-            public WF.Control Control1 { get; private set; }
+            public Control Control1 { get; private set; }
             /// <summary>
             /// První control v Panel2
             /// </summary>
-            public WF.Control Control2 { get; private set; }
+            public Control Control2 { get; private set; }
             /// <summary>
             /// Orientace splitteru (té dělící čáry)
             /// </summary>
-            public WF.Orientation SplitterOrientation { get; private set; }
+            public Orientation SplitterOrientation { get; private set; }
             /// <summary>
             /// Vrací instanci <see cref="DxLayoutPanelSplitterChangedArgs"/> ze zdejších dat
             /// </summary>
@@ -732,7 +752,7 @@ namespace TestDevExpress.Components
         /// <param name="control2"></param>
         /// <param name="splitterOrientation"></param>
         /// <param name="splitterPosition"></param>
-        public DxLayoutPanelSplitterChangedArgs(WF.Control control1, WF.Control control2, WF.Orientation splitterOrientation, int splitterPosition)
+        public DxLayoutPanelSplitterChangedArgs(Control control1, Control control2, Orientation splitterOrientation, int splitterPosition)
         {
             this.Control1 = control1;
             this.Control2 = control2;
@@ -742,15 +762,15 @@ namespace TestDevExpress.Components
         /// <summary>
         /// První control v Panel1 (ten vlevo nebo nahoře)
         /// </summary>
-        public WF.Control Control1 { get; private set; }
+        public Control Control1 { get; private set; }
         /// <summary>
         /// První control v Panel2 (ten vpravo nebo dole)
         /// </summary>
-        public WF.Control Control2 { get; private set; }
+        public Control Control2 { get; private set; }
         /// <summary>
         /// Orientace splitteru (té dělící čáry)
         /// </summary>
-        public WF.Orientation SplitterOrientation { get; private set; }
+        public Orientation SplitterOrientation { get; private set; }
         /// <summary>
         /// Pozice splitteru
         /// </summary>
