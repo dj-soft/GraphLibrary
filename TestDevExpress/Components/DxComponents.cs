@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using System.Windows.Forms;
@@ -398,6 +399,16 @@ namespace TestDevExpress.Components
             if (shiftY) y = y + spinEdit.Height + inst._DetailYSpaceText;
             return spinEdit;
         }
+        public static DxCheckEdit CreateDxCheckEdit(int x, int y, int w, Control parent, string text, EventHandler checkedChanged = null,
+            DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            return CreateDxCheckEdit(x, ref y, w, parent, text, checkedChanged,
+                checkBoxStyle, borderStyles,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
+        }
         public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -435,6 +446,16 @@ namespace TestDevExpress.Components
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
+        public static DxListBoxControl CreateDxListBox(int x, int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            string toolTipTitle = null, string toolTipText = null,
+            DockStyle? dock = null, bool? visible = null, bool? tabStop = null)
+        {
+            return CreateDxListBox(x, ref y, w, h, parent, selectedIndexChanged,
+                multiColumn, selectionMode, itemHeightPadding, reorderByDragEnabled,
+                toolTipTitle, toolTipText,
+                dock, visible, tabStop, false);
+        }
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -460,9 +481,20 @@ namespace TestDevExpress.Components
 
             return listBox;
         }
+        public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null)
+        {
+            return CreateDxSimpleButton(x, ref y, w, h, parent, text, click,
+                paintStyles,
+                toolTipTitle, toolTipText,
+                visible, enabled, tabStop, false);
+        }
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
-              string toolTipTitle = null, string toolTipText = null,
-          bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool shiftY = false)
         {
             var inst = Instance;
 
@@ -470,7 +502,9 @@ namespace TestDevExpress.Components
             simpleButton.StyleController = inst._InputStyle;
             simpleButton.Text = text;
             if (visible.HasValue) simpleButton.Visible = visible.Value;
+            if (enabled.HasValue) simpleButton.Enabled = enabled.Value;
             if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
+            if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
 
             simpleButton.SetToolTip(toolTipTitle ?? text, toolTipText);
 
@@ -480,12 +514,22 @@ namespace TestDevExpress.Components
 
             return simpleButton;
         }
+        /// <summary>
+        /// Vytvoří a vrátí standardní ToolTipController
+        /// </summary>
+        /// <returns></returns>
         public static ToolTipController CreateToolTipController()
         {
             ToolTipController toolTipController = new ToolTipController();
 
             return toolTipController;
         }
+        /// <summary>
+        /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
         public static SuperToolTip CreateDxSuperTip(string title, string text)
         {
             if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text)) return null;
@@ -637,6 +681,178 @@ namespace TestDevExpress.Components
         /// Typicky jsou vloženy v akci OnBegin, a v akci OnEnd jsou načteny. Výchozí hodnota je null.
         /// </summary>
         public object UserData { get; set; }
+    }
+    #endregion
+    #region class RegexSupport
+    /// <summary>
+    /// Třída pro podporu konverze Wildcard patternu na <see cref="Regex"/>
+    /// </summary>
+    public static class RegexSupport
+    {
+        /// <summary>
+        /// Metoda vrátí true, pokud hodnota value vyhovuje vzorci pattern.
+        /// Pro opakované používání stejného patternu je vhodnější získat <see cref="Regex"/> metodou <see cref="CreateWildcardsRegex(string)"/>,
+        /// a ten pak používat pro testování různých hodnot opakovaně.
+        /// </summary>
+        /// <param name="value">Hodnota, například "Abcdef ghij"</param>
+        /// <param name="pattern">Vzorec, například "Abc??f *"</param>
+        /// <returns></returns>
+        public static bool IsMatchWildcards(string value, string pattern)
+        {
+            return IsMatchWildcards(value, pattern, true);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud hodnota value vyhovuje vzorci pattern.
+        /// Pro opakované používání stejného patternu je vhodnější získat <see cref="Regex"/> metodou <see cref="CreateWildcardsRegex(string, bool)"/>,
+        /// a ten pak používat pro testování různých hodnot opakovaně.
+        /// </summary>
+        /// <param name="value">Hodnota, například "Abcdef ghij"</param>
+        /// <param name="pattern">Vzorec, například "Abc??f *"</param>
+        /// <param name="ignoreCase">true = ignoruje velikost znaků, false = neignoruje</param>
+        /// <returns></returns>
+        public static bool IsMatchWildcards(string value, string pattern, bool ignoreCase)
+        {
+            if (!IsWildcardsValid(pattern)) return false;
+            Regex regex = CreateWildcardsRegex(pattern, ignoreCase);
+            return regex.IsMatch(value);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daný pattern je formálně správný a může být použit v metodě <see cref="CreateWildcardsRegex(string)"/>.
+        /// </summary>
+        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <returns></returns>
+        public static bool IsWildcardsValid(string pattern)
+        {
+            if (pattern == null) return false;
+            pattern = pattern.Trim();
+            if (pattern.Length == 0) return false;
+            if (IllegalCharactersRegex.IsMatch(pattern)) return false;
+            return true;
+        }
+        /// <summary>
+        /// Metoda vrátí pole <see cref="Regex"/>, které dovolují porovnávat konkrétní texty se standardní Wildcards notací.
+        /// Z dodané sady wildcard masek (odděleny středníkem) vrátí pole Regex výrazů pro jejich filtrování.
+        /// Pokud je na vstupu Empty, vrací prázdné pole.
+        /// Typický vstup: "*.tmp; *.js; *thumb*.*; *.htm*;" atd
+        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
+        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// </summary>
+        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <returns></returns>
+        public static Regex[] CreateWildcardsRegexes(string patterns)
+        {
+            return CreateWildcardsRegexes(patterns, true);
+        }
+        /// <summary>
+        /// Metoda vrátí pole <see cref="Regex"/>, které dovolují porovnávat konkrétní texty se standardní Wildcards notací.
+        /// Z dodané sady wildcard masek (odděleny středníkem) vrátí pole Regex výrazů pro jejich filtrování.
+        /// Pokud je na vstupu Empty, vrací prázdné pole.
+        /// Typický vstup: "*.tmp; *.js; *thumb*.*; *.htm*;" atd
+        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
+        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// </summary>
+        /// <param name="pattern">Patterny s užitím standardních Wildcards * a ?</param>
+        /// <returns></returns>
+        public static Regex[] CreateWildcardsRegexes(string patterns, bool ignoreCase)
+        {
+            List<Regex> regexes = new List<Regex>();
+            if (!String.IsNullOrEmpty(patterns))
+            {
+                string[] masks = patterns.Trim().Split(';');
+                foreach (string mask in masks)
+                {
+                    if (!String.IsNullOrEmpty(mask))
+                    {
+                        Regex regex = CreateWildcardsRegex(mask.Trim(), true);
+                        if (regex != null)
+                            regexes.Add(regex);
+                    }
+                }
+            }
+
+            return regexes.ToArray();
+        }
+        /// <summary>
+        /// Vrátí dodanou kolekci textů filtrovanou podle dané kolekce regulárních výrazů.
+        /// Kolekce <paramref name="data"/> typicky obsahuje seznam souborů nebo názvů;
+        /// kolekce <paramref name="regexes"/> obsahuje výstup zdejší metody <see cref="CreateWildcardsRegexes(string)"/>;
+        /// výstup zdejší metody pak obsahuje jen vyhovující soubory.
+        /// <para/>
+        /// Pokud <paramref name="data"/> je null, výstupem je null.
+        /// Pokud <paramref name="regexes"/> je null nebo prázdná kolekce, pak výstupem je vstupní kolekce <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="regexes"></param>
+        /// <returns></returns>
+        public static IEnumerable<string> FilterByRegexes(IEnumerable<string> data, IEnumerable<Regex> regexes)
+        {
+            if (data == null) return null;
+            if (regexes == null || regexes.Count() == 0) return data;
+            return data.Where(t => IsTextMatchToAny(t, regexes));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný text vyhovuje některé masce
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="regexes"></param>
+        /// <returns></returns>
+        public static bool IsTextMatchToAny(string text, IEnumerable<Regex> regexes)
+        {
+            if (text == null) return false;
+            if (regexes == null) return false;
+            return regexes.Any(mask => mask.IsMatch(text));
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="Regex"/>, který dovoluje porovnávat texty se standardní Wildcards notací.
+        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
+        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// </summary>
+        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <returns></returns>
+        public static Regex CreateWildcardsRegex(string pattern)
+        {
+            return CreateWildcardsRegex(pattern, true);
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="Regex"/>, který dovoluje porovnávat texty se standardní Wildcards notací.
+        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
+        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// </summary>
+        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <param name="ignoreCase">true = ignoruje velikost znaků, false = neignoruje</param>
+        /// <returns></returns>
+        public static Regex CreateWildcardsRegex(string pattern, bool ignoreCase)
+        {
+            if (pattern == null) throw new ArgumentNullException();
+
+            pattern = pattern.Trim();
+            if (pattern.Length == 0) throw new ArgumentException("Pattern is empty.");
+
+            if (IllegalCharactersRegex.IsMatch(pattern)) throw new ArgumentException("Pattern contains illegal characters.");
+
+            bool hasExtension = CatchExtentionRegex.IsMatch(pattern);
+            bool matchExact = false;
+            if (HasQuestionMarkRegEx.IsMatch(pattern))
+                matchExact = true;
+            else if (hasExtension)
+                matchExact = CatchExtentionRegex.Match(pattern).Groups[1].Length != 3;
+
+            string regexString = Regex.Escape(pattern);
+            regexString = "^" + Regex.Replace(regexString, @"\\\*", ".*");
+            regexString = Regex.Replace(regexString, @"\\\?", ".");
+            if (!matchExact && hasExtension)
+            {
+                regexString += NonDotCharacters;
+            }
+            regexString += "$";
+            RegexOptions regexOptions = (ignoreCase ? RegexOptions.Compiled | RegexOptions.IgnoreCase : RegexOptions.Compiled);
+            Regex regex = new Regex(regexString, regexOptions);
+            return regex;
+        }
+        private static Regex HasQuestionMarkRegEx = new Regex(@"\?", RegexOptions.Compiled);
+        private static Regex IllegalCharactersRegex = new Regex("[" + @"\/:<>|" + "\"]", RegexOptions.Compiled);
+        private static Regex CatchExtentionRegex = new Regex(@"^\s*.+\.([^\.]+)\s*$", RegexOptions.Compiled);
+        private static string NonDotCharacters = @"[^.]*";
     }
     #endregion
     #region Enumy
@@ -884,6 +1100,7 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl
     {
+        #region Public členy
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -893,6 +1110,50 @@ namespace TestDevExpress.Components
             ReorderIconColor = Color.FromArgb(192, 116, 116, 96);
             ReorderIconColorHot = Color.FromArgb(220, 160, 160, 122);
         }
+        /// <summary>
+        /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
+        /// </summary>
+        public event PaintEventHandler PaintList;
+        /// <summary>
+        /// Pole, obsahující informace o právě viditelných prvcích ListBoxu a jejich aktuální souřadnice
+        /// </summary>
+        public Tuple<int, object, Rectangle>[] VisibleItems
+        {
+            get
+            {
+                List<Tuple<int, object, Rectangle>> visibleItems = new List<Tuple<int, object, Rectangle>>();
+                int topIndex = this.TopIndex;
+                int index = (topIndex > 0 ? topIndex - 1 : topIndex);
+                int count = this.ItemCount;
+                while (index < count)
+                {
+                    Rectangle? bounds = GetItemBounds(index);
+                    if (bounds.HasValue)
+                        visibleItems.Add(new Tuple<int, object, Rectangle>(index, this.Items[index], bounds.Value));
+                    else if (index > topIndex)
+                        break;
+                    index++;
+                }
+                return visibleItems.ToArray();
+            }
+        }
+        /// <summary>
+        /// Pole, obsahující informace o právě selectovaných prvcích ListBoxu a jejich aktuální souřadnice
+        /// </summary>
+        public Tuple<int, object, Rectangle?>[] SelectedItemsInfo
+        {
+            get
+            {
+                List<Tuple<int, object, Rectangle?>> selectedItems = new List<Tuple<int, object, Rectangle?>>();
+                foreach (var index in this.SelectedIndices)
+                {
+                    Rectangle? bounds = GetItemBounds(index);
+                    selectedItems.Add(new Tuple<int, object, Rectangle?>(index, this.Items[index], bounds));
+                }
+                return selectedItems.ToArray();
+            }
+        }
+
         /// <summary>
         /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
         /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
@@ -920,6 +1181,7 @@ namespace TestDevExpress.Components
             }
         }
         private int _ItemHeightPadding = 0;
+        #endregion
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -932,26 +1194,47 @@ namespace TestDevExpress.Components
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         #endregion
         #region Overrides
+        /// <summary>
+        /// Při vykreslování
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+            this.PaintList?.Invoke(this, e);
             this.PaintOnMouseItem(e);
         }
+        /// <summary>
+        /// Po stisku klávesy
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
             OnMouseItemIndex = -1;
         }
+        /// <summary>
+        /// Po vstupu myši: určíme myšoaktivní prvek listu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
             this.DetectOnMouseItemAbsolute(Control.MousePosition);
         }
+        /// <summary>
+        /// Po pohybu myši: určíme myšoaktivní prvek listu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
             this.DetectOnMouseItem(e.Location);
         }
+        /// <summary>
+        /// Po odchodu myši: zrušíme myšoaktivní prvek listu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
@@ -1058,7 +1341,12 @@ namespace TestDevExpress.Components
         /// </summary>
         public int OnMouseItemIndex
         {
-            get { return _OnMouseItemIndex; }
+            get 
+            {
+                if (_OnMouseItemIndex >= this.ItemCount)
+                    _OnMouseItemIndex = -1;
+                return _OnMouseItemIndex;
+            }
             protected set
             {
                 if (value != _OnMouseItemIndex)
@@ -1108,9 +1396,30 @@ namespace TestDevExpress.Components
         /// </summary>
         private Rectangle? _OnMouseIconBounds = null;
         /// <summary>
-        /// Index prvku, pro který je vypočtena souřadnice <see cref="_OnMouseIconBounds"/>
+        /// Index prvku, pro který je vypočtena souřadnice a uložena v <see cref="_OnMouseIconBounds"/>
         /// </summary>
         private int _OnMouseIconBoundsIndex = -1;
+        /// <summary>
+        /// Vrátí souřadnice prvku na daném indexu. Volitelně může provést kontrolu na to, zda daný prvek je ve viditelné oblasti Listu. Pokud prvek neexistuje nebo není vidět, vrací null.
+        /// Vrácené souřadnice jsou relativní v prostoru this ListBoxu.
+        /// </summary>
+        /// <param name="itemIndex"></param>
+        /// <param name="onlyVisible"></param>
+        /// <returns></returns>
+        public Rectangle? GetItemBounds(int itemIndex, bool onlyVisible = true)
+        {
+            if (itemIndex < 0 || itemIndex >= this.ItemCount) return null;
+
+            Rectangle itemBounds = this.GetItemRectangle(itemIndex);
+            if (onlyVisible)
+            {   // Pokud chceme souřadnice pouze viditelného prvku, pak prověříme souřadnice prvku proti souřadnici prostoru v ListBoxu:
+                Rectangle listBounds = this.ClientRectangle;
+                if (itemBounds.Right <= listBounds.X || itemBounds.X >= listBounds.Right || itemBounds.Bottom <= listBounds.Y || itemBounds.Y >= listBounds.Bottom) 
+                    return null;   // Prvek není vidět
+            }
+
+            return itemBounds;
+        }
         /// <summary>
         /// Vrátí souřadnici prostoru pro myší ikonu
         /// </summary>
@@ -1118,24 +1427,14 @@ namespace TestDevExpress.Components
         /// <returns></returns>
         protected Rectangle? GetOnMouseIconBounds(int onMouseItemIndex)
         {
-            Rectangle? bounds = null;
-
-            int mouseIndex = OnMouseItemIndex;
-            if (mouseIndex < 0) return bounds;                       // Žádný prvek nemá myš
-
-            int visibleIndex = this.GetVisibleIndex(mouseIndex);
-
-            Rectangle listBounds = this.ClientRectangle;
-            Rectangle itemBounds = this.GetItemRectangle(mouseIndex);
-            if (itemBounds.Right <= listBounds.X || itemBounds.X >= listBounds.Right || itemBounds.Bottom <= listBounds.Y || itemBounds.Y >= listBounds.Bottom) return bounds;   // Prvek s myší není vidět
-
-            if (itemBounds.Width < 35) return bounds;                // Příliš úzký prvek
+            Rectangle? itemBounds = this.GetItemBounds(onMouseItemIndex, true);
+            if (!itemBounds.HasValue || itemBounds.Value.Width < 35) return null;        // Pokud prvek neexistuje, nebo není vidět, nebo je příliš úzký => vrátíme null
 
             int wb = 14;
-            int x0 = itemBounds.Right - wb - 6;
-            int yc = itemBounds.Y + itemBounds.Height / 2;
-            bounds = new Rectangle(x0 - 1, itemBounds.Y, wb + 1, itemBounds.Height);
-            return bounds;
+            int x0 = itemBounds.Value.Right - wb - 6;
+            int yc = itemBounds.Value.Y + itemBounds.Value.Height / 2;
+            Rectangle iconBounds = new Rectangle(x0 - 1, itemBounds.Value.Y, wb + 1, itemBounds.Value.Height);
+            return iconBounds;
         }
         #endregion
         #region ToolTip

@@ -19,7 +19,7 @@ namespace TestDevExpress.Components
     /// <summary>
     /// Panel, který vkládá controly do svých rámečků se Splittery
     /// </summary>
-    public class DxLayoutPanel : DevExpress.XtraEditors.PanelControl
+    public class DxLayoutPanel : DxPanelControl
     {
         #region Public prvky
         /// <summary>
@@ -71,42 +71,42 @@ namespace TestDevExpress.Components
         /// Metoda přidá daný control do layoutu.
         /// Typicky se používá pro první control, ale může být použita pro kterýkoli další. Pak se přidá za posledně přidaný doprava.
         /// </summary>
-        /// <param name="control"></param>
-        public void AddControl(Control control)
+        /// <param name="userControl"></param>
+        public void AddControl(Control userControl)
         {
-            if (control == null) return;
-            _AddControlDefault(control, AddControlParams.Default);
+            if (userControl == null) return;
+            _AddControlDefault(userControl, AddControlParams.Default);
         }
         /// <summary>
         /// Přidá nový control vedle controlu daného
         /// </summary>
-        /// <param name="control"></param>
+        /// <param name="userControl"></param>
         /// <param name="previousControl"></param>
         /// <param name="position"></param>
         /// <param name="previousSize">Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)</param>
         /// <param name="currentSize"></param>
         /// <param name="previousSizeRatio"></param>
         /// <param name="currentSizeRatio"></param>
-        public void AddControl(Control control, Control previousControl, LayoutPosition position, 
+        public void AddControl(Control userControl, Control previousControl, LayoutPosition position,
             int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
-            if (control == null) return;
+            if (userControl == null) return;
 
             AddControlParams parameters = new AddControlParams() { Position = position, PreviousSize = previousSize, CurrentSize = currentSize, PreviousSizeRatio = previousSizeRatio, CurrentSizeRatio = currentSizeRatio };
-            int prevIndex = _GetIndexOfControl(previousControl);
+            int prevIndex = _GetIndexOfUserControl(previousControl);
             if (prevIndex < 0)
-                _AddControlDefault(control, parameters);
+                _AddControlDefault(userControl, parameters);
             else
-                _AddControlNear(control, prevIndex, parameters);
+                _AddControlNear(userControl, prevIndex, parameters);
         }
         /// <summary>
         /// Najde daný control ve své evidenci, a pokud tam je, pak jej odebere a jeho prostor uvolní pro nejbližšího souseda.
         /// </summary>
-        /// <param name="control"></param>
-        public void RemoveControl(Control control)
+        /// <param name="userControl"></param>
+        public void RemoveControl(Control userControl)
         {
-            int index = _GetIndexOfControl(control);
-            _RemoveControl(index);
+            int index = _GetIndexOfUserControl(userControl);
+            _RemoveUserControl(index);
         }
         /// <summary>
         /// Přidá nový control na vhodné místo.
@@ -114,38 +114,36 @@ namespace TestDevExpress.Components
         /// Typicky se používá pro první control, ten se vkládá přímo do this jako jediný.
         /// Může se použít i jindy, pak nový control přidá k posledně přidanému controlu.
         /// </summary>
-        /// <param name="control"></param>
+        /// <param name="userControl"></param>
         /// <param name="parameters"></param>
-        private void _AddControlDefault(Control control, AddControlParams parameters)
+        private void _AddControlDefault(Control userControl, AddControlParams parameters)
         {
             int count = _Controls.Count;
             if (count == 0)
             {   // Zatím nemáme nic: nový control vložím přímo do this jako jediný (nebude se zatím používat SplitterContainer, není proč):
                 // this._RemoveRootContainer();
-                _AddControlTo(control, this);
+                _AddControlTo(userControl, this);
             }
             else
             {   // Už něco máme, přidáme nový control poblíž posledního evidovaného prvku:
-                _AddControlNear(control, count - 1, parameters);
+                _AddControlNear(userControl, count - 1, parameters);
             }
         }
         /// <summary>
         /// Dodaný control přidá poblíž jiného controlu, podle daných parametrů
         /// </summary>
-        /// <param name="control"></param>
+        /// <param name="userControl"></param>
         /// <param name="nearIndex"></param>
         /// <param name="parameters"></param>
-        private void _AddControlNear(Control control, int nearIndex, AddControlParams parameters)
+        private void _AddControlNear(Control userControl, int nearIndex, AddControlParams parameters)
         {
             // 1. Prvek s indexem [parentIndex] obsahuje control, vedle kterého budeme přidávat nově dodaný control
             ControlParentInfo nearInfo = _Controls[nearIndex];
             Control parent = nearInfo.Parent;
 
-            // 2. Tento control tedy odebereme z jeho dosavadního parenta:
-            Control nearControl = nearInfo.Control;
-            int idx = parent.Controls.IndexOf(nearControl);
-            if (idx >= 0)
-                parent.Controls.RemoveAt(idx);
+            // 2. Tento control (jeho hostitele) tedy odebereme z jeho dosavadního parenta:
+            var nearHost = nearInfo.HostControl;                     // Podržím si referenci v lokální proměnné, jinak by mohl objekt zmizet, protože v nearInfo je jen WeakReference
+            _RemoveControlFromParent(nearHost, parent);
 
             // 3. Do toho parenta vložíme místo controlu nový SplitterContainer a určíme panely pro stávající control a pro nový prvek (Panel1 a Panel2, podle parametru):
             DevExpress.XtraEditors.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel);
@@ -154,39 +152,46 @@ namespace TestDevExpress.Components
             newSplitContainer.SplitterMoved += _SplitterMoved;                                               // Až po nastavení pozice
 
             // 4. Stávající prvek vložíme jako Child do jeho nově určeného panelu, a vepíšeme to i do evidence:
-            currentControlPanel.Controls.Add(nearControl);
+            currentControlPanel.Controls.Add(nearHost);
             nearInfo.Parent = currentControlPanel;
 
-            // 5. Nový prvek vložíme do jeho panelu a vytvoříme pár a přidáme jej do evidence
-            _AddControlTo(control, newControlPanel);
+            // 5. Nový UserControl vložíme do jeho panelu a vytvoříme pár a přidáme jej do evidence:
+            _AddControlTo(userControl, newControlPanel);
         }
         /// <summary>
         /// Přidá daný control do daného parenta jako jeho Child, dá Dock = Fill, a přidá informaci do evidence v <see cref="_Controls"/>.
         /// </summary>
-        /// <param name="control"></param>
+        /// <param name="userControl"></param>
         /// <param name="parent"></param>
-        private void _AddControlTo(Control control, Control parent)
+        private void _AddControlTo(Control userControl, Control parent)
         {
-            control.Dock = DockStyle.Fill;
-            parent.Controls.Add(control);
-            ControlParentInfo pair = new ControlParentInfo(parent, control);
+            DxLayoutItemPanel hostControl = new DxLayoutItemPanel();
+            hostControl.UserControl = userControl;
+            hostControl.TitleBarVisible = true;
+            hostControl.TitleText = "Titulek";
+            hostControl.DockButtonsEnabled = true;
+            hostControl.CloseButtonVisible = true;
+
+            parent.Controls.Add(hostControl);
+            ControlParentInfo pair = new ControlParentInfo(parent, hostControl, userControl);
             _Controls.Add(pair);
         }
         /// <summary>
         /// Odebere daný control z parenta (vizuálně) i z evidence (datově)
         /// </summary>
         /// <param name="removeIndex"></param>
-        private void _RemoveControl(int removeIndex)
+        private void _RemoveUserControl(int removeIndex)
         {
             if (removeIndex < 0) return;                             // To není můj control
 
             var removeInfo = _Controls[removeIndex];
             var parent = removeInfo.Parent;                          // Parent daného controlu je typicky this (když control je jediný), anebo Panel1 nebo Panel2 nějakého SplitContaineru
-            var removeControl = removeInfo.Control;
-            if (parent != null && removeControl != null)
+            var removeHost = removeInfo.HostControl;
+            var removeControl = removeInfo.UserControl;
+            if (parent != null && removeHost != null)
             {
                 // 1. Odebereme daný control z jeho parenta a z evidence:
-                parent.Controls.Remove(removeControl);
+                _RemoveControlFromParent(removeHost, parent);
                 _Controls.RemoveAt(removeIndex);
                 OnUserControlRemoved(removeControl);
 
@@ -202,41 +207,34 @@ namespace TestDevExpress.Components
                         if (pairContainer != null)
                         {   // Našli jsme SplitContainerControl v sousedním panelu:
                             // Odebereme jej:
-                            int pairIdx = pairPanel.Controls.IndexOf(pairContainer);
-                            if (pairIdx >= 0)
-                                pairPanel.Controls.RemoveAt(pairIdx);
+                            _RemoveControlFromParent(pairContainer, pairPanel);
 
                             // Najdeme parenta od SplitContaineru, a z něj odebereme právě ten SplitContainer, tím jej zrušíme:
                             var splitParent = splitContainer.Parent;
-                            int contIdx = splitParent.Controls.IndexOf(splitContainer);
-                            if (contIdx >= 0)
-                                splitParent.Controls.RemoveAt(contIdx);
+                            _RemoveControlFromParent(splitContainer, splitParent);
 
                             // Do parenta od dosavadního SplitContaineru vložíme ten párový control (ale nikam to nepíšeme, protože UserControly a jejich parenti se nemění):
                             splitParent.Controls.Add(pairContainer);
                         }
                     }
                     else
-                    {   // Takže jsme odebrali prvek UserControl z jednoho panelu, a na párovém panelu máme jiný prvek UserControl.
-                        // Nechceme mít prázdný panel, a ani nechceme prázdný panel schovávat, chceme mít čistý layout = viditelné panely a na nich jeden control!
+                    {   // Takže jsme odebrali prvek UserControl (pomocí jeho Host) z jednoho panelu, a na párovém panelu máme jiný prvek UserControl.
+                        // Nechceme mít prázdný panel, a ani nechceme prázdný panel schovávat, chceme mít čistý layout = viditelné všechny panely a na nich vždy jeden control!
                         // Najdeme tedy párový control, odebereme SplitContaner, a na jeho místo vložíme ten párový Control:
                         var pairInfo = _Controls[pairIndex];
-                        var pairControl = pairInfo.Control;
+                        var pairControl = pairInfo.UserControl;                // Po dobu výměny si podržíme reference v proměnných, protože v pairInfo jsou jen WeakReference!
+                        var pairHost = pairInfo.HostControl;
 
                         // Odebereme párový control z jeho dosavadního parenta (kterým je párový panel):
-                        int panelIdx = pairPanel.Controls.IndexOf(pairControl);
-                        if (panelIdx >= 0)
-                            pairPanel.Controls.RemoveAt(panelIdx);
+                        _RemoveControlFromParent(pairHost, pairPanel);
 
                         // Najdeme parenta od SplitContaineru, a z něj odebereme právě ten SplitContainer, tím jej zrušíme:
                         var splitParent = splitContainer.Parent;
-                        int contIdx = splitParent.Controls.IndexOf(splitContainer);
-                        if (contIdx >= 0)
-                            splitParent.Controls.RemoveAt(contIdx);
+                        _RemoveControlFromParent(splitContainer, splitParent);
 
                         // Do parenta od dosavadního SplitContaineru vložíme ten párový control (a vepíšeme to do jeho Infa).
                         // Tento Parent je buď nějaký Panel1 nebo Panel2 od jiného SplitContaineru, anebo to může být this:
-                        splitParent.Controls.Add(pairControl);
+                        splitParent.Controls.Add(pairHost);
                         pairInfo.Parent = splitParent;
                     }
                 }
@@ -249,6 +247,20 @@ namespace TestDevExpress.Components
             }
         }
         /// <summary>
+        /// Daný control odebere z daného parenta, pokud je vše správně zadáno
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="parent"></param>
+        private void _RemoveControlFromParent(Control control, Control parent)
+        {
+            if (control != null && parent != null)
+            {
+                int index = parent.Controls.IndexOf(control);
+                if (index >= 0)
+                    parent.Controls.RemoveAt(index);
+            }
+        }
+        /// <summary>
         /// Vrátí pole všech uživatelských controlů (neobsahuje tedy SplitContainery). Pole je lineární, nezohledňuje aktuální rozložení.
         /// </summary>
         /// <returns></returns>
@@ -257,7 +269,7 @@ namespace TestDevExpress.Components
             List<Control> controls = new List<Control>();
             foreach (var controlPair in _Controls)
             {
-                var control = controlPair.Control;
+                var control = controlPair.UserControl;
                 if (control != null)
                     controls.Add(control);
             }
@@ -284,7 +296,7 @@ namespace TestDevExpress.Components
             // Horizontální panely (když se nový otevírá vlevo nebo vpravo):
             container.Horizontal = parameters.IsHorizontal;
 
-            // Panely, do nichž se budou vkládat současný a nová control:
+            // Panely, do nichž se budou vkládat současný a nový control:
             bool newPositionIs2 = parameters.NewPanelIsPanel2;
             currentControlPanel = (newPositionIs2 ? container.Panel1 : container.Panel2);
             newControlPanel = (newPositionIs2 ? container.Panel2 : container.Panel1);
@@ -370,12 +382,12 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Vrátí index daného User controlu v poli zdejších controlů.
         /// </summary>
-        /// <param name="control"></param>
+        /// <param name="userControl"></param>
         /// <returns></returns>
-        private int _GetIndexOfControl(Control control)
+        private int _GetIndexOfUserControl(Control userControl)
         {
-            if (control == null || _Controls.Count == 0) return - 1;
-            return _Controls.FindIndex(c => c.ContainsControl(control));
+            if (userControl == null || _Controls.Count == 0) return - 1;
+            return _Controls.FindIndex(c => c.ContainsUserControl(userControl));
         }
         /// <summary>
         /// Pole User controlů, v páru s jejich posledně známým parentem
@@ -590,20 +602,22 @@ namespace TestDevExpress.Components
         /// </summary>
         private class ControlParentInfo
         {
-            public ControlParentInfo(Control parent, Control control)
+            public ControlParentInfo(Control parent, DxLayoutItemPanel hostControl, Control userControl)
             {
                 _Parent = new WeakReference<Control>(parent);
-                _Control = new WeakReference<Control>(control);
+                _HostControl = new WeakReference<DxLayoutItemPanel>(hostControl);
+                _UserControl = new WeakReference<Control>(userControl);
             }
             private WeakReference<Control> _Parent;
-            private WeakReference<Control> _Control;
+            private WeakReference<DxLayoutItemPanel> _HostControl;
+            private WeakReference<Control> _UserControl;
             /// <summary>
             /// Vizualizace
             /// </summary>
             /// <returns></returns>
             public override string ToString()
             {
-                return $"Control: {Control?.Name}; Parent: {Parent?.Name}";
+                return $"Control: {UserControl?.Name}; Parent: {Parent?.Name}";
             }
             /// <summary>
             /// Vrátí true pokud v this objektu je jako <see cref="Parent"/> uložen dodaný objekt.
@@ -616,13 +630,13 @@ namespace TestDevExpress.Components
                 return (testParent != null && myParent != null && Object.ReferenceEquals(myParent, testParent));
             }
             /// <summary>
-            /// Vrátí true pokud v this objektu je jako <see cref="Control"/> uložen dodaný objekt.
+            /// Vrátí true pokud v this objektu je jako <see cref="UserControl"/> uložen dodaný objekt.
             /// </summary>
             /// <param name="testControl"></param>
             /// <returns></returns>
-            public bool ContainsControl(Control testControl)
+            public bool ContainsUserControl(Control testControl)
             {
-                var myControl = this.Control;
+                var myControl = this.UserControl;
                 return (testControl != null && myControl != null && Object.ReferenceEquals(myControl, testControl));
             }
             /// <summary>
@@ -630,9 +644,13 @@ namespace TestDevExpress.Components
             /// </summary>
             public Control Parent { get { return (_Parent.TryGetTarget(out var parent) ? parent : null); } set { _Parent = (value != null ? new WeakReference<Control>(value) : null); } }
             /// <summary>
+            /// Hostitel pro control
+            /// </summary>
+            public DxLayoutItemPanel HostControl { get { return (_HostControl.TryGetTarget(out var control) ? control : null); } }
+            /// <summary>
             /// Vlastní control
             /// </summary>
-            public Control Control { get { return (_Control.TryGetTarget(out var control) ? control : null); } }
+            public Control UserControl { get { return (_UserControl.TryGetTarget(out var control) ? control : null); } }
         }
         /// <summary>
         /// Parametry pro přidání controlu
@@ -736,6 +754,140 @@ namespace TestDevExpress.Components
                 DxLayoutPanelSplitterChangedArgs args = new DxLayoutPanelSplitterChangedArgs(Control1, Control2, SplitterOrientation, SplitContainer.SplitterPosition);
                 return args;
             }
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Panel, který slouží jako hostitel pro jeden uživatelský control v rámci <see cref="DxLayoutPanel"/>.
+    /// Obsahuje prostor pro titulek, zavírací křížek a OnMouse buttony pro předokování aktuálního prvku v rámci parent SplitContaineru.
+    /// </summary>
+    public class DxLayoutItemPanel : DxPanelControl
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxLayoutItemPanel()
+        {
+            this.Dock = DockStyle.Fill;
+        }
+        #region Titulkový panel a jeho buttony
+        /// <summary>
+        /// Titulkový panel je viditelný?
+        /// </summary>
+        public bool TitleBarVisible { get { return _TitleBarVisible; } set { this.RunInGui(() => _TitleBarSetVisible(value)); } }
+        private bool _TitleBarVisible;
+        public string TitleText { get { return _TitleText; } set { _TitleText = value; this.RunInGui(() => _TitleBarRefresh()); } }
+        private string _TitleText;
+        public bool CloseButtonVisible { get { return _CloseButtonVisible; } set { _CloseButtonVisible = value; this.RunInGui(() => _TitleBarRefresh()); } }
+        private bool _CloseButtonVisible;
+        public bool DockButtonsEnabled { get { return _DockButtonsEnabled; } set { _DockButtonsEnabled = value; this.RunInGui(() => _TitleBarRefresh()); } }
+        private bool _DockButtonsEnabled;
+        /// <summary>
+        /// Zajistí správnou existenci a viditelnost titulkového baru podle jeho požadované viditelnosti, a jeho vložení do this Controls
+        /// </summary>
+        /// <param name="titleBarVisible"></param>
+        private void _TitleBarSetVisible(bool titleBarVisible)
+        {
+            _TitleBarVisible = titleBarVisible;
+            if (titleBarVisible)
+            {   // Pokud má být viditelný:
+                if (_TitleBar == null)
+                    _TitleBarInit();
+                _TitleBarLayout();
+                _TitleBar.Visible = true;
+            }
+            else
+            {   // Pokud nemá být viditelný:
+                if (_TitleBar != null && _TitleBar.VisibleInternal != !titleBarVisible)
+                    _TitleBar.VisibleInternal = !titleBarVisible;
+            }
+        }
+        private void _TitleBarInit()
+        {
+            _TitleBar = new DxPanelControl() { Height = 35, Dock = DockStyle.Top };
+            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, _TitleBar, "", LabelStyleType.Title, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+            _CloseButton = DxComponent.CreateDxSimpleButton(200, 6, 24, 24, _TitleBar, "", _ClickClose, tabStop: false);
+            _CloseButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
+
+            // var c = DevExpress.Utils.ImageCollectionUtils.GetImageResourceNames(typeof(DevExpress.Skins.SkinManager).Assembly);
+            string resourceName = "images/content/barcode_16x16.png";
+            resourceName = "images/actions/loadfrom_16x16.png";
+            var img = DevExpress.Images.ImageResourceCache.Default.GetImage(resourceName);
+
+            _CloseButton.ImageOptions.Image = img;
+
+
+            _TitleBarRefresh();
+            _FillControls();
+        }
+        private void _TitleBarRefresh()
+        {
+            if (_TitleBar == null || _TitleLabel == null) return;
+            _TitleLabel.Text = _TitleText ?? "";
+            _CloseButton.Visible = _CloseButtonVisible;
+        }
+        private void _TitleBarLayout()
+        {
+            if (_TitleBar == null || _TitleLabel == null || !_TitleBarVisible) return;
+            int width = this.ClientSize.Width;
+            _TitleLabel.Width = (width - _TitleLabel.Left - 35);
+            _TitleBar.Height = _TitleLabel.Bottom + 6;
+            _CloseButton.Bounds = new Rectangle(width - 35, 6, 24, 24);
+        }
+        private DxPanelControl _TitleBar;
+        private DxLabelControl _TitleLabel;
+        private DxSimpleButton _CloseButton;
+        #endregion
+        #region Vnitřní události
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            _TitleBarLayout();
+        }
+        private void _ClickClose(object sender, EventArgs args)
+        { }
+        #endregion
+        #region UserControl
+        /// <summary>
+        /// Uživatelský control, obsazuje většinu prostoru this panelu, pod titulkem
+        /// </summary>
+        public Control UserControl
+        {
+            get { return _UserControl; }
+            set
+            {
+                Control userControl = _UserControl;
+                if (userControl != null)
+                {
+                    this.Controls.Remove(userControl);
+                    _UserControl = null;
+                }
+                userControl = value;
+                _UserControl = userControl;
+                if (userControl != null)
+                {
+                    userControl.Dock = DockStyle.Fill;
+                    this._FillControls();
+                }
+            }
+        }
+        private Control _UserControl;
+        /// <summary>
+        /// Do this.Controls ve správném pořadí vloží existující prvky TitleBar a UserControl, před tím vyprázdní pole controlů.
+        /// </summary>
+        private void _FillControls()
+        {
+            this.SuspendLayout();
+
+            //  Na pořadí při vkládání dokovaných prvků záleží, protože jinak bude size TitleBar nahoře a UserControl všude,
+            // ale UserControl by při chybném pořadí měl UserControl.Top = 0, kdežto správně má mít UserControl.Top = TitleBar.Bottom !
+            // Vkládáme jen ty prvky, které reálně existují. Neřešíme zde TitleBar.Visible.
+            this.Controls.Clear();
+            if (_UserControl != null) this.Controls.Add(_UserControl);
+            if (_TitleBar != null) this.Controls.Add(_TitleBar);
+
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
         #endregion
     }

@@ -701,6 +701,143 @@ namespace TestDevExpress
         }
     }
     #endregion
+    #region class DxImagePicker
+    public class DxImagePicker : Components.DxPanelControl
+    {
+        public DxImagePicker()
+        {
+            this.Initialize();
+        }
+        protected void Initialize()
+        {
+            _ImageResourceCache = DevExpress.Images.ImageResourceCache.Default;
+            _ClipboardCopyIndex = 0;
+
+            _ListBox = new Components.DxListBoxControl() { Dock = DockStyle.Fill };
+            _ListBox.SelectionMode = SelectionMode.MultiExtended;
+            _ListBox.ItemHeight = 32;
+            _ListBox.PaintList += _ListBox_PaintList;
+            _ListBox.KeyDown += _ListBox_KeyDown;
+
+            _ResourceNames = GetResourceKeys();
+            _ResourceFilter = "*close*.svg;*delete*";
+            _FillListByFilter();
+
+            this.Controls.Add(_ListBox);
+        }
+        private void _FillListByFilter()
+        {
+            string[] resources = _GetResourcesByFilter();
+
+            _ListBox.SuspendLayout();
+            _ListBox.Items.Clear();
+            _ListBox.Items.AddRange(resources);
+            _ListBox.ResumeLayout(false);
+            _ListBox.PerformLayout();
+        }
+        private string[] _GetResourcesByFilter()
+        {
+            var resources = _ResourceNames;
+            if (resources == null) return new string[0];
+            var filter = _ResourceFilter;
+            if (String.IsNullOrEmpty(filter)) return resources;
+            var regexes = Components.RegexSupport.CreateWildcardsRegexes(filter);
+            var result = Components.RegexSupport.FilterByRegexes(resources, regexes);
+            return result.ToArray();
+        }
+        private void _ListBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData == (Keys.Control | Keys.C)) _DoCopyClipboard();
+        }
+
+        private void _DoCopyClipboard()
+        {
+            StringBuilder sb = new StringBuilder();
+            var selectedItems = _ListBox.SelectedItemsInfo;
+            foreach (var selectedItem in selectedItems)
+            {
+                _ClipboardCopyIndex++;
+                string resourceName = selectedItem.Item2 as string;
+                sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
+            }
+            Clipboard.Clear();
+            Clipboard.SetText(sb.ToString());
+        }
+        private void _ListBox_PaintList(object sender, PaintEventArgs e)
+        {
+            _SvgPalette = DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(this.LookAndFeel, DevExpress.Utils.Drawing.ObjectState.Normal);
+            var visibleItems = _ListBox.VisibleItems;
+            foreach (var visibleItem in visibleItems)
+            {
+                string resourceName = visibleItem.Item2 as string;
+                Rectangle itemBounds = visibleItem.Item3;
+                var image = _GetImageFromResource(resourceName, new Size(32, 32), out Size size);
+                if (image != null)
+                {
+                    Point imagePoint = new Point((itemBounds.Right - 24 - size.Width / 2), itemBounds.Top + ((itemBounds.Height - size.Height) / 2));
+                    Rectangle imageBounds = new Rectangle(imagePoint, size);
+                    e.Graphics.DrawImage(image, imageBounds);
+                }
+            }
+        }
+        private System.Drawing.Image _GetImageFromResource(string resourceName, Size maxSize, out Size size)
+        {
+            System.Drawing.Image image = null;
+            size = new Size(32, 32);
+            if (!String.IsNullOrEmpty(resourceName))
+            {
+                try
+                {
+                    if (resourceName.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                    {
+                        //var svg = _ImageResourceCache.GetSvgImage(resourceName);
+                        //var svb = DevExpress.Utils.Svg.SvgBitmap.Create(svg);
+                        //image = svb.Render(_SvgPalette, 1d, DevExpress.Utils.DefaultBoolean.Default, DevExpress.Utils.DefaultBoolean.True);
+
+                        image = _ImageResourceCache.GetSvgImage(resourceName, _SvgPalette, size);
+                    }
+                    else
+                    {
+                        image = _ImageResourceCache.GetImage(resourceName);
+                        size = image.Size;
+                    }
+                }
+                catch (Exception exc)
+                {
+                    image = null;
+                }
+            }
+            if (size.Width > maxSize.Width) size.Width = maxSize.Width;
+            if (size.Height > maxSize.Height) size.Height = maxSize.Height;
+            return image;
+        }
+        string _ResourceFilter;
+        string[] _ResourceNames;
+        int _ClipboardCopyIndex;
+        DevExpress.Images.ImageResourceCache _ImageResourceCache;
+        DevExpress.Utils.Design.ISvgPaletteProvider _SvgPalette;
+        Components.DxListBoxControl _ListBox;
+        public static string[] GetResourceKeys()
+        {
+            //var irc = DevExpress.Images.ImageResourceCache.Default;
+            //var fld = irc.GetType().GetField("resources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            //var resources = fld?.GetValue(irc);
+            //Dictionary<string, System.IO.Stream> dict = resources as Dictionary<string, System.IO.Stream>;
+
+            //var keys = dict.Keys;
+
+            var keyList = DevExpress.Images.ImageResourceCache.Default.GetAllResourceKeys().ToList();
+            keyList.Sort();
+
+            return keyList.ToArray();
+
+            //string resourceName = "images/content/barcode_16x16.png";
+            //resourceName = "images/actions/loadfrom_16x16.png";
+            //var image = DevExpress.Images.ImageResourceCache.Default.GetImage(resourceName);
+
+        }
+    }
+    #endregion
     #region PanelResize : panel pro zobrazení posloupnosti (Logu) událostí WinForm
     /// <summary>
     /// PanelResize : panel pro zobrazení posloupnosti (Logu) událostí WinForm

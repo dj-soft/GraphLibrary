@@ -1755,6 +1755,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _OpenLayoutFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 37, 190, 50), Text = "Otevři LayoutForm" };
             _OpenLayoutFormButton.Click += _OpenLayoutFormButton_Click;
             _EditorsPanel.Controls.Add(_OpenLayoutFormButton);
+
+
+            _DxImagePicker = new DxImagePicker() { Bounds = new Rectangle(20, 100, 640, 480) };
+            _EditorsPanel.Controls.Add(_DxImagePicker);
         }
 
         private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
@@ -1859,6 +1863,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.TokenEdit _TokenEdit;
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
         private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
+        private DxImagePicker _DxImagePicker;
         #endregion
         #region TreeView
         protected void InitTreeView()
