@@ -69,7 +69,7 @@ namespace TestDevExpress.Components
             titleStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
             var labelStyle = new DevExpress.XtraEditors.StyleController();
-            labelStyle.Appearance.FontSizeDelta = 1;
+            labelStyle.Appearance.FontSizeDelta = 0;
             labelStyle.Appearance.FontStyleDelta = FontStyle.Italic;
             labelStyle.Appearance.Options.UseBorderColor = false;
             labelStyle.Appearance.Options.UseBackColor = false;
@@ -83,8 +83,8 @@ namespace TestDevExpress.Components
             labelStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
             var inputStyle = new DevExpress.XtraEditors.StyleController();
-            inputStyle.Appearance.FontSizeDelta = 1;
-            inputStyle.Appearance.FontStyleDelta = FontStyle.Bold;
+            inputStyle.Appearance.FontSizeDelta = 0;
+            inputStyle.Appearance.FontStyleDelta = FontStyle.Regular;
             inputStyle.Appearance.Options.UseBorderColor = false;
             inputStyle.Appearance.Options.UseBackColor = false;
             inputStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
@@ -434,7 +434,7 @@ namespace TestDevExpress.Components
             return checkEdit;
         }
         public static DxListBoxControl CreateDxListBox(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? tabStop = null)
         {
@@ -442,22 +442,22 @@ namespace TestDevExpress.Components
             int w = width ?? 0;
             int h = height ?? 0;
             return CreateDxListBox(0, ref y, w, h, parent, selectedIndexChanged,
-                multiColumn, selectionMode, itemHeightPadding, reorderByDragEnabled,
+                multiColumn, selectionMode, itemHeight, itemHeightPadding, reorderByDragEnabled,
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null)
         {
             return CreateDxListBox(x, ref y, w, h, parent, selectedIndexChanged,
-                multiColumn, selectionMode, itemHeightPadding, reorderByDragEnabled,
+                multiColumn, selectionMode, itemHeight, itemHeightPadding, reorderByDragEnabled,
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null, bool shiftY = false)
         {
@@ -468,7 +468,9 @@ namespace TestDevExpress.Components
             if (dock.HasValue) listBox.Dock = dock.Value;
             if (multiColumn.HasValue) listBox.MultiColumn = multiColumn.Value;
             if (selectionMode.HasValue) listBox.SelectionMode = selectionMode.Value;
+            if (itemHeight.HasValue) listBox.ItemHeight = itemHeight.Value;
             if (itemHeightPadding.HasValue) listBox.ItemHeightPadding = itemHeightPadding.Value;
+
             if (reorderByDragEnabled.HasValue) listBox.ReorderByDragEnabled = reorderByDragEnabled.Value;
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
@@ -514,6 +516,36 @@ namespace TestDevExpress.Components
 
             return simpleButton;
         }
+        public static DxSimpleButton CreateDxMiniButton(int x, int y, int w, int h, Control parent, EventHandler click = null,
+                   Image image = null, string resourceName = null,
+                   string toolTipTitle = null, string toolTipText = null,
+                   bool? visible = null, bool? enabled = null, bool? tabStop = null)
+        {
+            var inst = Instance;
+
+            var miniButton = new DxSimpleButton() { Bounds = new Rectangle(x, y, w, h) };
+            miniButton.StyleController = inst._InputStyle;
+            miniButton.Text = "";
+            if (visible.HasValue) miniButton.Visible = visible.Value;
+            if (enabled.HasValue) miniButton.Enabled = enabled.Value;
+            miniButton.TabStop = tabStop ?? false;
+            miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
+
+            DxComponent.ApplyImage(miniButton.ImageOptions, image, resourceName, new Size(w - 4, h - 4));
+            miniButton.ImageOptions.ImageToTextIndent = 0;
+            miniButton.ImageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.BottomCenter;
+            miniButton.Padding = new Padding(0);
+            miniButton.Margin = new Padding(0);
+
+            miniButton.SetToolTip(toolTipTitle, toolTipText);
+
+            if (click != null) miniButton.Click += click;
+            if (parent != null) parent.Controls.Add(miniButton);
+
+            return miniButton;
+        }
+
+
         /// <summary>
         /// Vytvoří a vrátí standardní ToolTipController
         /// </summary>
@@ -540,6 +572,217 @@ namespace TestDevExpress.Components
 
             return superTip;
         }
+        #endregion
+        #region ImageResource
+        /// <summary>
+        /// Vrací setříděný seznam DevExpress resources
+        /// </summary>
+        /// <param name="addPng">Akceptovat bitmapy (PNG)</param>
+        /// <param name="addSvg">Akceptovat vektory (SVG)</param>
+        /// <returns></returns>
+        public static string[] GetResourceKeys(bool addPng = true, bool addSvg = true)
+        {
+            return Instance._GetResourceKeys(addPng, addSvg);
+        }
+        /// <summary>
+        /// Vrací setříděný seznam DevExpress resources
+        /// </summary>
+        /// <param name="addPng">Akceptovat bitmapy (PNG)</param>
+        /// <param name="addSvg">Akceptovat vektory (SVG)</param>
+        /// <returns></returns>
+        protected string[] _GetResourceKeys(bool addPng, bool addSvg)
+        {
+            if (!addPng && !addSvg) return new string[0];
+
+            var keyList = _ImageResourceCache.GetAllResourceKeys()
+                .Where(k => (addPng && k.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) || (addSvg && k.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            keyList.Sort();
+
+            return keyList.ToArray();
+        }
+        /// <summary>
+        /// Vrátí Image (bitmapu) pro daný název DevExpress zdroje.
+        /// Vstupem může být SVG i PNG zdroj.
+        /// <para/>
+        /// Pro SVG obrázek je vhodné:
+        /// 1. určit <paramref name="optimalSvgSize"/>, pak bude Image renderován exaktně na zadaný rozměr.
+        /// 2. předat i paletu <paramref name="svgPalette"/>, tím bude SVG obrázek přizpůsoben danému skinu a stavu.
+        /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
+        /// </summary>
+        /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
+        /// <param name="size">Výstup konkrétní velikosti, odráží velikost bitmapy, nebo <paramref name="optimalSvgSize"/> pro SVG, je oříznuto na <paramref name="maxSize"/></param>
+        /// <param name="maxSize"></param>
+        /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
+        /// <param name="svgPalette">Paleta pro vykreslení SVG Image</param>
+        /// <param name="svgState">Stav objektu pro vykreslení SVG Image, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
+        /// <returns></returns>
+        public static Image GetImageFromResource(string resourceName, out Size size,
+            Size? maxSize = null, Size? optimalSvgSize = null, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            return Instance._GetImageFromResource(resourceName, out size,
+                maxSize, optimalSvgSize, svgPalette, svgState);
+        }
+        /// <summary>
+        /// Vrátí Image (bitmapu) pro daný název DevExpress zdroje.
+        /// Vstupem může být SVG i PNG zdroj.
+        /// <para/>
+        /// Pro SVG obrázek je vhodné:
+        /// 1. určit <paramref name="optimalSvgSize"/>, pak bude Image renderován exaktně na zadaný rozměr.
+        /// 2. předat i paletu <paramref name="svgPalette"/>, tím bude SVG obrázek přizpůsoben danému skinu a stavu.
+        /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
+        /// </summary>
+        /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
+        /// <param name="size">Výstup konkrétní velikosti, odráží velikost bitmapy, nebo <paramref name="optimalSvgSize"/> pro SVG, je oříznuto na <paramref name="maxSize"/></param>
+        /// <param name="maxSize"></param>
+        /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
+        /// <param name="svgPalette">Paleta pro vykreslení SVG Image</param>
+        /// <param name="svgState">Stav objektu pro vykreslení SVG Image, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
+        /// <returns></returns>
+        protected Image _GetImageFromResource(string resourceName, out Size size,
+            Size? maxSize, Size? optimalSvgSize, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, DevExpress.Utils.Drawing.ObjectState? svgState)
+        {
+            System.Drawing.Image image = null;
+            size = new Size(32, 32);
+            if (!String.IsNullOrEmpty(resourceName))
+            {
+                try
+                {
+                    if (_IsImageNameSvg(resourceName))
+                    {
+                        if (svgPalette == null)
+                            svgPalette = GetSvgPalette(DevExpress.LookAndFeel.UserLookAndFeel.Default, svgState);
+                        if (optimalSvgSize.HasValue)
+                            size = optimalSvgSize.Value;
+                        else if (maxSize.HasValue)
+                            size = maxSize.Value;
+                        _ImageResourceRewindStream(resourceName);
+                        image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
+                    }
+                    else
+                    {
+                        image = _ImageResourceCache.GetImage(resourceName);
+                        size = image.Size;
+                        if (maxSize.HasValue)
+                        {
+                            if (maxSize.Value.Width > 0 && size.Width > maxSize.Value.Width) size.Width = maxSize.Value.Width;
+                            if (maxSize.Value.Height > 0 && size.Height > maxSize.Value.Height) size.Height = maxSize.Value.Height;
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    image = null;
+                }
+            }
+            return image;
+        }
+        /// <summary>
+        /// Vrátí SVG paletu [volitelně pro daný skin a pro daný stav objektu]
+        /// </summary>
+        /// <param name="skinProvider">Cílový skin, implicitně bude použit <see cref="DevExpress.LookAndFeel.UserLookAndFeel.Default"/></param>
+        /// <param name="svgState">Stav objektu, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
+        /// <returns></returns>
+        public static DevExpress.Utils.Design.ISvgPaletteProvider GetSvgPalette(DevExpress.Skins.ISkinProvider skinProvider = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            if (skinProvider == null) skinProvider = DevExpress.LookAndFeel.UserLookAndFeel.Default;
+            if (!svgState.HasValue) svgState = DevExpress.Utils.Drawing.ObjectState.Normal;
+            return DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(skinProvider, svgState.Value);
+        }
+        public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
+        public static DevExpress.Utils.Svg.SvgImage GetSvgImage(string key) { return Instance._GetSvgImage(key); }
+        public static void ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize); }
+        protected void _ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null)
+        {
+            if (image != null)
+            {
+                imageOptions.Image = image;
+            }
+            else if (!String.IsNullOrEmpty(resourceName))
+            {
+                try
+                {
+                    if (_IsImageNameSvg(resourceName))
+                    {
+                        _ImageResourceRewindStream(resourceName);
+                        imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
+                        if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
+                    }
+                    else
+                    {
+                        imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
+                    }
+                }
+                catch { }
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud dané jméno zdroje končí příponou ".svg"
+        /// </summary>
+        /// <param name="imageUri"></param>
+        /// <returns></returns>
+        protected static bool _IsImageNameSvg(string imageUri)
+        {
+            return (!String.IsNullOrEmpty(imageUri) && imageUri.EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
+        }
+        /// <summary>
+        /// Napravuje chybu DevExpress, kdy v <see cref="DevExpress.Images.ImageResourceCache"/> pro SVG zdroje po jejich použití je jejich zdrojový stream na konci, a další použití je tak znemožněno.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        protected void _ImageResourceRewindStream(string resourceName)
+        {
+            if (String.IsNullOrEmpty(resourceName)) return;
+
+            var imageResourceCache = _ImageResourceCache;
+            var dictonaryField = imageResourceCache.GetType().GetField("resources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (dictonaryField == null) return;
+            object dictonaryValue = dictonaryField.GetValue(imageResourceCache);
+
+            if (!(dictonaryValue is Dictionary<string, System.IO.Stream> dictionary)) return;
+            if (!dictionary.TryGetValue(resourceName, out System.IO.Stream stream)) return;
+
+            var position = stream.Position;
+            if (stream.Position > 0L && stream.CanSeek)
+                stream.Seek(0L, System.IO.SeekOrigin.Begin);
+        }
+        protected DevExpress.Utils.Svg.SvgImage _GetSvgImage(string key)
+        {
+            if (String.IsNullOrEmpty(key)) return null;
+
+            if (!key.StartsWith(ImageUriPrefix, StringComparison.OrdinalIgnoreCase)) key = ImageUriPrefix + key;
+            var svgImageCollection = _SvgImageCollection;
+            if (!svgImageCollection.ContainsKey(key))
+                svgImageCollection.Add(key, key);
+
+            return svgImageCollection[key];
+        }
+        /// <summary>
+        /// Prefix pro ImageUri: "image://"
+        /// </summary>
+        protected static string ImageUriPrefix { get { return "image://"; } }
+        /// <summary>
+        /// Cache systémových image resources
+        /// </summary>
+        protected DevExpress.Images.ImageResourceCache _ImageResourceCache
+        {
+            get
+            {
+                if (__ImageResourceCache == null)
+                    __ImageResourceCache = DevExpress.Images.ImageResourceCache.Default;
+                return __ImageResourceCache;
+            }
+        }
+        private DevExpress.Images.ImageResourceCache __ImageResourceCache;
+        protected DevExpress.Utils.SvgImageCollection _SvgImageCollection 
+        { 
+            get 
+            {
+                if (__SvgImageCollection == null)
+                    __SvgImageCollection = new SvgImageCollection();
+                return __SvgImageCollection;
+            }
+        }
+        private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
         #endregion
     }
     #endregion
@@ -848,6 +1091,24 @@ namespace TestDevExpress.Components
             RegexOptions regexOptions = (ignoreCase ? RegexOptions.Compiled | RegexOptions.IgnoreCase : RegexOptions.Compiled);
             Regex regex = new Regex(regexString, regexOptions);
             return regex;
+        }
+        /// <summary>
+        /// Pokud výraz obsahuje "Green" wildcards (% nebo _), pak je nahradí standardními (* a ?)
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public static string ReplaceGreenWildcards(string filter)
+        {
+            if (String.IsNullOrEmpty(filter)) return "";
+            bool containsGreen = (filter.Contains("%") || filter.Contains("_"));
+            bool containsStandard = (filter.Contains("*") || filter.Contains("?"));
+
+            if (containsGreen && !containsStandard)
+                filter = filter
+                    .Replace('%', '*')
+                    .Replace('_', '?');
+
+            return filter;
         }
         private static Regex HasQuestionMarkRegEx = new Regex(@"\?", RegexOptions.Compiled);
         private static Regex IllegalCharactersRegex = new Regex("[" + @"\/:<>|" + "\"]", RegexOptions.Compiled);
@@ -1481,6 +1742,312 @@ namespace TestDevExpress.Components
         /// <param name="text"></param>
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
+        #region Resize a SvgImage
+
+        #endregion
+    }
+    #endregion
+    #region DxImagePickerListBox
+    /// <summary>
+    /// ListBox nabízející DevExpress Resources
+    /// </summary>
+    public class DxImagePickerListBox : DxPanelControl
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxImagePickerListBox()
+        {
+            this.Initialize();
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        protected void Initialize()
+        {
+            _ClipboardCopyIndex = 0;
+
+            _FilterClearButton = DxComponent.CreateDxMiniButton(0, 0, 20, 20, this, _FilterClearButtonClick, resourceName: "svgimages/spreadsheet/clearfilter.svg",
+                toolTipTitle: "Zrušit filtr", toolTipText: "Zruší filtr, budou zobrazeny všechny dostupné zdroje.");
+            _FilterClearButton.MouseEnter += _AnyControlEnter;
+            _FilterClearButton.Enter += _AnyControlEnter;
+
+            _FilterText = DxComponent.CreateDxTextEdit(27, 0, 200, this,
+                toolTipTitle: "Filtr Resources", toolTipText: "Vepište část názvu zdroje.\r\nLze použít filtrační znaky * a ?.\r\nLze zadat víc filtrů, oddělených středníkem nebo čárkou.\r\n\r\nNapříklad: 'add' zobrazí všechny položky obsahující 'add',\r\n'*close*.svg' zobrazí něco obsahující 'close' s příponou '.svg',\r\n'*close*.svg;*delete*' zobrazí prvky close nebo delete");
+            _FilterText.MouseEnter += _AnyControlEnter;
+            _FilterText.Enter += _AnyControlEnter;
+            _FilterText.KeyUp += _FilterText_KeyUp;
+
+            _ListCopyButton = DxComponent.CreateDxMiniButton(230, 0, 20, 20, this, _ListCopyButtonClick, resourceName: "devav/actions/copy.svg",
+                toolTipTitle: "Zkopírovat", toolTipText: "Označené řádky v seznamu zdrojů vloží do schránky, jako Ctrl+C.");
+            _ListCopyButton.MouseEnter += _AnyControlEnter;
+            _ListCopyButton.Enter += _AnyControlEnter;
+
+            _ListBox = DxComponent.CreateDxListBox(DockStyle.None, parent: this, selectionMode: SelectionMode.MultiExtended, itemHeight: 32,
+                toolTipTitle: "Seznam Resources", toolTipText: "Označte jeden nebo více řádků, klávesou Ctrl+C zkopírujete názvy Resources jako kód C#.");
+            _ListBox.MouseEnter += _AnyControlEnter;
+            _ListBox.Enter += _AnyControlEnter;
+            _ListBox.KeyUp += _ListBox_KeyUp;
+            _ListBox.PaintList += _ListBox_PaintList;
+            _ListBox.SelectedIndexChanged += _ListBox_SelectedIndexChanged;
+
+            _ResourceNames = DxComponent.GetResourceKeys();
+            _ResourceFilter = "";
+            _StatusText = "";
+
+            _FillListByFilter();
+        }
+        /// <summary>
+        /// Po vstupu do jakéhokoli controlu nastavím výchozí status text
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _AnyControlEnter(object sender, EventArgs e)
+        {
+            _ResetStatusText();
+        }
+        /// <summary>
+        /// Po změně velikosti provedu rozmístění prvků
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this.DoLayout();
+        }
+        /// <summary>
+        /// Správně rozmístí prvky
+        /// </summary>
+        protected void DoLayout()
+        {
+            var size = this.ClientSize;
+            int mx = 3;
+            int my = 3;
+            int x = mx;
+            int y = my;
+            int sx = 2;
+            int sy = 2;
+            int r = size.Width - mx;
+            int w = size.Width - mx - mx;
+            int h = size.Height - my - my;
+            int txs = _FilterText.Height;
+            int bts = txs + sx;
+            
+            _FilterClearButton.Bounds = new Rectangle(x, y, txs, txs);
+            _FilterText.Bounds = new Rectangle(x + bts, y, w - bts - bts, txs);
+            _ListCopyButton.Bounds = new Rectangle(r - txs, y, txs, txs);
+
+            y = _FilterText.Bounds.Bottom + sy;
+            _ListBox.Bounds = new Rectangle(x, y, w, h - y);
+        }
+        /// <summary>
+        /// Clear filter
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _FilterClearButtonClick(object sender, EventArgs e) 
+        {
+            _ResourceFilter = "";
+            _FillListByFilter();
+            _FilterText.Focus();
+        }
+        /// <summary>
+        /// FilterText: Po klávese ve filtru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _FilterText_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Down || e.KeyCode == Keys.Enter)
+                _ListBox.Focus();
+            else if (e.KeyCode == Keys.Home || e.KeyCode == Keys.End || e.KeyCode == Keys.Up /* || e.KeyCode == Keys.Down */ || e.KeyCode == Keys.Left || e.KeyCode == Keys.Right || e.KeyCode == Keys.PageUp || e.KeyCode == Keys.PageDown || e.KeyCode == Keys.Tab || e.KeyCode == Keys.Escape)
+            { }
+            else if (e.Modifiers == Keys.Control)
+            { }
+            else
+                _FillListByFilter();
+        }
+        /// <summary>
+        /// Copy selected items
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListCopyButtonClick(object sender, EventArgs e) 
+        {
+            _FilterText.Focus();
+            _DoCopyClipboard();
+        }
+        /// <summary>
+        /// ListBox: Obsluha kláves: detekce Ctrl+C
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData == (Keys.Control | Keys.C)) _DoCopyClipboard();
+        }
+        /// <summary>
+        /// Po změně řádku v ListBoxu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var selectedItems = _ListBox.SelectedItemsInfo;
+            StatusText = "Označeny řádky: " + selectedItems.Length.ToString();
+        }
+        /// <summary>
+        /// Vykreslí obrázky do ListBoxu do viditelných prvků
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_PaintList(object sender, PaintEventArgs e)
+        {
+            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = Components.DxComponent.GetSvgPalette();
+            var visibleItems = _ListBox.VisibleItems;
+            foreach (var visibleItem in visibleItems)
+            {
+                string resourceName = visibleItem.Item2 as string;
+                Rectangle itemBounds = visibleItem.Item3;
+                var image = Components.DxComponent.GetImageFromResource(resourceName, out Size size, maxSize: new Size(32, 32), optimalSvgSize: new Size(32, 32), svgPalette: svgPalette);
+                if (image != null)
+                {
+                    Point imagePoint = new Point((itemBounds.Right - 24 - size.Width / 2), itemBounds.Top + ((itemBounds.Height - size.Height) / 2));
+                    Rectangle imageBounds = new Rectangle(imagePoint, size);
+                    e.Graphics.DrawImage(image, imageBounds);
+                }
+            }
+        }
+        DxSimpleButton _FilterClearButton;
+        DxTextEdit _FilterText;
+        DxSimpleButton _ListCopyButton;
+        DxListBoxControl _ListBox;
+        #region Seznam resources - získání, filtrování, tvorba Image, CopyToClipboard
+        /// <summary>
+        /// Do seznamu ListBox vloží zdroje odpovídající aktuálnímu filtru
+        /// </summary>
+        private void _FillListByFilter()
+        {
+            string[] resources = _GetResourcesByFilter();
+            _FilteredItemsCount = resources.Length;
+
+            _ListBox.SuspendLayout();
+            _ListBox.Items.Clear();
+            _ListBox.Items.AddRange(resources);
+            _ListBox.ResumeLayout(false);
+            _ListBox.PerformLayout();
+
+            _ResetStatusText();
+        }
+        /// <summary>
+        /// Vrátí pole zdrojů vyhovujících aktuálnímu filtru
+        /// </summary>
+        /// <returns></returns>
+        private string[] _GetResourcesByFilter()
+        {
+            if (_ResourceNames == null || _ResourceNames.Length == 0) return new string[0];
+
+            var filter = _ResourceFilter;
+            if (String.IsNullOrEmpty(filter)) return _ResourceNames;
+
+            filter = Components.RegexSupport.ReplaceGreenWildcards(filter);
+
+            string[] result = _GetResourcesByFilter(filter);
+            if (result.Length == 0)
+                result = _GetResourcesByFilter("*" + filter + "*");
+
+            return result;
+        }
+        private string[] _GetResourcesByFilter(string filter)
+        {
+            var regexes = Components.RegexSupport.CreateWildcardsRegexes(filter);
+            var result = Components.RegexSupport.FilterByRegexes(_ResourceNames, regexes);
+            return result.ToArray();
+        }
+        /// <summary>
+        /// Vloží do Clipboardu kód obsahující aktuálně vybrané texty
+        /// </summary>
+        private void _DoCopyClipboard()
+        {
+            var selectedItems = _ListBox.SelectedItemsInfo;
+            int rowCount = selectedItems.Length;
+            if (rowCount > 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var selectedItem in selectedItems)
+                {
+                    _ClipboardCopyIndex++;
+                    string resourceName = selectedItem.Item2 as string;
+                    sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
+                }
+                if (sb.Length > 0)
+                {
+                    Clipboard.Clear();
+                    Clipboard.SetText(sb.ToString());
+                }
+
+                StatusText = "Položky zkopírovány do schránky: " + rowCount.ToString();
+            }
+            else
+            {
+                StatusText = $"Nejsou označeny žádné položky.";
+            }
+        }
+        /// <summary>
+        /// Filtrační text z textboxu
+        /// </summary>
+        private string _ResourceFilter { get { return this._FilterText.Text.Trim(); } set { this._FilterText.Text = (value ?? ""); } }
+        /// <summary>
+        /// Jména všech zdrojů
+        /// </summary>
+        private string[] _ResourceNames;
+        /// <summary>
+        /// Číslo pro číslování proměnných do Clipboardu
+        /// </summary>
+        private int _ClipboardCopyIndex;
+        /// <summary>
+        /// Počet aktuálně filtrovaných položek
+        /// </summary>
+        private int _FilteredItemsCount;
+        #endregion
+        #region Podpora pro StatusBar
+        /// <summary>
+        /// Text vhodný pro zobrazení ve statusbaru. Setování nové hodnoty vyvolá event <see cref="StatusTextChanged"/>
+        /// </summary>
+        public string StatusText
+        {
+            get { return _StatusText; }
+            protected set
+            {
+                bool isChanged = !String.Equals(value, _StatusText);
+                _StatusText = value;
+                if (isChanged)
+                    StatusTextChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        private string _StatusText;
+        private void _ResetStatusText()
+        {
+            int allItemsCount = _ResourceNames.Length;
+            int filteredItemsCount = _FilteredItemsCount;
+            bool hasFilter = !String.IsNullOrEmpty(_ResourceFilter);
+            string filter = (hasFilter ? "'" + _ResourceFilter + "'" : "");
+            if (allItemsCount == 0)
+                StatusText = $"Neexistují žádné položky";
+            else if (!hasFilter)
+                StatusText = $"Zobrazeny všechny položky: {allItemsCount}";
+            else if (filteredItemsCount == 0)
+                StatusText = $"Zadanému filtru {filter} nevyhovuje žádná položka";
+            else if (filteredItemsCount == allItemsCount)
+                StatusText = $"Zadanému filtru {filter} vyhovují všechny položky: {filteredItemsCount}";
+            else
+                StatusText = $"Zadanému filtru {filter} vyhovují zobrazené položky: {filteredItemsCount}";
+        }
+        /// <summary>
+        /// Událost vyvolaná po změně textu v <see cref="StatusText"/>
+        /// </summary>
+        public event EventHandler StatusTextChanged;
         #endregion
     }
     #endregion

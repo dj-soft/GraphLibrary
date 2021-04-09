@@ -17,10 +17,11 @@ namespace TestDevExpress
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Application.Run(new TestDevExpress.Forms.MainForm());
+            // Application.Run(new TestDevExpress.Forms.MainForm());
+            Application.Run(new TestDevExpress.Forms.ImagePickerForm());
 
             // Application.Run(new TestDevExpress.Forms.GraphForm());
-            
+
             // Application.Run(new TestDevExpress.Forms.MdiParentForm());
 
         }

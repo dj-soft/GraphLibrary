@@ -1756,11 +1756,32 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _OpenLayoutFormButton.Click += _OpenLayoutFormButton_Click;
             _EditorsPanel.Controls.Add(_OpenLayoutFormButton);
 
+            _OpenImagePickerFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(620, 37, 190, 50), Text = "Resource List" };
+            _OpenImagePickerFormButton.Click += _OpenImagePickerFormButton_Click;
+            _EditorsPanel.Controls.Add(_OpenImagePickerFormButton);
 
-            _DxImagePicker = new DxImagePicker() { Bounds = new Rectangle(20, 100, 640, 480) };
-            _EditorsPanel.Controls.Add(_DxImagePicker);
+
+            // _DxImagePicker = new DxImagePickerListBox() { Bounds = new Rectangle(20, 100, 640, 480) };
+            // _EditorsPanel.Controls.Add(_DxImagePicker);
+
+            _EditorsPanel.SizeChanged += _EditorsPanel_SizeChanged;
+            EditorPanelDoLayout();
         }
+        /// <summary>
+        /// Po změně velikosti <see cref="_EditorsPanel"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _EditorsPanel_SizeChanged(object sender, EventArgs e)
+        {
+            EditorPanelDoLayout();
+        }
+        protected void EditorPanelDoLayout()
+        {
+            var size = _EditorsPanel.ClientSize;
 
+            if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
+        }
         private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
         {
             LayoutForm form = new LayoutForm(true);
@@ -1769,7 +1790,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
             form.Show();
         }
-
+        private void _OpenImagePickerFormButton_Click(object sender, EventArgs e)
+        {
+            using (ImagePickerForm form = new ImagePickerForm())
+            {
+                form.ShowDialog(this);
+            }
+        }
         private void _TokenAddButtonGreen_Click(object sender, EventArgs e)
         {
             _TokenInfoLabel.Text = "probíhá příprava dat...";
@@ -1863,7 +1890,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.TokenEdit _TokenEdit;
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
         private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
-        private DxImagePicker _DxImagePicker;
+        private DevExpress.XtraEditors.SimpleButton _OpenImagePickerFormButton;
+        private DxImagePickerListBox _DxImagePicker;
         #endregion
         #region TreeView
         protected void InitTreeView()
