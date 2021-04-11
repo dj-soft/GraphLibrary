@@ -196,7 +196,7 @@ namespace TestDevExpress.Components
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
         #endregion
-        #region Factory metody
+        #region Factory metody pro jednořádkovou tvorbu běžných komponent
         public static DxPanelControl CreateDxPanel(Control parent = null,
             DockStyle? dock = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
             int? width = null, int? height = null,
@@ -517,9 +517,10 @@ namespace TestDevExpress.Components
             return simpleButton;
         }
         public static DxSimpleButton CreateDxMiniButton(int x, int y, int w, int h, Control parent, EventHandler click = null,
-                   Image image = null, string resourceName = null,
-                   string toolTipTitle = null, string toolTipText = null,
-                   bool? visible = null, bool? enabled = null, bool? tabStop = null)
+            Image image = null, string resourceName = null,
+            Image hotImage = null, string hotResourceName = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null)
         {
             var inst = Instance;
 
@@ -531,9 +532,8 @@ namespace TestDevExpress.Components
             miniButton.TabStop = tabStop ?? false;
             miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
 
-            DxComponent.ApplyImage(miniButton.ImageOptions, image, resourceName, new Size(w - 4, h - 4));
-            miniButton.ImageOptions.ImageToTextIndent = 0;
-            miniButton.ImageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.BottomCenter;
+            DxComponent.ApplyImage(miniButton.ImageOptions, image, resourceName, new Size(w - 4, h - 4), true);
+
             miniButton.Padding = new Padding(0);
             miniButton.Margin = new Padding(0);
 
@@ -544,8 +544,6 @@ namespace TestDevExpress.Components
 
             return miniButton;
         }
-
-
         /// <summary>
         /// Vytvoří a vrátí standardní ToolTipController
         /// </summary>
@@ -714,6 +712,37 @@ namespace TestDevExpress.Components
                     }
                 }
                 catch { }
+            }
+        }
+        public static void ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
+        protected void _ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
+        {
+            if (image != null)
+            {
+                imageOptions.Image = image;
+            }
+            else if (!String.IsNullOrEmpty(resourceName))
+            {
+                try
+                {
+                    if (_IsImageNameSvg(resourceName))
+                    {
+                        _ImageResourceRewindStream(resourceName);
+                        imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
+                        if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
+                    }
+                    else
+                    {
+                        imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
+                    }
+                }
+                catch { }
+            }
+            if (smallButton)
+            {
+                imageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
+//                imageOptions.ImageToTextIndent = 0;
+  //              imageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.BottomCenter;
             }
         }
         /// <summary>
@@ -934,42 +963,32 @@ namespace TestDevExpress.Components
     {
         /// <summary>
         /// Metoda vrátí true, pokud hodnota value vyhovuje vzorci pattern.
-        /// Pro opakované používání stejného patternu je vhodnější získat <see cref="Regex"/> metodou <see cref="CreateWildcardsRegex(string)"/>,
+        /// Pro opakované používání stejného patternu je vhodnější získat <see cref="Regex"/> metodou <see cref="CreateWildcardsRegex(string, bool, bool)"/>,
         /// a ten pak používat pro testování různých hodnot opakovaně.
         /// </summary>
         /// <param name="value">Hodnota, například "Abcdef ghij"</param>
         /// <param name="pattern">Vzorec, například "Abc??f *"</param>
+        /// <param name="matchCase">Kontrolovat shodu velikosti písmen, default = false: "abc" == "ABc"</param>
+        /// <param name="checkIllegalFileCharacters">Vyhodit chybu, pokud pattern obsahuje zakázané znaky pro jména souborů, default = false: nekontrolovat</param>
         /// <returns></returns>
-        public static bool IsMatchWildcards(string value, string pattern)
+        public static bool IsMatchWildcards(string value, string pattern, bool matchCase = false, bool checkIllegalFileCharacters = false)
         {
-            return IsMatchWildcards(value, pattern, true);
-        }
-        /// <summary>
-        /// Metoda vrátí true, pokud hodnota value vyhovuje vzorci pattern.
-        /// Pro opakované používání stejného patternu je vhodnější získat <see cref="Regex"/> metodou <see cref="CreateWildcardsRegex(string, bool)"/>,
-        /// a ten pak používat pro testování různých hodnot opakovaně.
-        /// </summary>
-        /// <param name="value">Hodnota, například "Abcdef ghij"</param>
-        /// <param name="pattern">Vzorec, například "Abc??f *"</param>
-        /// <param name="ignoreCase">true = ignoruje velikost znaků, false = neignoruje</param>
-        /// <returns></returns>
-        public static bool IsMatchWildcards(string value, string pattern, bool ignoreCase)
-        {
-            if (!IsWildcardsValid(pattern)) return false;
-            Regex regex = CreateWildcardsRegex(pattern, ignoreCase);
+            if (!IsWildcardsValid(pattern, checkIllegalFileCharacters)) return false;
+            Regex regex = CreateWildcardsRegex(pattern, matchCase, checkIllegalFileCharacters);
             return regex.IsMatch(value);
         }
         /// <summary>
-        /// Metoda vrátí true, pokud daný pattern je formálně správný a může být použit v metodě <see cref="CreateWildcardsRegex(string)"/>.
+        /// Metoda vrátí true, pokud daný pattern je formálně správný a může být použit v metodě <see cref="CreateWildcardsRegex(string, bool, bool)"/>.
         /// </summary>
         /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <param name="checkIllegalFileCharacters">Vyhodit chybu, pokud pattern obsahuje zakázané znaky pro jména souborů, default = false: nekontrolovat</param>
         /// <returns></returns>
-        public static bool IsWildcardsValid(string pattern)
+        public static bool IsWildcardsValid(string pattern, bool checkIllegalFileCharacters = false)
         {
             if (pattern == null) return false;
             pattern = pattern.Trim();
             if (pattern.Length == 0) return false;
-            if (IllegalCharactersRegex.IsMatch(pattern)) return false;
+            if (checkIllegalFileCharacters && IllegalCharactersRegex.IsMatch(pattern)) return false;
             return true;
         }
         /// <summary>
@@ -978,13 +997,20 @@ namespace TestDevExpress.Components
         /// Pokud je na vstupu Empty, vrací prázdné pole.
         /// Typický vstup: "*.tmp; *.js; *thumb*.*; *.htm*;" atd
         /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
-        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// Volitelně lze požádat (<paramref name="matchCase"/>), aby <see cref="Regex"/> měl vypnutou/zapnutou option <see cref="RegexOptions.IgnoreCase"/>: 
+        /// false = ignoruje velikost znaků, true = neignoruje, porovnává exaktně
         /// </summary>
-        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <param name="patterns">Patterny s užitím standardních Wildcards * a ?, oddělené středníkem (nebo čárkami)</param>
+        /// <param name="matchCase">Kontrolovat shodu velikosti písmen, default = false: "abc" == "ABc"</param>
+        /// <param name="checkIllegalFileCharacters">Vyhodit chybu, pokud pattern obsahuje zakázané znaky pro jména souborů, default = false: nekontrolovat</param>
         /// <returns></returns>
-        public static Regex[] CreateWildcardsRegexes(string patterns)
+        public static Regex[] CreateWildcardsRegexes(string patterns, bool matchCase = false, bool checkIllegalFileCharacters = false)
         {
-            return CreateWildcardsRegexes(patterns, true);
+            string[] masks = patterns.Trim().Split(';');         // Prioritní oddělovač je středník
+            if (masks.Length == 1 && patterns.Contains(','))     // Pokud není přítomen středník, ale je přítomna čárka...
+                masks = patterns.Trim().Split(',');              //  ... pak i čárka může hrát roli oddělovače
+
+            return CreateWildcardsRegexes(masks, matchCase, checkIllegalFileCharacters);
         }
         /// <summary>
         /// Metoda vrátí pole <see cref="Regex"/>, které dovolují porovnávat konkrétní texty se standardní Wildcards notací.
@@ -992,21 +1018,23 @@ namespace TestDevExpress.Components
         /// Pokud je na vstupu Empty, vrací prázdné pole.
         /// Typický vstup: "*.tmp; *.js; *thumb*.*; *.htm*;" atd
         /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
-        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// Volitelně lze požádat (<paramref name="matchCase"/>), aby <see cref="Regex"/> měl vypnutou/zapnutou option <see cref="RegexOptions.IgnoreCase"/>: 
+        /// false = ignoruje velikost znaků, true = neignoruje, porovnává exaktně
         /// </summary>
-        /// <param name="pattern">Patterny s užitím standardních Wildcards * a ?</param>
+        /// <param name="patterns">Patterny s užitím standardních Wildcards * a ?, zde již rozdělené do pole jednotlivých patternů</param>
+        /// <param name="matchCase">Kontrolovat shodu velikosti písmen, default = false: "abc" == "ABc"</param>
+        /// <param name="checkIllegalFileCharacters">Vyhodit chybu, pokud pattern obsahuje zakázané znaky pro jména souborů</param>
         /// <returns></returns>
-        public static Regex[] CreateWildcardsRegexes(string patterns, bool ignoreCase)
+        public static Regex[] CreateWildcardsRegexes(string[] patterns, bool matchCase = false, bool checkIllegalFileCharacters = false)
         {
             List<Regex> regexes = new List<Regex>();
-            if (!String.IsNullOrEmpty(patterns))
+            if (patterns != null && patterns.Length > 0)
             {
-                string[] masks = patterns.Trim().Split(';');
-                foreach (string mask in masks)
+                foreach (string pattern in patterns)
                 {
-                    if (!String.IsNullOrEmpty(mask))
+                    if (!String.IsNullOrEmpty(pattern))
                     {
-                        Regex regex = CreateWildcardsRegex(mask.Trim(), true);
+                        Regex regex = CreateWildcardsRegex(pattern.Trim(), matchCase, checkIllegalFileCharacters);
                         if (regex != null)
                             regexes.Add(regex);
                     }
@@ -1018,7 +1046,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Vrátí dodanou kolekci textů filtrovanou podle dané kolekce regulárních výrazů.
         /// Kolekce <paramref name="data"/> typicky obsahuje seznam souborů nebo názvů;
-        /// kolekce <paramref name="regexes"/> obsahuje výstup zdejší metody <see cref="CreateWildcardsRegexes(string)"/>;
+        /// kolekce <paramref name="regexes"/> obsahuje výstup zdejší metody <see cref="CreateWildcardsRegexes(string, bool, bool)"/>;
         /// výstup zdejší metody pak obsahuje jen vyhovující soubory.
         /// <para/>
         /// Pokud <paramref name="data"/> je null, výstupem je null.
@@ -1036,7 +1064,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Vrátí true, pokud daný text vyhovuje některé masce
         /// </summary>
-        /// <param name="name"></param>
+        /// <param name="text"></param>
         /// <param name="regexes"></param>
         /// <returns></returns>
         public static bool IsTextMatchToAny(string text, IEnumerable<Regex> regexes)
@@ -1048,30 +1076,21 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Metoda vrátí <see cref="Regex"/>, který dovoluje porovnávat texty se standardní Wildcards notací.
         /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
-        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// Volitelně lze požádat (<paramref name="matchCase"/>), aby <see cref="Regex"/> měl vypnutou/zapnutou option <see cref="RegexOptions.IgnoreCase"/>: 
+        /// false = ignoruje velikost znaků, true = neignoruje, porovnává exaktně
         /// </summary>
         /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <param name="matchCase">Kontrolovat shodu velikosti písmen, default = false: "abc" == "ABc"</param>
+        /// <param name="checkIllegalFileCharacters">Vyhodit chybu, pokud pattern obsahuje zakázané znaky pro jména souborů</param>
         /// <returns></returns>
-        public static Regex CreateWildcardsRegex(string pattern)
-        {
-            return CreateWildcardsRegex(pattern, true);
-        }
-        /// <summary>
-        /// Metoda vrátí <see cref="Regex"/>, který dovoluje porovnávat texty se standardní Wildcards notací.
-        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
-        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
-        /// </summary>
-        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
-        /// <param name="ignoreCase">true = ignoruje velikost znaků, false = neignoruje</param>
-        /// <returns></returns>
-        public static Regex CreateWildcardsRegex(string pattern, bool ignoreCase)
+        public static Regex CreateWildcardsRegex(string pattern, bool matchCase = false, bool checkIllegalFileCharacters = false)
         {
             if (pattern == null) throw new ArgumentNullException();
 
             pattern = pattern.Trim();
             if (pattern.Length == 0) throw new ArgumentException("Pattern is empty.");
 
-            if (IllegalCharactersRegex.IsMatch(pattern)) throw new ArgumentException("Pattern contains illegal characters.");
+            if (checkIllegalFileCharacters && IllegalCharactersRegex.IsMatch(pattern)) throw new ArgumentException("Pattern contains illegal characters.");
 
             bool hasExtension = CatchExtentionRegex.IsMatch(pattern);
             bool matchExact = false;
@@ -1088,12 +1107,12 @@ namespace TestDevExpress.Components
                 regexString += NonDotCharacters;
             }
             regexString += "$";
-            RegexOptions regexOptions = (ignoreCase ? RegexOptions.Compiled | RegexOptions.IgnoreCase : RegexOptions.Compiled);
+            RegexOptions regexOptions = (matchCase ? RegexOptions.Compiled : RegexOptions.Compiled | RegexOptions.IgnoreCase);
             Regex regex = new Regex(regexString, regexOptions);
             return regex;
         }
         /// <summary>
-        /// Pokud výraz obsahuje "Green" wildcards (% nebo _), pak je nahradí standardními (* a ?)
+        /// Pokud výraz obsahuje tzv. "Green" wildcards (% nebo _) a přitom neobsahuje standardní wildcards (* a ?), pak je nahradí standardními (* a ?)
         /// </summary>
         /// <param name="filter"></param>
         /// <returns></returns>
@@ -1142,6 +1161,17 @@ namespace TestDevExpress.Components
     /// </summary>
     public class DxPanelControl : DevExpress.XtraEditors.PanelControl
     {
+        #region Konstruktor a základní vlastnosti
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxPanelControl()
+        {
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.Margin = new Padding(0);
+            this.Padding = new Padding(0);
+        }
+        #endregion
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -1768,7 +1798,8 @@ namespace TestDevExpress.Components
         {
             _ClipboardCopyIndex = 0;
 
-            _FilterClearButton = DxComponent.CreateDxMiniButton(0, 0, 20, 20, this, _FilterClearButtonClick, resourceName: "svgimages/spreadsheet/clearfilter.svg",
+            _FilterClearButton = DxComponent.CreateDxMiniButton(0, 0, 20, 20, this, _FilterClearButtonClick, 
+                resourceName: "svgimages/spreadsheet/clearfilter.svg",
                 toolTipTitle: "Zrušit filtr", toolTipText: "Zruší filtr, budou zobrazeny všechny dostupné zdroje.");
             _FilterClearButton.MouseEnter += _AnyControlEnter;
             _FilterClearButton.Enter += _AnyControlEnter;
@@ -1779,7 +1810,8 @@ namespace TestDevExpress.Components
             _FilterText.Enter += _AnyControlEnter;
             _FilterText.KeyUp += _FilterText_KeyUp;
 
-            _ListCopyButton = DxComponent.CreateDxMiniButton(230, 0, 20, 20, this, _ListCopyButtonClick, resourceName: "devav/actions/copy.svg",
+            _ListCopyButton = DxComponent.CreateDxMiniButton(230, 0, 20, 20, this, _ListCopyButtonClick, 
+                resourceName: "svgimages/xaf/action_copy.svg", hotResourceName: "svgimages/xaf/action_modeldifferences_copy.svg",
                 toolTipTitle: "Zkopírovat", toolTipText: "Označené řádky v seznamu zdrojů vloží do schránky, jako Ctrl+C.");
             _ListCopyButton.MouseEnter += _AnyControlEnter;
             _ListCopyButton.Enter += _AnyControlEnter;
@@ -1959,10 +1991,15 @@ namespace TestDevExpress.Components
 
             return result;
         }
+        /// <summary>
+        /// Vrátí pole zdrojů vyhovujících danému filtru
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         private string[] _GetResourcesByFilter(string filter)
         {
-            var regexes = Components.RegexSupport.CreateWildcardsRegexes(filter);
-            var result = Components.RegexSupport.FilterByRegexes(_ResourceNames, regexes);
+            var regexes = RegexSupport.CreateWildcardsRegexes(filter);
+            var result = RegexSupport.FilterByRegexes(_ResourceNames, regexes);
             return result.ToArray();
         }
         /// <summary>

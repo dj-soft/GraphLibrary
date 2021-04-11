@@ -793,7 +793,6 @@ namespace TestDevExpress.Components
             {   // Pokud má být viditelný:
                 if (_TitleBar == null)
                     _TitleBarInit();
-                _TitleBarLayout();
                 _TitleBar.Visible = true;
             }
             else
@@ -804,46 +803,23 @@ namespace TestDevExpress.Components
         }
         private void _TitleBarInit()
         {
-            _TitleBar = new DxPanelControl() { Height = 35, Dock = DockStyle.Top };
-            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, _TitleBar, "", LabelStyleType.Title, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
-            _CloseButton = DxComponent.CreateDxSimpleButton(200, 6, 24, 24, _TitleBar, "", _ClickClose, tabStop: false);
-            _CloseButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
-
-            // var c = DevExpress.Utils.ImageCollectionUtils.GetImageResourceNames(typeof(DevExpress.Skins.SkinManager).Assembly);
-            string resourceName = "images/content/barcode_16x16.png";
-            resourceName = "images/actions/loadfrom_16x16.png";
-            var img = DevExpress.Images.ImageResourceCache.Default.GetImage(resourceName);
-
-            _CloseButton.ImageOptions.Image = img;
-
+            _TitleBar = new DxLayoutTitlePanel();
 
             _TitleBarRefresh();
             _FillControls();
+            _TitleBar.DoLayout();
         }
         private void _TitleBarRefresh()
         {
-            if (_TitleBar == null || _TitleLabel == null) return;
-            _TitleLabel.Text = _TitleText ?? "";
-            _CloseButton.Visible = _CloseButtonVisible;
+            if (_TitleBar == null || !_TitleBarVisible) return;
+         //   _TitleBar.Title = _TitleText ?? "";
+         //   _CloseButton.Visible = _CloseButtonVisible;
         }
-        private void _TitleBarLayout()
-        {
-            if (_TitleBar == null || _TitleLabel == null || !_TitleBarVisible) return;
-            int width = this.ClientSize.Width;
-            _TitleLabel.Width = (width - _TitleLabel.Left - 35);
-            _TitleBar.Height = _TitleLabel.Bottom + 6;
-            _CloseButton.Bounds = new Rectangle(width - 35, 6, 24, 24);
-        }
-        private DxPanelControl _TitleBar;
-        private DxLabelControl _TitleLabel;
-        private DxSimpleButton _CloseButton;
+      
+        private DxLayoutTitlePanel _TitleBar;
+       
         #endregion
         #region Vnitřní události
-        protected override void OnClientSizeChanged(EventArgs e)
-        {
-            base.OnClientSizeChanged(e);
-            _TitleBarLayout();
-        }
         private void _ClickClose(object sender, EventArgs args)
         { }
         #endregion
@@ -890,6 +866,70 @@ namespace TestDevExpress.Components
             this.PerformLayout();
         }
         #endregion
+    }
+    public class DxLayoutTitlePanel : DxPanelControl
+    {
+        public DxLayoutTitlePanel()
+        {
+            this.Initialize();
+        }
+        private void Initialize()
+        {
+            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.Title, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+
+            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignverticalleft.svg", visible: false);
+            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignhorizontaltop.svg", visible: false);
+            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignhorizontalbottom.svg", visible: false);
+            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignverticalright.svg", visible: false);
+
+            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: "images/xaf/templatesv2images/action_delete.svg");
+
+
+            _DockLeftButton.Visible = true;
+            _DockTopButton.Visible = true;
+            _DockTopButton.Enabled = false;
+            _DockBottomButton.Visible = true;
+            _DockRightButton.Visible = true;
+
+            this.Height = 35;
+            this.Dock = DockStyle.Top;
+
+            _TitleBarVisible = true;
+        }
+        private void _ClickClose(object sender, EventArgs args)
+        { }
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            DoLayout();
+        }
+        public void DoLayout()
+        {
+            if (_TitleLabel == null || !_TitleBarVisible) return;
+            int width = this.ClientSize.Width;
+            int height = _TitleLabel.Bottom + 6;
+            if (this.Height != height) this.Height = height;
+
+            _TitleLabel.Width = (width - _TitleLabel.Left - 35);
+            int y = (height - 24) / 2;
+            int dx = 27;
+            int x = width - (5 * dx) - 9;
+
+            _DockLeftButton.Location = new Point(x, y); x += dx;
+            _DockTopButton.Location = new Point(x, y); x += dx;
+            _DockBottomButton.Location = new Point(x, y); x += dx;
+            _DockRightButton.Location = new Point(x, y); x += dx + 6;
+            _CloseButton.Location = new Point(x, y); x += dx;
+        }
+        private DxLabelControl _TitleLabel;
+        private DxSimpleButton _DockLeftButton;
+        private DxSimpleButton _DockTopButton;
+        private DxSimpleButton _DockBottomButton;
+        private DxSimpleButton _DockRightButton;
+        private DxSimpleButton _CloseButton;
+
+
+        private bool _TitleBarVisible;
     }
     #region Třídy pro eventy, enumy pro zadávání a pro eventy
     /// <summary>
