@@ -51,6 +51,10 @@ namespace TestDevExpress.Components
         /// </summary>
         public Control[] AllControls { get { return _GetAllControls(); } }
         /// <summary>
+        /// Aktuální počet controlů
+        /// </summary>
+        public int ControlCount { get { return _Controls.Count; } }
+        /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// </summary>
         public event EventHandler<TEventArgs<Control>> UserControlRemoved;
@@ -177,10 +181,11 @@ namespace TestDevExpress.Components
         /// <param name="dockPosition"></param>
         private void _AddControlTo(Control userControl, Control parent, LayoutPosition dockPosition)
         {
-            DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this.UseSvgIcons);
+            DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this, this.UseSvgIcons);
             hostControl.UserControl = userControl;
             hostControl.TitleBarVisible = true;
             hostControl.TitleText = "";
+            hostControl.IsPrimaryPanel = (ControlCount == 0);
             hostControl.DockButtonVisibility = ControlVisibility.OnMouse;
             hostControl.CloseButtonVisibility = ControlVisibility.Allways;
             hostControl.DockButtonClick += ItemPanel_DockButtonClick;
@@ -751,15 +756,15 @@ namespace TestDevExpress.Components
             /// <param name="userControl"></param>
             public ControlParentInfo(Control parent, DxLayoutItemPanel hostControl, Control userControl)
             {
-                _Parent = new WeakReference<Control>(parent);
-                _HostControl = new WeakReference<DxLayoutItemPanel>(hostControl);
-                _UserControl = new WeakReference<Control>(userControl);
+                __Parent = parent;
+                __HostControl = hostControl;
+                __UserControl = userControl;
 
                 RefreshLayoutFromHost(true);
             }
-            private WeakReference<Control> _Parent;
-            private WeakReference<DxLayoutItemPanel> _HostControl;
-            private WeakReference<Control> _UserControl;
+            private WeakTarget<Control> __Parent;
+            private WeakTarget<DxLayoutItemPanel> __HostControl;
+            private WeakTarget<Control> __UserControl;
             /// <summary>
             /// Vizualizace
             /// </summary>
@@ -812,15 +817,15 @@ namespace TestDevExpress.Components
             /// <summary>
             /// Parent prvek
             /// </summary>
-            public Control Parent { get { return (_Parent.TryGetTarget(out var parent) ? parent : null); } set { _Parent = (value != null ? new WeakReference<Control>(value) : null); } }
+            public Control Parent { get { return __Parent; } set { __Parent = value; } }
             /// <summary>
             /// Hostitel pro control
             /// </summary>
-            public DxLayoutItemPanel HostControl { get { return (_HostControl.TryGetTarget(out var control) ? control : null); } }
+            public DxLayoutItemPanel HostControl { get { return __HostControl; } }
             /// <summary>
             /// Vlastní control
             /// </summary>
-            public Control UserControl { get { return (_UserControl.TryGetTarget(out var control) ? control : null); } }
+            public Control UserControl { get { return __UserControl; } }
             /// <summary>
             /// User control přetypovaný na interface <see cref="ILayoutUserControl"/>.
             /// Může být null.
@@ -1120,28 +1125,41 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutItemPanel()
         {
-            this.Initialize(true);
+            this.Initialize(null, true);
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="owner"></param>
         /// <param name="useSvgIcons"></param>
-        public DxLayoutItemPanel(bool useSvgIcons)
+        public DxLayoutItemPanel(DxLayoutPanel owner, bool useSvgIcons)
         {
-            this.Initialize(useSvgIcons);
+            this.Initialize(owner, useSvgIcons);
         }
         /// <summary>
         /// Inicializace
         /// </summary>
+        /// <param name="owner"></param>
         /// <param name="useSvgIcons"></param>
-        protected void Initialize(bool useSvgIcons)
+        protected void Initialize(DxLayoutPanel owner, bool useSvgIcons)
         {
+            this.__Owner = owner;
             this.Dock = DockStyle.Fill;
 
             this._DockButtonVisibility = ControlVisibility.OnMouse;
             this._DockButtonDisabledPosition = LayoutPosition.None;
             this._UseSvgIcons = useSvgIcons;
         }
+        /// <summary>
+        /// Vlastník = kompletní layout
+        /// </summary>
+        public DxLayoutPanel Owner { get { return __Owner; } }
+        private WeakTarget<DxLayoutPanel> __Owner;
+        /// <summary>
+        /// Obsahuje true pokud this panel je primární = první vytvořený.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        public bool IsPrimaryPanel { get; set; }
         #endregion
         #region Titulkový panel a jeho buttony, hodnoty a eventy
         /// <summary>
@@ -1228,7 +1246,7 @@ namespace TestDevExpress.Components
         /// </summary>
         private void _TitleBarInit()
         {
-            _TitleBar = new DxLayoutTitlePanel(this.UseSvgIcons);
+            _TitleBar = new DxLayoutTitlePanel(this, this.UseSvgIcons);
             _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
             _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
@@ -1326,22 +1344,25 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutTitlePanel()
         {
-            this.Initialize(true);
+            this.Initialize(null, true);
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="owner"></param>
         /// <param name="useSvgIcons"></param>
-        public DxLayoutTitlePanel(bool useSvgIcons)
+        public DxLayoutTitlePanel(DxLayoutItemPanel owner, bool useSvgIcons)
         {
-            this.Initialize(useSvgIcons);
+            this.Initialize(owner, useSvgIcons);
         }
         /// <summary>
         /// Inicializace
         /// </summary>
+        /// <param name="owner"></param>
         /// <param name="useSvgIcons"></param>
-        private void Initialize(bool useSvgIcons)
+        private void Initialize(DxLayoutItemPanel owner, bool useSvgIcons)
         {
+            __Owner = owner;
             _UseSvgIcons = useSvgIcons;
 
             string[] icons = _GetIcons(useSvgIcons);
@@ -1364,7 +1385,16 @@ namespace TestDevExpress.Components
             MouseActivityInit();
         }
         /// <summary>
-        /// Vrátí pole ikon pro daný typ
+        /// Vlastník titulku = <see cref="DxLayoutItemPanel"/> jednoho UserControlu.
+        /// </summary>
+        public DxLayoutItemPanel Owner { get { return __Owner; } }
+        private WeakTarget<DxLayoutItemPanel> __Owner;
+        /// <summary>
+        /// Celý layout panel = všechny controly
+        /// </summary>
+        public DxLayoutPanel LayoutPanel {  get { return this.Owner?.Owner; } }
+        /// <summary>
+        /// Vrátí pole ikon pro daný typ (SVG / PNG)
         /// </summary>
         /// <param name="useSvgIcons"></param>
         /// <returns></returns>
