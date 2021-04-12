@@ -27,9 +27,9 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutPanel()
         {
-            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.SplitterContextMenuEnabled = false;
             this._Controls = new List<ControlParentInfo>();
+            this._UseSvgIcons = true;
         }
         /// <summary>
         /// Metoda najde a vrátí instanci <see cref="DxLayoutPanel"/>, do které patří daný control
@@ -71,6 +71,11 @@ namespace TestDevExpress.Components
         /// Default = false.
         /// </summary>
         public bool SplitterContextMenuEnabled { get; set; }
+        /// <summary>
+        /// Používat SVG ikony (true) / PNG ikony (false): default = true
+        /// </summary>
+        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; _RefreshControls(); } }
+        private bool _UseSvgIcons;
         #endregion
         #region Přidání, odebrání a evidence UserControlů
         /// <summary>
@@ -172,7 +177,7 @@ namespace TestDevExpress.Components
         /// <param name="dockPosition"></param>
         private void _AddControlTo(Control userControl, Control parent, LayoutPosition dockPosition)
         {
-            DxLayoutItemPanel hostControl = new DxLayoutItemPanel();
+            DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this.UseSvgIcons);
             hostControl.UserControl = userControl;
             hostControl.TitleBarVisible = true;
             hostControl.TitleText = "";
@@ -439,6 +444,23 @@ namespace TestDevExpress.Components
         {
             int index = _SearchIndexOfAnyControl(control);
             return (index >= 0 ? _Controls[index] : null);
+        }
+        /// <summary>
+        /// Refreshuje vlastnosti aktuálně přítomných controlů
+        /// </summary>
+        private void _RefreshControls()
+        {
+            foreach (ControlParentInfo controlParent in _Controls)
+                _RefreshControl(controlParent.HostControl);
+        }
+        /// <summary>
+        /// Refreshuje vlastnosti daného controlu
+        /// </summary>
+        /// <param name="hostControl"></param>
+        private void _RefreshControl(DxLayoutItemPanel hostControl)
+        {
+            if (hostControl == null) return;
+            hostControl.UseSvgIcons = this.UseSvgIcons;
         }
         /// <summary>
         /// Pole User controlů, v páru s jejich posledně známým parentem
@@ -1098,10 +1120,27 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutItemPanel()
         {
+            this.Initialize(true);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="useSvgIcons"></param>
+        public DxLayoutItemPanel(bool useSvgIcons)
+        {
+            this.Initialize(useSvgIcons);
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        /// <param name="useSvgIcons"></param>
+        protected void Initialize(bool useSvgIcons)
+        {
             this.Dock = DockStyle.Fill;
 
             this._DockButtonVisibility = ControlVisibility.OnMouse;
             this._DockButtonDisabledPosition = LayoutPosition.None;
+            this._UseSvgIcons = useSvgIcons;
         }
         #endregion
         #region Titulkový panel a jeho buttony, hodnoty a eventy
@@ -1153,6 +1192,11 @@ namespace TestDevExpress.Components
         public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_TitleBarRefresh); } }
         private ControlVisibility _CloseButtonVisibility;
         /// <summary>
+        /// Používat SVG ikony (true) / PNG ikony (false): default = true
+        /// </summary>
+        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; this.RunInGui(_TitleBarRefresh); } }
+        private bool _UseSvgIcons;
+        /// <summary>
         /// Uživatel kliknul na button Dock (strana je v argumentu)
         /// </summary>
         public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
@@ -1184,7 +1228,7 @@ namespace TestDevExpress.Components
         /// </summary>
         private void _TitleBarInit()
         {
-            _TitleBar = new DxLayoutTitlePanel();
+            _TitleBar = new DxLayoutTitlePanel(this.UseSvgIcons);
             _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
             _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
@@ -1221,6 +1265,7 @@ namespace TestDevExpress.Components
             _TitleBar.DockButtonVisibility = (isAnyDockPosition ? this.DockButtonVisibility : ControlVisibility.None);
             _TitleBar.DockButtonDisabledPosition = this.DockButtonDisabledPosition;
             _TitleBar.CloseButtonVisibility = this.CloseButtonVisibility;
+            _TitleBar.UseSvgIcons = this.UseSvgIcons;
         }
         private DxLayoutTitlePanel _TitleBar;
         #endregion
@@ -1281,16 +1326,32 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutTitlePanel()
         {
-            this.Initialize();
+            this.Initialize(true);
         }
-        private void Initialize()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="useSvgIcons"></param>
+        public DxLayoutTitlePanel(bool useSvgIcons)
         {
-            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignverticalleft.svg", visible: false, tag: LayoutPosition.Left);
-            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignhorizontaltop.svg", visible: false, tag: LayoutPosition.Top);
-            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignhorizontalbottom.svg", visible: false, tag: LayoutPosition.Bottom);
-            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignverticalright.svg", visible: false, tag: LayoutPosition.Right);
+            this.Initialize(useSvgIcons);
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        /// <param name="useSvgIcons"></param>
+        private void Initialize(bool useSvgIcons)
+        {
+            _UseSvgIcons = useSvgIcons;
 
-            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: "images/xaf/templatesv2images/action_delete.svg", visible: false);
+            string[] icons = _GetIcons(useSvgIcons);
+
+            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[0], visible: false, tag: LayoutPosition.Left);
+            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[1], visible: false, tag: LayoutPosition.Top);
+            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[2], visible: false, tag: LayoutPosition.Bottom);
+            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[3], visible: false, tag: LayoutPosition.Right);
+
+            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: icons[4], visible: false);
 
             _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
 
@@ -1301,6 +1362,32 @@ namespace TestDevExpress.Components
             _CloseButtonVisibility = ControlVisibility.None;
 
             MouseActivityInit();
+        }
+        /// <summary>
+        /// Vrátí pole ikon pro daný typ
+        /// </summary>
+        /// <param name="useSvgIcons"></param>
+        /// <returns></returns>
+        private static string[] _GetIcons(bool useSvgIcons)
+        {
+            if (useSvgIcons)
+                return new string[]
+                {
+                    "svgimages/align/alignverticalleft.svg",
+                    "svgimages/align/alignhorizontaltop.svg",
+                    "svgimages/align/alignhorizontalbottom.svg",
+                    "svgimages/align/alignverticalright.svg",
+                    "images/xaf/templatesv2images/action_delete.svg"
+                };
+            else
+                return new string[]
+                {
+                    "images/alignment/alignverticalleft_16x16.png",
+                    "images/alignment/alignhorizontaltop_16x16.png",
+                    "images/alignment/alignhorizontalbottom_16x16.png",
+                    "images/alignment/alignverticalright_16x16.png",
+                    "devav/actions/delete_16x16.png"
+                };
         }
         /// <summary>
         /// Po kliknutí na tlačítko Dock...
@@ -1341,18 +1428,25 @@ namespace TestDevExpress.Components
             if (_TitleLabel == null) return;
             int width = this.ClientSize.Width;
             int height = _TitleLabel.Bottom + 6;
-            if (this.Height != height) this.Height = height;
+            if (height < 28) height = 28;
+            if (this.Height != height)
+            {
+                this.Height = height;
+                // Nastavení jiné výšky než je aktuální (=v minulém řádku) vyvolá rekurzivně this metodu, v té už nepůjdeme touto větví, ale nastavíme souřadnice buttonů (za else).
+            }
+            else
+            {
+                _TitleLabel.Width = (width - _TitleLabel.Left - 35);
+                int y = (height - 24) / 2;
+                int dx = 27;
+                int x = width - (5 * dx) - 9;
 
-            _TitleLabel.Width = (width - _TitleLabel.Left - 35);
-            int y = (height - 24) / 2;
-            int dx = 27;
-            int x = width - (5 * dx) - 9;
-
-            _DockLeftButton.Location = new Point(x, y); x += dx;
-            _DockTopButton.Location = new Point(x, y); x += dx;
-            _DockBottomButton.Location = new Point(x, y); x += dx;
-            _DockRightButton.Location = new Point(x, y); x += dx + 6;
-            _CloseButton.Location = new Point(x, y); x += dx;
+                _DockLeftButton.Location = new Point(x, y); x += dx;
+                _DockTopButton.Location = new Point(x, y); x += dx;
+                _DockBottomButton.Location = new Point(x, y); x += dx;
+                _DockRightButton.Location = new Point(x, y); x += dx + 6;
+                _CloseButton.Location = new Point(x, y); x += dx;
+            }
         }
         private DxLabelControl _TitleLabel;
         private DxSimpleButton _DockLeftButton;
@@ -1360,7 +1454,6 @@ namespace TestDevExpress.Components
         private DxSimpleButton _DockBottomButton;
         private DxSimpleButton _DockRightButton;
         private DxSimpleButton _CloseButton;
-
         #endregion
         #region Pohyb myši a viditelnost buttonů
         /// <summary>
@@ -1456,6 +1549,39 @@ namespace TestDevExpress.Components
         /// Obsahuje true, pokud je myš nad controlem (nad kterýmkoli prvkem), false když je myš mimo
         /// </summary>
         private bool _IsMouseOnControl;
+        #endregion
+        #region Druh ikonek
+        /// <summary>
+        /// Používat SVG ikony (true) / PNG ikony (false): default = true
+        /// </summary>
+        public bool UseSvgIcons 
+        { 
+            get { return _UseSvgIcons; } 
+            set 
+            {
+                bool isChange = (_UseSvgIcons != value);
+                if (isChange)
+                {
+                    _UseSvgIcons = value;
+                    this.RunInGui(_RefreshIcons);
+                }
+            } 
+        }
+        private bool _UseSvgIcons;
+        /// <summary>
+        /// Aplikuje ikony druhu <see cref="UseSvgIcons"/>
+        /// </summary>
+        private void _RefreshIcons()
+        {
+            string[] icons = _GetIcons(_UseSvgIcons);
+            Size size = new Size(20, 20);
+
+            DxComponent.ApplyImage(_DockLeftButton.ImageOptions, null, icons[0], size, true);
+            DxComponent.ApplyImage(_DockTopButton.ImageOptions, null, icons[1], size, true);
+            DxComponent.ApplyImage(_DockBottomButton.ImageOptions, null, icons[2], size, true);
+            DxComponent.ApplyImage(_DockRightButton.ImageOptions, null, icons[3], size, true);
+            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[4], size, true);
+        }
         #endregion
         #region Public property a eventy
         /// <summary>
