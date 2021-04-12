@@ -28,6 +28,7 @@ namespace TestDevExpress.Components
         public DxLayoutPanel()
         {
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.SplitterContextMenuEnabled = false;
             this._Controls = new List<ControlParentInfo>();
         }
         /// <summary>
@@ -65,6 +66,11 @@ namespace TestDevExpress.Components
         /// Vyvolá se po změně orientace splitteru.
         /// </summary>
         public event EventHandler<DxLayoutPanelSplitterChangedArgs> SplitterOrientationChanged;
+        /// <summary>
+        /// Povolení pro zobrazování kontextového menu na Splitteru (pro změnu orientace Horizontální - Vertikální).
+        /// Default = false.
+        /// </summary>
+        public bool SplitterContextMenuEnabled { get; set; }
         #endregion
         #region Přidání, odebrání a evidence UserControlů
         /// <summary>
@@ -121,8 +127,7 @@ namespace TestDevExpress.Components
             int count = _Controls.Count;
             if (count == 0)
             {   // Zatím nemáme nic: nový control vložím přímo do this jako jediný (nebude se zatím používat SplitterContainer, není proč):
-                // this._RemoveRootContainer();
-                _AddControlTo(userControl, this);
+                _AddControlTo(userControl, this, LayoutPosition.None);
             }
             else
             {   // Už něco máme, přidáme nový control poblíž posledního evidovaného prvku:
@@ -148,32 +153,37 @@ namespace TestDevExpress.Components
             // 3. Do toho parenta vložíme místo controlu nový SplitterContainer a určíme panely pro stávající control a pro nový prvek (Panel1 a Panel2, podle parametru):
             DevExpress.XtraEditors.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel);
             parent.Controls.Add(newSplitContainer);
-            newSplitContainer.SplitterPosition = GetSplitterPosition(parent.ClientSize, parameters);         // Až po vložení do Parenta
+            newSplitContainer.SplitterPosition = _GetSplitterPosition(parent.ClientSize, parameters);         // Až po vložení do Parenta
             newSplitContainer.SplitterMoved += _SplitterMoved;                                               // Až po nastavení pozice
 
             // 4. Stávající prvek vložíme jako Child do jeho nově určeného panelu, a vepíšeme to i do evidence:
             currentControlPanel.Controls.Add(nearHost);
             nearInfo.Parent = currentControlPanel;
+            nearInfo.DockButtonDisabledPosition = parameters.PairPosition;
 
             // 5. Nový UserControl vložíme do jeho panelu a vytvoříme pár a přidáme jej do evidence:
-            _AddControlTo(userControl, newControlPanel);
+            _AddControlTo(userControl, newControlPanel, parameters.Position);
         }
         /// <summary>
         /// Přidá daný control do daného parenta jako jeho Child, dá Dock = Fill, a přidá informaci do evidence v <see cref="_Controls"/>.
         /// </summary>
         /// <param name="userControl"></param>
         /// <param name="parent"></param>
-        private void _AddControlTo(Control userControl, Control parent)
+        /// <param name="dockPosition"></param>
+        private void _AddControlTo(Control userControl, Control parent, LayoutPosition dockPosition)
         {
             DxLayoutItemPanel hostControl = new DxLayoutItemPanel();
             hostControl.UserControl = userControl;
             hostControl.TitleBarVisible = true;
-            hostControl.TitleText = "Titulek";
-            hostControl.DockButtonsEnabled = true;
-            hostControl.CloseButtonVisible = true;
+            hostControl.TitleText = "";
+            hostControl.DockButtonVisibility = ControlVisibility.OnMouse;
+            hostControl.CloseButtonVisibility = ControlVisibility.Allways;
+            hostControl.DockButtonClick += ItemPanel_DockButtonClick;
+            hostControl.CloseButtonClick += ItemPanel_CloseButtonClick;
 
             parent.Controls.Add(hostControl);
             ControlParentInfo pair = new ControlParentInfo(parent, hostControl, userControl);
+            pair.DockButtonDisabledPosition = dockPosition;
             _Controls.Add(pair);
         }
         /// <summary>
@@ -214,13 +224,15 @@ namespace TestDevExpress.Components
                             _RemoveControlFromParent(splitContainer, splitParent);
 
                             // Do parenta od dosavadního SplitContaineru vložíme ten párový control (ale nikam to nepíšeme, protože UserControly a jejich parenti se nemění):
+                            // Nemění se ani pozice (DockPosition) controlů.
                             splitParent.Controls.Add(pairContainer);
                         }
                     }
                     else
                     {   // Takže jsme odebrali prvek UserControl (pomocí jeho Host) z jednoho panelu, a na párovém panelu máme jiný prvek UserControl.
                         // Nechceme mít prázdný panel, a ani nechceme prázdný panel schovávat, chceme mít čistý layout = viditelné všechny panely a na nich vždy jeden control!
-                        // Najdeme tedy párový control, odebereme SplitContaner, a na jeho místo vložíme ten párový Control:
+                        // Najdeme a podržíme si tedy onen párový control; pak odebereme SplitContaner, a na jeho místo vložíme ten párový Control:
+                        // Vyřešíme i jeho DockPosition...
                         var pairInfo = _Controls[pairIndex];
                         var pairControl = pairInfo.UserControl;                // Po dobu výměny si podržíme reference v proměnných, protože v pairInfo jsou jen WeakReference!
                         var pairHost = pairInfo.HostControl;
@@ -236,6 +248,7 @@ namespace TestDevExpress.Components
                         // Tento Parent je buď nějaký Panel1 nebo Panel2 od jiného SplitContaineru, anebo to může být this:
                         splitParent.Controls.Add(pairHost);
                         pairInfo.Parent = splitParent;
+                        pairInfo.DockButtonDisabledPosition = pairInfo.CurrentDockPosition;
                     }
                 }
 
@@ -251,7 +264,7 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="control"></param>
         /// <param name="parent"></param>
-        private void _RemoveControlFromParent(Control control, Control parent)
+        private static void _RemoveControlFromParent(Control control, Control parent)
         {
             if (control != null && parent != null)
             {
@@ -313,7 +326,7 @@ namespace TestDevExpress.Components
         /// <param name="parentSize"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        private int GetSplitterPosition(Size parentSize, AddControlParams parameters)
+        private int _GetSplitterPosition(Size parentSize, AddControlParams parameters)
         {
             // Celková velikost v pixelech podle orientace:
             int size = (parameters.IsHorizontal ? parentSize.Width : parentSize.Height);
@@ -386,15 +399,79 @@ namespace TestDevExpress.Components
         /// <returns></returns>
         private int _GetIndexOfUserControl(Control userControl)
         {
-            if (userControl == null || _Controls.Count == 0) return - 1;
+            if (userControl == null || _Controls.Count == 0) return -1;
             return _Controls.FindIndex(c => c.ContainsUserControl(userControl));
+        }
+        /// <summary>
+        /// Vrátí <see cref="ControlParentInfo"/> obsahující daný User controlu v poli zdejších controlů.
+        /// </summary>
+        /// <param name="userControl"></param>
+        /// <returns></returns>
+        private ControlParentInfo _GetControlParentForUserControl(Control userControl)
+        {
+            int index = _GetIndexOfUserControl(userControl);
+            return (index >= 0 ? _Controls[index] : null);
+        }
+        /// <summary>
+        /// Najde index prvku, který obsahuje daný control na kterékoli pozici (<see cref="ControlParentInfo.UserControl"/>, <see cref="ControlParentInfo.HostControl"/>, <see cref="ControlParentInfo.Parent"/>).
+        /// Hledá i v rámci Parentů dodaného prvku.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        private int _SearchIndexOfAnyControl(Control control)
+        {
+            int index = -1;
+            for (int t = 0; t < 50; t++)
+            {   // t = timeout
+                index = _Controls.FindIndex(c => c.ContainsAnyControl(control));
+                if (index >= 0 || control.Parent == null) break;
+                control = control.Parent;
+            }
+            return index;
+        }
+        /// <summary>
+        /// Najde prvek <see cref="ControlParentInfo"/> , který obsahuje daný control na kterékoli pozici (<see cref="ControlParentInfo.UserControl"/>, <see cref="ControlParentInfo.HostControl"/>, <see cref="ControlParentInfo.Parent"/>).
+        /// Hledá i v rámci Parentů dodaného prvku.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        private ControlParentInfo _SearchControlParentOfAnyControl(Control control)
+        {
+            int index = _SearchIndexOfAnyControl(control);
+            return (index >= 0 ? _Controls[index] : null);
         }
         /// <summary>
         /// Pole User controlů, v páru s jejich posledně známým parentem
         /// </summary>
         private List<ControlParentInfo> _Controls;
         #endregion
-        #region Interaktivita vnitřní
+        #region Obsluha titulkových tlačítek na prvku DxLayoutItemPanel
+        /// <summary>
+        /// Po kliknutí na DockButton v titulku: změní pozici odpovídajícího prvku layoutu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ItemPanel_DockButtonClick(object sender, DxLayoutTitleDockPositionArgs e)
+        {
+            int index = _SearchIndexOfAnyControl(sender as Control);
+            if (index < 0) return;
+
+            var controlParent = _Controls[index];
+            var dockPosition = e.DockPosition;
+            _SetDockPosition(controlParent, dockPosition);
+        }
+        /// <summary>
+        /// Po kliknutí na CloseButton v titulku: odebere odpovídající prvek layoutu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ItemPanel_CloseButtonClick(object sender, EventArgs e)
+        {
+            int index = _SearchIndexOfAnyControl(sender as Control);
+            _RemoveUserControl(index);
+        }
+        #endregion
+        #region Interaktivita vnitřní - reakce na odebrání controlu, na pohyb splitteru, na změnu orientace splitteru, na změnu dokování 
         /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// Zavolá event <see cref="UserControlRemoved"/>.
@@ -440,6 +517,8 @@ namespace TestDevExpress.Components
         {
             SplitterOrientationChanged?.Invoke(this, args);
         }
+        #endregion
+        #region Kontextové menu pro změnu orientace splitteru
         /// <summary>
         /// MouseDown: odchytí pravou myš a zobrazí řídící menu
         /// </summary>
@@ -447,7 +526,7 @@ namespace TestDevExpress.Components
         /// <param name="e"></param>
         private void _SplitContainerMouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Right && sender is DevExpress.XtraEditors.SplitContainerControl splitContainer)
+            if (e.Button == MouseButtons.Right && sender is DevExpress.XtraEditors.SplitContainerControl splitContainer && SplitterContextMenuEnabled)
             {
                 var splitterBounds = splitContainer.SplitterBounds;
                 var mousePoint = e.Location;
@@ -536,27 +615,67 @@ namespace TestDevExpress.Components
             {
                 case _ContextMenuHorizontalName:
                     if (hasPair)
-                        _SetOrientation(pair, true);
+                        _SetOrientation(pair, true, false);
                     break;
                 case _ContextMenuVerticalName:
                     if (hasPair)
-                        _SetOrientation(pair, false);
+                        _SetOrientation(pair, false, false);
                     break;
             }
         }
         /// <summary>
-        /// Provede změnu orientace splitteru, včetně vyvolání eventu
+        /// Pro daný prvek (<paramref name="controlParent"/>) nastaví jeho pozici dokování.
+        /// </summary>
+        /// <param name="controlParent"></param>
+        /// <param name="dockPosition"></param>
+        private void _SetDockPosition(ControlParentInfo controlParent, LayoutPosition dockPosition)
+        {
+            if (controlParent == null) return;
+            DevExpress.XtraEditors.SplitContainerControl splitContainer = controlParent.HostControl?.SearchForParentOfType<DevExpress.XtraEditors.SplitContainerControl>();
+            if (splitContainer == null) return;
+
+            // Není možné jen změnit příznak dokování, musíme změnit orientaci parent SplitContaineru a/nebo prohodit obsah panelů Panel1 <=> Panel2!
+            bool horizontal = (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Right);
+            LayoutPosition currentDockPosition = controlParent.CurrentDockPosition;
+            bool currentIsPanel1 = (currentDockPosition == LayoutPosition.Left || currentDockPosition == LayoutPosition.Top);
+            bool targetIsPanel1 = (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Top);
+            bool swap = (currentIsPanel1 != targetIsPanel1);
+
+            UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
+            _SetOrientation(pair, horizontal, swap);
+        }
+        /// <summary>
+        /// Provede změnu orientace splitteru, prohození controlů, včetně vyvolání eventu
         /// </summary>
         /// <param name="pair"></param>
-        /// <param name="horizontal"></param>
-        private void _SetOrientation(UserControlPair pair, bool horizontal)
+        /// <param name="horizontal">Nastavit orientaci Horizontal</param>
+        /// <param name="swap">Prohodit navzájem obsah Panel1 - Panel2</param>
+        private void _SetOrientation(UserControlPair pair, bool horizontal, bool swap)
         {
-            if (pair == null || pair.SplitContainer.Horizontal == horizontal) return;
+            if (pair == null || (pair.SplitContainer.Horizontal == horizontal && !swap)) return;
+            _FillControlParentsToPair(pair);
 
-            pair.SplitContainer.Horizontal = horizontal;
+            bool isChanged = false;
+            using (this.ScopeSuspendParentLayout())
+                isChanged = pair.SetOrientation(horizontal, swap);
 
-            DxLayoutPanelSplitterChangedArgs args = pair.CreateSplitterChangedArgs();
-            OnSplitterOrientationChanged(args);
+            if (isChanged)
+            {
+                DxLayoutPanelSplitterChangedArgs args = pair.CreateSplitterChangedArgs();
+                OnSplitterOrientationChanged(args);
+            }
+        }
+        /// <summary>
+        /// Do daného páru doplní <see cref="UserControlPair.ControlParent1"/> pro <see cref="UserControlPair.Control1"/> a totéž pro Control2.
+        /// </summary>
+        /// <param name="pair"></param>
+        private void _FillControlParentsToPair(UserControlPair pair)
+        {
+            if (pair != null)
+            {
+                pair.ControlParent1 = _SearchControlParentOfAnyControl(pair.Control1);
+                pair.ControlParent2 = _SearchControlParentOfAnyControl(pair.Control2);
+            }
         }
         /// <summary>
         /// BarManager, OnDemand
@@ -600,13 +719,21 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Třída obsahující WeakReference na 
         /// </summary>
-        private class ControlParentInfo
+        protected class ControlParentInfo
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="parent"></param>
+            /// <param name="hostControl"></param>
+            /// <param name="userControl"></param>
             public ControlParentInfo(Control parent, DxLayoutItemPanel hostControl, Control userControl)
             {
                 _Parent = new WeakReference<Control>(parent);
                 _HostControl = new WeakReference<DxLayoutItemPanel>(hostControl);
                 _UserControl = new WeakReference<Control>(userControl);
+
+                RefreshLayoutFromHost(true);
             }
             private WeakReference<Control> _Parent;
             private WeakReference<DxLayoutItemPanel> _HostControl;
@@ -640,6 +767,27 @@ namespace TestDevExpress.Components
                 return (testControl != null && myControl != null && Object.ReferenceEquals(myControl, testControl));
             }
             /// <summary>
+            /// Metoda vrátí true, pokud this objekt obsahuje daný control v kterékoli pozici (<see cref="UserControl"/>, <see cref="HostControl"/>, <see cref="Parent"/>).
+            /// </summary>
+            /// <param name="testControl"></param>
+            /// <returns></returns>
+            public bool ContainsAnyControl(Control testControl)
+            {
+                if (testControl == null) return false;
+                Control anyControl;
+
+                anyControl = this.UserControl;
+                if (anyControl != null && Object.ReferenceEquals(anyControl, testControl)) return true;
+
+                anyControl = this.HostControl;
+                if (anyControl != null && Object.ReferenceEquals(anyControl, testControl)) return true;
+
+                anyControl = this.Parent;
+                if (anyControl != null && Object.ReferenceEquals(anyControl, testControl)) return true;
+
+                return false;
+            }
+            /// <summary>
             /// Parent prvek
             /// </summary>
             public Control Parent { get { return (_Parent.TryGetTarget(out var parent) ? parent : null); } set { _Parent = (value != null ? new WeakReference<Control>(value) : null); } }
@@ -651,6 +799,88 @@ namespace TestDevExpress.Components
             /// Vlastní control
             /// </summary>
             public Control UserControl { get { return (_UserControl.TryGetTarget(out var control) ? control : null); } }
+            /// <summary>
+            /// User control přetypovaný na interface <see cref="ILayoutUserControl"/>.
+            /// Může být null.
+            /// </summary>
+            public ILayoutUserControl ILayoutUserControl { get { return (UserControl as ILayoutUserControl); } }
+            /// <summary>
+            /// Aktuální reálná dokovaná pozice, odvozená od hostitelského containeru
+            /// </summary>
+            public LayoutPosition CurrentDockPosition
+            {
+                get
+                {
+                    DxLayoutItemPanel hostControl = HostControl;
+                    if (hostControl == null) return LayoutPosition.None;
+
+                    bool isHorizontal = false;
+                    int panelId = 0;
+
+
+                    DevExpress.XtraEditors.SplitGroupPanel dxPanel = hostControl.SearchForParentOfType<DevExpress.XtraEditors.SplitGroupPanel>();
+                    if (dxPanel != null && dxPanel.Parent is DevExpress.XtraEditors.SplitContainerControl dxSplitContainer)
+                    {   // DevExpress SplitPanel:
+                        isHorizontal = dxSplitContainer.Horizontal;
+                        panelId = (Object.ReferenceEquals(dxPanel, dxSplitContainer.Panel1) ? 1 :
+                                  (Object.ReferenceEquals(dxPanel, dxSplitContainer.Panel2) ? 2 : 0));
+                    }
+                    else
+                    {   // WinForm SplitPanel?
+                        SplitterPanel wfPanel = hostControl.SearchForParentOfType<SplitterPanel>();
+                        if (wfPanel != null && wfPanel.Parent is SplitContainer wfSplitContainer)
+                        {
+                            isHorizontal = (wfSplitContainer.Orientation == Orientation.Horizontal);
+                            panelId = (Object.ReferenceEquals(wfPanel, wfSplitContainer.Panel1) ? 1 :
+                                      (Object.ReferenceEquals(wfPanel, wfSplitContainer.Panel2) ? 2 : 0));
+                        }
+                    }
+
+                    switch (panelId)
+                    {
+                        case 1: return (isHorizontal ? LayoutPosition.Left : LayoutPosition.Top);            // Panel1 je (horizontálně) vlevo / (vertikálně) nahoře
+                        case 2: return (isHorizontal ? LayoutPosition.Right : LayoutPosition.Bottom);        // Panel1 je (horizontálně) vpravo / (vertikálně) dole
+                    }
+
+                    return LayoutPosition.None;
+                }
+            }
+            /// <summary>
+            /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
+            /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné (bez ohledu na <see cref="DxLayoutItemPanel.DockButtonVisibility"/>.
+            /// </summary>
+            public LayoutPosition DockButtonDisabledPosition 
+            { 
+                get { var hostControl = HostControl; return hostControl?.DockButtonDisabledPosition ?? LayoutPosition.None; } 
+                set { var hostControl = HostControl; if (hostControl != null) hostControl.DockButtonDisabledPosition = value; }
+            }
+            /// <summary>
+            /// Provede načtení dat z <see cref="UserControl"/>, pokud tento je typu <see cref="ILayoutUserControl"/>.
+            /// </summary>
+            public void RefreshLayoutFromHost(bool registerEvents = false)
+            {
+                var iLayoutUserControl = this.ILayoutUserControl;
+                if (iLayoutUserControl == null) return;
+
+                if (registerEvents)
+                {
+                    iLayoutUserControl.TitleTextChanged += ILayoutUserControl_TitleTextChanged;
+                }
+
+                var hostControl = this.HostControl;
+                if (hostControl == null) return;
+
+                hostControl.TitleText = iLayoutUserControl.TitleText;
+            }
+            /// <summary>
+            /// Po změně textu v UserControlu
+            /// </summary>
+            /// <param name="sender"></param>
+            /// <param name="e"></param>
+            private void ILayoutUserControl_TitleTextChanged(object sender, EventArgs e)
+            {
+                RefreshLayoutFromHost();
+            }
         }
         /// <summary>
         /// Parametry pro přidání controlu
@@ -673,7 +903,7 @@ namespace TestDevExpress.Components
             /// </summary>
             public static AddControlParams Default { get { return new AddControlParams(); } }
             /// <summary>
-            /// POzice, na kterou bude umístěn nový control
+            /// Pozice, na kterou bude umístěn nový control
             /// </summary>
             public LayoutPosition Position { get; set; }
             public bool IsSplitterFixed { get; set; }
@@ -708,6 +938,23 @@ namespace TestDevExpress.Components
             /// Obsahuje true pokud pozice nového panelu odpovídá Panel2 (Right nebo Bottom)
             /// </summary>
             public bool NewPanelIsPanel2 { get { return (this.Position == LayoutPosition.Right || this.Position == LayoutPosition.Bottom); } }
+            /// <summary>
+            /// Pozice párového panelu = párová strana k <see cref="Position"/>
+            /// </summary>
+            public LayoutPosition PairPosition
+            {
+                get
+                {
+                    switch (this.Position)
+                    {
+                        case LayoutPosition.Left: return LayoutPosition.Right;
+                        case LayoutPosition.Top: return LayoutPosition.Bottom;
+                        case LayoutPosition.Right: return LayoutPosition.Left;
+                        case LayoutPosition.Bottom: return LayoutPosition.Top;
+                    }
+                    return LayoutPosition.None;
+                }
+            }
         }
         /// <summary>
         /// Třída obsahující controly 1 a 2 a orientaci splitteru
@@ -734,6 +981,14 @@ namespace TestDevExpress.Components
             /// </summary>
             public DevExpress.XtraEditors.SplitContainerControl SplitContainer { get; private set; }
             /// <summary>
+            /// Plná data k Controlu 1. Doplňuje se ručně.
+            /// </summary>
+            public ControlParentInfo ControlParent1 { get; set; }
+            /// <summary>
+            /// Plná data k Controlu 2. Doplňuje se ručně.
+            /// </summary>
+            public ControlParentInfo ControlParent2 { get; set; }
+            /// <summary>
             /// První control v Panel1
             /// </summary>
             public Control Control1 { get; private set; }
@@ -754,34 +1009,157 @@ namespace TestDevExpress.Components
                 DxLayoutPanelSplitterChangedArgs args = new DxLayoutPanelSplitterChangedArgs(Control1, Control2, SplitterOrientation, SplitContainer.SplitterPosition);
                 return args;
             }
+            /// <summary>
+            /// Provede změnu orientace splitteru, prohození controlů. Neřeší eventy. Vrací true = došlo ke změně.
+            /// </summary>
+            /// <param name="horizontal">Nastavit orientaci Horizontal</param>
+            /// <param name="swap">Prohodit navzájem obsah Panel1 - Panel2</param>
+            public bool SetOrientation(bool horizontal, bool swap)
+            {
+                bool isChangeOrientation = false;
+                bool isChanged = false;
+
+                var control1 = this.Control1;
+                var parent1 = control1?.Parent;
+                var controlParent1 = this.ControlParent1;
+                var layoutItemPanel1 = controlParent1?.HostControl;
+
+                var control2 = this.Control2;
+                var parent2 = control2?.Parent;
+                var controlParent2 = this.ControlParent2;
+                var layoutItemPanel2 = controlParent2?.HostControl;
+
+                if (this.SplitContainer.Horizontal != horizontal)
+                {
+                    this.SplitContainer.Horizontal = horizontal;
+                    isChangeOrientation = true;
+                    isChanged = true;
+                }
+
+                if (swap)
+                {
+                    if (parent1 != null && control1 != null)
+                    {
+                        _RemoveControlFromParent(control1, parent1);
+                        if (controlParent1 != null)
+                            controlParent1.Parent = null;
+                    }
+                    if (parent2 != null && control2 != null)
+                    {
+                        _RemoveControlFromParent(control2, parent2);
+                        if (controlParent2 != null)
+                            controlParent2.Parent = null;
+                    }
+
+                    if (parent1 != null && control2 != null)
+                        parent1.Controls.Add(control2);
+                    if (controlParent2 != null)
+                        controlParent2.Parent = parent1;
+
+                    if (parent2 != null && control1 != null)
+                        parent2.Controls.Add(control1);
+                    if (controlParent1 != null)
+                        controlParent1.Parent = parent2;
+
+                    isChanged = true;
+                }
+
+                if (isChanged)
+                {
+                    if (controlParent1 != null) controlParent1.DockButtonDisabledPosition = controlParent1.CurrentDockPosition;
+                    if (controlParent2 != null) controlParent2.DockButtonDisabledPosition = controlParent2.CurrentDockPosition;
+                }
+
+                // Pokud jsem provedl prohození obsahu oanelů zleva doprava nebo shora dolů (tj. beze změny orientace splitteru), tak bych rád, aby stávající obsah měl dosavadní rozměr = 
+                //  upravím pozici splitteru tak, aby byla symetrická k pozici dosavadní:
+                if (swap && !isChangeOrientation )
+                {
+                    var clientSize = this.SplitContainer.ClientSize;
+                    int splitSize = (this.SplitContainer.Horizontal ? clientSize.Width : clientSize.Height);
+                    int splitPosition = splitSize - this.SplitContainer.SplitterPosition;
+                    this.SplitContainer.SplitterPosition = splitPosition;
+                }
+
+                return isChanged;
+            }
         }
         #endregion
     }
+    #region class DxLayoutItemPanel : panel hostující v sobě Title a UserControl
     /// <summary>
     /// Panel, který slouží jako hostitel pro jeden uživatelský control v rámci <see cref="DxLayoutPanel"/>.
     /// Obsahuje prostor pro titulek, zavírací křížek a OnMouse buttony pro předokování aktuálního prvku v rámci parent SplitContaineru.
     /// </summary>
     public class DxLayoutItemPanel : DxPanelControl
     {
+        #region Konstruktor, public property
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DxLayoutItemPanel()
         {
             this.Dock = DockStyle.Fill;
+
+            this._DockButtonVisibility = ControlVisibility.OnMouse;
+            this._DockButtonDisabledPosition = LayoutPosition.None;
         }
-        #region Titulkový panel a jeho buttony
+        #endregion
+        #region Titulkový panel a jeho buttony, hodnoty a eventy
         /// <summary>
         /// Titulkový panel je viditelný?
         /// </summary>
         public bool TitleBarVisible { get { return _TitleBarVisible; } set { this.RunInGui(() => _TitleBarSetVisible(value)); } }
         private bool _TitleBarVisible;
-        public string TitleText { get { return _TitleText; } set { _TitleText = value; this.RunInGui(() => _TitleBarRefresh()); } }
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public string TitleText { get { return _TitleText; } set { _TitleText = value; this.RunInGui(_TitleBarRefresh); } }
         private string _TitleText;
-        public bool CloseButtonVisible { get { return _CloseButtonVisible; } set { _CloseButtonVisible = value; this.RunInGui(() => _TitleBarRefresh()); } }
-        private bool _CloseButtonVisible;
-        public bool DockButtonsEnabled { get { return _DockButtonsEnabled; } set { _DockButtonsEnabled = value; this.RunInGui(() => _TitleBarRefresh()); } }
-        private bool _DockButtonsEnabled;
+        /// <summary>
+        /// Viditelnost buttonů Dock
+        /// </summary>
+        public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_TitleBarRefresh); } }
+        private ControlVisibility _DockButtonVisibility;
+        /// <summary>
+        /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
+        /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DockButtonVisibility"/>.
+        /// </summary>
+        public LayoutPosition DockButtonDisabledPosition 
+        { 
+            get { return _DockButtonDisabledPosition; } 
+            set 
+            {
+                LayoutPosition dockPosition = value;
+                bool isDock = (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Top || dockPosition == LayoutPosition.Bottom || dockPosition == LayoutPosition.Right);
+                _DockButtonDisabledPosition = (isDock ? dockPosition : LayoutPosition.None);
+                this.RunInGui(_TitleBarRefresh);
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="DockButtonDisabledPosition"/> obsahuje nějakou konkrétní hodnotu, nikoli None
+        /// </summary>
+        protected bool IsAnyDockPosition 
+        {
+            get 
+            {
+                LayoutPosition dockPosition = _DockButtonDisabledPosition;
+                return (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Top || dockPosition == LayoutPosition.Bottom || dockPosition == LayoutPosition.Right);
+            }
+        }
+        private LayoutPosition _DockButtonDisabledPosition;
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_TitleBarRefresh); } }
+        private ControlVisibility _CloseButtonVisibility;
+        /// <summary>
+        /// Uživatel kliknul na button Dock (strana je v argumentu)
+        /// </summary>
+        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
+        /// <summary>
+        /// Uživatel kliknul na button Close
+        /// </summary>
+        public event EventHandler CloseButtonClick;
         /// <summary>
         /// Zajistí správnou existenci a viditelnost titulkového baru podle jeho požadované viditelnosti, a jeho vložení do this Controls
         /// </summary>
@@ -801,27 +1179,50 @@ namespace TestDevExpress.Components
                     _TitleBar.VisibleInternal = !titleBarVisible;
             }
         }
+        /// <summary>
+        /// Inicializace TitleBaru
+        /// </summary>
         private void _TitleBarInit()
         {
             _TitleBar = new DxLayoutTitlePanel();
+            _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
+            _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
             _TitleBarRefresh();
             _FillControls();
             _TitleBar.DoLayout();
         }
+        /// <summary>
+        /// Po kliknutí na Dock button pře-vyvoláme náš event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TitleBar_DockButtonClick(object sender, DxLayoutTitleDockPositionArgs e)
+        {
+            this.DockButtonClick?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Po kliknutí na Close button pře-vyvoláme náš event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TitleBar_CloseButtonClick(object sender, EventArgs e)
+        {
+            this.CloseButtonClick?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Refresh hodnot do TitleBaru
+        /// </summary>
         private void _TitleBarRefresh()
         {
             if (_TitleBar == null || !_TitleBarVisible) return;
-         //   _TitleBar.Title = _TitleText ?? "";
-         //   _CloseButton.Visible = _CloseButtonVisible;
+            bool isAnyDockPosition = IsAnyDockPosition;
+            _TitleBar.TitleText = _TitleText;
+            _TitleBar.DockButtonVisibility = (isAnyDockPosition ? this.DockButtonVisibility : ControlVisibility.None);
+            _TitleBar.DockButtonDisabledPosition = this.DockButtonDisabledPosition;
+            _TitleBar.CloseButtonVisibility = this.CloseButtonVisibility;
         }
-      
         private DxLayoutTitlePanel _TitleBar;
-       
-        #endregion
-        #region Vnitřní události
-        private void _ClickClose(object sender, EventArgs args)
-        { }
         #endregion
         #region UserControl
         /// <summary>
@@ -867,45 +1268,77 @@ namespace TestDevExpress.Components
         }
         #endregion
     }
+    #endregion
+    #region class DxLayoutTitlePanel : titulkový řádek
+    /// <summary>
+    /// Titulkový řádek. Obsahuje titulek a několi buttonů.
+    /// </summary>
     public class DxLayoutTitlePanel : DxPanelControl
     {
+        #region Konstuktor, vnitřní život
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxLayoutTitlePanel()
         {
             this.Initialize();
         }
         private void Initialize()
         {
-            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.Title, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignverticalleft.svg", visible: false, tag: LayoutPosition.Left);
+            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignhorizontaltop.svg", visible: false, tag: LayoutPosition.Top);
+            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignhorizontalbottom.svg", visible: false, tag: LayoutPosition.Bottom);
+            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: "svgimages/align/alignverticalright.svg", visible: false, tag: LayoutPosition.Right);
 
-            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignverticalleft.svg", visible: false);
-            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignhorizontaltop.svg", visible: false);
-            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignhorizontalbottom.svg", visible: false);
-            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickClose, resourceName: "svgimages/align/alignverticalright.svg", visible: false);
+            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: "images/xaf/templatesv2images/action_delete.svg", visible: false);
 
-            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: "images/xaf/templatesv2images/action_delete.svg");
-
-
-            _DockLeftButton.Visible = true;
-            _DockTopButton.Visible = true;
-            _DockTopButton.Enabled = false;
-            _DockBottomButton.Visible = true;
-            _DockRightButton.Visible = true;
+            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
 
             this.Height = 35;
             this.Dock = DockStyle.Top;
 
-            _TitleBarVisible = true;
+            _DockButtonVisibility = ControlVisibility.None;
+            _CloseButtonVisibility = ControlVisibility.None;
+
+            MouseActivityInit();
         }
+        /// <summary>
+        /// Po kliknutí na tlačítko Dock...
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ClickDock(object sender, EventArgs args)
+        {
+            if (sender is Control control && control.Tag is LayoutPosition)
+            {
+                LayoutPosition dockPosition = (LayoutPosition)control.Tag;
+                DockButtonClick?.Invoke(this, new DxLayoutTitleDockPositionArgs(dockPosition));
+            }
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Close
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _ClickClose(object sender, EventArgs args)
-        { }
+        {
+            CloseButtonClick?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Po změně velikosti vyvolá <see cref="DoLayout()"/>
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
             DoLayout();
         }
+        /// <summary>
+        /// Zajistí rozmístění controlů
+        /// </summary>
         public void DoLayout()
         {
-            if (_TitleLabel == null || !_TitleBarVisible) return;
+            if (_TitleLabel == null) return;
             int width = this.ClientSize.Width;
             int height = _TitleLabel.Bottom + 6;
             if (this.Height != height) this.Height = height;
@@ -928,9 +1361,150 @@ namespace TestDevExpress.Components
         private DxSimpleButton _DockRightButton;
         private DxSimpleButton _CloseButton;
 
+        #endregion
+        #region Pohyb myši a viditelnost buttonů
+        /// <summary>
+        /// Inicializace eventů a proměnných pro myší aktivity
+        /// </summary>
+        private void MouseActivityInit()
+        {
+            RegisterMouseActivityEvents(this);
+            foreach (Control control in this.Controls)
+                RegisterMouseActivityEvents(control);
+            this.ParentChanged += Control_MouseActivityChanged;
+            this.MouseActivityDetect(true);
+        }
+        /// <summary>
+        /// Zaregistruje pro daný control eventhandlery, které budou řídit viditelnost prvků this panelu (buttony podle myši)
+        /// </summary>
+        /// <param name="control"></param>
+        private void RegisterMouseActivityEvents(Control control)
+        {
+            control.MouseEnter += Control_MouseActivityChanged;
+            control.MouseLeave += Control_MouseActivityChanged;
+            control.MouseMove += Control_MouseMove;
+        }
+        /// <summary>
+        /// Eventhandler pro detekci myší aktivity
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Control_MouseActivityChanged(object sender, EventArgs e)
+        {
+            MouseActivityDetect();
+        }
+        /// <summary>
+        /// Eventhandler pro detekci myší aktivity
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Control_MouseMove(object sender, MouseEventArgs e)
+        {
+            MouseActivityDetect();
+        }
+        /// <summary>
+        /// Provede se po myší aktivitě, zajistí Visible a Enabled pro buttony
+        /// </summary>
+        /// <param name="force"></param>
+        private void MouseActivityDetect(bool force = false)
+        {
+            Point mousePoint = this.PointToClient(Control.MousePosition);
+            bool isMouseOnControl = this.Bounds.Contains(mousePoint);
+            if (force || isMouseOnControl != _IsMouseOnControl)
+            {
+                _IsMouseOnControl = isMouseOnControl;
+                RefreshVisibility();
+            }
+        }
+        /// <summary>
+        /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
+        /// </summary>
+        private void RefreshVisibility()
+        {
+            this._TitleLabel.Text = _TitleText;
 
-        private bool _TitleBarVisible;
+            bool isMouseOnControl = _IsMouseOnControl;
+
+            bool isDockVisible = GetItemVisibility(_DockButtonVisibility, isMouseOnControl);
+            if (isDockVisible)
+            {
+                LayoutPosition dockButtonDisable = _DockButtonDisabledPosition;
+                _DockLeftButton.Enabled = (dockButtonDisable != LayoutPosition.Left);
+                _DockTopButton.Enabled = (dockButtonDisable != LayoutPosition.Top);
+                _DockBottomButton.Enabled = (dockButtonDisable != LayoutPosition.Bottom);
+                _DockRightButton.Enabled = (dockButtonDisable != LayoutPosition.Right);
+            }
+            _DockLeftButton.Visible = isDockVisible;
+            _DockTopButton.Visible = isDockVisible;
+            _DockBottomButton.Visible = isDockVisible;
+            _DockRightButton.Visible = isDockVisible;
+
+            bool isCloseVisible = GetItemVisibility(_CloseButtonVisibility, isMouseOnControl);
+            this._CloseButton.Visible = isCloseVisible;
+        }
+        /// <summary>
+        /// Vrátí true pokud control s daným režimem viditelnosti má být viditelný, při daném stavu myši na controlu
+        /// </summary>
+        /// <param name="controlVisibility"></param>
+        /// <param name="isMouseOnControl"></param>
+        /// <returns></returns>
+        private bool GetItemVisibility(ControlVisibility controlVisibility, bool isMouseOnControl)
+        {
+            return (controlVisibility == ControlVisibility.Allways || (controlVisibility == ControlVisibility.OnMouse && isMouseOnControl));
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je myš nad controlem (nad kterýmkoli prvkem), false když je myš mimo
+        /// </summary>
+        private bool _IsMouseOnControl;
+        #endregion
+        #region Public property a eventy
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public string TitleText
+        {
+            get { return _TitleText; }
+            set { _TitleText = value; this.RunInGui(RefreshVisibility); }
+        }
+        private string _TitleText;
+        /// <summary>
+        /// Viditelnost buttonů Dock
+        /// </summary>
+        public ControlVisibility DockButtonVisibility
+        {
+            get { return _DockButtonVisibility; }
+            set { _DockButtonVisibility = value; this.RunInGui(RefreshVisibility); }
+        }
+        private ControlVisibility _DockButtonVisibility;
+        /// <summary>
+        /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
+        /// </summary>
+        public LayoutPosition DockButtonDisabledPosition
+        {
+            get { return _DockButtonDisabledPosition; }
+            set { _DockButtonDisabledPosition = value; this.RunInGui(RefreshVisibility); }
+        }
+        private LayoutPosition _DockButtonDisabledPosition;
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        public ControlVisibility CloseButtonVisibility
+        {
+            get { return _CloseButtonVisibility; }
+            set { _CloseButtonVisibility = value; this.RunInGui(RefreshVisibility); }
+        }
+        private ControlVisibility _CloseButtonVisibility;
+        /// <summary>
+        /// Uživatel kliknul na button Dock (strana je v argumentu)
+        /// </summary>
+        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
+        /// <summary>
+        /// Uživatel kliknul na button Close
+        /// </summary>
+        public event EventHandler CloseButtonClick;
+        #endregion
     }
+    #endregion
     #region Třídy pro eventy, enumy pro zadávání a pro eventy
     /// <summary>
     /// Informace předávaná po změně splitteru (pozice, orientace)
@@ -993,6 +1567,60 @@ namespace TestDevExpress.Components
         /// Nahoru od stávajícího (=vodorovný splitter)
         /// </summary>
         Top
+    }
+    /// <summary>
+    /// Informace o požadovaném cíli dokování
+    /// </summary>
+    public class DxLayoutTitleDockPositionArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dockPosition"></param>
+        public DxLayoutTitleDockPositionArgs(LayoutPosition dockPosition)
+        {
+            this.DockPosition = dockPosition;
+        }
+        /// <summary>
+        /// Strana pro zadokování
+        /// </summary>
+        public LayoutPosition DockPosition { get; private set; }
+    }
+    /// <summary>
+    /// Viditelnost prvků v rámci controlů
+    /// </summary>
+    public enum ControlVisibility
+    {
+        /// <summary>
+        /// Prvek není viditelný nikdy
+        /// </summary>
+        None,
+        /// <summary>
+        /// Prvek je viditelný pouze tehdy, když je myš nad panelem
+        /// </summary>
+        OnMouse,
+        /// <summary>
+        /// Prvek je viditelný vždy
+        /// </summary>
+        Allways
+    }
+    /// <summary>
+    /// Optional interface, který poskytuje UserControl pro LayoutPanel
+    /// </summary>
+    public interface ILayoutUserControl
+    {
+        /// <summary>
+        /// Text do titulku
+        /// </summary>
+        string TitleText { get; }
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        ControlVisibility CloseButtonVisibility { get; }
+        /// <summary>
+        /// Událost volaná po změně <see cref="TitleText"/>
+        /// </summary>
+        event EventHandler TitleTextChanged;
     }
     #endregion
 }

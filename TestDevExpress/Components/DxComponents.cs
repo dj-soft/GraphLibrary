@@ -61,12 +61,20 @@ namespace TestDevExpress.Components
         #region Styly
         private void _InitStyles()
         {
-            var titleStyle = new DevExpress.XtraEditors.StyleController();
-            titleStyle.Appearance.FontSizeDelta = 2;
-            titleStyle.Appearance.FontStyleDelta = FontStyle.Regular;
-            titleStyle.Appearance.Options.UseBorderColor = false;
-            titleStyle.Appearance.Options.UseBackColor = false;
-            titleStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
+
+            var mainTitleStyle = new DevExpress.XtraEditors.StyleController();
+            mainTitleStyle.Appearance.FontSizeDelta = 4;
+            mainTitleStyle.Appearance.FontStyleDelta = FontStyle.Bold;
+            mainTitleStyle.Appearance.Options.UseBorderColor = false;
+            mainTitleStyle.Appearance.Options.UseBackColor = false;
+            mainTitleStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
+
+            var subTitleStyle = new DevExpress.XtraEditors.StyleController();
+            subTitleStyle.Appearance.FontSizeDelta = 2;
+            subTitleStyle.Appearance.FontStyleDelta = FontStyle.Bold;
+            subTitleStyle.Appearance.Options.UseBorderColor = false;
+            subTitleStyle.Appearance.Options.UseBackColor = false;
+            subTitleStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
             var labelStyle = new DevExpress.XtraEditors.StyleController();
             labelStyle.Appearance.FontSizeDelta = 0;
@@ -76,11 +84,11 @@ namespace TestDevExpress.Components
             labelStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
             var infoStyle = new DevExpress.XtraEditors.StyleController();
-            labelStyle.Appearance.FontSizeDelta = 0;
-            labelStyle.Appearance.FontStyleDelta = FontStyle.Italic;
-            labelStyle.Appearance.Options.UseBorderColor = false;
-            labelStyle.Appearance.Options.UseBackColor = false;
-            labelStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
+            infoStyle.Appearance.FontSizeDelta = 0;
+            infoStyle.Appearance.FontStyleDelta = FontStyle.Italic;
+            infoStyle.Appearance.Options.UseBorderColor = false;
+            infoStyle.Appearance.Options.UseBackColor = false;
+            infoStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
             var inputStyle = new DevExpress.XtraEditors.StyleController();
             inputStyle.Appearance.FontSizeDelta = 0;
@@ -89,7 +97,8 @@ namespace TestDevExpress.Components
             inputStyle.Appearance.Options.UseBackColor = false;
             inputStyle.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.NoWrap;
 
-            _TitleStyle = titleStyle;
+            _MainTitleStyle = mainTitleStyle;
+            _SubTitleStyle = subTitleStyle;
             _LabelStyle = labelStyle;
             _InfoStyle = infoStyle;
             _InputStyle = inputStyle;
@@ -110,9 +119,29 @@ namespace TestDevExpress.Components
             _DefaultButtonHeight = 32;
         }
         /// <summary>
-        /// Styl pro labely zobrazené jako <see cref="LabelStyleType.Title"/>
+        /// Vrátí styl labelu podle požadovaného typu
         /// </summary>
-        public static DevExpress.XtraEditors.StyleController TitleStyle { get { return Instance._TitleStyle; } }
+        /// <param name="styleType"></param>
+        /// <returns></returns>
+        private DevExpress.XtraEditors.IStyleController _GetLabelStyle(LabelStyleType? styleType)
+        {
+            switch (styleType)
+            {
+                case LabelStyleType.MainTitle: return _MainTitleStyle;
+                case LabelStyleType.SubTitle: return _SubTitleStyle;
+                case LabelStyleType.Default: return _LabelStyle;
+                case LabelStyleType.Info: return _InfoStyle;
+            }
+            return _LabelStyle;
+        }
+        /// <summary>
+        /// Styl pro labely zobrazené jako <see cref="LabelStyleType.MainTitle"/>
+        /// </summary>
+        public static DevExpress.XtraEditors.StyleController MainTitleStyle { get { return Instance._MainTitleStyle; } }
+        /// <summary>
+        /// Styl pro labely zobrazené jako <see cref="LabelStyleType.SubTitle"/>
+        /// </summary>
+        public static DevExpress.XtraEditors.StyleController TitleStyle { get { return Instance._SubTitleStyle; } }
         /// <summary>
         /// Styl pro labely zobrazené jako <see cref="LabelStyleType.Default"/>
         /// </summary>
@@ -178,7 +207,8 @@ namespace TestDevExpress.Components
         /// </summary>
         public static int DefaultButtonHeight { get { return Instance._DefaultButtonHeight; } }
 
-        private DevExpress.XtraEditors.StyleController _TitleStyle;
+        private DevExpress.XtraEditors.StyleController _MainTitleStyle;
+        private DevExpress.XtraEditors.StyleController _SubTitleStyle;
         private DevExpress.XtraEditors.StyleController _LabelStyle;
         private DevExpress.XtraEditors.StyleController _InfoStyle;
         private DevExpress.XtraEditors.StyleController _InputStyle;
@@ -247,7 +277,7 @@ namespace TestDevExpress.Components
 
             int yOffset = (useLabelTextOffset ? inst._DetailYOffsetLabelText : 0);
             var label = new DxLabelControl() { Bounds = new Rectangle(x, y + yOffset, w, inst._DetailYHeightLabel), Text = text };
-            label.StyleController = (styleType == LabelStyleType.Title ? inst._TitleStyle : (styleType == LabelStyleType.Info ? inst._InfoStyle : inst._LabelStyle));
+            label.StyleController = inst._GetLabelStyle(styleType);
             if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
             if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
             if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
@@ -520,13 +550,16 @@ namespace TestDevExpress.Components
             Image image = null, string resourceName = null,
             Image hotImage = null, string hotResourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null,
+            object tag = null)
         {
             var inst = Instance;
 
             var miniButton = new DxSimpleButton() { Bounds = new Rectangle(x, y, w, h) };
             miniButton.StyleController = inst._InputStyle;
             miniButton.Text = "";
+            miniButton.Tag = tag;
+
             if (visible.HasValue) miniButton.Visible = visible.Value;
             if (enabled.HasValue) miniButton.Enabled = enabled.Value;
             miniButton.TabStop = tabStop ?? false;
@@ -845,6 +878,7 @@ namespace TestDevExpress.Components
                 if (parent != null && !parent.IsDisposed)
                 {
                     parent.ResumeLayout(false);
+                    parent.PerformLayout();
                 }
                 s.UserData = null;
             }
@@ -937,8 +971,10 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="onBegin">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro uložení dat, budou k dispozici v akci <paramref name="onEnd"/></param>
         /// <param name="onEnd">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro čtení dat uložených v akci <paramref name="onBegin"/></param>
-        public UsingScope(Action<UsingScope> onBegin, Action<UsingScope> onEnd)
+        /// <param name="userData">Volitelně UserData</param>
+        public UsingScope(Action<UsingScope> onBegin, Action<UsingScope> onEnd, object userData = null)
         {
+            this.UserData = userData;
             _OnEnd = onEnd;
             onBegin?.Invoke(this);
         }
@@ -1146,9 +1182,13 @@ namespace TestDevExpress.Components
         /// </summary>
         Default,
         /// <summary>
-        /// Titulkový label
+        /// Titulkový label menší, typicky grupa
         /// </summary>
-        Title,
+        SubTitle,
+        /// <summary>
+        /// Titulkový label větší, jeden na formuláři
+        /// </summary>
+        MainTitle,
         /// <summary>
         /// Dodatková informace
         /// </summary>

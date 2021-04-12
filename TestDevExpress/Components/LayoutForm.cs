@@ -16,7 +16,7 @@ namespace TestDevExpress.Components
         { }
         public LayoutForm(bool useDevExpress)
         {
-            _LayoutPanel = new DxLayoutPanel() { Dock = System.Windows.Forms.DockStyle.Fill };
+            _LayoutPanel = new DxLayoutPanel() { Dock = System.Windows.Forms.DockStyle.Fill, SplitterContextMenuEnabled = true };
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
             this.Controls.Add(_LayoutPanel);
 
@@ -43,7 +43,7 @@ namespace TestDevExpress.Components
         public DxLayoutPanel LayoutPanel { get { return _LayoutPanel; } }
     }
 
-    public class LayoutTestPanel : System.Windows.Forms.Panel // DevExpress.XtraEditors.PanelControl
+    public class LayoutTestPanel : System.Windows.Forms.Panel, ILayoutUserControl // DevExpress.XtraEditors.PanelControl
     {
         public LayoutTestPanel()
         {
@@ -52,15 +52,8 @@ namespace TestDevExpress.Components
             Size buttonSize = ButtonSize;
 
             Id = ++LastPanelId;
-            string title = "Panel číslo " + Id.ToString();
-            _Title = new DevExpress.XtraEditors.LabelControl() { Text = title, Size = new Size(140, 25) };
-            _Title.Appearance.FontSizeDelta = 2;
-            _Title.Appearance.FontStyleDelta = FontStyle.Bold;
-            _Title.Appearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            _Title.Appearance.Options.UseTextOptions = true;
-            this.Controls.Add(_Title);
+            this.TitleText = "Panel číslo " + Id.ToString();
 
-            _CloseButton = CreateDxButton("ZAVŘÍT tento panel", LayoutPosition.None);
             _AddRightButton = CreateDxButton("Otevřít další VPRAVO", LayoutPosition.Right);
             _AddBottomButton = CreateDxButton("Otevřít další DOLE", LayoutPosition.Bottom);
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
@@ -82,63 +75,43 @@ namespace TestDevExpress.Components
             //this.LookAndFeel.UseDefaultLookAndFeel = false;
 
         }
+        public string TitleText 
+        {
+            get { return _TitleText; }
+            set { _TitleText = value; TitleTextChanged?.Invoke(this, EventArgs.Empty); }
+        }
+        public event EventHandler TitleTextChanged;
+        private string _TitleText;
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
-            this.SetVisibleButtons(false, true);
+            this.SetVisibleButtons(true);
         }
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
 
+            DetectVisibleButtons();
+        }
+        protected void DetectVisibleButtons()
+        {
             Point mousePoint = this.PointToClient(WF.Control.MousePosition);
             bool isMouseOnPanel = this.ClientRectangle.Contains(mousePoint);             // MouseLeave: myš mohla odejít i na naše Child controly, ale pak se nejedná o opuštění našeho controlu.
-            this.SetVisibleButtons(false, isMouseOnPanel);
+            this.SetVisibleButtons(isMouseOnPanel);
         }
-        protected override void OnEnter(EventArgs e)
+        protected void SetVisibleButtons(bool visible)
         {
-            base.OnEnter(e);
-            this.SetVisibleButtons(true, true);
-        }
-        protected override void OnLeave(EventArgs e)
-        {
-            base.OnLeave(e);
-            this.SetVisibleButtons(true, false);
-        }
-        protected override void OnGotFocus(EventArgs e)
-        {
-            base.OnGotFocus(e);
-            this.SetVisibleButtons(true, true);
-        }
-        protected override void OnLostFocus(EventArgs e)
-        {
-            base.OnLostFocus(e);
-            this.SetVisibleButtons(true, false);
-        }
-        protected void ResetVisibleButtons()
-        {
-            this._HasFocus = false;
-            this._HasMouse = false;
-            ShowVisibleButton();
-        }
-        protected void SetVisibleButtons(bool keyboardFocus, bool visible)
-        {
-            if (keyboardFocus)
-                this._HasFocus = visible;
-            else
-                this._HasMouse = visible;
+            this._HasMouse = visible;
             ShowVisibleButton();
         }
         protected void ShowVisibleButton()
         {
-            bool isVisible = this._HasFocus || this._HasMouse;
-            _CloseButton.Visible = isVisible;
+            bool isVisible = this._HasMouse;
             _AddRightButton.Visible = isVisible;
             _AddBottomButton.Visible = isVisible;
             _AddLeftButton.Visible = isVisible;
             _AddTopButton.Visible = isVisible;
         }
-        private bool _HasFocus = false;
         private bool _HasMouse = false;
 
         /// <summary>
@@ -155,17 +128,13 @@ namespace TestDevExpress.Components
         protected Color MyColor1;
         protected Color MyColor2;
 
-        DevExpress.XtraEditors.LabelControl _Title;
-        DevExpress.XtraEditors.SimpleButton _CloseButton;
+        // DevExpress.XtraEditors.LabelControl _Title;
+        // DevExpress.XtraEditors.SimpleButton _CloseButton;
         DevExpress.XtraEditors.SimpleButton _AddRightButton;
         DevExpress.XtraEditors.SimpleButton _AddBottomButton;
         DevExpress.XtraEditors.SimpleButton _AddLeftButton;
         DevExpress.XtraEditors.SimpleButton _AddTopButton;
-        /// <summary>
-        /// Viditelnost buttonu Close
-        /// </summary>
-        public bool CloseButtonVisible { get { return _CloseButton?.Visible ?? false; } set { if (_CloseButton != null) _CloseButton.Visible = value; } }
-
+        
         private DevExpress.XtraEditors.SimpleButton CreateDxButton(string text, LayoutPosition position)
         {
             var button = new DevExpress.XtraEditors.SimpleButton() { Text = text, Size = ButtonSize, Tag = position };
@@ -189,8 +158,6 @@ namespace TestDevExpress.Components
             int dw = cw - bw;
             int dh = ch - bh;
 
-            _Title.Location = new Point((cw - _Title.Width) / 2, (dh / 2) - 35);
-            _CloseButton.Location = new Point(dw / 2, dh / 2);                 // Uprostřed
             _AddRightButton.Location = new Point(dw - mx, dh / 2);             // Vpravo, svisle uprostřed
             _AddBottomButton.Location = new Point(dw / 2, dh - my);            // Vodorovně uprostřed, dole
             _AddLeftButton.Location = new Point(mx, dh / 2);                   // Vlevo, svisle uprostřed
@@ -204,25 +171,28 @@ namespace TestDevExpress.Components
         /// Doporučená velikost buttonů
         /// </summary>
         protected Size ButtonSize { get { return new Size(120, 32); } }
+
+
         private void _AnyButton_Click(object sender, EventArgs e)
         {
             if (!(sender is DevExpress.XtraEditors.SimpleButton button)) return;
             if (!(button.Tag is LayoutPosition)) return;
             LayoutPosition position = (LayoutPosition)button.Tag;
-            if (position == LayoutPosition.None)
-                LayoutPanel?.RemoveControl(this);
-            else
+            if (position == LayoutPosition.Left || position == LayoutPosition.Top || position == LayoutPosition.Bottom || position == LayoutPosition.Right)
             {
                 int size = ((position == LayoutPosition.Left || position == LayoutPosition.Right) ? ButtonSize.Width * 4 : ButtonSize.Height * 6);
                 LayoutTestPanel newPanel = new LayoutTestPanel();
 
                 float ratio = 0.4f;
                 LayoutPanel.AddControl(newPanel, this, position, currentSizeRatio: ratio);          // currentSize: size);
-                this.ResetVisibleButtons();
-                newPanel.SetVisibleButtons(true, true);
-                newPanel._CloseButton.Focus();
-                newPanel.SetVisibleButtons(true, true);
+                this.DetectVisibleButtons();
+                newPanel.DetectVisibleButtons();
             }
         }
+        #region ILayoutUserControl implementace
+        string ILayoutUserControl.TitleText { get { return this.TitleText; } }
+        ControlVisibility ILayoutUserControl.CloseButtonVisibility { get { return ControlVisibility.Allways; } }
+        event EventHandler ILayoutUserControl.TitleTextChanged { add { this.TitleTextChanged += value; } remove { this.TitleTextChanged -= value; } }
+        #endregion
     }
 }
