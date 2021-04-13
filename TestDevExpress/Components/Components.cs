@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TestDevExpress.Components;
 
 namespace TestDevExpress
 {
@@ -490,53 +491,6 @@ namespace TestDevExpress
             return new PointF(rectangle.X + rectangle.Width / 2f, rectangle.Y + rectangle.Height / 2f);
         }
 
-        #endregion
-        #region Control
-        /// <summary>
-        /// Vrátí IDisposable blok, který na svém počátku (při vyvolání této metody) provede control?.Parent.SuspendLayout(), 
-        /// a na konci bloku (při Dispose) provede control?.Parent.ResumeLayout(false)
-        /// </summary>
-        /// <param name="control"></param>
-        /// <returns></returns>
-        public static IDisposable ScopeSuspendParentLayout(this Control control)
-        {
-            return new UsingScope(
-            (s) =>
-            {   // OnBegin (Constructor):
-                Control parent = control?.Parent;
-                if (parent != null && !parent.IsDisposed)
-                {
-                    parent.SuspendLayout();
-                }
-                s.UserData = parent;
-            },
-            (s) =>
-            {   // OnEnd (Dispose):
-                Control parent = s.UserData as Control;
-                if (parent != null && !parent.IsDisposed)
-                {
-                    parent.ResumeLayout(false);
-                }
-                s.UserData = null;
-            }
-            );
-        }
-        /// <summary>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
-        /// kdežto tato metoda <see cref="IsSetVisible(Control)"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
-        /// </summary>
-        /// <param name="control"></param>
-        /// <returns></returns>
-        public static bool IsSetVisible(this Control control)
-        {
-            if (control is null) return false;
-            var getState = control.GetType().GetMethod("GetState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.NonPublic);
-            if (getState is null) return false;
-            object visible = getState.Invoke(control, new object[] { (int)0x02  /*STATE_VISIBLE*/  });
-            return (visible is bool ? (bool)visible : false);
-        }
         #endregion
     }
     #endregion
@@ -1413,93 +1367,6 @@ namespace TestDevExpress
         /// Konec, mimo
         /// </summary>
         public T End { get { return _End; } } private readonly T _End;
-    }
-    #endregion
-    #region class TEventArgs<T> : Třída argumentů obsahující jeden prvek generického typu Item
-    /// <summary>
-    /// Třída argumentů obsahující jeden prvek <see cref="Item"/> generického typu <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">Libovolný typ, třída na něj nemá žádné požadavky</typeparam>
-    public class TEventArgs<T> : EventArgs
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="item"></param>
-        public TEventArgs(T item) { Item = item; }
-        /// <summary>
-        /// Konkrétní datový prvek
-        /// </summary>
-        public T Item { get; private set; }
-    }
-    #endregion
-    #region class TEventValueChangeArgs<T> : Třída argumentů obsahující dva prvky generického typu OldValue a NewValue
-    /// <summary>
-    /// Třída argumentů obsahující dva prvky generického typu <typeparamref name="T"/> s charakterem 
-    /// Původní hodnota <see cref="OldValue"/> a Nová hodnota <see cref="NewValue"/>.
-    /// Novou hodnotu <see cref="NewValue"/> lze upravit (setovat), a zdroj eventu ji možná převezme.
-    /// Lze nastavit <see cref="Cancel"/> = true, a zdroj eventu možná akci zruší.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class TEventValueChangeArgs<T> : EventArgs
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="source">Zdroj události</param>
-        /// <param name="oldValue">Původní hodnota</param>
-        /// <param name="newValue">Nová hodnota</param>
-        public TEventValueChangeArgs(EventSource source, T oldValue, T newValue) { Source = source; OldValue = oldValue; _NewValue = newValue; }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"Change from: {OldValue}, to: {NewValue}, source: {Source}";
-        }
-        /// <summary>
-        /// Zdroj události
-        /// </summary>
-        public EventSource Source { get; private set; }
-        /// <summary>
-        /// Původní hodnota. Nelze změnit.
-        /// </summary>
-        public T OldValue { get; private set; }
-        /// <summary>
-        /// Nová hodnota. 
-        /// Hodnotu lze změnit, a zdroj eventu ji možná převezme.
-        /// Vložením hodnoty dojde k nastavení <see cref="Changed"/> na true.
-        /// </summary>
-        public T NewValue { get { return _NewValue; } set { Changed = true; _NewValue = value; } }
-        private T _NewValue;
-        /// <summary>
-        /// Zrušit událost? default = false, lze nastavit.
-        /// </summary>
-        public bool Cancel { get; set; } = false;
-        /// <summary>
-        /// Bude nastaveno na true poté, kdy aplikace vloží novou hodnotu do <see cref="NewValue"/>.
-        /// A to bez ohledu na změnu hodnoty.
-        /// </summary>
-        public bool Changed { get; private set; } = false;
-    }
-    /// <summary>
-    /// Zdroj eventu
-    /// </summary>
-    public enum EventSource
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Zásah kódu
-        /// </summary>
-        Code,
-        /// <summary>
-        /// Interaktivní akce uživatele
-        /// </summary>
-        User
     }
     #endregion
 }

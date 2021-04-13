@@ -1171,6 +1171,113 @@ namespace TestDevExpress.Components
         private static string NonDotCharacters = @"[^.]*";
     }
     #endregion
+    #region class TEventArgs<T> : Třída argumentů obsahující jeden prvek generického typu Item
+    /// <summary>
+    /// Třída argumentů obsahující jeden prvek <see cref="Item"/> generického typu <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">Libovolný typ, třída na něj nemá žádné požadavky</typeparam>
+    public class TEventArgs<T> : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        public TEventArgs(T item) { Item = item; }
+        /// <summary>
+        /// Konkrétní datový prvek
+        /// </summary>
+        public T Item { get; private set; }
+    }
+    /// <summary>
+    /// Třída argumentů obsahující jeden prvek <see cref="Item"/> generického typu <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">Libovolný typ, třída na něj nemá žádné požadavky</typeparam>
+    public class TEventCancelArgs<T> : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        public TEventCancelArgs(T item) { Item = item; Cancel = false; }
+        /// <summary>
+        /// Konkrétní datový prvek
+        /// </summary>
+        public T Item { get; private set; }
+        /// <summary>
+        /// Požadavek true na zrušení akce, default = false = akce proběhne (není zakázaná)
+        /// </summary>
+        public bool Cancel { get; set; }
+    }
+    #endregion
+    #region class TEventValueChangeArgs<T> : Třída argumentů obsahující dva prvky generického typu OldValue a NewValue
+    /// <summary>
+    /// Třída argumentů obsahující dva prvky generického typu <typeparamref name="T"/> s charakterem 
+    /// Původní hodnota <see cref="OldValue"/> a Nová hodnota <see cref="NewValue"/>.
+    /// Novou hodnotu <see cref="NewValue"/> lze upravit (setovat), a zdroj eventu ji možná převezme.
+    /// Lze nastavit <see cref="Cancel"/> = true, a zdroj eventu možná akci zruší.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class TEventValueChangeArgs<T> : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source">Zdroj události</param>
+        /// <param name="oldValue">Původní hodnota</param>
+        /// <param name="newValue">Nová hodnota</param>
+        public TEventValueChangeArgs(EventSource source, T oldValue, T newValue) { Source = source; OldValue = oldValue; _NewValue = newValue; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Change from: {OldValue}, to: {NewValue}, source: {Source}";
+        }
+        /// <summary>
+        /// Zdroj události
+        /// </summary>
+        public EventSource Source { get; private set; }
+        /// <summary>
+        /// Původní hodnota. Nelze změnit.
+        /// </summary>
+        public T OldValue { get; private set; }
+        /// <summary>
+        /// Nová hodnota. 
+        /// Hodnotu lze změnit, a zdroj eventu ji možná převezme.
+        /// Vložením hodnoty dojde k nastavení <see cref="Changed"/> na true.
+        /// </summary>
+        public T NewValue { get { return _NewValue; } set { Changed = true; _NewValue = value; } }
+        private T _NewValue;
+        /// <summary>
+        /// Zrušit událost? default = false, lze nastavit.
+        /// </summary>
+        public bool Cancel { get; set; } = false;
+        /// <summary>
+        /// Bude nastaveno na true poté, kdy aplikace vloží novou hodnotu do <see cref="NewValue"/>.
+        /// A to bez ohledu na změnu hodnoty.
+        /// </summary>
+        public bool Changed { get; private set; } = false;
+    }
+    /// <summary>
+    /// Zdroj eventu
+    /// </summary>
+    public enum EventSource
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Zásah kódu
+        /// </summary>
+        Code,
+        /// <summary>
+        /// Interaktivní akce uživatele
+        /// </summary>
+        User
+    }
+    #endregion
     #region Enumy
     /// <summary>
     /// Styl použitý pro Label

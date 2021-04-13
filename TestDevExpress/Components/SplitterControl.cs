@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using TestDevExpress;
+using TestDevExpress.Components;
 
 namespace Noris.Clients.Win.Components
 {

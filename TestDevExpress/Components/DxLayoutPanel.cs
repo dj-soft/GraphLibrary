@@ -77,6 +77,10 @@ namespace TestDevExpress.Components
         /// </summary>
         public bool SplitterContextMenuEnabled { get; set; }
         /// <summary>
+        /// Vyvolá se před odebráním konkrétního uživatelského controlu. Eventhandler může odebrání zakázat nastavením <see cref="TEventCancelArgs{T}.Cancel"/> na true,
+        /// </summary>
+        public event EventHandler<TEventCancelArgs<Control>> UserControlRemoveBefore;
+        /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// </summary>
         public event EventHandler<TEventArgs<Control>> UserControlRemoved;
@@ -504,10 +508,24 @@ namespace TestDevExpress.Components
         private void ItemPanel_CloseButtonClick(object sender, EventArgs e)
         {
             int index = _SearchIndexOfAnyControl(sender as Control);
-            _RemoveUserControl(index);
+            if (index < 0) return;
+
+            var controlParent = _Controls[index];
+            var args = new TEventCancelArgs<Control>(controlParent.UserControl);
+            OnUserControlRemoveBefore(args);
+            if (!args.Cancel)
+                _RemoveUserControl(index);
         }
         #endregion
         #region Interaktivita vnitřní - reakce na odebrání controlu, na pohyb splitteru, na změnu orientace splitteru, na změnu dokování 
+        /// <summary>
+        /// Vyvolá se po odebrání každého uživatelského controlu.
+        /// Zavolá event <see cref="UserControlRemoved"/>.
+        /// </summary>
+        protected virtual void OnUserControlRemoveBefore(TEventCancelArgs<Control> args)
+        {
+            UserControlRemoveBefore?.Invoke(this, args);
+        }
         /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// Zavolá event <see cref="UserControlRemoved"/>.
@@ -883,7 +901,7 @@ namespace TestDevExpress.Components
             }
             /// <summary>
             /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
-            /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné (bez ohledu na <see cref="DxLayoutItemPanel.DockButtonVisibility"/>.
+            /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné (bez ohledu na <see cref="DxLayoutPanel.DockButtonVisibility"/>.
             /// </summary>
             public LayoutPosition DockButtonDisabledPosition 
             { 
@@ -1180,7 +1198,7 @@ namespace TestDevExpress.Components
         private string _TitleText;
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
-        /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DockButtonVisibility"/>.
+        /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DxLayoutPanel.DockButtonVisibility"/>.
         /// </summary>
         public LayoutPosition DockButtonDisabledPosition { get { return _DockButtonDisabledPosition; } set { _DockButtonDisabledPosition = value; this.RunInGui(RefreshControl); } }
         private LayoutPosition _DockButtonDisabledPosition;
@@ -1239,8 +1257,7 @@ namespace TestDevExpress.Components
             _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
             _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
-            _FillControls();
-            // _TitleBar.DoLayout();
+            _FillPanelControls();
         }
         /// <summary>
         /// Po kliknutí na Dock button pře-vyvoláme náš event
@@ -1285,7 +1302,7 @@ namespace TestDevExpress.Components
                 if (userControl != null)
                 {
                     userControl.Dock = DockStyle.Fill;
-                    this._FillControls();
+                    this._FillPanelControls();
                 }
             }
         }
@@ -1293,7 +1310,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Do this.Controls ve správném pořadí vloží existující prvky TitleBar a UserControl, před tím vyprázdní pole controlů.
         /// </summary>
-        private void _FillControls()
+        private void _FillPanelControls()
         {
             this.SuspendLayout();
 

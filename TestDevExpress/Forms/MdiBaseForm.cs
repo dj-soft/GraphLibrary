@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.XtraBars.Ribbon;
+using TestDevExpress.Components;
 
 namespace TestDevExpress.Forms
 {
