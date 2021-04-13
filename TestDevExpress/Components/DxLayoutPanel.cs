@@ -1560,6 +1560,10 @@ namespace TestDevExpress.Components
             this.AppliedSvgIcons = useSvgIcons;
         }
         /// <summary>
+        /// Počet aktuálně zobrazených panelů v hlavním okně
+        /// </summary>
+        private int LayoutPanelControlCount { get { return (this.LayoutPanel?.ControlCount ?? 0); } }
+        /// <summary>
         /// Mají se použít SVG ikony?
         /// </summary>
         private bool UseSvgIcons { get { return (this.LayoutPanel?.UseSvgIcons ?? true); } }
@@ -1604,7 +1608,9 @@ namespace TestDevExpress.Components
             bool isMouseOnControl = _IsMouseOnControl;
             bool isPrimaryPanel = this.IsPrimaryPanel;
 
-            bool isDockVisible = GetItemVisibility(DockButtonVisibility, isMouseOnControl, isPrimaryPanel);
+            // Tlačítka pro dokování budeme zobrazovat pouze tehdy, když hlavní panel zobrazuje více než jeden prvek. Pro méně prvků nemá dokování význam!
+            bool hasMorePanels = (this.LayoutPanelControlCount > 1);
+            bool isDockVisible = hasMorePanels && GetItemVisibility(DockButtonVisibility, isMouseOnControl, isPrimaryPanel);
             if (isDockVisible)
             {
                 LayoutPosition dockButtonDisable = DockButtonDisabledPosition;
@@ -1618,6 +1624,7 @@ namespace TestDevExpress.Components
             _DockBottomButton.Visible = isDockVisible;
             _DockRightButton.Visible = isDockVisible;
 
+            // Tlačítko pro Close:
             bool isCloseVisible = GetItemVisibility(CloseButtonVisibility, isMouseOnControl, isPrimaryPanel);
             this._CloseButton.Visible = isCloseVisible;
         }

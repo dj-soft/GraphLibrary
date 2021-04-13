@@ -16,7 +16,14 @@ namespace TestDevExpress.Components
         { }
         public LayoutForm(bool useDevExpress)
         {
-            _LayoutPanel = new DxLayoutPanel() { Dock = System.Windows.Forms.DockStyle.Fill, SplitterContextMenuEnabled = true, UseSvgIcons = false };
+            _LayoutPanel = new DxLayoutPanel() 
+            {
+                Dock = System.Windows.Forms.DockStyle.Fill, 
+                SplitterContextMenuEnabled = false, 
+                DockButtonVisibility = ControlVisibility.OnMouse,
+                CloseButtonVisibility = ControlVisibility.OnNonPrimaryPanelAllways,
+                UseSvgIcons = false
+            };
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
             this.Controls.Add(_LayoutPanel);
 
