@@ -29,6 +29,8 @@ namespace TestDevExpress.Components
         {
             this.SplitterContextMenuEnabled = false;
             this._Controls = new List<ControlParentInfo>();
+            this._DockButtonVisibility = ControlVisibility.Default;
+            this._CloseButtonVisibility = ControlVisibility.Default;
             this._UseSvgIcons = true;
         }
         /// <summary>
@@ -55,6 +57,26 @@ namespace TestDevExpress.Components
         /// </summary>
         public int ControlCount { get { return _Controls.Count; } }
         /// <summary>
+        /// Viditelnost buttonů Dock
+        /// </summary>
+        public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_RefreshControls); } }
+        private ControlVisibility _DockButtonVisibility;
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_RefreshControls); } }
+        private ControlVisibility _CloseButtonVisibility;
+        /// <summary>
+        /// Používat SVG ikony (true) / PNG ikony (false): default = true
+        /// </summary>
+        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; _RefreshControls(); } }
+        private bool _UseSvgIcons;
+        /// <summary>
+        /// Povolení pro zobrazování kontextového menu na Splitteru (pro změnu orientace Horizontální - Vertikální).
+        /// Default = false.
+        /// </summary>
+        public bool SplitterContextMenuEnabled { get; set; }
+        /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// </summary>
         public event EventHandler<TEventArgs<Control>> UserControlRemoved;
@@ -70,16 +92,6 @@ namespace TestDevExpress.Components
         /// Vyvolá se po změně orientace splitteru.
         /// </summary>
         public event EventHandler<DxLayoutPanelSplitterChangedArgs> SplitterOrientationChanged;
-        /// <summary>
-        /// Povolení pro zobrazování kontextového menu na Splitteru (pro změnu orientace Horizontální - Vertikální).
-        /// Default = false.
-        /// </summary>
-        public bool SplitterContextMenuEnabled { get; set; }
-        /// <summary>
-        /// Používat SVG ikony (true) / PNG ikony (false): default = true
-        /// </summary>
-        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; _RefreshControls(); } }
-        private bool _UseSvgIcons;
         #endregion
         #region Přidání, odebrání a evidence UserControlů
         /// <summary>
@@ -181,19 +193,17 @@ namespace TestDevExpress.Components
         /// <param name="dockPosition"></param>
         private void _AddControlTo(Control userControl, Control parent, LayoutPosition dockPosition)
         {
-            DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this, this.UseSvgIcons);
+            DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this);
             hostControl.UserControl = userControl;
             hostControl.TitleBarVisible = true;
             hostControl.TitleText = "";
             hostControl.IsPrimaryPanel = (ControlCount == 0);
-            hostControl.DockButtonVisibility = ControlVisibility.OnMouse;
-            hostControl.CloseButtonVisibility = ControlVisibility.Allways;
+            hostControl.DockButtonDisabledPosition = dockPosition;
             hostControl.DockButtonClick += ItemPanel_DockButtonClick;
             hostControl.CloseButtonClick += ItemPanel_CloseButtonClick;
 
             parent.Controls.Add(hostControl);
             ControlParentInfo pair = new ControlParentInfo(parent, hostControl, userControl);
-            pair.DockButtonDisabledPosition = dockPosition;
             _Controls.Add(pair);
         }
         /// <summary>
@@ -464,8 +474,7 @@ namespace TestDevExpress.Components
         /// <param name="hostControl"></param>
         private void _RefreshControl(DxLayoutItemPanel hostControl)
         {
-            if (hostControl == null) return;
-            hostControl.UseSvgIcons = this.UseSvgIcons;
+            hostControl?.RefreshControl();
         }
         /// <summary>
         /// Pole User controlů, v páru s jejich posledně známým parentem
@@ -1125,73 +1134,72 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutItemPanel()
         {
-            this.Initialize(null, true);
+            this.Initialize(null);
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="owner"></param>
-        /// <param name="useSvgIcons"></param>
-        public DxLayoutItemPanel(DxLayoutPanel owner, bool useSvgIcons)
+        public DxLayoutItemPanel(DxLayoutPanel owner)
         {
-            this.Initialize(owner, useSvgIcons);
+            this.Initialize(owner);
         }
         /// <summary>
         /// Inicializace
         /// </summary>
         /// <param name="owner"></param>
-        /// <param name="useSvgIcons"></param>
-        protected void Initialize(DxLayoutPanel owner, bool useSvgIcons)
+        protected void Initialize(DxLayoutPanel owner)
         {
             this.__Owner = owner;
             this.Dock = DockStyle.Fill;
 
-            this._DockButtonVisibility = ControlVisibility.OnMouse;
             this._DockButtonDisabledPosition = LayoutPosition.None;
-            this._UseSvgIcons = useSvgIcons;
         }
         /// <summary>
         /// Vlastník = kompletní layout
         /// </summary>
         public DxLayoutPanel Owner { get { return __Owner; } }
         private WeakTarget<DxLayoutPanel> __Owner;
-        /// <summary>
-        /// Obsahuje true pokud this panel je primární = první vytvořený.
-        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
-        /// </summary>
-        public bool IsPrimaryPanel { get; set; }
         #endregion
-        #region Titulkový panel a jeho buttony, hodnoty a eventy
+        #region Naše vlastní data pro Titulkový panel, eventy
         /// <summary>
         /// Titulkový panel je viditelný?
         /// </summary>
         public bool TitleBarVisible { get { return _TitleBarVisible; } set { this.RunInGui(() => _TitleBarSetVisible(value)); } }
         private bool _TitleBarVisible;
         /// <summary>
+        /// Obsahuje true pokud this panel je primární = první vytvořený.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        public bool IsPrimaryPanel { get { return _IsPrimaryPanel; } set { _IsPrimaryPanel = value; this.RunInGui(RefreshControl); } }
+        private bool _IsPrimaryPanel;
+        /// <summary>
         /// Text titulku
         /// </summary>
-        public string TitleText { get { return _TitleText; } set { _TitleText = value; this.RunInGui(_TitleBarRefresh); } }
+        public string TitleText { get { return _TitleText; } set { _TitleText = value; this.RunInGui(RefreshControl); } }
         private string _TitleText;
-        /// <summary>
-        /// Viditelnost buttonů Dock
-        /// </summary>
-        public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_TitleBarRefresh); } }
-        private ControlVisibility _DockButtonVisibility;
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DockButtonVisibility"/>.
         /// </summary>
-        public LayoutPosition DockButtonDisabledPosition 
-        { 
-            get { return _DockButtonDisabledPosition; } 
-            set 
-            {
-                LayoutPosition dockPosition = value;
-                bool isDock = (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Top || dockPosition == LayoutPosition.Bottom || dockPosition == LayoutPosition.Right);
-                _DockButtonDisabledPosition = (isDock ? dockPosition : LayoutPosition.None);
-                this.RunInGui(_TitleBarRefresh);
-            }
+        public LayoutPosition DockButtonDisabledPosition { get { return _DockButtonDisabledPosition; } set { _DockButtonDisabledPosition = value; this.RunInGui(RefreshControl); } }
+        private LayoutPosition _DockButtonDisabledPosition;
+        /// <summary>
+        /// Refresh obsahu
+        /// </summary>
+        internal void RefreshControl()
+        {
+            if (_TitleBar != null && _TitleBarVisible)
+                _TitleBar.RefreshControl();
         }
+        /// <summary>
+        /// Uživatel kliknul na button Dock (strana je v argumentu)
+        /// </summary>
+        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
+        /// <summary>
+        /// Uživatel kliknul na button Close
+        /// </summary>
+        public event EventHandler CloseButtonClick;
         /// <summary>
         /// Obsahuje true, pokud <see cref="DockButtonDisabledPosition"/> obsahuje nějakou konkrétní hodnotu, nikoli None
         /// </summary>
@@ -1203,25 +1211,6 @@ namespace TestDevExpress.Components
                 return (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Top || dockPosition == LayoutPosition.Bottom || dockPosition == LayoutPosition.Right);
             }
         }
-        private LayoutPosition _DockButtonDisabledPosition;
-        /// <summary>
-        /// Viditelnost buttonu Close
-        /// </summary>
-        public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_TitleBarRefresh); } }
-        private ControlVisibility _CloseButtonVisibility;
-        /// <summary>
-        /// Používat SVG ikony (true) / PNG ikony (false): default = true
-        /// </summary>
-        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; this.RunInGui(_TitleBarRefresh); } }
-        private bool _UseSvgIcons;
-        /// <summary>
-        /// Uživatel kliknul na button Dock (strana je v argumentu)
-        /// </summary>
-        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
-        /// <summary>
-        /// Uživatel kliknul na button Close
-        /// </summary>
-        public event EventHandler CloseButtonClick;
         /// <summary>
         /// Zajistí správnou existenci a viditelnost titulkového baru podle jeho požadované viditelnosti, a jeho vložení do this Controls
         /// </summary>
@@ -1246,13 +1235,12 @@ namespace TestDevExpress.Components
         /// </summary>
         private void _TitleBarInit()
         {
-            _TitleBar = new DxLayoutTitlePanel(this, this.UseSvgIcons);
+            _TitleBar = new DxLayoutTitlePanel(this);
             _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
             _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
-            _TitleBarRefresh();
             _FillControls();
-            _TitleBar.DoLayout();
+            // _TitleBar.DoLayout();
         }
         /// <summary>
         /// Po kliknutí na Dock button pře-vyvoláme náš event
@@ -1273,21 +1261,11 @@ namespace TestDevExpress.Components
             this.CloseButtonClick?.Invoke(this, e);
         }
         /// <summary>
-        /// Refresh hodnot do TitleBaru
+        /// Instance titulkového řádku
         /// </summary>
-        private void _TitleBarRefresh()
-        {
-            if (_TitleBar == null || !_TitleBarVisible) return;
-            bool isAnyDockPosition = IsAnyDockPosition;
-            _TitleBar.TitleText = _TitleText;
-            _TitleBar.DockButtonVisibility = (isAnyDockPosition ? this.DockButtonVisibility : ControlVisibility.None);
-            _TitleBar.DockButtonDisabledPosition = this.DockButtonDisabledPosition;
-            _TitleBar.CloseButtonVisibility = this.CloseButtonVisibility;
-            _TitleBar.UseSvgIcons = this.UseSvgIcons;
-        }
         private DxLayoutTitlePanel _TitleBar;
         #endregion
-        #region UserControl
+        #region UserControl a vkládání controlů (UserControl + _TitleBar) do this.Controls
         /// <summary>
         /// Uživatelský control, obsazuje většinu prostoru this panelu, pod titulkem
         /// </summary>
@@ -1344,43 +1322,37 @@ namespace TestDevExpress.Components
         /// </summary>
         public DxLayoutTitlePanel()
         {
-            this.Initialize(null, true);
+            this.Initialize(null);
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="owner"></param>
-        /// <param name="useSvgIcons"></param>
-        public DxLayoutTitlePanel(DxLayoutItemPanel owner, bool useSvgIcons)
+        public DxLayoutTitlePanel(DxLayoutItemPanel owner)
         {
-            this.Initialize(owner, useSvgIcons);
+            this.Initialize(owner);
         }
         /// <summary>
         /// Inicializace
         /// </summary>
         /// <param name="owner"></param>
-        /// <param name="useSvgIcons"></param>
-        private void Initialize(DxLayoutItemPanel owner, bool useSvgIcons)
+        private void Initialize(DxLayoutItemPanel owner)
         {
             __Owner = owner;
-            _UseSvgIcons = useSvgIcons;
 
-            string[] icons = _GetIcons(useSvgIcons);
-
+            string[] icons = CurrentIcons;
             _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[0], visible: false, tag: LayoutPosition.Left);
             _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[1], visible: false, tag: LayoutPosition.Top);
             _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[2], visible: false, tag: LayoutPosition.Bottom);
             _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[3], visible: false, tag: LayoutPosition.Right);
-
             _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: icons[4], visible: false);
 
             _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
 
+            this.AppliedSvgIcons = this.UseSvgIcons;
+
             this.Height = 35;
             this.Dock = DockStyle.Top;
-
-            _DockButtonVisibility = ControlVisibility.None;
-            _CloseButtonVisibility = ControlVisibility.None;
 
             MouseActivityInit();
         }
@@ -1393,32 +1365,6 @@ namespace TestDevExpress.Components
         /// Celý layout panel = všechny controly
         /// </summary>
         public DxLayoutPanel LayoutPanel {  get { return this.Owner?.Owner; } }
-        /// <summary>
-        /// Vrátí pole ikon pro daný typ (SVG / PNG)
-        /// </summary>
-        /// <param name="useSvgIcons"></param>
-        /// <returns></returns>
-        private static string[] _GetIcons(bool useSvgIcons)
-        {
-            if (useSvgIcons)
-                return new string[]
-                {
-                    "svgimages/align/alignverticalleft.svg",
-                    "svgimages/align/alignhorizontaltop.svg",
-                    "svgimages/align/alignhorizontalbottom.svg",
-                    "svgimages/align/alignverticalright.svg",
-                    "images/xaf/templatesv2images/action_delete.svg"
-                };
-            else
-                return new string[]
-                {
-                    "images/alignment/alignverticalleft_16x16.png",
-                    "images/alignment/alignhorizontaltop_16x16.png",
-                    "images/alignment/alignhorizontalbottom_16x16.png",
-                    "images/alignment/alignverticalright_16x16.png",
-                    "devav/actions/delete_16x16.png"
-                };
-        }
         /// <summary>
         /// Po kliknutí na tlačítko Dock...
         /// </summary>
@@ -1485,6 +1431,37 @@ namespace TestDevExpress.Components
         private DxSimpleButton _DockRightButton;
         private DxSimpleButton _CloseButton;
         #endregion
+        #region Data získaná z Ownerů, vlastní eventy
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public string TitleText { get { return Owner?.TitleText ?? ""; } }
+        /// <summary>
+        /// Obsahuje true pokud this panel je primární = první vytvořený.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        public bool IsPrimaryPanel { get { return Owner?.IsPrimaryPanel ?? false; } }
+        /// <summary>
+        /// Viditelnost buttonů Dock
+        /// </summary>
+        public ControlVisibility DockButtonVisibility { get { return LayoutPanel?.DockButtonVisibility ?? ControlVisibility.Default; } }
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        public ControlVisibility CloseButtonVisibility { get { return LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default; } }
+        /// <summary>
+        /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
+        /// </summary>
+        public LayoutPosition DockButtonDisabledPosition { get { return Owner?.DockButtonDisabledPosition ?? LayoutPosition.None; } }
+        /// <summary>
+        /// Uživatel kliknul na button Dock (strana je v argumentu)
+        /// </summary>
+        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
+        /// <summary>
+        /// Uživatel kliknul na button Close
+        /// </summary>
+        public event EventHandler CloseButtonClick;
+        #endregion
         #region Pohyb myši a viditelnost buttonů
         /// <summary>
         /// Inicializace eventů a proměnných pro myší aktivity
@@ -1536,22 +1513,101 @@ namespace TestDevExpress.Components
             if (force || isMouseOnControl != _IsMouseOnControl)
             {
                 _IsMouseOnControl = isMouseOnControl;
-                RefreshVisibility();
+                RefreshButtonVisibility();
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je myš nad controlem (nad kterýmkoli prvkem), false když je myš mimo
+        /// </summary>
+        private bool _IsMouseOnControl;
+        #endregion
+        #region Refreshe (obsah, viditelnost, interaktivní tlačítka podle stavu myši)
+        /// <summary>
+        /// Aplikuje ikony požadovaného druhu
+        /// </summary>
+        internal void RefreshControl()
+        {
+            this.RefreshTitle();
+            this.RefreshIcons();
+            this.RefreshButtonVisibility();
+        }
+        /// <summary>
+        /// Aktualizuje text titulku
+        /// </summary>
+        private void RefreshTitle()
+        {
+            this._TitleLabel.Text = this.TitleText;
+        }
+        /// <summary>
+        /// Aktualizuje vzhled ikon, pokud je to nutné
+        /// </summary>
+        private void RefreshIcons(bool force = false)
+        {
+            bool appliedSvgIcons = AppliedSvgIcons;
+            bool useSvgIcons = UseSvgIcons;
+
+            if (!force && appliedSvgIcons == useSvgIcons) return;
+
+            string[] icons = CurrentIcons;
+            Size size = new Size(20, 20);
+
+            DxComponent.ApplyImage(_DockLeftButton.ImageOptions, null, icons[0], size, true);
+            DxComponent.ApplyImage(_DockTopButton.ImageOptions, null, icons[1], size, true);
+            DxComponent.ApplyImage(_DockBottomButton.ImageOptions, null, icons[2], size, true);
+            DxComponent.ApplyImage(_DockRightButton.ImageOptions, null, icons[3], size, true);
+            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[4], size, true);
+
+            this.AppliedSvgIcons = useSvgIcons;
+        }
+        /// <summary>
+        /// Mají se použít SVG ikony?
+        /// </summary>
+        private bool UseSvgIcons { get { return (this.LayoutPanel?.UseSvgIcons ?? true); } }
+        /// <summary>
+        /// Nyní jsou použité SVG ikony?
+        /// </summary>
+        private bool AppliedSvgIcons;
+        /// <summary>
+        /// Obsahuje pole ikon pro aktuální typ (SVG / PNG)
+        /// </summary>
+        private string[] CurrentIcons
+        {
+            get
+            {
+                bool useSvgIcons = UseSvgIcons;
+
+                if (useSvgIcons)
+                    return new string[]
+                    {
+                    "svgimages/align/alignverticalleft.svg",
+                    "svgimages/align/alignhorizontaltop.svg",
+                    "svgimages/align/alignhorizontalbottom.svg",
+                    "svgimages/align/alignverticalright.svg",
+                    "images/xaf/templatesv2images/action_delete.svg"
+                    };
+                else
+                    return new string[]
+                    {
+                    "images/alignment/alignverticalleft_16x16.png",
+                    "images/alignment/alignhorizontaltop_16x16.png",
+                    "images/alignment/alignhorizontalbottom_16x16.png",
+                    "images/alignment/alignverticalright_16x16.png",
+                    "devav/actions/delete_16x16.png"
+                    };
             }
         }
         /// <summary>
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
-        private void RefreshVisibility()
+        private void RefreshButtonVisibility()
         {
-            this._TitleLabel.Text = _TitleText;
-
             bool isMouseOnControl = _IsMouseOnControl;
+            bool isPrimaryPanel = this.IsPrimaryPanel;
 
-            bool isDockVisible = GetItemVisibility(_DockButtonVisibility, isMouseOnControl);
+            bool isDockVisible = GetItemVisibility(DockButtonVisibility, isMouseOnControl, isPrimaryPanel);
             if (isDockVisible)
             {
-                LayoutPosition dockButtonDisable = _DockButtonDisabledPosition;
+                LayoutPosition dockButtonDisable = DockButtonDisabledPosition;
                 _DockLeftButton.Enabled = (dockButtonDisable != LayoutPosition.Left);
                 _DockTopButton.Enabled = (dockButtonDisable != LayoutPosition.Top);
                 _DockBottomButton.Enabled = (dockButtonDisable != LayoutPosition.Bottom);
@@ -1562,7 +1618,7 @@ namespace TestDevExpress.Components
             _DockBottomButton.Visible = isDockVisible;
             _DockRightButton.Visible = isDockVisible;
 
-            bool isCloseVisible = GetItemVisibility(_CloseButtonVisibility, isMouseOnControl);
+            bool isCloseVisible = GetItemVisibility(CloseButtonVisibility, isMouseOnControl, isPrimaryPanel);
             this._CloseButton.Visible = isCloseVisible;
         }
         /// <summary>
@@ -1570,94 +1626,14 @@ namespace TestDevExpress.Components
         /// </summary>
         /// <param name="controlVisibility"></param>
         /// <param name="isMouseOnControl"></param>
+        /// <param name="isPrimaryPanel"></param>
         /// <returns></returns>
-        private bool GetItemVisibility(ControlVisibility controlVisibility, bool isMouseOnControl)
+        private bool GetItemVisibility(ControlVisibility controlVisibility, bool isMouseOnControl, bool isPrimaryPanel)
         {
-            return (controlVisibility == ControlVisibility.Allways || (controlVisibility == ControlVisibility.OnMouse && isMouseOnControl));
+            bool isAlways = (isPrimaryPanel ? controlVisibility.HasFlag(ControlVisibility.OnPrimaryPanelAllways) : controlVisibility.HasFlag(ControlVisibility.OnNonPrimaryPanelAllways));
+            bool isOnMouse = (isPrimaryPanel ? controlVisibility.HasFlag(ControlVisibility.OnPrimaryPanelOnMouse) : controlVisibility.HasFlag(ControlVisibility.OnNonPrimaryPanelOnMouse));
+            return (isAlways || (isOnMouse && isMouseOnControl));
         }
-        /// <summary>
-        /// Obsahuje true, pokud je myš nad controlem (nad kterýmkoli prvkem), false když je myš mimo
-        /// </summary>
-        private bool _IsMouseOnControl;
-        #endregion
-        #region Druh ikonek
-        /// <summary>
-        /// Používat SVG ikony (true) / PNG ikony (false): default = true
-        /// </summary>
-        public bool UseSvgIcons 
-        { 
-            get { return _UseSvgIcons; } 
-            set 
-            {
-                bool isChange = (_UseSvgIcons != value);
-                if (isChange)
-                {
-                    _UseSvgIcons = value;
-                    this.RunInGui(_RefreshIcons);
-                }
-            } 
-        }
-        private bool _UseSvgIcons;
-        /// <summary>
-        /// Aplikuje ikony druhu <see cref="UseSvgIcons"/>
-        /// </summary>
-        private void _RefreshIcons()
-        {
-            string[] icons = _GetIcons(_UseSvgIcons);
-            Size size = new Size(20, 20);
-
-            DxComponent.ApplyImage(_DockLeftButton.ImageOptions, null, icons[0], size, true);
-            DxComponent.ApplyImage(_DockTopButton.ImageOptions, null, icons[1], size, true);
-            DxComponent.ApplyImage(_DockBottomButton.ImageOptions, null, icons[2], size, true);
-            DxComponent.ApplyImage(_DockRightButton.ImageOptions, null, icons[3], size, true);
-            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[4], size, true);
-        }
-        #endregion
-        #region Public property a eventy
-        /// <summary>
-        /// Text titulku
-        /// </summary>
-        public string TitleText
-        {
-            get { return _TitleText; }
-            set { _TitleText = value; this.RunInGui(RefreshVisibility); }
-        }
-        private string _TitleText;
-        /// <summary>
-        /// Viditelnost buttonů Dock
-        /// </summary>
-        public ControlVisibility DockButtonVisibility
-        {
-            get { return _DockButtonVisibility; }
-            set { _DockButtonVisibility = value; this.RunInGui(RefreshVisibility); }
-        }
-        private ControlVisibility _DockButtonVisibility;
-        /// <summary>
-        /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
-        /// </summary>
-        public LayoutPosition DockButtonDisabledPosition
-        {
-            get { return _DockButtonDisabledPosition; }
-            set { _DockButtonDisabledPosition = value; this.RunInGui(RefreshVisibility); }
-        }
-        private LayoutPosition _DockButtonDisabledPosition;
-        /// <summary>
-        /// Viditelnost buttonu Close
-        /// </summary>
-        public ControlVisibility CloseButtonVisibility
-        {
-            get { return _CloseButtonVisibility; }
-            set { _CloseButtonVisibility = value; this.RunInGui(RefreshVisibility); }
-        }
-        private ControlVisibility _CloseButtonVisibility;
-        /// <summary>
-        /// Uživatel kliknul na button Dock (strana je v argumentu)
-        /// </summary>
-        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
-        /// <summary>
-        /// Uživatel kliknul na button Close
-        /// </summary>
-        public event EventHandler CloseButtonClick;
         #endregion
     }
     #endregion
@@ -1745,20 +1721,41 @@ namespace TestDevExpress.Components
     /// <summary>
     /// Viditelnost prvků v rámci controlů
     /// </summary>
+    [Flags]
     public enum ControlVisibility
     {
         /// <summary>
         /// Prvek není viditelný nikdy
         /// </summary>
-        None,
+        None = 0,
         /// <summary>
-        /// Prvek je viditelný pouze tehdy, když je myš nad panelem
+        /// Pro primární panel:  Prvek je viditelný pouze tehdy, když je myš nad panelem
         /// </summary>
-        OnMouse,
+        OnPrimaryPanelOnMouse = 1,
         /// <summary>
-        /// Prvek je viditelný vždy
+        /// Pro primární panel: Prvek je viditelný vždy
         /// </summary>
-        Allways
+        OnPrimaryPanelAllways = 2,
+        /// <summary>
+        /// Pro NONprimární panel:  Prvek je viditelný pouze tehdy, když je myš nad panelem
+        /// </summary>
+        OnNonPrimaryPanelOnMouse = 0x10,
+        /// <summary>
+        /// Pro NONprimární panel: Prvek je viditelný vždy
+        /// </summary>
+        OnNonPrimaryPanelAllways = 0x20,
+        /// <summary>
+        /// Pod myší, na všech panelech
+        /// </summary>
+        OnMouse = OnPrimaryPanelOnMouse | OnNonPrimaryPanelOnMouse,
+        /// <summary>
+        /// Vždy, na všech panelech
+        /// </summary>
+        Allways = OnPrimaryPanelAllways | OnNonPrimaryPanelAllways,
+        /// <summary>
+        /// Default = pod myší vždy
+        /// </summary>
+        Default = OnMouse
     }
     /// <summary>
     /// Optional interface, který poskytuje UserControl pro LayoutPanel
