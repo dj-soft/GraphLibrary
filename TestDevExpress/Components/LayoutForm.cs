@@ -39,7 +39,7 @@ namespace TestDevExpress.Components
 
             this._Timer = new Timer() { Interval = 1800 };
             this._Timer.Tick += _Timer_Tick;
-            this._Timer.Enabled = true;
+            this._Timer.Enabled = false;
         }
         /// <summary>
         /// Po změně layoutu (pozice prvků)
