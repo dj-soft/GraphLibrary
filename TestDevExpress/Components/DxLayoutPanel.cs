@@ -117,10 +117,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud dodaný UserControl implementuje <see cref="ILayoutUserControl"/>, pak zdejší instance se stará o aktuálnost titulku.
         /// </summary>
         /// <param name="userControl"></param>
-        public void AddControl(Control userControl)
+        /// <param name="titleText"></param>
+        public void AddControl(Control userControl, string titleText = null)
         {
             if (userControl == null) return;
-            _AddControlDefault(userControl, AddControlParams.Default);
+            AddControlParams parameters = new AddControlParams() { TitleText = titleText };
+            _AddControlDefault(userControl, parameters);
         }
         /// <summary>
         /// Přidá nový control vedle controlu daného, s danými parametry.
