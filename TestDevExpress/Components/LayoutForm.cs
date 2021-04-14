@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using System.Drawing;
 using WF = System.Windows.Forms;
-
+using System.Windows.Forms;
 
 namespace TestDevExpress.Components
 {
@@ -33,7 +33,13 @@ namespace TestDevExpress.Components
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Bounds = formBounds;
         }
-
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+            this._LayoutPanel.RemoveAllControls();
+            if (this._LayoutPanel.ControlCount > 0)
+                e.Cancel = true;
+        }
         private void _LayoutPanel_LastControlRemoved(object sender, EventArgs e)
         {
             this.Close();

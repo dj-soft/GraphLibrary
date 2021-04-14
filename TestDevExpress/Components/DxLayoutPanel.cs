@@ -28,7 +28,7 @@ namespace TestDevExpress.Components
         public DxLayoutPanel()
         {
             this.SplitterContextMenuEnabled = false;
-            this._Controls = new List<ControlParentInfo>();
+            this._Controls = new List<LayoutTileInfo>();
             this._DockButtonVisibility = ControlVisibility.Default;
             this._CloseButtonVisibility = ControlVisibility.Default;
             this._UseSvgIcons = true;
@@ -140,6 +140,16 @@ namespace TestDevExpress.Components
             _RemoveUserControl(index);
         }
         /// <summary>
+        /// Metoda odebere všechny panely layoutu, počínaje od posledního.
+        /// Typicky se volá před zavřením hostitelského okna.
+        /// </summary>
+        public void RemoveAllControls()
+        {
+            int count = this.ControlCount;
+            for (int i = count - 1; i >= 0; i--)
+                _RemoveUserControl(i);
+        }
+        /// <summary>
         /// Přidá nový control na vhodné místo.
         /// Není určen Near control (tj. vedle kterého controlu má být nový umístěn).
         /// Typicky se používá pro první control, ten se vkládá přímo do this jako jediný.
@@ -168,7 +178,7 @@ namespace TestDevExpress.Components
         private void _AddControlNear(Control userControl, int nearIndex, AddControlParams parameters)
         {
             // 1. Prvek s indexem [parentIndex] obsahuje control, vedle kterého budeme přidávat nově dodaný control
-            ControlParentInfo nearInfo = _Controls[nearIndex];
+            LayoutTileInfo nearInfo = _Controls[nearIndex];
             Control parent = nearInfo.Parent;
 
             // 2. Tento control (jeho hostitele) tedy odebereme z jeho dosavadního parenta:
@@ -207,18 +217,43 @@ namespace TestDevExpress.Components
             hostControl.CloseButtonClick += ItemPanel_CloseButtonClick;
 
             parent.Controls.Add(hostControl);
-            ControlParentInfo pair = new ControlParentInfo(parent, hostControl, userControl);
-            _Controls.Add(pair);
+            LayoutTileInfo tileInfo = new LayoutTileInfo(parent, hostControl, userControl);
+            _Controls.Add(tileInfo);
         }
         /// <summary>
-        /// Odebere daný control z parenta (vizuálně) i z evidence (datově)
+        /// Odebere daný control z parenta (vizuálně) i z evidence (datově).
+        /// Před tím volá eventhandler <see cref="UserControlRemoveBefore"/> a reaguje na jeho požadavek Cancel (=pro Cancel = true přeruší proces odebrání panelu).
         /// </summary>
         /// <param name="removeIndex"></param>
         private void _RemoveUserControl(int removeIndex)
         {
             if (removeIndex < 0) return;                             // To není můj control
-
             var removeInfo = _Controls[removeIndex];
+            bool enabled = _RemoveUserControlBefore(removeInfo);
+            if (enabled)
+                _RemoveUserControlInternal(removeIndex, removeInfo);
+        }
+        /// <summary>
+        /// Metoda je volána pro daný panel layoutu před tím, než bude panel odebrán.
+        /// Úkolem je zavolat eventhandler <see cref="UserControlRemoveBefore"/>.
+        /// Metoda vrací true = je povoleno panel odebrat (vrací not Cancel).
+        /// Pokud vrátí false, pak panel nelze odebrat a proces bude zastaven.
+        /// </summary>
+        /// <param name="removeInfo"></param>
+        /// <returns></returns>
+        private bool _RemoveUserControlBefore(LayoutTileInfo removeInfo)
+        {
+            var args = new TEventCancelArgs<Control>(removeInfo.UserControl);
+            OnUserControlRemoveBefore(args);
+            return !args.Cancel;
+        }
+        /// <summary>
+        /// Reálně odebere daný panel layoutu ze struktury (vizuálně i datově).
+        /// </summary>
+        /// <param name="removeIndex"></param>
+        /// <param name="removeInfo"></param>
+        private void _RemoveUserControlInternal(int removeIndex, LayoutTileInfo removeInfo)
+        {
             var parent = removeInfo.Parent;                          // Parent daného controlu je typicky this (když control je jediný), anebo Panel1 nebo Panel2 nějakého SplitContaineru
             var removeHost = removeInfo.HostControl;
             var removeControl = removeInfo.UserControl;
@@ -427,17 +462,17 @@ namespace TestDevExpress.Components
             return _Controls.FindIndex(c => c.ContainsUserControl(userControl));
         }
         /// <summary>
-        /// Vrátí <see cref="ControlParentInfo"/> obsahující daný User controlu v poli zdejších controlů.
+        /// Vrátí <see cref="LayoutTileInfo"/> obsahující daný User controlu v poli zdejších controlů.
         /// </summary>
         /// <param name="userControl"></param>
         /// <returns></returns>
-        private ControlParentInfo _GetControlParentForUserControl(Control userControl)
+        private LayoutTileInfo _GetControlParentForUserControl(Control userControl)
         {
             int index = _GetIndexOfUserControl(userControl);
             return (index >= 0 ? _Controls[index] : null);
         }
         /// <summary>
-        /// Najde index prvku, který obsahuje daný control na kterékoli pozici (<see cref="ControlParentInfo.UserControl"/>, <see cref="ControlParentInfo.HostControl"/>, <see cref="ControlParentInfo.Parent"/>).
+        /// Najde index prvku, který obsahuje daný control na kterékoli pozici (<see cref="LayoutTileInfo.UserControl"/>, <see cref="LayoutTileInfo.HostControl"/>, <see cref="LayoutTileInfo.Parent"/>).
         /// Hledá i v rámci Parentů dodaného prvku.
         /// </summary>
         /// <param name="control"></param>
@@ -454,12 +489,12 @@ namespace TestDevExpress.Components
             return index;
         }
         /// <summary>
-        /// Najde prvek <see cref="ControlParentInfo"/> , který obsahuje daný control na kterékoli pozici (<see cref="ControlParentInfo.UserControl"/>, <see cref="ControlParentInfo.HostControl"/>, <see cref="ControlParentInfo.Parent"/>).
+        /// Najde prvek <see cref="LayoutTileInfo"/> , který obsahuje daný control na kterékoli pozici (<see cref="LayoutTileInfo.UserControl"/>, <see cref="LayoutTileInfo.HostControl"/>, <see cref="LayoutTileInfo.Parent"/>).
         /// Hledá i v rámci Parentů dodaného prvku.
         /// </summary>
         /// <param name="control"></param>
         /// <returns></returns>
-        private ControlParentInfo _SearchControlParentOfAnyControl(Control control)
+        private LayoutTileInfo _SearchControlParentOfAnyControl(Control control)
         {
             int index = _SearchIndexOfAnyControl(control);
             return (index >= 0 ? _Controls[index] : null);
@@ -469,8 +504,8 @@ namespace TestDevExpress.Components
         /// </summary>
         private void _RefreshControls()
         {
-            foreach (ControlParentInfo controlParent in _Controls)
-                _RefreshControl(controlParent.HostControl);
+            foreach (LayoutTileInfo tileInfo in _Controls)
+                _RefreshControl(tileInfo.HostControl);
         }
         /// <summary>
         /// Refreshuje vlastnosti daného controlu
@@ -483,7 +518,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Pole User controlů, v páru s jejich posledně známým parentem
         /// </summary>
-        private List<ControlParentInfo> _Controls;
+        private List<LayoutTileInfo> _Controls;
         #endregion
         #region Obsluha titulkových tlačítek na prvku DxLayoutItemPanel
         /// <summary>
@@ -496,9 +531,9 @@ namespace TestDevExpress.Components
             int index = _SearchIndexOfAnyControl(sender as Control);
             if (index < 0) return;
 
-            var controlParent = _Controls[index];
+            var tileInfo = _Controls[index];
             var dockPosition = e.DockPosition;
-            _SetDockPosition(controlParent, dockPosition);
+            _SetDockPosition(tileInfo, dockPosition);
         }
         /// <summary>
         /// Po kliknutí na CloseButton v titulku: odebere odpovídající prvek layoutu
@@ -509,12 +544,7 @@ namespace TestDevExpress.Components
         {
             int index = _SearchIndexOfAnyControl(sender as Control);
             if (index < 0) return;
-
-            var controlParent = _Controls[index];
-            var args = new TEventCancelArgs<Control>(controlParent.UserControl);
-            OnUserControlRemoveBefore(args);
-            if (!args.Cancel)
-                _RemoveUserControl(index);
+            _RemoveUserControl(index);
         }
         #endregion
         #region Interaktivita vnitřní - reakce na odebrání controlu, na pohyb splitteru, na změnu orientace splitteru, na změnu dokování 
@@ -678,19 +708,19 @@ namespace TestDevExpress.Components
             }
         }
         /// <summary>
-        /// Pro daný prvek (<paramref name="controlParent"/>) nastaví jeho pozici dokování.
+        /// Pro daný prvek (<paramref name="tileInfo"/>) nastaví jeho pozici dokování.
         /// </summary>
-        /// <param name="controlParent"></param>
+        /// <param name="tileInfo"></param>
         /// <param name="dockPosition"></param>
-        private void _SetDockPosition(ControlParentInfo controlParent, LayoutPosition dockPosition)
+        private void _SetDockPosition(LayoutTileInfo tileInfo, LayoutPosition dockPosition)
         {
-            if (controlParent == null) return;
-            DevExpress.XtraEditors.SplitContainerControl splitContainer = controlParent.HostControl?.SearchForParentOfType<DevExpress.XtraEditors.SplitContainerControl>();
+            if (tileInfo == null) return;
+            DevExpress.XtraEditors.SplitContainerControl splitContainer = tileInfo.HostControl?.SearchForParentOfType<DevExpress.XtraEditors.SplitContainerControl>();
             if (splitContainer == null) return;
 
             // Není možné jen změnit příznak dokování, musíme změnit orientaci parent SplitContaineru a/nebo prohodit obsah panelů Panel1 <=> Panel2!
             bool horizontal = (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Right);
-            LayoutPosition currentDockPosition = controlParent.CurrentDockPosition;
+            LayoutPosition currentDockPosition = tileInfo.CurrentDockPosition;
             bool currentIsPanel1 = (currentDockPosition == LayoutPosition.Left || currentDockPosition == LayoutPosition.Top);
             bool targetIsPanel1 = (dockPosition == LayoutPosition.Left || dockPosition == LayoutPosition.Top);
             bool swap = (currentIsPanel1 != targetIsPanel1);
@@ -720,15 +750,15 @@ namespace TestDevExpress.Components
             }
         }
         /// <summary>
-        /// Do daného páru doplní <see cref="UserControlPair.ControlParent1"/> pro <see cref="UserControlPair.Control1"/> a totéž pro Control2.
+        /// Do daného páru doplní <see cref="UserControlPair.TileInfo1"/> pro <see cref="UserControlPair.Control1"/> a totéž pro Control2.
         /// </summary>
         /// <param name="pair"></param>
         private void _FillControlParentsToPair(UserControlPair pair)
         {
             if (pair != null)
             {
-                pair.ControlParent1 = _SearchControlParentOfAnyControl(pair.Control1);
-                pair.ControlParent2 = _SearchControlParentOfAnyControl(pair.Control2);
+                pair.TileInfo1 = _SearchControlParentOfAnyControl(pair.Control1);
+                pair.TileInfo2 = _SearchControlParentOfAnyControl(pair.Control2);
             }
         }
         /// <summary>
@@ -769,11 +799,11 @@ namespace TestDevExpress.Components
             _BarManager = barManager;
         }
         #endregion
-        #region Třídy ControlParentPair (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
+        #region Třídy LayoutTileInfo (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
         /// <summary>
         /// Třída obsahující WeakReference na 
         /// </summary>
-        protected class ControlParentInfo
+        protected class LayoutTileInfo
         {
             /// <summary>
             /// Konstruktor
@@ -781,7 +811,7 @@ namespace TestDevExpress.Components
             /// <param name="parent"></param>
             /// <param name="hostControl"></param>
             /// <param name="userControl"></param>
-            public ControlParentInfo(Control parent, DxLayoutItemPanel hostControl, Control userControl)
+            public LayoutTileInfo(Control parent, DxLayoutItemPanel hostControl, Control userControl)
             {
                 __Parent = parent;
                 __HostControl = hostControl;
@@ -1037,11 +1067,11 @@ namespace TestDevExpress.Components
             /// <summary>
             /// Plná data k Controlu 1. Doplňuje se ručně.
             /// </summary>
-            public ControlParentInfo ControlParent1 { get; set; }
+            public LayoutTileInfo TileInfo1 { get; set; }
             /// <summary>
             /// Plná data k Controlu 2. Doplňuje se ručně.
             /// </summary>
-            public ControlParentInfo ControlParent2 { get; set; }
+            public LayoutTileInfo TileInfo2 { get; set; }
             /// <summary>
             /// První control v Panel1
             /// </summary>
@@ -1075,13 +1105,11 @@ namespace TestDevExpress.Components
 
                 var control1 = this.Control1;
                 var parent1 = control1?.Parent;
-                var controlParent1 = this.ControlParent1;
-                var layoutItemPanel1 = controlParent1?.HostControl;
+                var tileInfo1 = this.TileInfo1;
 
                 var control2 = this.Control2;
                 var parent2 = control2?.Parent;
-                var controlParent2 = this.ControlParent2;
-                var layoutItemPanel2 = controlParent2?.HostControl;
+                var tileInfo2 = this.TileInfo2;
 
                 if (this.SplitContainer.Horizontal != horizontal)
                 {
@@ -1095,36 +1123,36 @@ namespace TestDevExpress.Components
                     if (parent1 != null && control1 != null)
                     {
                         _RemoveControlFromParent(control1, parent1);
-                        if (controlParent1 != null)
-                            controlParent1.Parent = null;
+                        if (tileInfo1 != null)
+                            tileInfo1.Parent = null;
                     }
                     if (parent2 != null && control2 != null)
                     {
                         _RemoveControlFromParent(control2, parent2);
-                        if (controlParent2 != null)
-                            controlParent2.Parent = null;
+                        if (tileInfo2 != null)
+                            tileInfo2.Parent = null;
                     }
 
                     if (parent1 != null && control2 != null)
                         parent1.Controls.Add(control2);
-                    if (controlParent2 != null)
-                        controlParent2.Parent = parent1;
+                    if (tileInfo2 != null)
+                        tileInfo2.Parent = parent1;
 
                     if (parent2 != null && control1 != null)
                         parent2.Controls.Add(control1);
-                    if (controlParent1 != null)
-                        controlParent1.Parent = parent2;
+                    if (tileInfo1 != null)
+                        tileInfo1.Parent = parent2;
 
                     isChanged = true;
                 }
 
                 if (isChanged)
                 {
-                    if (controlParent1 != null) controlParent1.DockButtonDisabledPosition = controlParent1.CurrentDockPosition;
-                    if (controlParent2 != null) controlParent2.DockButtonDisabledPosition = controlParent2.CurrentDockPosition;
+                    if (tileInfo1 != null) tileInfo1.DockButtonDisabledPosition = tileInfo1.CurrentDockPosition;
+                    if (tileInfo2 != null) tileInfo2.DockButtonDisabledPosition = tileInfo2.CurrentDockPosition;
                 }
 
-                // Pokud jsem provedl prohození obsahu oanelů zleva doprava nebo shora dolů (tj. beze změny orientace splitteru), tak bych rád, aby stávající obsah měl dosavadní rozměr = 
+                // Pokud jsem provedl prohození obsahu panelů zleva doprava nebo shora dolů (tj. beze změny orientace splitteru), tak bych rád, aby stávající obsah měl dosavadní rozměr = 
                 //  upravím pozici splitteru tak, aby byla symetrická k pozici dosavadní:
                 if (swap && !isChangeOrientation )
                 {
