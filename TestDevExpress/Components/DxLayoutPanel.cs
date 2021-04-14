@@ -109,7 +109,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<DxLayoutPanelSplitterChangedArgs> LayoutPanelChanged;
         #endregion
-        #region Přidání, refresh titulku, odebrání a evidence UserControlů
+        #region Přidání UserControlů, refresh titulku, odebrání a evidence UserControlů
         /// <summary>
         /// Metoda přidá daný control do layoutu.
         /// Typicky se používá pro první control, ale může být použita pro kterýkoli další. Pak se přidá za posledně přidaný doprava.
@@ -1467,6 +1467,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: icons[4], visible: false);
 
             _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+            _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
+            _TitleLabelCurrentWidthType = TitleLabelWidthType.All;
 
             this.AppliedSvgIcons = this.UseSvgIcons;
 
@@ -1522,6 +1524,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_TitleLabel == null) return;
             int width = this.ClientSize.Width;
+            int fontHeight = _TitleLabel.StyleController?.Appearance.Font.Height ?? _TitleLabel.Appearance.Font.Height;
+            if (_TitleLabel.Height != fontHeight)
+                _TitleLabel.Height = fontHeight;
             int height = _TitleLabel.Bottom + 6;
             if (height < 28) height = 28;
             if (this.Height != height)
@@ -1531,17 +1536,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                _TitleLabel.Width = (width - _TitleLabel.Left - 35);
                 int y = (height - 24) / 2;
-                int dx = 27;
-                int x = width - (5 * dx) - 9;
+                int bs = 6;
+                int w1 = 27;
+                int w5 = (5 * w1) + bs;
+                int x = width - w5;
 
-                _DockLeftButton.Location = new Point(x, y); x += dx;
-                _DockTopButton.Location = new Point(x, y); x += dx;
-                _DockBottomButton.Location = new Point(x, y); x += dx;
-                _DockRightButton.Location = new Point(x, y); x += dx + 6;
-                _CloseButton.Location = new Point(x, y); x += dx;
+                int ls = 3;
+                TitleLabelRightDock = width - w5 - ls;
+                TitleLabelRightClose = width - w1 - ls;
+                TitleLabelRightAll = width - ls;
+
+                _DockLeftButton.Location = new Point(x, y); x += w1;
+                _DockTopButton.Location = new Point(x, y); x += w1;
+                _DockBottomButton.Location = new Point(x, y); x += w1;
+                _DockRightButton.Location = new Point(x, y); x += w1 + bs;
+                _CloseButton.Location = new Point(x, y); x += w1;
+
+                DoLayoutTitleLabel();
             }
+        }
+        /// <summary>
+        /// Nastaví šířku pro <see cref="_TitleLabel"/> podle aktuálního režimu <see cref="_TitleLabelCurrentWidthType"/> a podle aktuálně nastavených pozic Right pro TitleLabel
+        /// </summary>
+        protected void DoLayoutTitleLabel()
+        {
+            var type = _TitleLabelCurrentWidthType;
+            int right = (type == TitleLabelWidthType.DockButton ? TitleLabelRightDock : (type == TitleLabelWidthType.CloseButton ? TitleLabelRightClose : TitleLabelRightAll));
+            _TitleLabel.Width = (right - _TitleLabel.Left);
         }
         private DxLabelControl _TitleLabel;
         private DxSimpleButton _DockLeftButton;
@@ -1549,6 +1571,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxSimpleButton _DockBottomButton;
         private DxSimpleButton _DockRightButton;
         private DxSimpleButton _CloseButton;
+        private TitleLabelWidthType _TitleLabelCurrentWidthType;
+        private int TitleLabelRightDock;
+        private int TitleLabelRightClose;
+        private int TitleLabelRightAll;
+        private enum TitleLabelWidthType { None, DockButton, CloseButton, All }
         #endregion
         #region Data získaná z Ownerů, vlastní eventy
         /// <summary>
@@ -1746,6 +1773,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Tlačítko pro Close:
             bool isCloseVisible = GetItemVisibility(CloseButtonVisibility, isMouseOnControl, isPrimaryPanel);
             this._CloseButton.Visible = isCloseVisible;
+
+            // Šířka TitleLabelu:
+            _TitleLabelCurrentWidthType = (isDockVisible ? TitleLabelWidthType.DockButton : (isCloseVisible ? TitleLabelWidthType.CloseButton : TitleLabelWidthType.All));
+            DoLayoutTitleLabel();
         }
         /// <summary>
         /// Vrátí true pokud control s daným režimem viditelnosti má být viditelný, při daném stavu myši na controlu
