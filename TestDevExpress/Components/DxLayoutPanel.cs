@@ -581,7 +581,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             int index = _SearchIndexOfAnyControl(sender as Control);
             if (index >= 0)
             {
-
                 LayoutTileInfo tileInfo = _Controls[index];
                 var args = new TEventCancelArgs<Control>(tileInfo.UserControl);
                 this.OnCloseButtonClickAfter(args);
