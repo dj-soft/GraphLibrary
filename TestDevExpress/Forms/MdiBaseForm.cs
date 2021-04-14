@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using DevExpress.XtraBars.Ribbon;
 using TestDevExpress.Components;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {

@@ -14,7 +14,7 @@ using System.Drawing;
 
 using DevExpress.Utils;
 
-namespace TestDevExpress.Components
+namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
     /// Panel, který vkládá controly do svých rámečků se Splittery
@@ -677,15 +677,15 @@ namespace TestDevExpress.Components
         private const string _ContextMenuHorizontalName = "Horizontal";
         private string _ContextMenuHorizontalText { get { return "Vedle sebe"; } }
         private string _ContextMenuHorizontalToolTip { get { return "Panely vlevo a vpravo, oddělovač je svislý"; } }
-        private Image _ContextMenuHorizontalGlyph { get { return TestDevExpress.Properties.Resources.distribute_horizontal_margin_24_; } }
+        private Image _ContextMenuHorizontalGlyph { get { return DxComponent.GetImageFromResource("grayscaleimages/alignment/alignverticalcenter_16x16.png"); } }
         private const string _ContextMenuVerticalName = "Vertical";
         private string _ContextMenuVerticalText { get { return "Pod sebou"; } }
         private string _ContextMenuVerticalToolTip { get { return "Panely nahoře a dole, oddělovač je vodorovný"; } }
-        private Image _ContextMenuVerticalGlyph { get { return TestDevExpress.Properties.Resources.distribute_vertical_margin_24_; } }
+        private Image _ContextMenuVerticalGlyph { get { return DxComponent.GetImageFromResource("grayscaleimages/alignment/alignhorizontalcenter_16x16.png"); } }
         private const string _ContextMenuCloseName = "Vertical";
         private string _ContextMenuCloseText { get { return "Zavřít"; } }
         private string _ContextMenuCloseToolTip { get { return "Zavře nabídku bez změny vzhledu"; } }
-        private Image _ContextMenuCloseGlyph { get { return TestDevExpress.Properties.Resources.dialog_no_2_24_; } }
+        private Image _ContextMenuCloseGlyph { get { return DxComponent.GetImageFromResource("grayscaleimages/edit/delete_16x16.png"); } }
         /// <summary>
         /// Po kliknutí na položku kontextového menu pro splitter: Horizontální / Vertikální
         /// </summary>

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using TestDevExpress;
-using TestDevExpress.Components;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace Noris.Clients.Win.Components
 {

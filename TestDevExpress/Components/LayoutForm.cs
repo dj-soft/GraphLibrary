@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using WF = System.Windows.Forms;
 using System.Windows.Forms;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Components
 {
@@ -19,7 +20,7 @@ namespace TestDevExpress.Components
             _LayoutPanel = new DxLayoutPanel() 
             {
                 Dock = System.Windows.Forms.DockStyle.Fill, 
-                SplitterContextMenuEnabled = false, 
+                SplitterContextMenuEnabled = true, 
                 DockButtonVisibility = ControlVisibility.OnMouse,
                 CloseButtonVisibility = ControlVisibility.OnNonPrimaryPanelAllways,
                 UseSvgIcons = false

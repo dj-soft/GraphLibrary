@@ -22,7 +22,7 @@ using DevExpress.Utils;
 // using RIB = DevExpress.XtraBars.Ribbon;
 // using NOD = DevExpress.XtraTreeList.Nodes;
 
-namespace TestDevExpress.Components
+namespace Noris.Clients.Win.Components.AsolDX
 {
     #region class DxComponent : Factory pro tvorbu DevExpress komponent
     /// <summary>
@@ -642,6 +642,27 @@ namespace TestDevExpress.Components
         /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
         /// </summary>
         /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
+        /// <param name="maxSize"></param>
+        /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
+        /// <param name="svgPalette">Paleta pro vykreslení SVG Image</param>
+        /// <param name="svgState">Stav objektu pro vykreslení SVG Image, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
+        /// <returns></returns>
+        public static Image GetImageFromResource(string resourceName, 
+            Size? maxSize = null, Size? optimalSvgSize = null, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            return GetImageFromResource(resourceName, out Size size,
+                maxSize, optimalSvgSize, svgPalette, svgState);
+        }
+        /// <summary>
+        /// Vrátí Image (bitmapu) pro daný název DevExpress zdroje.
+        /// Vstupem může být SVG i PNG zdroj.
+        /// <para/>
+        /// Pro SVG obrázek je vhodné:
+        /// 1. určit <paramref name="optimalSvgSize"/>, pak bude Image renderován exaktně na zadaný rozměr.
+        /// 2. předat i paletu <paramref name="svgPalette"/>, tím bude SVG obrázek přizpůsoben danému skinu a stavu.
+        /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
+        /// </summary>
+        /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
         /// <param name="size">Výstup konkrétní velikosti, odráží velikost bitmapy, nebo <paramref name="optimalSvgSize"/> pro SVG, je oříznuto na <paramref name="maxSize"/></param>
         /// <param name="maxSize"></param>
         /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
@@ -1171,6 +1192,44 @@ namespace TestDevExpress.Components
         private static string NonDotCharacters = @"[^.]*";
     }
     #endregion
+    #region class WeakTarget<T> : Typová obálka nad WeakReference
+    /// <summary>
+    /// Typová obálka nad <see cref="WeakReference"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal class WeakTarget<T> where T : class
+    {
+        /// <summary>
+        /// Konstruktor. Lze použít i implicitní konverzi:
+        /// <see cref="WeakTarget{T}"/> wt = (T)target; a následně: T target2 = wt.Target;
+        /// </summary>
+        /// <param name="target"></param>
+        public WeakTarget(T target)
+        {
+            this._Wref = (target != null ? new WeakReference(target) : null);
+        }
+        private readonly WeakReference _Wref;
+        /// <summary>
+        /// Obsahuje true pokud cíl je nyní dostupný a je správného typu
+        /// </summary>
+        public bool IsAlive { get { return ((this._Wref?.IsAlive ?? false) ? (this._Wref.Target is T) : false); } }
+        /// <summary>
+        /// Cíl daného typu
+        /// </summary>
+        public T Target { get { return ((this.IsAlive) ? this._Wref.Target as T : null); } }
+        /// <summary>
+        /// Implicitní konverze z typového WeakTargetu na originální objekt daného typu
+        /// </summary>
+        /// <param name="target"></param>
+        public static implicit operator T(WeakTarget<T> target) { return target?.Target; }
+        /// <summary>
+        /// Implicitní konverze z originálního objektu daného typu na typový WeakTarget
+        /// </summary>
+        /// <param name="source"></param>
+        public static implicit operator WeakTarget<T>(T source) { return (source is null ? null : new WeakTarget<T>(source)); }
+    }
+    #endregion
+
     #region class TEventArgs<T> : Třída argumentů obsahující jeden prvek generického typu Item
     /// <summary>
     /// Třída argumentů obsahující jeden prvek <see cref="Item"/> generického typu <typeparamref name="T"/>.
@@ -2083,13 +2142,13 @@ namespace TestDevExpress.Components
         /// <param name="e"></param>
         private void _ListBox_PaintList(object sender, PaintEventArgs e)
         {
-            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = Components.DxComponent.GetSvgPalette();
+            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = DxComponent.GetSvgPalette();
             var visibleItems = _ListBox.VisibleItems;
             foreach (var visibleItem in visibleItems)
             {
                 string resourceName = visibleItem.Item2 as string;
                 Rectangle itemBounds = visibleItem.Item3;
-                var image = Components.DxComponent.GetImageFromResource(resourceName, out Size size, maxSize: new Size(32, 32), optimalSvgSize: new Size(32, 32), svgPalette: svgPalette);
+                var image = DxComponent.GetImageFromResource(resourceName, out Size size, maxSize: new Size(32, 32), optimalSvgSize: new Size(32, 32), svgPalette: svgPalette);
                 if (image != null)
                 {
                     Point imagePoint = new Point((itemBounds.Right - 24 - size.Width / 2), itemBounds.Top + ((itemBounds.Height - size.Height) / 2));
@@ -2130,7 +2189,7 @@ namespace TestDevExpress.Components
             var filter = _ResourceFilter;
             if (String.IsNullOrEmpty(filter)) return _ResourceNames;
 
-            filter = Components.RegexSupport.ReplaceGreenWildcards(filter);
+            filter = RegexSupport.ReplaceGreenWildcards(filter);
 
             string[] result = _GetResourcesByFilter(filter);
             if (result.Length == 0)

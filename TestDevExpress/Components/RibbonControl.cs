@@ -10,7 +10,7 @@ using WinFormServices.Drawing;
 
 using XB = DevExpress.XtraBars;
 using XR = DevExpress.XtraBars.Ribbon;
-using TestDevExpress.Components;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress
 {

@@ -18,6 +18,7 @@ using DXT = DevExpress.XtraTabbedMdi;
 
 using NWC = Noris.Clients.Win.Components;
 using TestDevExpress.Components;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {

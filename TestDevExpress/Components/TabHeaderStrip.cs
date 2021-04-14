@@ -13,6 +13,7 @@ using WinForm = System.Windows.Forms;
 
 using NCC = Noris.Clients.Controllers;
 using DXN = DevExpress.XtraBars.Navigation;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress
 {
@@ -2195,43 +2196,6 @@ namespace TestDevExpress
         public string PropertyName { get; private set; }
     }
 
-    #endregion
-    #region class WeakTarget<T> : Typová obálka nad WeakReference
-    /// <summary>
-    /// Typová obálka nad <see cref="WeakReference"/>
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal class WeakTarget<T> where T : class
-    {
-        /// <summary>
-        /// Konstruktor. Lze použít i implicitní konverzi:
-        /// <see cref="WeakTarget{T}"/> wt = (T)target; a následně: T target2 = wt.Target;
-        /// </summary>
-        /// <param name="target"></param>
-        public WeakTarget(T target)
-        {
-            this._Wref = (target != null ? new WeakReference(target) : null);
-        }
-        private readonly WeakReference _Wref;
-        /// <summary>
-        /// Obsahuje true pokud cíl je nyní dostupný a je správného typu
-        /// </summary>
-        public bool IsAlive { get { return ((this._Wref?.IsAlive ?? false) ? (this._Wref.Target is T) : false); } }
-        /// <summary>
-        /// Cíl daného typu
-        /// </summary>
-        public T Target { get { return ((this.IsAlive) ? this._Wref.Target as T : null); } }
-        /// <summary>
-        /// Implicitní konverze z typového WeakTargetu na originální objekt daného typu
-        /// </summary>
-        /// <param name="target"></param>
-        public static implicit operator T(WeakTarget<T> target) { return target?.Target; }
-        /// <summary>
-        /// Implicitní konverze z originálního objektu daného typu na typový WeakTarget
-        /// </summary>
-        /// <param name="source"></param>
-        public static implicit operator WeakTarget<T>(T source) { return (source is null ? null : new WeakTarget<T>(source)); }
-    }
     #endregion
     #region Interface IMember : předpis pro podřízený prvek, který dovoluje svému Ownerovi se do něj vepsat jako Vlastní prvku
     /// <summary>

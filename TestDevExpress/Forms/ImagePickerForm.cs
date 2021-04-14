@@ -9,6 +9,7 @@ using WF = System.Windows.Forms;
 
 using DXB = DevExpress.XtraBars;
 using DXE = DevExpress.XtraEditors;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
@@ -108,14 +109,14 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitFrames()
         {
-            _MainPanel = Components.DxComponent.CreateDxPanel(this, WF.DockStyle.Fill, DXE.Controls.BorderStyles.NoBorder);
+            _MainPanel = DxComponent.CreateDxPanel(this, WF.DockStyle.Fill, DXE.Controls.BorderStyles.NoBorder);
         }
         /// <summary>
         /// Inicializace objektu Ribbon a Statusbar
         /// </summary>
         private void InitRibbons()
         {
-            _DxRibbonControl = new Components.DxRibbonControl();
+            _DxRibbonControl = new DxRibbonControl();
             _DxRibbonControl.Items.Clear();
 
             this.Ribbon = _DxRibbonControl;
@@ -128,8 +129,8 @@ namespace TestDevExpress.Forms
             this.Controls.Add(this.Ribbon);
             this.Controls.Add(this.StatusBar);
         }
-        Components.DxPanelControl _MainPanel;
-        Components.DxRibbonControl _DxRibbonControl;
+        DxPanelControl _MainPanel;
+        DxRibbonControl _DxRibbonControl;
         #endregion
         #region Ribbon a StatusBar
         /// <summary>
@@ -165,7 +166,7 @@ namespace TestDevExpress.Forms
         #region List = DxImagePicker
         private void InitList()
         {
-            _ImagePickerList = new Components.DxImagePickerListBox() { Dock = WF.DockStyle.Fill };
+            _ImagePickerList = new DxImagePickerListBox() { Dock = WF.DockStyle.Fill };
             _ImagePickerList.StatusTextChanged += _ImagePickerList_StatusTextChanged;
             _MainPanel.Controls.Add(_ImagePickerList);
             RefreshStatusText();
@@ -180,7 +181,7 @@ namespace TestDevExpress.Forms
             this._StatusText = _ImagePickerList.StatusText;
         }
 
-        private Components.DxImagePickerListBox _ImagePickerList;
+        private DxImagePickerListBox _ImagePickerList;
         #endregion
 
     }

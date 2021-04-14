@@ -15,7 +15,7 @@ using System.Drawing;
 using DevExpress.Utils;
 
 
-namespace TestDevExpress.Components
+namespace Noris.Clients.Win.Components.AsolDX
 {
     #region DxRibbon
     /// <summary>

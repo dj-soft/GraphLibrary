@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TestDevExpress.Components;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress
 {
