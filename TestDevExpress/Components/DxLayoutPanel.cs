@@ -97,10 +97,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<DxLayoutPanelSplitterChangedArgs> LayoutPanelChanged;
         #endregion
-        #region Přidání, odebrání a evidence UserControlů
+        #region Přidání, refresh titulku, odebrání a evidence UserControlů
         /// <summary>
         /// Metoda přidá daný control do layoutu.
         /// Typicky se používá pro první control, ale může být použita pro kterýkoli další. Pak se přidá za posledně přidaný doprava.
+        /// <para/>
+        /// Pokud dodaný UserControl implementuje <see cref="ILayoutUserControl"/>, pak zdejší instance se stará o aktuálnost titulku.
         /// </summary>
         /// <param name="userControl"></param>
         public void AddControl(Control userControl)
@@ -109,26 +111,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AddControlDefault(userControl, AddControlParams.Default);
         }
         /// <summary>
-        /// Přidá nový control vedle controlu daného
+        /// Přidá nový control vedle controlu daného, s danými parametry.
+        /// <para/>
+        /// Pokud dodaný UserControl implementuje <see cref="ILayoutUserControl"/>, pak zdejší instance se stará o aktuálnost titulku.
         /// </summary>
         /// <param name="userControl"></param>
         /// <param name="previousControl"></param>
         /// <param name="position"></param>
+        /// <param name="titleText"></param>
         /// <param name="previousSize">Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)</param>
         /// <param name="currentSize"></param>
         /// <param name="previousSizeRatio"></param>
         /// <param name="currentSizeRatio"></param>
-        public void AddControl(Control userControl, Control previousControl, LayoutPosition position,
+        public void AddControl(Control userControl, Control previousControl, LayoutPosition position, 
+            string titleText = null,
             int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
             if (userControl == null) return;
 
-            AddControlParams parameters = new AddControlParams() { Position = position, PreviousSize = previousSize, CurrentSize = currentSize, PreviousSizeRatio = previousSizeRatio, CurrentSizeRatio = currentSizeRatio };
+            AddControlParams parameters = new AddControlParams() { Position = position, TitleText = titleText,
+                PreviousSize = previousSize, CurrentSize = currentSize, PreviousSizeRatio = previousSizeRatio, CurrentSizeRatio = currentSizeRatio };
             int prevIndex = _GetIndexOfUserControl(previousControl);
             if (prevIndex < 0)
                 _AddControlDefault(userControl, parameters);
             else
                 _AddControlNear(userControl, prevIndex, parameters);
+        }
+        /// <summary>
+        /// Metoda najde panel s daným UserControlem, a zajistí aktualizaci jeho titulku.
+        /// <para/>
+        /// Pokud dodaný UserControl implementuje <see cref="ILayoutUserControl"/>, pak zdejší instance se stará o aktuálnost titulku sama.
+        /// </summary>
+        /// <param name="userControl"></param>
+        /// <param name="titleText"></param>
+        public void UpdateTitle(Control userControl, string titleText)
+        {
+            int index = _GetIndexOfUserControl(userControl);
+            if (index < 0) return;
+            var hostControl = _Controls[index].HostControl;
+            if (hostControl != null)
+                hostControl.TitleText = titleText;
         }
         /// <summary>
         /// Najde daný control ve své evidenci, a pokud tam je, pak jej odebere a jeho prostor uvolní pro nejbližšího souseda.
@@ -162,7 +184,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int count = _Controls.Count;
             if (count == 0)
             {   // Zatím nemáme nic: nový control vložím přímo do this jako jediný (nebude se zatím používat SplitterContainer, není proč):
-                _AddControlTo(userControl, this, LayoutPosition.None);
+                _AddControlTo(userControl, this, LayoutPosition.None, parameters.TitleText);
             }
             else
             {   // Už něco máme, přidáme nový control poblíž posledního evidovaného prvku:
@@ -188,7 +210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // 3. Do toho parenta vložíme místo controlu nový SplitterContainer a určíme panely pro stávající control a pro nový prvek (Panel1 a Panel2, podle parametru):
             DevExpress.XtraEditors.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel);
             parent.Controls.Add(newSplitContainer);
-            newSplitContainer.SplitterPosition = _GetSplitterPosition(parent.ClientSize, parameters);         // Až po vložení do Parenta
+            newSplitContainer.SplitterPosition = _GetSplitterPosition(parent.ClientSize, parameters);        // Až po vložení do Parenta
             newSplitContainer.SplitterMoved += _SplitterMoved;                                               // Až po nastavení pozice
 
             // 4. Stávající prvek vložíme jako Child do jeho nově určeného panelu, a vepíšeme to i do evidence:
@@ -197,7 +219,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             nearInfo.DockButtonDisabledPosition = parameters.PairPosition;
 
             // 5. Nový UserControl vložíme do jeho panelu a vytvoříme pár a přidáme jej do evidence:
-            _AddControlTo(userControl, newControlPanel, parameters.Position);
+            _AddControlTo(userControl, newControlPanel, parameters.Position, parameters.TitleText);
         }
         /// <summary>
         /// Přidá daný control do daného parenta jako jeho Child, dá Dock = Fill, a přidá informaci do evidence v <see cref="_Controls"/>.
@@ -205,12 +227,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="userControl"></param>
         /// <param name="parent"></param>
         /// <param name="dockPosition"></param>
-        private void _AddControlTo(Control userControl, Control parent, LayoutPosition dockPosition)
+        /// <param name="titleText"></param>
+        private void _AddControlTo(Control userControl, Control parent, LayoutPosition dockPosition, string titleText)
         {
             DxLayoutItemPanel hostControl = new DxLayoutItemPanel(this);
             hostControl.UserControl = userControl;
             hostControl.TitleBarVisible = true;
-            hostControl.TitleText = "";
+            hostControl.TitleText = titleText;
             hostControl.IsPrimaryPanel = (ControlCount == 0);
             hostControl.DockButtonDisabledPosition = dockPosition;
             hostControl.DockButtonClick += ItemPanel_DockButtonClick;
@@ -222,7 +245,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Odebere daný control z parenta (vizuálně) i z evidence (datově).
-        /// Před tím volá eventhandler <see cref="UserControlRemoveBefore"/> a reaguje na jeho požadavek Cancel (=pro Cancel = true přeruší proces odebrání panelu).
+        /// Před tím volá eventhandler <see cref="UserControlRemoveBefore"/> a reaguje na jeho požadavek Cancel (= pro Cancel = true přeruší proces odebrání panelu).
         /// </summary>
         /// <param name="removeIndex"></param>
         private void _RemoveUserControl(int removeIndex)
@@ -453,6 +476,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vrátí index daného User controlu v poli zdejších controlů.
+        /// Pokud vrátí -1, pak control nebyl nalezen.
         /// </summary>
         /// <param name="userControl"></param>
         /// <returns></returns>
@@ -463,6 +487,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vrátí <see cref="LayoutTileInfo"/> obsahující daný User controlu v poli zdejších controlů.
+        /// Může vrátit null.
         /// </summary>
         /// <param name="userControl"></param>
         /// <returns></returns>
@@ -474,6 +499,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Najde index prvku, který obsahuje daný control na kterékoli pozici (<see cref="LayoutTileInfo.UserControl"/>, <see cref="LayoutTileInfo.HostControl"/>, <see cref="LayoutTileInfo.Parent"/>).
         /// Hledá i v rámci Parentů dodaného prvku.
+        /// Pokud vrátí -1, pak control nebyl nalezen.
         /// </summary>
         /// <param name="control"></param>
         /// <returns></returns>
@@ -491,6 +517,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Najde prvek <see cref="LayoutTileInfo"/> , který obsahuje daný control na kterékoli pozici (<see cref="LayoutTileInfo.UserControl"/>, <see cref="LayoutTileInfo.HostControl"/>, <see cref="LayoutTileInfo.Parent"/>).
         /// Hledá i v rámci Parentů dodaného prvku.
+        /// Může vrátit null.
         /// </summary>
         /// <param name="control"></param>
         /// <returns></returns>
@@ -529,11 +556,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void ItemPanel_DockButtonClick(object sender, DxLayoutTitleDockPositionArgs e)
         {
             int index = _SearchIndexOfAnyControl(sender as Control);
-            if (index < 0) return;
-
-            var tileInfo = _Controls[index];
-            var dockPosition = e.DockPosition;
-            _SetDockPosition(tileInfo, dockPosition);
+            if (index >= 0)
+                _SetDockPosition(_Controls[index], e.DockPosition);
         }
         /// <summary>
         /// Po kliknutí na CloseButton v titulku: odebere odpovídající prvek layoutu
@@ -543,8 +567,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void ItemPanel_CloseButtonClick(object sender, EventArgs e)
         {
             int index = _SearchIndexOfAnyControl(sender as Control);
-            if (index < 0) return;
-            _RemoveUserControl(index);
+            if (index >= 0)
+                _RemoveUserControl(index);
         }
         #endregion
         #region Interaktivita vnitřní - reakce na odebrání controlu, na pohyb splitteru, na změnu orientace splitteru, na změnu dokování 
@@ -579,12 +603,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _SplitterMoved(object sender, EventArgs e)
         {
+            if (_SplitterMovedDisable) return;
+
             if (sender is DevExpress.XtraEditors.SplitContainerControl splitContainer)
             {
                 UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
+                _FillControlParentsToPair(pair);
                 OnSplitterPositionChanged(pair.CreateSplitterChangedArgs());
             }
         }
+        /// <summary>
+        /// true = Dočasné potlačení volání události <see cref="OnSplitterPositionChanged(DxLayoutPanelSplitterChangedArgs)"/>.
+        /// Používá se v době změny layoutu v metodě <see cref="_SetOrientation(UserControlPair, bool, bool)"/>, kdy se mění jak orientace, tak i pozice splitteru.
+        /// Pak nechci volat samostatný event <see cref="SplitterPositionChanged"/>, protože bude následně volán event <see cref="LayoutPanelChanged"/>.
+        /// </summary>
+        private bool _SplitterMovedDisable;
         /// <summary>
         /// Provede se po změně pozice splitteru
         /// </summary>
@@ -740,8 +773,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FillControlParentsToPair(pair);
 
             bool isChanged = false;
-            using (this.ScopeSuspendParentLayout())
-                isChanged = pair.SetOrientation(horizontal, swap);
+            bool splitterMovedDisable = _SplitterMovedDisable;
+            try
+            {
+                _SplitterMovedDisable = true;
+                using (this.ScopeSuspendParentLayout())
+                    isChanged = pair.SetOrientation(horizontal, swap);
+            }
+            finally
+            {
+                _SplitterMovedDisable = splitterMovedDisable;
+            }
 
             if (isChanged)
             {
@@ -990,6 +1032,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Pozice, na kterou bude umístěn nový control
             /// </summary>
             public LayoutPosition Position { get; set; }
+            /// <summary>
+            /// Text titulku
+            /// </summary>
+            public string TitleText { get; set; }
             public bool IsSplitterFixed { get; set; }
             public int? FixedSize { get; set; }
             public int MinSize { get; set; }
@@ -1090,7 +1136,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public DxLayoutPanelSplitterChangedArgs CreateSplitterChangedArgs()
             {
-                DxLayoutPanelSplitterChangedArgs args = new DxLayoutPanelSplitterChangedArgs(Control1, Control2, SplitterOrientation, SplitContainer.SplitterPosition);
+                DxLayoutPanelSplitterChangedArgs args = new DxLayoutPanelSplitterChangedArgs(TileInfo1?.UserControl, TileInfo2?.UserControl, SplitterOrientation, SplitContainer.SplitterPosition);
                 return args;
             }
             /// <summary>
@@ -1710,19 +1756,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SplitterPosition = splitterPosition;
         }
         /// <summary>
-        /// První control v Panel1 (ten vlevo nebo nahoře)
+        /// První UserControl v Panel1 (ten vlevo nebo nahoře)
         /// </summary>
         public Control Control1 { get; private set; }
         /// <summary>
-        /// První control v Panel2 (ten vpravo nebo dole)
+        /// První UserControl v Panel2 (ten vpravo nebo dole)
         /// </summary>
         public Control Control2 { get; private set; }
         /// <summary>
-        /// Orientace splitteru (té dělící čáry)
+        /// Orientace splitteru (té dělící čáry): 
+        /// <see cref="Orientation.Horizontal"/> když splitter je vodorovný, pak <see cref="Control1"/> je nahoře a <see cref="Control2"/> je dole;
+        /// <see cref="Orientation.Vertical"/> když splitter je svislý, pak <see cref="Control1"/> je vlevo a <see cref="Control2"/> je vpravo.
         /// </summary>
         public Orientation SplitterOrientation { get; private set; }
         /// <summary>
-        /// Pozice splitteru
+        /// Pozice splitteru zleva (když <see cref="SplitterOrientation"/> = <see cref="Orientation.Vertical"/>);
+        /// nebo shora (když <see cref="SplitterOrientation"/> = <see cref="Orientation.Horizontal"/>).
         /// </summary>
         public int SplitterPosition { get; set; }
     }

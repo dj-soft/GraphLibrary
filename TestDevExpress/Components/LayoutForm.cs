@@ -26,6 +26,9 @@ namespace TestDevExpress.Components
                 UseSvgIcons = false
             };
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
+            _LayoutPanel.SplitterPositionChanged += _LayoutPanel_SplitterPositionChanged;
+            _LayoutPanel.LayoutPanelChanged += _LayoutPanel_LayoutPanelChanged;
+
             this.Controls.Add(_LayoutPanel);
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
@@ -33,7 +36,74 @@ namespace TestDevExpress.Components
 
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Bounds = formBounds;
+
+            this._Timer = new Timer() { Interval = 1800 };
+            this._Timer.Tick += _Timer_Tick;
+            this._Timer.Enabled = true;
         }
+        /// <summary>
+        /// Po změně layoutu (pozice prvků)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _LayoutPanel_LayoutPanelChanged(object sender, DxLayoutPanelSplitterChangedArgs e)
+        {
+            _ShowLayout(e);
+        }
+        /// <summary>
+        /// Po změně pozice splitteru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _LayoutPanel_SplitterPositionChanged(object sender, DxLayoutPanelSplitterChangedArgs e)
+        {
+            _ShowLayout(e);
+        }
+        private void _ShowLayout(DxLayoutPanelSplitterChangedArgs e)
+        {
+            LayoutTestPanel panel1 = e.Control1 as LayoutTestPanel;
+            LayoutTestPanel panel2 = e.Control2 as LayoutTestPanel;
+            var orientation = e.SplitterOrientation;
+            var position = e.SplitterPosition;
+        }
+        /// <summary>
+        /// Občas změním titulek některého panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Timer_Tick(object sender, EventArgs e)
+        {
+            this._Timer.Enabled = false;
+
+            // Najdeme si náhodně nějaký panel:
+            var controls = _LayoutPanel.AllControls;
+            int count = controls.Length;
+            if (count > 0)
+            {
+                Random rand = new Random();
+                LayoutTestPanel testPanel = controls[rand.Next(count)] as LayoutTestPanel;
+                if (testPanel != null)
+                {
+
+                    string title = testPanel.TitleText;
+                    if (rand.Next(10) > 3)
+                    {
+                        string[] suffix = "A;B;C;D;E;F;G;H;I;J;K;L;M;N;O;P;Q".Split(';');
+                        title = title + " [" + suffix[rand.Next(suffix.Length)] + rand.Next(10, 100).ToString() + "]";
+                    }
+
+                    _LayoutPanel.UpdateTitle(testPanel, title);
+
+                    this._Timer.Interval = rand.Next(700, 4500);
+                }
+            }
+
+            this._Timer.Enabled = true;
+        }
+        /// <summary>
+        /// Chtěl bych zavřít formulář
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
@@ -41,6 +111,11 @@ namespace TestDevExpress.Components
             if (this._LayoutPanel.ControlCount > 0)
                 e.Cancel = true;
         }
+        /// <summary>
+        /// Někdo zavřel poslední panel
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _LayoutPanel_LastControlRemoved(object sender, EventArgs e)
         {
             this.Close();
@@ -55,6 +130,8 @@ namespace TestDevExpress.Components
         /// Panel layoutu
         /// </summary>
         public DxLayoutPanel LayoutPanel { get { return _LayoutPanel; } }
+
+        System.Windows.Forms.Timer _Timer;
     }
 
     public class LayoutTestPanel : System.Windows.Forms.Panel, ILayoutUserControl // DevExpress.XtraEditors.PanelControl
