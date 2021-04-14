@@ -95,7 +95,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vyvolá se po změně orientace splitteru.
         /// </summary>
-        public event EventHandler<DxLayoutPanelSplitterChangedArgs> SplitterOrientationChanged;
+        public event EventHandler<DxLayoutPanelSplitterChangedArgs> LayoutPanelChanged;
         #endregion
         #region Přidání, odebrání a evidence UserControlů
         /// <summary>
@@ -594,12 +594,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             SplitterPositionChanged?.Invoke(this, args);
         }
         /// <summary>
-        /// Provede se po změně orientace splitteru
+        /// Provede se po změně rozložení panelů pro dvě sousední stránky
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnSplitterOrientationChanged(DxLayoutPanelSplitterChangedArgs args)
+        protected virtual void OnLayoutPanelChanged(DxLayoutPanelSplitterChangedArgs args)
         {
-            SplitterOrientationChanged?.Invoke(this, args);
+            LayoutPanelChanged?.Invoke(this, args);
         }
         #endregion
         #region Kontextové menu pro změnu orientace splitteru
@@ -746,7 +746,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (isChanged)
             {
                 DxLayoutPanelSplitterChangedArgs args = pair.CreateSplitterChangedArgs();
-                OnSplitterOrientationChanged(args);
+                OnLayoutPanelChanged(args);
             }
         }
         /// <summary>
