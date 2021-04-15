@@ -899,6 +899,73 @@ namespace Noris.Clients.Win.Components.AsolDX
             _BarManager = barManager;
         }
         #endregion
+        #region Persistence
+        /// <summary>
+        /// Kompletní layout tohoto panelu
+        /// </summary>
+        public string XmlLayout
+        {
+            get { return GetXmlLayout(); }
+            set { SetXmlLayout(value); }
+        }
+        /// <summary>
+        /// Vyvolá event <see cref="XmlLayoutChanged"/>
+        /// </summary>
+        protected virtual void OnXmlLayoutChanged()
+        {
+            XmlLayoutChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost vyvolaná po každé změně <see cref="XmlLayout"/>
+        /// </summary>
+        public event EventHandler XmlLayoutChanged;
+        private string GetXmlLayout()
+        {
+            Area area = new Area();
+            GetXmlLayoutFillArea(area, this);
+            area.SplitterOrientation = Orientation.Horizontal;
+            string xmlLayout = Persist.Serialize(area);
+            var copy = Persist.Deserialize(xmlLayout);
+            return xmlLayout;
+        }
+
+        private void GetXmlLayoutFillArea(Area area, Control host)
+        {
+            if (host.Controls.Count == 0) return;
+            Control control = host.Controls[0];
+            if (control is DevExpress.XtraEditors.SplitContainerControl dxSplit)
+            {
+                area.SplitterOrientation = (dxSplit.Horizontal ? Orientation.Vertical: Orientation.Horizontal);
+                area.FixedPanel = (dxSplit.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel1 ? FixedPanel.Panel1 :
+                                  (dxSplit.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel2 ? FixedPanel.Panel2 :
+                                   FixedPanel.None));
+                area.SplitterPosition = dxSplit.SplitterPosition;
+
+                area.Content1 = new Area();
+                GetXmlLayoutFillArea(area.Content1, dxSplit.Panel1);
+
+                area.Content2 = new Area();
+                GetXmlLayoutFillArea(area.Content2, dxSplit.Panel2);
+            }
+            else if (control is System.Windows.Forms.SplitContainer wfSplit)
+            { }
+            else if (control is DxLayoutItemPanel item)
+            { }
+        }
+        private void SetXmlLayout(string xmlLayout)
+        {
+        }
+        private class Area
+        {
+            public string AreaId { get; set; }
+            public string ContentId { get; set; }
+            public Orientation? SplitterOrientation { get; set; }
+            public FixedPanel? FixedPanel { get; set; }
+            public int? SplitterPosition { get; set; }
+            public Area Content1 { get; set; }
+            public Area Content2 { get; set; }
+        }
+        #endregion
         #region Třídy LayoutTileInfo (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
         /// <summary>
         /// Třída obsahující WeakReference na 

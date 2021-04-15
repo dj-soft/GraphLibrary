@@ -276,6 +276,8 @@ namespace TestDevExpress.Components
                 LayoutPanel.AddControl(newPanel, this, position, currentSizeRatio: ratio);
                 this.MouseActivityDetect();
                 newPanel.MouseActivityDetect();
+
+                var xmlLayout = LayoutPanel.XmlLayout;
             }
         }
         DevExpress.XtraEditors.SimpleButton _AddRightButton;
