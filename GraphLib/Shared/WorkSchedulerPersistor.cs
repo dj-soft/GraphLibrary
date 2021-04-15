@@ -4160,6 +4160,9 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 IList iList = data as IList;
                 if (iList == null) return null;
 
+                // Může být, že konkrétní List je potomkem Listu, a ve svém konstruktoru má naplnění několika výchozích prvků. Ale my máme i tyto prvky serializované, budeme je deserializovat, takže ty defaultní zahodíme:
+                if (iList.Count > 0) iList.Clear();
+
                 args.CurrentOperation = "GetGenerics";
                 args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
                 Type itemType = args.DataTypeInfo.ItemDataType;
@@ -4239,6 +4242,9 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 IDictionary iDict = data as IDictionary;
                 if (iDict == null) return null;
 
+                // Může být, že konkrétní Dictionary je potomkem Dictionary, a ve svém konstruktoru má naplnění několika výchozích prvků. Ale my máme i tyto prvky serializované, budeme je deserializovat, takže ty defaultní zahodíme:
+                if (iDict.Count > 0) iDict.Clear();
+
                 args.CurrentOperation = "GetGenerics";
                 args.DataTypeInfo = this.TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
                 Type keyType = args.DataTypeInfo.GetGenericType(0);
@@ -4306,7 +4312,6 @@ namespace Noris.LCS.Base.WorkScheduler.InternalPersistor
                 {   // Data persistujeme přímo do elementu args.XmlElement:
                     XmlElement xmlCurrElement = CreateElement(_ElementNameValue, args.XmlElement);
                     this.CompoundTypeSaveTo(args, true, xmlCurrElement);
-
                 }
 
                 args.CurrentOperation = "NotifyData.End";
