@@ -171,6 +171,7 @@
     </Compile>
     <Compile Include="Components\RandomText.cs" />
     <Compile Include="Components\ThreadManager.cs" />
+    <Compile Include="Components\XmlPersist.cs" />
     <Compile Include="Forms\GraphForm.cs">
       <SubType>Form</SubType>
     </Compile>

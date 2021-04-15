@@ -31,6 +31,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._Controls = new List<LayoutTileInfo>();
             this._DockButtonVisibility = ControlVisibility.Default;
             this._CloseButtonVisibility = ControlVisibility.Default;
+            this._DockButtonLeftToolTip = null;
+            this._DockButtonTopToolTip = null;
+            this._DockButtonBottomToolTip = null;
+            this._DockButtonRightToolTip = null;
+            this._CloseButtonToolTip = null;
             this._UseSvgIcons = true;
         }
         /// <summary>
@@ -67,9 +72,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_RefreshControls); } }
         private ControlVisibility _CloseButtonVisibility;
         /// <summary>
+        /// Tooltip na buttonu DockLeft
+        /// </summary>
+        public string DockButtonLeftToolTip { get { return _DockButtonLeftToolTip; } set { _DockButtonLeftToolTip = value; this.RunInGui(_RefreshControls); } }
+        private string _DockButtonLeftToolTip;
+        /// <summary>
+        /// Tooltip na buttonu DockTop
+        /// </summary>
+        public string DockButtonTopToolTip { get { return _DockButtonTopToolTip; } set { _DockButtonTopToolTip = value; this.RunInGui(_RefreshControls); } }
+        private string _DockButtonTopToolTip;
+        /// <summary>
+        /// Tooltip na buttonu DockBottom
+        /// </summary>
+        public string DockButtonBottomToolTip { get { return _DockButtonBottomToolTip; } set { _DockButtonBottomToolTip = value; this.RunInGui(_RefreshControls); } }
+        private string _DockButtonBottomToolTip;
+        /// <summary>
+        /// Tooltip na buttonu DockRight
+        /// </summary>
+        public string DockButtonRightToolTip { get { return _DockButtonRightToolTip; } set { _DockButtonRightToolTip = value; this.RunInGui(_RefreshControls); } }
+        private string _DockButtonRightToolTip;
+        /// <summary>
+        /// Tooltip na buttonu Close
+        /// </summary>
+        public string CloseButtonToolTip { get { return _CloseButtonToolTip; } set { _CloseButtonToolTip = value; this.RunInGui(_RefreshControls); } }
+        private string _CloseButtonToolTip;
+        /// <summary>
         /// Používat SVG ikony (true) / PNG ikony (false): default = true
         /// </summary>
-        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; _RefreshControls(); } }
+        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; this.RunInGui(_RefreshControls); } }
         private bool _UseSvgIcons;
         /// <summary>
         /// Povolení pro zobrazování kontextového menu na Splitteru (pro změnu orientace Horizontální - Vertikální).
@@ -961,44 +991,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Aktuální reálná dokovaná pozice, odvozená od hostitelského containeru
             /// </summary>
-            public LayoutPosition CurrentDockPosition
-            {
-                get
-                {
-                    DxLayoutItemPanel hostControl = HostControl;
-                    if (hostControl == null) return LayoutPosition.None;
-
-                    bool isHorizontal = false;
-                    int panelId = 0;
-
-
-                    DevExpress.XtraEditors.SplitGroupPanel dxPanel = hostControl.SearchForParentOfType<DevExpress.XtraEditors.SplitGroupPanel>();
-                    if (dxPanel != null && dxPanel.Parent is DevExpress.XtraEditors.SplitContainerControl dxSplitContainer)
-                    {   // DevExpress SplitPanel:
-                        isHorizontal = dxSplitContainer.Horizontal;
-                        panelId = (Object.ReferenceEquals(dxPanel, dxSplitContainer.Panel1) ? 1 :
-                                  (Object.ReferenceEquals(dxPanel, dxSplitContainer.Panel2) ? 2 : 0));
-                    }
-                    else
-                    {   // WinForm SplitPanel?
-                        SplitterPanel wfPanel = hostControl.SearchForParentOfType<SplitterPanel>();
-                        if (wfPanel != null && wfPanel.Parent is SplitContainer wfSplitContainer)
-                        {
-                            isHorizontal = (wfSplitContainer.Orientation == Orientation.Horizontal);
-                            panelId = (Object.ReferenceEquals(wfPanel, wfSplitContainer.Panel1) ? 1 :
-                                      (Object.ReferenceEquals(wfPanel, wfSplitContainer.Panel2) ? 2 : 0));
-                        }
-                    }
-
-                    switch (panelId)
-                    {
-                        case 1: return (isHorizontal ? LayoutPosition.Left : LayoutPosition.Top);            // Panel1 je (horizontálně) vlevo / (vertikálně) nahoře
-                        case 2: return (isHorizontal ? LayoutPosition.Right : LayoutPosition.Bottom);        // Panel1 je (horizontálně) vpravo / (vertikálně) dole
-                    }
-
-                    return LayoutPosition.None;
-                }
-            }
+            public LayoutPosition CurrentDockPosition { get { return HostControl?.CurrentDockPosition ?? LayoutPosition.None; } }
             /// <summary>
             /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
             /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné (bez ohledu na <see cref="DxLayoutPanel.DockButtonVisibility"/>.
@@ -1280,6 +1273,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxLayoutPanel Owner { get { return __Owner; } }
         private WeakTarget<DxLayoutPanel> __Owner;
+        /// <summary>
+        /// Aktuální reálná dokovaná pozice, odvozená od hostitelského containeru
+        /// </summary>
+        public LayoutPosition CurrentDockPosition
+        {
+            get
+            {
+                bool isHorizontal = false;
+                int panelId = 0;
+
+                DevExpress.XtraEditors.SplitGroupPanel dxPanel = this.SearchForParentOfType<DevExpress.XtraEditors.SplitGroupPanel>();
+                if (dxPanel != null && dxPanel.Parent is DevExpress.XtraEditors.SplitContainerControl dxSplitContainer)
+                {   // DevExpress SplitPanel:
+                    isHorizontal = dxSplitContainer.Horizontal;
+                    panelId = (Object.ReferenceEquals(dxPanel, dxSplitContainer.Panel1) ? 1 :
+                              (Object.ReferenceEquals(dxPanel, dxSplitContainer.Panel2) ? 2 : 0));
+                }
+                else
+                {   // WinForm SplitPanel?
+                    SplitterPanel wfPanel = this.SearchForParentOfType<SplitterPanel>();
+                    if (wfPanel != null && wfPanel.Parent is SplitContainer wfSplitContainer)
+                    {
+                        isHorizontal = (wfSplitContainer.Orientation == Orientation.Horizontal);
+                        panelId = (Object.ReferenceEquals(wfPanel, wfSplitContainer.Panel1) ? 1 :
+                                  (Object.ReferenceEquals(wfPanel, wfSplitContainer.Panel2) ? 2 : 0));
+                    }
+                }
+
+                switch (panelId)
+                {
+                    case 1: return (isHorizontal ? LayoutPosition.Left : LayoutPosition.Top);            // Panel1 je (horizontálně) vlevo / (vertikálně) nahoře
+                    case 2: return (isHorizontal ? LayoutPosition.Right : LayoutPosition.Bottom);        // Panel1 je (horizontálně) vpravo / (vertikálně) dole
+                }
+
+                return LayoutPosition.None;
+            }
+        }
         #endregion
         #region Naše vlastní data pro Titulkový panel, eventy
         /// <summary>
@@ -1466,15 +1496,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[3], visible: false, tag: LayoutPosition.Right);
             _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: icons[4], visible: false);
 
+            // Pořadí má vliv: _TitleLabel až nakonec => bude "pod" ikonami:
             _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
             _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
             _TitleLabelCurrentWidthType = TitleLabelWidthType.All;
 
-            this.AppliedSvgIcons = this.UseSvgIcons;
-
             this.Height = 35;
             this.Dock = DockStyle.Top;
 
+            RefreshIcons(true);
             MouseActivityInit();
         }
         /// <summary>
@@ -1563,7 +1593,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var type = _TitleLabelCurrentWidthType;
             int right = (type == TitleLabelWidthType.DockButton ? TitleLabelRightDock : (type == TitleLabelWidthType.CloseButton ? TitleLabelRightClose : TitleLabelRightAll));
-            _TitleLabel.Width = (right - _TitleLabel.Left);
+            int width = (right - _TitleLabel.Left);
+            _TitleLabel.Width = (width < 30 ? 30 : width);
         }
         private DxLabelControl _TitleLabel;
         private DxSimpleButton _DockLeftButton;
@@ -1595,6 +1626,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Viditelnost buttonu Close
         /// </summary>
         public ControlVisibility CloseButtonVisibility { get { return LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default; } }
+        /// <summary>
+        /// Tooltip na buttonu DockLeft
+        /// </summary>
+        public string DockButtonLeftToolTip { get { return LayoutPanel?.DockButtonLeftToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu DockTop
+        /// </summary>
+        public string DockButtonTopToolTip { get { return LayoutPanel?.DockButtonTopToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu DockBottom
+        /// </summary>
+        public string DockButtonBottomToolTip { get { return LayoutPanel?.DockButtonBottomToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu DockRight
+        /// </summary>
+        public string DockButtonRightToolTip { get { return LayoutPanel?.DockButtonRightToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu Close
+        /// </summary>
+        public string CloseButtonToolTip { get { return LayoutPanel?.CloseButtonToolTip; } }
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// </summary>
@@ -1702,6 +1753,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.ApplyImage(_DockBottomButton.ImageOptions, null, icons[2], size, true);
             DxComponent.ApplyImage(_DockRightButton.ImageOptions, null, icons[3], size, true);
             DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[4], size, true);
+
+            _DockLeftButton.SetToolTip(this.DockButtonLeftToolTip);
+            _DockTopButton.SetToolTip(this.DockButtonTopToolTip);
+            _DockBottomButton.SetToolTip(this.DockButtonBottomToolTip);
+            _DockRightButton.SetToolTip(this.DockButtonRightToolTip);
+            _CloseButton.SetToolTip(this.CloseButtonToolTip);
 
             this.AppliedSvgIcons = useSvgIcons;
         }
@@ -1922,6 +1979,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public interface ILayoutUserControl
     {
+        /// <summary>
+        /// ID controlu, dostává se do LayoutInfo
+        /// </summary>
+        string Id { get; }
         /// <summary>
         /// Text do titulku
         /// </summary>

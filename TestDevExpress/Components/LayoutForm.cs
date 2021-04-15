@@ -17,12 +17,17 @@ namespace TestDevExpress.Components
         { }
         public LayoutForm(bool useDevExpress)
         {
-            _LayoutPanel = new DxLayoutPanel() 
+            _LayoutPanel = new DxLayoutPanel()
             {
-                Dock = System.Windows.Forms.DockStyle.Fill, 
-                SplitterContextMenuEnabled = true, 
+                Dock = System.Windows.Forms.DockStyle.Fill,
+                SplitterContextMenuEnabled = true,
                 DockButtonVisibility = ControlVisibility.OnMouse,
                 CloseButtonVisibility = ControlVisibility.OnNonPrimaryPanelAllways,
+                DockButtonLeftToolTip = "Přemístit tento panel doleva",
+                DockButtonTopToolTip = "Přemístit tento panel nahoru",
+                DockButtonBottomToolTip = "Přemístit tento panel dolů",
+                DockButtonRightToolTip = "Přemístit tento panel doprava",
+                CloseButtonToolTip = "Zavřít tento panel",
                 UseSvgIcons = true
             };
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
@@ -347,6 +352,7 @@ namespace TestDevExpress.Components
         private bool _IsMouseOnControl;
         #endregion
         #region ILayoutUserControl implementace
+        string ILayoutUserControl.Id { get { return this.Id.ToString(); } }
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
         ControlVisibility ILayoutUserControl.CloseButtonVisibility { get { return ControlVisibility.Allways; } }
         event EventHandler ILayoutUserControl.TitleTextChanged { add { this.TitleTextChanged += value; } remove { this.TitleTextChanged -= value; } }
