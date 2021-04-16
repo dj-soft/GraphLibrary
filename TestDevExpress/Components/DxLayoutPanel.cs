@@ -54,9 +54,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             return null;
         }
         /// <summary>
-        /// Pole všech uživatelských controlů (neobsahuje tedy SplitContainery). Pole je lineární, nezohledňuje aktuální rozložení.
+        /// Pole všech uživatelských controlů (neobsahuje tedy SplitContainery). 
+        /// Pole je lineární, nezohledňuje aktuální rozložení.
+        /// Každý prvek pole obsahuje <see cref="DxLayoutItemInfo.AreaId"/> = ID prostoru v layoutu.
+        /// Pole obsahuje jen ty prostory, kde je nějaký UserControl.
+        /// <para/>
+        /// Kompletní rozložení prostoru je popsáno v <see cref="XmlLayout"/>.
         /// </summary>
-        public Control[] AllControls { get { return _GetAllControls(); } }
+        public DxLayoutItemInfo[] DxLayoutItems { get { return GetLayoutData().Item2; } }
         /// <summary>
         /// Aktuální počet controlů
         /// </summary>
@@ -107,6 +112,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool SplitterContextMenuEnabled { get; set; }
         /// <summary>
+        /// Vyvolá se po přidání nového controlu.
+        /// </summary>
+        public event EventHandler<TEventArgs<Control>> UserControlAdd;
+        /// <summary>
         /// Vyvolá se po kliknutí na tlačítko 'CloseButton' na konkrétním panelu.
         /// Eventhandler může akci odebrání panelu zakázat = nastavením <see cref="TEventCancelArgs{T}.Cancel"/> na true.
         /// Pokud Cancel zůstane false, bude zahájeno odebrání panelu - stejně jako by kód vyvolal metodu <see cref="RemoveControl(Control)"/>,
@@ -138,6 +147,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyvolá se po změně orientace splitteru.
         /// </summary>
         public event EventHandler<DxLayoutPanelSplitterChangedArgs> LayoutPanelChanged;
+        /// <summary>
+        /// Událost vyvolaná po každé změně <see cref="XmlLayout"/>, volá se vždy po:
+        /// Přidání / odebrání controlu;
+        /// Změna dokování;
+        /// Změna pozice splitteru
+        /// </summary>
+        public event EventHandler XmlLayoutChanged;
         #endregion
         #region Přidání UserControlů, refresh titulku, odebrání a evidence UserControlů
         /// <summary>
@@ -167,7 +183,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="currentSize"></param>
         /// <param name="previousSizeRatio"></param>
         /// <param name="currentSizeRatio"></param>
-        public void AddControl(Control userControl, Control previousControl, LayoutPosition position, 
+        public void AddControl(Control userControl, Control previousControl, LayoutPosition position,
             string titleText = null,
             int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
@@ -252,10 +268,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RemoveControlFromParent(nearHost, parent);
 
             // 3. Do toho parenta vložíme místo controlu nový SplitterContainer a určíme panely pro stávající control a pro nový prvek (Panel1 a Panel2, podle parametru):
-            DevExpress.XtraEditors.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel);
-            parent.Controls.Add(newSplitContainer);
-            newSplitContainer.SplitterPosition = _GetSplitterPosition(parent.ClientSize, parameters);        // Až po vložení do Parenta
-            newSplitContainer.SplitterMoved += _SplitterMoved;                                               // Až po nastavení pozice
+            DevExpress.XtraEditors.SplitContainerControl newSplitContainer = _CreateNewContainer(parameters, parent, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel);
 
             // 4. Stávající prvek vložíme jako Child do jeho nově určeného panelu, a vepíšeme to i do evidence:
             currentControlPanel.Controls.Add(nearHost);
@@ -286,6 +299,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             parent.Controls.Add(hostControl);
             LayoutTileInfo tileInfo = new LayoutTileInfo(parent, hostControl, userControl);
             _Controls.Add(tileInfo);
+
+            if (!_AllEventsDisable)
+            {
+                OnUserControlAdd(new TEventArgs<Control>(userControl));
+                OnXmlLayoutChanged();
+            }
         }
         /// <summary>
         /// Odebere daný control z parenta (vizuálně) i z evidence (datově).
@@ -311,7 +330,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _RemoveUserControlBefore(LayoutTileInfo removeInfo)
         {
             var args = new TEventCancelArgs<Control>(removeInfo.UserControl);
-            OnUserControlRemoveBefore(args);
+            if (!_AllEventsDisable)
+            {
+                OnUserControlRemoveBefore(args);
+            }
             return !args.Cancel;
         }
         /// <summary>
@@ -324,12 +346,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             var parent = removeInfo.Parent;                          // Parent daného controlu je typicky this (když control je jediný), anebo Panel1 nebo Panel2 nějakého SplitContaineru
             var removeHost = removeInfo.HostControl;
             var removeControl = removeInfo.UserControl;
+            bool removedLastControl = false;
             if (parent != null && removeHost != null)
             {
                 // 1. Odebereme daný control z jeho parenta a z evidence:
                 _RemoveControlFromParent(removeHost, parent);
                 _Controls.RemoveAt(removeIndex);
-                OnUserControlRemoved(removeControl);
+                if (!_AllEventsDisable)
+                {
+                    OnUserControlRemoved(removeControl);
+                }
 
                 // 2. Zjistíme, zda jeho parent je Panel1 nebo Panel2 z určitého SplitContaineru (najdeme SplitContainer a párový Panel) => pak najdeme párový Control a přemístíme jej nahoru:
                 if (_IsParentSplitPanel(parent, out DevExpress.XtraEditors.SplitContainerControl splitContainer, out DevExpress.XtraEditors.SplitGroupPanel pairPanel))
@@ -381,8 +407,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // 3. Pokud parentem není SplitContainer, zjistíme zda Parent jsme my sami => pak jsme odebrali poslední control:
                 else if (Object.ReferenceEquals(parent, this))
                 {
-                    this.OnLastControlRemoved();
+                    removedLastControl = true;
                 }
+            }
+
+            if (!_AllEventsDisable)
+            {
+                OnXmlLayoutChanged();
+                if (removedLastControl)
+                    this.OnLastControlRemoved();
             }
         }
         /// <summary>
@@ -400,51 +433,87 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Vrátí pole všech uživatelských controlů (neobsahuje tedy SplitContainery). Pole je lineární, nezohledňuje aktuální rozložení.
-        /// </summary>
-        /// <returns></returns>
-        private Control[] _GetAllControls()
-        {
-            List<Control> controls = new List<Control>();
-            foreach (var controlPair in _Controls)
-            {
-                var control = controlPair.UserControl;
-                if (control != null)
-                    controls.Add(control);
-            }
-            return controls.ToArray();
-        }
-        /// <summary>
         /// Metoda vytvoří a vrátí nový <see cref="DevExpress.XtraEditors.SplitContainerControl"/>.
+        /// Tento Container umístí do daného hostitele, nastaví mu korektní pozici splitteru a poté aktivuje jeho eventhandlery.
         /// Současně určí (out parametry) panely, kam se má vložit stávající control a kam nový control, podle pozice v parametru <see cref="AddControlParams.Position"/>.
         /// </summary>
         /// <param name="parameters"></param>
+        /// <param name="host">Hostitel</param>
         /// <param name="currentControlPanel"></param>
         /// <param name="newControlPanel"></param>
         /// <returns></returns>
-        private DevExpress.XtraEditors.SplitContainerControl _CreateNewContainer(AddControlParams parameters, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel)
+        private DevExpress.XtraEditors.SplitContainerControl _CreateNewContainer(AddControlParams parameters, Control host, out DevExpress.XtraEditors.SplitGroupPanel currentControlPanel, out DevExpress.XtraEditors.SplitGroupPanel newControlPanel)
         {
             var container = new DxSplitContainerControl() { Dock = DockStyle.Fill };
 
             // parametry:
+            container.Horizontal = parameters.IsHorizontal;
             container.IsSplitterFixed = parameters.IsSplitterFixed;
             container.FixedPanel = parameters.FixedPanel;
             container.Panel1.MinSize = parameters.MinSize;
             container.Panel2.MinSize = parameters.MinSize;
+            container.ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True;
 
-            // Horizontální panely (když se nový otevírá vlevo nebo vpravo):
-            container.Horizontal = parameters.IsHorizontal;
+            // Umístit do hostitele a podle jeho velikosti určit pozici splitteru:
+            host.Controls.Add(container);
+            container.SplitterPosition = _GetSplitterPosition(host.ClientSize, parameters);        // Až po vložení do Parenta
+            container.MouseDown += _SplitContainerMouseDown;                                       // Eventhandlery až po nastavení pozice
+            container.SplitterMoved += _SplitterMoved;
 
-            // Panely, do nichž se budou vkládat současný a nový control:
+            // Out: Panely, do nichž se budou vkládat současný a nový control:
             bool newPositionIs2 = parameters.NewPanelIsPanel2;
             currentControlPanel = (newPositionIs2 ? container.Panel1 : container.Panel2);
             newControlPanel = (newPositionIs2 ? container.Panel2 : container.Panel1);
 
+            return container;
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí nový <see cref="DevExpress.XtraEditors.SplitContainerControl"/>.
+        /// Tento Container umístí do daného hostitele, nastaví mu korektní pozici splitteru a poté aktivuje jeho eventhandlery.
+        /// </summary>
+        /// <param name="area">Definice prostoru</param>
+        /// <param name="host">Hostitel</param>
+        /// <returns></returns>
+        private DevExpress.XtraEditors.SplitContainerControl _CreateNewContainer(Area area, Control host)
+        {
+            var container = new DxSplitContainerControl() { Dock = DockStyle.Fill };
+
+            // parametry:
+            container.Horizontal = (area.SplitterOrientation == Orientation.Vertical);             // SplitterOrientation vyjadřuje pozici Splitteru, kdežto Horizontal vyjadřuje pozici panelů...
+            container.IsSplitterFixed = area.IsSplitterFixed;
+            container.FixedPanel = (area.FixedPanel.HasValue ? (area.FixedPanel == FixedPanel.Panel1 ? DevExpress.XtraEditors.SplitFixedPanel.Panel1 :
+                                                               (area.FixedPanel == FixedPanel.Panel2 ? DevExpress.XtraEditors.SplitFixedPanel.Panel2 :
+                                                                DevExpress.XtraEditors.SplitFixedPanel.None)) :
+                                                             DevExpress.XtraEditors.SplitFixedPanel.Panel1);
+            container.Panel1.MinSize = area.MinSize1 ?? 100;
+            container.Panel2.MinSize = area.MinSize2 ?? 100;
             container.ShowSplitGlyph = DevExpress.Utils.DefaultBoolean.True;
 
-            container.MouseDown += _SplitContainerMouseDown;
+            // Umístit do hostitele a podle jeho velikosti určit pozici splitteru:
+            host.Controls.Add(container);
+            container.SplitterPosition = _GetSplitterPosition(host.ClientSize, area);              // Až po vložení do Parenta
+            container.MouseDown += _SplitContainerMouseDown;                                       // Eventhandlery až po nastavení pozice
+            container.SplitterMoved += _SplitterMoved;
 
             return container;
+        }
+        /// <summary>
+        /// Uloží informace o daném containeru do instance <see cref="Area"/> tak, aby později bylo možno vytvořit nový container podle těchto dat.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="area"></param>
+        private void _FillContainerInfo(DevExpress.XtraEditors.SplitContainerControl container, Area area)
+        {
+            area.ContentType = AreaContentType.DxSplitContainer;
+            area.SplitterOrientation = (container.Horizontal ? Orientation.Vertical : Orientation.Horizontal);    // SplitterOrientation vyjadřuje pozici Splitteru, kdežto Horizontal vyjadřuje pozici panelů...
+            area.IsSplitterFixed = container.IsSplitterFixed;
+            area.FixedPanel = (container.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel1 ? FixedPanel.Panel1 :
+                              (container.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel2 ? FixedPanel.Panel2 :
+                               FixedPanel.None));
+            area.MinSize1 = container.Panel1.MinSize;
+            area.MinSize2 = container.Panel2.MinSize;
+            area.SplitterPosition = container.SplitterPosition;
+            area.SplitterRange = (container.Horizontal ? container.Size.Width : container.ClientSize.Height);     // Vnější velikost containeru = ClientSize jeho hostitele
         }
         /// <summary>
         /// Vrátí pozici splitteru
@@ -486,6 +555,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             return size / 2;
+        }
+        /// <summary>
+        /// Vrátí pozici splitteru
+        /// </summary>
+        /// <param name="parentSize"></param>
+        /// <param name="area"></param>
+        /// <returns></returns>
+        private int _GetSplitterPosition(Size parentSize, Area area)
+        {
+            // Celková velikost v pixelech podle orientace splitteru: svislý splitter se pohybuje v rámci šířky prostoru:
+            int size = (area.SplitterOrientation == Orientation.Vertical ? parentSize.Width : parentSize.Height);
+            int position = area.SplitterPosition ?? (size / 2);
+            int range = (area.SplitterRange ?? 1000);
+            // Podle toho, který panel je fixní:
+            switch (area.FixedPanel)
+            {
+                case FixedPanel.Panel1:
+                    return position;
+                case FixedPanel.Panel2:
+                    int panel2Size = range - position;
+                    return (size - panel2Size);
+                default:
+                    double ratio = (double)position / (double)range;
+                    return (int)Math.Round((double)size * ratio, 0);
+            }
         }
         /// <summary>
         /// Metoda určí, zda dodaný <paramref name="parent"/> je jedním z panelů (<see cref="DevExpress.XtraEditors.SplitGroupPanel"/>) nějakého <see cref="DevExpress.XtraEditors.SplitContainerControl"/>.
@@ -552,6 +646,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int index = -1;
             for (int t = 0; t < 50; t++)
             {   // t = timeout
+                if (control == null) break;
                 index = _Controls.FindIndex(c => c.ContainsAnyControl(control));
                 if (index >= 0 || control.Parent == null) break;
                 control = control.Parent;
@@ -615,13 +710,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 LayoutTileInfo tileInfo = _Controls[index];
                 var args = new TEventCancelArgs<Control>(tileInfo.UserControl);
-                this.OnCloseButtonClickAfter(args);
+                if (!_AllEventsDisable)
+                {
+                    this.OnCloseButtonClickAfter(args);
+                }
                 if (!args.Cancel)
                     _RemoveUserControl(index);
             }
         }
         #endregion
         #region Interaktivita vnitřní - reakce na odebrání controlu, na pohyb splitteru, na změnu orientace splitteru, na změnu dokování 
+        /// <summary>
+        /// Vyvolá se po přidání každého jednoho uživatelského controlu.
+        /// Zavolá event <see cref="UserControlAdd"/>.
+        /// </summary>
+        protected virtual void OnUserControlAdd(TEventArgs<Control> args)
+        {
+            UserControlAdd?.Invoke(this, args);
+        }
         /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
         /// Zavolá event <see cref="UserControlRemoved"/>.
@@ -655,28 +761,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             LastControlRemoved?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
-        /// Vyvolá se po pohybu splitteru
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _SplitterMoved(object sender, EventArgs e)
-        {
-            if (_SplitterMovedDisable) return;
-
-            if (sender is DevExpress.XtraEditors.SplitContainerControl splitContainer)
-            {
-                UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
-                _FillControlParentsToPair(pair);
-                OnSplitterPositionChanged(pair.CreateSplitterChangedArgs());
-            }
-        }
-        /// <summary>
-        /// true = Dočasné potlačení volání události <see cref="OnSplitterPositionChanged(DxLayoutPanelSplitterChangedArgs)"/>.
-        /// Používá se v době změny layoutu v metodě <see cref="_SetOrientation(UserControlPair, bool, bool)"/>, kdy se mění jak orientace, tak i pozice splitteru.
-        /// Pak nechci volat samostatný event <see cref="SplitterPositionChanged"/>, protože bude následně volán event <see cref="LayoutPanelChanged"/>.
-        /// </summary>
-        private bool _SplitterMovedDisable;
-        /// <summary>
         /// Provede se po změně pozice splitteru
         /// </summary>
         /// <param name="args"></param>
@@ -692,8 +776,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             LayoutPanelChanged?.Invoke(this, args);
         }
+        /// <summary>
+        /// Vyvolá event <see cref="XmlLayoutChanged"/>
+        /// </summary>
+        protected virtual void OnXmlLayoutChanged()
+        {
+            XmlLayoutChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// true = Dočasné potlačení volání události <see cref="OnSplitterPositionChanged(DxLayoutPanelSplitterChangedArgs)"/>.
+        /// Používá se v době změny layoutu v metodě <see cref="_SetOrientation(UserControlPair, bool, bool)"/>, kdy se mění jak orientace, tak i pozice splitteru.
+        /// Pak nechci volat samostatný event <see cref="SplitterPositionChanged"/>, protože bude následně volán event <see cref="LayoutPanelChanged"/>.
+        /// </summary>
+        private bool _SplitterMovedDisable;
+        /// <summary>
+        /// true = Dočasné potlačení volání všech událostí.
+        /// Používá se v době aplikace nového layoutu v metodě <see cref="SetXmlLayout(string)"/>, kdy se mění všechno.
+        /// </summary>
+        private bool _AllEventsDisable;
         #endregion
-        #region Kontextové menu pro změnu orientace splitteru
+        #region Kontextové menu pro změnu orientace splitteru, pohyb splitteru, změna dokování = výkonné akce
         /// <summary>
         /// MouseDown: odchytí pravou myš a zobrazí řídící menu
         /// </summary>
@@ -799,6 +901,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Vyvolá se po pohybu splitteru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SplitterMoved(object sender, EventArgs e)
+        {
+            if (_SplitterMovedDisable) return;
+
+            if (sender is DevExpress.XtraEditors.SplitContainerControl splitContainer)
+            {
+                if (!_AllEventsDisable)
+                {
+                    UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
+                    _FillControlParentsToPair(pair);
+                    OnSplitterPositionChanged(pair.CreateSplitterChangedArgs());
+                    OnXmlLayoutChanged();
+                }
+            }
+        }
+        /// <summary>
         /// Pro daný prvek (<paramref name="tileInfo"/>) nastaví jeho pozici dokování.
         /// </summary>
         /// <param name="tileInfo"></param>
@@ -845,8 +967,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (isChanged)
             {
-                DxLayoutPanelSplitterChangedArgs args = pair.CreateSplitterChangedArgs();
-                OnLayoutPanelChanged(args);
+                if (!_AllEventsDisable)
+                {
+                    DxLayoutPanelSplitterChangedArgs args = pair.CreateSplitterChangedArgs();
+                    OnLayoutPanelChanged(args);
+                    OnXmlLayoutChanged();
+                }
             }
         }
         /// <summary>
@@ -899,72 +1025,315 @@ namespace Noris.Clients.Win.Components.AsolDX
             _BarManager = barManager;
         }
         #endregion
-        #region Persistence
+        #region XML Layout, Persistence layoutu
         /// <summary>
-        /// Kompletní layout tohoto panelu
+        /// Kompletní layout tohoto panelu.
+        /// <para/>
+        /// Layout lze setovat.
+        /// V době setování nejsou volány žádné eventy, i když probíhají veškeré události.
         /// </summary>
-        public string XmlLayout
-        {
-            get { return GetXmlLayout(); }
-            set { SetXmlLayout(value); }
-        }
+        public string XmlLayout { get { return GetLayoutData().Item1; } set { SetXmlLayout(value); } }
+        #region čtení layoutu
         /// <summary>
-        /// Vyvolá event <see cref="XmlLayoutChanged"/>
+        /// Zmapuje celý this layout.
+        /// Vrátí tři prvky:
+        /// Item1 = string XML layoutu celého panelu;
+        /// Item2 = pole obsahující nalezené UserControly ve formě <see cref="DxLayoutItemInfo"/>;
+        /// Item3 = Dictionary obsahující všechny Host controly a jejich ID. Host je this anebo každý Panel1 a Panel2 v celé stávající struktuře.
         /// </summary>
-        protected virtual void OnXmlLayoutChanged()
-        {
-            XmlLayoutChanged?.Invoke(this, EventArgs.Empty);
-        }
-        /// <summary>
-        /// Událost vyvolaná po každé změně <see cref="XmlLayout"/>
-        /// </summary>
-        public event EventHandler XmlLayoutChanged;
-        private string GetXmlLayout()
+        /// <returns></returns>
+        private (string, DxLayoutItemInfo[], Dictionary<string, Control>) GetLayoutData()
         {
             Area area = new Area();
-            GetXmlLayoutFillArea(area, this);
-            area.SplitterOrientation = Orientation.Horizontal;
+            List<DxLayoutItemInfo> items = new List<DxLayoutItemInfo>();
+            Dictionary<string, Control> hosts = new Dictionary<string, Control>();
+            GetXmlLayoutFillArea(area, this, "C", hosts, items);
             string xmlLayout = Persist.Serialize(area);
-            var copy = Persist.Deserialize(xmlLayout);
-            return xmlLayout;
+            var array = items.ToArray();
+            return (xmlLayout, array, hosts);
         }
-
-        private void GetXmlLayoutFillArea(Area area, Control host)
+        /// <summary>
+        /// Metoda provede analýzu obsahu daného controlu, kterým je container obsahující typicky jeden control.
+        /// Tento první control detekuje a určí jeho typ (<see cref="DevExpress.XtraEditors.SplitContainerControl"/> nebo 
+        /// <see cref="System.Windows.Forms.SplitContainer"/> nebo <see cref="DxLayoutItemPanel"/>.
+        /// Do instance <paramref name="area"/> vepíše jeho typ a pokračuje rekurzivě analýzou panelů, pokud jde o SplitContainer.
+        /// Pokud obnsahuje 
+        /// </summary>
+        /// <param name="area"></param>
+        /// <param name="host"></param>
+        /// <param name="areaId"></param>
+        /// <param name="hosts">Průběžně vznikající lineární Dictionary se všemi Host controly, kde Key je jejich AreaId 
+        /// a Value je Control, který v sobě může hostovat koncový panel typu <see cref="DxLayoutItemPanel"/>; 
+        /// Value tedy je buď this, nebo Panel1 nebo Panel2 nějakého SplitContaineru.</param>
+        /// <param name="items">Průběžně vznikající lineární pole s UserControly a jejich AreaId</param>
+        private void GetXmlLayoutFillArea(Area area, Control host, string areaId, Dictionary<string, Control> hosts, List<DxLayoutItemInfo> items)
         {
-            if (host.Controls.Count == 0) return;
+            area.AreaId = areaId;
+            hosts.Add(areaId, host);
+            if (host.Controls.Count == 0)
+            {
+                area.ContentType = AreaContentType.None;
+                return;
+            }
+
             Control control = host.Controls[0];
             if (control is DevExpress.XtraEditors.SplitContainerControl dxSplit)
-            {
-                area.SplitterOrientation = (dxSplit.Horizontal ? Orientation.Vertical: Orientation.Horizontal);
-                area.FixedPanel = (dxSplit.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel1 ? FixedPanel.Panel1 :
-                                  (dxSplit.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel2 ? FixedPanel.Panel2 :
-                                   FixedPanel.None));
-                area.SplitterPosition = dxSplit.SplitterPosition;
+            {   // V našem hostiteli je SplitContainerControl od DevExpress:
+                _FillContainerInfo(dxSplit, area);
 
                 area.Content1 = new Area();
-                GetXmlLayoutFillArea(area.Content1, dxSplit.Panel1);
+                GetXmlLayoutFillArea(area.Content1, dxSplit.Panel1, areaId + "/P1", hosts, items);
 
                 area.Content2 = new Area();
-                GetXmlLayoutFillArea(area.Content2, dxSplit.Panel2);
+                GetXmlLayoutFillArea(area.Content2, dxSplit.Panel2, areaId + "/P2", hosts, items);
             }
             else if (control is System.Windows.Forms.SplitContainer wfSplit)
-            { }
-            else if (control is DxLayoutItemPanel item)
-            { }
+            {   // V našem hostiteli je SplitContainerControl od WinFormu:
+                area.ContentType = AreaContentType.WfSplitContainer;
+                area.SplitterOrientation = wfSplit.Orientation;
+                area.FixedPanel = wfSplit.FixedPanel;
+                area.SplitterPosition = wfSplit.SplitterDistance;
+
+                area.Content1 = new Area();
+                GetXmlLayoutFillArea(area.Content1, wfSplit.Panel1, areaId + "/P1", hosts, items);
+
+                area.Content2 = new Area();
+                GetXmlLayoutFillArea(area.Content2, wfSplit.Panel2, areaId + "/P2", hosts, items);
+            }
+            else if (control is DxLayoutItemPanel itemPanel)
+            {   // V našem hostiteli je Panel s UserControlem:
+                area.ContentType = AreaContentType.DxLayoutItemPanel;
+                Control userControl = itemPanel.UserControl;
+                Size areaSize = host.ClientSize;
+                if (userControl != null)
+                {
+                    if (userControl is ILayoutUserControl iUserControl)
+                    {
+                        area.ControlId = iUserControl.Id;
+                        area.ContentText = iUserControl.TitleText;
+                    }
+                    else 
+                    {
+                        area.ContentText = userControl.Text;
+                    }
+                    items.Add(new DxLayoutItemInfo(areaId, areaSize, area.ControlId, userControl));
+                }
+            }
+            else
+            {
+                area.ContentType = AreaContentType.Empty;
+            }
         }
+        #endregion
+        #region aplikace layoutu
+        /// <summary>
+        /// Vloží daný layout do zdejšího objektu.
+        /// Zahodí dosavadní layout.
+        /// Pokusí se zachovat stávající UserControly: prioritně je po vložení nového layoutu umístí do stejnojmenných pozic (<see cref="DxLayoutItemInfo.AreaId"/>),
+        /// 
+        /// </summary>
+        /// <param name="xmlLayout"></param>
         private void SetXmlLayout(string xmlLayout)
         {
+            if (String.IsNullOrEmpty(xmlLayout))
+                throw new ArgumentNullException($"Set to {_XmlLayoutName} error: value is empty.");
+
+            Area area = Persist.Deserialize(xmlLayout) as Area;
+            if (area == null)
+                throw new ArgumentNullException($"Set to {_XmlLayoutName} error: XML string is not valid.");
+
+            bool allEventsDisable = _AllEventsDisable;
+            try
+            {
+                _AllEventsDisable = true;
+                var layout = GetLayoutData();
+                SetXmlLayoutClear(layout.Item3);
+                SetXmlLayoutSet(area);
+                SetXmlLayoutFill(layout.Item2);
+
+            }
+            finally
+            {
+                _AllEventsDisable = allEventsDisable;
+            }
         }
+        /// <summary>
+        /// Korektně zruší stávající konstrukci layoutu
+        /// </summary>
+        /// <param name="hosts"></param>
+        private void SetXmlLayoutClear(Dictionary<string, Control> hosts)
+        {
+            List<KeyValuePair<string, Control>> hostList = hosts.ToList();
+            hostList.Sort((a, b) => CompareAreaIdDesc(a.Key, b.Key));
+            foreach (var hostItem in hostList)
+                SetXmlLayoutClearOne(hostItem.Value);
+            _Controls.Clear();
+        }
+        /// <summary>
+        /// Vymaže obsah daného hostitele (odebere jeho Controls).
+        /// </summary>
+        /// <param name="host"></param>
+        private void SetXmlLayoutClearOne(Control host)
+        {
+            DxLayoutItemPanel panel = host.Controls.OfType<DxLayoutItemPanel>().FirstOrDefault();
+            if (host.Controls.Count > 0)
+                host.Controls.Clear();
+            if (panel != null)
+                panel.Dispose();
+        }
+        /// <summary>
+        /// Třídí podle AreaId sestupně = na prvním místě bude nejhlubší Panel2, pak sousední Panel1...
+        /// Vhodné pro postupné odebírání obsahu panelů
+        /// </summary>
+        /// <param name="areaId1"></param>
+        /// <param name="areaId2"></param>
+        /// <returns></returns>
+        private static int CompareAreaIdDesc(string areaId1, string areaId2)
+        {
+            int len1 = areaId1.Length;
+            int len2 = areaId2.Length;
+            int cmp = len2.CompareTo(len1);
+            if (cmp == 0)
+                cmp = areaId2.CompareTo(areaId1);
+            return cmp;
+        }
+        /// <summary>
+        /// Vygeneruje nový layout, prázdný = bez UserControlů
+        /// </summary>
+        /// <param name="area"></param>
+        private void SetXmlLayoutSet(Area area)
+        {
+            SetXmlLayoutSetArea(this, area);
+        }
+        /// <summary>
+        /// Vygeneruje do daného hostitele jednu úroveň layoutu, rekurzivní metoda
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="area"></param>
+        private void SetXmlLayoutSetArea(Control host, Area area)
+        {
+            if (area == null)
+                throw new ArgumentException($"Set to {_XmlLayoutName} error: Area is null.");
+
+            switch (area.ContentType)
+            {
+                case AreaContentType.DxSplitContainer:
+                    var container = this._CreateNewContainer(area, host);
+                    SetXmlLayoutSetArea(container.Panel1, area.Content1);
+                    SetXmlLayoutSetArea(container.Panel2, area.Content2);
+                    break;
+                case AreaContentType.WfSplitContainer:
+                    // Tento typ obecně nepoužíváme:
+                    break;
+                case AreaContentType.DxLayoutItemPanel:
+                    // Tento typ obsahu vytváříme jinde (v metodě SetXmlLayoutFill):
+                    break;
+            }
+        }
+        /// <summary>
+        /// Do stávajícího layoutu vloží prvky zachované z dřívějšího layoutu, pokud to půjde
+        /// </summary>
+        /// <param name="layoutsInfo"></param>
+        private void SetXmlLayoutFill(DxLayoutItemInfo[] layoutsInfo)
+        { }
+        /// <summary>
+        /// Jméno property <see cref="XmlLayout"/> pro hlášky
+        /// </summary>
+        private string _XmlLayoutName { get { return nameof(DxLayoutPanel) + "." + nameof(XmlLayout); } }
+        #endregion
+        #region třídy layoutu: Area, enum AreaContentType
+        /// <summary>
+        /// Rozložení pracovní plochy, jedna plocha a její využití, rekurzivní třída.
+        /// Obsah této třídy se persistuje do XML.
+        /// POZOR tedy: neměňme jména [PropertyName("xxx")], jejich hodnoty jsou uloženy v XML tvaru na serveru 
+        /// a podle atributu PropertyName budou načítána do aktuálních properties.
+        /// Lze měnit jména properties.
+        /// <para/>
+        /// Obecně k XML persistoru: není nutno používat atribut [PropertyName("xxx")], ale pak musíme zajistit neměnnost názvů properties ve třídě.
+        /// </summary>
         private class Area
         {
+            /// <summary>
+            /// ID prostoru
+            /// </summary>
+            [PropertyName("AreaID")]
             public string AreaId { get; set; }
-            public string ContentId { get; set; }
+            /// <summary>
+            /// Typ obsahu = co v prostoru je
+            /// </summary>
+            [PropertyName("Content")]
+            public AreaContentType ContentType { get; set; }
+            /// <summary>
+            /// Uživatelský identifikátor
+            /// </summary>
+            [PropertyName("ControlID")]
+            public string ControlId { get; set; }
+            /// <summary>
+            /// Text controlu, typicky jeho titulek
+            /// </summary>
+            [PersistingEnabled(false)]
+            public string ContentText { get; set; }
+            /// <summary>
+            /// Orientace splitteru
+            /// </summary>
+            [PropertyName("SplitterOrientation")]
             public Orientation? SplitterOrientation { get; set; }
+            /// <summary>
+            /// Fixovaný splitter?
+            /// </summary>
+            [PropertyName("IsSplitterFixed")]
+            public bool IsSplitterFixed { get; set; }
+            /// <summary>
+            /// Fixovaný panel
+            /// </summary>
+            [PropertyName("FixedPanel")]
             public FixedPanel? FixedPanel { get; set; }
+            /// <summary>
+            /// Minimální velikost pro Panel1
+            /// </summary>
+            [PropertyName("MinSize1")]
+            public int? MinSize1 { get; set; }
+            /// <summary>
+            /// Minimální velikost pro Panel2
+            /// </summary>
+            [PropertyName("MinSize2")]
+            public int? MinSize2 { get; set; }
+            /// <summary>
+            /// Pozice splitteru absolutní, zleva nebo shora
+            /// </summary>
+            [PropertyName("SplitterPosition")]
             public int? SplitterPosition { get; set; }
+            /// <summary>
+            /// Rozsah pohybu splitteru (šířka nebo výška prostoru).
+            /// Podle této hodnoty a podle <see cref="FixedPanel"/> je následně restorována pozice při vkládání layoutu do nového objektu.
+            /// <para/>
+            /// Pokud původní prostor měl šířku 1000 px, pak zde je 1000. Pokud fixovaný panel byl Panel2, je to uvedeno v <see cref="FixedPanel"/>.
+            /// Pozice splitteru zleva byla např. 420 (v <see cref="SplitterPosition"/>). Šířka fixního panelu tedy je (1000 - 420) = 580.
+            /// Nyní budeme restorovat XmlLayout do nového prostoru, jehož šířka není 1000, ale 800px.
+            /// Protože fixovaný panel je Panel2 (vpravo), pak nová pozice splitteru (zleva) je taková, aby Panel2 měl šířku stejnou jako původně (580): 
+            /// nově tedy (800 - 580) = 220.
+            /// <para/>
+            /// Obdobné přepočty budou provedeny pro jinou situaci, kdy FixedPanel je None = splitter ke "gumový" = proporcionální.
+            /// Pak se při restoru přepočte nová pozice splitteru pomocí poměru původní pozice ku Range.
+            /// </summary>
+            [PropertyName("SplitterRange")]
+            public int? SplitterRange { get; set; }
+            /// <summary>
+            /// Obsah panelu 1 (rekurzivní instance téže třídy)
+            /// </summary>
+            [PropertyName("Content1")]
             public Area Content1 { get; set; }
+            /// <summary>
+            /// Obsah panelu 2 (rekurzivní instance téže třídy)
+            /// </summary>
+            [PropertyName("Content2")]
             public Area Content2 { get; set; }
         }
+        /// <summary>
+        /// Typ obsahu prostoru
+        /// </summary>
+        private enum AreaContentType { None, Empty, DxLayoutItemPanel, DxSplitContainer, WfSplitContainer }
+        #endregion
         #endregion
         #region Třídy LayoutTileInfo (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
         /// <summary>
@@ -1325,6 +1694,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Initialize(owner);
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"UserControl: {this.UserControl?.GetType()}, Text: {this.UserControl?.Text}";
+        }
+        /// <summary>
         /// Inicializace
         /// </summary>
         /// <param name="owner"></param>
@@ -1376,6 +1753,35 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 return LayoutPosition.None;
             }
+        }
+        /// <summary>
+        /// Uvolnění zdrojů
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            this._Dispose();
+        }
+        /// <summary>
+        /// Vnitřní Dispose
+        /// </summary>
+        private void _Dispose()
+        {
+            _TitleBarVisible = false;
+            _IsPrimaryPanel = false;
+
+            this.Controls.Clear();
+            if (_TitleBar != null)
+            {
+                _TitleBar.Dispose();
+                _TitleBar = null;
+            }
+
+            // Tady nesmí být Dispose, protože tohle je aplikační control...
+            _UserControl = null;
+
+            __Owner = null;
         }
         #endregion
         #region Naše vlastní data pro Titulkový panel, eventy
@@ -2001,6 +2407,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Strana pro zadokování
         /// </summary>
         public LayoutPosition DockPosition { get; private set; }
+    }
+    /// <summary>
+    /// Informace o prostoru v layoutu a o UserControlu v něm umístěném
+    /// </summary>
+    public class DxLayoutItemInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="areaId"></param>
+        /// <param name="areaSize"></param>
+        /// <param name="controlId"></param>
+        /// <param name="userControl"></param>
+        public DxLayoutItemInfo(string areaId, Size areaSize, string controlId, Control userControl)
+        {
+            this.AreaId = areaId;
+            this.AreaSize = areaSize;
+            this.ControlId = controlId;
+            this.UserControl = userControl;
+        }
+        /// <summary>
+        /// ID prostoru
+        /// </summary>
+        public string AreaId { get; private set; }
+        /// <summary>
+        /// Velikost prostoru, typicky jej využívá celý Control pokud je Docked
+        /// </summary>
+        public Size AreaSize { get; private set; }
+        /// <summary>
+        /// ID controlu, pokud jej poskytuje prostřednictvím interface: <see cref="ILayoutUserControl.Id"/>
+        /// </summary>
+        public string ControlId { get; private set; }
+        /// <summary>
+        /// Control zde umístěný
+        /// </summary>
+        public Control UserControl { get; private set; }
     }
     /// <summary>
     /// Viditelnost prvků v rámci controlů

@@ -33,8 +33,13 @@ namespace TestDevExpress.Components
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
             _LayoutPanel.SplitterPositionChanged += _LayoutPanel_SplitterPositionChanged;
             _LayoutPanel.LayoutPanelChanged += _LayoutPanel_LayoutPanelChanged;
+            _LayoutPanel.XmlLayoutChanged += _LayoutPanel_XmlLayoutChanged;
 
             this.Controls.Add(_LayoutPanel);
+
+            _FunctionPanel = DxComponent.CreateDxPanel(this, DockStyle.Top, height: 45);
+            _CopyLayoutButton = DxComponent.CreateDxSimpleButton(3, 6, 150, 37, _FunctionPanel, "Copy XmlLayout", _CopyLayoutButtonClick, toolTipText: "Zkopíruje aktuální XML layout do schránky");
+            _PasteLayoutButton = DxComponent.CreateDxSimpleButton(159, 6, 150, 37, _FunctionPanel, "Paste XmlLayout", _PasteLayoutButtonClick, toolTipText: "Vloží text ze schránky do XML layoutu");
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);
@@ -46,6 +51,28 @@ namespace TestDevExpress.Components
             this._Timer.Tick += _Timer_Tick;
             this._Timer.Enabled = true;
         }
+        private void _CopyLayoutButtonClick(object sender, EventArgs e)
+        {
+            var xmlLayout = _LayoutPanel.XmlLayout;
+            Clipboard.Clear();
+            Clipboard.SetText(xmlLayout);
+        }
+        private void _PasteLayoutButtonClick(object sender, EventArgs e)
+        {
+            if (Clipboard.ContainsText(TextDataFormat.Text))
+            {
+                var xmlLayoutTest = _LayoutPanel.XmlLayout;
+                var xmlLayoutClip = Clipboard.GetText();
+                if (xmlLayoutClip != null && xmlLayoutClip.Length > 50 && xmlLayoutClip.Length < 25000 && xmlLayoutClip.Substring(0,38) == xmlLayoutTest.Substring(0, 38))
+                    _LayoutPanel.XmlLayout = xmlLayoutClip;
+            }
+        }
+        private void _LayoutPanel_XmlLayoutChanged(object sender, EventArgs e)
+        {
+            var xmlLayout = _LayoutPanel.XmlLayout;
+            int len = xmlLayout.Length;
+        }
+
         /// <summary>
         /// Po změně layoutu (pozice prvků)
         /// </summary>
@@ -81,23 +108,25 @@ namespace TestDevExpress.Components
             this._Timer.Enabled = false;
 
             // Najdeme si náhodně nějaký panel:
-            var controls = _LayoutPanel.AllControls;
-            int count = controls.Length;
+            var layoutsItem = _LayoutPanel.DxLayoutItems;
+            int count = layoutsItem.Length;
             if (count > 0)
             {
                 Random rand = new Random();
-                LayoutTestPanel testPanel = controls[rand.Next(count)] as LayoutTestPanel;
-                if (testPanel != null)
+                DxLayoutItemInfo layoutItem = layoutsItem[rand.Next(count)];
+                if (layoutItem != null)
                 {
-
-                    string title = testPanel.TitleText;
-                    if (rand.Next(10) > 3)
+                    if (layoutItem.UserControl is LayoutTestPanel testPanel)
                     {
-                        string appendix = RandomText.GetRandomSentence(2, 5, false);
-                        title = title + " (" + appendix + ")";
-                    }
+                        string title = testPanel.TitleText;
+                        if (rand.Next(10) > 3)
+                        {
+                            string appendix = RandomText.GetRandomSentence(2, 5, false);
+                            title = title + " (" + appendix + ")";
+                        }
 
-                    _LayoutPanel.UpdateTitle(testPanel, title);
+                        _LayoutPanel.UpdateTitle(testPanel, title);
+                    }
 
                     this._Timer.Interval = rand.Next(700, 3200);
                 }
@@ -130,12 +159,15 @@ namespace TestDevExpress.Components
         {
             _LayoutPanel.AddControl(control);
         }
-        private DxLayoutPanel _LayoutPanel;
         /// <summary>
         /// Panel layoutu
         /// </summary>
         public DxLayoutPanel LayoutPanel { get { return _LayoutPanel; } }
 
+        private DxLayoutPanel _LayoutPanel;
+        private DxPanelControl _FunctionPanel;
+        private DxSimpleButton _CopyLayoutButton;
+        private DxSimpleButton _PasteLayoutButton;
         System.Windows.Forms.Timer _Timer;
     }
     /// <summary>
@@ -276,8 +308,6 @@ namespace TestDevExpress.Components
                 LayoutPanel.AddControl(newPanel, this, position, currentSizeRatio: ratio);
                 this.MouseActivityDetect();
                 newPanel.MouseActivityDetect();
-
-                var xmlLayout = LayoutPanel.XmlLayout;
             }
         }
         DevExpress.XtraEditors.SimpleButton _AddRightButton;
