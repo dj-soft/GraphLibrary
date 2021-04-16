@@ -38,8 +38,13 @@ namespace TestDevExpress.Components
             this.Controls.Add(_LayoutPanel);
 
             _FunctionPanel = DxComponent.CreateDxPanel(this, DockStyle.Top, height: 45);
-            _CopyLayoutButton = DxComponent.CreateDxSimpleButton(3, 6, 150, 37, _FunctionPanel, "Copy XmlLayout", _CopyLayoutButtonClick, toolTipText: "Zkopíruje aktuální XML layout do schránky");
-            _PasteLayoutButton = DxComponent.CreateDxSimpleButton(159, 6, 150, 37, _FunctionPanel, "Paste XmlLayout", _PasteLayoutButtonClick, toolTipText: "Vloží text ze schránky do XML layoutu");
+            _CopyLayoutButton = DxComponent.CreateDxSimpleButton(10, 6, 150, 37, _FunctionPanel, "Copy XmlLayout", _CopyLayoutButtonClick, toolTipText: "Zkopíruje aktuální XML layout do schránky");
+            _PasteLayoutButton = DxComponent.CreateDxSimpleButton(170, 6, 150, 37, _FunctionPanel, "Paste XmlLayout", _PasteLayoutButtonClick, toolTipText: "Vloží text ze schránky do XML layoutu");
+
+            _SetLayout1Button = DxComponent.CreateDxSimpleButton(340, 6, 150, 37, _FunctionPanel, "Set Layout 1", _SetLayout1ButtonClick, toolTipText: "Vloží fixní layout 1");
+            _SetLayout2Button = DxComponent.CreateDxSimpleButton(500, 6, 150, 37, _FunctionPanel, "Set Layout 2", _SetLayout2ButtonClick, toolTipText: "Vloží fixní layout 2");
+            _SetLayout3Button = DxComponent.CreateDxSimpleButton(660, 6, 150, 37, _FunctionPanel, "Set Layout 3", _SetLayout3ButtonClick, toolTipText: "Vloží fixní layout 3");
+            _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);
@@ -53,9 +58,32 @@ namespace TestDevExpress.Components
         }
         private void _CopyLayoutButtonClick(object sender, EventArgs e)
         {
+            string text = "";
             var xmlLayout = _LayoutPanel.XmlLayout;
+            var controls = _LayoutPanel.DxLayoutItems;
+
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                string space = "                ";
+                string eol = Environment.NewLine;
+
+                string areaIds = "";
+                foreach (var control in controls)
+                    areaIds += (areaIds.Length == 0 ? "" : "; ") + control.AreaId;
+
+                string code = space + "string xmlLayout = @\"" + xmlLayout.Replace("\"", "'") + "\";" + eol +
+                              space + "string areaIds = \"" + areaIds + "\";" + eol +
+                              space + "ApplyLayout(xmlLayout, areaIds);" + eol;
+
+                text = code;
+            }
+            else
+            {
+                text = xmlLayout;
+            }
+
             Clipboard.Clear();
-            Clipboard.SetText(xmlLayout);
+            Clipboard.SetText(text);
         }
         private void _PasteLayoutButtonClick(object sender, EventArgs e)
         {
@@ -67,6 +95,92 @@ namespace TestDevExpress.Components
                     _LayoutPanel.XmlLayout = xmlLayoutClip;
             }
         }
+        private void _SetLayout1ButtonClick(object sender, EventArgs e)
+        {
+            string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
+<id-persistent Version='2.00' Created='2021-04-16 23:03:30.992' Creator='David'>
+ <id-data>
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxLayoutItemPanel' ControlID='1' IsSplitterFixed='false' />
+ </id-data>
+</id-persistent>";
+            string areaIds = "C";
+            ApplyLayout(xmlLayout, areaIds);
+        }
+        private void _SetLayout2ButtonClick(object sender, EventArgs e)
+        {
+            string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
+<id-persistent Version='2.00' Created='2021-04-16 23:20:20.977' Creator='David'>
+ <id-data>
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='325' SplitterRange='1376'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='2' IsSplitterFixed='false' />
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='205' SplitterRange='781'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='3' IsSplitterFixed='false' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='809' SplitterRange='1046'>
+     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='571'>
+      <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1/P1' Content='DxLayoutItemPanel' ControlID='1' IsSplitterFixed='false' />
+      <id-value id-value.Target='Content2' AreaID='C/P2/P2/P1/P2' Content='DxLayoutItemPanel' ControlID='5' IsSplitterFixed='false' />
+     </id-value>
+     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='4' IsSplitterFixed='false' />
+    </id-value>
+   </id-value>
+  </id-value>
+ </id-data>
+</id-persistent>";
+            string areaIds = "C/P1; C/P2/P1; C/P2/P2/P1/P1; C/P2/P2/P1/P2; C/P2/P2/P2";
+            ApplyLayout(xmlLayout, areaIds);
+        }
+        private void _SetLayout3ButtonClick(object sender, EventArgs e)
+        {
+            string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
+<id-persistent Version='2.00' Created='2021-04-16 23:35:06.115' Creator='David'>
+ <id-data>
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='396' SplitterRange='1376'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='1' IsSplitterFixed='false' />
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='256' SplitterRange='781'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='4' IsSplitterFixed='false' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxLayoutItemPanel' ControlID='5' IsSplitterFixed='false' />
+   </id-value>
+  </id-value>
+ </id-data>
+</id-persistent>";
+            string areaIds = "C/P1; C/P2/P1; C/P2/P2";
+            ApplyLayout(xmlLayout, areaIds);
+        }
+        private void _SetLayout4ButtonClick(object sender, EventArgs e)
+        {
+            string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
+<id-persistent Version='2.00' Created='2021-04-16 23:37:10.083' Creator='David'>
+ <id-data>
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='162' SplitterRange='781'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='26' IsSplitterFixed='false' />
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='342' SplitterRange='1376'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='28' IsSplitterFixed='false' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='694' SplitterRange='1029'>
+     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='247' SplitterRange='614'>
+      <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1/P1' Content='DxLayoutItemPanel' ControlID='29' IsSplitterFixed='false' />
+      <id-value id-value.Target='Content2' AreaID='C/P2/P2/P1/P2' Content='DxLayoutItemPanel' ControlID='31' IsSplitterFixed='false' />
+     </id-value>
+     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='30' IsSplitterFixed='false' />
+    </id-value>
+   </id-value>
+  </id-value>
+ </id-data>
+</id-persistent>";
+            string areaIds = "C/P1; C/P2/P1; C/P2/P2/P1/P1; C/P2/P2/P1/P2; C/P2/P2/P2";
+            ApplyLayout(xmlLayout, areaIds);
+
+        }
+        private void ApplyLayout(string xmlLayout, string areaIds)
+        {
+            _LayoutPanel.DisableAllEvents = true;
+            _LayoutPanel.RemoveAllControls();
+            _LayoutPanel.XmlLayout = xmlLayout.Replace("'", "\"");
+            string[] areasId = areaIds.Split(';', ',');
+            foreach (string areaId in areasId)
+                _LayoutPanel.AddControlToArea(new LayoutTestPanel(), areaId.Trim());
+            _LayoutPanel.DisableAllEvents = false;
+        }
+
         private void _LayoutPanel_XmlLayoutChanged(object sender, EventArgs e)
         {
             var xmlLayout = _LayoutPanel.XmlLayout;
@@ -168,6 +282,10 @@ namespace TestDevExpress.Components
         private DxPanelControl _FunctionPanel;
         private DxSimpleButton _CopyLayoutButton;
         private DxSimpleButton _PasteLayoutButton;
+        private DxSimpleButton _SetLayout1Button;
+        private DxSimpleButton _SetLayout2Button;
+        private DxSimpleButton _SetLayout3Button;
+        private DxSimpleButton _SetLayout4Button;
         System.Windows.Forms.Timer _Timer;
     }
     /// <summary>
@@ -361,9 +479,14 @@ namespace TestDevExpress.Components
         /// <param name="force"></param>
         private void MouseActivityDetect(bool force = false)
         {
-            Point mousePoint = this.PointToClient(Control.MousePosition);
-            bool isMouseOnControl = this.Bounds.Contains(mousePoint);
-            isMouseOnControl = this.ClientRectangle.Contains(mousePoint);
+            if (this.IsDisposed || this.Disposing) return;
+
+            bool isMouseOnControl = false;
+            if (this.Parent != null)
+            {
+                Point mousePoint = this.PointToClient(Control.MousePosition);
+                isMouseOnControl = this.Bounds.Contains(mousePoint);
+            }
             if (force || isMouseOnControl != _IsMouseOnControl)
             {
                 _IsMouseOnControl = isMouseOnControl;
