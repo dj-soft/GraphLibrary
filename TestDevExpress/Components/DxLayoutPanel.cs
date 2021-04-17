@@ -179,17 +179,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="previousControl"></param>
         /// <param name="position"></param>
         /// <param name="titleText"></param>
+        /// <param name="fixedPanel"></param>
+        /// <param name="isFixedSplitter"></param>
         /// <param name="previousSize">Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)</param>
         /// <param name="currentSize"></param>
         /// <param name="previousSizeRatio"></param>
         /// <param name="currentSizeRatio"></param>
         public void AddControl(Control userControl, Control previousControl, LayoutPosition position,
             string titleText = null,
+            DevExpress.XtraEditors.SplitFixedPanel fixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1, bool isFixedSplitter = false,
             int? previousSize = null, int? currentSize = null, float? previousSizeRatio = null, float? currentSizeRatio = null)
         {
             if (userControl == null) return;
 
-            AddControlParams parameters = new AddControlParams() { Position = position, TitleText = titleText,
+            AddControlParams parameters = new AddControlParams() { Position = position, 
+                TitleText = titleText,
+                FixedPanel = fixedPanel, IsSplitterFixed = isFixedSplitter,
                 PreviousSize = previousSize, CurrentSize = currentSize, PreviousSizeRatio = previousSizeRatio, CurrentSizeRatio = currentSizeRatio };
             int prevIndex = _GetIndexOfUserControl(previousControl);
             if (prevIndex < 0)
@@ -212,6 +217,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(areaId)) throw new ArgumentNullException("DxLayoutPanel.AddControlToArea() error: 'areaId' is empty.");
             var hosts = GetLayoutData().Item3;              // Stávající struktura layoutu, obsahuje klíče AreaId a odpovídající panely
             if (!hosts.TryGetValue(areaId, out var hostInfo)) throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' does not exists.");
+
+            if (hostInfo.Parent.Controls.Count > 0)
+            {   // Hele, ono tam (v požadovaném AreaId) už něco je!!!  Co s tím?
+                if (hostInfo.ChildType == AreaContentType.DxSplitContainer || hostInfo.ChildType == AreaContentType.WfSplitContainer)
+                    throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any container ({hostInfo.ChildType}), can not insert any UserControl.");
+                if (hostInfo.ChildType == AreaContentType.DxLayoutItemPanel)
+                {
+                    if (!removeOld)
+                        throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any UserControl, and is not specified removeOld=true, can not insert any UserControl.");
+                    _RemoveUserControlOnly(hostInfo.ChildItemPanel);
+                }
+                hostInfo.Parent.Controls.Clear();
+            }
 
             _AddControlTo(userControl, hostInfo.Parent, (ControlCount == 0), titleText);
         }
@@ -456,6 +474,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnXmlLayoutChanged();
                 if (removedLastControl)
                     this.OnLastControlRemoved();
+            }
+        }
+        /// <summary>
+        /// Odebere daný panel z evidence a z parenta, ale parenta ponechává beze změny na jeho dosavadním místě.
+        /// Do parenta bude následně vkládán jiný UserControl.
+        /// </summary>
+        /// <param name="itemPanel"></param>
+        private void _RemoveUserControlOnly(DxLayoutItemPanel itemPanel)
+        {
+            Control userControl = itemPanel.UserControl;
+            RemoveControlFromParent(userControl, itemPanel);
+            RemoveControlFromParent(itemPanel, itemPanel.Parent);
+
+            int removeIndex = _GetIndexOfUserControl(userControl);
+            if (removeIndex >= 0)
+                _Controls.RemoveAt(removeIndex);
+
+            if (!_AllEventsDisable)
+            {
+                OnUserControlRemoved(userControl);
             }
         }
         /// <summary>
@@ -1240,10 +1278,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var layoutOld = GetLayoutData();           // Stávající layout, z něj využijeme strukturu (Item3) a následně pole UserControlů a jejich adres (Item2)
                     SetXmlLayoutClear(layoutOld.Item3);
                     SetXmlLayoutCreatePanels(area);            // Vytvoříme nové containery a jejich panely
-                    var layoutNew = GetLayoutData();           // Nový layout, využijeme novou strukturu (Item3), do které vložíme stávající UserControly do jejich adres (Item2)
-                    lostControls = SetXmlLayoutFill(layoutOld.Item2, layoutNew.Item3);
+                    var layoutNew = GetLayoutData();           // Nový layout: využijeme z něj Item3 = nová struktura layoutu (klíče AreaId + hostitelé), ...
+                    lostControls = SetXmlLayoutFill(layoutOld.Item2, layoutNew.Item3);  // ... do které vložíme stávající UserControly do jejich adres (podle starého seznamu Item2)
                     _AllEventsDisable = allEventsDisable;
-                    SetXmlLayoutReportLostControls(lostControls);
+                    ReportLostControls(lostControls);          // Předáme aplikaci (skrze event UserControlRemoved) ty staré UserControly, které nebylo možno umístit do nového layoutu
                     ReleaseContent(layoutOld.Item2);
                     ReleaseContent(layoutOld.Item3.Values);
                     ReleaseContent(layoutNew.Item2);
@@ -1360,7 +1398,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Oznámí aplikaci prostřednictvím eventu <see cref="UserControlRemoved"/> ty stávající controly, které se do nového layoutu nedostaly, protože pro ně nebylo místo
         /// </summary>
         /// <param name="lostControls"></param>
-        private void SetXmlLayoutReportLostControls(DxLayoutItemInfo[] lostControls)
+        private void ReportLostControls(DxLayoutItemInfo[] lostControls)
         {
             if (_AllEventsDisable) return;
             foreach (DxLayoutItemInfo lostControl in lostControls)
@@ -1641,9 +1679,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Text titulku
             /// </summary>
             public string TitleText { get; set; }
+            /// <summary>
+            /// Je fixovaný Splitter? 
+            /// Nezadáno = false
+            /// </summary>
             public bool IsSplitterFixed { get; set; }
             public int? FixedSize { get; set; }
             public int MinSize { get; set; }
+            /// <summary>
+            /// Který panel je fixovaný (jeho velikost se nemění při změně velikosti celého SplitContaineru)?
+            /// Nezadáno = Panel1
+            /// </summary>
             public DevExpress.XtraEditors.SplitFixedPanel FixedPanel { get; set; }
             /// <summary>
             /// Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)
@@ -2181,12 +2227,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void DoLayout()
         {
             if (_TitleLabel == null) return;
-            int width = this.ClientSize.Width;
             int fontHeight = _TitleLabel.StyleController?.Appearance.Font.Height ?? _TitleLabel.Appearance.Font.Height;
             if (_TitleLabel.Height != fontHeight)
                 _TitleLabel.Height = fontHeight;
+            int buttonSize = 24;
+            int minHeight = buttonSize + 4;
             int height = _TitleLabel.Bottom + 6;
-            if (height < 28) height = 28;
+            if (height < minHeight) height = minHeight;
             if (this.Height != height)
             {
                 this.Height = height;
@@ -2194,22 +2241,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                int y = (height - 24) / 2;
-                int bs = 6;
-                int w1 = 27;
-                int w5 = (5 * w1) + bs;
-                int x = width - w5;
+                int y = (height - buttonSize) / 2;
+                int panelWidth = this.ClientSize.Width;
 
-                int ls = 3;
-                TitleLabelRightDock = width - w5 - ls;
-                TitleLabelRightClose = width - w1 - ls;
-                TitleLabelRightAll = width - ls;
+                // Zjistím, zda bude někdy možno zobrazit Close button:
+                bool isPrimaryPanel = this.IsPrimaryPanel;
+                bool canCloseVisible = GetItemVisibility(CloseButtonVisibility, true, isPrimaryPanel) || GetItemVisibility(CloseButtonVisibility, false, isPrimaryPanel);
 
-                _DockLeftButton.Location = new Point(x, y); x += w1;
-                _DockTopButton.Location = new Point(x, y); x += w1;
-                _DockBottomButton.Location = new Point(x, y); x += w1;
-                _DockRightButton.Location = new Point(x, y); x += w1 + bs;
-                _CloseButton.Location = new Point(x, y); x += w1;
+                int buttonWidth = buttonSize;
+                int space1 = 3;
+                int space2 = 6;
+                int distanceX1 = buttonWidth + space1;
+                int closeButtonX = (canCloseVisible ? panelWidth - distanceX1 : panelWidth - space1);
+                int dockButtonsAreaX = (4 * distanceX1) + (canCloseVisible ? space2 : -space1);
+                int dockButtonsX = closeButtonX - dockButtonsAreaX;
+
+                int labelSpaceX = 3;
+                TitleLabelRightDock = dockButtonsX - labelSpaceX;
+                TitleLabelRightClose = closeButtonX - labelSpaceX;
+                TitleLabelRightAll = panelWidth - labelSpaceX;
+
+                int x = dockButtonsX;
+                _DockLeftButton.Location = new Point(x, y); x += distanceX1;
+                _DockTopButton.Location = new Point(x, y); x += distanceX1;
+                _DockBottomButton.Location = new Point(x, y); x += distanceX1;
+                _DockRightButton.Location = new Point(x, y);
+
+                x = closeButtonX;
+                _CloseButton.Location = new Point(x, y);
 
                 DoLayoutTitleLabel();
             }
@@ -2296,6 +2355,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.RefreshTitle();
             this.RefreshIcons();
             this.RefreshButtonVisibility();
+            this.DoLayout();
         }
         /// <summary>
         /// Aktualizuje text titulku
@@ -2464,8 +2524,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isMouseOnControl = false;
             if (this.Parent != null)
             {
-                Point mousePoint = this.PointToClient(Control.MousePosition);
-                isMouseOnControl = this.Bounds.Contains(mousePoint);
+                Point absolutePoint = Control.MousePosition;
+                Point relativePoint = this.PointToClient(absolutePoint);
+                isMouseOnControl = this.ClientRectangle.Contains(relativePoint);
             }
             if (force || isMouseOnControl != _IsMouseOnControl)
             {

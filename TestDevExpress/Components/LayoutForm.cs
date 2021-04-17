@@ -22,7 +22,7 @@ namespace TestDevExpress.Components
                 Dock = System.Windows.Forms.DockStyle.Fill,
                 SplitterContextMenuEnabled = true,
                 DockButtonVisibility = ControlVisibility.OnMouse,
-                CloseButtonVisibility = ControlVisibility.OnNonPrimaryPanelAllways,
+                CloseButtonVisibility = ControlVisibility.Allways,     // ControlVisibility.OnNonPrimaryPanelAllways,
                 DockButtonLeftToolTip = "Přemístit tento panel doleva",
                 DockButtonTopToolTip = "Přemístit tento panel nahoru",
                 DockButtonBottomToolTip = "Přemístit tento panel dolů",
@@ -149,36 +149,44 @@ namespace TestDevExpress.Components
         private void _SetLayout4ButtonClick(object sender, EventArgs e)
         {
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
-<id-persistent Version='2.00' Created='2021-04-16 23:37:10.083' Creator='David'>
+<id-persistent Version='2.00' Created='2021-04-17 18:32:14.095' Creator='David'>
  <id-data>
-  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='162' SplitterRange='781'>
-   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='26' IsSplitterFixed='false' />
-   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='342' SplitterRange='1376'>
-    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='28' IsSplitterFixed='false' />
-    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='694' SplitterRange='1029'>
-     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='247' SplitterRange='614'>
-      <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1/P1' Content='DxLayoutItemPanel' ControlID='29' IsSplitterFixed='false' />
-      <id-value id-value.Target='Content2' AreaID='C/P2/P2/P1/P2' Content='DxLayoutItemPanel' ControlID='31' IsSplitterFixed='false' />
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='312' SplitterRange='781'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='124' SplitterRange='312'>
+    <id-value id-value.Target='Content1' AreaID='C/P1/P1' Content='DxLayoutItemPanel' ControlID='39' IsSplitterFixed='false' />
+    <id-value id-value.Target='Content2' AreaID='C/P1/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='293' SplitterRange='1376'>
+     <id-value id-value.Target='Content1' AreaID='C/P1/P2/P1' Content='DxLayoutItemPanel' ControlID='41' IsSplitterFixed='false' />
+     <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='846' SplitterRange='1078'>
+      <id-value id-value.Target='Content1' AreaID='C/P1/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='38' IsSplitterFixed='false' />
+      <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='42' IsSplitterFixed='false' />
      </id-value>
-     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='30' IsSplitterFixed='false' />
+    </id-value>
+   </id-value>
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='464'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='37' IsSplitterFixed='false' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='679' SplitterRange='1376'>
+     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='40' IsSplitterFixed='false' />
+     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='43' IsSplitterFixed='false' />
     </id-value>
    </id-value>
   </id-value>
  </id-data>
 </id-persistent>";
-            string areaIds = "C/P1; C/P2/P1; C/P2/P2/P1/P1; C/P2/P2/P1/P2; C/P2/P2/P2";
+            string areaIds = "C/P1/P1; C/P1/P2/P1; C/P1/P2/P2/P1; C/P1/P2/P2/P2; C/P2/P1; C/P2/P2/P1; C/P2/P2/P2";
             ApplyLayout(xmlLayout, areaIds);
-
         }
         private void ApplyLayout(string xmlLayout, string areaIds)
         {
-            _LayoutPanel.DisableAllEvents = true;
-            _LayoutPanel.RemoveAllControls();
-            _LayoutPanel.XmlLayout = xmlLayout.Replace("'", "\"");
-            string[] areasId = areaIds.Split(';', ',');
-            foreach (string areaId in areasId)
-                _LayoutPanel.AddControlToArea(new LayoutTestPanel(), areaId.Trim());
-            _LayoutPanel.DisableAllEvents = false;
+            using (_LayoutPanel.ScopeSuspendParentLayout())
+            {
+                _LayoutPanel.DisableAllEvents = true;
+                _LayoutPanel.RemoveAllControls();
+                _LayoutPanel.XmlLayout = xmlLayout.Replace("'", "\"");
+                string[] areasId = areaIds.Split(';', ',');
+                foreach (string areaId in areasId)
+                    _LayoutPanel.AddControlToArea(new LayoutTestPanel(), areaId.Trim());
+                _LayoutPanel.DisableAllEvents = false;
+            }
         }
 
         private void _LayoutPanel_XmlLayoutChanged(object sender, EventArgs e)
@@ -484,8 +492,9 @@ namespace TestDevExpress.Components
             bool isMouseOnControl = false;
             if (this.Parent != null)
             {
-                Point mousePoint = this.PointToClient(Control.MousePosition);
-                isMouseOnControl = this.Bounds.Contains(mousePoint);
+                Point absolutePoint = Control.MousePosition;
+                Point relativePoint = this.PointToClient(absolutePoint);
+                isMouseOnControl = this.ClientRectangle.Contains(relativePoint);
             }
             if (force || isMouseOnControl != _IsMouseOnControl)
             {
