@@ -2144,42 +2144,64 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konstruktor
         /// </summary>
         public DxLayoutTitlePanel()
+            : base()
         {
-            this.Initialize(null);
+            this.Initialize();
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="owner"></param>
         public DxLayoutTitlePanel(DxLayoutItemPanel owner)
-        {
-            this.Initialize(owner);
-        }
-        /// <summary>
-        /// Inicializace
-        /// </summary>
-        /// <param name="owner"></param>
-        private void Initialize(DxLayoutItemPanel owner)
+            : base()
         {
             __Owner = owner;
-
-            string[] icons = CurrentIcons;
-            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[0], visible: false, tag: LayoutPosition.Left);
-            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[1], visible: false, tag: LayoutPosition.Top);
-            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[2], visible: false, tag: LayoutPosition.Bottom);
-            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, resourceName: icons[3], visible: false, tag: LayoutPosition.Right);
-            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, resourceName: icons[4], visible: false);
-
-            // Pořadí má vliv: _TitleLabel až nakonec => bude "pod" ikonami:
-            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
-            _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
-            _TitleLabelCurrentWidthType = TitleLabelWidthType.All;
-
-            this.Height = 35;
-            this.Dock = DockStyle.Top;
-
             RefreshIcons(true);
+        }
+        /// <summary>
+        /// Inicializace.
+        /// POZOR: virtuální metoda volaná z konstruktoru předka!!!  Obecně nedoporučovaná technika.
+        /// Tato metoda tedy proběhne dříve, než proběhne zdejší konstruktor!!!  (=nepoužívat referenci na __Owner)
+        /// </summary>
+        protected override void Initialize()
+        {
+            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Left);
+            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Top);
+            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Bottom);
+            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Right);
+
+            base.Initialize();
+
             MouseActivityInit();
+        }
+        /// <summary>
+        /// Rozmístí svoje buttony, posouvá souřadnice podle umístěných buttonů.
+        /// Výchozí pozice parametru x je vpravo. Buttony se umísťují zprava doleva.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        protected override void DoLayoutButtons(ref int x, ref int y)
+        {
+            base.DoLayoutButtons(ref x, ref y);
+
+            // Buttony budeme sázet na jejich pozice v pořadí zprava:
+            int bw = ButtonSize;
+            int bs = ButtonSpace;
+            int bd = bw + bs;
+
+            x -= bw;
+            _DockRightButton.Location = new Point(x, y);
+
+            x -= bd;
+            _DockBottomButton.Location = new Point(x, y);
+
+            x -= bd;
+            _DockTopButton.Location = new Point(x, y);
+
+            x -= bd;
+            _DockLeftButton.Location = new Point(x, y);
+
+            x -= bs;
         }
         /// <summary>
         /// Vlastník titulku = <see cref="DxLayoutItemPanel"/> jednoho UserControlu.
@@ -2203,116 +2225,94 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DockButtonClick?.Invoke(this, new DxLayoutTitleDockPositionArgs(dockPosition));
             }
         }
-        /// <summary>
-        /// Po kliknutí na tlačítko Close
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _ClickClose(object sender, EventArgs args)
-        {
-            CloseButtonClick?.Invoke(this, EventArgs.Empty);
-        }
-        /// <summary>
-        /// Po změně velikosti vyvolá <see cref="DoLayout()"/>
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnClientSizeChanged(EventArgs e)
-        {
-            base.OnClientSizeChanged(e);
-            DoLayout();
-        }
-        /// <summary>
-        /// Zajistí rozmístění controlů
-        /// </summary>
-        public void DoLayout()
-        {
-            if (_TitleLabel == null) return;
-            int fontHeight = _TitleLabel.StyleController?.Appearance.Font.Height ?? _TitleLabel.Appearance.Font.Height;
-            if (_TitleLabel.Height != fontHeight)
-                _TitleLabel.Height = fontHeight;
-            int buttonSize = 24;
-            int minHeight = buttonSize + 4;
-            int height = _TitleLabel.Bottom + 6;
-            if (height < minHeight) height = minHeight;
-            if (this.Height != height)
-            {
-                this.Height = height;
-                // Nastavení jiné výšky než je aktuální (=v minulém řádku) vyvolá rekurzivně this metodu, v té už nepůjdeme touto větví, ale nastavíme souřadnice buttonů (za else).
-            }
-            else
-            {
-                int y = (height - buttonSize) / 2;
-                int panelWidth = this.ClientSize.Width;
-
-                // Zjistím, zda bude někdy možno zobrazit Close button:
-                bool isPrimaryPanel = this.IsPrimaryPanel;
-                bool canCloseVisible = GetItemVisibility(CloseButtonVisibility, true, isPrimaryPanel) || GetItemVisibility(CloseButtonVisibility, false, isPrimaryPanel);
-
-                int buttonWidth = buttonSize;
-                int space1 = 3;
-                int space2 = 6;
-                int distanceX1 = buttonWidth + space1;
-                int closeButtonX = (canCloseVisible ? panelWidth - distanceX1 : panelWidth - space1);
-                int dockButtonsAreaX = (4 * distanceX1) + (canCloseVisible ? space2 : -space1);
-                int dockButtonsX = closeButtonX - dockButtonsAreaX;
-
-                int labelSpaceX = 3;
-                TitleLabelRightDock = dockButtonsX - labelSpaceX;
-                TitleLabelRightClose = closeButtonX - labelSpaceX;
-                TitleLabelRightAll = panelWidth - labelSpaceX;
-
-                int x = dockButtonsX;
-                _DockLeftButton.Location = new Point(x, y); x += distanceX1;
-                _DockTopButton.Location = new Point(x, y); x += distanceX1;
-                _DockBottomButton.Location = new Point(x, y); x += distanceX1;
-                _DockRightButton.Location = new Point(x, y);
-
-                x = closeButtonX;
-                _CloseButton.Location = new Point(x, y);
-
-                DoLayoutTitleLabel();
-            }
-        }
-        /// <summary>
-        /// Nastaví šířku pro <see cref="_TitleLabel"/> podle aktuálního režimu <see cref="_TitleLabelCurrentWidthType"/> a podle aktuálně nastavených pozic Right pro TitleLabel
-        /// </summary>
-        protected void DoLayoutTitleLabel()
-        {
-            var type = _TitleLabelCurrentWidthType;
-            int right = (type == TitleLabelWidthType.DockButton ? TitleLabelRightDock : (type == TitleLabelWidthType.CloseButton ? TitleLabelRightClose : TitleLabelRightAll));
-            int width = (right - _TitleLabel.Left);
-            _TitleLabel.Width = (width < 30 ? 30 : width);
-        }
-        private DxLabelControl _TitleLabel;
         private DxSimpleButton _DockLeftButton;
         private DxSimpleButton _DockTopButton;
         private DxSimpleButton _DockBottomButton;
         private DxSimpleButton _DockRightButton;
-        private DxSimpleButton _CloseButton;
-        private TitleLabelWidthType _TitleLabelCurrentWidthType;
-        private int TitleLabelRightDock;
-        private int TitleLabelRightClose;
-        private int TitleLabelRightAll;
-        private enum TitleLabelWidthType { None, DockButton, CloseButton, All }
+        #endregion
+        #region Ikony
+        /// <summary>
+        /// Mají se použít SVG ikony?
+        /// </summary>
+        public override bool UseSvgIcons { get { return (this.LayoutPanel?.UseSvgIcons ?? true); } set { } }
+        /// <summary>
+        /// Aktualizuje vzhled ikon, pokud je to nutné
+        /// </summary>
+        protected override void RefreshIcons(bool force = false)
+        {
+            if (!NeedRefreshIcons(force)) return;
+
+            base.RefreshIcons(force);
+
+            string[] icons = CurrentIcons;
+            Size size = new Size(20, 20);
+
+            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[0], size, true);
+            _CloseButton.SetToolTip(this.CloseButtonToolTip);
+
+            DxComponent.ApplyImage(_DockLeftButton.ImageOptions, null, icons[1], size, true);
+            DxComponent.ApplyImage(_DockTopButton.ImageOptions, null, icons[2], size, true);
+            DxComponent.ApplyImage(_DockBottomButton.ImageOptions, null, icons[3], size, true);
+            DxComponent.ApplyImage(_DockRightButton.ImageOptions, null, icons[4], size, true);
+
+            _DockLeftButton.SetToolTip(this.DockButtonLeftToolTip);
+            _DockTopButton.SetToolTip(this.DockButtonTopToolTip);
+            _DockBottomButton.SetToolTip(this.DockButtonBottomToolTip);
+            _DockRightButton.SetToolTip(this.DockButtonRightToolTip);
+        }
+        /// <summary>
+        /// Aktuální ikony
+        /// </summary>
+        protected override string[] CurrentIcons
+        {
+            get
+            {
+                bool useSvgIcons = UseSvgIcons;
+
+                if (useSvgIcons)
+                    return new string[]
+                    {
+                        "images/xaf/templatesv2images/action_delete.svg",
+                        "svgimages/align/alignverticalleft.svg",
+                        "svgimages/align/alignhorizontaltop.svg",
+                        "svgimages/align/alignhorizontalbottom.svg",
+                        "svgimages/align/alignverticalright.svg"
+                    };
+                else
+                    return new string[]
+                    {
+                        "devav/actions/delete_16x16.png",
+                        "images/alignment/alignverticalleft_16x16.png",
+                        "images/alignment/alignhorizontaltop_16x16.png",
+                        "images/alignment/alignhorizontalbottom_16x16.png",
+                        "images/alignment/alignverticalright_16x16.png"
+                    };
+            }
+        }
         #endregion
         #region Data získaná z Ownerů, vlastní eventy
-        /// <summary>
-        /// Text titulku
-        /// </summary>
-        public string TitleText { get { return Owner?.TitleText ?? ""; } }
         /// <summary>
         /// Obsahuje true pokud this panel je primární = první vytvořený.
         /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
         /// </summary>
-        public bool IsPrimaryPanel { get { return Owner?.IsPrimaryPanel ?? false; } }
+        public override bool IsPrimaryPanel { get { return Owner?.IsPrimaryPanel ?? false; } set { } }
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public override string TitleText { get { return Owner?.TitleText ?? ""; } }
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        public override ControlVisibility CloseButtonVisibility { get { return LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default; } set { } }
+        /// <summary>
+        /// Tooltip na buttonu Close
+        /// </summary>
+        public override string CloseButtonToolTip { get { return LayoutPanel?.CloseButtonToolTip; } set { } }
+
         /// <summary>
         /// Viditelnost buttonů Dock
         /// </summary>
         public ControlVisibility DockButtonVisibility { get { return LayoutPanel?.DockButtonVisibility ?? ControlVisibility.Default; } }
-        /// <summary>
-        /// Viditelnost buttonu Close
-        /// </summary>
-        public ControlVisibility CloseButtonVisibility { get { return LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default; } }
         /// <summary>
         /// Tooltip na buttonu DockLeft
         /// </summary>
@@ -2330,10 +2330,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string DockButtonRightToolTip { get { return LayoutPanel?.DockButtonRightToolTip; } }
         /// <summary>
-        /// Tooltip na buttonu Close
-        /// </summary>
-        public string CloseButtonToolTip { get { return LayoutPanel?.CloseButtonToolTip; } }
-        /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// </summary>
         public LayoutPosition DockButtonDisabledPosition { get { return Owner?.DockButtonDisabledPosition ?? LayoutPosition.None; } }
@@ -2341,10 +2337,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Uživatel kliknul na button Dock (strana je v argumentu)
         /// </summary>
         public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
-        /// <summary>
-        /// Uživatel kliknul na button Close
-        /// </summary>
-        public event EventHandler CloseButtonClick;
         #endregion
         #region Refreshe (obsah, viditelnost, interaktivní tlačítka podle stavu myši)
         /// <summary>
@@ -2354,95 +2346,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.RefreshTitle();
             this.RefreshIcons();
-            this.RefreshButtonVisibility();
+            this.RefreshButtonVisibility(false);
             this.DoLayout();
-        }
-        /// <summary>
-        /// Aktualizuje text titulku
-        /// </summary>
-        private void RefreshTitle()
-        {
-            this._TitleLabel.Text = this.TitleText;
-        }
-        /// <summary>
-        /// Aktualizuje vzhled ikon, pokud je to nutné
-        /// </summary>
-        private void RefreshIcons(bool force = false)
-        {
-            bool appliedSvgIcons = AppliedSvgIcons;
-            bool useSvgIcons = UseSvgIcons;
-
-            if (!force && appliedSvgIcons == useSvgIcons) return;
-
-            string[] icons = CurrentIcons;
-            Size size = new Size(20, 20);
-
-            DxComponent.ApplyImage(_DockLeftButton.ImageOptions, null, icons[0], size, true);
-            DxComponent.ApplyImage(_DockTopButton.ImageOptions, null, icons[1], size, true);
-            DxComponent.ApplyImage(_DockBottomButton.ImageOptions, null, icons[2], size, true);
-            DxComponent.ApplyImage(_DockRightButton.ImageOptions, null, icons[3], size, true);
-            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[4], size, true);
-
-            _DockLeftButton.SetToolTip(this.DockButtonLeftToolTip);
-            _DockTopButton.SetToolTip(this.DockButtonTopToolTip);
-            _DockBottomButton.SetToolTip(this.DockButtonBottomToolTip);
-            _DockRightButton.SetToolTip(this.DockButtonRightToolTip);
-            _CloseButton.SetToolTip(this.CloseButtonToolTip);
-
-            this.AppliedSvgIcons = useSvgIcons;
         }
         /// <summary>
         /// Počet aktuálně zobrazených panelů v hlavním okně
         /// </summary>
         private int LayoutPanelControlCount { get { return (this.LayoutPanel?.ControlCount ?? 0); } }
         /// <summary>
-        /// Mají se použít SVG ikony?
-        /// </summary>
-        private bool UseSvgIcons { get { return (this.LayoutPanel?.UseSvgIcons ?? true); } }
-        /// <summary>
-        /// Nyní jsou použité SVG ikony?
-        /// </summary>
-        private bool AppliedSvgIcons;
-        /// <summary>
-        /// Obsahuje pole ikon pro aktuální typ (SVG / PNG)
-        /// </summary>
-        private string[] CurrentIcons
-        {
-            get
-            {
-                bool useSvgIcons = UseSvgIcons;
-
-                if (useSvgIcons)
-                    return new string[]
-                    {
-                    "svgimages/align/alignverticalleft.svg",
-                    "svgimages/align/alignhorizontaltop.svg",
-                    "svgimages/align/alignhorizontalbottom.svg",
-                    "svgimages/align/alignverticalright.svg",
-                    "images/xaf/templatesv2images/action_delete.svg"
-                    };
-                else
-                    return new string[]
-                    {
-                    "images/alignment/alignverticalleft_16x16.png",
-                    "images/alignment/alignhorizontaltop_16x16.png",
-                    "images/alignment/alignhorizontalbottom_16x16.png",
-                    "images/alignment/alignverticalright_16x16.png",
-                    "devav/actions/delete_16x16.png"
-                    };
-            }
-        }
-        /// <summary>
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
-        protected override void RefreshButtonVisibility()
+        /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="DxTitlePanel.DoLayoutTitleLabel()"/> ?</param>
+        protected override void RefreshButtonVisibility(bool doLayoutTitle)
         {
-            bool isMouseOnControl = _IsMouseOnControl;
-            bool isPrimaryPanel = this.IsPrimaryPanel;
+            TitleLabelRight = this.ClientSize.Width - PanelMargin;
 
             // Tlačítka pro dokování budeme zobrazovat pouze tehdy, když hlavní panel zobrazuje více než jeden prvek. Pro méně prvků nemá dokování význam!
             bool hasMorePanels = (this.LayoutPanelControlCount > 1);
-            bool isDockVisible = hasMorePanels && GetItemVisibility(DockButtonVisibility, isMouseOnControl, isPrimaryPanel);
+            bool isDockVisible = hasMorePanels && GetItemVisibility(DockButtonVisibility, IsMouseOnControl, IsPrimaryPanel);
             if (isDockVisible)
             {
                 LayoutPosition dockButtonDisable = DockButtonDisabledPosition;
@@ -2456,13 +2377,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DockBottomButton.Visible = isDockVisible;
             _DockRightButton.Visible = isDockVisible;
 
-            // Tlačítko pro Close:
-            bool isCloseVisible = GetItemVisibility(CloseButtonVisibility, isMouseOnControl, isPrimaryPanel);
-            this._CloseButton.Visible = isCloseVisible;
+            base.RefreshButtonVisibility(false);
 
             // Šířka TitleLabelu:
-            _TitleLabelCurrentWidthType = (isDockVisible ? TitleLabelWidthType.DockButton : (isCloseVisible ? TitleLabelWidthType.CloseButton : TitleLabelWidthType.All));
-            DoLayoutTitleLabel();
+            if (isDockVisible) TitleLabelRight = _DockLeftButton.Location.X - ButtonSpace;
+ 
+            // Upravit šířku TitleLabelu:
+            if (doLayoutTitle) DoLayoutTitleLabel();
         }
         #endregion
     }
@@ -2473,6 +2394,213 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxTitlePanel : DxPanelControl
     {
+        #region Konstruktor, inicializace, proměnné TitleLabel a CloseButton
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTitlePanel()
+        {
+            Initialize();
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        protected virtual void Initialize()
+        {
+            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, visible: false);
+
+            this.UseSvgIcons = true;
+            // Pořadí má vliv: _TitleLabel až nakonec => bude "pod" ikonami:
+            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+            _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
+            TitleLabelRight = 200;
+
+            this.Height = 35;
+            this.Dock = DockStyle.Top;
+        }
+        /// <summary>
+        /// Po změně velikosti vyvolá <see cref="DoLayout()"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            DoLayout();
+        }
+        /// <summary>
+        /// Zajistí rozmístění controlů.
+        /// </summary>
+        public virtual void DoLayout()
+        {
+            if (_TitleLabel == null) return;
+            int fontHeight = _TitleLabel.StyleController?.Appearance.Font.Height ?? _TitleLabel.Appearance.Font.Height;
+            if (_TitleLabel.Height != fontHeight)
+                _TitleLabel.Height = fontHeight;
+            int buttonSize = ButtonSize;
+            int minHeight = buttonSize + 4;
+            int height = _TitleLabel.Bottom + 6;
+            if (height < minHeight) height = minHeight;
+            if (this.Height != height)
+            {
+                this.Height = height;
+                // Nastavení jiné výšky než je aktuální (=v minulém řádku) vyvolá rekurzivně this metodu, v té už nepůjdeme touto větví, ale nastavíme souřadnice buttonů (za else).
+            }
+            else
+            {
+                int panelWidth = this.ClientSize.Width;
+                int x = panelWidth - PanelMargin;
+                TitleLabelRight = x;
+                int y = (height - buttonSize) / 2;
+                this.DoLayoutButtons(ref x, ref y);
+                this.RefreshButtonVisibility(true);
+            }
+        }
+        /// <summary>
+        /// Rozmístí buttony.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        protected virtual void DoLayoutButtons(ref int x, ref int y)
+        {
+            // Zjistím, zda bude někdy možno zobrazit Close button:
+            bool isPrimaryPanel = this.IsPrimaryPanel;
+            bool canCloseVisible = GetItemVisibility(CloseButtonVisibility, true, isPrimaryPanel) || GetItemVisibility(CloseButtonVisibility, false, isPrimaryPanel);
+            if (canCloseVisible)
+            {   // Button může mít nastaveno Visible = true; podle stavu myši:
+                x -= ButtonSize;
+                _CloseButton.Location = new Point(x, y);
+                x -= (2 * ButtonSpace);
+            }
+            else
+            {   // Button bude mít stále Visible = false:
+                _CloseButton.Location = new Point(x, y);
+            }
+        }
+        /// <summary>
+        /// Velikost buttonu Close a Dock, vnější. Button je čtvercový.
+        /// </summary>
+        protected virtual int ButtonSize { get { return 24; } }
+        /// <summary>
+        /// Mezera mezi sousedními buttony. Mezera mezi skupinami je dvojnásobná.
+        /// </summary>
+        protected virtual int ButtonSpace { get { return 3; } }
+        /// <summary>
+        /// Okraje panelu
+        /// </summary>
+        protected virtual int PanelMargin { get { return 3; } }
+        /// <summary>
+        /// Nastaví šířku pro <see cref="_TitleLabel"/> podle aktuální hodnoty <see cref="TitleLabelRight"/>
+        /// </summary>
+        protected void DoLayoutTitleLabel()
+        {
+            int width = (TitleLabelRight - _TitleLabel.Left);
+            _TitleLabel.Width = (width < 30 ? 30 : width);
+        }
+        /// <summary>
+        /// Label titulku
+        /// </summary>
+        protected DxLabelControl _TitleLabel;
+        /// <summary>
+        /// Close button
+        /// </summary>
+        protected DxSimpleButton _CloseButton;
+        /// <summary>
+        /// Pozice Right pro TitleLabel.
+        /// Nastavuje se v metodách, které řídí Layout a Viditelnost buttonů, obsahuje pozici X nejkrajnějšího buttonu vlevo mínus Space
+        /// </summary>
+        protected int TitleLabelRight;
+        #endregion
+        #region Titulkový text
+        /// <summary>
+        /// Obsahuje true pokud this panel je primární = první vytvořený.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        public virtual bool IsPrimaryPanel { get; set; } = true;
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public virtual string TitleText { get; set; }
+        /// <summary>
+        /// Aktualizuje text titulku
+        /// </summary>
+        protected void RefreshTitle()
+        {
+            this._TitleLabel.Text = this.TitleText;
+        }
+        #endregion
+        #region Close button
+        /// <summary>
+        /// Viditelnost buttonu Close
+        /// </summary>
+        public virtual ControlVisibility CloseButtonVisibility { get; set; } = ControlVisibility.Allways;
+        /// <summary>
+        /// Tooltip na buttonu Close
+        /// </summary>
+        public virtual string CloseButtonToolTip { get; set; }
+        /// <summary>
+        /// Po kliknutí na tlačítko Close
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ClickClose(object sender, EventArgs args)
+        {
+            CloseButtonClick?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Uživatel kliknul na button Close
+        /// </summary>
+        public event EventHandler CloseButtonClick;
+        #endregion
+        #region Ikony
+        /// <summary>
+        /// Mají se použít SVG ikony?
+        /// </summary>
+        public virtual bool UseSvgIcons { get; set; }
+        /// <summary>
+        /// Aktualizuje vzhled ikon, pokud je to nutné.
+        /// Bázová třída <see cref="DxTitlePanel"/> na závěr nastavuje <see cref="AppliedSvgIcons"/> = <see cref="UseSvgIcons"/>;
+        /// </summary>
+        protected virtual void RefreshIcons(bool force = false)
+        {
+            if (!NeedRefreshIcons(force)) return;
+
+            string[] icons = CurrentIcons;
+            Size size = new Size(20, 20);
+
+            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[0], size, true);
+            _CloseButton.SetToolTip(this.CloseButtonToolTip);
+
+            this.AppliedSvgIcons = UseSvgIcons;
+        }
+        /// <summary>
+        /// Vrátí true, pokud je třeba provést Refresh ikon
+        /// </summary>
+        /// <param name="force"></param>
+        /// <returns></returns>
+        protected bool NeedRefreshIcons(bool force = false)
+        {
+            return (force || UseSvgIcons != AppliedSvgIcons);
+        }
+        /// <summary>
+        /// Obsahuje pole ikon pro aktuální typ (SVG / PNG)
+        /// </summary>
+        protected virtual string[] CurrentIcons
+        {
+            get
+            {
+                bool useSvgIcons = UseSvgIcons;
+
+                if (useSvgIcons)
+                    return new string[] { "images/xaf/templatesv2images/action_delete.svg" };
+                else
+                    return new string[] { "devav/actions/delete_16x16.png" };
+            }
+        }
+        /// <summary>
+        /// Nyní jsou použité SVG ikony?
+        /// </summary>
+        protected bool AppliedSvgIcons { get; set; }
+        #endregion
         #region Pohyb myši a viditelnost buttonů
         /// <summary>
         /// Inicializace eventů a proměnných pro myší aktivity
@@ -2528,17 +2656,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Point relativePoint = this.PointToClient(absolutePoint);
                 isMouseOnControl = this.ClientRectangle.Contains(relativePoint);
             }
-            if (force || isMouseOnControl != _IsMouseOnControl)
+            if (force || isMouseOnControl != IsMouseOnControl)
             {
-                _IsMouseOnControl = isMouseOnControl;
-                RefreshButtonVisibility();
+                IsMouseOnControl = isMouseOnControl;
+                RefreshButtonVisibility(true);
             }
         }
         /// <summary>
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
-        protected virtual void RefreshButtonVisibility()
-        { }
+        /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="DoLayoutTitleLabel()"/> ?</param>
+        protected virtual void RefreshButtonVisibility(bool doLayoutTitle)
+        {
+            TitleLabelRight = this.ClientSize.Width - PanelMargin;
+
+            // Tlačítko pro Close:
+            bool isCloseVisible = GetItemVisibility(CloseButtonVisibility, IsMouseOnControl, IsPrimaryPanel);
+            this._CloseButton.Visible = isCloseVisible;
+
+            // Šířka TitleLabelu:
+            if (isCloseVisible) TitleLabelRight = this._CloseButton.Location.X - ButtonSpace;
+
+            // Upravit šířku TitleLabelu:
+            if (doLayoutTitle) DoLayoutTitleLabel();
+        }
         /// <summary>
         /// Vrátí true pokud control s daným režimem viditelnosti má být viditelný, při daném stavu myši na controlu
         /// </summary>
@@ -2555,7 +2696,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true, pokud je myš nad controlem (nad kterýmkoli prvkem), false když je myš mimo
         /// </summary>
-        protected bool _IsMouseOnControl;
+        protected bool IsMouseOnControl;
         #endregion
     }
     #endregion
