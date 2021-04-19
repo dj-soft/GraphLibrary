@@ -2244,11 +2244,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             base.RefreshIcons(force);
 
-            string[] icons = CurrentIcons;
-            Size size = new Size(20, 20);
+            int bs = ButtonSize - 4;
+            Size size = new Size(bs, bs);
 
-            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[0], size, true);
-            _CloseButton.SetToolTip(this.CloseButtonToolTip);
+            string[] icons = CurrentIcons;
 
             DxComponent.ApplyImage(_DockLeftButton.ImageOptions, null, icons[1], size, true);
             DxComponent.ApplyImage(_DockTopButton.ImageOptions, null, icons[2], size, true);
@@ -2269,6 +2268,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool useSvgIcons = UseSvgIcons;
 
+                // Na pozici [0] je Close, pak jsou: Left, Top, Bottom, Right:
                 if (useSvgIcons)
                     return new string[]
                     {
@@ -2308,7 +2308,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tooltip na buttonu Close
         /// </summary>
         public override string CloseButtonToolTip { get { return LayoutPanel?.CloseButtonToolTip; } set { } }
-
         /// <summary>
         /// Viditelnost buttonů Dock
         /// </summary>
@@ -2340,7 +2339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Refreshe (obsah, viditelnost, interaktivní tlačítka podle stavu myši)
         /// <summary>
-        /// Aplikuje ikony požadovaného druhu
+        /// Zajistí přenačtení hodnot z Ownera a jejich promítnutí do this titulku
         /// </summary>
         internal void RefreshControl()
         {
@@ -2564,8 +2563,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!NeedRefreshIcons(force)) return;
 
+            int bs = ButtonSize - 4;
+            Size size = new Size(bs, bs);
+
             string[] icons = CurrentIcons;
-            Size size = new Size(20, 20);
 
             DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[0], size, true);
             _CloseButton.SetToolTip(this.CloseButtonToolTip);
