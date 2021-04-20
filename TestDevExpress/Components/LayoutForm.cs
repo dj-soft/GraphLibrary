@@ -55,7 +55,7 @@ namespace TestDevExpress.Components
 
             this._Timer = new Timer() { Interval = 1800 };
             this._Timer.Tick += _Timer_Tick;
-            this._Timer.Enabled = true;
+            this._Timer.Enabled = false;
         }
         private void _CopyLayoutButtonClick(object sender, EventArgs e)
         {
@@ -101,7 +101,7 @@ namespace TestDevExpress.Components
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-16 23:03:30.992' Creator='David'>
  <id-data>
-  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxLayoutItemPanel' ControlID='1' IsSplitterFixed='false' />
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxLayoutItemPanel' ControlID='1' />
  </id-data>
 </id-persistent>";
             string areaIds = "C";
@@ -112,16 +112,16 @@ namespace TestDevExpress.Components
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-16 23:20:20.977' Creator='David'>
  <id-data>
-  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='325' SplitterRange='1376'>
-   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='2' IsSplitterFixed='false' />
-   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='205' SplitterRange='781'>
-    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='3' IsSplitterFixed='false' />
-    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='809' SplitterRange='1046'>
-     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='571'>
-      <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1/P1' Content='DxLayoutItemPanel' ControlID='1' IsSplitterFixed='false' />
-      <id-value id-value.Target='Content2' AreaID='C/P2/P2/P1/P2' Content='DxLayoutItemPanel' ControlID='5' IsSplitterFixed='false' />
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='325' SplitterRange='1376'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='2' />
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='205' SplitterRange='781'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='3' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='809' SplitterRange='1046'>
+     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='571'>
+      <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1/P1' Content='DxLayoutItemPanel' ControlID='1' />
+      <id-value id-value.Target='Content2' AreaID='C/P2/P2/P1/P2' Content='DxLayoutItemPanel' ControlID='5' />
      </id-value>
-     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='4' IsSplitterFixed='false' />
+     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='4' />
     </id-value>
    </id-value>
   </id-value>
@@ -135,11 +135,11 @@ namespace TestDevExpress.Components
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-16 23:35:06.115' Creator='David'>
  <id-data>
-  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='396' SplitterRange='1376'>
-   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='1' IsSplitterFixed='false' />
-   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='256' SplitterRange='781'>
-    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='4' IsSplitterFixed='false' />
-    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxLayoutItemPanel' ControlID='5' IsSplitterFixed='false' />
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='396' SplitterRange='1376'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxLayoutItemPanel' ControlID='1' />
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='256' SplitterRange='781'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='4' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxLayoutItemPanel' ControlID='5' />
    </id-value>
   </id-value>
  </id-data>
@@ -152,22 +152,22 @@ namespace TestDevExpress.Components
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-17 18:32:14.095' Creator='David'>
  <id-data>
-  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='312' SplitterRange='781'>
-   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='124' SplitterRange='312'>
-    <id-value id-value.Target='Content1' AreaID='C/P1/P1' Content='DxLayoutItemPanel' ControlID='39' IsSplitterFixed='false' />
-    <id-value id-value.Target='Content2' AreaID='C/P1/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='293' SplitterRange='1376'>
-     <id-value id-value.Target='Content1' AreaID='C/P1/P2/P1' Content='DxLayoutItemPanel' ControlID='41' IsSplitterFixed='false' />
-     <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='846' SplitterRange='1078'>
-      <id-value id-value.Target='Content1' AreaID='C/P1/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='38' IsSplitterFixed='false' />
-      <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='42' IsSplitterFixed='false' />
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='312' SplitterRange='781'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='124' SplitterRange='312'>
+    <id-value id-value.Target='Content1' AreaID='C/P1/P1' Content='DxLayoutItemPanel' ControlID='39' />
+    <id-value id-value.Target='Content2' AreaID='C/P1/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='293' SplitterRange='1376'>
+     <id-value id-value.Target='Content1' AreaID='C/P1/P2/P1' Content='DxLayoutItemPanel' ControlID='41' />
+     <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='846' SplitterRange='1078'>
+      <id-value id-value.Target='Content1' AreaID='C/P1/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='38' />
+      <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='42' />
      </id-value>
     </id-value>
    </id-value>
-   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='464'>
-    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='37' IsSplitterFixed='false' />
-    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' IsSplitterFixed='false' MinSize1='100' MinSize2='100' SplitterOrientation='Vertical' SplitterPosition='679' SplitterRange='1376'>
-     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='40' IsSplitterFixed='false' />
-     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='43' IsSplitterFixed='false' />
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='464'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='37' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='679' SplitterRange='1376'>
+     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='40' />
+     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='43' />
     </id-value>
    </id-value>
   </id-value>

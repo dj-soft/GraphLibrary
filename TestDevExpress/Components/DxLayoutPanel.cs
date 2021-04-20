@@ -562,7 +562,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // parametry:
             container.Horizontal = (area.SplitterOrientation == Orientation.Vertical);             // SplitterOrientation vyjadřuje pozici Splitteru, kdežto Horizontal vyjadřuje pozici panelů...
-            container.IsSplitterFixed = area.IsSplitterFixed;
+            container.IsSplitterFixed = area.IsSplitterFixed ?? false;
             container.FixedPanel = (area.FixedPanel.HasValue ? (area.FixedPanel == FixedPanel.Panel1 ? DevExpress.XtraEditors.SplitFixedPanel.Panel1 :
                                                                (area.FixedPanel == FixedPanel.Panel2 ? DevExpress.XtraEditors.SplitFixedPanel.Panel2 :
                                                                 DevExpress.XtraEditors.SplitFixedPanel.None)) :
@@ -588,12 +588,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             area.ContentType = AreaContentType.DxSplitContainer;
             area.SplitterOrientation = (container.Horizontal ? Orientation.Vertical : Orientation.Horizontal);    // SplitterOrientation vyjadřuje pozici Splitteru, kdežto Horizontal vyjadřuje pozici panelů...
-            area.IsSplitterFixed = container.IsSplitterFixed;
+            if (container.IsSplitterFixed) area.IsSplitterFixed = true;
             area.FixedPanel = (container.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel1 ? FixedPanel.Panel1 :
                               (container.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel2 ? FixedPanel.Panel2 :
                                FixedPanel.None));
-            area.MinSize1 = container.Panel1.MinSize;
-            area.MinSize2 = container.Panel2.MinSize;
+            if (container.Panel1.MinSize != 100) area.MinSize1 = container.Panel1.MinSize;
+            if (container.Panel2.MinSize != 100) area.MinSize2 = container.Panel2.MinSize;
             area.SplitterPosition = container.SplitterPosition;
             area.SplitterRange = (container.Horizontal ? container.Size.Width : container.ClientSize.Height);     // Vnější velikost containeru = ClientSize jeho hostitele
         }
@@ -1472,7 +1472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Fixovaný splitter?
             /// </summary>
             [PropertyName("IsSplitterFixed")]
-            public bool IsSplitterFixed { get; set; }
+            public bool? IsSplitterFixed { get; set; }
             /// <summary>
             /// Fixovaný panel
             /// </summary>

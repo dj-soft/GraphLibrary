@@ -160,6 +160,7 @@
     <Compile Include="Components\DxLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Components\DxOverlay.cs" />
     <Compile Include="Components\DxRibbon.cs">
       <SubType>Component</SubType>
     </Compile>
