@@ -21,6 +21,7 @@ namespace TestDevExpress.Components
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,
                 SplitterContextMenuEnabled = true,
+                DragDropEnabled = true,
                 DockButtonVisibility = ControlVisibility.OnMouse,
                 CloseButtonVisibility = ControlVisibility.Allways,     // ControlVisibility.OnNonPrimaryPanelAllways,
                 DockButtonLeftToolTip = "Přemístit tento panel doleva",

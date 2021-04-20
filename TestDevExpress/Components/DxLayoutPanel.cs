@@ -67,6 +67,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int ControlCount { get { return _Controls.Count; } }
         /// <summary>
+        /// Je povoleno přemístění prvků pomocí Drag And Drop
+        /// </summary>
+        public bool DragDropEnabled { get; set; }
+        /// <summary>
         /// Viditelnost buttonů Dock
         /// </summary>
         public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_RefreshControls); } }
@@ -2301,6 +2305,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override string TitleText { get { return Owner?.TitleText ?? ""; } }
         /// <summary>
+        /// Je povoleno přemístění titulku pomocí Drag And Drop
+        /// </summary>
+        public override bool DragDropEnabled { get { return (LayoutPanel?.DragDropEnabled ?? false); } set { } }
+        /// <summary>
         /// Viditelnost buttonu Close
         /// </summary>
         public override ControlVisibility CloseButtonVisibility { get { return LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default; } set { } }
@@ -2413,6 +2421,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
             _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
             TitleLabelRight = 200;
+
+            this.DragAndDropInit();
 
             this.Height = 35;
             this.Dock = DockStyle.Top;
@@ -2698,6 +2708,126 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud je myš nad controlem (nad kterýmkoli prvkem), false když je myš mimo
         /// </summary>
         protected bool IsMouseOnControl;
+        #endregion
+        #region Drag and Drop
+        /// <summary>
+        /// Je povoleno přemístění titulku pomocí Drag And Drop
+        /// </summary>
+        public virtual bool DragDropEnabled { get; set; }
+        protected void DragAndDropInit()
+        {
+            this.DragAndDropInit(this);
+            this.DragAndDropInit(_TitleLabel);
+            this.DragAndDropReset();
+        }
+        protected void DragAndDropInit(Control control)
+        {
+            control.MouseDown += DragAndDrop_MouseDown;
+            control.MouseMove += DragAndDrop_MouseMove;
+            control.MouseUp += DragAndDrop_MouseUp;
+        }
+        private void DragAndDropReset()
+        {
+            this.DragAndDrop_State = DragAndDrop_StateType.None;
+            this.DragAndDrop_DownLocation = null;
+            this.DragAndDrop_DownArea = null;
+            this.DragAndDrop_VoidSize = SystemInformation.DragSize;
+        }
+        private void DragAndDrop_MouseDown(object sender, MouseEventArgs e)
+        {
+            Point mousePoint = Control.MousePosition;
+            if (e.Button == MouseButtons.Left && DragDropEnabled)
+            {
+                this.DragAndDrop_State = DragAndDrop_StateType.MouseDown;
+                this.DragAndDrop_DownLocation = mousePoint;
+                Size voidSize = this.DragAndDrop_VoidSize;
+                Point voidPoint = new Point(mousePoint.X - voidSize.Width / 2, mousePoint.Y - voidSize.Height / 2);
+                this.DragAndDrop_DownArea = new Rectangle(voidPoint, voidSize);
+            }
+        }
+        private void DragAndDrop_MouseMove(object sender, MouseEventArgs e)
+        {
+            Point mousePoint = Control.MousePosition;
+            switch (this.DragAndDrop_State)
+            {
+                case DragAndDrop_StateType.MouseDown:
+                    if (this.DragAndDrop_DownArea.HasValue && !this.DragAndDrop_DownArea.Value.Contains(mousePoint))
+                    {
+                        this.DragAndDrop_State = DragAndDrop_StateType.MouseMove;
+                        this.DragAndDrop_DownArea = null;
+                        DragAndDrop_Start(mousePoint);
+                        DragAndDrop_Move(mousePoint);
+                    }
+                    break;
+                case DragAndDrop_StateType.MouseMove:
+                    DragAndDrop_Move(mousePoint);
+                    break;
+            }
+        }
+        private void DragAndDrop_MouseUp(object sender, MouseEventArgs e)
+        {
+            Point mousePoint = Control.MousePosition;
+            switch (this.DragAndDrop_State)
+            {
+                case DragAndDrop_StateType.MouseDown:
+                case DragAndDrop_StateType.MouseCancel:
+                    DragAndDrop_End(mousePoint);
+                    break;
+                case DragAndDrop_StateType.MouseMove:
+                    DragAndDrop_Drop(mousePoint);
+                    DragAndDrop_End(mousePoint);
+                    break;
+            }
+        }
+        protected void DragAndDrop_Start(Point mousePoint)
+        {
+            // this.DoDragDrop(this, DragDropEffects.Move);
+        }
+
+        protected void DragAndDrop_Move(Point mousePoint)
+        {
+        }
+        protected void DragAndDrop_Drop(Point mousePoint)
+        {
+
+        }
+        protected void DragAndDrop_End(Point mousePoint)
+        {
+            this.DoDragDrop(this, DragDropEffects.None);
+
+            this.DragAndDrop_State = DragAndDrop_StateType.None;
+            this.DragAndDrop_DownLocation = null;
+            this.DragAndDrop_DownArea = null;
+        }
+
+
+        protected override void OnDragDrop(DragEventArgs drgevent)
+        {
+            base.OnDragDrop(drgevent);
+        }
+        protected override void OnQueryContinueDrag(QueryContinueDragEventArgs qcdevent)
+        {
+            base.OnQueryContinueDrag(qcdevent);
+        }
+        protected override void OnDragEnter(DragEventArgs drgevent)
+        {
+            base.OnDragEnter(drgevent);
+        }
+        protected override void OnDragOver(DragEventArgs drgevent)
+        {
+            base.OnDragOver(drgevent);
+        }
+        protected override void OnDragLeave(EventArgs e)
+        {
+            base.OnDragLeave(e);
+        }
+
+        private DragAndDrop_StateType DragAndDrop_State;
+        private Point? DragAndDrop_DownLocation;
+        private Rectangle? DragAndDrop_DownArea;
+        private Size DragAndDrop_VoidSize;
+        private enum DragAndDrop_StateType { None, MouseDown, MouseMove, MouseCancel }
+
         #endregion
     }
     #endregion
