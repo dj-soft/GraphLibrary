@@ -2276,7 +2276,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (useSvgIcons)
                     return new string[]
                     {
-                        "images/xaf/templatesv2images/action_delete.svg",
+                        "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg",
                         "svgimages/align/alignverticalleft.svg",
                         "svgimages/align/alignhorizontaltop.svg",
                         "svgimages/align/alignhorizontalbottom.svg",
@@ -2600,9 +2600,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 bool useSvgIcons = UseSvgIcons;
-
                 if (useSvgIcons)
-                    return new string[] { "images/xaf/templatesv2images/action_delete.svg" };
+                    return new string[] { "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg" };
                 else
                     return new string[] { "devav/actions/delete_16x16.png" };
             }

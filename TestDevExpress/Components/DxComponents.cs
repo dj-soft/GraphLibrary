@@ -54,6 +54,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxComponent()
         {
             this._InitStyles();
+            this._InitZoom();
         }
         private static DxComponent _Instance;
         private static object _InstanceLock = new object();
@@ -61,9 +62,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Styly
         private void _InitStyles()
         {
-
             var mainTitleStyle = new DevExpress.XtraEditors.StyleController();
-            mainTitleStyle.Appearance.FontSizeDelta = 4;
+            mainTitleStyle.Appearance.FontSizeDelta = 3;
             mainTitleStyle.Appearance.FontStyleDelta = FontStyle.Bold;
             mainTitleStyle.Appearance.Options.UseBorderColor = false;
             mainTitleStyle.Appearance.Options.UseBackColor = false;
@@ -157,55 +157,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odsazení labelu od levého okraje X
         /// </summary>
-        public static int DetailXLabel { get { return Instance._DetailXLabel; } }
+        public static int DetailXLabel { get { return ZoomToGuiInt(Instance._DetailXLabel); } }
         /// <summary>
         /// Odsazení textu od levého okraje X
         /// </summary>
-        public static int DetailXText { get { return Instance._DetailXText; } }
+        public static int DetailXText { get { return ZoomToGuiInt(Instance._DetailXText); } }
         /// <summary>
         /// Odsazení prvního prvku od horního okraje Y
         /// </summary>
-        public static int DetailYFirst { get { return Instance._DetailYFirst; } }
+        public static int DetailYFirst { get { return ZoomToGuiInt(Instance._DetailYFirst); } }
         /// <summary>
         /// Výchozí hodnota výšky labelu
         /// </summary>
-        public static int DetailYHeightLabel { get { return Instance._DetailYHeightLabel; } }
+        public static int DetailYHeightLabel { get { return ZoomToGuiInt(Instance._DetailYHeightLabel); } }
         /// <summary>
         /// Výchozí hodnota výšky textu
         /// </summary>
-        public static int DetailYHeightText { get { return Instance._DetailYHeightText; } }
+        public static int DetailYHeightText { get { return ZoomToGuiInt(Instance._DetailYHeightText); } }
         /// <summary>
         /// Posun labelu vůči textu v ose Y pro zarovnané úpatí textu
         /// </summary>
-        public static int DetailYOffsetLabelText { get { return Instance._DetailYOffsetLabelText; } }
+        public static int DetailYOffsetLabelText { get { return ZoomToGuiInt(Instance._DetailYOffsetLabelText); } }
         /// <summary>
         /// Odsazení labelu dalšího řádku od předešlého textu
         /// </summary>
-        public static int DetailYSpaceLabel { get { return Instance._DetailYSpaceLabel; } }
+        public static int DetailYSpaceLabel { get { return ZoomToGuiInt(Instance._DetailYSpaceLabel); } }
         /// <summary>
         /// Odsazení textu řádku od předešlého labelu
         /// </summary>
-        public static int DetailYSpaceText { get { return Instance._DetailYSpaceText; } }
+        public static int DetailYSpaceText { get { return ZoomToGuiInt(Instance._DetailYSpaceText); } }
         /// <summary>
         /// Okraj v ose X
         /// </summary>
-        public static int DetailXMargin { get { return Instance._DetailXMargin; } }
+        public static int DetailXMargin { get { return ZoomToGuiInt(Instance._DetailXMargin); } }
         /// <summary>
         /// Okraj v ose Y
         /// </summary>
-        public static int DetailYMargin { get { return Instance._DetailYMargin; } }
+        public static int DetailYMargin { get { return ZoomToGuiInt(Instance._DetailYMargin); } }
         /// <summary>
         /// Defaultní výška panelu s buttony
         /// </summary>
-        public static int DefaultButtonPanelHeight { get { return Instance._DefaultButtonPanelHeight; } }
+        public static int DefaultButtonPanelHeight { get { return ZoomToGuiInt(Instance._DefaultButtonPanelHeight); } }
         /// <summary>
         /// Defaultní šířka buttonu
         /// </summary>
-        public static int DefaultButtonWidth { get { return Instance._DefaultButtonWidth; } }
+        public static int DefaultButtonWidth { get { return ZoomToGuiInt(Instance._DefaultButtonWidth); } }
         /// <summary>
         /// Defaultní výška buttonu
         /// </summary>
-        public static int DefaultButtonHeight { get { return Instance._DefaultButtonHeight; } }
+        public static int DefaultButtonHeight { get { return ZoomToGuiInt(Instance._DefaultButtonHeight); } }
 
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;
         private DevExpress.XtraEditors.StyleController _SubTitleStyle;
@@ -225,6 +225,61 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonPanelHeight;
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
+        #endregion
+        #region Rozhraní na Zoom
+        /// <summary>
+        /// Inicializace Zoomu
+        /// </summary>
+        private void _InitZoom()
+        {
+            _Zoom = 1m;
+        }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static int ZoomToGuiInt(int value) { decimal zoom = Instance._Zoom; return _ZoomToGuiInt(value, zoom); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Point ZoomToGuiInt(Point value) { decimal zoom = Instance._Zoom; return new Point(_ZoomToGuiInt(value.X, zoom), _ZoomToGuiInt(value.Y, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Point? ZoomToGuiInt(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; return new Point(_ZoomToGuiInt(value.Value.X, zoom), _ZoomToGuiInt(value.Value.Y, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Size ZoomToGuiInt(Size value) { decimal zoom = Instance._Zoom; return new Size(_ZoomToGuiInt(value.Width, zoom), _ZoomToGuiInt(value.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Size? ZoomToGuiInt(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; return new Size(_ZoomToGuiInt(value.Value.Width, zoom), _ZoomToGuiInt(value.Value.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="zoom"></param>
+        /// <returns></returns>
+        private static int _ZoomToGuiInt(int value, decimal zoom) { return (int)Math.Round((decimal)value * zoom, 0); }
+        /// <summary>
+        /// Aktuální hodnota Zoomu
+        /// </summary>
+        internal static decimal Zoom { get { return Instance._Zoom; } }
+        /// <summary>
+        /// Reload hodnoty Zoomu
+        /// </summary>
+        internal static void ReloadZoom() { Instance._Zoom = ComponentConnector.GraphicsCache.CurrentZoom; }
+        private decimal _Zoom;
         #endregion
         #region Factory metody pro jednořádkovou tvorbu běžných komponent
         public static DxPanelControl CreateDxPanel(Control parent = null,

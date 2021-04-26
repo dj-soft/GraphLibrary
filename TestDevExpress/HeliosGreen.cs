@@ -42,7 +42,7 @@ namespace Noris.Clients.Win.Components
 }
 
 
-namespace TestDevExpress
+namespace Noris.Clients.Win.Components
 {
     /// <summary>
     /// Simulace Green
@@ -109,6 +109,10 @@ namespace TestDevExpress
         {
             _ImageList = new ImageList();
         }
+        /// <summary>
+        /// Zoom
+        /// </summary>
+        public decimal CurrentZoom { get { return 1m; } }
         /// <summary>
         /// Simulace Green
         /// </summary>

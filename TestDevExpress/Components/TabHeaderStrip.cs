@@ -13,6 +13,7 @@ using WinForm = System.Windows.Forms;
 
 using NCC = Noris.Clients.Controllers;
 using DXN = DevExpress.XtraBars.Navigation;
+using Noris.Clients.Win.Components;
 using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress
