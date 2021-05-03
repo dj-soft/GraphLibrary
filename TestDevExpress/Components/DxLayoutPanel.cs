@@ -13,7 +13,6 @@ using System.Windows.Forms;
 using System.Drawing;
 
 using DevExpress.Utils;
-using DevExpress.XtraCharts.Native;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
