@@ -63,6 +63,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxLayoutItemInfo[] DxLayoutItems { get { return GetLayoutData().Item2; } }
         /// <summary>
+        /// Vrátí true, pokud aktuálně existující layout obsahuje prostor daného klíče <paramref name="areaId"/> a pokud je možno do něj vložit UserControl.
+        /// Parametr <paramref name="removeOld"/> specifikuje, zda lze akceptovat prostor, který už nějaký UserControl obsahuje.
+        /// </summary>
+        /// <param name="areaId"></param>
+        /// <param name="removeOld"></param>
+        /// <returns></returns>
+        public bool CanAddUserControlTo(string areaId, bool removeOld = false)
+        {
+            if (String.IsNullOrEmpty(areaId)) return false;
+
+            var hosts = GetLayoutData().Item3;                                 // Stávající struktura layoutu, obsahuje klíče AreaId a odpovídající panely
+            if (!hosts.TryGetValue(areaId, out var hostInfo)) return false;    // Když ve struktuře vůbec není daný prostor...
+
+            if (hostInfo.Parent.Controls.Count == 0) return true;              // Prostor tam je a je prázdný
+            switch (hostInfo.ChildType)
+            {
+                case AreaContentType.Empty: return true;                       // Prázdno
+                case AreaContentType.DxSplitContainer:
+                case AreaContentType.WfSplitContainer: return false;           // Nějaký vnořený SplitContainer: to nejde použít pro UserControl.
+                case AreaContentType.DxLayoutItemPanel: return removeOld;      // Pokud je tam control: vracím true (=Mohu přidat nový UserControl) tehdy, když je povoleno stávající UserControl odebrat.
+            }
+            return false;
+        }
+        /// <summary>
+        /// Zkusí najít daný prostor a vrátit UserControl, pokud se tam nachází
+        /// </summary>
+        /// <param name="areaId"></param>
+        /// <param name="userControl"></param>
+        /// <returns></returns>
+        public bool TryGetUserControl(string areaId, out Control userControl)
+        {
+            userControl = null;
+            if (String.IsNullOrEmpty(areaId)) return false;
+
+            var hosts = GetLayoutData().Item3;                                 // Stávající struktura layoutu, obsahuje klíče AreaId a odpovídající panely
+            if (!hosts.TryGetValue(areaId, out var hostInfo)) return false;    // Když ve struktuře vůbec není daný prostor...
+
+            if (hostInfo.ChildType != AreaContentType.DxLayoutItemPanel) return false;
+
+            userControl = hostInfo.ChildItemPanel?.UserControl;
+            return (userControl != null);
+        }
+        /// <summary>
         /// Aktuální počet controlů
         /// </summary>
         public int ControlCount { get { return _Controls.Count; } }
@@ -264,9 +307,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             int index = _GetIndexOfUserControl(userControl);
             if (index < 0) return;
-            var hostControl = _Controls[index].HostControl;
-            if (hostControl != null)
-                hostControl.TitleText = titleText;
+            var tileInfo = _Controls[index];
+            tileInfo.UpdateTitle(titleText);
         }
         /// <summary>
         /// Najde daný control ve své evidenci, a pokud tam je, pak jej odebere a jeho prostor uvolní pro nejbližšího souseda.
@@ -1115,6 +1157,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V době setování nejsou volány žádné eventy, i když probíhají veškeré události.
         /// </summary>
         public string XmlLayout { get { return GetLayoutData().Item1; } set { SetXmlLayout(value); } }
+        /// <summary>
+        /// Ověří, zda daný string může být akceptován jako <see cref="XmlLayout"/>
+        /// </summary>
+        /// <param name="xmlLayout"></param>
+        /// <returns></returns>
+        public static bool IsXmlLayoutValid(string xmlLayout)
+        {
+            if (String.IsNullOrEmpty(xmlLayout)) return false;
+            try
+            {
+                Area area = Persist.Deserialize(xmlLayout) as Area;
+                if (area != null) return true;
+            }
+            catch { }
+            return false;
+        }
+        /// <summary>
+        /// Ověří, zda daný string může být akceptován jako klíč prostoru AreaId
+        /// </summary>
+        /// <param name="areaId"></param>
+        /// <returns></returns>
+        public static bool IsAreaIdValid(string areaId)
+        {
+            if (String.IsNullOrEmpty(areaId)) return false;
+            var items = areaId.Split('/');
+            return items.All(i => (i == "C" || i == "P1" || i == "P2"));
+        }
         #region čtení layoutu
         /// <summary>
         /// Zmapuje celý this layout.
@@ -1543,7 +1612,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __HostControl = hostControl;
                 __UserControl = userControl;
 
-                RefreshLayoutFromHost(true);
+                if (userControl is ILayoutUserControl iLayoutUserControl)
+                    iLayoutUserControl.TitleChanged += UserControlTitleChanged;
+
+                RefreshTitleFromUserControl();
             }
             private WeakTarget<Control> __Parent;
             private WeakTarget<DxLayoutItemPanel> __HostControl;
@@ -1628,31 +1700,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 set { var hostControl = HostControl; if (hostControl != null) hostControl.DockButtonDisabledPosition = value; }
             }
             /// <summary>
-            /// Provede načtení dat z <see cref="UserControl"/>, pokud tento je typu <see cref="ILayoutUserControl"/>.
-            /// </summary>
-            public void RefreshLayoutFromHost(bool registerEvents = false)
-            {
-                var iLayoutUserControl = this.ILayoutUserControl;
-                if (iLayoutUserControl == null) return;
-
-                if (registerEvents)
-                {
-                    iLayoutUserControl.TitleTextChanged += ILayoutUserControl_TitleTextChanged;
-                }
-
-                var hostControl = this.HostControl;
-                if (hostControl == null) return;
-
-                hostControl.TitleText = iLayoutUserControl.TitleText;
-            }
-            /// <summary>
             /// Po změně textu v UserControlu
             /// </summary>
             /// <param name="sender"></param>
             /// <param name="e"></param>
-            private void ILayoutUserControl_TitleTextChanged(object sender, EventArgs e)
+            private void UserControlTitleChanged(object sender, EventArgs e)
             {
-                RefreshLayoutFromHost();
+                RefreshTitleFromUserControl();
+            }
+            /// <summary>
+            /// Aktualizuje titulek buď z dodaného textu nebo z 
+            /// </summary>
+            /// <param name="titleText"></param>
+            internal void UpdateTitle(string titleText)
+            {
+                RefreshTitleFromUserControl(titleText);
+            }
+            /// <summary>
+            /// Provede načtení dat o titulku z <see cref="UserControl"/>, pokud tento je typu <see cref="ILayoutUserControl"/>.
+            /// </summary>
+            /// <param name="titleText"></param>
+            public void RefreshTitleFromUserControl(string titleText = null)
+            {
+                var hostControl = this.HostControl;
+                if (hostControl == null) return;
+
+                var iLayoutUserControl = this.ILayoutUserControl;
+                if (iLayoutUserControl != null)
+                    hostControl.ReloadTitleFrom(iLayoutUserControl);
+                else
+                    hostControl.TitleText = titleText;
             }
         }
         /// <summary>
@@ -1991,6 +2068,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Naše vlastní data pro Titulkový panel, eventy
         /// <summary>
+        /// Naplní data o titulku daty z dodaného objektu typu <see cref="ILayoutUserControl"/>
+        /// </summary>
+        /// <param name="iLayoutUserControl"></param>
+        public void ReloadTitleFrom(ILayoutUserControl iLayoutUserControl)
+        {
+            this.RunInGui(() => _ReloadTitleFrom(iLayoutUserControl));
+        }
+        /// <summary>
+        /// GUI thread: Naplní data o titulku daty z dodaného objektu typu <see cref="ILayoutUserControl"/>
+        /// </summary>
+        /// <param name="iLayoutUserControl"></param>
+        private void _ReloadTitleFrom(ILayoutUserControl iLayoutUserControl)
+        {
+            _TitleBarVisible = iLayoutUserControl.TitleVisible;
+            _TitleText = iLayoutUserControl.TitleText;
+            _TitleIcon = iLayoutUserControl.TitleIcon;
+            _TitleBarSetVisible(iLayoutUserControl.TitleVisible);
+            RefreshControl();
+        }
+        /// <summary>
         /// Titulkový panel je viditelný?
         /// </summary>
         public bool TitleBarVisible { get { return _TitleBarVisible; } set { this.RunInGui(() => _TitleBarSetVisible(value)); } }
@@ -2006,6 +2103,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string TitleText { get { return _TitleText; } set { _TitleText = value; this.RunInGui(RefreshControl); } }
         private string _TitleText;
+        /// <summary>
+        /// Ikona titulku
+        /// </summary>
+        public Image TitleIcon { get { return _TitleIcon; } set { _TitleIcon = value; this.RunInGui(RefreshControl); } }
+        private Image _TitleIcon;
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DxLayoutPanel.DockButtonVisibility"/>.
@@ -2248,7 +2350,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             base.RefreshIcons(force);
 
-            int bs = ButtonSize - 4;
+            int bs = ButtonSize - 4;                      // 4 = okraje mezi buttonem a vnitřním Image
             Size size = new Size(bs, bs);
 
             string[] icons = CurrentIcons;
@@ -2301,9 +2403,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override bool IsPrimaryPanel { get { return Owner?.IsPrimaryPanel ?? false; } set { } }
         /// <summary>
+        /// Ikona titulku
+        /// </summary>
+        public override Image TitleIcon { get { return Owner?.TitleIcon ?? null; } set { } }
+        /// <summary>
         /// Text titulku
         /// </summary>
-        public override string TitleText { get { return Owner?.TitleText ?? ""; } }
+        public override string TitleText { get { return Owner?.TitleText ?? ""; } set { } }
         /// <summary>
         /// Je povoleno přemístění titulku pomocí Drag And Drop
         /// </summary>
@@ -2351,6 +2457,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         internal void RefreshControl()
         {
+            this.RefreshIcon();
             this.RefreshTitle();
             this.RefreshIcons();
             this.RefreshButtonVisibility(false);
@@ -2414,12 +2521,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void Initialize()
         {
-            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, visible: false);
+            CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, visible: false);
 
             this.UseSvgIcons = true;
-            // Pořadí má vliv: _TitleLabel až nakonec => bude "pod" ikonami:
-            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
-            _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
+            // Pořadí má vliv: TitleLabel až nakonec => bude "pod" ikonami:
+            TitlePicture = new DevExpress.XtraEditors.PictureEdit() { ReadOnly = true, Bounds = new Rectangle(12, 6, 24, 24), Visible = false, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, BackColor = Color.Transparent };
+            this.Controls.Add(TitlePicture);
+
+            TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+            TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
             TitleLabelRight = 200;
 
             this.DragAndDropInit();
@@ -2441,13 +2551,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual void DoLayout()
         {
-            if (_TitleLabel == null) return;
-            int fontHeight = _TitleLabel.StyleController?.Appearance.Font.Height ?? _TitleLabel.Appearance.Font.Height;
-            if (_TitleLabel.Height != fontHeight)
-                _TitleLabel.Height = fontHeight;
+            int height = this.Height;
+
+            if (TitleLabel != null)
+            {
+                int fontHeight = TitleLabel.StyleController?.Appearance.Font.Height ?? TitleLabel.Appearance.Font.Height;
+                if (TitleLabel.Height != fontHeight)
+                    TitleLabel.Height = fontHeight;
+                height = TitleLabel.Bottom + 6;
+            }
+
             int buttonSize = ButtonSize;
             int minHeight = buttonSize + 4;
-            int height = _TitleLabel.Bottom + 6;
             if (height < minHeight) height = minHeight;
             if (this.Height != height)
             {
@@ -2477,18 +2592,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (canCloseVisible)
             {   // Button může mít nastaveno Visible = true; podle stavu myši:
                 x -= ButtonSize;
-                _CloseButton.Location = new Point(x, y);
+                CloseButton.Location = new Point(x, y);
                 x -= (2 * ButtonSpace);
             }
             else
             {   // Button bude mít stále Visible = false:
-                _CloseButton.Location = new Point(x, y);
+                CloseButton.Location = new Point(x, y);
             }
         }
         /// <summary>
         /// Velikost buttonu Close a Dock, vnější. Button je čtvercový.
         /// </summary>
-        protected virtual int ButtonSize { get { return 24; } }
+        protected virtual int ButtonSize { get { return DxComponent.ZoomToGuiInt(24); } }
         /// <summary>
         /// Mezera mezi sousedními buttony. Mezera mezi skupinami je dvojnásobná.
         /// </summary>
@@ -2498,21 +2613,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual int PanelMargin { get { return 3; } }
         /// <summary>
-        /// Nastaví šířku pro <see cref="_TitleLabel"/> podle aktuální hodnoty <see cref="TitleLabelRight"/>
+        /// Nastaví šířku pro <see cref="TitleLabel"/> podle aktuální hodnoty <see cref="TitleLabelRight"/>
         /// </summary>
         protected void DoLayoutTitleLabel()
         {
-            int width = (TitleLabelRight - _TitleLabel.Left);
-            _TitleLabel.Width = (width < 30 ? 30 : width);
+            int width = (TitleLabelRight - TitleLabel.Left);
+            TitleLabel.Width = (width < 30 ? 30 : width);
         }
+        /// <summary>
+        /// Ikona titulku
+        /// </summary>
+        protected DevExpress.XtraEditors.PictureEdit TitlePicture;
         /// <summary>
         /// Label titulku
         /// </summary>
-        protected DxLabelControl _TitleLabel;
+        protected DxLabelControl TitleLabel;
         /// <summary>
         /// Close button
         /// </summary>
-        protected DxSimpleButton _CloseButton;
+        protected DxSimpleButton CloseButton;
         /// <summary>
         /// Pozice Right pro TitleLabel.
         /// Nastavuje se v metodách, které řídí Layout a Viditelnost buttonů, obsahuje pozici X nejkrajnějšího buttonu vlevo mínus Space
@@ -2526,15 +2645,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool IsPrimaryPanel { get; set; } = true;
         /// <summary>
+        /// Ikona titulku
+        /// </summary>
+        public virtual Image TitleIcon { get; set; }
+        /// <summary>
         /// Text titulku
         /// </summary>
         public virtual string TitleText { get; set; }
+        /// <summary>
+        /// Aktualizuje ikonu titulku
+        /// </summary>
+        protected void RefreshIcon()
+        {
+            int labelX = 6;
+            Image image = this.TitleIcon;
+            if (image != null)
+            {
+                int bs = ButtonSize;
+                TitlePicture.Bounds = new Rectangle(labelX, 4, bs, bs);
+                TitlePicture.Image = image;
+                TitlePicture.Visible = true;
+                labelX += bs + ButtonSpace;
+            }
+            else
+            {
+                TitlePicture.Visible = false;
+            }
+            this.TitleLabel.Left = labelX;
+        }
         /// <summary>
         /// Aktualizuje text titulku
         /// </summary>
         protected void RefreshTitle()
         {
-            this._TitleLabel.Text = this.TitleText;
+            this.TitleLabel.Text = this.TitleText;
         }
         #endregion
         #region Close button
@@ -2578,8 +2722,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             string[] icons = CurrentIcons;
 
-            DxComponent.ApplyImage(_CloseButton.ImageOptions, null, icons[0], size, true);
-            _CloseButton.SetToolTip(this.CloseButtonToolTip);
+            DxComponent.ApplyImage(CloseButton.ImageOptions, null, icons[0], size, true);
+            CloseButton.SetToolTip(this.CloseButtonToolTip);
 
             this.AppliedSvgIcons = UseSvgIcons;
         }
@@ -2682,10 +2826,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Tlačítko pro Close:
             bool isCloseVisible = GetItemVisibility(CloseButtonVisibility, IsMouseOnControl, IsPrimaryPanel);
-            this._CloseButton.Visible = isCloseVisible;
+            this.CloseButton.Visible = isCloseVisible;
 
             // Šířka TitleLabelu:
-            if (isCloseVisible) TitleLabelRight = this._CloseButton.Location.X - ButtonSpace;
+            if (isCloseVisible) TitleLabelRight = this.CloseButton.Location.X - ButtonSpace;
 
             // Upravit šířku TitleLabelu:
             if (doLayoutTitle) DoLayoutTitleLabel();
@@ -2713,12 +2857,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Je povoleno přemístění titulku pomocí Drag And Drop
         /// </summary>
         public virtual bool DragDropEnabled { get; set; }
+        /// <summary>
+        /// Init
+        /// </summary>
+        protected void DragAndDropInit()
+        {
+        }
+
+        /*
+
+        TODO
+
+        /// <summary>
+        /// Init
+        /// </summary>
         protected void DragAndDropInit()
         {
             this.DragAndDropInit(this);
             this.DragAndDropInit(_TitleLabel);
             this.DragAndDropReset();
         }
+
         protected void DragAndDropInit(Control control)
         {
             control.MouseDown += DragAndDrop_MouseDown;
@@ -2827,6 +2986,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Size DragAndDrop_VoidSize;
         private enum DragAndDrop_StateType { None, MouseDown, MouseMove, MouseCancel }
 
+
+
+        */
         #endregion
     }
     #endregion
@@ -3018,17 +3180,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string Id { get; }
         /// <summary>
+        /// Viditelnost titulku
+        /// </summary>
+        bool TitleVisible { get; }
+        /// <summary>
         /// Text do titulku
         /// </summary>
         string TitleText { get; }
         /// <summary>
-        /// Viditelnost buttonu Close
+        /// Ikonka před textem
         /// </summary>
-        ControlVisibility CloseButtonVisibility { get; }
+        Image TitleIcon { get; }
         /// <summary>
-        /// Událost volaná po změně <see cref="TitleText"/>
+        /// Barva pozadí titulku.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
-        event EventHandler TitleTextChanged;
+        Color? TitleBackColor { get; }
+        /// <summary>
+        /// Barva písma titulku.
+        /// Pokud je null, pak titulek má defaultní barvu písma podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy textu = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        Color? TitleTextColor { get; }
+        /// <summary>
+        /// Událost volaná po změně jakékoli hodnoty v <see cref="TitleText"/> nebo <see cref="TitleBackColor"/> nebo <see cref="TitleTextColor"/>
+        /// </summary>
+        event EventHandler TitleChanged;
     }
     #endregion
 }

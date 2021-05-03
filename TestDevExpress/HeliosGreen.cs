@@ -32,6 +32,13 @@ namespace Noris.Clients.Controllers
     }
 }
 
+namespace Noris.Clients.Common
+{
+    public class SupportScaling
+    {
+        public static int GetScaledValue(int designValue) { return designValue; }
+    }
+}
 
 namespace Noris.Clients.Win.Components
 {

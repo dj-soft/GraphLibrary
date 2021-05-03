@@ -332,13 +332,22 @@ namespace TestDevExpress.Components
         public string TitleText 
         {
             get { return _TitleText; }
-            set { _TitleText = value; TitleTextChanged?.Invoke(this, EventArgs.Empty); }
+            set { _TitleText = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
         }
         private string _TitleText;
         /// <summary>
+        /// Ikona u titulku
+        /// </summary>
+        public Image TitleIcon
+        {
+            get { return _TitleIcon; }
+            set { _TitleIcon = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
+        }
+        private Image _TitleIcon;
+        /// <summary>
         /// Došlo ke změně <see cref="TitleText"/>
         /// </summary>
-        public event EventHandler TitleTextChanged;
+        public event EventHandler TitleChanged;
         #endregion
         #region Inicializace, jednotlivé controly, jejich eventy
         /// <summary>
@@ -518,9 +527,12 @@ namespace TestDevExpress.Components
         #endregion
         #region ILayoutUserControl implementace
         string ILayoutUserControl.Id { get { return this.Id.ToString(); } }
+        bool ILayoutUserControl.TitleVisible { get { return true; } }
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
-        ControlVisibility ILayoutUserControl.CloseButtonVisibility { get { return ControlVisibility.Allways; } }
-        event EventHandler ILayoutUserControl.TitleTextChanged { add { this.TitleTextChanged += value; } remove { this.TitleTextChanged -= value; } }
+        Image ILayoutUserControl.TitleIcon { get { return this.TitleIcon; } }
+        Color? ILayoutUserControl.TitleBackColor { get { return null; } }
+        Color? ILayoutUserControl.TitleTextColor { get { return null; } }
+        event EventHandler ILayoutUserControl.TitleChanged { add { this.TitleChanged += value; } remove { this.TitleChanged -= value; } }
         #endregion
     }
 }

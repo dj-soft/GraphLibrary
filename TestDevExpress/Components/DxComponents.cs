@@ -278,7 +278,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
-        internal static void ReloadZoom() { Instance._Zoom = ComponentConnector.GraphicsCache.CurrentZoom; }
+        internal static void ReloadZoom() { Instance._Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; }
         private decimal _Zoom;
         #endregion
         #region Factory metody pro jednořádkovou tvorbu běžných komponent
