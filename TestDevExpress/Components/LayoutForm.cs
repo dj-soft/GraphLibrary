@@ -31,6 +31,7 @@ namespace TestDevExpress.Components
                 CloseButtonToolTip = "Zavřít tento panel",
                 UseSvgIcons = true
             };
+            _LayoutPanel.UserControlAdd += _LayoutPanel_UserControlAdd;
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
             _LayoutPanel.SplitterPositionChanged += _LayoutPanel_SplitterPositionChanged;
             _LayoutPanel.LayoutPanelChanged += _LayoutPanel_LayoutPanelChanged;
@@ -47,6 +48,9 @@ namespace TestDevExpress.Components
             _SetLayout3Button = DxComponent.CreateDxSimpleButton(660, 6, 150, 37, _FunctionPanel, "Set Layout 3", _SetLayout3ButtonClick, toolTipText: "Vloží fixní layout 3");
             _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
 
+            _Random = new Random();
+            _Icons = new Image[] { Properties.Resources.Ball01_16, Properties.Resources.Ball02_16, Properties.Resources.Ball03_16, Properties.Resources.Ball04_16, Properties.Resources.Ball05_16, Properties.Resources.Ball06_16, Properties.Resources.Ball07_16, Properties.Resources.Ball08_16, Properties.Resources.Ball09_16, Properties.Resources.Ball10_16, Properties.Resources.Ball11_16, Properties.Resources.Ball12_16, Properties.Resources.Ball13_16, Properties.Resources.Ball14_16, Properties.Resources.Ball15_16, Properties.Resources.Ball16_16, Properties.Resources.Ball17_16, Properties.Resources.Ball18_16, Properties.Resources.Ball19_16, Properties.Resources.Ball20_16, Properties.Resources.Ball21_16, Properties.Resources.Ball22_16, Properties.Resources.Ball23_16 };
+
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);
 
@@ -57,6 +61,7 @@ namespace TestDevExpress.Components
             this._Timer.Tick += _Timer_Tick;
             this._Timer.Enabled = false;
         }
+
         private void _CopyLayoutButtonClick(object sender, EventArgs e)
         {
             string text = "";
@@ -185,7 +190,11 @@ namespace TestDevExpress.Components
                 _LayoutPanel.XmlLayout = xmlLayout.Replace("'", "\"");
                 string[] areasId = areaIds.Split(';', ',');
                 foreach (string areaId in areasId)
-                    _LayoutPanel.AddControlToArea(new LayoutTestPanel(), areaId.Trim());
+                {
+                    LayoutTestPanel testPanel = new LayoutTestPanel();
+                    testPanel.TitleIcon = _GetIcon();
+                    _LayoutPanel.AddControlToArea(testPanel, areaId.Trim());
+                }
                 _LayoutPanel.DisableAllEvents = false;
             }
         }
@@ -235,27 +244,42 @@ namespace TestDevExpress.Components
             int count = layoutsItem.Length;
             if (count > 0)
             {
-                Random rand = new Random();
-                DxLayoutItemInfo layoutItem = layoutsItem[rand.Next(count)];
+                DxLayoutItemInfo layoutItem = layoutsItem[_Random.Next(count)];
                 if (layoutItem != null)
                 {
                     if (layoutItem.UserControl is LayoutTestPanel testPanel)
                     {
-                        string title = testPanel.TitleText;
-                        if (rand.Next(10) > 3)
+                        if (_Random.Next(10) > 3)
                         {
+                            string title = testPanel.TitleTextBasic;
                             string appendix = RandomText.GetRandomSentence(2, 5, false);
                             title = title + " (" + appendix + ")";
+                            testPanel.TitleText = title;              // Set => Event => DxLayout eventhandler
                         }
 
-                        _LayoutPanel.UpdateTitle(testPanel, title);
+                        if (_Random.Next(10) > 3)
+                        {
+                            testPanel.TitleIcon = _GetIcon();
+                        }
+
+                        // _LayoutPanel.UpdateTitle(testPanel, title);
                     }
 
-                    this._Timer.Interval = rand.Next(700, 3200);
+                    this._Timer.Interval = _Random.Next(700, 3200);
                 }
             }
 
             this._Timer.Enabled = true;
+        }
+
+        private void _LayoutPanel_UserControlAdd(object sender, TEventArgs<Control> e)
+        {
+            if (e.Item is LayoutTestPanel testPanel)
+                testPanel.TitleIcon = _GetIcon();
+        }
+        private Image _GetIcon()
+        {
+            return _Icons[_Random.Next(_Icons.Length)];
         }
         /// <summary>
         /// Chtěl bych zavřít formulář
@@ -295,7 +319,9 @@ namespace TestDevExpress.Components
         private DxSimpleButton _SetLayout2Button;
         private DxSimpleButton _SetLayout3Button;
         private DxSimpleButton _SetLayout4Button;
-        System.Windows.Forms.Timer _Timer;
+        private Image[] _Icons;
+        private Random _Random;
+        private Timer _Timer;
     }
     /// <summary>
     /// Testovací panel reprezentující UserControl v <see cref="DxLayoutPanel"/>, náhrada DynamicPage
@@ -326,6 +352,10 @@ namespace TestDevExpress.Components
         /// ID panelu naposledy vytvořeného
         /// </summary>
         protected static int LastPanelId = 0;
+        /// <summary>
+        /// Základní text titulku, nemění se, nepropisuje se do <see cref="TitleText"/>
+        /// </summary>
+        public string TitleTextBasic { get; set; }
         /// <summary>
         /// Text v titulku
         /// </summary>
@@ -358,7 +388,8 @@ namespace TestDevExpress.Components
             this.Dock = System.Windows.Forms.DockStyle.Fill;
 
             Id = ++LastPanelId;
-            this.TitleText = "Panel číslo " + Id.ToString();
+            this.TitleTextBasic = "Panel číslo " + Id.ToString();
+            this.TitleText = this.TitleTextBasic;
 
             _AddRightButton = CreateDxButton("Otevřít další VPRAVO", LayoutPosition.Right);
             _AddBottomButton = CreateDxButton("Otevřít další DOLE", LayoutPosition.Bottom);
