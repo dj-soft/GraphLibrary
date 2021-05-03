@@ -192,7 +192,7 @@ namespace TestDevExpress.Components
                 foreach (string areaId in areasId)
                 {
                     LayoutTestPanel testPanel = new LayoutTestPanel();
-                    testPanel.TitleIcon = _GetIcon();
+                    PrepareTestPanel(testPanel);
                     _LayoutPanel.AddControlToArea(testPanel, areaId.Trim());
                 }
                 _LayoutPanel.DisableAllEvents = false;
@@ -275,8 +275,20 @@ namespace TestDevExpress.Components
         private void _LayoutPanel_UserControlAdd(object sender, TEventArgs<Control> e)
         {
             if (e.Item is LayoutTestPanel testPanel)
-                testPanel.TitleIcon = _GetIcon();
+                PrepareTestPanel(testPanel);
         }
+        private void PrepareTestPanel(LayoutTestPanel testPanel)
+        {
+            testPanel.TitleIcon = _GetIcon();
+            if (_Random.Next(10) > 3)
+            {
+                Color baseColor = Color.FromArgb(255, 255, 32);
+                testPanel.LineColor = Color.FromArgb(160, baseColor);
+                testPanel.LineColorEnd = Color.FromArgb(12, baseColor);
+                testPanel.LineWidth = 4;
+            }
+        }
+
         private Image _GetIcon()
         {
             return _Icons[_Random.Next(_Icons.Length)];
@@ -304,6 +316,8 @@ namespace TestDevExpress.Components
 
         public void AddControl(WF.Control control)
         {
+            if (control is LayoutTestPanel testPanel)
+                PrepareTestPanel(testPanel);
             _LayoutPanel.AddControl(control);
         }
         /// <summary>
@@ -374,6 +388,26 @@ namespace TestDevExpress.Components
             set { _TitleIcon = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
         }
         private Image _TitleIcon;
+        /// <summary>
+        /// Barva linky pod titulkem.
+        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        /// Pokud je null, pak linka se nekreslí.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? LineColor { get; set; }
+        /// <summary>
+        /// Barva linky pod titulkem na konci (Gradient zleva doprava).
+        /// Pokud je null, pak se nepoužívá gradientní barva.
+        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? LineColorEnd { get; set; }
+        /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        public int? LineWidth { get; set; }
         /// <summary>
         /// Došlo ke změně <see cref="TitleText"/>
         /// </summary>
@@ -561,6 +595,26 @@ namespace TestDevExpress.Components
         bool ILayoutUserControl.TitleVisible { get { return true; } }
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
         Image ILayoutUserControl.TitleIcon { get { return this.TitleIcon; } }
+        /// <summary>
+        /// Barva linky pod titulkem.
+        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        /// Pokud je null, pak linka se nekreslí.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        Color? ILayoutUserControl.LineColor { get { return this.LineColor; } }
+        /// <summary>
+        /// Barva linky pod titulkem na konci (Gradient zleva doprava).
+        /// Pokud je null, pak se nepoužívá gradientní barva.
+        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        Color? ILayoutUserControl.LineColorEnd { get { return this.LineColorEnd; } }
+        /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        int? ILayoutUserControl.LineWidth { get { return this.LineWidth; } }
         Color? ILayoutUserControl.TitleBackColor { get { return null; } }
         Color? ILayoutUserControl.TitleTextColor { get { return null; } }
         event EventHandler ILayoutUserControl.TitleChanged { add { this.TitleChanged += value; } remove { this.TitleChanged -= value; } }

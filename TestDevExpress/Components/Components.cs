@@ -90,6 +90,9 @@ namespace TestDevExpress
     }
     #endregion
     #region class DrawingExtensions : Extensions metody pro grafické třídy (z namespace System.Drawing)
+
+    /*
+
     /// <summary>
     /// Extensions metody pro grafické třídy (z namespace System.Drawing)
     /// </summary>
@@ -494,6 +497,7 @@ namespace TestDevExpress
 
         #endregion
     }
+    */
     #endregion
     #region class AsolSamplePanel : panel zobrazující nějaký obrazec pro demostraci rozměrů panelu a jeho reakci na resize/relocation
     /// <summary>
