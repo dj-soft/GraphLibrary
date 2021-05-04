@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace TestDevExpress
     /// </summary>
     public class RandomText
     {
+        #region Náhodné slovo, věta, odstavec
         /// <summary>
         /// Vrať náhodné slovo
         /// </summary>
@@ -74,6 +76,8 @@ namespace TestDevExpress
                 sentence += ".";
             return sentence;
         }
+        #endregion
+        #region Zdroje slov
         /// <summary>
         /// Náhodná slova
         /// </summary>
@@ -100,11 +104,6 @@ namespace TestDevExpress
             var words = text.Split(" \r\n\t".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             return words.Where(w => w.Length >= 4).ToArray();
         }
-        /// <summary>
-        /// Random generátor
-        /// </summary>
-        public static Random Rand { get { if (_Rand is null) _Rand = new Random(); return _Rand; } }
-        private static Random _Rand;
         /// <summary>
         /// Text "Tři muži na toulkách"
         /// </summary>
@@ -570,5 +569,71 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
 „Vláda shromážděná kolem prezidenta republiky zasedala celý den v Elysejském paláci.";
             }
         }
+        #endregion
+        #region Generátor náhodné pravděpodobnosti, čísla, barvy...
+        /// <summary>
+        /// Vrátí true s danou pravděpodobností:
+        /// 0 = nikdy není true; 100 = vždy je true; mezi tím: 10 = vrátí true v 10 případech ze 100 volání
+        /// </summary>
+        /// <param name="probability"></param>
+        public static bool IsTrue(int probability = 50)
+        {
+            probability = _ToRange(probability, 0, 100);
+            int value = Rand.Next(0, 100);                 // číslo 0-99
+            return (value < probability);                  // Pokud je probability = 0, pak value nikdy není < 0, vždy vrátím false. Pokud probability = 100, pak value je vždy < 100. ....
+        }
+        public static Color GetRandomColor(int low = 0, int high = 256, bool isRandomAlpha = false)
+        {
+            low = _ToRange(low, 0, 255);
+            high = _ToRange(high, low, 256);
+            var rand = Rand;
+            int a = (isRandomAlpha ? rand.Next(low, high) : 255);
+            int r = rand.Next(low, high);
+            int g = rand.Next(low, high);
+            int b = rand.Next(low, high);
+            return Color.FromArgb(a, r, g, b);
+        }
+        /// <summary>
+        /// Vrátí náhodný prvek z pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static T GetRandomItem<T>(params T[] items)
+        {
+            return GetRandomItem((IList<T>)items);
+        }
+        /// <summary>
+        /// Vrátí náhodný prvek z pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static T GetRandomItem<T>(IList<T> items)
+        {
+            if (items == null) return default(T);
+            int count = items.Count;
+            if (count == 0) return default(T);
+            return items[Rand.Next(count)];
+        }
+        /// <summary>
+        /// Vrátí danou hodnotu zarovnanou do min - max, obě meze jsou včetně
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private static int _ToRange(int value, int min, int max)
+        {
+            return (value < min ? min : (value > max ? max : value));
+        }
+        #endregion
+        #region Náhoda
+        /// <summary>
+        /// Random generátor
+        /// </summary>
+        public static Random Rand { get { if (_Rand is null) _Rand = new Random(); return _Rand; } }
+        private static Random _Rand;
+        #endregion
     }
 }

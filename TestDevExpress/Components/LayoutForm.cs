@@ -48,7 +48,6 @@ namespace TestDevExpress.Components
             _SetLayout3Button = DxComponent.CreateDxSimpleButton(660, 6, 150, 37, _FunctionPanel, "Set Layout 3", _SetLayout3ButtonClick, toolTipText: "Vloží fixní layout 3");
             _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
 
-            _Random = new Random();
             _Icons = new Image[] { Properties.Resources.Ball01_16, Properties.Resources.Ball02_16, Properties.Resources.Ball03_16, Properties.Resources.Ball04_16, Properties.Resources.Ball05_16, Properties.Resources.Ball06_16, Properties.Resources.Ball07_16, Properties.Resources.Ball08_16, Properties.Resources.Ball09_16, Properties.Resources.Ball10_16, Properties.Resources.Ball11_16, Properties.Resources.Ball12_16, Properties.Resources.Ball13_16, Properties.Resources.Ball14_16, Properties.Resources.Ball15_16, Properties.Resources.Ball16_16, Properties.Resources.Ball17_16, Properties.Resources.Ball18_16, Properties.Resources.Ball19_16, Properties.Resources.Ball20_16, Properties.Resources.Ball21_16, Properties.Resources.Ball22_16, Properties.Resources.Ball23_16 };
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
@@ -61,7 +60,12 @@ namespace TestDevExpress.Components
             this._Timer.Tick += _Timer_Tick;
             this._Timer.Enabled = false;
         }
-
+        #region XmlLayout
+        private void _LayoutPanel_XmlLayoutChanged(object sender, EventArgs e)
+        {
+            var xmlLayout = _LayoutPanel.XmlLayout;
+            int len = xmlLayout.Length;
+        }
         private void _CopyLayoutButtonClick(object sender, EventArgs e)
         {
             string text = "";
@@ -198,12 +202,8 @@ namespace TestDevExpress.Components
                 _LayoutPanel.DisableAllEvents = false;
             }
         }
+        #endregion
 
-        private void _LayoutPanel_XmlLayoutChanged(object sender, EventArgs e)
-        {
-            var xmlLayout = _LayoutPanel.XmlLayout;
-            int len = xmlLayout.Length;
-        }
 
         /// <summary>
         /// Po změně layoutu (pozice prvků)
@@ -244,28 +244,26 @@ namespace TestDevExpress.Components
             int count = layoutsItem.Length;
             if (count > 0)
             {
-                DxLayoutItemInfo layoutItem = layoutsItem[_Random.Next(count)];
+                DxLayoutItemInfo layoutItem = RandomText.GetRandomItem(layoutsItem);
                 if (layoutItem != null)
                 {
                     if (layoutItem.UserControl is LayoutTestPanel testPanel)
                     {
-                        if (_Random.Next(10) > 3)
-                        {
+                        if (RandomText.IsTrue(70))
+                        {   // 70% prvků bude mít náhodný textový suffix:
                             string title = testPanel.TitleTextBasic;
                             string appendix = RandomText.GetRandomSentence(2, 5, false);
                             title = title + " (" + appendix + ")";
                             testPanel.TitleText = title;              // Set => Event => DxLayout eventhandler
                         }
 
-                        if (_Random.Next(10) > 3)
-                        {
+                        if (RandomText.IsTrue(20))
+                        {   // 20% prvků bude mít náhodně změněnou ikonu:
                             testPanel.TitleIcon = _GetIcon();
                         }
-
-                        // _LayoutPanel.UpdateTitle(testPanel, title);
                     }
 
-                    this._Timer.Interval = _Random.Next(700, 3200);
+                    this._Timer.Interval = RandomText.Rand.Next(700, 3200);
                 }
             }
 
@@ -280,18 +278,31 @@ namespace TestDevExpress.Components
         private void PrepareTestPanel(LayoutTestPanel testPanel)
         {
             testPanel.TitleIcon = _GetIcon();
-            if (_Random.Next(10) > 3)
-            {
-                Color baseColor = Color.FromArgb(255, 255, 32);
-                testPanel.LineColor = Color.FromArgb(160, baseColor);
-                testPanel.LineColorEnd = Color.FromArgb(12, baseColor);
+
+            if (RandomText.IsTrue(40))
+            {   // 40% prvků bude mít podtržení:
+                Color lineColor = Color.FromArgb(255, 255, 32);
+                if (RandomText.IsTrue(20))
+                    // 20% z nich bude mít náhodnou barvu podtržení:
+                    lineColor = RandomText.GetRandomColor(48, 160);
+                testPanel.LineColor = Color.FromArgb(160, lineColor);
+                testPanel.LineColorEnd = Color.FromArgb(12, lineColor);
                 testPanel.LineWidth = 4;
+            }
+
+            if (RandomText.IsTrue(40))
+            {   // 40% prvků bude mít BackColor:
+                Color backColor = RandomText.GetRandomColor(64, 256);
+                testPanel.TitleBackColor = Color.FromArgb(160, backColor);
+                if (RandomText.IsTrue(40))
+                    // 40% z nich bude mít fadeout:
+                    testPanel.TitleBackColorEnd = Color.FromArgb(0, backColor);
             }
         }
 
         private Image _GetIcon()
         {
-            return _Icons[_Random.Next(_Icons.Length)];
+            return RandomText.GetRandomItem(_Icons);
         }
         /// <summary>
         /// Chtěl bych zavřít formulář
@@ -334,7 +345,6 @@ namespace TestDevExpress.Components
         private DxSimpleButton _SetLayout3Button;
         private DxSimpleButton _SetLayout4Button;
         private Image[] _Icons;
-        private Random _Random;
         private Timer _Timer;
     }
     /// <summary>
@@ -408,6 +418,12 @@ namespace TestDevExpress.Components
         /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
         /// </summary>
         public int? LineWidth { get; set; }
+
+        public int TitleBackMargins { get; set; }
+        public Color? TitleBackColor { get; set; }
+        public Color? TitleBackColorEnd { get; set; }
+        public Color? TitleTextColor { get; set; }
+
         /// <summary>
         /// Došlo ke změně <see cref="TitleText"/>
         /// </summary>
@@ -430,11 +446,7 @@ namespace TestDevExpress.Components
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
             _AddTopButton = CreateDxButton("Otevřít další NAHOŘE", LayoutPosition.Top);
 
-            Random rand = new Random();
-            int r = rand.Next(160, 240);
-            int g = rand.Next(160, 240);
-            int b = rand.Next(160, 240);
-            this.BackColor = Color.FromArgb(r, g, b);
+            this.BackColor = RandomText.GetRandomColor(160, 240);
 
             MouseActivityInit();
         }
@@ -596,6 +608,12 @@ namespace TestDevExpress.Components
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
         Image ILayoutUserControl.TitleIcon { get { return this.TitleIcon; } }
         /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        int? ILayoutUserControl.LineWidth { get { return this.LineWidth; } }
+        /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud je null, pak linka se nekreslí.
@@ -610,13 +628,22 @@ namespace TestDevExpress.Components
         /// </summary>
         Color? ILayoutUserControl.LineColorEnd { get { return this.LineColorEnd; } }
         /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
         /// </summary>
-        int? ILayoutUserControl.LineWidth { get { return this.LineWidth; } }
-        Color? ILayoutUserControl.TitleBackColor { get { return null; } }
-        Color? ILayoutUserControl.TitleTextColor { get { return null; } }
+        int? ILayoutUserControl.TitleBackMargins { get { return this.TitleBackMargins; } }
+        /// <summary>
+        /// Barva pozadí titulku.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        Color? ILayoutUserControl.TitleBackColor { get { return this.TitleBackColor; } }
+        /// <summary>
+        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        Color? ILayoutUserControl.TitleBackColorEnd { get { return this.TitleBackColorEnd; } }
+        Color? ILayoutUserControl.TitleTextColor { get { return this.TitleTextColor; } }
         event EventHandler ILayoutUserControl.TitleChanged { add { this.TitleChanged += value; } remove { this.TitleChanged -= value; } }
         #endregion
     }

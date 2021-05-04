@@ -2301,9 +2301,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TitleBarVisible = iLayoutUserControl.TitleVisible;
             _TitleText = iLayoutUserControl.TitleText;
             _TitleIcon = iLayoutUserControl.TitleIcon;
+            _LineWidth = iLayoutUserControl.LineWidth;
             _LineColor = iLayoutUserControl.LineColor;
             _LineColorEnd = iLayoutUserControl.LineColorEnd;
-            _LineWidth = iLayoutUserControl.LineWidth;
+            _TitleBackMargins = iLayoutUserControl.TitleBackMargins;
+            _TitleBackColor = iLayoutUserControl.TitleBackColor;
+            _TitleBackColorEnd = iLayoutUserControl.TitleBackColorEnd;
             _TitleBarSetVisible(iLayoutUserControl.TitleVisible);
             RefreshControl();
         }
@@ -2329,6 +2332,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         public Image TitleIcon { get { return _TitleIcon; } set { _TitleIcon = value; this.RunInGui(RefreshControl); } }
         private Image _TitleIcon;
         /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        public int? LineWidth { get { return _LineWidth; } set { _LineWidth = value; this.RunInGui(RefreshControl); } }
+        private int? _LineWidth;
+        /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud je null, pak linka se nekreslí.
@@ -2345,13 +2356,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         public Color? LineColorEnd { get { return _LineColorEnd; } set { _LineColorEnd = value; this.RunInGui(RefreshControl); } }
         private Color? _LineColorEnd;
         /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
         /// </summary>
-        public int? LineWidth { get { return _LineWidth; } set { _LineWidth = value; this.RunInGui(RefreshControl); } }
-        private int? _LineWidth;
+        public int? TitleBackMargins { get { return _TitleBackMargins; } set { _TitleBackMargins = value; this.RunInGui(RefreshControl); } }
+        private int? _TitleBackMargins;
+        /// <summary>
+        /// Barva pozadí titulku.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? TitleBackColor { get { return _TitleBackColor; } set { _TitleBackColor = value; this.RunInGui(RefreshControl); } }
+        private Color? _TitleBackColor;
+        /// <summary>
+        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? TitleBackColorEnd { get { return _TitleBackColorEnd; } set { _TitleBackColorEnd = value; this.RunInGui(RefreshControl); } }
+        private Color? _TitleBackColorEnd;
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DxLayoutPanel.DockButtonVisibility"/>.
@@ -2653,6 +2675,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override string TitleText { get { return Owner?.TitleText ?? ""; } set { } }
         /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        public override int? LineWidth { get { return Owner?.LineWidth; } set { } }
+        /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud je null, pak linka se nekreslí.
@@ -2667,12 +2696,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override Color? LineColorEnd { get { return Owner?.LineColorEnd; } set { } }
         /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
         /// </summary>
-        public override int? LineWidth { get { return Owner?.LineWidth; } set { } }
+        public override int? TitleBackMargins { get { return Owner?.TitleBackMargins; } set { } }
+        /// <summary>
+        /// Barva pozadí titulku.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public override Color? TitleBackColor { get { return Owner?.TitleBackColor; } set { } }
+        /// <summary>
+        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public override Color? TitleBackColorEnd { get { return Owner?.TitleBackColorEnd; } set { } }
         /// <summary>
         /// Je povoleno přemístění titulku pomocí Drag And Drop
         /// </summary>
@@ -2965,6 +3003,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string TitleText { get; set; }
         /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        public virtual int? LineWidth { get; set; }
+        /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud je null, pak linka se nekreslí.
@@ -2979,12 +3024,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual Color? LineColorEnd { get; set; }
         /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
         /// </summary>
-        public virtual int? LineWidth { get; set; }
+        public virtual int? TitleBackMargins { get; set; }
+        /// <summary>
+        /// Barva pozadí titulku.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public virtual Color? TitleBackColor { get; set; }
+        /// <summary>
+        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public virtual Color? TitleBackColorEnd { get; set; }
+
         /// <summary>
         /// Aktualizuje ikonu titulku. Neřeší pozice (Location, Bounds), to dělá <see cref="DoLayoutTitleIcon(ref int)"/>.
         /// </summary>
@@ -3108,7 +3163,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected int AppliedIconSize { get; set; }
         #endregion
-        #region Paint Line
+        #region Paint Background and Line
         /// <summary>
         /// OnPaint
         /// </summary>
@@ -3116,8 +3171,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+
+            if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
+                PaintBackground(e, margins, backColor, backColorEnd);
+
             if (HasPaintLine(out int lineWidth, out Color lineColor, out Color? lineColorEnd))
                 PaintLine(e, lineWidth, lineColor, lineColorEnd);
+        }
+        /// <summary>
+        /// Vrací true, pokud se má kreslit Backgrounds
+        /// </summary>
+        /// <param name="margins"></param>
+        /// <param name="backColor"></param>
+        /// <param name="backColorEnd"></param>
+        /// <returns></returns>
+        private bool HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd)
+        {
+            Color? bc = this.TitleBackColor;
+            if (bc.HasValue)
+            {
+                margins = DxComponent.ZoomToGuiInt(this.TitleBackMargins ?? 0);
+                backColor = bc.Value;
+                backColorEnd = this.TitleBackColorEnd;
+                return true;
+            }
+            margins = 0;
+            backColor = Color.Empty;
+            backColorEnd = null;
+            return false;
+        }
+        /// <summary>
+        /// Vykreslí Backgrounds
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="margins"></param>
+        /// <param name="backColor"></param>
+        /// <param name="backColorEnd"></param>
+        private void PaintBackground(PaintEventArgs e, int margins, Color backColor, Color? backColorEnd)
+        {
+            Rectangle backBounds = this.ClientRectangle;
+            if (margins > (backBounds.Height / 2)) return;
+            if (margins > 0)
+                backBounds = backBounds.Enlarge(-margins);
+            DxComponent.DrawLine(e.Graphics, backBounds, backColor, backColorEnd);
         }
         /// <summary>
         /// Vrací true, pokud se má kreslit Line
@@ -3624,6 +3720,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Image TitleIcon { get; }
         /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        int? LineWidth { get; }
+        /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud je null, pak linka se nekreslí.
@@ -3638,18 +3741,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Color? LineColorEnd { get; }
         /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
         /// </summary>
-        int? LineWidth { get; }
+        int? TitleBackMargins { get; }
         /// <summary>
         /// Barva pozadí titulku.
         /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
         /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
         Color? TitleBackColor { get; }
+        /// <summary>
+        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        Color? TitleBackColorEnd { get; }
         /// <summary>
         /// Barva písma titulku.
         /// Pokud je null, pak titulek má defaultní barvu písma podle skinu.
