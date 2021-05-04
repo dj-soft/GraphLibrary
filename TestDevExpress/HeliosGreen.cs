@@ -97,12 +97,42 @@ namespace Noris.Clients.Win.Components
         public static void ShowWarningToDeveloper(string message)
         {
             if (!System.Diagnostics.Debugger.IsAttached) return;
-            MessageBox.Show(Host, message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
+            MessageBox.Show(Host.Owner, message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
         }
         /// <summary>
         /// Simulace Green
         /// </summary>
-        public static Control Host { get { return Form.ActiveForm; } }
+        public static AppHost Host { get { if (_Host == null) _Host = new AppHost(); return _Host; } }
+        private static AppHost _Host;
+    }
+    public class AppHost
+    {
+        public bool InvokeRequired { get { return (AnyControl?.InvokeRequired ?? false); } }
+        public void Invoke(Delegate method)
+        {
+            var control = AnyControl;
+            if (control != null)
+            {
+                if (control.InvokeRequired)
+                    control.Invoke(method);
+                else
+                    method.DynamicInvoke();
+            }
+        }
+        public void Invoke(Delegate method, params object[] args)
+        {
+            var control = AnyControl;
+            if (control != null)
+            {
+                if (control.InvokeRequired)
+                    control.Invoke(method);
+                else
+                    method.DynamicInvoke(args);
+            }
+        }
+        public Control Owner { get { return AnyControl; } }
+        protected Control AnyControl { get { return Form.ActiveForm; } }
+        public event EventHandler InteractiveZoomChanged;
     }
     /// <summary>
     /// Simulace Green

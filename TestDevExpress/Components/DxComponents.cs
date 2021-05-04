@@ -15,6 +15,8 @@ using System.Drawing;
 
 using DevExpress.Utils;
 using System.Drawing.Drawing2D;
+using DevExpress.Pdf.Native;
+using DevExpress.XtraPdfViewer;
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
 // using TAB = DevExpress.XtraTab;
@@ -235,6 +237,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitZoom()
         {
             _Zoom = 1m;
+            _SubscribersToZoomChange = new List<_SubscriberToZoomChange>();
+            _SubscribersToZoomLastClean = DateTime.Now;
+            ComponentConnector.Host.InteractiveZoomChanged += Host_InteractiveZoomChanged;
+            _ReloadZoom();
+        }
+        /// <summary>
+        /// Po interaktivní změně Zoomu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Host_InteractiveZoomChanged(object sender, EventArgs e)
+        {
+            _ReloadZoom();
+            _CallSubscriberToZoomChange();
         }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
@@ -280,8 +296,109 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
-        internal static void ReloadZoom() { Instance._Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; }
+        internal static void ReloadZoom() { Instance._ReloadZoom(); }
+        /// <summary>
+        /// Reload hodnoty Zoomu uvnitř instance
+        /// </summary>
+        private void _ReloadZoom() { _Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; }
         private decimal _Zoom;
+        #endregion
+        #region SubscriberToZoomChange
+        /// <summary>
+        /// Zaeviduje si dalšího žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> po změně Zoomu
+        /// </summary>
+        /// <param name="subscriber"></param>
+        public static void SubscribeToZoomChange(ISubscriberToZoomChange subscriber)
+        {
+            Instance._AddSubscriberToZoomChange(subscriber);
+        }
+        /// <summary>
+        /// Odebere daného žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> ze seznamu.
+        /// </summary>
+        /// <param name="subscriber"></param>
+        public static void UnSubscribeToZoomChange(ISubscriberToZoomChange subscriber)
+        {
+            Instance._RemoveSubscriberToZoomChange(subscriber);
+        }
+        /// <summary>
+        /// Zaeviduje si dalšího žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> po změně Zoomu
+        /// </summary>
+        /// <param name="subscriber"></param>
+        private void _AddSubscriberToZoomChange(ISubscriberToZoomChange subscriber)
+        {
+            if (subscriber == null) return;
+
+            _ClearDeadSubscriberToZoomChange();
+            lock (_SubscribersToZoomChange)
+                _SubscribersToZoomChange.Add(new _SubscriberToZoomChange(subscriber));
+        }
+        /// <summary>
+        /// Odebere daného žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> ze seznamu.
+        /// </summary>
+        /// <param name="subscriber"></param>
+        private void _RemoveSubscriberToZoomChange(ISubscriberToZoomChange subscriber)
+        {
+            lock (_SubscribersToZoomChange)
+                _SubscribersToZoomChange.RemoveAll(s => !s.IsAlive || s.ContainsSubscriber(subscriber));
+        }
+        /// <summary>
+        /// Odebere mrtvé Subscribery z pole <see cref="_SubscribersToZoomChange"/>
+        /// </summary>
+        /// <param name="force"></param>
+        private void _ClearDeadSubscriberToZoomChange(bool force = false)
+        {
+            if (!force && ((TimeSpan)(DateTime.Now - _SubscribersToZoomLastClean)).TotalSeconds < 30d) return;  // Když to není nutné, nebudeme to řešit
+            lock (_SubscribersToZoomChange)
+                _SubscribersToZoomChange.RemoveAll(s => !s.IsAlive);
+            _SubscribersToZoomLastClean = DateTime.Now;
+        }
+        /// <summary>
+        /// Zavolá všechny živé subscribery o změně Zoomu
+        /// </summary>
+        private void _CallSubscriberToZoomChange()
+        {
+            _ClearDeadSubscriberToZoomChange();
+            
+            List<_SubscriberToZoomChange> activeSubscribers = null;
+            lock (_SubscribersToZoomChange)
+                activeSubscribers = _SubscribersToZoomChange.ToList();
+
+            activeSubscribers.ForEach(s => s.CallSubscribe());
+        }
+        private List<_SubscriberToZoomChange> _SubscribersToZoomChange;
+        private DateTime _SubscribersToZoomLastClean;
+        /// <summary>
+        /// Evidence jednoho subscribera
+        /// </summary>
+        private class _SubscriberToZoomChange
+        {
+            public _SubscriberToZoomChange(ISubscriberToZoomChange subscriber)
+            {
+                __Subscriber = new WeakTarget<ISubscriberToZoomChange>(subscriber);
+            }
+            private WeakTarget<ISubscriberToZoomChange> __Subscriber;
+            /// <summary>
+            /// true pokud je objekt použitelný
+            /// </summary>
+            public bool IsAlive { get { return __Subscriber.IsAlive; } }
+            /// <summary>
+            /// Vrátí true, pokud this instance drží odkaz na daného subscribera.
+            /// </summary>
+            public bool ContainsSubscriber(ISubscriberToZoomChange testSubscriber)
+            {
+                ISubscriberToZoomChange mySubscriber = __Subscriber.Target;
+                return (mySubscriber != null && Object.ReferenceEquals(mySubscriber, testSubscriber));
+            }
+            /// <summary>
+            /// Zavolá metodu <see cref="ISubscriberToZoomChange.ZoomChanged()"/> pro zdejší cíl
+            /// </summary>
+            public void CallSubscribe()
+            {
+                ISubscriberToZoomChange subscriber = __Subscriber.Target;
+                if (subscriber != null)
+                    subscriber.ZoomChanged();
+            }
+        }
         #endregion
         #region Factory metody pro jednořádkovou tvorbu běžných komponent
         public static DxPanelControl CreateDxPanel(Control parent = null,
@@ -3767,7 +3884,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static implicit operator WeakTarget<T>(T source) { return (source is null ? null : new WeakTarget<T>(source)); }
     }
     #endregion
-
     #region class TEventArgs<T> : Třída argumentů obsahující jeden prvek generického typu Item
     /// <summary>
     /// Třída argumentů obsahující jeden prvek <see cref="Item"/> generického typu <typeparamref name="T"/>.
@@ -3873,6 +3989,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Interaktivní akce uživatele
         /// </summary>
         User
+    }
+    #endregion
+    #region interface
+    /// <summary>
+    /// Objekt, který chce být informován o změně Zoomu.
+    /// Při své iniciaizaci má objekt zavolat <see cref="DxComponent.SubscribeToZoomChange(ISubscriberToZoomChange)"/>.
+    /// Pak po změně Zoomu dostane řízení do své metody <see cref="ISubscriberToZoomChange.ZoomChanged"/>.
+    /// Objekt se může odregistrovat (typicky v Dispose()) metodou <see cref="DxComponent.UnSubscribeToZoomChange(ISubscriberToZoomChange)"/>, ale není to povinné.
+    /// </summary>
+    public interface ISubscriberToZoomChange
+    {
+        /// <summary>
+        /// Došlo ke změně Zoomu
+        /// </summary>
+        void ZoomChanged();
     }
     #endregion
     #region Enumy
