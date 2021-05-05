@@ -582,12 +582,20 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
             int value = Rand.Next(0, 100);                 // číslo 0-99
             return (value < probability);                  // Pokud je probability = 0, pak value nikdy není < 0, vždy vrátím false. Pokud probability = 100, pak value je vždy < 100. ....
         }
-        public static Color GetRandomColor(int low = 0, int high = 256, bool isRandomAlpha = false)
+        /// <summary>
+        /// Vrátí náhodnou barvu, volitelně v daném rozmezí 0 až 256, volitelně s náhodnou hodntou Alpha
+        /// </summary>
+        /// <param name="low"></param>
+        /// <param name="high"></param>
+        /// <param name="alpha">Hodnota Alpha</param>
+        /// <param name="isRandomAlpha">Použít náhodný Alpha kanál v rozmezí 16 - 240? false = ne, Alpha bude 255</param>
+        /// <returns></returns>
+        public static Color GetRandomColor(int low = 0, int high = 256, int? alpha = null, bool isRandomAlpha = false)
         {
             low = _ToRange(low, 0, 255);
             high = _ToRange(high, low, 256);
             var rand = Rand;
-            int a = (isRandomAlpha ? rand.Next(low, high) : 255);
+            int a = (alpha.HasValue ? _ToRange(alpha.Value, 0, 256) : (isRandomAlpha ? rand.Next(16, 240) : 255));
             int r = rand.Next(low, high);
             int g = rand.Next(low, high);
             int b = rand.Next(low, high);

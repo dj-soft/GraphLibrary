@@ -786,7 +786,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="bounds"></param>
         /// <param name="color1"></param>
         /// <param name="color2"></param>
-        public static void DrawLine(Graphics graphics, Rectangle bounds, Color color1, Color? color2)
+        public static void PaintDrawLine(Graphics graphics, Rectangle bounds, Color color1, Color? color2)
         {
             if (!color2.HasValue)
             {
@@ -794,7 +794,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                using (var brush = CreateBrushForGradient(bounds, color1, color2.Value, RectangleSide.Right))
+                using (var brush = PaintCreateBrushForGradient(bounds, color1, color2.Value, RectangleSide.Right))
                 {
                     graphics.FillRectangle(brush, bounds);
                 }
@@ -808,7 +808,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="color2"></param>
         /// <param name="targetSide"></param>
         /// <returns></returns>
-        internal static LinearGradientBrush CreateBrushForGradient(Rectangle bounds, Color color1, Color color2, RectangleSide targetSide)
+        public static LinearGradientBrush PaintCreateBrushForGradient(Rectangle bounds, Color color1, Color color2, RectangleSide targetSide)
         {
             switch (targetSide)
             {
@@ -831,6 +831,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return new LinearGradientBrush(bounds, color1, color2, LinearGradientMode.Horizontal);
             }
         }
+        /// <summary>
+        /// Okamžitě vrací SolidBrush pro kreslení danou barvou. Nesmí být Disposován!
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static SolidBrush PaintGetSolidBrush(Color color) { return Instance._GetSolidBrush(color); }
+        /// <summary>
+        /// Okamžitě vrací Pen pro kreslení danou barvou. Nesmí být Disposován!
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static Pen PaintGetPen(Color color) { return Instance._GetPen(color); }
+
         private SolidBrush _GetSolidBrush(Color color)
         {
             _SolidBrush.Color = color;
@@ -4130,6 +4143,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.Margin = new Padding(0);
             this.Padding = new Padding(0);
+        }
+        /// <summary>
+        /// Barva pozadí uživatelská, má přednost před skinem, aplikuje se na hotový skin, může obsahovat Alpha kanál = pak skrz tuto barvu prosvítá podkladový skin
+        /// </summary>
+        public Color? BackColorUser { get { return _BackColorUser; } set { _BackColorUser = value; Invalidate(); } }
+        private Color? _BackColorUser;
+        #endregion
+        #region Paint
+        /// <summary>
+        /// Základní kreslení
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            this.PaintBackColorUser(e);
+        }
+        /// <summary>
+        /// Overlay kreslení BackColorUser
+        /// </summary>
+        /// <param name="e"></param>
+        protected void PaintBackColorUser(PaintEventArgs e)
+        {
+            var backColorUser = BackColorUser;
+            if (!backColorUser.HasValue) return;
+            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColorUser.Value), this.ClientRectangle);
         }
         #endregion
         #region Rozšířené property

@@ -350,7 +350,7 @@ namespace TestDevExpress.Components
     /// <summary>
     /// Testovací panel reprezentující UserControl v <see cref="DxLayoutPanel"/>, náhrada DynamicPage
     /// </summary>
-    public class LayoutTestPanel : System.Windows.Forms.Panel, ILayoutUserControl // DevExpress.XtraEditors.PanelControl
+    public class LayoutTestPanel : DxPanelControl, ILayoutUserControl // DevExpress.XtraEditors.PanelControl / System.Windows.Forms.Panel
     {
         #region Public vrstva: konstruktor, property, eventy
         /// <summary>
@@ -446,7 +446,7 @@ namespace TestDevExpress.Components
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
             _AddTopButton = CreateDxButton("Otevřít další NAHOŘE", LayoutPosition.Top);
 
-            this.BackColor = RandomText.GetRandomColor(160, 240);
+            this.BackColorUser = RandomText.GetRandomColor(64, 256, 64);
 
             MouseActivityInit();
         }

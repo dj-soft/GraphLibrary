@@ -3213,7 +3213,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (margins > (backBounds.Height / 2)) return;
             if (margins > 0)
                 backBounds = backBounds.Enlarge(-margins);
-            DxComponent.DrawLine(e.Graphics, backBounds, backColor, backColorEnd);
+            DxComponent.PaintDrawLine(e.Graphics, backBounds, backColor, backColorEnd);
         }
         /// <summary>
         /// Vrací true, pokud se má kreslit Line
@@ -3269,7 +3269,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             Rectangle lineBounds = new Rectangle(titleBounds.X - 2, ly, titleBounds.Width + 2, (lb - ly));
-            DxComponent.DrawLine(e.Graphics, lineBounds, lineColor, lineColorEnd);
+            DxComponent.PaintDrawLine(e.Graphics, lineBounds, lineColor, lineColorEnd);
         }
         #endregion
         #region Pohyb myši a viditelnost buttonů
