@@ -24,6 +24,7 @@ namespace TestDevExpress.Components
                 DragDropEnabled = true,
                 DockButtonVisibility = ControlVisibility.OnMouse,
                 CloseButtonVisibility = ControlVisibility.Allways,     // ControlVisibility.OnNonPrimaryPanelAllways,
+                EmptyPanelButtons = EmptyPanelVisibleButtons.Close,
                 DockButtonLeftToolTip = "Přemístit tento panel doleva",
                 DockButtonTopToolTip = "Přemístit tento panel nahoru",
                 DockButtonBottomToolTip = "Přemístit tento panel dolů",
@@ -47,6 +48,7 @@ namespace TestDevExpress.Components
             _SetLayout2Button = DxComponent.CreateDxSimpleButton(500, 6, 150, 37, _FunctionPanel, "Set Layout 2", _SetLayout2ButtonClick, toolTipText: "Vloží fixní layout 2");
             _SetLayout3Button = DxComponent.CreateDxSimpleButton(660, 6, 150, 37, _FunctionPanel, "Set Layout 3", _SetLayout3ButtonClick, toolTipText: "Vloží fixní layout 3");
             _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
+            _SetLayout5Button = DxComponent.CreateDxSimpleButton(980, 6, 150, 37, _FunctionPanel, "Set Void Layout", _SetLayout5ButtonClick, toolTipText: "Vloží fixní layout obsahující i prázdné panely");
 
             _Icons = new Image[] { Properties.Resources.Ball01_16, Properties.Resources.Ball02_16, Properties.Resources.Ball03_16, Properties.Resources.Ball04_16, Properties.Resources.Ball05_16, Properties.Resources.Ball06_16, Properties.Resources.Ball07_16, Properties.Resources.Ball08_16, Properties.Resources.Ball09_16, Properties.Resources.Ball10_16, Properties.Resources.Ball11_16, Properties.Resources.Ball12_16, Properties.Resources.Ball13_16, Properties.Resources.Ball14_16, Properties.Resources.Ball15_16, Properties.Resources.Ball16_16, Properties.Resources.Ball17_16, Properties.Resources.Ball18_16, Properties.Resources.Ball19_16, Properties.Resources.Ball20_16, Properties.Resources.Ball21_16, Properties.Resources.Ball22_16, Properties.Resources.Ball23_16 };
 
@@ -183,6 +185,35 @@ namespace TestDevExpress.Components
  </id-data>
 </id-persistent>";
             string areaIds = "C/P1/P1; C/P1/P2/P1; C/P1/P2/P2/P1; C/P1/P2/P2/P2; C/P2/P1; C/P2/P2/P1; C/P2/P2/P2";
+            ApplyLayout(xmlLayout, areaIds);
+        }
+        private void _SetLayout5ButtonClick(object sender, EventArgs e)
+        {
+            string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
+<id-persistent Version='2.00' Created='2021-04-17 18:32:14.095' Creator='David'>
+ <id-data>
+  <id-value id-value.Type='Noris.Clients.Win.Components.AsolDX.DxLayoutPanel+Area' AreaID='C' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='312' SplitterRange='781'>
+   <id-value id-value.Target='Content1' AreaID='C/P1' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='124' SplitterRange='312'>
+    <id-value id-value.Target='Content1' AreaID='C/P1/P1' Content='DxLayoutItemPanel' ControlID='39' />
+    <id-value id-value.Target='Content2' AreaID='C/P1/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='293' SplitterRange='1376'>
+     <id-value id-value.Target='Content1' AreaID='C/P1/P2/P1' Content='DxLayoutItemPanel' ControlID='41' />
+     <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='846' SplitterRange='1078'>
+      <id-value id-value.Target='Content1' AreaID='C/P1/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='38' />
+      <id-value id-value.Target='Content2' AreaID='C/P1/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='42' />
+     </id-value>
+    </id-value>
+   </id-value>
+   <id-value id-value.Target='Content2' AreaID='C/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Horizontal' SplitterPosition='278' SplitterRange='464'>
+    <id-value id-value.Target='Content1' AreaID='C/P2/P1' Content='DxLayoutItemPanel' ControlID='37' />
+    <id-value id-value.Target='Content2' AreaID='C/P2/P2' Content='DxSplitContainer' FixedPanel='Panel1' SplitterOrientation='Vertical' SplitterPosition='679' SplitterRange='1376'>
+     <id-value id-value.Target='Content1' AreaID='C/P2/P2/P1' Content='DxLayoutItemPanel' ControlID='40' />
+     <id-value id-value.Target='Content2' AreaID='C/P2/P2/P2' Content='DxLayoutItemPanel' ControlID='43' />
+    </id-value>
+   </id-value>
+  </id-value>
+ </id-data>
+</id-persistent>";
+            string areaIds = "C/P1/P1; C/P1/P2/P2/P2";
             ApplyLayout(xmlLayout, areaIds);
         }
         private void ApplyLayout(string xmlLayout, string areaIds)
@@ -344,6 +375,7 @@ namespace TestDevExpress.Components
         private DxSimpleButton _SetLayout2Button;
         private DxSimpleButton _SetLayout3Button;
         private DxSimpleButton _SetLayout4Button;
+        private DxSimpleButton _SetLayout5Button;
         private Image[] _Icons;
         private Timer _Timer;
     }
