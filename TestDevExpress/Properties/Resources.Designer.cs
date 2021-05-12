@@ -611,6 +611,36 @@ namespace TestDevExpress.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] AssecoPatka {
+            get {
+                object obj = ResourceManager.GetObject("AssecoPatka", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap AssecoPatka33 {
+            get {
+                object obj = ResourceManager.GetObject("AssecoPatka33", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap AssecoPatkaPng {
+            get {
+                object obj = ResourceManager.GetObject("AssecoPatkaPng", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap Ball01_16 {
@@ -3236,6 +3266,16 @@ namespace TestDevExpress.Properties {
         internal static System.Drawing.Bitmap draw_triangle4_24_ {
             get {
                 object obj = ResourceManager.GetObject("draw_triangle4_24_", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap earth_globe_sphere_20 {
+            get {
+                object obj = ResourceManager.GetObject("earth_globe_sphere_20", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -6651,6 +6691,16 @@ namespace TestDevExpress.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] homer_simpson {
+            get {
+                object obj = ResourceManager.GetObject("homer_simpson", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap hourglass_16 {
@@ -6706,6 +6756,26 @@ namespace TestDevExpress.Properties {
         internal static System.Drawing.Bitmap Menu2 {
             get {
                 object obj = ResourceManager.GetObject("Menu2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Moon {
+            get {
+                object obj = ResourceManager.GetObject("Moon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Moon10 {
+            get {
+                object obj = ResourceManager.GetObject("Moon10", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

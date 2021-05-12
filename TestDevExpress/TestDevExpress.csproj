@@ -2275,5 +2275,26 @@
   <ItemGroup>
     <None Include="Images\Icons16\move_task_down_16.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\homer-simpson.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AssecoPatka.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AssecoPatka.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AssecoPatka33.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\earth-globe-sphere-20.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Moon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Moon10.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -255,12 +255,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Hele, ono tam (v požadovaném AreaId) už něco je!!!  Co s tím?
                 if (hostInfo.ChildType == AreaContentType.DxSplitContainer || hostInfo.ChildType == AreaContentType.WfSplitContainer)
                     throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any container ({hostInfo.ChildType}), can not insert any UserControl.");
-                if (hostInfo.ChildType == AreaContentType.DxLayoutItemPanel)
-                {
-                    if (!removeOld)
-                        throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any UserControl, and is not specified removeOld=true, can not insert any UserControl.");
+                if (hostInfo.ChildType == AreaContentType.DxLayoutItemPanel && !removeOld)
+                    throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any UserControl, and is not specified removeOld=true, can not insert any UserControl.");
+                if (hostInfo.ChildType == AreaContentType.DxLayoutItemPanel || hostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
                     _RemoveUserControlOnly(hostInfo.ChildItemPanel);
-                }
                 hostInfo.Parent.Controls.Clear();
             }
 
@@ -551,16 +549,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RemoveUserControlOnly(DxLayoutItemPanel itemPanel)
         {
             Control userControl = itemPanel.UserControl;
-            RemoveControlFromParent(userControl, itemPanel);
+            bool hasUserControl = (userControl != null);
+            if (hasUserControl) RemoveControlFromParent(userControl, itemPanel);
+
             RemoveControlFromParent(itemPanel, itemPanel.Parent);
 
-            int removeIndex = _GetIndexOfUserControl(userControl);
-            if (removeIndex >= 0)
-                _Controls.RemoveAt(removeIndex);
-
-            if (!_AllEventsDisable)
+            if (hasUserControl)
             {
-                OnUserControlRemoved(userControl);
+                int removeIndex = _GetIndexOfUserControl(userControl);
+                if (removeIndex >= 0)
+                    _Controls.RemoveAt(removeIndex);
+
+                if (!_AllEventsDisable)
+                {
+                    OnUserControlRemoved(userControl);
+                }
             }
         }
         /// <summary>
@@ -1285,7 +1288,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else if (control is DxLayoutItemPanel itemPanel)
             {   // V našem hostiteli je Panel s UserControlem:
                 hostInfo.ChildItemPanel = itemPanel;
-                area.ContentType = AreaContentType.DxLayoutItemPanel;
+                area.ContentType = (!itemPanel.IsEmpty ? AreaContentType.DxLayoutItemPanel : AreaContentType.EmptyLayoutPanel);
                 Size areaSize = host.ClientSize;
                 Control userControl = itemPanel.UserControl;
                 bool isPrimaryPanel = itemPanel.IsPrimaryPanel;
@@ -1332,7 +1335,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Druh obsahu
             /// </summary>
-            public AreaContentType ChildType { get { return (ChildContainer != null ? AreaContentType.DxSplitContainer : (ChildItemPanel != null ? AreaContentType.DxLayoutItemPanel : AreaContentType.Empty)); } }
+            public AreaContentType ChildType 
+            { 
+                get 
+                {
+                    if (ChildContainer != null)
+                        return AreaContentType.DxSplitContainer;
+                    if (ChildItemPanel != null)
+                        return (!ChildItemPanel.IsEmpty ? AreaContentType.DxLayoutItemPanel : AreaContentType.EmptyLayoutPanel);
+                    return AreaContentType.Empty; 
+                }
+            }
             /// <summary>
             /// Child prvek typu SplitContainer, nebo null
             /// </summary>
@@ -1342,7 +1355,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DxLayoutItemPanel ChildItemPanel { get; set; }
             /// <summary>
-            /// Prostor je k dispozici pro UserControl
+            /// Odstraní všechny Controly z parenta a ze svých referencí <see cref="ChildContainer"/> a <see cref="ChildItemPanel"/>
+            /// </summary>
+            public void ClearChilds()
+            {
+                this.ChildContainer = null;
+                this.ChildItemPanel = null;
+                var parent = this.Parent;
+                if (parent != null)
+                    parent.Controls.Clear();
+            }
+            /// <summary>
+            /// Prostor je k dispozici pro umístění UserControlu (buď je zcela Empty, nebo obsahuje EmptyLayoutPanel).
+            /// </summary>
+            public bool IsDisponible
+            {
+                get
+                {
+                    var parent = this.Parent;
+                    if (parent == null) return false;
+                    var childType = this.ChildType;
+                    return (childType == AreaContentType.Empty || childType == AreaContentType.EmptyLayoutPanel);
+                }
+            }
+            /// <summary>
+            /// Prostor je k dispozici pro cokoliv, neobsahuje žádný control
             /// </summary>
             public bool IsEmpty
             {
@@ -1350,8 +1387,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     var parent = this.Parent;
                     if (parent == null) return false;
-                    var childType = this.ChildType;
-                    return (childType == AreaContentType.Empty && parent.Controls.Count == 0);
+                    return (parent.Controls.Count == 0);
                 }
             }
             /// <summary>
@@ -1393,14 +1429,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             DxLayoutItemInfo[] lostControls = null;
             bool allEventsDisable = _AllEventsDisable;
-            bool createTitlePanels = _NeedTitleBarInEmptyPanel;
+            bool createEmptyControls = _CreateEmptyControlInEmptyPanel;
             try
             {
                 using (this.ScopeSuspendParentLayout())
                 {
                     _AllEventsDisable = true;
                     SetXmlLayoutClear(layoutOld.Item3);
-                    SetXmlLayoutCreatePanels(area, createTitlePanels);    // Vytvoříme nové prázdné containery a jejich panely
+                    SetXmlLayoutCreatePanels(area, createEmptyControls);    // Vytvoříme nové prázdné containery a jejich panely
                     var layoutNew = GetLayoutData();                      // Nový layout: využijeme z něj Item3 = nová struktura layoutu (klíče AreaId + hostitelé), ...
 
                     // Nyní vložíme stávající UserControly do jejich adres (podle mapy, podle parametru a podle starého seznamu Item2)
@@ -1492,18 +1528,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vygeneruje nový layout, prázdný = bez UserControlů
         /// </summary>
         /// <param name="area"></param>
-        /// <param name="createTitlePanels">Vytvářit titulkový panel</param>
-        private void SetXmlLayoutCreatePanels(Area area, bool createTitlePanels)
+        /// <param name="createEmptyControls">Vytvářit titulkový panel</param>
+        private void SetXmlLayoutCreatePanels(Area area, bool createEmptyControls)
         {
-            SetXmlLayoutCreateContainer(this, area, createTitlePanels);
+            SetXmlLayoutCreateContainer(this, area, createEmptyControls);
         }
         /// <summary>
         /// Vygeneruje do daného hostitele jednu úroveň layoutu, rekurzivní metoda
         /// </summary>
         /// <param name="host"></param>
         /// <param name="area"></param>
-        /// <param name="createTitlePanels">Vytvářit titulkový panel</param>
-        private void SetXmlLayoutCreateContainer(Control host, Area area, bool createTitlePanels)
+        /// <param name="createEmptyControls">Vytvářit titulkový panel</param>
+        private void SetXmlLayoutCreateContainer(Control host, Area area, bool createEmptyControls)
         {
             if (area == null)
                 throw new ArgumentException($"Set to {_XmlLayoutName} error: Area is null.");
@@ -1512,43 +1548,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case AreaContentType.DxSplitContainer:
                     var container = this._CreateNewContainer(area, host);
-                    SetXmlLayoutCreateContainer(container.Panel1, area.Content1, createTitlePanels);
-                    SetXmlLayoutCreateContainer(container.Panel2, area.Content2, createTitlePanels);
+                    SetXmlLayoutCreateContainer(container.Panel1, area.Content1, createEmptyControls);
+                    SetXmlLayoutCreateContainer(container.Panel2, area.Content2, createEmptyControls);
                     break;
                 case AreaContentType.WfSplitContainer:
                     // Tento typ obecně nepoužíváme!
                     break;
                 case AreaContentType.DxLayoutItemPanel:
-                    if (createTitlePanels)
+                    if (createEmptyControls)
                     {
-                        var title = this._CreateNewTitleBar();
-                        host.Controls.Add(title);
+                        var emptyPanel = this._CreateEmptyControl();
+                        host.Controls.Add(emptyPanel);
                     }
                     break;
             }
         }
-        private DxDockTitlePanel _CreateNewTitleBar()
+        private DxLayoutItemPanel _CreateEmptyControl()
         {
-            DxDockTitlePanel panel = new DxDockTitlePanel();
+            DxLayoutItemPanel itemPanel = new DxLayoutItemPanel();
 
             var buttons = this.EmptyPanelButtons;
-            panel.CloseButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Close) ? this.CloseButtonVisibility : ControlVisibility.None);
-            panel.DockButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Dock) ? this.DockButtonVisibility : ControlVisibility.None);
+            // itemPanel.CloseButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Close) ? this.CloseButtonVisibility : ControlVisibility.None);
+            // itemPanel.DockButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Dock) ? this.DockButtonVisibility : ControlVisibility.None);
 
-            panel.CloseButtonClick += Panel_CloseButtonClick;
+            itemPanel.CloseButtonClick += Panel_CloseButtonClick;
 
-            return panel;
+            return itemPanel;
         }
-
+        /// <summary>
+        /// Uživatel chce zavřít prázdný panel
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Panel_CloseButtonClick(object sender, EventArgs e)
         {
             
         }
-
         /// <summary>
-        /// Obsahuje true, pokud se do nových prázdných panelů mají vytvářet titulkové řádky
+        /// Obsahuje true, pokud se do nových prázdných panelů mají vytvářet prázdné panely s titulkem a tlačítky
         /// </summary>
-        private bool _NeedTitleBarInEmptyPanel
+        private bool _CreateEmptyControlInEmptyPanel
         {
             get
             {
@@ -1578,9 +1617,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     string oldAreaId = oldControl.AreaId;
                     string newAreaId = (mapDict.ContainsKey(oldAreaId) ? mapDict[oldAreaId] : null);
-                    if (newAreaId != null && newHosts.TryGetValue(newAreaId, out var newHostInfo) && newHostInfo.IsEmpty)
+                    if (newAreaId != null && newHosts.TryGetValue(newAreaId, out var newHostInfo) && newHostInfo.IsDisponible)
                     {   // Pokud máme explicitně určenou cílovou oblast pomocí mapy, a oblast existuje a je prázdná,
                         // pak do ní dáme control bez ohledu na lostControlMode:
+                        if (newHostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                            newHostInfo.ClearChilds();
                         AddControlToParent(oldControl.UserControl, newHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText);
                     }
                     else
@@ -1610,17 +1651,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                             // 1. Pokud můžeme využít existující oblasti:
                             if (canUseExistingHosts)
                             {
-                                if (newHosts.TryGetValue(oldAreaId, out var newHostInfo) && newHostInfo.IsEmpty)
+                                if (newHosts.TryGetValue(oldAreaId, out var newHostInfo) && newHostInfo.IsDisponible)
                                 {   // Pokud najdeme původní oblast dle AreaId, a oblast existuje a je prázdná,
                                     // pak do ní tento control umístíme:
+                                    if (newHostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                                        newHostInfo.ClearChilds();
                                     AddControlToParent(oldControl.UserControl, newHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText);
                                     isAssigned = true;
                                 }
                                 if (!isAssigned)
                                 {   // Zkusíme najít libovolný existující prázdný prvek:
-                                    var anyHostInfo = newHosts.Values.FirstOrDefault(h => h.IsEmpty);
+                                    var anyHostInfo = newHosts.Values.FirstOrDefault(h => h.IsDisponible);
                                     if (anyHostInfo != null)
                                     {
+                                        if (anyHostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                                            anyHostInfo.ClearChilds();
                                         AddControlToParent(oldControl.UserControl, anyHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText);
                                         isAssigned = true;
                                     }
@@ -1849,7 +1894,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typ obsahu prostoru
         /// </summary>
-        private enum AreaContentType { None, Empty, DxLayoutItemPanel, DxSplitContainer, WfSplitContainer }
+        private enum AreaContentType 
+        {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
+            None, 
+            /// <summary>
+            /// Žádný control
+            /// </summary>
+            Empty,
+            /// <summary>
+            /// Prázdný DxLayoutItemPanel
+            /// </summary>
+            EmptyLayoutPanel,
+            /// <summary>
+            /// Standardní naplněný DxLayoutItemPanel
+            /// </summary>
+            DxLayoutItemPanel, 
+            /// <summary>
+            /// SplitContainer typu DevExpress
+            /// </summary>
+            DxSplitContainer,
+            /// <summary>
+            /// SplitContainer typu WinForm
+            /// </summary>
+            WfSplitContainer
+        }
         #endregion
         #endregion
         #region Třídy LayoutTileInfo (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
@@ -2464,8 +2535,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {   // Pokud nemá být viditelný:
-                if (_TitleBar != null && _TitleBar.VisibleInternal != !titleBarVisible)
-                    _TitleBar.VisibleInternal = !titleBarVisible;
+                if (_TitleBar != null && _TitleBar.VisibleInternal)
+                    _TitleBar.VisibleInternal = false;
             }
         }
         /// <summary>
@@ -2503,6 +2574,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxLayoutTitlePanel _TitleBar;
         #endregion
         #region UserControl a vkládání controlů (UserControl + _TitleBar) do this.Controls
+        /// <summary>
+        /// Obsahuje true pokud this panel je prázdný = neobsahuje <see cref="UserControl"/>
+        /// </summary>
+        public bool IsEmpty { get { return (this.UserControl == null); } }
         /// <summary>
         /// Uživatelský control, obsazuje většinu prostoru this panelu, pod titulkem
         /// </summary>
@@ -2640,37 +2715,64 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override bool DragDropEnabled { get { return (LayoutPanel?.DragDropEnabled ?? false); } set { } }
         /// <summary>
-        /// Viditelnost buttonu Close
+        /// Viditelnost buttonu Close.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="LayoutPanel"/> (=výchozí stav).
         /// </summary>
-        public override ControlVisibility CloseButtonVisibility { get { return LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default; } set { } }
+        public override ControlVisibility CloseButtonVisibility 
+        {
+            get { return (_CloseButtonVisibility ?? LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default); } 
+            set { _CloseButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); } 
+        }
+        private ControlVisibility? _CloseButtonVisibility;
         /// <summary>
-        /// Tooltip na buttonu Close
+        /// Tooltip na buttonu Close.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu NULL = bude se přebírat z <see cref="LayoutPanel"/> (=výchozí stav).
         /// </summary>
-        public override string CloseButtonToolTip { get { return LayoutPanel?.CloseButtonToolTip; } set { } }
+        public override string CloseButtonToolTip
+        {
+            get { return (_CloseButtonToolTip ?? LayoutPanel?.CloseButtonToolTip ?? ""); } 
+            set { _CloseButtonToolTip = value; } 
+        }
+        private string _CloseButtonToolTip;
         /// <summary>
-        /// Viditelnost buttonů Dock
+        /// Viditelnost buttonů Dock.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="LayoutPanel"/> (=výchozí stav).
         /// </summary>
-        public override ControlVisibility DockButtonVisibility { get { return LayoutPanel?.DockButtonVisibility ?? ControlVisibility.Default; } set { } }
+        public override ControlVisibility DockButtonVisibility 
+        { 
+            get { return (_DockButtonVisibility ?? LayoutPanel?.DockButtonVisibility ?? ControlVisibility.Default); }
+            set { _DockButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
+        }
+        private ControlVisibility? _DockButtonVisibility;
         /// <summary>
-        /// Tooltip na buttonu DockLeft
+        /// Tooltip na buttonu DockLeft.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
         /// </summary>
         public override string DockButtonLeftToolTip { get { return LayoutPanel?.DockButtonLeftToolTip; } set { } }
         /// <summary>
-        /// Tooltip na buttonu DockTop
+        /// Tooltip na buttonu DockTop.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
         /// </summary>
         public override string DockButtonTopToolTip { get { return LayoutPanel?.DockButtonTopToolTip; } set { } }
         /// <summary>
-        /// Tooltip na buttonu DockBottom
+        /// Tooltip na buttonu DockBottom.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
         /// </summary>
         public override string DockButtonBottomToolTip { get { return LayoutPanel?.DockButtonBottomToolTip; } set { } }
         /// <summary>
-        /// Tooltip na buttonu DockRight
+        /// Tooltip na buttonu DockRight.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
         /// </summary>
         public override string DockButtonRightToolTip { get { return LayoutPanel?.DockButtonRightToolTip; } set { } }
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// </summary>
-        public override LayoutPosition DockButtonDisabledPosition { get { return Owner?.DockButtonDisabledPosition ?? LayoutPosition.None; } set { } }
+        public override LayoutPosition DockButtonDisabledPosition 
+        {
+            get { return (_DockButtonDisabledPosition ?? Owner?.DockButtonDisabledPosition ?? LayoutPosition.None); } 
+            set { _DockButtonDisabledPosition = value; }
+        }
+        private LayoutPosition? _DockButtonDisabledPosition;
         /// <summary>
         /// Obsahuje-li true, budou zobrazována dokovací tlačítka podle situace v hlavním panelu, typicky reaguje na počet panelů.
         /// </summary>
@@ -3794,6 +3896,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vždy, na všech panelech
         /// </summary>
         Allways = OnPrimaryPanelAllways | OnNonPrimaryPanelAllways,
+        /// <summary>
+        /// Převzít nastavení parenta
+        /// </summary>
+        ByParent = 0x10000,
         /// <summary>
         /// Default = pod myší vždy
         /// </summary>
