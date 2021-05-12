@@ -33,7 +33,7 @@ namespace TestDevExpress.Forms
             };
             this.Controls.Add(_AsolPanel);
 
-            _AsolRibbon = new RibbonControl()
+            _AsolRibbon = new DxRibbonControl() // RibbonControl()
             {
                 ApplicationButtonText = " DJ soft "
             };
@@ -42,15 +42,15 @@ namespace TestDevExpress.Forms
 
             this.RibbonVisibility = RibbonVisibility.Visible;
         }
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonData> e)
+        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
         {
             if (e.Item is null) return;
             if (e.Item.ItemType == RibbonItemType.Menu) return;           // Pouze došlo k aktivaci Menu, nikoli k výběru konkrétní položky...
             this.OnRibbonItemClick(e.Item);
         }
-        protected virtual void OnRibbonItemClick(IRibbonData ribbonData) { }
-        public override DevExpress.XtraBars.Ribbon.RibbonControl Ribbon { get { return this._AsolRibbon; } set { this._AsolRibbon = value as TestDevExpress.RibbonControl; } }
-        public TestDevExpress.RibbonControl AsolRibbon { get { return _AsolRibbon; } } private TestDevExpress.RibbonControl _AsolRibbon;
+        protected virtual void OnRibbonItemClick(IMenuItem ribbonData) { }
+        public override DevExpress.XtraBars.Ribbon.RibbonControl Ribbon { get { return this._AsolRibbon; } set { } }
+        public DxRibbonControl AsolRibbon { get { return _AsolRibbon; } } private DxRibbonControl _AsolRibbon;
         public TestDevExpress.AsolPanel AsolPanel { get { return _AsolPanel; } } private TestDevExpress.AsolPanel _AsolPanel;
         protected virtual void AsolInitializeControls() { }
         protected virtual void AsolFillRibbon() { }

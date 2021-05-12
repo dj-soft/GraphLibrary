@@ -118,7 +118,7 @@ namespace TestDevExpress
 
         private void RibbonControl_ItemClick(object sender, XB.ItemClickEventArgs e)
         {
-            if (!(e.Item.Tag is IRibbonData ribbonData)) return;
+            if (!(e.Item.Tag is IMenuItem ribbonData)) return;
             _RibbonItemClick(ribbonData);
             ShowInfo("ItemClick", ribbonData.ToString());
         }
@@ -136,13 +136,13 @@ namespace TestDevExpress
             // MessageBox.Show(action + Environment.NewLine + info ?? "", "Click", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void _RibbonItemClick(IRibbonData item)
+        private void _RibbonItemClick(IMenuItem item)
         {
             OnRibbonItemClick(item);
-            RibbonItemClick?.Invoke(this, new TEventArgs<IRibbonData>(item));
+            RibbonItemClick?.Invoke(this, new TEventArgs<IMenuItem>(item));
         }
-        protected virtual void OnRibbonItemClick(IRibbonData item) { }
-        public event EventHandler<TEventArgs<IRibbonData>> RibbonItemClick;
+        protected virtual void OnRibbonItemClick(IMenuItem item) { }
+        public event EventHandler<TEventArgs<IMenuItem>> RibbonItemClick;
 
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace TestDevExpress
             return group;
         }
 
-        protected XB.BarItem GetBarItem(IRibbonData item, XR.RibbonPageGroup group, bool enableNew = true)
+        protected XB.BarItem GetBarItem(IMenuItem item, XR.RibbonPageGroup group, bool enableNew = true)
         {
             if (item is null || group is null) return null;
             XB.BarItem barItem = Items[item.ItemId];
@@ -311,7 +311,7 @@ namespace TestDevExpress
 
             return barItem;
         }
-        protected XB.BarItem CreateBarItem(IRibbonData item)
+        protected XB.BarItem CreateBarItem(IMenuItem item)
         {
             XB.BarItem barItem = null;
             switch (item.ItemType)
@@ -342,7 +342,7 @@ namespace TestDevExpress
                     foreach (var menuItem in menuItems)
                     {
                         var menuLink = menu.AddItem(menuItem);
-                        if ((menuItem.Tag is IRibbonData ribbonData) && ribbonData.ItemIsFirstInGroup)
+                        if ((menuItem.Tag is IMenuItem ribbonData) && ribbonData.ItemIsFirstInGroup)
                             menuLink.BeginGroup = true;
                     }
                     barItem = menu;
@@ -360,7 +360,7 @@ namespace TestDevExpress
             }
             return barItem;
         }
-        protected XB.BarBaseButtonItem CreateBaseButton(IRibbonData item)
+        protected XB.BarBaseButtonItem CreateBaseButton(IMenuItem item)
         {
             XB.BarBaseButtonItem baseButton = null;
             switch (item.ItemType)
@@ -383,12 +383,12 @@ namespace TestDevExpress
             }
             return baseButton;
         }
-        protected XB.BarItem[] GetBarSubItems(IRibbonData[] items)
+        protected XB.BarItem[] GetBarSubItems(IMenuItem[] items)
         {
             List<XB.BarItem> barItems = new List<XB.BarItem>();
             if (items != null)
             {
-                foreach (IRibbonData item in items)
+                foreach (IMenuItem item in items)
                 {
                     XB.BarItem barItem = CreateBarItem(item);
                     if (barItem != null)
@@ -397,12 +397,12 @@ namespace TestDevExpress
             }
             return barItems.ToArray();
         }
-        protected XB.BarBaseButtonItem[] GetBarBaseButtons(IRibbonData[] items)
+        protected XB.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem[] items)
         {
             List<XB.BarBaseButtonItem> baseButtons = new List<XB.BarBaseButtonItem>();
             if (items != null)
             {
-                foreach (IRibbonData item in items)
+                foreach (IMenuItem item in items)
                 {
                     XB.BarBaseButtonItem baseButton = CreateBaseButton(item);
                     if (baseButton != null)
@@ -411,12 +411,12 @@ namespace TestDevExpress
             }
             return baseButtons.ToArray();
         }
-        protected XB.PopupMenu GetPopupSubItems(IRibbonData[] items)
+        protected XB.PopupMenu GetPopupSubItems(IMenuItem[] items)
         {
             XB.PopupMenu dxPopup = new XB.PopupMenu(BarManager);
             if (items != null)
             {
-                foreach (IRibbonData item in items)
+                foreach (IMenuItem item in items)
                 {
                     XB.BarItem barItem = CreateBarItem(item);
                     if (barItem != null)
@@ -428,7 +428,7 @@ namespace TestDevExpress
             }
             return dxPopup;
         }
-        protected void FillBarItem(XB.BarItem barItem, IRibbonData item)
+        protected void FillBarItem(XB.BarItem barItem, IMenuItem item)
         {
             barItem.Caption = item.ItemText;
             barItem.Enabled = item.ItemEnabled;
@@ -497,64 +497,6 @@ namespace TestDevExpress
         private XR.RibbonBarManager _BarManager;
         #endregion
     }
-    #region Interface IRibbonItem a IRibbonData;  Enumy RibbonItemType a RibbonPageType
-
-
-    public interface IRibbonItem : IRibbonData
-    {
-        string CategoryId { get; }
-        string CategoryText { get; }
-        Color CategoryColor { get; }
-        bool CategoryVisible { get; }
-        bool PageIsHome { get; }
-        int PageOrder { get; }
-        string PageId { get; }
-        string PageText { get; }
-        Color PageColor { get; }
-        RibbonPageType PageType { get; }
-        int GroupOrder { get; }
-        string GroupId { get; }
-        string GroupText { get; }
-        string GroupImage { get; }
-    }
-    public interface IRibbonData
-    {
-        int ItemOrder { get; }
-        string ItemId { get; }
-        bool ItemIsFirstInGroup { get; }
-        RibbonItemType ItemType { get; }
-        XR.RibbonItemStyles RibbonStyle { get; }
-        bool ItemEnabled { get; }
-        int? ItemToolbarOrder { get; }
-        string ItemImage { get; }
-        bool ItemIsChecked { get; }
-        XB.BarItemPaintStyle ItemPaintStyle { get; }
-        string ItemText { get; }
-        string HotKey { get; }
-        string ToolTip { get; }
-        string ToolTipTitle { get; }
-        string ToolTipIcon { get; }
-        IRibbonData[] SubItems { get; }
-        object Tag { get; set; }
-    }
-
-    public enum RibbonItemType
-    {
-        None,
-        Button,
-        ButtonGroup,
-        SplitButton,
-        CheckBoxStandard,
-        CheckBoxSlider,
-        RadioItem,
-        Menu
-    }
-    public enum RibbonPageType
-    {
-        Default,
-        Contextual
-    }
-    #endregion
     #region class FreezePanel : Panel, který umí zamrazit control na sobě hostovaný
     /// <summary>
     /// Panel, který umí zamrazit control na sobě hostovaný.
@@ -677,78 +619,17 @@ namespace TestDevExpress
     }
     #endregion
 
-    #region RibbonItem : základní implementace IRibbonItem
-    /// <summary>
-    /// RibbonItem : základní implementace <see cref="IRibbonItem"/>
-    /// </summary>
-    public class RibbonItem : IRibbonItem
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public RibbonItem()
-        {
-            PageId = "";
-            PageIsHome = true;
-            GroupId = "";
-            GroupText = "";
-            ItemEnabled = true;
-            ItemType = RibbonItemType.Button;
-            ItemPaintStyle = XB.BarItemPaintStyle.Standard;
-            RibbonStyle = XR.RibbonItemStyles.Large;
-        }
-        public override string ToString()
-        {
-            string text = "";
-            if (!String.IsNullOrEmpty(PageText)) text += $"Page: {PageText}, ";
-            if (!String.IsNullOrEmpty(GroupText)) text += $"Group: {GroupText}, ";
-            text += $"Item: {ItemText}, Type: {ItemType}";
-            return text;
-        }
-        public string CategoryId { get; set; }
-        public string CategoryText { get; set; }
-        public Color CategoryColor { get; set; }
-        public bool CategoryVisible { get; set; }
-        public bool PageIsHome { get; set; }
-        public int PageOrder { get; set; }
-        public string PageId { get; set; }
-        public string PageText { get; set; }
-        public Color PageColor { get; set; }
-        public RibbonPageType PageType { get; set; }
-        public int GroupOrder { get; set; }
-        public string GroupId { get; set; }
-        public string GroupText { get; set; }
-        public string GroupImage { get; set; }
-        public int ItemOrder { get; set; }
-        public string ItemId { get; set; }
-        public bool ItemIsFirstInGroup { get; set; }
-        public RibbonItemType ItemType { get; set; }
-        public XR.RibbonItemStyles RibbonStyle { get; set; }
-        public bool ItemEnabled { get; set; }
-        public int? ItemToolbarOrder { get; set; }
-        public string ItemImage { get; set; }
-        public bool ItemIsChecked { get; set; }
-        public XB.BarItemPaintStyle ItemPaintStyle { get; set; }
-        public string ItemText { get; set; }
-        public string HotKey { get; set; }
-        public string ToolTip { get; set; }
-        public string ToolTipTitle { get; set; }
-        public string ToolTipIcon { get; set; }
-        public IRibbonData[] SubItems { get; set; }
-        public object Tag { get; set; }
-    }
-    #endregion
     #region RibbonSample : testovací zdroj dat pro Ribbon
     /// <summary>
     /// RibbonSample : testovací zdroj dat pro Ribbon
     /// </summary>
     public class RibbonSample
     {
-        public static void AddItems(List<IRibbonItem> items, int groupCount)
+        public static void CreateItemsTo(List<IRibbonItem> items, int groupCount)
         {
             _AddItems(items, groupCount, out string info);
         }
-        public static void AddItems(List<IRibbonItem> items, int groupCount, out string info)
+        public static void CreateItemsTo(List<IRibbonItem> items, int groupCount, out string info)
         {
             _AddItems(items, groupCount, out info);
         }
@@ -795,10 +676,10 @@ namespace TestDevExpress
             bool nextIsFirst = false;
             for (int w = 0; (w < count || radioCount > 0); w++)
             {
-                string itemText = RandomText.GetRandomWord(true);
-                string itemImage = GetRandomImageName();
-                string toolTip = RandomText.GetRandomSentence(Rand.Next(5, 16));
-                string toolTipTitle = RandomText.GetRandomSentence(Rand.Next(1, 3));
+                string itemText = Random.GetWord(true);
+                string itemImageName = GetRandomImageName();
+                string toolTip = Random.GetSentence(Rand.Next(5, 16));
+                string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
                 int? inToolbar = ((Rand.Next(100) < 2) ? (int?)10 : null);
                 if (inToolbar.HasValue)
                 { }
@@ -813,13 +694,13 @@ namespace TestDevExpress
                     GroupText = groupText,
                     ItemId = "Item" + (++_RibbonItemId),
                     ItemText = itemText,
+                    ItemImage = itemImageName,
                     ItemIsFirstInGroup = isFirst,
                     RibbonStyle = ribbonStyle,
                     ItemToolbarOrder = inToolbar,
                     ToolTip = toolTip,
                     ToolTipTitle = toolTipTitle,
-                    ToolTipIcon = "help_hint_48_",
-                    ItemImage = itemImage
+                    ToolTipIcon = "help_hint_48_"
                 };
                 _RibbonItemCount++;
 
@@ -864,18 +745,18 @@ namespace TestDevExpress
                 items.Add(item);
             }
         }
-        protected static IRibbonData[] _CreateSubItems(int maxCount, int level = 0)
+        protected static IMenuItem[] _CreateSubItems(int maxCount, int level = 0)
         {
-            List<IRibbonData> subItems = new List<IRibbonData>();
+            List<IMenuItem> subItems = new List<IMenuItem>();
 
             if (maxCount < 5) maxCount = 5;
             int count = Rand.Next(3, maxCount);
             for (int i = 0; i < count; i++)
             {
-                string itemText = RandomText.GetRandomWord(true);
+                string itemText = Random.GetWord(true);
                 string itemImage = GetRandomImageName(33);
-                string toolTip = RandomText.GetRandomSentence(Rand.Next(5, 16));
-                string toolTipTitle = RandomText.GetRandomSentence(Rand.Next(1, 3));
+                string toolTip = Random.GetSentence(Rand.Next(5, 16));
+                string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
                 bool isFirst = (Rand.Next(10) < 3);
 
                 RibbonItem item = new RibbonItem()
@@ -936,8 +817,8 @@ namespace TestDevExpress
             if ((randomEmpty > 0) && (Rand.Next(100) < randomEmpty)) return null;
             return ResourceImages[Rand.Next(ResourceImages.Length)];
         }
-        public static Random Rand { get { if (_Rand is null) _Rand = new Random(); return _Rand; } }
-        private static Random _Rand;
+        public static System.Random Rand { get { if (_Rand is null) _Rand = new System.Random(); return _Rand; } }
+        private static System.Random _Rand;
         public static string[] PageNames { get { if (_PageNames is null) _PageNames = "DOMŮ;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
         private static string[] _PageNames;
         public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky".Split(';'); return _GroupNames; } }
@@ -952,7 +833,7 @@ namespace TestDevExpress
             foreach (var property in properties)
             {
                 object value = property.GetValue(null);
-                if (value is Image)
+                if (value is Image image && image.Size.Width <= 48)
                     names.Add(property.Name);
             }
             return names.ToArray();

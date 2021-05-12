@@ -275,26 +275,26 @@ namespace TestDevExpress.Components
             int count = layoutsItem.Length;
             if (count > 0)
             {
-                DxLayoutItemInfo layoutItem = RandomText.GetRandomItem(layoutsItem);
+                DxLayoutItemInfo layoutItem = Random.GetItem(layoutsItem);
                 if (layoutItem != null)
                 {
                     if (layoutItem.UserControl is LayoutTestPanel testPanel)
                     {
-                        if (RandomText.IsTrue(70))
+                        if (Random.IsTrue(70))
                         {   // 70% prvků bude mít náhodný textový suffix:
                             string title = testPanel.TitleTextBasic;
-                            string appendix = RandomText.GetRandomSentence(2, 5, false);
+                            string appendix = Random.GetSentence(2, 5, false);
                             title = title + " (" + appendix + ")";
                             testPanel.TitleText = title;              // Set => Event => DxLayout eventhandler
                         }
 
-                        if (RandomText.IsTrue(20))
+                        if (Random.IsTrue(20))
                         {   // 20% prvků bude mít náhodně změněnou ikonu:
                             testPanel.TitleIcon = _GetIcon();
                         }
                     }
 
-                    this._Timer.Interval = RandomText.Rand.Next(700, 3200);
+                    this._Timer.Interval = Random.Rand.Next(700, 3200);
                 }
             }
 
@@ -310,22 +310,22 @@ namespace TestDevExpress.Components
         {
             testPanel.TitleIcon = _GetIcon();
 
-            if (RandomText.IsTrue(40))
+            if (Random.IsTrue(40))
             {   // 40% prvků bude mít podtržení:
                 Color lineColor = Color.FromArgb(255, 255, 32);
-                if (RandomText.IsTrue(20))
+                if (Random.IsTrue(20))
                     // 20% z nich bude mít náhodnou barvu podtržení:
-                    lineColor = RandomText.GetRandomColor(48, 160);
+                    lineColor = Random.GetColor(48, 160);
                 testPanel.LineColor = Color.FromArgb(160, lineColor);
                 testPanel.LineColorEnd = Color.FromArgb(12, lineColor);
                 testPanel.LineWidth = 4;
             }
 
-            if (RandomText.IsTrue(40))
+            if (Random.IsTrue(40))
             {   // 40% prvků bude mít BackColor:
-                Color backColor = RandomText.GetRandomColor(64, 256);
+                Color backColor = Random.GetColor(64, 256);
                 testPanel.TitleBackColor = Color.FromArgb(160, backColor);
-                if (RandomText.IsTrue(40))
+                if (Random.IsTrue(40))
                     // 40% z nich bude mít fadeout:
                     testPanel.TitleBackColorEnd = Color.FromArgb(0, backColor);
             }
@@ -333,7 +333,7 @@ namespace TestDevExpress.Components
 
         private Image _GetIcon()
         {
-            return RandomText.GetRandomItem(_Icons);
+            return Random.GetItem(_Icons);
         }
         /// <summary>
         /// Chtěl bych zavřít formulář
@@ -478,7 +478,7 @@ namespace TestDevExpress.Components
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
             _AddTopButton = CreateDxButton("Otevřít další NAHOŘE", LayoutPosition.Top);
 
-            this.BackColorUser = RandomText.GetRandomColor(64, 256, 64);
+            this.BackColorUser = Random.GetColor(64, 256, 64);
 
             MouseActivityInit();
         }

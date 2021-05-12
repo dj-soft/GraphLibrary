@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using DS = DevExpress.Skins;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
@@ -33,7 +34,7 @@ namespace TestDevExpress.Forms
         {
             List<IRibbonItem> ribbonItems = new List<IRibbonItem>();
             AddBasicItemsToRibbon(ribbonItems);
-            RibbonSample.AddItems(ribbonItems, 8);
+            RibbonSample.CreateItemsTo(ribbonItems, 8);
             AsolRibbon.AddItems(ribbonItems);
         }
         protected void AddBasicItemsToRibbon(List<IRibbonItem> items)
@@ -60,7 +61,7 @@ namespace TestDevExpress.Forms
             action?.Invoke(item);
             return item;
         }
-        protected override void OnRibbonItemClick(IRibbonData ribbonData)
+        protected override void OnRibbonItemClick(IMenuItem ribbonData)
         {
             base.OnRibbonItemClick(ribbonData);
             if (ribbonData.Tag is SkinInfo skinInfo) SelectSkin(skinInfo);
@@ -140,14 +141,14 @@ namespace TestDevExpress.Forms
         #region Random Ribbon Content
         protected void AddRibbonItemsToRibbon(List<IRibbonItem> items)
         {
-            items.Add(CreateMainRibbonItem("RibbonItem01", "Clear Ribbon", nameof(Properties.Resources.bookmark_24_), "Otevře nové okno jako TAB document", RibbonCommands.ClearAddBasic, action: r => r.ItemIsFirstInGroup = true));
-            items.Add(CreateMainRibbonItem("RibbonItem02", "Reset Ribbon", nameof(Properties.Resources.bookmark_3_24_), "Aktivuje některý existující TAB document", RibbonCommands.ClearAddRandom));
-            items.Add(CreateMainRibbonItem("RibbonItem03", "Add1 Ribbon", nameof(Properties.Resources.bookmark_toolbar_2_24_), "Zavře některý existující TAB document", RibbonCommands.Add1));
-            items.Add(CreateMainRibbonItem("RibbonItem04", "Add5 Ribbon", nameof(Properties.Resources.bookmark_toolbar_4_24_), "Otevře nové okno jako FREE WINDOW", RibbonCommands.Add5));
+            items.Add(CreateMainRibbonItem("RibbonItem01", "Clear Ribbon", nameof(Properties.Resources.bookmark_24_), "Smaže vše z Ribbonu a pak pouze základní prvky", RibbonCommands.ClearAddBasic, action: r => r.ItemIsFirstInGroup = true));
+            items.Add(CreateMainRibbonItem("RibbonItem02", "Reset Ribbon", nameof(Properties.Resources.bookmark_3_24_), "Smaže vše z Ribbonu a pak jej přiměřeně naplní", RibbonCommands.ClearAddRandom));
+            items.Add(CreateMainRibbonItem("RibbonItem03", "Add1 Ribbon", nameof(Properties.Resources.bookmark_toolbar_2_24_), "Přidá něco málo položek", RibbonCommands.Add1));
+            items.Add(CreateMainRibbonItem("RibbonItem04", "Add5 Ribbon", nameof(Properties.Resources.bookmark_toolbar_4_24_), "Přidá hodně položek", RibbonCommands.Add5));
         }
         protected void RibbonAction(RibbonCommands ribbonCommand)
         {
-            AsolRibbon.Freeze = false;
+            // AsolRibbon.Freeze = false;
 
             List<IRibbonItem> ribbonItems = new List<IRibbonItem>();
             switch (ribbonCommand)
@@ -159,18 +160,18 @@ namespace TestDevExpress.Forms
                 case RibbonCommands.ClearAddRandom:
                     AsolRibbon.Clear();
                     AddBasicItemsToRibbon(ribbonItems);
-                    RibbonSample.AddItems(ribbonItems, 8);
+                    RibbonSample.CreateItemsTo(ribbonItems, 8);
                     break;
                 case RibbonCommands.Add1:
-                    RibbonSample.AddItems(ribbonItems, 3);
+                    RibbonSample.CreateItemsTo(ribbonItems, 3);
                     break;
                 case RibbonCommands.Add5:
-                    RibbonSample.AddItems(ribbonItems, 12);
+                    RibbonSample.CreateItemsTo(ribbonItems, 12);
                     break;
             }
             AsolRibbon.AddItems(ribbonItems);
 
-            AsolRibbon.Freeze = false;
+            // AsolRibbon.Freeze = false;
         }
 
         protected enum RibbonCommands { None, ClearAddBasic, ClearAddRandom, Add1, Add5 }

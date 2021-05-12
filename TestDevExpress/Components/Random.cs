@@ -10,7 +10,7 @@ namespace TestDevExpress
     /// <summary>
     /// Generátor náhodných textů
     /// </summary>
-    public class RandomText
+    public class Random
     {
         #region Náhodné slovo, věta, odstavec
         /// <summary>
@@ -18,7 +18,7 @@ namespace TestDevExpress
         /// </summary>
         /// <param name="firstUpper"></param>
         /// <returns></returns>
-        public static string GetRandomWord(bool firstUpper = false)
+        public static string GetWord(bool firstUpper = false)
         {
             string word = WordBook[Rand.Next(WordBook.Length)];
             if (firstUpper) word = word.Substring(0, 1).ToUpper() + word.Substring(1);
@@ -32,14 +32,14 @@ namespace TestDevExpress
         /// <param name="minSentenceCount"></param>
         /// <param name="maxSentenceCount"></param>
         /// <returns></returns>
-        public static string GetRandomSentences(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount)
+        public static string GetSentences(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount)
         {
             string sentences = "";
             int sentenceCount = Rand.Next(minSentenceCount, maxSentenceCount);
             string eol = Environment.NewLine;
             for (int s = 0; s < sentenceCount; s++)
             {
-                string sentence = GetRandomSentence(minWordCount, maxWordCount);
+                string sentence = GetSentence(minWordCount, maxWordCount);
                 if (sentences.Length > 0)
                 {
                     if (Rand.Next(3) == 0) sentences += eol;
@@ -56,10 +56,10 @@ namespace TestDevExpress
         /// <param name="maxCount"></param>
         /// <param name="addDot"></param>
         /// <returns></returns>
-        public static string GetRandomSentence(int minCount, int maxCount, bool addDot = false)
+        public static string GetSentence(int minCount, int maxCount, bool addDot = false)
         {
             int count = Rand.Next(minCount, maxCount);
-            return GetRandomSentence(count, addDot);
+            return GetSentence(count, addDot);
         }
         /// <summary>
         /// Vrať náhodnou větu
@@ -67,11 +67,11 @@ namespace TestDevExpress
         /// <param name="count"></param>
         /// <param name="addDot"></param>
         /// <returns></returns>
-        public static string GetRandomSentence(int count, bool addDot = false)
+        public static string GetSentence(int count, bool addDot = false)
         {
             string sentence = "";
             for (int w = 0; w < count; w++)
-                sentence += (sentence.Length > 0 ? ((Rand.Next(12) < 1) ? ", " : " ") : "") + GetRandomWord((w == 0));
+                sentence += (sentence.Length > 0 ? ((Rand.Next(12) < 1) ? ", " : " ") : "") + GetWord((w == 0));
             if (addDot)
                 sentence += ".";
             return sentence;
@@ -590,7 +590,7 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
         /// <param name="alpha">Hodnota Alpha</param>
         /// <param name="isRandomAlpha">Použít náhodný Alpha kanál v rozmezí 16 - 240? false = ne, Alpha bude 255</param>
         /// <returns></returns>
-        public static Color GetRandomColor(int low = 0, int high = 256, int? alpha = null, bool isRandomAlpha = false)
+        public static Color GetColor(int low = 0, int high = 256, int? alpha = null, bool isRandomAlpha = false)
         {
             low = _ToRange(low, 0, 255);
             high = _ToRange(high, low, 256);
@@ -607,9 +607,9 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static T GetRandomItem<T>(params T[] items)
+        public static T GetItem<T>(params T[] items)
         {
-            return GetRandomItem((IList<T>)items);
+            return GetItem((IList<T>)items);
         }
         /// <summary>
         /// Vrátí náhodný prvek z pole
@@ -617,7 +617,7 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static T GetRandomItem<T>(IList<T> items)
+        public static T GetItem<T>(IList<T> items)
         {
             if (items == null) return default(T);
             int count = items.Count;
@@ -640,8 +640,8 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
         /// <summary>
         /// Random generátor
         /// </summary>
-        public static Random Rand { get { if (_Rand is null) _Rand = new Random(); return _Rand; } }
-        private static Random _Rand;
+        public static System.Random Rand { get { if (_Rand is null) _Rand = new System.Random(); return _Rand; } }
+        private static System.Random _Rand;
         #endregion
     }
 }

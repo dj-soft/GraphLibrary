@@ -69,6 +69,9 @@ namespace TestDevExpress.Forms
             options.OpacityColor = Color.DarkBlue;
             options.Opacity = 40;
             
+            // options.LoadingIndicatorType = DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Ring;
+            // options.LoadingIndicatorType = DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Spinner;
+
 
             // op.LogoImageOptions.SvgImage = Properties.Resources.homer_simpson;
             // op.LogoImageOptions.SvgImageSize = new Size(80, 80);
@@ -78,6 +81,8 @@ namespace TestDevExpress.Forms
 
             DevExpress.XtraSplashScreen.SplashScreenManager.ShowFluentSplashScreen(
                 options,
+                parentForm: owner,
+                startPos: DevExpress.XtraSplashScreen.SplashFormStartPosition.CenterScreen,
                 useFadeIn: true,
                 useFadeOut: true
             );
@@ -114,7 +119,7 @@ namespace TestDevExpress.Forms
         }
         private void InitData()
         {
-            Rand = new Random();
+            Rand = new System.Random();
         }
         private void InitDevExpress()
         {
@@ -122,8 +127,8 @@ namespace TestDevExpress.Forms
             DS.SkinManager.EnableFormSkins();
             DS.SkinManager.EnableMdiFormSkins();
 
-            var skins = DS.SkinManager.Default.Skins;
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "Stardust";
+            // var skins = DS.SkinManager.Default.Skins;
+            // DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "Stardust";
 
 
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
@@ -143,7 +148,7 @@ namespace TestDevExpress.Forms
             foreach (DS.SkinContainer skin in DS.SkinManager.Default.Skins)
                 skins.Add(skin);
             skins.Sort((a, b) => String.Compare(a.SkinName, b.SkinName));
-            string initialSkinName = "Seven";
+            string initialSkinName = "Lilian"; // "Dark Side";
             TextItem selectedItem = null;
             foreach (DS.SkinContainer skin in skins)
             {
@@ -1268,7 +1273,7 @@ namespace TestDevExpress.Forms
             }
         }
         protected bool IsRibbonFilled = false;
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonData> e)
+        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
         {
             if (e.Item is null) return;
             string line = $"RibbonItem.Click: {e.Item}";
@@ -1433,7 +1438,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog [OK]";
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
             dialogArgs.PrepareButtons(DialogResult.OK);
-            dialogArgs.MessageText = RandomText.GetRandomSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = Random.GetSentences(4, 8, 3, 12);
 
             DialogForm(dialogArgs);
         }
@@ -1473,7 +1478,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Yes/No";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
-            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + RandomText.GetRandomSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
             dialogArgs.PrepareButtons(DialogResult.Yes, DialogResult.No);
             dialogArgs.IconFile = "Quest";
             dialogArgs.Buttons[0].ImageFile = "Yes";
@@ -1488,7 +1493,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Yes/No / Right";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
-            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + RandomText.GetRandomSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
             dialogArgs.MessageHorizontalAlignment = NWC.AlignContentToSide.End;
             dialogArgs.MessageVerticalAlignment = NWC.AlignContentToSide.Center;
             dialogArgs.PrepareButtons(DialogResult.Yes, DialogResult.No);
@@ -1504,7 +1509,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Abort/Retry/Ignore";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Error;
-            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + RandomText.GetRandomSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
             dialogArgs.Buttons[2].IsInitialButton = true;
             dialogArgs.StatusBarCtrlCVisible = true;
@@ -1517,7 +1522,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Abort/Retry/Ignore / RightRight";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Exclamation;
-            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + RandomText.GetRandomSentences(4, 9, 8, 20);
+            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 9, 8, 20);
             dialogArgs.MessageHorizontalAlignment = NWC.AlignContentToSide.End;
             dialogArgs.MessageVerticalAlignment = NWC.AlignContentToSide.End;
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
@@ -1533,7 +1538,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Abort/Retry/Ignore / TopRight";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Hand;
-            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + RandomText.GetRandomSentences(4, 9, 8, 20);
+            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 9, 8, 20);
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
             dialogArgs.ButtonPanelDock = DockStyle.Right;
             dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Begin;
@@ -1572,7 +1577,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             dialogArgs.Title = "Dialog [OK] ExtraLong";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
-            dialogArgs.MessageText = RandomText.Text1;
+            dialogArgs.MessageText = Random.Text1;
             dialogArgs.PrepareButtons(DialogResult.OK, DialogResult.No);
             dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Center;
             dialogArgs.ButtonHeight = 26;
@@ -1737,8 +1742,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private void _MsgOpenShowForm(string subTitle, bool topMost, bool asModal)
         {
             Rectangle bounds = GetRandomRectangle();
-            string caption = RandomText.GetRandomSentence(2, 5) + subTitle;
-            string text = RandomText.GetRandomSentences(4, 8, 3, 12);
+            string caption = Random.GetSentence(2, 5) + subTitle;
+            string text = Random.GetSentences(4, 8, 3, 12);
             DevExpress.XtraEditors.XtraForm form = new DevExpress.XtraEditors.XtraForm() { Bounds = bounds, Text = caption, TopMost = topMost, ShowInTaskbar = topMost };
             Label label = new Label() { Text = text, Name = "Label", AutoSize = false, Bounds = new Rectangle(12, 9, bounds.Width - 28, bounds.Height - 30), Font = SystemFonts.DialogFont };
             form.Controls.Add(label);
@@ -1898,7 +1903,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             List<Tuple<string, int>> tokens = new List<Tuple<string, int>>();
             for (int n = 0; n < count; n++)
             {
-                string text = RandomText.GetRandomSentence(1, 4, false);
+                string text = Random.GetSentence(1, 4, false);
                 tokens.Add(new Tuple<string, int>(text, n));
             }
             return tokens;
@@ -1939,7 +1944,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             List<DevExpress.XtraEditors.TokenEditToken> tokens = new List<DevExpress.XtraEditors.TokenEditToken>();
             for (int n = 0; n < count; n++)
             {
-                string text = RandomText.GetRandomSentence(1, 4, false);
+                string text = Random.GetSentence(1, 4, false);
                 tokens.Add(new DevExpress.XtraEditors.TokenEditToken(text, n));
             }
             return tokens;
@@ -2081,7 +2086,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
 
             // Vytvoříme ChildNodes a zobrazíme je:
-            bool empty = (RandomText.Rand.Next(10) > 7);
+            bool empty = (Random.Rand.Next(10) > 7);
             var nodes = _CreateSampleChilds(parentNodeId, ItemCountType.Standard);       // A pak vyrobíme Child nody
             _AddLogLine($"Načtena data: {nodes.Count} prvků.");
             _TreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
@@ -2209,12 +2214,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             int rootCount = GetItemCount(countType, false);
             for (int r = 0; r < rootCount; r++)
             {
-                bool isLazy = (RandomText.Rand.Next(10) >= 5);
-                bool addChilds = !isLazy && (RandomText.Rand.Next(10) >= 3);
-                bool isExpanded = (addChilds && (RandomText.Rand.Next(10) >= 2));
+                bool isLazy = (Random.Rand.Next(10) >= 5);
+                bool addChilds = !isLazy && (Random.Rand.Next(10) >= 3);
+                bool isExpanded = (addChilds && (Random.Rand.Next(10) >= 2));
 
                 string rootKey = "R." + (++_InternalNodeId).ToString();
-                string text = RandomText.GetRandomSentence(2, 5) + (isLazy ? " ..." : "");
+                string text = Random.GetSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
                 NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
                 _FillNode(rootNode);
@@ -2232,8 +2237,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             var newPosition = _NewNodePosition;
             int childCount = GetItemCount(countType, true);
             int lastIndex = childCount - 1;
-            bool addEditable = canAddEditable && (RandomText.Rand.Next(20) >= 8);
-            bool addShowNext = canAddShowNext && (childCount < 25 && (RandomText.Rand.Next(20) >= 4));
+            bool addEditable = canAddEditable && (Random.Rand.Next(20) >= 8);
+            bool addShowNext = canAddShowNext && (childCount < 25 && (Random.Rand.Next(20) >= 4));
             if (addEditable) childCount++;
             for (int c = 0; c < childCount; c++)
             {
@@ -2272,10 +2277,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
                     childNode.ImageName0 = "move_task_down_16";
                     break;
                 case NodeItemType.DefaultText:
-                    text = RandomText.GetRandomSentence(2, 5);
+                    text = Random.GetSentence(2, 5);
                     childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
                     childNode.CanCheck = true;
-                    childNode.IsChecked = (RandomText.Rand.Next(20) > 16);
+                    childNode.IsChecked = (Random.Rand.Next(20) > 16);
                     _FillNode(childNode);
                     break;
             }
@@ -2283,22 +2288,22 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _FillNode(NodeItemInfo node)
         {
-            if (RandomText.Rand.Next(20) >= 15)
+            if (Random.Rand.Next(20) >= 15)
                 node.ImageName0 = "object_locked_2_16";
 
-            string imageNumb = RandomText.Rand.Next(1, 24).ToString("00");
+            string imageNumb = Random.Rand.Next(1, 24).ToString("00");
             node.ImageName1 = $"Ball{imageNumb }_16";
 
             node.ToolTipTitle = null; // RandomText.GetRandomSentence(2, 5);
-            node.ToolTipText = RandomText.GetRandomSentence(10, 50);
+            node.ToolTipText = Random.GetSentence(10, 50);
         }
         private int GetItemCount(ItemCountType countType, bool forChilds)
         {
             switch (countType)
             {
                 case ItemCountType.Empty: return 0;
-                case ItemCountType.Standard: return (forChilds ? RandomText.Rand.Next(1, 12) : RandomText.Rand.Next(10, 30));
-                case ItemCountType.Big: return (forChilds ? RandomText.Rand.Next(40, 120) : RandomText.Rand.Next(120, 400));
+                case ItemCountType.Standard: return (forChilds ? Random.Rand.Next(1, 12) : Random.Rand.Next(10, 30));
+                case ItemCountType.Big: return (forChilds ? Random.Rand.Next(40, 120) : Random.Rand.Next(120, 400));
             }
             return 0;
         }
@@ -2312,7 +2317,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private enum NewNodePositionType { None, First, Last }
         #endregion
         #region Random
-        Random Rand;
+        System.Random Rand;
         protected int GetRandomInt(int min, int max)
         {
             return Rand.Next(min, max);

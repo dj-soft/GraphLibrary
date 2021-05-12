@@ -31,6 +31,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._Controls = new List<LayoutTileInfo>();
             this._DockButtonVisibility = ControlVisibility.Default;
             this._CloseButtonVisibility = ControlVisibility.Default;
+            this._EmptyPanelButtons = EmptyPanelVisibleButtons.None;
             this._DockButtonLeftToolTip = null;
             this._DockButtonTopToolTip = null;
             this._DockButtonBottomToolTip = null;
@@ -133,6 +134,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tento event <see cref="CloseButtonClickAfter"/> není volán z metody <see cref="RemoveControl(Control)"/>.
         /// </summary>
         public event EventHandler<TEventCancelArgs<Control>> CloseButtonClickAfter;
+        /// <summary>
+        /// Vyvolá se před odebráním prázdného prostoru (je vytvořen setováním XmlLayout, a dosud není obsazen) v layoutu.
+        /// Aplikační kód tomu může zabránit nastavením Cancel = true.
+        /// Pokud tomu aplikace nezabrání, pak aplikace nemůže do daného prostoru vložit UserControl, protože prostor nebude k dispozici.
+        /// </summary>
+        public event EventHandler<TEventCancelArgs<string>> EmptyAreaRemoveBefore;
         /// <summary>
         /// Vyvolá se před odebráním konkrétního uživatelského controlu. 
         /// Tato událost je vyvolána v průběhu provádění metody <see cref="RemoveControl(Control)"/> (a tedy i <see cref="RemoveAllControls()"/>).
@@ -466,74 +473,128 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="removeInfo"></param>
         private void _RemoveUserControlInternal(int removeIndex, LayoutTileInfo removeInfo)
         {
-            var parent = removeInfo.Parent;                          // Parent daného controlu je typicky this (když control je jediný), anebo Panel1 nebo Panel2 nějakého SplitContaineru
+            var parent = removeInfo.Parent;                // Parent daného controlu je typicky this (když control je jediný), anebo Panel1 nebo Panel2 nějakého SplitContaineru
             var removeHost = removeInfo.HostControl;
             var removeControl = removeInfo.UserControl;
             bool removedLastControl = false;
             if (parent != null && removeHost != null)
             {
-                // 1. Odebereme daný control z jeho parenta a z evidence:
-                RemoveControlFromParent(removeHost, parent);
-                _Controls.RemoveAt(removeIndex);
+                _Controls.RemoveAt(removeIndex);           // Odebereme daný control z datové evidence
+                removedLastControl = _RemovePanelFromParentWithLayout(removeHost);    // Odebereme hostitelský panel z jeho parenta a přeuspořádáme layout tak, aby obsadil uvolněné místo
                 if (!_AllEventsDisable)
                 {
-                    OnUserControlRemoved(removeControl);
+                    OnUserControlRemoved(removeControl);   // Pošleme uživateli událost UserControlRemoved
+                }
+            }
+            _RaiseEventsLayoutChange(removedLastControl);
+        }
+        /// <summary>
+        /// Metoda odebere daný panel z layoutu, očekává se prázdný panel (nekontroluje se).
+        /// </summary>
+        /// <param name="removeHost"></param>
+        private void _RemoveEmptyPanelFromParentWithLayout(DxLayoutItemPanel removeHost)
+        {
+            if (removeHost == null) return;
+
+            bool cancel = false;
+            if (!_AllEventsDisable)
+            {
+                string areaId = _SearchAreaIdForHost(removeHost);
+                TEventCancelArgs<string> args = new TEventCancelArgs<string>(areaId);
+                OnEmptyAreaRemoveBefore(args);
+                cancel = args.Cancel;
+            }
+            if (!cancel)
+            {
+                bool removedLastControl = _RemovePanelFromParentWithLayout(removeHost);
+                _RaiseEventsLayoutChange(removedLastControl);
+            }
+        }
+        /// <summary>
+        /// Odebere daný hostitelský panel z daného parenta.
+        /// Najde parenta, najde párový panel a jeho obsah rozmístí tak, aby obsadil celý prostor (=zruší původní SplitContainer a na jeho místo dá obsah párového Panelu).
+        /// Vrací true, pokud daný host byl posledním hostem layoutu.
+        /// </summary>
+        /// <param name="removeHost"></param>
+        /// <returns></returns>
+        private bool _RemovePanelFromParentWithLayout(DxLayoutItemPanel removeHost)
+        {
+            bool removedLastControl = false;
+
+            // Jednoduše odeberu hostitele z jeho parenta (jako Control):
+            Control parent = removeHost.Parent;
+            RemoveControlFromParent(removeHost, parent);
+
+            // Zjistíme, zda jeho parent je Panel1 nebo Panel2 z určitého SplitContaineru (najdeme SplitContainer a párový Panel) => pak najdeme párový Control a přemístíme jej nahoru:
+            bool isDone = false;
+            if (_IsParentSplitPanel(parent, out DevExpress.XtraEditors.SplitContainerControl splitContainer, out DevExpress.XtraEditors.SplitGroupPanel pairPanel))
+            {   // Máme nalezený párový panel (pairPanel).
+                // Měli bychom jej nějak spojit s panelem, z něhož byl nyní odebrán obsah:
+
+                // 2a. Najdeme data o UserControlu v párovém panelu:
+                int pairIndex = _Controls.FindIndex(i => i.ContainsParent(pairPanel));
+                if (pairIndex >= 0)
+                {   // Takže jsme odebrali prvek UserControl (pomocí jeho Host) z jednoho panelu, a na párovém panelu máme jiný prvek UserControl.
+                    // Nechceme mít prázdný panel, a ani nechceme prázdný panel schovávat, chceme mít čistý layout = viditelné všechny panely a na nich vždy jeden control!
+                    // Najdeme a podržíme si tedy onen párový control; pak odebereme SplitContaner, a na jeho místo vložíme ten párový Control:
+                    // Vyřešíme i jeho DockPosition...
+                    var pairInfo = _Controls[pairIndex];
+                    var pairControl = pairInfo.UserControl;                // Po dobu výměny si podržíme reference v proměnných, protože v pairInfo jsou jen WeakReference!
+                    var pairHost = pairInfo.HostControl;
+
+                    // Odebereme párový control z jeho dosavadního parenta (kterým je párový panel):
+                    RemoveControlFromParent(pairHost, pairPanel);
+
+                    // Najdeme parenta od SplitContaineru, a z něj odebereme právě ten SplitContainer, tím jej zrušíme:
+                    var splitParent = splitContainer.Parent;
+                    RemoveControlFromParent(splitContainer, splitParent);
+
+                    // Do parenta od dosavadního SplitContaineru vložíme ten párový control (a vepíšeme to do jeho Infa).
+                    // Tento Parent je buď nějaký Panel1 nebo Panel2 od jiného SplitContaineru, anebo to může být this:
+                    splitParent.Controls.Add(pairHost);
+                    pairInfo.Parent = splitParent;
+                    pairInfo.DockButtonDisabledPosition = pairInfo.CurrentDockPosition;
+
+                    isDone = true;
                 }
 
-                // 2. Zjistíme, zda jeho parent je Panel1 nebo Panel2 z určitého SplitContaineru (najdeme SplitContainer a párový Panel) => pak najdeme párový Control a přemístíme jej nahoru:
-                if (_IsParentSplitPanel(parent, out DevExpress.XtraEditors.SplitContainerControl splitContainer, out DevExpress.XtraEditors.SplitGroupPanel pairPanel))
-                {
-                    // 2a. Najdeme data o párovém panelu:
-                    int pairIndex = _Controls.FindIndex(i => i.ContainsParent(pairPanel));
-                    if (pairIndex < 0)
-                    {   // Párový panel NEOBSAHUJE nijaký UserControl, měl by tedy obsahovat jiný SplitContainer, který obsahuje dva panely, v každém jeden UserControl.
-                        // Najdeme tedy tento párový SplitContainer a přemístíme jej z pairPanel do splitContainer.Parent, a splitContainer (nyní už prázdný) jako takový zrušíme:
-                        DevExpress.XtraEditors.SplitContainerControl pairContainer = pairPanel.Controls.OfType<DevExpress.XtraEditors.SplitContainerControl>().FirstOrDefault();
-                        if (pairContainer != null)
-                        {   // Našli jsme SplitContainerControl v sousedním panelu:
-                            // Odebereme jej:
-                            RemoveControlFromParent(pairContainer, pairPanel);
-
-                            // Najdeme parenta od SplitContaineru, a z něj odebereme právě ten SplitContainer, tím jej zrušíme:
-                            var splitParent = splitContainer.Parent;
-                            RemoveControlFromParent(splitContainer, splitParent);
-
-                            // Do parenta od dosavadního SplitContaineru vložíme ten párový control (ale nikam to nepíšeme, protože UserControly a jejich parenti se nemění):
-                            // Nemění se ani pozice (DockPosition) controlů.
-                            splitParent.Controls.Add(pairContainer);
-                        }
-                    }
-                    else
-                    {   // Takže jsme odebrali prvek UserControl (pomocí jeho Host) z jednoho panelu, a na párovém panelu máme jiný prvek UserControl.
-                        // Nechceme mít prázdný panel, a ani nechceme prázdný panel schovávat, chceme mít čistý layout = viditelné všechny panely a na nich vždy jeden control!
-                        // Najdeme a podržíme si tedy onen párový control; pak odebereme SplitContaner, a na jeho místo vložíme ten párový Control:
-                        // Vyřešíme i jeho DockPosition...
-                        var pairInfo = _Controls[pairIndex];
-                        var pairControl = pairInfo.UserControl;                // Po dobu výměny si podržíme reference v proměnných, protože v pairInfo jsou jen WeakReference!
-                        var pairHost = pairInfo.HostControl;
-
-                        // Odebereme párový control z jeho dosavadního parenta (kterým je párový panel):
-                        RemoveControlFromParent(pairHost, pairPanel);
+                if (!isDone)
+                {   // V párovém panelu NEBYL UserControl, může tam být něco jiného:
+                    // Může to být SplitContainer, nebo prázdný Panel, nebo jen Titulek, nebo něco jiného.
+                    // Měli bychom tedy najít první control, který je umístěn v pairPanelu, a přemístit jej na celou plochu stávajícího Panel1 + Panel2:
+                    Control pairControl = pairPanel.Controls.OfType<Control>().FirstOrDefault();
+                    if (pairControl != null)
+                    {   // Našli jsme jakýkoli Control v sousedním panelu:
+                        // Odebereme jej z párového panelu:
+                        RemoveControlFromParent(pairControl, pairPanel);
 
                         // Najdeme parenta od SplitContaineru, a z něj odebereme právě ten SplitContainer, tím jej zrušíme:
                         var splitParent = splitContainer.Parent;
                         RemoveControlFromParent(splitContainer, splitParent);
 
-                        // Do parenta od dosavadního SplitContaineru vložíme ten párový control (a vepíšeme to do jeho Infa).
-                        // Tento Parent je buď nějaký Panel1 nebo Panel2 od jiného SplitContaineru, anebo to může být this:
-                        splitParent.Controls.Add(pairHost);
-                        pairInfo.Parent = splitParent;
-                        pairInfo.DockButtonDisabledPosition = pairInfo.CurrentDockPosition;
-                    }
-                }
+                        // Do parenta od dosavadního SplitContaineru vložíme ten párový control (ale nikam to nepíšeme, protože UserControly a jejich parenti se nemění):
+                        // Nemění se ani pozice (DockPosition) controlů.
+                        splitParent.Controls.Add(pairControl);
 
-                // 3. Pokud parentem není SplitContainer, zjistíme zda Parent jsme my sami => pak jsme odebrali poslední control:
-                else if (Object.ReferenceEquals(parent, this))
-                {
-                    removedLastControl = true;
+                        isDone = true;
+                    }
                 }
             }
 
+            // Pokud parentem není SplitContainer, zjistíme zda Parent jsme my sami => pak jsme odebrali poslední control:
+            else if (Object.ReferenceEquals(parent, this))
+            {
+                removedLastControl = true;
+            }
+
+            return removedLastControl;
+        }
+        /// <summary>
+        /// Vyvolá události <see cref="XmlLayoutChanged"/> a volitelně <see cref="LastControlRemoved"/>, pokud nejsou eventy potlačeny
+        /// </summary>
+        /// <param name="removedLastControl"></param>
+        private void _RaiseEventsLayoutChange(bool removedLastControl)
+        {
             if (!_AllEventsDisable)
             {
                 OnXmlLayoutChanged();
@@ -883,6 +944,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void OnCloseButtonClickAfter(TEventCancelArgs<Control> args)
         {
             CloseButtonClickAfter?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Vyvolá se před odebráním prázdného panelu z layoutu
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnEmptyAreaRemoveBefore(TEventCancelArgs<string> args)
+        {
+            EmptyAreaRemoveBefore?.Invoke(this, args);
         }
         /// <summary>
         /// Vyvolá se po odebrání každého uživatelského controlu.
@@ -1251,7 +1320,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void GetXmlLayoutFillArea(Area area, Control host, string areaId, List<DxLayoutItemInfo> items, Dictionary<string, HostAreaInfo> hosts)
         {
             area.AreaId = areaId;
-            HostAreaInfo hostInfo = new HostAreaInfo(host);
+            HostAreaInfo hostInfo = new HostAreaInfo(areaId, host);
             hosts.Add(areaId, hostInfo);
             if (host.Controls.Count == 0)
             {
@@ -1313,6 +1382,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Najde a vrátí AreaId pro daný panel = obsah layoutu = hostitel pro titulek a UserControl
+        /// </summary>
+        /// <param name="host"></param>
+        /// <returns></returns>
+        private string _SearchAreaIdForHost(DxLayoutItemPanel host)
+        {
+            if (host == null) return null;
+            var hosts = GetLayoutData().Item3;
+            var found = hosts.FirstOrDefault(h => object.ReferenceEquals(h.Value.ChildItemPanel, host));
+            return found.Value?.AreaId;
+        }
+        /// <summary>
         /// Informace o jednom každém prvku panelu a jeho obsazení
         /// </summary>
         private class HostAreaInfo
@@ -1320,13 +1401,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Konstruktor
             /// </summary>
-            /// <param name="parent"></param>
-            public HostAreaInfo(Control parent)
+            /// <param name="areaId">ID prostoru</param>
+            /// <param name="parent">Parent, kterým je this, nebo Panel1 nebo Panel2 nějakého SplitContaineru. Nikdy není null.</param>
+            public HostAreaInfo(string areaId , Control parent)
             {
+                this.AreaId = areaId;
                 this.Parent = parent;
                 this.ChildContainer = null;
                 this.ChildItemPanel = null;
             }
+            /// <summary>
+            /// ID prostoru
+            /// </summary>
+            public string AreaId { get; private set; }
             /// <summary>
             /// Parent, kterým je this, nebo Panel1 nebo Panel2 nějakého SplitContaineru.
             /// Nikdy není null.
@@ -1556,24 +1643,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case AreaContentType.DxLayoutItemPanel:
                     if (createEmptyControls)
-                    {
-                        var emptyPanel = this._CreateEmptyControl();
-                        host.Controls.Add(emptyPanel);
-                    }
+                        this._CreateEmptyPanel(host);
                     break;
             }
         }
-        private DxLayoutItemPanel _CreateEmptyControl()
+        /// <summary>
+        /// Vytvoří novou instanci panelu <see cref="DxLayoutItemPanel"/>, jako prázdnou (bez UserControlu), vloží ji do daného hosta a vrátí ji.
+        /// </summary>
+        /// <param name="host"></param>
+        /// <returns></returns>
+        private DxLayoutItemPanel _CreateEmptyPanel(Control host)
         {
-            DxLayoutItemPanel itemPanel = new DxLayoutItemPanel();
+            DxLayoutItemPanel emptyPanel = new DxLayoutItemPanel(this);
 
             var buttons = this.EmptyPanelButtons;
-            // itemPanel.CloseButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Close) ? this.CloseButtonVisibility : ControlVisibility.None);
-            // itemPanel.DockButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Dock) ? this.DockButtonVisibility : ControlVisibility.None);
+            emptyPanel.TitleBarVisible = true;
+            emptyPanel.CloseButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Close) ? this.CloseButtonVisibility : ControlVisibility.None);
+            emptyPanel.DockButtonVisibility = (buttons.HasFlag(EmptyPanelVisibleButtons.Dock) ? this.DockButtonVisibility : ControlVisibility.None);
+            emptyPanel.CloseButtonClick += Panel_CloseButtonClick;
 
-            itemPanel.CloseButtonClick += Panel_CloseButtonClick;
+            if (host != null) host.Controls.Add(emptyPanel);
 
-            return itemPanel;
+            return emptyPanel;
         }
         /// <summary>
         /// Uživatel chce zavřít prázdný panel
@@ -1582,7 +1673,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void Panel_CloseButtonClick(object sender, EventArgs e)
         {
-            
+            if (sender is DxLayoutItemPanel removeHost)
+                _RemoveEmptyPanelFromParentWithLayout(removeHost);
         }
         /// <summary>
         /// Obsahuje true, pokud se do nových prázdných panelů mají vytvářet prázdné panely s titulkem a tlačítky
@@ -1925,7 +2017,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Třídy LayoutTileInfo (evidence UserControlů) a AddControlParams (parametry pro přidání UserControlu) a UserControlPair (data o jednom Splitteru)
         /// <summary>
-        /// Třída obsahující WeakReference na 
+        /// Třída obsahující WeakReference na UserControl (=uživatelův panel) a HostControl (zdejší panel obsahující titulek) a Parent (control, v němž bude / je / byl umístěn HostControl
         /// </summary>
         protected class LayoutTileInfo
         {
@@ -2274,10 +2366,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
-    #region class DxLayoutItemPanel : panel hostující v sobě Title a UserControl
+    #region class DxLayoutItemPanel : panel hostující v sobě TitlePanel a UserControl
     /// <summary>
     /// Panel, který slouží jako hostitel pro jeden uživatelský control v rámci <see cref="DxLayoutPanel"/>.
-    /// Obsahuje prostor pro titulek, zavírací křížek a OnMouse buttony pro předokování aktuálního prvku v rámci parent SplitContaineru.
+    /// Obsahuje panel pro titulek, zavírací křížek a OnMouse buttony pro předokování aktuálního prvku v rámci parent SplitContaineru.
     /// </summary>
     public class DxLayoutItemPanel : DxPanelControl
     {
@@ -2487,6 +2579,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color? TitleBackColorEnd { get { return _TitleBackColorEnd; } set { _TitleBackColorEnd = value; this.RunInGui(RefreshControl); } }
         private Color? _TitleBackColorEnd;
+        /// <summary>
+        /// Viditelnost buttonu Close.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
+        /// </summary>
+        public ControlVisibility CloseButtonVisibility
+        {
+            get { return (_CloseButtonVisibility ?? Owner?.CloseButtonVisibility ?? ControlVisibility.Default); }
+            set { _CloseButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
+        }
+        private ControlVisibility? _CloseButtonVisibility;
+        /// <summary>
+        /// Viditelnost buttonů Dock.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
+        /// </summary>
+        public ControlVisibility DockButtonVisibility
+        {
+            get { return (_DockButtonVisibility ?? Owner?.DockButtonVisibility ?? ControlVisibility.Default); }
+            set { _DockButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
+        }
+        private ControlVisibility? _DockButtonVisibility;
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// Pokud sem bude vložena hodnota <see cref="LayoutPosition.None"/>, pak dokovací buttony nebudou viditelné bez ohledu na <see cref="DxLayoutPanel.DockButtonVisibility"/>.
@@ -2716,11 +2828,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override bool DragDropEnabled { get { return (LayoutPanel?.DragDropEnabled ?? false); } set { } }
         /// <summary>
         /// Viditelnost buttonu Close.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="LayoutPanel"/> (=výchozí stav).
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
         /// </summary>
         public override ControlVisibility CloseButtonVisibility 
         {
-            get { return (_CloseButtonVisibility ?? LayoutPanel?.CloseButtonVisibility ?? ControlVisibility.Default); } 
+            get { return (_CloseButtonVisibility ?? Owner?.CloseButtonVisibility ?? ControlVisibility.Default); } 
             set { _CloseButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); } 
         }
         private ControlVisibility? _CloseButtonVisibility;
@@ -2736,11 +2848,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _CloseButtonToolTip;
         /// <summary>
         /// Viditelnost buttonů Dock.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="LayoutPanel"/> (=výchozí stav).
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
         /// </summary>
         public override ControlVisibility DockButtonVisibility 
         { 
-            get { return (_DockButtonVisibility ?? LayoutPanel?.DockButtonVisibility ?? ControlVisibility.Default); }
+            get { return (_DockButtonVisibility ?? Owner?.DockButtonVisibility ?? ControlVisibility.Default); }
             set { _DockButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
         }
         private ControlVisibility? _DockButtonVisibility;
