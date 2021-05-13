@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            DevExpress.XtraBars.BarShortcut barShortcut1 = new DevExpress.XtraBars.BarShortcut();
             this.StatusStrip = new System.Windows.Forms.StatusStrip();
             this.button3 = new System.Windows.Forms.Button();
             this._PanelHeaders1 = new System.Windows.Forms.Panel();
@@ -73,6 +74,7 @@
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.SkinList = new System.Windows.Forms.ListBox();
             this.ribbonControl1 = new TestDevExpress.RibbonControl();
+            this._RunDataFormBtn = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._SplitTabHeaders)).BeginInit();
             this._SplitTabHeaders.Panel1.SuspendLayout();
             this._SplitTabHeaders.Panel2.SuspendLayout();
@@ -393,6 +395,7 @@
             // 
             // DynamicPage
             // 
+            this.DynamicPage.Controls.Add(this._RunDataFormBtn);
             this.DynamicPage.Controls.Add(this._RunMdiFormBtn);
             this.DynamicPage.Controls.Add(this._RibbonResetTextBtn);
             this.DynamicPage.Controls.Add(this._RibbonBoundsText);
@@ -633,6 +636,7 @@
             this.ribbonControl1.Name = "ribbonControl1";
             this.ribbonControl1.RibbonCaptionAlignment = DevExpress.XtraBars.Ribbon.RibbonCaptionAlignment.Center;
             this.ribbonControl1.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonControlStyle.Office2019;
+            this.ribbonControl1.SearchItemShortcut = barShortcut1;
             this.ribbonControl1.SelectedPageId = null;
             this.ribbonControl1.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             this.ribbonControl1.ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;
@@ -642,6 +646,17 @@
             this.ribbonControl1.ShowSearchItem = true;
             this.ribbonControl1.Size = new System.Drawing.Size(0, 50);
             this.ribbonControl1.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
+            // 
+            // _RunDataFormBtn
+            // 
+            this._RunDataFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this._RunDataFormBtn.Location = new System.Drawing.Point(162, 363);
+            this._RunDataFormBtn.Name = "_RunDataFormBtn";
+            this._RunDataFormBtn.Size = new System.Drawing.Size(150, 60);
+            this._RunDataFormBtn.TabIndex = 7;
+            this._RunDataFormBtn.Text = "Run DataForm";
+            this._RunDataFormBtn.UseVisualStyleBackColor = true;
+            this._RunDataFormBtn.Click += new System.EventHandler(this._RunDataFormBtn_Click);
             // 
             // MainForm
             // 
@@ -728,6 +743,7 @@
         private AsolPanel _EditorsPanel;
         private System.Windows.Forms.TabPage tabPage8;
         private AsolPanel _TreeViewPanel;
+        private System.Windows.Forms.Button _RunDataFormBtn;
     }
 }
 

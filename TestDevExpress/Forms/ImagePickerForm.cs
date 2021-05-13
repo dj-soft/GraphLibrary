@@ -16,7 +16,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář zobrazující zdroje obrázků DevExpress
     /// </summary>
-    public class ImagePickerForm : DXB.Ribbon.RibbonForm
+    public class ImagePickerForm : DxRibbonForm
     {
         /// <summary>
         /// Konstuktor

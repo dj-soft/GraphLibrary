@@ -157,6 +157,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Components\DxComponents.cs" />
+    <Compile Include="Components\DxDataForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\DxLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -173,6 +176,9 @@
     <Compile Include="Components\Random.cs" />
     <Compile Include="Components\ThreadManager.cs" />
     <Compile Include="Components\XmlPersist.cs" />
+    <Compile Include="Forms\DataForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\GraphForm.cs">
       <SubType>Form</SubType>
     </Compile>

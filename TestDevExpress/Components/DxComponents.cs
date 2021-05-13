@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 using System.Windows.Forms;
 using System.Drawing;
@@ -874,6 +875,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             return Instance._GetResourceKeys(addPng, addSvg);
         }
         /// <summary>
+        /// Zkusí najít daný zdroj v <see cref="_ImageResourceDictionary"/> (seznam systémových zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
+        /// Přípona je trim(), lower() a bez tečky na začátku, například: "png", "svg" atd.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="extension"></param>
+        /// <returns></returns>
+        public static bool TryGetResourceExtension(string resourceName, out string extension)
+        {
+            return Instance._TryGetResourceExtension(resourceName, out extension);
+        }
+        /// <summary>
         /// Vrací setříděný seznam DevExpress resources
         /// </summary>
         /// <param name="addPng">Akceptovat bitmapy (PNG)</param>
@@ -1114,6 +1126,52 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DevExpress.Images.ImageResourceCache __ImageResourceCache;
+        /// <summary>
+        /// Zkusí najít daný zdroj v <see cref="_ImageResourceDictionary"/> (seznam systémových zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
+        /// Přípona je trim(), lower() a bez tečky na začátku, například: "png", "svg" atd.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="extension"></param>
+        /// <returns></returns>
+        protected bool _TryGetResourceExtension(string resourceName, out string extension)
+        {
+            extension = null;
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            var dictionary = _ImageResourceDictionary;
+            var key = resourceName.Trim().ToLower();
+            return dictionary.TryGetValue(key, out extension);
+        }
+        /// <summary>
+        /// Dictionary obsahující všechny systémové zdroje (jako Key) 
+        /// a jejich normalizovanou příponu (jako Value) ve formě "png", "svg" atd (bez tečky, lower, trim)
+        /// </summary>
+        protected Dictionary<string, string> _ImageResourceDictionary
+        {
+            get
+            {
+                if (__ImageResourceDictionary == null)
+                {
+                    Dictionary<string, string> dict = new Dictionary<string, string>();
+                    var names = _ImageResourceCache.GetAllResourceKeys();
+                    foreach (var name in names)
+                    {
+                        if (!String.IsNullOrEmpty(name))
+                        {
+                            string key = name.Trim().ToLower();
+                            if (!dict.ContainsKey(key))
+                            {
+                                string ext = System.IO.Path.GetExtension(key).Trim();
+                                if (ext.Length > 0 && ext[0] == '.') ext = ext.Substring(1);
+                                dict.Add(key, ext);
+                            }
+                        }
+                    }
+                    __ImageResourceDictionary = dict;
+                }
+                return __ImageResourceDictionary;
+            }
+        }
+        private Dictionary<string, string> __ImageResourceDictionary;
         protected DevExpress.Utils.SvgImageCollection _SvgImageCollection 
         { 
             get 
@@ -1124,6 +1182,140 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
+        #endregion
+        #region Win32Api informace
+        [DllImport("User32")]
+        private extern static int GetGuiResources(IntPtr hProcess, int uiFlags);
+        /// <summary>
+        /// Získá a vrátí informace o využití zdrojů operačního systému
+        /// </summary>
+        /// <returns></returns>
+        public static WinProcessInfo GetWinProcessInfo()
+        {
+            return WinProcessInfo.GetCurent();
+        }
+        /// <summary>
+        /// Informace o využití zdrojů operačního systému
+        /// </summary>
+        public class WinProcessInfo
+        {
+            /// <summary>
+            /// Získá a vrátí informace o využití zdrojů operačního systému
+            /// </summary>
+            /// <returns></returns>
+            public static WinProcessInfo GetCurent()
+            {
+                using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                {
+                    long privateMemory = process.PrivateMemorySize64;
+                    long workingSet64 = process.WorkingSet64;
+                    int gDIHandleCount = GetGuiResources(process.Handle, 0);
+                    int userHandleCount = GetGuiResources(process.Handle, 1);
+                    return new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
+                }
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="privateMemory"></param>
+            /// <param name="workingSet"></param>
+            /// <param name="gDIHandleCount"></param>
+            /// <param name="userHandleCount"></param>
+            public WinProcessInfo(long privateMemory, long workingSet, int gDIHandleCount, int userHandleCount)
+            {
+                this.PrivateMemory = privateMemory;
+                this.WorkingSet = workingSet;
+                this.GDIHandleCount = gDIHandleCount;
+                this.UserHandleCount = userHandleCount;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString() { return Text4; }
+            /// <summary>
+            /// Jednořádkový text, 2 údaje. Popisek je v <see cref="Text2Info"/>
+            /// </summary>
+            public string Text2
+            {
+                get
+                {
+                    return $"   GDI: {GDIHandleCount};  User: {UserHandleCount}   ";
+                }
+            }
+            /// <summary>
+            /// Popisek hodnot uvedených v <see cref="Text2"/>, vhodný do ToolTipu
+            /// </summary>
+            public static string Text2Info { get { return "\r\nGDI: počet GDI Handles z WinAPI\r\nUser: počet User Handles z WinAPI"; } }
+
+            /// <summary>
+            /// Jednořádkový text, 4 údaje. Popisek je v <see cref="Text4Info"/>
+            /// </summary>
+            public string Text4
+            {
+                get
+                {
+                    string privMemoryKb = ((int)(this.PrivateMemory / 1024L)).ToString("### ### ##0").Trim();
+                    string workSetKb = ((int)(this.WorkingSet / 1024L)).ToString("### ### ##0").Trim();
+                    return $"   Priv: {privMemoryKb} KB;  Work: {workSetKb} KB;  GDI: {GDIHandleCount};  User: {UserHandleCount}   ";
+                }
+            }
+            /// <summary>
+            /// Plný text, 4 údaje na 4 řádcích, do ToolTipu.
+            /// </summary>
+            public string Text4Full
+            {
+                get
+                {
+                    string eol = Environment.NewLine;
+                    string privMemoryKb = ((int)(this.PrivateMemory / 1024L)).ToString("### ### ##0").Trim();
+                    string workSetKb = ((int)(this.WorkingSet / 1024L)).ToString("### ### ##0").Trim();
+                    return $"Private memory {privMemoryKb} KB{eol}Working set: {workSetKb} KB{eol}GDI Handles: {GDIHandleCount}{eol}USER Handles: {UserHandleCount}";
+                }
+            }
+            /// <summary>
+            /// Popisek hodnot uvedených v <see cref="Text4"/>, vhodný do ToolTipu
+            /// </summary>
+            public static string Text4Info { get { return "\r\nPriv: spotřeba paměti 'Private KB'\r\nWork: spotřeba paměti 'WorkingSet KB'\r\nGDI: počet GDI Handles z WinAPI\r\nUser: počet User Handles z WinAPI"; } }
+            /// <summary>
+            /// <see cref="System.Diagnostics.Process.PrivateMemorySize64"/>
+            /// </summary>
+            public long PrivateMemory { get; private set; }
+            /// <summary>
+            /// <see cref="System.Diagnostics.Process.WorkingSet64"/>
+            /// </summary>
+            public long WorkingSet { get; private set; }
+            /// <summary>
+            /// Počet využitých objektů GDI Handle z WinAPI
+            /// </summary>
+            public int GDIHandleCount { get; private set; }
+            /// <summary>
+            /// Počet využitých objektů USER Handle z WinAPI
+            /// </summary>
+            public int UserHandleCount { get; private set; }
+            /// <summary>
+            /// Součet hodnot dvou instancí
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static WinProcessInfo operator +(WinProcessInfo a, WinProcessInfo b)
+            {
+                if (a is null || b is null) return null;
+                return new WinProcessInfo(a.PrivateMemory + b.PrivateMemory, a.WorkingSet + b.WorkingSet, a.GDIHandleCount + b.GDIHandleCount, a.UserHandleCount + b.UserHandleCount);
+            }
+            /// <summary>
+            /// Rozdíl hodnot dvou instancí
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static WinProcessInfo operator -(WinProcessInfo a, WinProcessInfo b)
+            {
+                if (a is null || b is null) return null;
+                return new WinProcessInfo(a.PrivateMemory - b.PrivateMemory, a.WorkingSet - b.WorkingSet, a.GDIHandleCount - b.GDIHandleCount, a.UserHandleCount - b.UserHandleCount);
+            }
+        }
         #endregion
     }
     #endregion
@@ -4127,6 +4319,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         BottomLeft
     }
 
+    #endregion
+    #region DxStdForm
+    public class DxStdForm : DevExpress.XtraEditors.XtraForm
+    { }
+    #endregion
+    #region DxRibbonForm
+    public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
+    { }
     #endregion
     #region DxPanelControl
     /// <summary>

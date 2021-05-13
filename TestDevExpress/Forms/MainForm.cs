@@ -22,7 +22,7 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
-    public partial class MainForm : Form
+    public partial class MainForm : DxStdForm
     {
         /// <summary>
         /// Konstruktor
@@ -1267,7 +1267,7 @@ namespace TestDevExpress.Forms
             {
                 IsRibbonFilled = true;
 
-                var items = RibbonSample.CreateItems(14, out string info);
+                var items = RibbonSample.CreateItems(4, out string info);
                 _AddRibbonText(info);
                 _RibbonAddItems(items, false);
             }
@@ -1312,6 +1312,16 @@ namespace TestDevExpress.Forms
             {
                 mdiParent.WindowState = FormWindowState.Maximized;
                 mdiParent.ShowDialog();
+            }
+        }
+        private void _RunDataFormBtn_Click(object sender, EventArgs e)
+        {
+            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
+            using (var dataForm = new DataForm())
+            {
+                dataForm.WinProcessInfoBeforeForm = winProcessInfo;
+                dataForm.WindowState = FormWindowState.Maximized;
+                dataForm.ShowDialog();
             }
         }
         private void _RibbonResetTextBtn_Click(object sender, EventArgs e)

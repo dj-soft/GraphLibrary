@@ -17,7 +17,7 @@ using DevExpress.Utils;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
-    #region DxRibbon
+    #region DxRibbonControl
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
@@ -77,11 +77,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 IconSize = DevExpress.Utils.ToolTipIconSize.Large,
                 CloseOnClick = DevExpress.Utils.DefaultBoolean.True
             };
-
-            ApplicationButtonClick += RibbonControl_ApplicationButtonClick;
-            ItemClick += RibbonControl_ItemClick;
-            PageCategoryClick += RibbonControl_PageCategoryClick;
-            PageGroupCaptionButtonClick += RibbonControl_PageGroupCaptionButtonClick;
 
             Visible = true;
         }
@@ -247,7 +242,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.CheckBoxStandard:
                 case RibbonItemType.CheckBoxSlider:
+                    bool isSlider = (item.ItemType == RibbonItemType.CheckBoxSlider);
                     DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked);
+                    checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                     barItem = checkItem;
                     break;
                 case RibbonItemType.RadioItem:
@@ -350,8 +347,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             barItem.Caption = item.ItemText;
             barItem.Enabled = item.ItemEnabled;
-            barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage, ImagesSize, item.ItemText);
-            barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage, LargeImagesSize, item.ItemText);
+
+            string imageName = item.ItemImage;
+            if (imageName != null)
+            {
+                // barItem.ImageOptions.imaind
+                if (DxComponent.TryGetResourceExtension(imageName, out var _))
+                {
+
+                }
+                else
+                {
+                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage, ImagesSize, item.ItemText);
+                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage, LargeImagesSize, item.ItemText);
+                }
+            }
+
             if (!string.IsNullOrEmpty(item.HotKey))
             {
                 if (barItem is DevExpress.XtraBars.BarSubItem)
@@ -363,7 +374,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
             {   // Do CheckBoxu vepisujeme víc vlastností:
                 checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
-                checkItem.CheckStyle = (item.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio : DevExpress.XtraBars.BarCheckStyles.Standard);
+                checkItem.CheckStyle = 
+                    (item.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
+                    (item.ItemType == RibbonItemType.CheckBoxSlider ? DevExpress.XtraBars.BarCheckStyles.Standard :
+                     DevExpress.XtraBars.BarCheckStyles.Standard));
                 checkItem.Checked = item.ItemIsChecked;
             }
 
@@ -372,13 +386,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.RibbonStyle = item.RibbonStyle;
 
             if (item.ToolTip != null)
-                barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ToolTipIcon);
+                barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
 
             barItem.Tag = item;
         }
-        protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string image)
+        protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string itemText, string image)
         {
             if (text is null) return null;
+            if (title == null) title = itemText;
             var superTip = new DevExpress.Utils.SuperToolTip();
             if (title != null)
             {
@@ -392,11 +407,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 superTip.Items.AddSeparator();
             }
             var dxText = superTip.Items.Add(text);
-            //if (image != null)
-            //{
-            //    dxText.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(UserGraphicsSize.Large);
-            //    dxText.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(image, UserGraphicsSize.Large);
-            //}
             return superTip;
         }
         protected DevExpress.XtraBars.Ribbon.RibbonBarManager BarManager
@@ -435,7 +445,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            if (e.Item is null) return;
             if (!(e.Item.Tag is IMenuItem ribbonData)) return;
+            if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
+                ribbonData.ItemIsChecked = checkItem.Checked;
+
             _RibbonItemClick(ribbonData);
         }
         private void RibbonControl_PageCategoryClick(object sender, DevExpress.XtraBars.Ribbon.PageCategoryClickEventArgs e)
@@ -590,6 +604,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxRibbonStatusBar
+    /// <summary>
+    /// Potomek StatusBaru
+    /// </summary>
+    public class DxRibbonStatusBar : DevExpress.XtraBars.Ribbon.RibbonStatusBar
+    { }
+    #endregion
     #region RibbonItem : základní implementace IRibbonItem
     /// <summary>
     /// RibbonItem : základní implementace <see cref="IRibbonItem"/>
@@ -680,7 +701,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         bool ItemEnabled { get; }
         int? ItemToolbarOrder { get; }
         string ItemImage { get; }
-        bool ItemIsChecked { get; }
+        /// <summary>
+        /// Určuje, zda CheckBox je zaškrtnutý.
+        /// Po změně zaškrtnutí v Ribbonu (uživatelem) je do této property setována aktuální hodnota z Ribbonu 
+        /// a poté je vyvolána událost <see cref="DxRibbonControl.RibbonItemClick"/>.
+        /// </summary>
+        bool ItemIsChecked { get; set; }
         DevExpress.XtraBars.BarItemPaintStyle ItemPaintStyle { get; }
         string ItemText { get; }
         string HotKey { get; }
