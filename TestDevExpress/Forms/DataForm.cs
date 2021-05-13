@@ -79,9 +79,12 @@ namespace TestDevExpress.Forms
 
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.Refresh", ItemText = "Refresh", ToolTip = "Znovu načíst údaje do statusbaru o spotřebě systémových zdrojů", ItemImage = imageRefresh });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.Clear", ItemText = "Smazat", ToolTip = "Zahodit DataForm a uvolnit jeho zdroje", ItemImage = imageClear });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.NoAdd", ItemText = "Nevkládat Controly", ToolTip = "Vytvořit instance controlů ale NEPŘIDÁVAT JE do Panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxSlider });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxSlider, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxSlider, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.AddControls", ItemText = "Vkládat Controly", ToolTip = "Vytvořit instance controlů ale NEPŘIDÁVAT JE do Panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "basic", GroupText = "ZÁKLADNÍ", ItemId = "Dx.Basic.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown});
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
 
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
@@ -122,15 +125,15 @@ namespace TestDevExpress.Forms
                 case "Dx.Basic.Clear":
                     _RemoveDataForms();
                     break;
-                case "Dx.Basic.NoAdd":
-                    _DxDataFormNoAdd = e.Item.ItemIsChecked;
+                case "Dx.Basic.AddControls":
+                    _DxDataFormNoAdd = !(e.Item.ItemIsChecked ?? false);
                     break;
                 case "Dx.Basic.Add50":
-                    _DxDataFormAdd50 = e.Item.ItemIsChecked;
+                    _DxDataFormAdd50 = (e.Item.ItemIsChecked ?? false);
                     break;
                 case "Dx.Basic.UseWinForm":
                     _RemoveDataForms();         // Změna zvolené komponenty musí vždy shodit aktuální komponentu, kvůli vizuální shodě Ribbon :: DataForm
-                    _DxDataUseWinForm = e.Item.ItemIsChecked;
+                    _DxDataUseWinForm = (e.Item.ItemIsChecked ?? false);
                     break;
                 default:
                     if (e.Item.Tag is DxDataFormSample sample)
@@ -163,10 +166,12 @@ namespace TestDevExpress.Forms
             dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
             dxDataForm.CreateSample(sample);
             dxDataForm.GotFocus += DxDataForm_GotFocus;
-            _DxMainPanel.Controls.Add(dxDataForm);
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
+            _DoLayoutAnyDataForm();
+
+            _DxMainPanel.Controls.Add(dxDataForm);
         }
         private void _AddDataFormWf(DxDataFormSample sample)
         {
@@ -174,10 +179,12 @@ namespace TestDevExpress.Forms
             wfDataForm.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             wfDataForm.CreateSample(sample);
             wfDataForm.GotFocus += DxDataForm_GotFocus;
-            _DxMainPanel.Controls.Add(wfDataForm);
 
             _WfDataForm = wfDataForm;
             _AnyDataForm = wfDataForm;
+            _DoLayoutAnyDataForm();
+
+            _DxMainPanel.Controls.Add(wfDataForm);
         }
         private void DxDataForm_GotFocus(object sender, EventArgs e)
         {

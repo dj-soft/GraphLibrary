@@ -147,6 +147,7 @@ namespace TestDevExpress.Forms
             page1.Groups.Add(group10);
 
             group10.ItemLinks.Add(new DXB.SkinDropDownButtonItem());
+            group10.ItemLinks.Add(new DXB.SkinPaletteDropDownButtonItem());
             group10.ItemLinks.Add(new DXB.SkinPaletteRibbonGalleryBarItem());
         }
         /// <summary>

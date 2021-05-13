@@ -328,12 +328,12 @@ namespace TestDevExpress
                     barItem = splitButton;
                     break;
                 case RibbonItemType.CheckBoxStandard:
-                case RibbonItemType.CheckBoxSlider:
-                    XB.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked);
+                case RibbonItemType.CheckBoxToggle:
+                    XB.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
                     barItem = checkItem;
                     break;
                 case RibbonItemType.RadioItem:
-                    XB.BarCheckItem radioItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked);
+                    XB.BarCheckItem radioItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
                     barItem = radioItem;
                     break;
                 case RibbonItemType.Menu:
@@ -446,7 +446,7 @@ namespace TestDevExpress
             {   // Do CheckBoxu vepisujeme víc vlastností:
                 checkItem.CheckBoxVisibility = XB.CheckBoxVisibility.BeforeText;
                 checkItem.CheckStyle = (item.ItemType == RibbonItemType.RadioItem ? XB.BarCheckStyles.Radio : XB.BarCheckStyles.Standard);
-                checkItem.Checked = item.ItemIsChecked;
+                checkItem.Checked = item.ItemIsChecked ?? false;
             }
 
             barItem.PaintStyle = item.ItemPaintStyle;

@@ -241,15 +241,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barItem = splitButton;
                     break;
                 case RibbonItemType.CheckBoxStandard:
-                case RibbonItemType.CheckBoxSlider:
-                    bool isSlider = (item.ItemType == RibbonItemType.CheckBoxSlider);
-                    DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked);
+                    bool isSlider = (item.ItemType == RibbonItemType.CheckBoxToggle);
+                    DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
                     checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                     barItem = checkItem;
                     break;
                 case RibbonItemType.RadioItem:
-                    DevExpress.XtraBars.BarCheckItem radioItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked);
+                    DevExpress.XtraBars.BarCheckItem radioItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
                     barItem = radioItem;
+                    break;
+                case RibbonItemType.CheckBoxToggle:
+                    DxCheckBoxToggle toggleSwitch = new DxCheckBoxToggle(this.BarManager, item.ItemText);
+                    barItem = toggleSwitch;
                     break;
                 case RibbonItemType.Menu:
                     DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(item.ItemText);
@@ -261,6 +264,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                             menuLink.BeginGroup = true;
                     }
                     barItem = menu;
+                    break;
+                case RibbonItemType.SkinSetDropDown:
+                    barItem = new DevExpress.XtraBars.SkinDropDownButtonItem();
+                    break;
+                case RibbonItemType.SkinPaletteDropDown:
+                    barItem = new DevExpress.XtraBars.SkinPaletteDropDownButtonItem();
+                    break;
+                case RibbonItemType.SkinPaletteGallery:
+                    barItem = new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem();
                     break;
                 case RibbonItemType.Button:
                 default:
@@ -345,16 +357,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IMenuItem item)
         {
-            barItem.Caption = item.ItemText;
+            if (item.ItemText != null)
+                barItem.Caption = item.ItemText;
+
             barItem.Enabled = item.ItemEnabled;
 
             string imageName = item.ItemImage;
-            if (imageName != null)
+            if (imageName != null && !(barItem is DxCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
             {
-                // barItem.ImageOptions.imaind
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
                 {
-
+                    DxComponent.ApplyImage(barItem.ImageOptions, resourceName: item.ItemImage);
                 }
                 else
                 {
@@ -376,9 +389,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                 checkItem.CheckStyle = 
                     (item.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
-                    (item.ItemType == RibbonItemType.CheckBoxSlider ? DevExpress.XtraBars.BarCheckStyles.Standard :
+                    (item.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
                      DevExpress.XtraBars.BarCheckStyles.Standard));
-                checkItem.Checked = item.ItemIsChecked;
+                checkItem.Checked = item.ItemIsChecked ?? false;
+            }
+
+            if (barItem is DxCheckBoxToggle dxCheckBoxToggle)
+            {
+                dxCheckBoxToggle.Checked = item.ItemIsChecked;
+                if (item.ItemImage != null) dxCheckBoxToggle.ImageNameNull = item.ItemImage;
+                if (item.ItemImageUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = item.ItemImageUnChecked;
+                if (item.ItemImageChecked != null) dxCheckBoxToggle.ImageNameChecked = item.ItemImageChecked;
             }
 
             barItem.PaintStyle = item.ItemPaintStyle;
@@ -459,12 +480,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
         }
 
-        private void _RibbonItemClick(IMenuItem item)
+        internal void RaiseRibbonItemClick(IMenuItem menuItem) { _RibbonItemClick(menuItem); }
+        private void _RibbonItemClick(IMenuItem menuItem)
         {
-            OnRibbonItemClick(item);
-            RibbonItemClick?.Invoke(this, new TEventArgs<IMenuItem>(item));
+            var args = new TEventArgs<IMenuItem>(menuItem);
+            OnRibbonItemClick(args);
+            RibbonItemClick?.Invoke(this, args);
         }
-        protected virtual void OnRibbonItemClick(IMenuItem item) { }
+        protected virtual void OnRibbonItemClick(TEventArgs<IMenuItem> args) { }
         public event EventHandler<TEventArgs<IMenuItem>> RibbonItemClick;
         #endregion
         #region Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
@@ -604,6 +627,163 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region class DxCheckBoxToggle : Button reprezentující hodnotu "Checked" { NULL - false - true } s využitím tří ikonek 
+    /// <summary>
+    /// Button reprezentující hodnotu <see cref="Checked"/> { NULL - false - true } s využitím tří ikonek 
+    /// </summary>
+    public class DxCheckBoxToggle : DevExpress.XtraBars.BarButtonItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxCheckBoxToggle() : base() { Initialize(); }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="manager"></param>
+        /// <param name="caption"></param>
+        public DxCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption) : base(manager, caption) { Initialize(); }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="manager"></param>
+        /// <param name="caption"></param>
+        /// <param name="imageIndex"></param>
+        public DxCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex) : base(manager, caption, imageIndex) { Initialize(); }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="manager"></param>
+        /// <param name="caption"></param>
+        /// <param name="imageIndex"></param>
+        /// <param name="shortcut"></param>
+        public DxCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex, DevExpress.XtraBars.BarShortcut shortcut) : base(manager, caption, imageIndex, shortcut) { Initialize(); }
+        /// <summary>
+        /// Inicializace buttonu
+        /// </summary>
+        protected void Initialize()
+        {
+            _ImageNameNull = "svgimages/xaf/state_validation_skipped.svg";
+            _ImageNameUnChecked = "svgimages/xaf/state_validation_invalid.svg";
+            _ImageNameChecked = "svgimages/xaf/state_validation_valid.svg";
+            _Checked = null;
+            ApplyImage();
+
+            /*
+        string resource1 = "svgimages/xaf/state_validation_information.svg";
+        string resource2 = "svgimages/xaf/state_validation_invalid.svg";
+        string resource3 = "svgimages/xaf/state_validation_skipped.svg";
+        string resource4 = "svgimages/xaf/state_validation_valid.svg";
+
+            */
+
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko
+        /// </summary>
+        /// <param name="link"></param>
+        protected override void OnClick(DevExpress.XtraBars.BarItemLink link)
+        {
+            this.Checked = !this.Checked;                  // Změní se hodnota Checked => vyvolá se OnCheckedChanged()
+            base.OnClick(link);
+        }
+        /// <summary>
+        /// Po změně hodnoty <see cref="Checked"/>
+        /// </summary>
+        protected virtual void OnCheckedChanged()
+        {
+            ApplyImage();
+            if (this.Ribbon is DxRibbonControl dxRibbonControl && this.Tag is IMenuItem menuItem)
+            {
+                menuItem.ItemIsChecked = this.Checked;
+                dxRibbonControl.RaiseRibbonItemClick(menuItem);
+            }
+            CheckedChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost po změně hodnoty <see cref="Checked"/>
+        /// </summary>
+        public event EventHandler CheckedChanged;
+        /// <summary>
+        /// Aplikuje do sebe aktuální obrázek
+        /// </summary>
+        protected void ApplyImage()
+        {
+            DxComponent.ApplyImage(this.ImageOptions, resourceName: ImageNameCurrent);
+        }
+        /// <summary>
+        /// Aktuálně platný obrázek podle hodnoty <see cref="Checked"/>
+        /// </summary>
+        protected string ImageNameCurrent 
+        {
+            get { var value = this.Checked; return (value.HasValue ? (value.Value ? ImageNameChecked : ImageNameUnChecked) : ImageNameNull); } 
+        }
+        /// <summary>
+        /// Hodnota označení / neoznačení / NULL
+        /// </summary>
+        public bool? Checked 
+        { 
+            get { return _Checked; } 
+            set 
+            {
+                if (value != _Checked)
+                {
+                    _Checked = value; 
+                    OnCheckedChanged();
+                }
+            }
+        }
+        private bool? _Checked;
+        /// <summary>
+        /// Jméno ikony za stavu <see cref="Checked"/> = NULL
+        /// </summary>
+        public string ImageNameNull
+        {
+            get { return _ImageNameNull; }
+            set
+            {
+                if (!String.Equals(_ImageNameNull, value, StringComparison.Ordinal))
+                {
+                    _ImageNameNull = value;
+                    ApplyImage();
+                }
+            }
+        }
+        private string _ImageNameNull;
+        /// <summary>
+        /// Jméno ikony za stavu <see cref="Checked"/> = false
+        /// </summary>
+        public string ImageNameUnChecked 
+        { 
+            get { return _ImageNameUnChecked; } 
+            set 
+            {
+                if (!String.Equals(_ImageNameUnChecked, value, StringComparison.Ordinal))
+                {
+                    _ImageNameUnChecked = value;
+                    ApplyImage();
+                }
+            }
+        }
+        private string _ImageNameUnChecked;
+        /// <summary>
+        /// Jméno ikony za stavu <see cref="Checked"/> = true
+        /// </summary>
+        public string ImageNameChecked
+        { 
+            get { return _ImageNameChecked; } 
+            set 
+            {
+                if (!String.Equals(_ImageNameChecked, value, StringComparison.Ordinal))
+                {
+                    _ImageNameChecked = value;
+                    ApplyImage();
+                }
+            } 
+        }
+        private string _ImageNameChecked;
+    }
+    #endregion
     #region DxRibbonStatusBar
     /// <summary>
     /// Potomek StatusBaru
@@ -658,11 +838,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         public RibbonItemType ItemType { get; set; }
         public string ItemText { get; set; }
         public string ItemImage { get; set; }
+        public string ItemImageUnChecked { get; set; }
+        public string ItemImageChecked { get; set; }
         public bool ItemIsFirstInGroup { get; set; }
         public DevExpress.XtraBars.Ribbon.RibbonItemStyles RibbonStyle { get; set; }
         public bool ItemEnabled { get; set; }
         public int? ItemToolbarOrder { get; set; }
-        public bool ItemIsChecked { get; set; }
+        public bool? ItemIsChecked { get; set; }
         public DevExpress.XtraBars.BarItemPaintStyle ItemPaintStyle { get; set; }
         public string HotKey { get; set; }
         public string ToolTip { get; set; }
@@ -700,13 +882,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         DevExpress.XtraBars.Ribbon.RibbonItemStyles RibbonStyle { get; }
         bool ItemEnabled { get; }
         int? ItemToolbarOrder { get; }
+        /// <summary>
+        /// Jméno ikony.
+        /// Pro prvek typu <see cref="RibbonItemType.CheckBoxToggle"/> tato ikona reprezentuje stav, kdy <see cref="ItemIsChecked"/> = NULL.
+        /// </summary>
         string ItemImage { get; }
+        /// <summary>
+        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        string ItemImageUnChecked { get; }
+        /// <summary>
+        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        string ItemImageChecked { get; }
         /// <summary>
         /// Určuje, zda CheckBox je zaškrtnutý.
         /// Po změně zaškrtnutí v Ribbonu (uživatelem) je do této property setována aktuální hodnota z Ribbonu 
         /// a poté je vyvolána událost <see cref="DxRibbonControl.RibbonItemClick"/>.
+        /// Hodnota může být null, pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
         /// </summary>
-        bool ItemIsChecked { get; set; }
+        bool? ItemIsChecked { get; set; }
         DevExpress.XtraBars.BarItemPaintStyle ItemPaintStyle { get; }
         string ItemText { get; }
         string HotKey { get; }
@@ -724,9 +919,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         ButtonGroup,
         SplitButton,
         CheckBoxStandard,
-        CheckBoxSlider,
+        /// <summary>
+        /// Button se stavem Checked, který může být NULL (výchozí hodnota). 
+        /// Pokud má být výchozí stav false, je třeba jej do <see cref="IMenuItem.ItemIsChecked"/> vložit!
+        /// Lze specifikovat ikony pro všechny tři stavy (NULL - false - true)
+        /// </summary>
+        CheckBoxToggle,
         RadioItem,
-        Menu
+        Menu,
+        SkinSetDropDown,
+        SkinPaletteDropDown,
+        SkinPaletteGallery
+
     }
     public enum RibbonPageType
     {
