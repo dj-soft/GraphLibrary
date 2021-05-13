@@ -663,13 +663,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected void Initialize()
         {
-            _ImageNameNull = "svgimages/xaf/state_validation_skipped.svg";
-            _ImageNameUnChecked = "svgimages/xaf/state_validation_invalid.svg";
-            _ImageNameChecked = "svgimages/xaf/state_validation_valid.svg";
+            _ImageNameNull = "images/xaf/templatesv2images/bo_unknown_disabled.svg";     //  "svgimages/xaf/state_validation_skipped.svg";
+            _ImageNameUnChecked = "svgimages/icon%20builder/actions_deletecircled.svg";  //  "svgimages/xaf/state_validation_invalid.svg";
+            _ImageNameChecked = "svgimages/icon%20builder/actions_checkcircled.svg";     //  "svgimages/xaf/state_validation_valid.svg";
             _Checked = null;
             ApplyImage();
 
             /*
+
+ string resource5 = "svgimages/icon%20builder/actions_question.svg";
+            string resource3 = "svgimages/icon%20builder/actions_checkcircled.svg";
+            string resource4 = "svgimages/icon%20builder/actions_removecircled.svg";
+            string resource6 = "svgimages/icon%20builder/actions_deletecircled.svg";
+            string resource1 = "images/xaf/templatesv2images/bo_unknown.svg";
+            string resource2 = "images/xaf/templatesv2images/bo_unknown_disabled.svg";
+
+
+            string resource1 = "svgimages/outlook%20inspired/needassistance.svg";
+
+            string resource2 = "svgimages/icon%20builder/security_warningcircled1.svg";
+
+
         string resource1 = "svgimages/xaf/state_validation_information.svg";
         string resource2 = "svgimages/xaf/state_validation_invalid.svg";
         string resource3 = "svgimages/xaf/state_validation_skipped.svg";
@@ -684,7 +698,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         protected override void OnClick(DevExpress.XtraBars.BarItemLink link)
         {
-            this.Checked = !this.Checked;                  // Změní se hodnota Checked => vyvolá se OnCheckedChanged()
+            var value = this.Checked;
+            this.Checked = (!value.HasValue ? false : !value.Value);           // Změní se hodnota Checked => vyvolá se OnCheckedChanged()
             base.OnClick(link);
         }
         /// <summary>
