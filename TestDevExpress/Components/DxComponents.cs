@@ -18,6 +18,7 @@ using DevExpress.Utils;
 using System.Drawing.Drawing2D;
 using DevExpress.Pdf.Native;
 using DevExpress.XtraPdfViewer;
+using DevExpress.XtraEditors;
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
 // using TAB = DevExpress.XtraTab;
@@ -1325,6 +1326,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public static class DrawingExtensions
     {
+        #region Control
         /// <summary>
         /// Vrátí IDisposable blok, který na svém počátku (při vyvolání této metody) provede control?.Parent.SuspendLayout(), 
         /// a na konci bloku (při Dispose) provede control?.Parent.ResumeLayout(false)
@@ -1387,7 +1389,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return null;
         }
+        public static void DisposeContent(this Control control)
+        {
+            if (control == null || control.IsDisposed || control.Disposing) return;
 
+            var childs = control.Controls.OfType<System.Windows.Forms.Control>().ToArray();
+            foreach (var child in childs)
+            {
+                if (child == null || child.IsDisposed || child.Disposing) continue;
+
+                if (child is DevExpress.XtraEditors.XtraScrollableControl xsc)
+                {
+                    xsc.AutoScroll = false;
+                }
+                if (child is System.Windows.Forms.ScrollableControl wsc)
+                {
+                    wsc.AutoScroll = false;
+                }
+
+                control.Controls.Remove(child);
+
+                try { child.Dispose(); }
+                catch { }
+            }
+        }
+        #endregion
         #region Invoke to GUI: run, get, set
         /// <summary>
         /// Metoda provede danou akci v GUI threadu
@@ -1430,8 +1456,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 writer(value);
         }
         #endregion
-
-
         #region Color: Shift
         /// <summary>
         /// Vrací danou barvu s daným posunutím
@@ -4327,6 +4351,71 @@ namespace Noris.Clients.Win.Components.AsolDX
     #region DxRibbonForm
     public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
     { }
+    #endregion
+    #region DxAutoScrollPanelControl
+    /// <summary>
+    /// DxAutoScrollPanelControl : Panel s podporou AutoScroll a s podporou události při změně VisibleBounds
+    /// </summary>
+    public class DxAutoScrollPanelControl : DxPanelControl
+    {
+        public DxAutoScrollPanelControl()
+        {
+            this.AutoScroll = true;
+        }
+        #region VisibleBounds
+        public Rectangle VisibleBounds { get { return _GetVisibleBounds(); } }
+        protected virtual void OnVisibleBoundsChanged() { }
+        public event EventHandler VisibleBoundsChanged;
+        private void _CheckVisibleBoundsChange()
+        {
+            Rectangle last = __LastVisibleBounds;
+            Rectangle current = _GetVisibleBounds();
+            if (current == last) return;
+            __LastVisibleBounds = current;
+
+            OnVisibleBoundsChanged();
+            VisibleBoundsChanged?.Invoke(this, EventArgs.Empty);
+        }
+        private Rectangle _GetVisibleBounds()
+        {
+            Point autoScrollPoint = this.AutoScrollPosition;
+            Point origin = new Point(-autoScrollPoint.X, -autoScrollPoint.Y);
+            Size size = this.ClientSize;
+            return new Rectangle(origin, size);
+        }
+        private Rectangle __LastVisibleBounds;
+
+        /// <summary>
+        /// Tato metoda je jako jediná vyvolaná při posunu obsahu pomocí kolečka myší a některých dalších akcích (pohyb po controlech, resize), 
+        /// ale není volaná při manipulaci se Scrollbary.
+        /// </summary>
+        protected override void SyncScrollbars()
+        {
+            base.SyncScrollbars();
+            this._CheckVisibleBoundsChange();
+        }
+        /// <summary>
+        /// Tato metoda je vyvolaná při manipulaci se Scrollbary.
+        /// Při té se ale nevolá SyncScrollbars().
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected override void OnScroll(object sender, XtraScrollEventArgs e)
+        {
+            base.OnScroll(sender, e);
+            this._CheckVisibleBoundsChange();
+        }
+        /// <summary>
+        /// Volá se po změně velikosti tohoto controlu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this._CheckVisibleBoundsChange();
+        }
+        #endregion
+    }
     #endregion
     #region DxPanelControl
     /// <summary>
