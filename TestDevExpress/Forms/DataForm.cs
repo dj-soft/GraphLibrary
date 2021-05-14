@@ -120,6 +120,7 @@ namespace TestDevExpress.Forms
             switch (e.Item.ItemId)
             {
                 case "Dx.Basic.Refresh":
+                    GCCollect();
                     RefreshStatusCurrent();
                     break;
                 case "Dx.Basic.Clear":
@@ -164,12 +165,15 @@ namespace TestDevExpress.Forms
         {
             DxDataForm dxDataForm = new DxDataForm();
             dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-            dxDataForm.CreateSample(sample);
+            dxDataForm.MemoryMode = DxDataFormMemoryMode.Default;
             dxDataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
             _DoLayoutAnyDataForm();
+
+            // dxDataForm.AddItems();
+            dxDataForm.CreateSample(sample);
 
             _DxMainPanel.Controls.Add(dxDataForm);
         }
@@ -177,12 +181,13 @@ namespace TestDevExpress.Forms
         {
             WfDataForm wfDataForm = new WfDataForm();
             wfDataForm.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            wfDataForm.CreateSample(sample);
             wfDataForm.GotFocus += DxDataForm_GotFocus;
 
             _WfDataForm = wfDataForm;
             _AnyDataForm = wfDataForm;
             _DoLayoutAnyDataForm();
+
+            wfDataForm.CreateSample(sample);
 
             _DxMainPanel.Controls.Add(wfDataForm);
         }
@@ -217,8 +222,12 @@ namespace TestDevExpress.Forms
                     control.Dispose();
                 }
             }
-            GC.Collect(0, GCCollectionMode.Forced);
+            GCCollect();
             WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
+        }
+        private void GCCollect()
+        {
+            GC.Collect(0, GCCollectionMode.Forced);
         }
         private void _DoLayoutAnyDataForm()
         {

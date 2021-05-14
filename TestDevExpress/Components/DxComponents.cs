@@ -129,6 +129,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="styleType"></param>
         /// <returns></returns>
+        public static DevExpress.XtraEditors.IStyleController GetLabelStyle(LabelStyleType? styleType) { return Instance._GetLabelStyle(styleType); }
+        /// <summary>
+        /// Vrátí styl labelu podle požadovaného typu
+        /// </summary>
+        /// <param name="styleType"></param>
+        /// <returns></returns>
         private DevExpress.XtraEditors.IStyleController _GetLabelStyle(LabelStyleType? styleType)
         {
             switch (styleType)
@@ -455,10 +461,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             var label = new DxLabelControl() { Bounds = new Rectangle(x, y + yOffset, w, inst._DetailYHeightLabel), Text = text };
             label.StyleController = inst._GetLabelStyle(styleType);
             if (wordWrap.HasValue) label.Appearance.TextOptions.WordWrap = wordWrap.Value;
-            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
-            if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
-            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
             if (autoSizeMode.HasValue) label.AutoSizeMode = autoSizeMode.Value;
+            if (hAlignment.HasValue) label.Appearance.TextOptions.HAlignment = hAlignment.Value;
+
+            if (wordWrap.HasValue || hAlignment.HasValue) label.Appearance.Options.UseTextOptions = true;
 
             if (visible.HasValue) label.Visible = visible.Value;
 
@@ -779,6 +785,254 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return superTip;
         }
+        #endregion
+        #region Factory metody pro tvorbu komponent DataFormu
+        #region Public static rozhraní
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormControl(IDataFormItem dataFormItem) { return Instance._CreateDataFormControl(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Label pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormLabel(IDataFormItem dataFormItem) { return Instance._CreateDataFormLabel(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TextBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormTextBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormTextBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu EditBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormEditBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormEditBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu SpinnerBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormSpinnerBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormSpinnerBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormCheckBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormCheckBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu BreadCrumb pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormBreadCrumb(IDataFormItem dataFormItem) { return Instance._CreateDataFormBreadCrumb(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxList pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormComboBoxList(IDataFormItem dataFormItem) { return Instance._CreateDataFormComboBoxList(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxEdit pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormComboBoxEdit(IDataFormItem dataFormItem) { return Instance._CreateDataFormComboBoxEdit(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ListView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormListView(IDataFormItem dataFormItem) { return Instance._CreateDataFormListView(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TreeView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormTreeView(IDataFormItem dataFormItem) { return Instance._CreateDataFormTreeView(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu RadioButtonBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormRadioButtonBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormRadioButtonBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Button pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormButton(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu DropDownButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormDropDownButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormDropDownButton(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Image pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormImage(IDataFormItem dataFormItem) { return Instance._CreateDataFormImage(dataFormItem); }
+        #endregion
+        #region private rozcestník a výkonné metody
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormControl(IDataFormItem dataFormItem) 
+        {
+            switch (dataFormItem.ItemType)
+            {
+                case DataFormItemType.Label: return _CreateDataFormLabel(dataFormItem);
+                case DataFormItemType.TextBox: return _CreateDataFormTextBox(dataFormItem);
+                case DataFormItemType.EditBox: return _CreateDataFormEditBox(dataFormItem);
+                case DataFormItemType.SpinnerBox: return _CreateDataFormSpinnerBox(dataFormItem);
+                case DataFormItemType.CheckBox: return _CreateDataFormCheckBox(dataFormItem);
+                case DataFormItemType.BreadCrumb: return _CreateDataFormBreadCrumb(dataFormItem);
+                case DataFormItemType.ComboBoxList: return _CreateDataFormComboBoxList(dataFormItem);
+                case DataFormItemType.ComboBoxEdit: return _CreateDataFormComboBoxEdit(dataFormItem);
+                case DataFormItemType.ListView: return _CreateDataFormListView(dataFormItem);
+                case DataFormItemType.TreeView: return _CreateDataFormTreeView(dataFormItem);
+                case DataFormItemType.RadioButtonBox: return _CreateDataFormRadioButtonBox(dataFormItem);
+                case DataFormItemType.Button: return _CreateDataFormButton(dataFormItem);
+                case DataFormItemType.DropDownButton: return _CreateDataFormDropDownButton(dataFormItem);
+                case DataFormItemType.Image: return _CreateDataFormImage(dataFormItem);
+            }
+            throw new ArgumentException();
+
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Label pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormLabel(IDataFormItem dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var label = CreateDxLabel(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text,
+                dataFormItem.LabelStyle, dataFormItem.LabelWordWrap, dataFormItem.LabelAutoSize, dataFormItem.LabelHAlignment, 
+                dataFormItem.Visible);
+            return label;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TextBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormTextBox(IDataFormItem dataFormItem) 
+        {
+            var bounds = dataFormItem.Bounds;
+            var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
+                dataFormItem.TextMaskType, dataFormItem.TextEditMask, dataFormItem.TextUseMaskAsDisplayFormat,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return textEdit;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu EditBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormEditBox(IDataFormItem dataFormItem) 
+        {
+            var bounds = dataFormItem.Bounds;
+            var memoEdit = CreateDxMemoEdit(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, null,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return memoEdit;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu SpinnerBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormSpinnerBox(IDataFormItem dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxSpinEdit(bounds.X, bounds.Y, bounds.Width, null, null,
+                dataFormItem.SpinMinValue, dataFormItem.SpinMaxValue, dataFormItem.SpinIncrement, dataFormItem.TextEditMask, dataFormItem.SpinStyle,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormCheckBox(IDataFormItem dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxCheckEdit(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text, null,
+                dataFormItem.CheckBoxStyle, dataFormItem.BorderStyle,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu BreadCrumb pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormBreadCrumb(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxList pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormComboBoxList(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxEdit pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormComboBoxEdit(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ListView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormListView(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TreeView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormTreeView(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu RadioButtonBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormRadioButtonBox(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Button pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormButton(IDataFormItem dataFormItem) 
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxSimpleButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu DropDownButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormDropDownButton(IDataFormItem dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Image pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormImage(IDataFormItem dataFormItem) { return null; }
+        #endregion
         #endregion
         #region Draw metody
         /// <summary>
@@ -1389,6 +1643,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return null;
         }
+        /// <summary>
+        /// Korektně disposuje všechny Child prvky.
+        /// </summary>
+        /// <param name="control"></param>
         public static void DisposeContent(this Control control)
         {
             if (control == null || control.IsDisposed || control.Disposing) return;
@@ -4349,6 +4607,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     { }
     #endregion
     #region DxRibbonForm
+    /// <summary>
+    /// Formulář s ribbonem
+    /// </summary>
     public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
     { }
     #endregion
@@ -4358,24 +4619,45 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxAutoScrollPanelControl : DxPanelControl
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxAutoScrollPanelControl()
         {
             this.AutoScroll = true;
         }
         #region VisibleBounds
-        public Rectangle VisibleBounds { get { return _GetVisibleBounds(); } }
+        /// <summary>
+        /// Souřadnice Child prvků, které jsou nyní vidět (=logické koordináty).
+        /// Pokud tedy mám Child prvek s Bounds = { 0, 0, 600, 2000 } 
+        /// a this container má velikost { 500, 300 } a je odscrollovaný trochu dolů (o 100 pixelů),
+        /// pak VisibleBounds obsahuje právě to "viditelné okno" v Child controlu = { 100, 0, 500, 300 }
+        /// </summary>
+        public Rectangle VisibleBounds { get { return __CurrentVisibleBounds; } }
+        /// <summary>
+        /// Jo provedeno po změně <see cref="VisibleBounds"/>
+        /// </summary>
         protected virtual void OnVisibleBoundsChanged() { }
+        /// <summary>
+        /// Událost je vyvolaná po každé změně <see cref="VisibleBounds"/>
+        /// </summary>
         public event EventHandler VisibleBoundsChanged;
+        /// <summary>
+        /// Zkontroluje, zda aktuální viditelná oblast je shodná/jiná než dosavadní, a pokud je jiná pak ji upraví a vyvolá události.
+        /// </summary>
         private void _CheckVisibleBoundsChange()
         {
-            Rectangle last = __LastVisibleBounds;
+            Rectangle last = __CurrentVisibleBounds;
             Rectangle current = _GetVisibleBounds();
             if (current == last) return;
-            __LastVisibleBounds = current;
-
+            __CurrentVisibleBounds = current;
             OnVisibleBoundsChanged();
             VisibleBoundsChanged?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Vrátí aktuálně viditelnou oblast vypočtenou pro AutoScrollPosition a ClientSize
+        /// </summary>
+        /// <returns></returns>
         private Rectangle _GetVisibleBounds()
         {
             Point autoScrollPoint = this.AutoScrollPosition;
@@ -4383,8 +4665,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             Size size = this.ClientSize;
             return new Rectangle(origin, size);
         }
-        private Rectangle __LastVisibleBounds;
-
+        private Rectangle __CurrentVisibleBounds;
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            this._CheckVisibleBoundsChange();
+            base.OnPaint(e);
+        }
         /// <summary>
         /// Tato metoda je jako jediná vyvolaná při posunu obsahu pomocí kolečka myší a některých dalších akcích (pohyb po controlech, resize), 
         /// ale není volaná při manipulaci se Scrollbary.
@@ -4392,7 +4678,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void SyncScrollbars()
         {
             base.SyncScrollbars();
-            this._CheckVisibleBoundsChange();
         }
         /// <summary>
         /// Tato metoda je vyvolaná při manipulaci se Scrollbary.
