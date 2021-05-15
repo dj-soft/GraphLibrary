@@ -4635,7 +4635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Rectangle VisibleBounds { get { return __CurrentVisibleBounds; } }
         /// <summary>
-        /// Jo provedeno po změně <see cref="VisibleBounds"/>
+        /// Je provedeno po změně <see cref="DxAutoScrollPanelControl.VisibleBounds"/>
         /// </summary>
         protected virtual void OnVisibleBoundsChanged() { }
         /// <summary>

@@ -16,15 +16,62 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public partial class DxDataForm : DxPanelControl
     {
+        #region Konstruktor a proměnné, Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DxDataForm()
         {
-            ScrollPanel = new DxDataFormScrollPanel(this);
-            this.Controls.Add(ScrollPanel);
-           
+            __Pages = new Dictionary<string, DxDataFormPage>();
+            __Items = new Dictionary<string, DxDataFormControlItem>();
         }
+        /// <summary>
+        /// Souhrn stránek
+        /// </summary>
+        public DxDataFormPage[] Pages { get { return __Pages.Values.ToArray(); } }
+        private Dictionary<string, DxDataFormPage> __Pages;
+        /// <summary>
+        /// Souhrn aktuálních prvků
+        /// </summary>
+        public DxDataFormControlItem[] Items { get { return __Items.Values.ToArray(); } }
+        private Dictionary<string, DxDataFormControlItem> __Items;
+        /// <summary>
+        /// Dispose prvku
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            this.DisposeContent();
+            base.Dispose(disposing);
+            this._ClearInstance();
+        }
+        /// <summary>
+        /// Uvolní instance na které drží referenci, neřeší ale jejich Dispose.
+        /// </summary>
+        private void _ClearInstance()
+        {
+            __PagesClear();
+            __Pages = null;
+
+            __ItemsClear();
+            __Items = null;
+        }
+        private void __PagesClear()
+        {
+            if (__Pages == null) return;
+            foreach (var page in __Pages.Values)
+                page.Dispose();
+            __Pages.Clear();
+        }
+        private void __ItemsClear()
+        {
+            if (__Items == null) return;
+            foreach (var item in __Items.Values)
+                item.Dispose();
+            __Items.Clear();
+        }
+        #endregion
+
         /// <summary>
         /// Režim práce s pamětí
         /// </summary>
@@ -52,29 +99,248 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return true;
         }
-
-
-        //   NUTNO PŘEPACOVAT NA ZÁLOŽKOVNÍK A TEDY VÍCE PANELŮ!
-
-        internal DxDataFormScrollPanel ScrollPanel { get; set; }
-        internal DxDataFormContentPanel ContentPanel { get { return this.ScrollPanel.ContentPanel; } }
-
+        #region Přidání controlů do logických stránek
+        /// <summary>
+        /// Přidá řadu controlů, řeší záložky
+        /// </summary>
+        /// <param name="items"></param>
         internal void AddItems(IEnumerable<IDataFormItem> items)
         {
-            ScrollPanel.AddItems(items);
+            if (items == null) return;
+            foreach (IDataFormItem item in items)
+                _AddItem(item, true);
+            _FinalisePages();
         }
+        /// <summary>
+        /// Přidá jeden control, řeší záložky.
+        /// Pro více controlů prosím volejme <see cref="AddItems(IEnumerable{IDataFormItem})"/>!
+        /// </summary>
+        /// <param name="item"></param>
         internal void AddItem(IDataFormItem item)
         {
-            ScrollPanel.AddItem(item);
+            _AddItem(item, true);
+            _FinalisePages();
+        }
+        /// <summary>
+        /// Přidá jeden control, volitelně finalizuje dotčenou stránku.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="skipFinalise"></param>
+        private void _AddItem(IDataFormItem item, bool skipFinalise = false)
+        {
+            if (item == null) throw new ArgumentNullException("DxDataForm.AddItem(item) error: item is null.");
+            string itemKey = _CheckNewItemKey(item);
+            DxDataFormPage page = _GetPage(item);
+            DxDataFormControlItem controlItem = page.AddItem(item, skipFinalise);
+            __Items.Add(itemKey, controlItem);
+        }
+        /// <summary>
+        /// Najde a nebo vytvoří a vrátí stránku <see cref="DxDataFormPage"/> podle dat v definici prvku.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private DxDataFormPage _GetPage(IDataFormItem item)
+        {
+            DxDataFormPage page;
+            string pageKey = _GetKey(item.PageName);
+            if (!__Pages.TryGetValue(pageKey, out page))
+            {
+                page = _CreatePage(item);
+                __Pages.Add(pageKey, page);
+            }
+            return page;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí instanci <see cref="DxDataFormPage"/> podle dat v definici prvku.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private DxDataFormPage _CreatePage(IDataFormItem item)
+        {
+            DxDataFormPage page = new DxDataFormPage(this);
+            page.FillFrom(item);
+            return page;
+        }
+        /// <summary>
+        /// Finalizuje stránky z hlediska jejich vnitřního uspořádání i z hlediska zobrazení (jedn panel / více panelů na záložkách)
+        /// </summary>
+        private void _FinalisePages()
+        {
+            foreach (var page in __Pages.Values)
+                page.FinaliseContent();
+
+            PrepareTabForPages();
+        }
+        /// <summary>
+        /// Zkontroluje, že daný <see cref="IDataFormItem"/> má neprázdný klíč <see cref="IDataFormItem.ItemName"/> a že tento klíč dosud není v this dataformu použit.
+        /// Může vyhodit chybu.
+        /// </summary>
+        /// <param name="item"></param>
+        private string _CheckNewItemKey(IDataFormItem item)
+        {
+            string itemKey = _GetKey(item.ItemName);
+            if (itemKey == "") throw new ArgumentNullException("DxDataForm.AddItem(item) error: ItemName is empty.");
+            if (__Items.ContainsKey(itemKey)) throw new ArgumentException($"DxDataForm.AddItem(item) error: ItemName '{item.ItemName}' already exists, duplicity name is not allowed.");
+            return itemKey;
+        }
+        /// <summary>
+        /// Vrací klíč z daného textu: pro null nebo empty vrátí "", jinak vrátí Trim().ToLower()
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private static string _GetKey(string name)
+        {
+            return (String.IsNullOrEmpty(name) ? "" : name.Trim().ToLower());
+        }
+        #endregion
+
+        private void PrepareTabForPages()
+        {
+            // var pages = __Pages.Values.Where(p => !p.IsEmpty).ToArray();
+            var pages = __Pages.Values.ToArray();                    // Všechny stránky v poli
+            int count = pages.Where(p => !p.IsEmpty).Count();        // Počet stránek, které obsahují controly
+            if (count > 0)
+            {
+                var page = pages[0];
+                page.PlaceToParent(this);
+            }
         }
 
-        internal void AddControls(IEnumerable<WF.Control> controls)
+
+
+
+    }
+    /// <summary>
+    /// Data jedné stránky (záložky) DataFormu: ID, titulek, ikona, vizuální control <see cref="DxDataFormScrollPanel"/>.
+    /// Tento vizuální control může být umístěn přímo v <see cref="DxDataForm"/> (což je vizuální panel),
+    /// anebo může být umístěn na záložce.
+    /// </summary>
+    public class DxDataFormPage : IDisposable
+    {
+        #region Konstruktor, proměnné, Dispose
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
+        public DxDataFormPage(DxDataForm dataForm)
         {
-            ScrollPanel.AddControls(controls);
+            __DataForm = dataForm;
+            __ScrollPanel = new DxDataFormScrollPanel(this);
         }
-        internal void AddControl(WF.Control control)
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
         {
-            ScrollPanel.AddControl(control);
+            this._ClearInstance();
+        }
+        /// <summary>
+        /// Uvolní instance na které drží referenci, neřeší ale jejich Dispose.
+        /// </summary>
+        private void _ClearInstance()
+        {
+            __DataForm = null;
+            __ScrollPanel?.Dispose();
+            __ScrollPanel = null;
+        }
+        /// <summary>
+        /// Odkaz na main instanci DataForm
+        /// </summary>
+        public DxDataForm DataForm { get { return __DataForm; } }
+        private DxDataForm __DataForm;
+        /// <summary>
+        /// Vizuální prvek <see cref="DxDataFormScrollPanel"/>
+        /// </summary>
+        public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
+        private DxDataFormScrollPanel __ScrollPanel;
+        /// <summary>
+        /// Název stránky = klíč
+        /// </summary>
+        public string PageName { get; set; }
+        /// <summary>
+        /// Titulek stránky
+        /// </summary>
+        public string PageText { get; set; }
+        /// <summary>
+        /// Text ToolTipu stránky (jako Titulek ToolTipu slouží <see cref="PageText"/>)
+        /// </summary>
+        public string PageToolTipText { get; set; }
+        /// <summary>
+        /// Ikona stránky
+        /// </summary>
+        public string PageIconName { get; set; }
+        /// <summary>
+        /// Vepíše do svých proměnných data z daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        public void FillFrom(IDataFormItem item)
+        {
+            this.PageName = item.PageName;
+            this.PageText = item.PageText;
+            this.PageToolTipText = item.PageToolTipText;
+            this.PageIconName = item.PageIconName;
+        }
+        /// <summary>
+        /// Obsahuje true pokud this page neobsahuje žádný control
+        /// </summary>
+        public bool IsEmpty { get { return this.ScrollPanel.IsEmpty; } }
+        /// <summary>
+        /// Do své evidence přidá control pro danou definici <paramref name="item"/>.
+        /// Volitelně vynechá finalizaci (refreshe), to je vhodné pokud se z vyšších úrovní volá vícekrát AddItem opakovaně a finalizace se provede na závěr.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="skipFinalise"></param>
+        /// <returns></returns>
+        internal DxDataFormControlItem AddItem(IDataFormItem item, bool skipFinalise = false)
+        {
+            return this.ScrollPanel.AddItem(item, skipFinalise);
+        }
+        /// <summary>
+        /// Volá se po dokončení přidávání nebo přemisťování nebo odebírání prvků.
+        /// </summary>
+        internal void FinaliseContent()
+        {
+            this.ScrollPanel.FinaliseContent();
+        }
+        #endregion
+
+        /// <summary>
+        /// Umístí svůj vizuální container do daného Parenta.
+        /// Před tím prověří, zda v něm již není a pokud tam už je, pak nic nedělá. Lze tedy volat libovolně často.
+        /// </summary>
+        /// <param name="parent"></param>
+        public void PlaceToParent(WF.Control parent)
+        {
+            this.ScrollPanel.PlaceToParent(parent);
+        }
+        /// <summary>
+        /// Odebere svůj vizuální container z jeho dosavadního Parenta
+        /// </summary>
+        public void ReleaseFromParent()
+        {
+            this.ScrollPanel.ReleaseFromParent();
+        }
+    }
+    /// <summary>
+    /// Container, který se dokuje do parenta = jeho velikost je omezená, 
+    /// a hostuje v sobě <see cref="DxDataFormContentPanel"/>, který má velikost odpovídající svému obsahu a tento Content je pak posouván uvnitř this panelu = Scroll obsahu.
+    /// Tento container v sobě obsahuje List <see cref="Items"/> jeho jednotlivých Controlů typu <see cref="DxDataFormControlItem"/>.
+    /// </summary>
+    public class DxDataFormScrollPanel : DxAutoScrollPanelControl
+    {
+        #region Konstruktor, proměnné, Dispose
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="page"></param>
+        public DxDataFormScrollPanel(DxDataFormPage page)
+        {
+            __Page = page;
+            __ContentPanel = new DxDataFormContentPanel(this);
+            __Items = new List<DxDataFormControlItem>();
+            this.Controls.Add(ContentPanel);
+            this.Dock = WF.DockStyle.Fill;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         }
         /// <summary>
         /// Dispose prvku
@@ -84,74 +350,90 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.DisposeContent();
             base.Dispose(disposing);
+            this._ClearInstance();
         }
-    }
-    /// <summary>
-    /// Container, který se dokuje do parenta = jeho velikost je omezená, 
-    /// a hostuje v sobě <see cref="DxDataFormContentPanel"/>, který má velikost odpovídající svému obsahu a tento Content je pak posouván uvnitř this panelu = Scroll obsahu.
-    /// </summary>
-    internal class DxDataFormScrollPanel : DxAutoScrollPanelControl
-    {
-        public DxDataFormScrollPanel(DxDataForm dxDataForm)
+        /// <summary>
+        /// Uvolní instance na které drží referenci, neřeší ale jejich Dispose.
+        /// </summary>
+        private void _ClearInstance()
         {
-            __DxDataForm = dxDataForm;
-            ContentPanel = new DxDataFormContentPanel();
-            this.Controls.Add(ContentPanel);
-            this.Dock = WF.DockStyle.Fill;
-            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            Items = new List<DxDataFormControlItem>();
+            __Page = null;
+            __ContentPanel = null;     // Instance byla Disposována standardně v this.Dispose() =>  this.DisposeContent();, tady jen zahazuji referenci na zombie objekt
+            __Items?.Clear();          // Jednotlivé prvky nedisposujeme zde, ale na úrovni DxDataForm, protože tam je vytváříme a společně je tam evidujeme pod klíčem.
+            __Items = null;
         }
-        private DxDataForm __DxDataForm;
+        /// <summary>
+        /// Odkaz na main instanci DataForm
+        /// </summary>
+        public DxDataForm DataForm { get { return __Page.DataForm; } }
+        /// <summary>
+        /// Odkaz na stránku, ve které this ScrollPanel bydlí.
+        /// Stránka je datový objekt, nikoli nutně vizuální.
+        /// Pokud <see cref="DxDataForm"/> obsahuje pouze jednu stránku, pak objekt <see cref="DxDataFormPage"/> nemá vizuální reprezentaci 
+        /// a this panel <see cref="DxDataFormScrollPanel"/> je hostován přímo v <see cref="DxDataForm"/>.
+        /// Pokud existuje více než jedna stránka, pak existuje více panelů <see cref="DxDataFormScrollPanel"/>, a každý je hostován ve své TabPage,
+        /// a jejich TabContainer je hostován v <see cref="DxDataForm"/>.
+        /// </summary>
+        public DxDataFormPage Page { get { return __Page; } }
+        private DxDataFormPage __Page;
+        /// <summary>
+        /// Vizuální panel, který má velikost pokrývající všechny Controly, je umístěn v this, a je posouván pomocí AutoScrollu
+        /// </summary>
+        internal DxDataFormContentPanel ContentPanel { get { return __ContentPanel; } }
+        private DxDataFormContentPanel __ContentPanel;
+        /// <summary>
+        /// Soupis controlů, které jsou obsaženy v this ScrollPanelu (fyzicky jsou ale umístěny v <see cref="ContentPanel"/>)
+        /// </summary>
+        internal List<DxDataFormControlItem> Items { get { return __Items; } }
+        private List<DxDataFormControlItem> __Items;
+        /// <summary>
+        /// Obsahuje true pokud this page neobsahuje žádný control
+        /// </summary>
+        public bool IsEmpty { get { return (this.__Items.Count == 0); } }
+        #endregion
+
+
+        /// <summary>
+        /// Je provedeno po změně <see cref="DxAutoScrollPanelControl.VisibleBounds"/>.
+        /// </summary>
         protected override void OnVisibleBoundsChanged()
         {
             base.OnVisibleBoundsChanged();
             ContentViewChanged();
         }
+        /// <summary>
+        /// Po změně viditelného prostoru provede Refresh viditelných controlů
+        /// </summary>
         private void ContentViewChanged()
         {
-            if (this.ContentPanel == null) return;                   // Voláno v procesu konstruktoru
+            if (this.ContentPanel == null) return;                   // Toto nastane, pokud je voláno v procesu konstruktoru (což je, protože se mění velikost)
             this.ContentPanel.ContentVisibleBounds = this.VisibleBounds;
             RefreshVisibleItems();
         }
-        internal DxDataFormContentPanel ContentPanel { get; private set; }
-
-        internal void AddItems(IEnumerable<IDataFormItem> items)
+        /// <summary>
+        /// Do své evidence přidá control pro danou definici <paramref name="item"/>.
+        /// Volitelně vynechá finalizaci (refreshe), to je vhodné pokud se z vyšších úrovní volá vícekrát AddItem opakovaně a finalizace se provede na závěr.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="skipFinalise"></param>
+        /// <returns></returns>
+        internal DxDataFormControlItem AddItem(IDataFormItem item, bool skipFinalise = false)
         {
-            if (items == null) return;
-            foreach (var item in items)
-                _AddItem(item);
+            DxDataFormControlItem controlItem = new DxDataFormControlItem(this, item);
+            Items.Add(controlItem);
+            if (!skipFinalise)
+                FinaliseContent();
+            return controlItem;
+        }
+        /// <summary>
+        /// Volá se po dokončení přidávání nebo přemisťování nebo odebírání prvků.
+        /// </summary>
+        internal void FinaliseContent()
+        {
             RefreshContentSize();
             RefreshVisibleItems();
         }
-        internal void AddItem(IDataFormItem item)
-        {
-            _AddItem(item);
-            RefreshContentSize();
-            RefreshVisibleItems();
-        }
-        private void _AddItem(IDataFormItem item)
-        {
-            Items.Add(new DxDataFormControlItem(__DxDataForm, this.ContentPanel, item));
-        }
-        internal void AddControls(IEnumerable<WF.Control> controls)
-        {
-            if (controls == null) return;
-            foreach (var control in controls)
-                _AddControl(control);
-            RefreshContentSize();
-            RefreshVisibleItems();
-        }
-        internal void AddControl(WF.Control control)
-        {
-            _AddControl(control);
-            RefreshContentSize();
-            RefreshVisibleItems();
-        }
-        private void _AddControl(WF.Control control)
-        {
-            Items.Add(new DxDataFormControlItem(__DxDataForm, this.ContentPanel, control));
-        }
-        internal void RefreshContentSize()
+        private void RefreshContentSize()
         {
             int maxR = 0;
             int maxB = 0;
@@ -171,14 +453,56 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ContentPanel.Bounds = new Rectangle(0, 0, maxR, maxB);
         }
 
-        internal void RefreshVisibleItems()
+        private void RefreshVisibleItems()
         {
             var visibleBounds = this.VisibleBounds;
             foreach (var item in Items)
                 item.RefreshVisibleItem(visibleBounds);
         }
-        internal List<DxDataFormControlItem> Items { get; private set; }
 
+        /// <summary>
+        /// Umístí svůj vizuální container do daného Parenta.
+        /// Před tím prověří, zda v něm již není a pokud tam už je, pak nic nedělá. Lze tedy volat libovolně často.
+        /// </summary>
+        /// <param name="parent"></param>
+        public void PlaceToParent(WF.Control parent)
+        {
+            if (parent != null && this.Parent != null && Object.ReferenceEquals(this.Parent, parent)) return;           // Beze změny
+
+            ReleaseFromParent();
+
+            if (parent != null)
+                parent.Controls.Add(this);
+        }
+        /// <summary>
+        /// Odebere svůj vizuální container z jeho dosavadního Parenta
+        /// </summary>
+        public void ReleaseFromParent()
+        {
+            var parent = this.Parent;
+            if (parent != null)
+                parent.Controls.Remove(this);
+        }
+
+    }
+    /// <summary>
+    /// Hostitelský panel pro jednotlivé Controly.
+    /// Tento panel si udržuje svoji velikost odpovídající všem svým Controlům, 
+    /// není Dock, není AutoScroll (to je jeho Parent = <see cref="DxDataFormScrollPanel"/>).
+    /// </summary>
+    public class DxDataFormContentPanel : DxPanelControl
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="scrollPanel"></param>
+        public DxDataFormContentPanel(DxDataFormScrollPanel scrollPanel)
+        {
+            this.__ScrollPanel = scrollPanel;
+            this.Dock = WF.DockStyle.None;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.AutoScroll = false;
+        }
         /// <summary>
         /// Dispose prvku
         /// </summary>
@@ -188,21 +512,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.DisposeContent();
             base.Dispose(disposing);
         }
-    }
-    /// <summary>
-    /// Hostitelský panel pro jednotlivé Controly.
-    /// Tento panel si udržuje svoji velikost odpovídající všem svým Controlům, 
-    /// není Dock, není AutoScroll (to je jeho Parent = <see cref="DxDataFormScrollPanel"/>).
-    /// </summary>
-    internal class DxDataFormContentPanel : DxPanelControl
-    {
-        public DxDataFormContentPanel()
+        /// <summary>
+        /// Uvolní instance na které drží referenci, neřeší ale jejich Dispose.
+        /// </summary>
+        private void _ClearInstance()
         {
-            this.Dock = WF.DockStyle.None;
-            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            this.AutoScroll = false;
+            __ScrollPanel = null;
         }
-
+        /// <summary>
+        /// Main DataForm
+        /// </summary>
+        public DxDataForm DataForm { get { return __ScrollPanel?.DataForm; } }
+        /// <summary>
+        /// ScrollPanel, který řídí zobrazení zdejšího panelu
+        /// </summary>
+        public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
+        private DxDataFormScrollPanel __ScrollPanel;
         public Rectangle ContentVisibleBounds { get { return _ContentVisibleBounds; } set { _SetContentVisibleBounds(value); } }
         private Rectangle _ContentVisibleBounds;
         private void _SetContentVisibleBounds(Rectangle contentVisibleBounds)
@@ -212,15 +537,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ContentVisibleBounds = contentVisibleBounds;
         }
 
-        /// <summary>
-        /// Dispose prvku
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            this.DisposeContent();
-            base.Dispose(disposing);
-        }
     }
     /// <summary>
     /// <see cref="DxDataFormControlItem"/> : Třída obsahující každý jeden prvek controlu v rámci DataFormu:
@@ -228,41 +544,72 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Umožňuje řešit jeho tvorbu a uvolnění OnDemand = podle viditelnosti v rámci Parenta.
     /// Šetří tak čas a paměťové nároky.
     /// </summary>
-    internal class DxDataFormControlItem
+    public class DxDataFormControlItem : IDisposable
     {
-        public DxDataFormControlItem(DxDataForm dxDataForm, DxDataFormContentPanel hostPanel, WF.Control control)
-        {
-            if (control is null)
-                throw new ArgumentNullException("control", "DxDataFormControlItem(control) is null.");
-
-            __DataForm = dxDataForm;
-            __HostPanel = hostPanel;
-            __Control = control;
-            __ControlIsExternal = true;
-        }
-        public DxDataFormControlItem(DxDataForm dxDataForm, DxDataFormContentPanel hostPanel, IDataFormItem dataFormItem)
+        #region Konstruktor, Dispose, proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="scrollPanel"></param>
+        /// <param name="dataFormItem"></param>
+        /// <param name="control"></param>
+        public DxDataFormControlItem(DxDataFormScrollPanel scrollPanel, IDataFormItem dataFormItem, WF.Control control = null)
         {
             if (dataFormItem is null)
                 throw new ArgumentNullException("dataFormItem", "DxDataFormControlItem(dataFormItem) is null.");
 
-            __DataForm = dxDataForm;
-            __HostPanel = hostPanel;
+            __ScrollPanel = scrollPanel;
             __DataFormItem = dataFormItem;
-            __ControlIsExternal = false;
+            __Control = control;
+            if (control != null)
+            {
+                __ControlIsExternal = true;
+                RegisterControlEvents(control);
+            }
         }
-
-        public DxDataForm DataForm { get { return __DataForm; } }
-        private DxDataForm __DataForm;
-        public DxDataFormContentPanel HostPanel { get { return __HostPanel; } }
-        private DxDataFormContentPanel __HostPanel;
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            _ClearInstance();
+        }
+        /// <summary>
+        /// Uvolní instance na které drží referenci, neřeší ale jejich Dispose (s výjimkou <see cref="__Control"/>, pokud jsme ji vytvářeli zde a stále existuje, pak ji Disposuje)
+        /// </summary>
+        private void _ClearInstance()
+        {
+            ReleaseControl(DxDataFormMemoryMode.RemoveReleaseHandle | DxDataFormMemoryMode.RemoveDispose, true);
+            __ScrollPanel = null;
+            __Control = null;
+        }
+        /// <summary>
+        /// Main DataForm
+        /// </summary>
+        public DxDataForm DataForm { get { return __ScrollPanel?.DataForm; } }
+        /// <summary>
+        /// ScrollPanel, který řídí zobrazení našeho <see cref="ContentPanel"/>
+        /// </summary>
+        public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
+        private DxDataFormScrollPanel __ScrollPanel;
+        /// <summary>
+        /// Panel, v němž bude this control fyzicky umístěn
+        /// </summary>
+        public DxDataFormContentPanel ContentPanel { get { return __ScrollPanel?.ContentPanel; } }
+        /// <summary>
+        /// Fyzický control
+        /// </summary>
         public WF.Control Control { get { return __Control; } }
         private WF.Control __Control;
         /// <summary>
-        /// Obsahuje true tehdy, když zdejší Control je dodán externě. Pak jej nemůžeme Disposovat a znovuvytvářet, ale musíme jej držet permanentně.
+        /// Obsahuje true tehdy, když zdejší <see cref="Control"/> je dodán externě. 
+        /// Pak jej nemůžeme Disposovat a znovuvytvářet, ale musíme jej držet permanentně.
         /// </summary>
         private bool __ControlIsExternal;
         public IDataFormItem DataFormItem { get { return __DataFormItem; } }
         private IDataFormItem __DataFormItem;
+        #endregion
+        #region Řízení viditelnosti, OnDemand tvorba a release fyzického Controlu
         /// <summary>
         /// Index prvku pro procházení přes TAB
         /// </summary>
@@ -290,7 +637,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal void RefreshVisibleItem(Rectangle visibleBounds)
         {
             var controlBounds = this.Bounds;
-            bool isVisible = __DataForm.IsInVisibleBounds(controlBounds, visibleBounds); //.HasValue && IsInVisibleBounds( Rectangle.Intersect(visibleBounds, controlBounds.Value).HasPixels());
+            bool isVisible = DataForm.IsInVisibleBounds(controlBounds, visibleBounds); //.HasValue && IsInVisibleBounds( Rectangle.Intersect(visibleBounds, controlBounds.Value).HasPixels());
             bool isHosted = IsHosted && (__Control != null);
 
             if (isVisible)
@@ -298,21 +645,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!isHosted)
                 {
                     WF.Control control = GetOrCreateControl();
-                    __HostPanel.Controls.Add(control);
+                    ContentPanel.Controls.Add(control);
                     IsHosted = true;
                 }
                 RefreshItemValues();
             }
             else if (isHosted && !isVisible)
             {
-                WF.Control control = __Control;
-                __HostPanel.Controls.Remove(control);
+                ReleaseControl(DataForm.MemoryMode);
                 IsHosted = false;
-                ReleaseControl(control);
             }
-
-
-
         }
         /// <summary>
         /// Aktualizuje hodnoty na controlu, který je právě viditelný
@@ -339,16 +681,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return control;
         }
-
-        private void RegisterControlEvents(WF.Control control)
+        /// <summary>
+        /// Aktuální control (pokud existuje) odebere z <see cref="ContentPanel"/>, a pak podle daného režimu jej uvolní z paměti (Handle plus Dispose)
+        /// </summary>
+        /// <param name="memoryMode"></param>
+        /// <param name="isFinal"></param>
+        private void ReleaseControl(DxDataFormMemoryMode memoryMode, bool isFinal = false)
         {
-            
-        }
-
-        private void ReleaseControl(WF.Control control)
-        {
+            WF.Control control = __Control;
             if (control == null || control.IsDisposed || control.Disposing) return;
-            var memoryMode = __DataForm.MemoryMode;
+
+            ContentPanel.Controls.Remove(control);
 
             if (memoryMode.HasFlag(DxDataFormMemoryMode.RemoveReleaseHandle))
             {
@@ -358,21 +701,37 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (!__ControlIsExternal && memoryMode.HasFlag(DxDataFormMemoryMode.RemoveDispose))
             {
+                UnRegisterControlEvents(control);
                 try { control.Dispose(); }
                 catch { }
                 __Control = null;
             }
-
+            else if (isFinal)
+            {
+                UnRegisterControlEvents(control);
+            }
         }
         [DllImport("User32")]
         private static extern int DestroyWindow(IntPtr hWnd);
-        private void _DestroyHandle(WF.Control control)
+        #endregion
+        #region Události controlu
+        /// <summary>
+        /// Naváže zdejší eventhandlery k danému controlu
+        /// </summary>
+        /// <param name="control"></param>
+        private void RegisterControlEvents(WF.Control control)
         {
-            if (control != null && control.IsHandleCreated && !control.RecreatingHandle)
-            {
-                DestroyWindow(control.Handle);
-            }
+
         }
+        /// <summary>
+        /// Odváže zdejší eventhandlery k danému controlu
+        /// </summary>
+        /// <param name="control"></param>
+        private void UnRegisterControlEvents(WF.Control control)
+        {
+
+        }
+        #endregion
     }
     /// <summary>
     /// Deklarace každého jednoho prvku v rámci DataFormu
@@ -381,8 +740,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         public string ItemName { get; set; }
         public int? TabIndex { get; set; }
-        public int PageId { get; set; }
+        public string PageName { get; set; }
         public string PageText { get; set; }
+        public string PageToolTipText { get; set; }
         public string PageIconName { get; set; }
         public DataFormItemType ItemType { get; set; }
         public Rectangle Bounds { get; set; }
@@ -413,8 +773,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         string ItemName { get; }
         int? TabIndex { get; }
-        int PageId { get; }
+        string PageName { get; }
         string PageText { get; }
+        string PageToolTipText { get; }
         string PageIconName { get; }
         DataFormItemType ItemType { get; }
         Rectangle Bounds { get; }
@@ -518,6 +879,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
             };
 
+            int cx = 1000;
             int w;
             int x = 6;
             int y = 8;
@@ -527,38 +889,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (sample.LabelCount >= 1)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
                     x += w + 6;
                 }
                 if (sample.TextCount >= 1)
                 {
                     w = rand.Next(180, 350);
-                    items.Add(new DataFormItem() { ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
                     x += w + 6;
                 }
                 if (sample.CheckCount >= 1)
                 {
                     w = rand.Next(200, 250);
                     var style = styles[rand.Next(styles.Length)];
-                    items.Add(new DataFormItem() { ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")"});
+                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")"});
                     x += w + 6;
                 }
                 if (sample.LabelCount >= 2)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
                     x += w + 6;
                 }
                 if (sample.TextCount >= 2)
                 {
                     w = rand.Next(250, 450);
-                    items.Add(new DataFormItem() { ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
                     x += w + 6;
                 }
                 if (sample.CheckCount >= 2)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
+                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
                     x += w + 6;
                 }
                 y += 30;
