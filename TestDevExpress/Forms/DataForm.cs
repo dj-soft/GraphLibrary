@@ -136,13 +136,13 @@ namespace TestDevExpress.Forms
                 case "Dx.Basic.Clear":
                     _RemoveDataForms();
                     break;
-                case "Dx.Basic.AddControls":
+                case "Dx.Params.AddControls":
                     _DxDataFormNoAdd = !(e.Item.ItemIsChecked ?? false);
                     break;
-                case "Dx.Basic.Add50":
+                case "Dx.Params.Add50":
                     _DxDataFormAdd50 = (e.Item.ItemIsChecked ?? false);
                     break;
-                case "Dx.Basic.UseWinForm":
+                case "Dx.Params.UseWinForm":
                     _RemoveDataForms();         // Změna zvolené komponenty musí vždy shodit aktuální komponentu, kvůli vizuální shodě Ribbon :: DataForm
                     _DxDataUseWinForm = (e.Item.ItemIsChecked ?? false);
                     break;

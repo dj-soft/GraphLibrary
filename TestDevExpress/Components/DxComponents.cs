@@ -4625,6 +4625,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxAutoScrollPanelControl()
         {
             this.AutoScroll = true;
+            this.SetAutoScrollMargin(40, 6);
             this.Padding = new Padding(10);
             this.SetStyle(ControlStyles.UserPaint, true);
         }

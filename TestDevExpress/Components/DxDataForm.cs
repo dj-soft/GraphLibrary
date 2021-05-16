@@ -201,18 +201,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             var pagesAll = __Pages.Values.ToArray();                    // Všechny stránky v poli (i prázdné)
             var pagesData = pagesAll.Where(p => !p.IsEmpty).ToArray();  // Jen ty stránky, které obsahují controly
 
-            if (_TabPane == null)
+            if (pagesData.Length == 1)
             {
-                _TabPane = new DxTabPane();
-                _TabPane.Dock = WF.DockStyle.Fill;
-                this.Controls.Add(_TabPane);
+                var pageData = pagesData[0];
+                pageData.PlaceToParent(this);
             }
-
-            foreach (var pageData in pagesData)
+            else if (pagesData.Length > 1)
             {
-                var pane = _TabPane.AddNewPage(pageData.PageName ?? "", pageData.PageText ?? "Záložka s daty", pageData.PageToolTipText);
-                pageData.PlaceToParent(pane);
-                pageData.Dock = WF.DockStyle.Fill;
+                if (_TabPane == null)
+                {
+                    _TabPane = new DxTabPane();
+                    _TabPane.Dock = WF.DockStyle.Fill;
+                    this.Controls.Add(_TabPane);
+                }
+
+                foreach (var pageData in pagesData)
+                {
+                    var pane = _TabPane.AddNewPage(pageData.PageName ?? "", pageData.PageText ?? "Záložka s daty", pageData.PageToolTipText);
+                    // pane.
+                    pageData.PlaceToParent(pane);
+                    pageData.Dock = WF.DockStyle.Fill;
+                }
             }
 
             /*
