@@ -24,6 +24,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __Pages = new Dictionary<string, DxDataFormPage>();
             __Items = new Dictionary<string, DxDataFormControlItem>();
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.MemoryMode = DxDataFormMemoryMode.Default;
         }
         /// <summary>
         /// Souhrn stránek
@@ -99,7 +101,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return true;
         }
-        #region Přidání controlů do logických stránek
+        #region Přidání / odebrání controlů do logických stránek (AddItems), tvorba nových stránek, 
         /// <summary>
         /// Přidá řadu controlů, řeší záložky
         /// </summary>
@@ -131,8 +133,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (item == null) throw new ArgumentNullException("DxDataForm.AddItem(item) error: item is null.");
             string itemKey = _CheckNewItemKey(item);
             DxDataFormPage page = _GetPage(item);
-            DxDataFormControlItem controlItem = page.AddItem(item, skipFinalise);
-            __Items.Add(itemKey, controlItem);
+            DxDataFormControlItem controlItem = page.AddItem(item, skipFinalise);        // I stránka sama si přidá prvek do svého pole, ale jen pro své zobrazovací potřeby.
+            __Items.Add(itemKey, controlItem);             // Prvek přidávám do Dictionary bez obav, protože unikátnost klíče jsem prověřil v metodě _CheckNewItemKey() před chvilkou
         }
         /// <summary>
         /// Najde a nebo vytvoří a vrátí stránku <see cref="DxDataFormPage"/> podle dat v definici prvku.
@@ -196,26 +198,418 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void PrepareTabForPages()
         {
-            // var pages = __Pages.Values.Where(p => !p.IsEmpty).ToArray();
-            var pages = __Pages.Values.ToArray();                    // Všechny stránky v poli
-            int count = pages.Where(p => !p.IsEmpty).Count();        // Počet stránek, které obsahují controly
+            var pagesAll = __Pages.Values.ToArray();                    // Všechny stránky v poli (i prázdné)
+            var pagesData = pagesAll.Where(p => !p.IsEmpty).ToArray();  // Jen ty stránky, které obsahují controly
+
+            if (_TabPane == null)
+            {
+                _TabPane = new DxTabPane();
+                _TabPane.Dock = WF.DockStyle.Fill;
+                this.Controls.Add(_TabPane);
+            }
+
+            foreach (var pageData in pagesData)
+            {
+                var pane = _TabPane.AddNewPage(pageData.PageName ?? "", pageData.PageText ?? "Záložka s daty", pageData.PageToolTipText);
+                pageData.PlaceToParent(pane);
+                pageData.Dock = WF.DockStyle.Fill;
+            }
+
+            /*
+            int count = pagesAll.Where(p => !p.IsEmpty).Count();        // Počet stránek, které obsahují controly
             if (count > 0)
             {
-                var page = pages[0];
+                var page = pagesAll[0];
                 page.PlaceToParent(this);
             }
+            */
         }
 
+        private DxTabPane _TabPane;
+
+        #region Tvorba testovacích dat : CreateSamples()
+        public static IEnumerable<IDataFormItem> CreateSample(int sampleId)
+        {
+            switch (sampleId)
+            {
+                case 1: return _CreateSample1();
+                case 2: return _CreateSample2();
+                case 3: return _CreateSample3();
+                case 4: return _CreateSample4();
+                case 5: return _CreateSample5();
+                case 6: return _CreateSample6();
+
+            }
+            return null;
+        }
+        private static IEnumerable<IDataFormItem> _CreateSample1()
+        {
+            int x1, y1, x2, y2;
+            List<DataFormItem> items = new List<DataFormItem>();
+
+            // Stránka 0
+            x1 = 6;
+            y1 = 8;
+            x2 = 700;
+            y2 = 8;
+
+            _CreateSampleAddReferName1(items, "Reference:", x1, y1); y1 += 25;
+            _CreateSampleAddReferName1(items, "Dodavatel:", x1, y1); y1 += 25;
+            _CreateSampleAddReferName1(items, "Sklad:", x1, y1); y1 += 25;
+            _CreateSampleAddReferName1(items, "Odběratel:", x1, y1); y1 += 25;
+
+            y1 += 10;
+
+            _CreateSampleAddMemo(items, "Poznámka nákupní:", x2, y2, 550, 95); y2 += 110;
+
+            _CreateSampleAddPrice3(items, "Cena nákupní:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena DPH 0:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena DPH 1:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena DPH 2:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena evidenční:", x1, y1); y1 += 25;
+
+            y1 += 10;
+
+            _CreateSampleAddMemo(items, "Poznámka cenová:", x2, y2, 550, 120); y2 += 135;
+
+            _CreateSampleAddLabel1(items, "Rabaty:", x1, y1);
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat dodavatele", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat skladu", DevExpress.XtraEditors.Controls.CheckBoxStyle.Default, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat odběratele", null, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat uživatele", null, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat termínový", null, x1, y1); y1 += 25;
+
+            y1 += 10;
+
+            _CreateSampleAddMemo(items, "Poznámka k rabatům:", x2, y2, 550, 120); y2 += 135;
+
+            _CreateSampleAddDate2(items, "Datum objednávky", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum potvrzení", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum expedice", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum příjmu na sklad", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum přejímky kvality", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum zaúčtování", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum splatnosti", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum úhrady", x1, y1); y1 += 25;
 
 
+            _CreateSampleSetPage(items, "page0", "ZÁKLADNÍ ÚDAJE", "Tato záložka obsahuje základní údaje o dokladu", null);
+
+            // Stránka 1
+            x1 = 6;
+            y1 = 8;
+            x2 = 700;
+            y2 = 8;
+
+            _CreateSampleAddPrice3(items, "Cena nákupní €:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena DPH 0 €:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena DPH 1 €:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena DPH 2 €:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena evidenční €:", x1, y1); y1 += 25;
+
+            _CreateSampleAddMemo(items, "Poznámka k cizí měně:", x1, y1, 550, 120); y1 += 135;
+
+            _CreateSampleAddMemo(items, "Poznámka k účtování:", x1, y1, 550, 120); y1 += 135;
+
+            y1 += 10;
+
+            _CreateSampleAddLabel1(items, "Účtování:", x1, y1);
+            _CreateSampleAddCheckBox1(items, "Účtovat do běžného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat do reálného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat jako rozpočtová organizace", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat až po schválení majitelem", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat do černého účetního rozvrhu", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat až po zaplacení", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat jen 30. února", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+
+            _CreateSampleSetPage(items, "page1", "CENOVÉ ÚDAJE v €", "Tato záložka obsahuje údaje o cenách v €urech", null);
+
+            // Stránka 2
+            x1 = 6;
+            y1 = 8;
+            x2 = 700;
+            y2 = 8;
+
+            _CreateSampleAddReferName1(items, "Zapsal:", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum zadání do systému", x1, y1); y1 += 25;
+
+            _CreateSampleSetPage(items, "page2", "SYSTÉMOVÉ ÚDAJE", "Tato záložka obsahuje údaje o osobě a času zadání do systému", null);
+
+            return items;
+        }
+        private static IEnumerable<IDataFormItem> _CreateSample2()
+        {
+            List<IDataFormItem> items = new List<IDataFormItem>();
+            Random rand = _SampleRandom;
+
+
+            return items;
+        }
+        private static IEnumerable<IDataFormItem> _CreateSample3()
+        {
+            List<IDataFormItem> items = new List<IDataFormItem>();
+            Random rand = _SampleRandom;
+
+
+            return items;
+        }
+        private static IEnumerable<IDataFormItem> _CreateSample4()
+        {
+            List<IDataFormItem> items = new List<IDataFormItem>();
+            Random rand = _SampleRandom;
+
+
+            return items;
+        }
+        private static IEnumerable<IDataFormItem> _CreateSample5()
+        {
+            List<IDataFormItem> items = new List<IDataFormItem>();
+            Random rand = _SampleRandom;
+
+
+            return items;
+        }
+        private static IEnumerable<IDataFormItem> _CreateSample6()
+        {
+            List<IDataFormItem> items = new List<IDataFormItem>();
+            Random rand = _SampleRandom;
+
+
+            return items;
+        }
+        private static void _CreateSampleAddLabel1(List<DataFormItem> items, string label, int x, int y, int? w = null, DevExpress.Utils.HorzAlignment? labelHalignment = null)
+        {
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.Label,
+                Bounds = new Rectangle(x, y, (w ?? 180), 20),
+                Text = label,
+                LabelHAlignment = (labelHalignment ?? DevExpress.Utils.HorzAlignment.Far),
+                LabelAutoSize = LabelAutoSizeMode.None
+            });
+        }
+        private static void _CreateSampleAddReferName1(List<DataFormItem> items, string label, int x, int y)
+        {
+            _CreateSampleAddLabel1(items, label, x, y);
+
+            items.Add(new DataFormItem() 
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox, 
+                Bounds = new Rectangle(x + 183, y, 150, 20) 
+            });
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x + 336, y, 250, 20)
+            });
+        }
+        private static void _CreateSampleAddPrice3(List<DataFormItem> items, string label, int x, int y)
+        {
+            _CreateSampleAddLabel1(items, label, x, y);
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x + 183, y, 125, 20),
+                TextMaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric,
+                TextEditMask = "### ### ##0.00"
+            });
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x + 311, y, 125, 20),
+                TextMaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric,
+                TextEditMask = "### ### ##0.00"
+            });
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x + 439, y, 125, 20),
+                TextMaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric,
+                TextEditMask = "### ### ##0.00"
+            });
+        }
+        private static void _CreateSampleAddDate2(List<DataFormItem> items, string label, int x, int y)
+        {
+            _CreateSampleAddLabel1(items, label, x, y);
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x + 183, y, 125, 20),
+                TextMaskType = DevExpress.XtraEditors.Mask.MaskType.DateTime,
+                TextEditMask = "d",
+                ToolTipTitle = "DATUM POČÁTKU",
+                ToolTipText = "Tento den se událost začala"
+            });
+
+            _CreateSampleAddLabel1(items, "...", x + 311, y, 30, DevExpress.Utils.HorzAlignment.Center);
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x + 344, y, 125, 20),
+                TextMaskType = DevExpress.XtraEditors.Mask.MaskType.DateTime,
+                TextEditMask = "d",
+                ToolTipTitle = "DATUM KONCE",
+                ToolTipText = "Tento den se událost skončila"
+            });
+        }
+        private static void _CreateSampleAddMemo(List<DataFormItem> items, string label, int x, int y, int w, int h)
+        {
+            _CreateSampleAddLabel1(items, label, x, y);
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.EditBox,
+                Bounds = new Rectangle(x + 183, y, w, h),
+                ToolTipTitle = "POZNÁMKA",
+                ToolTipText = "Zde můžete zadat libovolný text"
+            });
+        }
+        private static void _CreateSampleAddCheckBox1(List<DataFormItem> items, string label, DevExpress.XtraEditors.Controls.CheckBoxStyle? style, int x, int y)
+        {
+            if (!style.HasValue) style = _SampleCheckBoxStyle();
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.CheckBox,
+                Bounds = new Rectangle(x + 183, y, 350, 20),
+                Text = label,
+                CheckBoxStyle = style
+            });
+        }
+        private static void _CreateSampleSetPage(List<DataFormItem> items, string pageName, string pageText, string pageToolTipText, string pageIconName)
+        {
+            var pageItems = items.Where(i => i.PageName == null).ToArray();
+            foreach (var pageItem in pageItems)
+            {
+                pageItem.PageName = pageName;
+                pageItem.PageText = pageText;
+                pageItem.PageToolTipText = pageToolTipText;
+                pageItem.PageIconName = pageIconName;
+            }
+        }
+        private static string _SampleItemName(List<DataFormItem> items) { return "item_" + (items.Count + 1000).ToString(); }
+        public static IEnumerable<IDataFormItem> CreateSample(DxDataFormSample sample)
+        {
+            List<DataFormItem> items = new List<DataFormItem>();
+            Random rand = _SampleRandom;
+
+            int w;
+            int x = 6;
+            int y = 8;
+            for (int i = 0; i < sample.RowsCount; i++)
+            {
+                x = 6;
+                if (sample.LabelCount >= 1)
+                {
+                    w = rand.Next(100, 200);
+                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    x += w + 6;
+                }
+                if (sample.TextCount >= 1)
+                {
+                    w = rand.Next(180, 350);
+                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    x += w + 6;
+                }
+                if (sample.CheckCount >= 1)
+                {
+                    w = rand.Next(200, 250);
+                    var style = _SampleCheckBoxStyle();
+                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")" });
+                    x += w + 6;
+                }
+                if (sample.LabelCount >= 2)
+                {
+                    w = rand.Next(100, 200);
+                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    x += w + 6;
+                }
+                if (sample.TextCount >= 2)
+                {
+                    w = rand.Next(250, 450);
+                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    x += w + 6;
+                }
+                if (sample.CheckCount >= 2)
+                {
+                    w = rand.Next(100, 200);
+                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
+                    x += w + 6;
+                }
+                y += 30;
+            }
+
+            return items;
+        }
+        /// <summary>
+        /// Random pro Samples
+        /// </summary>
+        private static Random _SampleRandom { get { if (__SampleRandom == null) __SampleRandom = new Random(); return __SampleRandom; } }
+        private static Random __SampleRandom;
+        private static int _SampleWidth(int min, int max) { return _SampleRandom.Next(min, max + 1); }
+        /// <summary>
+        /// Vrátí náhodný styl checkboxu
+        /// </summary>
+        /// <returns></returns>
+        private static DevExpress.XtraEditors.Controls.CheckBoxStyle _SampleCheckBoxStyle()
+        {
+            var styles = _SampleCheckBoxStyles;
+            return styles[_SampleRandom.Next(styles.Length)];
+        }
+        /// <summary>
+        /// Soupis použitelných CheckBox stylů
+        /// </summary>
+        private static DevExpress.XtraEditors.Controls.CheckBoxStyle[] _SampleCheckBoxStyles
+        {
+            get
+            {
+                DevExpress.XtraEditors.Controls.CheckBoxStyle[] styles = new DevExpress.XtraEditors.Controls.CheckBoxStyle[]
+                {
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.Default,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.Radio,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.CheckBox,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgCheckBox1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgFlag1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgFlag2,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgHeart1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgHeart2,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgLock1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgRadio1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgRadio2,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgStar1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgStar2,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgThumb1,
+                    DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
+                };
+                return styles;
+            }
+        }
+        #endregion
 
     }
+    #region class DxDataFormPage : Data jedné stránky (záložky) DataFormu
     /// <summary>
     /// Data jedné stránky (záložky) DataFormu: ID, titulek, ikona, vizuální control <see cref="DxDataFormScrollPanel"/>.
     /// Tento vizuální control může být umístěn přímo v <see cref="DxDataForm"/> (což je vizuální panel),
     /// anebo může být umístěn na záložce.
     /// </summary>
-    public class DxDataFormPage : IDisposable
+    public class DxDataFormPage : DxDataFormScrollPanel
     {
         #region Konstruktor, proměnné, Dispose
         /// <summary>
@@ -223,15 +617,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataForm"></param>
         public DxDataFormPage(DxDataForm dataForm)
+            : base(dataForm)
         {
-            __DataForm = dataForm;
-            __ScrollPanel = new DxDataFormScrollPanel(this);
         }
         /// <summary>
         /// Dispose
         /// </summary>
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
             this._ClearInstance();
         }
         /// <summary>
@@ -239,20 +633,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ClearInstance()
         {
-            __DataForm = null;
-            __ScrollPanel?.Dispose();
-            __ScrollPanel = null;
         }
-        /// <summary>
-        /// Odkaz na main instanci DataForm
-        /// </summary>
-        public DxDataForm DataForm { get { return __DataForm; } }
-        private DxDataForm __DataForm;
-        /// <summary>
-        /// Vizuální prvek <see cref="DxDataFormScrollPanel"/>
-        /// </summary>
-        public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
-        private DxDataFormScrollPanel __ScrollPanel;
         /// <summary>
         /// Název stránky = klíč
         /// </summary>
@@ -280,49 +661,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.PageToolTipText = item.PageToolTipText;
             this.PageIconName = item.PageIconName;
         }
-        /// <summary>
-        /// Obsahuje true pokud this page neobsahuje žádný control
-        /// </summary>
-        public bool IsEmpty { get { return this.ScrollPanel.IsEmpty; } }
-        /// <summary>
-        /// Do své evidence přidá control pro danou definici <paramref name="item"/>.
-        /// Volitelně vynechá finalizaci (refreshe), to je vhodné pokud se z vyšších úrovní volá vícekrát AddItem opakovaně a finalizace se provede na závěr.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="skipFinalise"></param>
-        /// <returns></returns>
-        internal DxDataFormControlItem AddItem(IDataFormItem item, bool skipFinalise = false)
-        {
-            return this.ScrollPanel.AddItem(item, skipFinalise);
-        }
-        /// <summary>
-        /// Volá se po dokončení přidávání nebo přemisťování nebo odebírání prvků.
-        /// </summary>
-        internal void FinaliseContent()
-        {
-            this.ScrollPanel.FinaliseContent();
-        }
+       
         #endregion
-
-        /// <summary>
-        /// Umístí svůj vizuální container do daného Parenta.
-        /// Před tím prověří, zda v něm již není a pokud tam už je, pak nic nedělá. Lze tedy volat libovolně často.
-        /// </summary>
-        /// <param name="parent"></param>
-        public void PlaceToParent(WF.Control parent)
-        {
-            this.ScrollPanel.PlaceToParent(parent);
-        }
-        /// <summary>
-        /// Odebere svůj vizuální container z jeho dosavadního Parenta
-        /// </summary>
-        public void ReleaseFromParent()
-        {
-            this.ScrollPanel.ReleaseFromParent();
-        }
     }
+    #endregion
+    #region class DxDataFormScrollPanel : Container, který hostuje DxDataFormContentPanel, a který se dokuje do parenta
     /// <summary>
-    /// Container, který se dokuje do parenta = jeho velikost je omezená, 
+    /// Container, který hostuje DxDataFormContentPanel, a který se dokuje do parenta = jeho velikost je omezená, 
     /// a hostuje v sobě <see cref="DxDataFormContentPanel"/>, který má velikost odpovídající svému obsahu a tento Content je pak posouván uvnitř this panelu = Scroll obsahu.
     /// Tento container v sobě obsahuje List <see cref="Items"/> jeho jednotlivých Controlů typu <see cref="DxDataFormControlItem"/>.
     /// </summary>
@@ -332,10 +677,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="page"></param>
-        public DxDataFormScrollPanel(DxDataFormPage page)
+        /// <param name="dataForm"></param>
+        public DxDataFormScrollPanel(DxDataForm dataForm)
         {
-            __Page = page;
+            __DataForm = dataForm;
             __ContentPanel = new DxDataFormContentPanel(this);
             __Items = new List<DxDataFormControlItem>();
             this.Controls.Add(ContentPanel);
@@ -357,7 +702,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ClearInstance()
         {
-            __Page = null;
+            __DataForm = null;
             __ContentPanel = null;     // Instance byla Disposována standardně v this.Dispose() =>  this.DisposeContent();, tady jen zahazuji referenci na zombie objekt
             __Items?.Clear();          // Jednotlivé prvky nedisposujeme zde, ale na úrovni DxDataForm, protože tam je vytváříme a společně je tam evidujeme pod klíčem.
             __Items = null;
@@ -365,17 +710,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odkaz na main instanci DataForm
         /// </summary>
-        public DxDataForm DataForm { get { return __Page.DataForm; } }
-        /// <summary>
-        /// Odkaz na stránku, ve které this ScrollPanel bydlí.
-        /// Stránka je datový objekt, nikoli nutně vizuální.
-        /// Pokud <see cref="DxDataForm"/> obsahuje pouze jednu stránku, pak objekt <see cref="DxDataFormPage"/> nemá vizuální reprezentaci 
-        /// a this panel <see cref="DxDataFormScrollPanel"/> je hostován přímo v <see cref="DxDataForm"/>.
-        /// Pokud existuje více než jedna stránka, pak existuje více panelů <see cref="DxDataFormScrollPanel"/>, a každý je hostován ve své TabPage,
-        /// a jejich TabContainer je hostován v <see cref="DxDataForm"/>.
-        /// </summary>
-        public DxDataFormPage Page { get { return __Page; } }
-        private DxDataFormPage __Page;
+        public DxDataForm DataForm { get { return __DataForm; } }
+        private DxDataForm __DataForm;
         /// <summary>
         /// Vizuální panel, který má velikost pokrývající všechny Controly, je umístěn v this, a je posouván pomocí AutoScrollu
         /// </summary>
@@ -485,6 +821,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
     }
+    #endregion
+    #region class DxDataFormContentPanel : Hostitelský panel pro jednotlivé Controly
     /// <summary>
     /// Hostitelský panel pro jednotlivé Controly.
     /// Tento panel si udržuje svoji velikost odpovídající všem svým Controlům, 
@@ -538,6 +876,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
     }
+    #endregion
+    #region class DxDataFormControlItem : Třída obsahující každý jeden prvek controlu v rámci DataFormu
     /// <summary>
     /// <see cref="DxDataFormControlItem"/> : Třída obsahující každý jeden prvek controlu v rámci DataFormu:
     /// jeho definici <see cref="IDataFormItem"/> i fyzický control.
@@ -733,8 +1073,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #endregion
+    #region class DataFormItem : Deklarace každého jednoho prvku v rámci DataFormu, implementace IDataFormItem
     /// <summary>
-    /// Deklarace každého jednoho prvku v rámci DataFormu
+    /// Deklarace každého jednoho prvku v rámci DataFormu, implementace <see cref="IDataFormItem"/>
     /// </summary>
     public class DataFormItem : IDataFormItem
     {
@@ -769,6 +1111,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
     }
+    #endregion
+    #region interface IDataFormItem, enums DataFormItemType, DxDataFormMemoryMode
     public interface IDataFormItem
     {
         string ItemName { get; }
@@ -853,82 +1197,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Default = HostOnlyVisible | RemoveReleaseHandle | RemoveDispose
     }
+    #endregion
+
+
+
     #region Pouze pro testování, později smazat
-    partial class DxDataForm 
-    {   // Rozšíření standardu pro testy
-        public void CreateSample(DxDataFormSample sample)
-        {
-            List<IDataFormItem> items = new List<IDataFormItem>();
-            Random rand = new Random();
-            DevExpress.XtraEditors.Controls.CheckBoxStyle[] styles = new DevExpress.XtraEditors.Controls.CheckBoxStyle[]
-            {
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.Default,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.Radio,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.CheckBox,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgCheckBox1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgFlag1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgFlag2,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgHeart1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgHeart2,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgLock1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgRadio1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgRadio2,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgStar1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgStar2,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgThumb1,
-                DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1,
-            };
-
-            int cx = 1000;
-            int w;
-            int x = 6;
-            int y = 8;
-            for (int i = 0; i < sample.RowsCount; i++)
-            {
-                x = 6;
-                if (sample.LabelCount >= 1)
-                {
-                    w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
-                    x += w + 6;
-                }
-                if (sample.TextCount >= 1)
-                {
-                    w = rand.Next(180, 350);
-                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
-                    x += w + 6;
-                }
-                if (sample.CheckCount >= 1)
-                {
-                    w = rand.Next(200, 250);
-                    var style = styles[rand.Next(styles.Length)];
-                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")"});
-                    x += w + 6;
-                }
-                if (sample.LabelCount >= 2)
-                {
-                    w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
-                    x += w + 6;
-                }
-                if (sample.TextCount >= 2)
-                {
-                    w = rand.Next(250, 450);
-                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
-                    x += w + 6;
-                }
-                if (sample.CheckCount >= 2)
-                {
-                    w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemName = "item" + (cx++).ToString(), ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
-                    x += w + 6;
-                }
-                y += 30;
-            }
-
-            this.AddItems(items);
-        }
-    }
+  
     public class WfDataForm : WF.Panel
     {
         public void CreateSample(DxDataFormSample sample)

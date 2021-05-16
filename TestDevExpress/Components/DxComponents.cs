@@ -4625,6 +4625,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxAutoScrollPanelControl()
         {
             this.AutoScroll = true;
+            this.Padding = new Padding(10);
+            this.SetStyle(ControlStyles.UserPaint, true);
         }
         #region VisibleBounds
         /// <summary>
@@ -4666,11 +4668,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Rectangle(origin, size);
         }
         private Rectangle __CurrentVisibleBounds;
-        protected override void OnPaint(PaintEventArgs e)
+        /// <summary>
+        /// Volá se při kreslení pozadí.
+        /// Potomci zde mohou detekovat nové <see cref="VisibleBounds"/> a podle nich zobrazit potřebné controly.
+        /// V této metodě budou controly zobrazeny bez blikání = ještě dříve, než se Panel naroluje na novou souřadnici
+        /// 
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaintBackground(PaintEventArgs e)
         {
             this._CheckVisibleBoundsChange();
-            base.OnPaint(e);
+            base.OnPaintBackground(e);
         }
+        //   TATO METODA SE VOLÁ AŽ PO OnPaintBackground() A NENÍ TEDY NUTNO JI ŘEŠIT:
+        //protected override void OnPaint(PaintEventArgs e)
+        //{
+        //    this._CheckVisibleBoundsChange();
+        //    base.OnPaint(e);
+        //}
         /// <summary>
         /// Tato metoda je jako jediná vyvolaná při posunu obsahu pomocí kolečka myší a některých dalších akcích (pohyb po controlech, resize), 
         /// ale není volaná při manipulaci se Scrollbary.
@@ -4678,6 +4693,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void SyncScrollbars()
         {
             base.SyncScrollbars();
+            this._CheckVisibleBoundsChange();
         }
         /// <summary>
         /// Tato metoda je vyvolaná při manipulaci se Scrollbary.
@@ -4764,6 +4780,59 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl
     { }
+    #endregion
+    #region DxTabPane
+    /// <summary>
+    /// Control se záložkami = <see cref="DevExpress.XtraBars.Navigation.TabPane"/>
+    /// </summary>
+    public class DxTabPane : DevExpress.XtraBars.Navigation.TabPane
+    {
+        public DxTabPane()
+        {
+            this.TabAlignment = DevExpress.XtraEditors.Alignment.Near;           // Near = doleva, Far = doprava, Center = uprostřed
+            this.PageProperties.AllowBorderColorBlending = true;
+            this.PageProperties.ShowMode = DevExpress.XtraBars.Navigation.ItemShowMode.ImageAndText;
+            this.AllowCollapse = DevExpress.Utils.DefaultBoolean.False;          // Nedovolí uživateli skrýt headery
+
+            this.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Style3D;
+            this.LookAndFeel.UseWindowsXPTheme = true;
+            this.OverlayResizeZoneThickness = 20;
+            this.ItemOrientation = Orientation.Horizontal;                       // Vertical = kreslí řadu záhlaví vodorovně, ale obsah jednotlivého buttonu svisle :-(
+
+            this.AllowTransitionAnimation = DevExpress.Utils.DefaultBoolean.True;
+            this.TransitionAnimationProperties.FrameCount = 250;                 // Celkový čas = interval * count
+            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
+            this.TransitionType = DevExpress.Utils.Animation.Transitions.Fade;  // Pěkné je SlideFade, Použitelné je Fade, možná Push a Shape
+            this.TransitionManager.UseDirectXPaint = DefaultBoolean.True;
+
+            // Požadavky designu na vzhled buttonů:
+            this.AppearanceButton.Normal.FontSizeDelta = 2;
+            this.AppearanceButton.Normal.FontStyleDelta = FontStyle.Regular;
+            this.AppearanceButton.Normal.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            this.AppearanceButton.Hovered.FontSizeDelta = 2;
+            this.AppearanceButton.Hovered.FontStyleDelta = FontStyle.Underline;
+            this.AppearanceButton.Hovered.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+            this.AppearanceButton.Pressed.FontSizeDelta = 2;
+            this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
+            this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+        }
+        public DevExpress.XtraBars.Navigation.TabNavigationPage AddNewPage(string pageName, string pageText, string pageToolTip = null, string pageImageName = null)
+        {
+            string text = pageText;
+            var page = this.CreateNewPage() as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            page.Name = pageName;
+            page.Caption = text;
+            page.PageText = text;
+            page.ToolTip = pageToolTip;
+            page.ImageOptions.Image = null; // pageImageName tabHeaderItem.Image;
+            page.Properties.ShowMode = DevExpress.XtraBars.Navigation.ItemShowMode.ImageAndText;
+
+            this.Pages.Add(page);
+            // this.SelectedPage = page;
+
+            return page;
+        }
+    }
     #endregion
     #region DxLabelControl
     /// <summary>
