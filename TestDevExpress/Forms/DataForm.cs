@@ -102,12 +102,12 @@ namespace TestDevExpress.Forms
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown});
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
 
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample1", ItemText = "Ukázka 1", ItemImage = imageTest, Tag = "Sample1" });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample2", ItemText = "Ukázka 2", ItemImage = imageTest, Tag = "Sample2" });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample3", ItemText = "Ukázka 3", ItemImage = imageTest, Tag = "Sample3" });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample4", ItemText = "Ukázka 4", ItemImage = imageTest, Tag = "Sample4" });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample5", ItemText = "Ukázka 5", ItemImage = imageTest, Tag = "Sample5" });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample6", ItemText = "Ukázka 6", ItemImage = imageTest, Tag = "Sample6" });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample1", ItemText = "Ukázka 1", ItemImage = imageTest, Tag = "Sample1", ItemEnabled = true });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample2", ItemText = "Ukázka 2", ItemImage = imageTest, Tag = "Sample2", ItemEnabled = true });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample3", ItemText = "Ukázka 3", ItemImage = imageTest, Tag = "Sample3", ItemEnabled = false });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample4", ItemText = "Ukázka 4", ItemImage = imageTest, Tag = "Sample4", ItemEnabled = false });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample5", ItemText = "Ukázka 5", ItemImage = imageTest, Tag = "Sample5", ItemEnabled = false });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample6", ItemText = "Ukázka 6", ItemImage = imageTest, Tag = "Sample6", ItemEnabled = false });
 
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.AddControls", ItemText = "Vkládat Controly", ToolTip = "Vytvořit instance controlů ale NEPŘIDÁVAT JE do Panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
@@ -207,6 +207,7 @@ namespace TestDevExpress.Forms
             DxDataForm dxDataForm = new DxDataForm();
             dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
             dxDataForm.GotFocus += DxDataForm_GotFocus;
+            dxDataForm.TabChangeDone += DxDataForm_TabChangeDone;
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
@@ -221,6 +222,14 @@ namespace TestDevExpress.Forms
 
             RefreshStatusCurrent();
         }
+
+        private void DxDataForm_TabChangeDone(object sender, TEventArgs<TimeSpan> e)
+        {
+            if (!_DxShowTimeSpan.HasValue) return;           // To je v době prvotní časomíry, a tu chceme zachovat = při vytváření PrepareTabForPages
+            _DxShowTimeSpan = e.Item;
+            RefreshStatusCurrent();
+        }
+
         private void _AddDataFormDx(DxDataFormSample sample)
         {
             DxDataForm dxDataForm = new DxDataForm();

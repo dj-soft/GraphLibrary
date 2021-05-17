@@ -201,6 +201,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             var pagesAll = __Pages.Values.ToArray();                    // Všechny stránky v poli (i prázdné)
             var pagesData = pagesAll.Where(p => !p.IsEmpty).ToArray();  // Jen ty stránky, které obsahují controly
 
+
+            #warning příliš jednoduché, nezvládne změny, funguje jen pro první dávku prvků:
+
+
             if (pagesData.Length == 1)
             {
                 var pageData = pagesData[0];
@@ -214,29 +218,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _TabPane.Dock = WF.DockStyle.Fill;
                     _TabPane.PageChangingPrepare += _TabPane_PageChangingPrepare;
                     _TabPane.PageChangingRelease += _TabPane_PageChangingRelease;
+                    _TabPane.TransitionType = DxTabPaneTransitionType.SlideSlow;
+                    _TabPane.TransitionType = DxTabPaneTransitionType.None;
                     this.Controls.Add(_TabPane);
                 }
 
                 foreach (var pageData in pagesData)
                 {
                     var pane = _TabPane.AddNewPage(pageData.PageName ?? "", pageData.PageText ?? "Záložka s daty", pageData.PageToolTipText);
-                    // pane.
                     pageData.PlaceToParent(pane);
                     pageData.Dock = WF.DockStyle.Fill;
                 }
             }
-
-            /*
-            int count = pagesAll.Where(p => !p.IsEmpty).Count();        // Počet stránek, které obsahují controly
-            if (count > 0)
-            {
-                var page = pagesAll[0];
-                page.PlaceToParent(this);
-            }
-            */
         }
         private void _TabPane_PageChangingPrepare(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
         {
+            _TabPaneChangeStart = DateTime.Now;
             DxDataFormPage page = GetDataFormPage(e.Item);
             if (page != null) page.IsActiveContent = true;
         }
@@ -245,7 +242,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxDataFormPage page = GetDataFormPage(e.Item);
             if (page != null) page.IsActiveContent = false;
+            if (_TabPaneChangeStart.HasValue) RunTabChangeDone(DateTime.Now - _TabPaneChangeStart.Value);
         }
+        private DateTime? _TabPaneChangeStart;
         /// <summary>
         /// Vrátí <see cref="DxDataFormPage"/> nacházející se na daném controlu
         /// </summary>
@@ -257,6 +256,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         private DxTabPane _TabPane;
+        /// <summary>
+        /// Vyvolá akce po dokončení změny stránky, vhodné i pro časomíru a refresh zdrojů
+        /// </summary>
+        /// <param name="time"></param>
+        private void RunTabChangeDone(TimeSpan time)
+        {
+            TEventArgs<TimeSpan> args = new TEventArgs<TimeSpan>(time);
+            OnTabChangeDone(args);
+            TabChangeDone?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Akce po dokončení změny stránky, vhodné i pro časomíru a refresh zdrojů
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTabChangeDone(TEventArgs<TimeSpan> args) { }
+        /// <summary>
+        /// Akce po dokončení změny stránky, vhodné i pro časomíru a refresh zdrojů
+        /// </summary>
+        public event EventHandler<TEventArgs<TimeSpan>> TabChangeDone;
+        /// <summary>
+        /// Metoda vrátí true pro typ prvku, který může dostat klávesový Focus
+        /// </summary>
+        /// <param name="itemType"></param>
+        /// <returns></returns>
+        public static bool IsFocusableControl(DataFormItemType itemType)
+        {
+            switch (itemType)
+            {
+                case DataFormItemType.TextBox:
+                case DataFormItemType.EditBox:
+                case DataFormItemType.SpinnerBox:
+                case DataFormItemType.CheckBox:
+                case DataFormItemType.BreadCrumb:
+                case DataFormItemType.ComboBoxList:
+                case DataFormItemType.ComboBoxEdit:
+                case DataFormItemType.ListView:
+                case DataFormItemType.TreeView:
+                case DataFormItemType.RadioButtonBox:
+                case DataFormItemType.Button:
+                case DataFormItemType.DropDownButton:
+                    return true;
+            }
+            return false;
+        }
+
 
         #region Tvorba testovacích dat : CreateSamples()
         public static IEnumerable<IDataFormItem> CreateSample(int sampleId)
@@ -392,9 +436,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private static IEnumerable<IDataFormItem> _CreateSample2()
         {
-            List<IDataFormItem> items = new List<IDataFormItem>();
+            List<DataFormItem> items = new List<DataFormItem>();
             Random rand = _SampleRandom;
 
+            int x, y, rows;
+            int[] widths;
+
+            x = 6;
+            y = 6;
+            rows = 400;
+            widths = new int[] { 50, 75, 150, 100, 250, 60, 60, 60, 20, 40 };
+            for (int r = 1; r <= rows; r++)
+                _CreateSampleAddSampleRow(items, "Ukázkový řádek " + r.ToString(), widths, ref x, ref y);
+
+            _CreateSampleSetPage(items, "page0", "400 řádků x 10 textů", "Položky 1", null);
+
+
+            x = 6;
+            y = 6;
+            rows = 300;
+            widths = new int[] { 50, 50, 150, 150, 20, 40, 50, 50, 150, 150, 20, 40, 50, 50, 150, 150, 20, 40 };
+            for (int r = 1; r <= rows; r++)
+                _CreateSampleAddSampleRow(items, "Ukázkový řádek " + r.ToString(), widths, ref x, ref y);
+
+            _CreateSampleSetPage(items, "page1", "300 řádků x 18 textů", "Položky 2", null);
+
+
+            x = 6;
+            y = 6;
+            rows = 20;
+            widths = new int[] { 150, 100, 75, 50, 40, 30, 20, 150, 100, 75, 50, 40, 30, 20, };
+            for (int r = 1; r <= rows; r++)
+                _CreateSampleAddSampleRow(items, "Ukázkový řádek " + r.ToString(), widths, ref x, ref y);
+
+            _CreateSampleSetPage(items, "page2", "20 řádků x 14 textů", "Položky 3", null);
+
+
+            x = 6;
+            y = 6;
+            rows = 7;
+            widths = new int[] { 380, 230, 140, 90 };
+            for (int r = 1; r <= rows; r++)
+                _CreateSampleAddSampleRow(items, "Ukázkový řádek " + r.ToString(), widths, ref x, ref y);
+
+            _CreateSampleSetPage(items, "page3", "7 řádků x 4 texty", "Položky 4", null);
+
+
+            x = 6;
+            y = 6;
+            rows = 5;
+            widths = new int[] { 80, 350, 80, 30, 50 };
+            for (int r = 1; r <= rows; r++)
+                _CreateSampleAddSampleRow(items, "Ukázkový řádek " + r.ToString(), widths, ref x, ref y);
+
+            _CreateSampleSetPage(items, "page4", "5 řádků x 5 textů", "Položky 5", null);
 
             return items;
         }
@@ -440,6 +535,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Text = label,
                 LabelHAlignment = (labelHalignment ?? DevExpress.Utils.HorzAlignment.Far),
                 LabelAutoSize = LabelAutoSizeMode.None
+            });
+        }
+        private static void _CreateSampleAddText1(List<DataFormItem> items, int x, int y, int? w = null, DevExpress.XtraEditors.Mask.MaskType? maskType = null, string mask = null, 
+            string toolTipText = null, string toolTipTitle = null)
+        {
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.TextBox,
+                Bounds = new Rectangle(x, y, w ?? 100, 20),
+                TextMaskType = maskType,
+                TextEditMask = mask,
+                ToolTipText = toolTipText,
+                ToolTipTitle = toolTipTitle
             });
         }
         private static void _CreateSampleAddReferName1(List<DataFormItem> items, string label, int x, int y)
@@ -575,6 +684,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Text = label3,
                 CheckBoxStyle = style
             });
+        }
+        private static void _CreateSampleAddSampleRow(List<DataFormItem> items, string label, int[] widths, ref int x, ref int y)
+        {
+            _CreateSampleAddLabel1(items, label, x, y);
+
+            string toolTipText = "Návodný text čili ToolTip k této položce v tuto chvíli nic zajímavého neobsahuje";
+            int cx = x + 190;
+            int t = 1;
+            foreach (int w in widths)
+            {
+                _CreateSampleAddText1(items, cx, y, w, toolTipText: toolTipText , toolTipTitle: "NÁPOVĚDA - " + label + ":" + (t++).ToString());
+                cx += w + 3;
+            }
+
+            y += 22;
         }
         private static void _CreateSampleSetPage(List<DataFormItem> items, string pageName, string pageText, string pageToolTipText, string pageIconName)
         {
@@ -791,7 +915,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.PageToolTipText = item.PageToolTipText;
             this.PageIconName = item.PageIconName;
         }
-       
         #endregion
     }
     #endregion
@@ -801,7 +924,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// a hostuje v sobě <see cref="DxDataFormContentPanel"/>, který má velikost odpovídající svému obsahu a tento Content je pak posouván uvnitř this panelu = Scroll obsahu.
     /// Tento container v sobě obsahuje List <see cref="Items"/> jeho jednotlivých Controlů typu <see cref="DxDataFormControlItem"/>.
     /// </summary>
-    public class DxDataFormScrollPanel : DxAutoScrollPanelControl
+    public class DxDataFormScrollPanel : DxAutoScrollPanelControl, IDxDataFormScrollPanel
     {
         #region Konstruktor, proměnné, Dispose
         /// <summary>
@@ -814,6 +937,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ContentPanel = new DxDataFormContentPanel(this);
             __Items = new List<DxDataFormControlItem>();
             __IsActiveContent = true;
+            __CurrentlyFocusedDataItem = null;
             this.Controls.Add(ContentPanel);
             this.Dock = WF.DockStyle.Fill;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
@@ -837,6 +961,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ContentPanel = null;     // Instance byla Disposována standardně v this.Dispose() =>  this.DisposeContent();, tady jen zahazuji referenci na zombie objekt
             __Items?.Clear();          // Jednotlivé prvky nedisposujeme zde, ale na úrovni DxDataForm, protože tam je vytváříme a společně je tam evidujeme pod klíčem.
             __Items = null;
+            __CurrentlyFocusedDataItem = null;
         }
         /// <summary>
         /// Odkaz na main instanci DataForm
@@ -857,6 +982,164 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true pokud this page neobsahuje žádný control
         /// </summary>
         public bool IsEmpty { get { return (this.__Items.Count == 0); } }
+        #endregion
+        #region Control s focusem, obecně focus
+        /// <summary>
+        /// Control, který má aktuálně focus. Lze setovat hodnotu, ve vizuálním containeru dostane daný prvek Focus.
+        /// Při jakékoli změně focusu je volán event <see cref="FocusedItemChanged"/>.
+        /// Zde se pracuje s popisnými daty typu <see cref="IDataFormItem"/>, které se vkládají do metody <see cref="AddItem(IDataFormItem, bool)"/>.
+        /// </summary>
+        public IDataFormItem FocusedItem { get { return __CurrentlyFocusedDataItem?.DataFormItem; } set { _SetFocusToItem(value); } }
+        /// <summary>
+        /// Aktivní prvek, hodnotu do této property setuje vlastní prvek ve své události GotFocus.
+        /// Setování hodnoty tedy nemá měnit aktivní focus (to bychom nikdy neskončili), ale má řešit následky skutečné změny focusu.
+        /// </summary>
+        DxDataFormControlItem IDxDataFormScrollPanel.ActiveItem { get { return __CurrentlyFocusedDataItem; } set { _ActivatedItem(value); } }
+        /// <summary>
+        /// Zajistí předání focusu do daného prvku, pokud to je možné.
+        /// Pokud vstupní prvek neodpovídá existujícímu controlu, ke změně focusu nedojde.
+        /// </summary>
+        /// <param name="item"></param>
+        private void _SetFocusToItem(IDataFormItem item)
+        {
+            DxDataFormControlItem dataItem = (item != null ? this.__Items.FirstOrDefault(i => i.ContainsItem(item) && i.IsFocusableControl) : null);
+            if (dataItem == null) return;
+
+            // Prvek (dataItem) má mít focus (z logiky toho, že jsme tady),
+            if (!dataItem.IsHosted)
+            {   // a pokud aktuálně není hostován = není přítomen v Parent containeru,
+                //  zajistíme, že Focusovaný prvek bude fyzicky vytvořen a umístěn do Parent containeru:
+                RefreshVisibleItems();
+            }
+
+            // Tato metoda nemění obsah proměnných (__CurrentlyFocusedDataItem, __PreviousFocusableDataItem, __NextFocusableDataItem).
+            // To proběhne až jako reakce na GotFocus pomocí setování fokusovaného prvku do ActiveItem, následně metoda _ActivatedItem()...
+            // Tady jen dáme vizuální focus:
+            dataItem.SetFocus();
+        }
+        /// <summary>
+        /// Je voláno poté, kdy byl aktivován daný control.
+        /// To může být jak z aplikačního kódu (setování <see cref="FocusedItem"/>, tak z GUI, pohybem po controlech a následně event GotFocus, 
+        /// který setuje focusovaný prvek do <see cref="IDxDataFormScrollPanel.ActiveItem"/>. 
+        /// Nikdy se nesetuje NULL.
+        /// </summary>
+        /// <param name="dataItem"></param>
+        private void _ActivatedItem(DxDataFormControlItem dataItem)
+        {
+            bool isChange = !Object.ReferenceEquals(dataItem, __CurrentlyFocusedDataItem);
+
+            __CurrentlyFocusedDataItem = dataItem;
+            _SearchNearControls(dataItem);
+            _EnsureHostingFocusableItemd();
+
+            if (isChange)
+                RunFocusedItemChanged();
+        }
+        /// <summary>
+        /// Vyvolá události <see cref="OnFocusedItemChanged(TEventArgs{DxDataFormControlItem})"/> a <see cref="FocusedItemChanged"/>
+        /// </summary>
+        private void RunFocusedItemChanged()
+        {
+            TEventArgs<DxDataFormControlItem> args = new TEventArgs<DxDataFormControlItem>(__CurrentlyFocusedDataItem);
+            OnFocusedItemChanged(args);
+            FocusedItemChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po změně focusovaného prvku <see cref="FocusedItem"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnFocusedItemChanged(TEventArgs<DxDataFormControlItem> args) { }
+        /// <summary>
+        /// Vyvoolá se po změně focusovaného prvku <see cref="FocusedItem"/>
+        /// </summary>
+        public event EventHandler<TEventArgs<DxDataFormControlItem>> FocusedItemChanged;
+        /// <summary>
+        /// Najde a zapamatuje si referenci na nejbližší controly před a za daným prvkem.
+        /// Tyto prvky jsou ty, které budou dosažitelné z daného prvku pomocí Tab a ShiftTab, a musí tedy být fyzicky přítomny na <see cref="ContentPanel"/>, aby focus správně chodil.
+        /// </summary>
+        /// <param name="dataItem"></param>
+        private void _SearchNearControls(DxDataFormControlItem dataItem)
+        {
+            List<DxDataFormControlItem> items = this.Items;
+
+            //   Izolovat a setřídit?
+            // items = items.ToList();
+            // items.Sort(DxDataFormControlItem.CompareByTabOrder);
+
+            int index = items.FindIndex(i => Object.ReferenceEquals(i, dataItem));
+            __PreviousFocusableDataItem = _SearchNearControl(items, index, -1, false);
+            __NextFocusableDataItem = _SearchNearControl(items, index, 1, false);
+        }
+        /// <summary>
+        /// Najde a vrátí prvek, který se v daném seznamu nachází nedaleko daného indexu v daném směru a může dostat focus.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="index"></param>
+        /// <param name="step"></param>
+        /// <param name="acceptIndex"></param>
+        /// <returns></returns>
+        private DxDataFormControlItem _SearchNearControl(List<DxDataFormControlItem> items, int index, int step, bool acceptIndex)
+        {
+            int count = items.Count;
+            if (count == 0) return null;
+
+            index = (index < 0 ? 0 : (index >= count ? count - 1 : index));    // Zarovnat index do mezí 0 až (count-1)
+            int i = index;
+            bool accept = acceptIndex;
+            for (int t = 0; t < count; t++)
+            {   // t není index, t je timeout!
+                if (accept)
+                {
+                    if (items[i].CanGotFocus)
+                        return items[i];
+                }
+                else
+                {   // Další prvek budeme akceptovat vždy
+                    accept = true;
+                }
+                i += step;
+                if (i == index) break;
+
+                // Dokola:
+                if (i < 0) i = count - 1;
+                else if (i >= count) i = 0;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Metoda zajistí, že prvky, které mají nebo mohou dostat nejbližší focus, budou hostovány v <see cref="ContentPanel"/>.
+        /// Jde o prvky: <see cref="__CurrentlyFocusedDataItem"/>, <see cref="__PreviousFocusableDataItem"/>, <see cref="__NextFocusableDataItem"/>.
+        /// Volá se po změně objektů uložených v těchto proměnných.
+        /// Metoda zjistí, zda všechny objekty (které nejsou null) mají IsHost true, a pokud ne pak vyvolá 
+        /// </summary>
+        private void _EnsureHostingFocusableItemd()
+        {
+            bool needRefresh = ((__CurrentlyFocusedDataItem != null && !__CurrentlyFocusedDataItem.IsHosted) ||
+                                (__PreviousFocusableDataItem != null && !__PreviousFocusableDataItem.IsHosted) ||
+                                (__NextFocusableDataItem != null && !__NextFocusableDataItem.IsHosted));
+            if (needRefresh)
+                RefreshVisibleItems();
+        }
+        /// <summary>
+        /// Vrátí true pokud daný prvek má být zařazen mezi hostované prvky z důvodu Focusu (aktuální, předchozí, následující)
+        /// </summary>
+        /// <param name="dataItem"></param>
+        /// <returns></returns>
+        bool IDxDataFormScrollPanel.IsNearFocusableItem(DxDataFormControlItem dataItem)
+        {
+            if (dataItem != null)
+            {
+                if (__CurrentlyFocusedDataItem != null && Object.ReferenceEquals(dataItem, __CurrentlyFocusedDataItem)) return true;
+                if (__PreviousFocusableDataItem != null && Object.ReferenceEquals(dataItem, __PreviousFocusableDataItem)) return true;
+                if (__NextFocusableDataItem != null && Object.ReferenceEquals(dataItem, __NextFocusableDataItem)) return true;
+            }
+            return false;
+        }
+
+        DxDataFormControlItem __CurrentlyFocusedDataItem;
+        DxDataFormControlItem __PreviousFocusableDataItem;
+        DxDataFormControlItem __NextFocusableDataItem;
+
         #endregion
 
 
@@ -931,8 +1214,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var visibleBounds = this.VisibleBounds;
             bool isActiveContent = this.__IsActiveContent;
+
+            this.SuspendLayout();
+            this.BeginInit();
+
             foreach (var item in Items)
                 item.RefreshVisibleItem(visibleBounds, isActiveContent);
+
+            this.EndInit();
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
         /// <summary>
         /// Obsahuje true, pokud obsah je aktivní, false pokud nikoliv. Výchozí je true.
@@ -978,6 +1269,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 parent.Controls.Remove(this);
         }
 
+    }
+    /// <summary>
+    /// Interní přístup do <see cref="DxDataFormScrollPanel"/>
+    /// </summary>
+    public interface IDxDataFormScrollPanel
+    {
+        /// <summary>
+        /// Aktivní prvek, hodnotu do této property setuje prvek ve své události GotFocus.
+        /// Setování hodnoty tedy nemá měnit aktivní focus (to bychom nikdy neskončili), ale má řešit následky skutečné změny focusu.
+        /// </summary>
+        DxDataFormControlItem ActiveItem { get; set; }
+        /// <summary>
+        /// Vrátí true pokud daný prvek má být zařazen mezi hostované prvky z důvodu Focusu (aktuální, předchozí, následující)
+        /// </summary>
+        /// <param name="dataItem"></param>
+        /// <returns></returns>
+        bool IsNearFocusableItem(DxDataFormControlItem dataItem);
     }
     #endregion
     #region class DxDataFormContentPanel : Hostitelský panel pro jednotlivé Controly
@@ -1125,11 +1433,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ScrollPanel = scrollPanel;
             __DataFormItem = dataFormItem;
             __Control = control;
+            __IsFocusableControl = DxDataForm.IsFocusableControl(dataFormItem.ItemType);
             if (control != null)
             {
                 __ControlIsExternal = true;
                 RegisterControlEvents(control);
             }
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ItemType: {this.__DataFormItem.ItemType}; Bounds: {this.Bounds}; IsHosted: {IsHosted}";
         }
         /// <summary>
         /// Dispose
@@ -1155,6 +1472,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ScrollPanel, který řídí zobrazení našeho <see cref="ContentPanel"/>
         /// </summary>
         public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
+        /// <summary>
+        /// ScrollPanel pro interní přístup
+        /// </summary>
+        protected IDxDataFormScrollPanel IScrollPanel { get { return __ScrollPanel; } }
         private DxDataFormScrollPanel __ScrollPanel;
         /// <summary>
         /// Panel, v němž bude this control fyzicky umístěn
@@ -1175,6 +1496,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public IDataFormItem DataFormItem { get { return __DataFormItem; } }
         private IDataFormItem __DataFormItem;
+        /// <summary>
+        /// Obsahuje true tehdy, když zdejší prvek <see cref="DataFormItem"/> může dostat Focus podle svého typu.
+        /// </summary>
+        public bool IsFocusableControl { get { return __IsFocusableControl; } }
+        private bool __IsFocusableControl;
         #endregion
         #region Řízení viditelnosti, OnDemand tvorba a release fyzického Controlu
         /// <summary>
@@ -1197,6 +1523,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true pro prvek, který je aktuálně umístěn ve viditelném panelu
         /// </summary>
         public bool IsHosted { get; private set; }
+        /// <summary>
+        /// Zajistí předání Focusu do this prvku.
+        /// Pokud prvek dosud neměl Focus, dostane jej a to vyvolá událost GotFocus.
+        /// </summary>
+        public void SetFocus()
+        {
+            var control = this.Control;
+            if (control != null)
+                control.Focus();
+        }
+        /// <summary>
+        /// Obsahuje true pokud this prvek může dostat Focus.
+        /// Tedy prvek musí být obecně fokusovatelný (nikoli Label), musí být obecně Viditelný <see cref="Visible"/>,
+        /// musí být Enabled a TabStop.
+        /// </summary>
+        public bool CanGotFocus
+        {
+            get
+            {
+                if (!IsFocusableControl) return false;
+                if (!Visible) return false;
+
+
+                return true;
+            }
+        }
         /// <summary>
         /// Zajistí, že this prvek bude zobrazen podle toho, zda se nachází v dané viditelné oblasti
         /// </summary>
@@ -1224,10 +1576,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Obsahuje true pokud this prvek má být aktuálně přítomen jako živý prvek v controlu <see cref="ContentPanel"/>.
+        /// Obsahuje true pokud this prvek má být někdy viditelný podle definice dat <see cref="IDataFormItem.Visible"/>.
+        /// Pokud je tam null, považuje se to za true.
+        /// </summary>
+        internal bool Visible
+        {
+            get
+            {
+                var dataVisible = this.__DataFormItem.Visible;
+                if (dataVisible.HasValue && !dataVisible.Value) return false;
+                return true;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true pokud this prvek má být aktuálně přítomen jako živý prvek v controlu <see cref="ContentPanel"/>,
+        /// z hlediska aktivity parent prvku i z hlediska souřadnic
         /// </summary>
         /// <returns></returns>
-        internal bool IsVisibleItem
+        internal bool IsCurrentlyVisibleItem
         {
             get
             {
@@ -1246,11 +1612,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Prvek má být vidět, pokud je aktivní obsah, a pokud v definici prvku není Visible = false:
             if (!isActiveContent) return false;
-            var dataVisible = this.__DataFormItem.Visible;
-            if (dataVisible.HasValue && !dataVisible.Value) return false;
+            if (!Visible) return false;
 
             // Prvek má být vidět, pokud má klávesový Focus anebo jeho TabIndex je +1 / -1 od aktuálního focusovaného prvku (aby bylo možno na něj přejít klávesou):
-
+            if (this.IScrollPanel.IsNearFocusableItem(this)) return true;
 
             // Prvek má být vidět, pokud jeho souřadnice jsou ve viditelné oblasti nebo blízko ní:
             var controlBounds = this.Bounds;
@@ -1322,7 +1687,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         private void RegisterControlEvents(WF.Control control)
         {
-
+            if (__IsFocusableControl)
+                control.GotFocus += Control_GotFocus;
         }
         /// <summary>
         /// Odváže zdejší eventhandlery k danému controlu
@@ -1330,7 +1696,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         private void UnRegisterControlEvents(WF.Control control)
         {
+            if (__IsFocusableControl)
+                control.GotFocus -= Control_GotFocus;
+        }
 
+        private void Control_GotFocus(object sender, EventArgs e)
+        {
+            this.IScrollPanel.ActiveItem = this;
+        }
+        /// <summary>
+        /// Vrací true
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        internal bool ContainsItem(IDataFormItem item)
+        {
+            return (item != null && Object.ReferenceEquals(this.__DataFormItem, item));
         }
         #endregion
     }

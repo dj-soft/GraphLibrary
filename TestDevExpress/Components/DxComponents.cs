@@ -4782,12 +4782,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl
     { }
     #endregion
-    #region DxTabPane
+    #region DxTabPane : Control se záložkami = DevExpress.XtraBars.Navigation.TabPane
     /// <summary>
     /// Control se záložkami = <see cref="DevExpress.XtraBars.Navigation.TabPane"/>
     /// </summary>
     public class DxTabPane : DevExpress.XtraBars.Navigation.TabPane
     {
+        #region Konstruktor a zjednodušené přidání záložky
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -4829,6 +4830,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.RemoveEvents();
             base.Dispose(disposing);
         }
+        /// <summary>
+        /// Nastaví defaultní vlastnosti
+        /// </summary>
         private void InitProperties()
         {
             this.TabAlignment = DevExpress.XtraEditors.Alignment.Near;           // Near = doleva, Far = doprava, Center = uprostřed
@@ -4841,11 +4845,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OverlayResizeZoneThickness = 20;
             this.ItemOrientation = Orientation.Horizontal;                       // Vertical = kreslí řadu záhlaví vodorovně, ale obsah jednotlivého buttonu svisle :-(
 
-            this.AllowTransitionAnimation = DevExpress.Utils.DefaultBoolean.True;
-            this.TransitionAnimationProperties.FrameCount = 250;                 // Celkový čas = interval * count
-            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
-            this.TransitionType = DevExpress.Utils.Animation.Transitions.Fade;   // Pěkné je SlideFade, Použitelné je Fade, možná Push a Shape
-            this.TransitionManager.UseDirectXPaint = DefaultBoolean.True;
+            this.TransitionType = DxTabPaneTransitionType.FadeFast;
 
             // Požadavky designu na vzhled buttonů:
             this.AppearanceButton.Normal.FontSizeDelta = 2;
@@ -4858,6 +4858,74 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
             this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
         }
+        /// <summary>
+        /// Typ přechodového efektu
+        /// </summary>
+        public new DxTabPaneTransitionType TransitionType
+        {
+            get { return _TransitionType; }
+            set
+            {
+                _TransitionType = value;
+                DxTabPaneTransitionType type = value & DxTabPaneTransitionType.AllTypes;
+                if (type == DxTabPaneTransitionType.None)
+                {
+                    this.AllowTransitionAnimation = DevExpress.Utils.DefaultBoolean.False;
+                }
+                else
+                {
+                    this.AllowTransitionAnimation = DevExpress.Utils.DefaultBoolean.True;
+                    this.TransitionManager.UseDirectXPaint = DefaultBoolean.True;
+                    switch (type)
+                    {
+                        case DxTabPaneTransitionType.Fade:
+                            base.TransitionType = DevExpress.Utils.Animation.Transitions.Fade;
+                            break;
+                        case DxTabPaneTransitionType.Slide:
+                            base.TransitionType = DevExpress.Utils.Animation.Transitions.SlideFade;
+                            break;
+                        case DxTabPaneTransitionType.Push:
+                            base.TransitionType = DevExpress.Utils.Animation.Transitions.Push;
+                            break;
+                        case DxTabPaneTransitionType.Shape:
+                            base.TransitionType = DevExpress.Utils.Animation.Transitions.Shape;
+                            break;
+                        default:
+                            base.TransitionType = DevExpress.Utils.Animation.Transitions.Fade;
+                            break;
+                    }
+
+                    DxTabPaneTransitionType time = value & DxTabPaneTransitionType.AllTimes;
+                    switch (time)
+                    {
+                        case DxTabPaneTransitionType.Fast:
+                            this.TransitionAnimationProperties.FrameCount = 50;                  // Celkový čas = interval * count
+                            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
+                            break;
+                        case DxTabPaneTransitionType.Medium:
+                            this.TransitionAnimationProperties.FrameCount = 100;                 // Celkový čas = interval * count
+                            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
+                            break;
+                        case DxTabPaneTransitionType.Slow:
+                            this.TransitionAnimationProperties.FrameCount = 250;                 // Celkový čas = interval * count
+                            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
+                            break;
+                        case DxTabPaneTransitionType.VerySlow:
+                            this.TransitionAnimationProperties.FrameCount = 500;                 // Celkový čas = interval * count
+                            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
+                            break;
+                        default:
+                            this.TransitionAnimationProperties.FrameCount = 100;                 // Celkový čas = interval * count
+                            this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
+                            break;
+                    }
+                }
+            }
+        }
+        private DxTabPaneTransitionType _TransitionType;
+        /// <summary>
+        /// Aktivuje vlastní eventy
+        /// </summary>
         private void InitEvents()
         {
             this.TransitionManager.BeforeTransitionStarts += TransitionManager_BeforeTransitionStarts;
@@ -4865,7 +4933,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SelectedPageChanging += DxTabPane_SelectedPageChanging;
             this.SelectedPageChanged += DxTabPane_SelectedPageChanged;
         }
-
+        /// <summary>
+        /// Deaktivuje vlastní eventy
+        /// </summary>
         private void RemoveEvents()
         {
             this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
@@ -4873,7 +4943,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SelectedPageChanging -= DxTabPane_SelectedPageChanging;
             this.SelectedPageChanged -= DxTabPane_SelectedPageChanged;
         }
-
+        #endregion
         #region Přepínání záložek a volání událostí pro podporu deaktivace a aktivace správné stránky
         /// <summary>
         /// Obsahuje true, pokud jsme v procesu přepínání záložek, false v běžném stavu
@@ -5009,8 +5079,45 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
         #endregion
+    }
+    /// <summary>
+    /// Typ přechodového efektu v <see cref="DxTabPane"/>
+    /// </summary>
+    [Flags]
+    public enum DxTabPaneTransitionType 
+    {
+        None = 0,
+        
+        Fast = 0x0001,
+        Medium = 0x0002,
+        Slow = 0x0004,
+        VerySlow = 0x0008,
 
+        Fade = 0x0100,
+        Slide = 0x0200,
+        Push = 0x0400,
+        Shape = 0x0800,
 
+        FadeFast = Fade | Fast,
+        FadeMedium = Fade | Medium,
+        FadeSlow = Fade | Slow,
+
+        SlideFast = Slide | Fast,
+        SlideMedium = Slide | Medium,
+        SlideSlow = Slide | Slow,
+
+        PushFast = Push | Fast,
+        PushMedium = Push | Medium,
+        PushSlow = Push | Slow,
+
+        ShapeFast = Shape | Fast,
+        ShapeMedium = Shape | Medium,
+        ShapeSlow = Shape | Slow,
+
+        Default = FadeFast,
+
+        AllTimes = Fast | Medium | Slow | VerySlow,
+        AllTypes = Fade | Slide | Push | Shape
     }
     #endregion
     #region DxLabelControl
