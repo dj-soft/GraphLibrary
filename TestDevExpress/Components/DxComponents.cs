@@ -4788,7 +4788,48 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxTabPane : DevExpress.XtraBars.Navigation.TabPane
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxTabPane()
+        {
+            InitProperties();
+            InitEvents();
+            
+        }
+        /// <summary>
+        /// Přidá novou stránku (záložku) do this containeru
+        /// </summary>
+        /// <param name="pageName"></param>
+        /// <param name="pageText"></param>
+        /// <param name="pageToolTip"></param>
+        /// <param name="pageImageName"></param>
+        /// <returns></returns>
+        public DevExpress.XtraBars.Navigation.TabNavigationPage AddNewPage(string pageName, string pageText, string pageToolTip = null, string pageImageName = null)
+        {
+            string text = pageText;
+            var page = this.CreateNewPage() as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            page.Name = pageName;
+            page.Caption = text;
+            page.PageText = text;
+            page.ToolTip = pageToolTip;
+            page.ImageOptions.Image = null; // pageImageName tabHeaderItem.Image;
+            page.Properties.ShowMode = DevExpress.XtraBars.Navigation.ItemShowMode.ImageAndText;
+
+            this.Pages.Add(page);
+
+            return page;
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            this.RemoveEvents();
+            base.Dispose(disposing);
+        }
+        private void InitProperties()
         {
             this.TabAlignment = DevExpress.XtraEditors.Alignment.Near;           // Near = doleva, Far = doprava, Center = uprostřed
             this.PageProperties.AllowBorderColorBlending = true;
@@ -4803,7 +4844,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AllowTransitionAnimation = DevExpress.Utils.DefaultBoolean.True;
             this.TransitionAnimationProperties.FrameCount = 250;                 // Celkový čas = interval * count
             this.TransitionAnimationProperties.FrameInterval = 2 * 10000;        // 10000 je jedna jednotka, která je rovna 1 milisekundě
-            this.TransitionType = DevExpress.Utils.Animation.Transitions.Fade;  // Pěkné je SlideFade, Použitelné je Fade, možná Push a Shape
+            this.TransitionType = DevExpress.Utils.Animation.Transitions.Fade;   // Pěkné je SlideFade, Použitelné je Fade, možná Push a Shape
             this.TransitionManager.UseDirectXPaint = DefaultBoolean.True;
 
             // Požadavky designu na vzhled buttonů:
@@ -4817,22 +4858,159 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
             this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
         }
-        public DevExpress.XtraBars.Navigation.TabNavigationPage AddNewPage(string pageName, string pageText, string pageToolTip = null, string pageImageName = null)
+        private void InitEvents()
         {
-            string text = pageText;
-            var page = this.CreateNewPage() as DevExpress.XtraBars.Navigation.TabNavigationPage;
-            page.Name = pageName;
-            page.Caption = text;
-            page.PageText = text;
-            page.ToolTip = pageToolTip;
-            page.ImageOptions.Image = null; // pageImageName tabHeaderItem.Image;
-            page.Properties.ShowMode = DevExpress.XtraBars.Navigation.ItemShowMode.ImageAndText;
-
-            this.Pages.Add(page);
-            // this.SelectedPage = page;
-
-            return page;
+            this.TransitionManager.BeforeTransitionStarts += TransitionManager_BeforeTransitionStarts;
+            this.TransitionManager.AfterTransitionEnds += TransitionManager_AfterTransitionEnds;
+            this.SelectedPageChanging += DxTabPane_SelectedPageChanging;
+            this.SelectedPageChanged += DxTabPane_SelectedPageChanged;
         }
+
+        private void RemoveEvents()
+        {
+            this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
+            this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
+            this.SelectedPageChanging -= DxTabPane_SelectedPageChanging;
+            this.SelectedPageChanged -= DxTabPane_SelectedPageChanged;
+        }
+
+        #region Přepínání záložek a volání událostí pro podporu deaktivace a aktivace správné stránky
+        /// <summary>
+        /// Obsahuje true, pokud jsme v procesu přepínání záložek, false v běžném stavu
+        /// </summary>
+        public bool PageChangingIsRunning { get; private set; }
+        /// <summary>
+        /// Obsahuje dřívější aktivní stránku před procesem přepínání záložek
+        /// </summary>
+        public DevExpress.XtraBars.Navigation.TabNavigationPage PageChangingPageOld { get; private set; }
+        /// <summary>
+        /// Obsahuje novou aktivní stránku po procesu přepínání záložek
+        /// </summary>
+        public DevExpress.XtraBars.Navigation.TabNavigationPage PageChangingPageNew { get; private set; }
+
+        /// <summary>
+        /// Zajistí události pro přípravu obsahu nové stránky před přepnutím na ni (stránka dosud není vidět)
+        /// </summary>
+        /// <param name="pageNew"></param>
+        private void RunPageChangingPrepare(DevExpress.XtraBars.Navigation.TabNavigationPage pageNew)
+        {
+            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageNew);
+            OnPageChangingPrepare(args);
+            PageChangingPrepare?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se pro přípravu obsahu nové stránky před přepnutím na ni (stránka dosud není vidět)
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnPageChangingPrepare(TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args) { }
+        /// <summary>
+        /// Volá se při přípravu obsahu nové stránky před přepnutím na ni (stránka dosud není vidět)
+        /// </summary>
+        public event EventHandler<TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>> PageChangingPrepare;
+
+        /// <summary>
+        /// Zajistí události pro aktivaci obsahu nové stránky po přepnutím na ni (stránka už je vidět)
+        /// </summary>
+        /// <param name="pageNew"></param>
+        private void RunPageChangingActivate(DevExpress.XtraBars.Navigation.TabNavigationPage pageNew)
+        {
+            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageNew);
+            OnPageChangingActivate(args);
+            PageChangingActivate?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se pro aktivaci obsahu nové stránky po přepnutím na ni (stránka už je vidět)
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnPageChangingActivate(TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args) { }
+        /// <summary>
+        /// Volá se při aktivaci obsahu nové stránky po přepnutím na ni (stránka už je vidět)
+        /// </summary>
+        public event EventHandler<TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>> PageChangingActivate;
+
+        /// <summary>
+        /// Zajistí události pro deaktivaci obsahu staré stránky před přepnutím z ní (stránka je dosud vidět)
+        /// </summary>
+        /// <param name="pageOld"></param>
+        private void RunPageChangingDeactivate(DevExpress.XtraBars.Navigation.TabNavigationPage pageOld)
+        {
+            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageOld);
+            OnPageChangingDeactivate(args);
+            PageChangingDeactivate?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se pro deaktivaci obsahu staré stránky před přepnutím z ní (stránka je dosud vidět)
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnPageChangingDeactivate(TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args) { }
+        /// <summary>
+        /// Volá se při deaktivaci obsahu staré stránky před přepnutím z ní (stránka je dosud vidět)
+        /// </summary>
+        public event EventHandler<TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>> PageChangingDeactivate;
+
+        /// <summary>
+        /// Zajistí události pro uvolnění obsahu staré stránky před přepnutím z ní (stránka už není vidět)
+        /// </summary>
+        /// <param name="pageOld"></param>
+        private void RunPageChangingRelease(DevExpress.XtraBars.Navigation.TabNavigationPage pageOld)
+        {
+            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageOld);
+            OnPageChangingRelease(args);
+            PageChangingRelease?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se pro uvolnění obsahu staré stránky před přepnutím z ní (stránka už není vidět)
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnPageChangingRelease(TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args) { }
+        /// <summary>
+        /// Volá se při uvolnění obsahu staré stránky před přepnutím z ní (stránka už není vidět)
+        /// </summary>
+        public event EventHandler<TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>> PageChangingRelease;
+
+        // Pořadí eventů v konstuktoru:
+        //     DxTabPane_SelectedPageChanging;
+        //     DxTabPane_SelectedPageChanged;
+        // Pořadí eventů při přepínání stránky s transicí:        SelectedPageIndex
+        //     DxTabPane_SelectedPageChanging;                           old           mám k dispozici old i new page v argumentu
+        //     TransitionManager_BeforeTransitionStarts;                 old
+        //     DxTabPane_SelectedPageChanged;                            new
+        //     TransitionManager_AfterTransitionEnds;                    new
+
+        private void TransitionManager_BeforeTransitionStarts(DevExpress.Utils.Animation.ITransition transition, System.ComponentModel.CancelEventArgs e)
+        {
+        }
+        private void TransitionManager_AfterTransitionEnds(DevExpress.Utils.Animation.ITransition transition, EventArgs e)
+        {
+        }
+        /// <summary>
+        /// Na začátku přepínání záložek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxTabPane_SelectedPageChanging(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangingEventArgs e)
+        {
+            this.PageChangingPageOld = e.OldPage as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            this.PageChangingPageNew = e.Page as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            this.PageChangingIsRunning = true;
+            this.RunPageChangingDeactivate(this.PageChangingPageOld);
+            this.RunPageChangingPrepare(this.PageChangingPageNew);
+        }
+        /// <summary>
+        /// Na konci přepínání záložek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxTabPane_SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
+        {
+            this.RunPageChangingActivate(this.PageChangingPageNew);
+            this.RunPageChangingRelease(this.PageChangingPageOld);
+            this.PageChangingIsRunning = false;
+
+        }
+        #endregion
+
+
     }
     #endregion
     #region DxLabelControl

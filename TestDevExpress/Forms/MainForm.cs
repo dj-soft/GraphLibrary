@@ -1838,6 +1838,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _OpenImagePickerFormButton.Click += _OpenImagePickerFormButton_Click;
             _EditorsPanel.Controls.Add(_OpenImagePickerFormButton);
 
+            _TestDataFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(620, 96, 190, 50), Text = "DataForm test" };
+            _TestDataFormButton.Click += _TestDataFormButton_Click;
+            _EditorsPanel.Controls.Add(_TestDataFormButton);
+
 
             // _DxImagePicker = new DxImagePickerListBox() { Bounds = new Rectangle(20, 100, 640, 480) };
             // _EditorsPanel.Controls.Add(_DxImagePicker);
@@ -1873,6 +1877,16 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             using (ImagePickerForm form = new ImagePickerForm())
             {
                 form.ShowDialog(this);
+            }
+        }
+        private void _TestDataFormButton_Click(object sender, EventArgs e)
+        {
+            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
+            using (var dataForm = new DataForm())
+            {
+                dataForm.WinProcessInfoBeforeForm = winProcessInfo;
+                dataForm.WindowState = FormWindowState.Maximized;
+                dataForm.ShowDialog();
             }
         }
         private void _TokenAddButtonGreen_Click(object sender, EventArgs e)
@@ -1969,6 +1983,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
         private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
         private DevExpress.XtraEditors.SimpleButton _OpenImagePickerFormButton;
+        private DevExpress.XtraEditors.SimpleButton _TestDataFormButton;
         private DxImagePickerListBox _DxImagePicker;
         #endregion
         #region TreeView

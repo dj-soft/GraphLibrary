@@ -38,14 +38,24 @@ namespace TestDevExpress.Forms
             this.StatusBar = _DxRibbonStatusBar;
             this.Controls.Add(this._DxRibbonStatusBar);
 
-            _StatusItems = new DevExpress.XtraBars.BarStaticItem[]
-            {
-                CreateStatusBarItem(),CreateStatusBarItem(),CreateStatusBarItem(),CreateStatusBarItem(),
-                CreateStatusBarItem(2),CreateStatusBarItem(),CreateStatusBarItem(),CreateStatusBarItem(2)
-            };
+            this._StatusItemTitle = CreateStatusBarItem();
+            this._StatusItemBefore = CreateStatusBarItem();
+            this._StatusItemDeltaConstructor = CreateStatusBarItem();
+            this._StatusItemDeltaShow = CreateStatusBarItem();
+            this._StatusItemDeltaCurrent = CreateStatusBarItem(2);
+            this._StatusItemDeltaForm = CreateStatusBarItem();
+            this._StatusItemCurrent = CreateStatusBarItem(1);
+            this._StatusItemTime = CreateStatusBarItem(2);
 
-            foreach (var statusItem in _StatusItems)
-                this._DxRibbonStatusBar.ItemLinks.Add(statusItem);
+            // V tomto pořadí budou viditelné:
+            //   netřeba : this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemTitle);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaCurrent);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemTime);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemCurrent);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemBefore);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaForm);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaConstructor);
+            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaShow);
 
             WinProcessInfoAfterInit = DxComponent.WinProcessInfo.GetCurent();
         }
@@ -68,7 +78,14 @@ namespace TestDevExpress.Forms
             item.AllowHtmlText = DevExpress.Utils.DefaultBoolean.True;
             return item;
         }
-        private DevExpress.XtraBars.BarStaticItem[] _StatusItems;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemTitle;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemBefore;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemDeltaConstructor;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemDeltaShow;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemDeltaCurrent;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemDeltaForm;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemTime;
+        private DevExpress.XtraBars.BarStaticItem _StatusItemCurrent;
         #endregion
         #region Ribbon - obsah a rozcestník
         private void _DxRibbonFill()
@@ -303,19 +320,19 @@ namespace TestDevExpress.Forms
         private void RefreshStatus()
         {
             string eol = Environment.NewLine;
-            _StatusItems[0].Caption = ""; // "<b>DataForm tester</b>";
+            this._StatusItemTitle.Caption = ""; // "<b>DataForm tester</b>";
 
             var before = WinProcessInfoBeforeForm;
-            _StatusItems[1].Caption = "   Stav před: <b>" + (before?.Text2 ?? "") + "<b>";
-            _StatusItems[1].Hint = "Obsazená paměť před zahájením otevírání okna:" + eol + (before?.Text4Full ?? "");
+            this._StatusItemBefore.Caption = "   Stav před: <b>" + (before?.Text2 ?? "") + "<b>";
+            this._StatusItemBefore.Hint = "Obsazená paměť před zahájením otevírání okna:" + eol + (before?.Text4Full ?? "");
 
             var deltaInit = WinProcessInfoAfterInit - WinProcessInfoBeforeForm;
-            _StatusItems[2].Caption = "   Delta Init: <b>" + (deltaInit?.Text2 ?? "") + "<b>";
-            _StatusItems[2].Hint = "Spotřeba paměti v rámci konstruktoru a inicializaci:" + eol + (deltaInit?.Text4Full ?? "");
+            this._StatusItemDeltaConstructor.Caption = "   Delta Init: <b>" + (deltaInit?.Text2 ?? "") + "<b>";
+            this._StatusItemDeltaConstructor.Hint = "Spotřeba paměti v rámci konstruktoru a inicializaci:" + eol + (deltaInit?.Text4Full ?? "");
 
             var deltaShow = WinProcessInfoAfterShown - WinProcessInfoAfterInit;
-            _StatusItems[3].Caption = "   Delta Show: <b>" + (deltaShow?.Text2 ?? "") + "<b>";
-            _StatusItems[3].Hint = "Spotřeba paměti od dokončení inicializace do konce provádění Show:" + eol + (deltaShow?.Text4Full ?? "");
+            this._StatusItemDeltaShow.Caption = "   Delta Show: <b>" + (deltaShow?.Text2 ?? "") + "<b>";
+            this._StatusItemDeltaShow.Hint = "Spotřeba paměti od dokončení inicializace do konce provádění Show:" + eol + (deltaShow?.Text4Full ?? "");
             RefreshStatusCurrent();
         }
         private void RefreshStatusCurrent()
@@ -324,21 +341,20 @@ namespace TestDevExpress.Forms
             var current = DxComponent.WinProcessInfo.GetCurent();
 
             var deltaCurr = current - WinProcessInfoAfterShown;
-            _StatusItems[4].Caption = "   Delta Current: <b>" + (deltaCurr?.Text2 ?? "") + "<b>";
-            _StatusItems[4].Hint = "Spotřeba paměti DxDataForm (od prázdného zobrazení do aktuálního stavu):" + eol + (deltaCurr?.Text4Full ?? "");
+            this._StatusItemDeltaCurrent.Caption = "   Delta Current: <b>" + (deltaCurr?.Text2 ?? "") + "<b>";
+            this._StatusItemDeltaCurrent.Hint = "Spotřeba paměti DxDataForm (od prázdného zobrazení do aktuálního stavu):" + eol + (deltaCurr?.Text4Full ?? "");
 
             var deltaForm = current - WinProcessInfoBeforeForm;
-            _StatusItems[5].Caption = "   Delta Form: <b>" + (deltaForm?.Text2 ?? "") + "<b>";
-            _StatusItems[5].Hint = "Spotřeba celého aktuálního formuláře (od vytvoření do aktuálního stavu):" + eol + (deltaForm?.Text4Full ?? "");
+            this._StatusItemDeltaForm.Caption = "   Delta Form: <b>" + (deltaForm?.Text2 ?? "") + "<b>";
+            this._StatusItemDeltaForm.Hint = "Spotřeba celého aktuálního formuláře (od vytvoření do aktuálního stavu):" + eol + (deltaForm?.Text4Full ?? "");
 
-            _StatusItems[6].Caption = "   Total Current: <b>" + (current?.Text2 ?? "") + "<b>";
-            _StatusItems[6].Hint = "Spotřeba paměti aktuálně:" + eol + (current?.Text4Full ?? "");
+            this._StatusItemCurrent.Caption = "   Total Current: <b>" + (current?.Text2 ?? "") + "<b>";
+            this._StatusItemCurrent.Hint = "Spotřeba paměti aktuálně:" + eol + (current?.Text4Full ?? "");
 
             var time = _DxShowTimeSpan;
             bool hasTime = time.HasValue;
-            _StatusItems[7].Caption = hasTime ? "   Time: <b>" + time.Value.TotalMilliseconds.ToString("### ##0").Trim() + " ms<b>" : "";
-            _StatusItems[7].Hint = "Čas zobrazení DataFormu od začátku konstruktoru po GotFocus";
-
+            this._StatusItemTime.Caption = hasTime ? "   Time: <b>" + time.Value.TotalMilliseconds.ToString("### ##0").Trim() + " ms<b>" : "";
+            this._StatusItemTime.Hint = "Čas zobrazení DataFormu od začátku konstruktoru po GotFocus";
         }
         #endregion
     }

@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            DevExpress.XtraBars.BarShortcut barShortcut1 = new DevExpress.XtraBars.BarShortcut();
             this.StatusStrip = new System.Windows.Forms.StatusStrip();
             this.button3 = new System.Windows.Forms.Button();
             this._PanelHeaders1 = new System.Windows.Forms.Panel();
@@ -92,6 +91,7 @@
             this.tabPageChart.SuspendLayout();
             this.tabPage6.SuspendLayout();
             this.tabPage7.SuspendLayout();
+            this._EditorsPanel.SuspendLayout();
             this.tabPage8.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MainSplit)).BeginInit();
             this.MainSplit.Panel1.SuspendLayout();
@@ -395,7 +395,6 @@
             // 
             // DynamicPage
             // 
-            this.DynamicPage.Controls.Add(this._RunDataFormBtn);
             this.DynamicPage.Controls.Add(this._RunMdiFormBtn);
             this.DynamicPage.Controls.Add(this._RibbonResetTextBtn);
             this.DynamicPage.Controls.Add(this._RibbonBoundsText);
@@ -549,6 +548,7 @@
             // _EditorsPanel
             // 
             this._EditorsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
+            this._EditorsPanel.Controls.Add(this._RunDataFormBtn);
             this._EditorsPanel.DevExpressSkinEnabled = true;
             this._EditorsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._EditorsPanel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
@@ -636,7 +636,6 @@
             this.ribbonControl1.Name = "ribbonControl1";
             this.ribbonControl1.RibbonCaptionAlignment = DevExpress.XtraBars.Ribbon.RibbonCaptionAlignment.Center;
             this.ribbonControl1.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonControlStyle.Office2019;
-            this.ribbonControl1.SearchItemShortcut = barShortcut1;
             this.ribbonControl1.SelectedPageId = null;
             this.ribbonControl1.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             this.ribbonControl1.ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;
@@ -650,13 +649,12 @@
             // _RunDataFormBtn
             // 
             this._RunDataFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this._RunDataFormBtn.Location = new System.Drawing.Point(162, 363);
+            this._RunDataFormBtn.Location = new System.Drawing.Point(3, 221);
             this._RunDataFormBtn.Name = "_RunDataFormBtn";
             this._RunDataFormBtn.Size = new System.Drawing.Size(150, 60);
-            this._RunDataFormBtn.TabIndex = 7;
+            this._RunDataFormBtn.TabIndex = 8;
             this._RunDataFormBtn.Text = "Run DataForm";
             this._RunDataFormBtn.UseVisualStyleBackColor = true;
-            this._RunDataFormBtn.Click += new System.EventHandler(this._RunDataFormBtn_Click);
             // 
             // MainForm
             // 
@@ -686,6 +684,7 @@
             this.tabPageChart.ResumeLayout(false);
             this.tabPage6.ResumeLayout(false);
             this.tabPage7.ResumeLayout(false);
+            this._EditorsPanel.ResumeLayout(false);
             this.tabPage8.ResumeLayout(false);
             this.MainSplit.Panel1.ResumeLayout(false);
             this.MainSplit.Panel2.ResumeLayout(false);

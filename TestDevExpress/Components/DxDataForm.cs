@@ -212,6 +212,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     _TabPane = new DxTabPane();
                     _TabPane.Dock = WF.DockStyle.Fill;
+                    _TabPane.PageChangingPrepare += _TabPane_PageChangingPrepare;
+                    _TabPane.PageChangingRelease += _TabPane_PageChangingRelease;
                     this.Controls.Add(_TabPane);
                 }
 
@@ -232,6 +234,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 page.PlaceToParent(this);
             }
             */
+        }
+        private void _TabPane_PageChangingPrepare(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
+        {
+            DxDataFormPage page = GetDataFormPage(e.Item);
+            if (page != null) page.IsActiveContent = true;
+        }
+
+        private void _TabPane_PageChangingRelease(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
+        {
+            DxDataFormPage page = GetDataFormPage(e.Item);
+            if (page != null) page.IsActiveContent = false;
+        }
+        /// <summary>
+        /// Vrátí <see cref="DxDataFormPage"/> nacházející se na daném controlu
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        private DxDataFormPage GetDataFormPage(WF.Control parent)
+        {
+            return parent?.Controls.OfType<DxDataFormPage>().FirstOrDefault();
         }
 
         private DxTabPane _TabPane;
@@ -262,45 +284,67 @@ namespace Noris.Clients.Win.Components.AsolDX
             x2 = 700;
             y2 = 8;
 
-            _CreateSampleAddReferName1(items, "Reference:", x1, y1); y1 += 25;
-            _CreateSampleAddReferName1(items, "Dodavatel:", x1, y1); y1 += 25;
-            _CreateSampleAddReferName1(items, "Sklad:", x1, y1); y1 += 25;
-            _CreateSampleAddReferName1(items, "Odběratel:", x1, y1); y1 += 25;
+            int h0 = 20;
+            int h1 = 30;
+            int h2 = 20;
 
-            y1 += 10;
+            _CreateSampleAddReferName1(items, "Reference:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Dodavatel:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Náš provoz:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Útvar:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Sklad:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Odpovědná osoba:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Expediční sklad:", x1, y1); y1 += h1;
+            _CreateSampleAddReferName1(items, "Odběratel:", x1, y1); y1 += h1;
 
-            _CreateSampleAddMemo(items, "Poznámka nákupní:", x2, y2, 550, 95); y2 += 110;
+            y1 += h2;
 
-            _CreateSampleAddPrice3(items, "Cena nákupní:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena DPH 0:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena DPH 1:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena DPH 2:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena evidenční:", x1, y1); y1 += 25;
+            _CreateSampleAddMemo(items, "Poznámka nákupní:", x2, y2, 550, 7 * h1 + h0); y2 += 8 * h1;
 
-            y1 += 10;
+            _CreateSampleAddPrice3(items, "Cena nákupní:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena DPH 0:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena DPH 1:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena DPH 2:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena evidenční:", x1, y1); y1 += h1;
 
-            _CreateSampleAddMemo(items, "Poznámka cenová:", x2, y2, 550, 120); y2 += 135;
+            y1 += h2;
+
+            _CreateSampleAddMemo(items, "Poznámka cenová:", x2, y2, 550, 4 * h1 + h0); y2 += 5 * h1;
 
             _CreateSampleAddLabel1(items, "Rabaty:", x1, y1);
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat dodavatele", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat skladu", DevExpress.XtraEditors.Controls.CheckBoxStyle.Default, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat odběratele", null, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat uživatele", null, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat termínový", null, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat dodavatele", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat skladu", DevExpress.XtraEditors.Controls.CheckBoxStyle.Default, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat odběratele", null, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat uživatele", null, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat termínový", null, x1, y1); y1 += h1;
 
-            y1 += 10;
+            y1 += h2;
 
-            _CreateSampleAddMemo(items, "Poznámka k rabatům:", x2, y2, 550, 120); y2 += 135;
+            _CreateSampleAddMemo(items, "Poznámka k rabatům:", x2, y2, 550, 4 * h1 + h0); y2 += 5 * h1;
 
-            _CreateSampleAddDate2(items, "Datum objednávky", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum potvrzení", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum expedice", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum příjmu na sklad", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum přejímky kvality", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum zaúčtování", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum splatnosti", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum úhrady", x1, y1); y1 += 25;
+            _CreateSampleAddDate2(items, "Datum objednávky", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum potvrzení", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum expedice", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum příjmu na sklad", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum přejímky kvality", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum zaúčtování", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum splatnosti", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum úhrady", x1, y1); y1 += h1;
 
+            y1 += h2;
+
+            _CreateSampleAddMemo(items, "Předvolby:", x2, y2, 550, 120); y2 += 135;
+            _CreateSampleAddCheckBox3(items, "Tuzemský dodavatel", "Akciovka", "S.r.o.", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Dodavatel v EU", "Majitel v EU", "Daně z příjmu v EU", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Dodavatel v US", "Majitel v US", "Daně z příjmu v US", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Nespolehlivý dodavatel", "Důvod: peníze", "Důvod: kriminální", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Tuzemský odběratel", "akciovka", "sro", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Koncový zákazník", "sro", "fyzická osoba", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Hlídané zboží", "Spotřební daň", "Bezpečnostní problémy", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Hlídaná platba", "Nespolehlivý plátce", "Nestandardní banka", x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox3(items, "Nadměrný objem", "hmotnostní", "finanční", x1, y1); y1 += h1;
+
+            y1 += h2;
 
             _CreateSampleSetPage(items, "page0", "ZÁKLADNÍ ÚDAJE", "Tato záložka obsahuje základní údaje o dokladu", null);
 
@@ -310,26 +354,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             x2 = 700;
             y2 = 8;
 
-            _CreateSampleAddPrice3(items, "Cena nákupní €:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena DPH 0 €:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena DPH 1 €:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena DPH 2 €:", x1, y1); y1 += 25;
-            _CreateSampleAddPrice3(items, "Cena evidenční €:", x1, y1); y1 += 25;
+            _CreateSampleAddPrice3(items, "Cena nákupní €:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena DPH 0 €:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena DPH 1 €:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena DPH 2 €:", x1, y1); y1 += h1;
+            _CreateSampleAddPrice3(items, "Cena evidenční €:", x1, y1); y1 += h1;
 
-            _CreateSampleAddMemo(items, "Poznámka k cizí měně:", x1, y1, 550, 120); y1 += 135;
+            _CreateSampleAddMemo(items, "Poznámka k cizí měně:", x1, y1, 550, 4 * h1 + h0); y1 += 5 * h1;
 
-            _CreateSampleAddMemo(items, "Poznámka k účtování:", x1, y1, 550, 120); y1 += 135;
+            _CreateSampleAddMemo(items, "Poznámka k účtování:", x1, y1, 550, 4 * h1 + h0); y1 += 5 * h1;
 
-            y1 += 10;
+            y1 += h2;
 
             _CreateSampleAddLabel1(items, "Účtování:", x1, y1);
-            _CreateSampleAddCheckBox1(items, "Účtovat do běžného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Účtovat do reálného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Účtovat jako rozpočtová organizace", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Účtovat až po schválení majitelem", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Účtovat do černého účetního rozvrhu", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Účtovat až po zaplacení", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
-            _CreateSampleAddCheckBox1(items, "Účtovat jen 30. února", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += 25;
+            _CreateSampleAddCheckBox1(items, "Účtovat do běžného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat do reálného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat jako rozpočtová organizace", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat až po schválení majitelem", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat do černého účetního rozvrhu", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat až po zaplacení", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat jen 30. února", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
 
             _CreateSampleSetPage(items, "page1", "CENOVÉ ÚDAJE v €", "Tato záložka obsahuje údaje o cenách v €urech", null);
 
@@ -339,8 +383,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             x2 = 700;
             y2 = 8;
 
-            _CreateSampleAddReferName1(items, "Zapsal:", x1, y1); y1 += 25;
-            _CreateSampleAddDate2(items, "Datum zadání do systému", x1, y1); y1 += 25;
+            _CreateSampleAddReferName1(items, "Zapsal:", x1, y1); y1 += h1;
+            _CreateSampleAddDate2(items, "Datum zadání do systému", x1, y1); y1 += h1;
 
             _CreateSampleSetPage(items, "page2", "SYSTÉMOVÉ ÚDAJE", "Tato záložka obsahuje údaje o osobě a času zadání do systému", null);
 
@@ -458,7 +502,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Bounds = new Rectangle(x + 183, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.DateTime,
                 TextEditMask = "d",
-                ToolTipTitle = "DATUM POČÁTKU",
+                ToolTipTitle = label + " - zahájení",
                 ToolTipText = "Tento den se událost začala"
             });
 
@@ -471,7 +515,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Bounds = new Rectangle(x + 344, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.DateTime,
                 TextEditMask = "d",
-                ToolTipTitle = "DATUM KONCE",
+                ToolTipTitle = label + " - konec",
                 ToolTipText = "Tento den se událost skončila"
             });
         }
@@ -501,16 +545,93 @@ namespace Noris.Clients.Win.Components.AsolDX
                 CheckBoxStyle = style
             });
         }
+        private static void _CreateSampleAddCheckBox3(List<DataFormItem> items, string label1, string label2, string label3, int x, int y)
+        {
+            DevExpress.XtraEditors.Controls.CheckBoxStyle style = DevExpress.XtraEditors.Controls.CheckBoxStyle.Default;
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.CheckBox,
+                Bounds = new Rectangle(x + 183, y, 250, 20),
+                Text = label1,
+                CheckBoxStyle = style
+            });
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.CheckBox,
+                Bounds = new Rectangle(x + 436, y, 250, 20),
+                Text = label2,
+                CheckBoxStyle = style
+            });
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.CheckBox,
+                Bounds = new Rectangle(x + 689, y, 250, 20),
+                Text = label3,
+                CheckBoxStyle = style
+            });
+        }
         private static void _CreateSampleSetPage(List<DataFormItem> items, string pageName, string pageText, string pageToolTipText, string pageIconName)
         {
             var pageItems = items.Where(i => i.PageName == null).ToArray();
+
+            string itemsAnalyse = _CreateSampleAnalyse(pageItems);
+
             foreach (var pageItem in pageItems)
             {
                 pageItem.PageName = pageName;
                 pageItem.PageText = pageText;
-                pageItem.PageToolTipText = pageToolTipText;
+                pageItem.PageToolTipText = (pageToolTipText ?? "") + itemsAnalyse;
                 pageItem.PageIconName = pageIconName;
             }
+        }
+        /// <summary>
+        /// Vrátí text, obsahující jednotlivé druhy přítomných prvků a jejich počet v daném poli
+        /// </summary>
+        /// <param name="pageItems"></param>
+        /// <returns></returns>
+        private static string _CreateSampleAnalyse(DataFormItem[] pageItems)
+        {
+            string info = "";
+            string eol = "\r\n";
+            var itemGroups = pageItems.GroupBy(i => i.ItemType);
+            int countItems = 0;
+            int countGDI = 0;
+            int countUSER = 0;
+            foreach (var itemGroup in itemGroups)
+            {
+                var itemType = itemGroup.Key;
+                int countItem = itemGroup.Count();
+                countItems += countItem;
+                string line = "... Typ prvku: " + itemType.ToString() + ";  Počet prvků: " + countItem.ToString();
+                switch (itemType)
+                {
+                    case DataFormItemType.Label:
+                    case DataFormItemType.CheckBox:
+                        countUSER += countItem;
+                        break;
+                    case DataFormItemType.TextBox:
+                    case DataFormItemType.EditBox:
+                        countGDI += 2 * countItem;
+                        countUSER += 2 * countItem;
+                        break;
+                    default:
+                        countGDI += countItem;
+                        countUSER += countItem;
+                        break;
+                }
+                info += eol + line;
+            }
+
+            string suma = $"CELKEM: {countItems};  GDI Handles: {countGDI};  USER Handles: {countUSER}";
+            info += eol + suma;
+
+            return info;
         }
         private static string _SampleItemName(List<DataFormItem> items) { return "item_" + (items.Count + 1000).ToString(); }
         public static IEnumerable<IDataFormItem> CreateSample(DxDataFormSample sample)
@@ -692,6 +813,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __DataForm = dataForm;
             __ContentPanel = new DxDataFormContentPanel(this);
             __Items = new List<DxDataFormControlItem>();
+            __IsActiveContent = true;
             this.Controls.Add(ContentPanel);
             this.Dock = WF.DockStyle.Fill;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
@@ -778,6 +900,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             RefreshContentSize();
             RefreshVisibleItems();
         }
+        /// <summary>
+        /// Z jednotlivých controlů vypočte potřebnou velikost pro <see cref="ContentPanel"/> a vepíši ji do něj.
+        /// Tím se zajistí správné Scrollování obsahu.
+        /// </summary>
         private void RefreshContentSize()
         {
             int maxR = 0;
@@ -797,14 +923,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             maxB += 6;
             this.ContentPanel.Bounds = new Rectangle(0, 0, maxR, maxB);
         }
-
+        /// <summary>
+        /// Zajistí refresh viditelnosti prvků podle aktuální viditelné oblasti a dalších parametrů.
+        /// Výsledkem je vytvoření controlu nebo jeho uvolnění podle potřeby.
+        /// </summary>
         private void RefreshVisibleItems()
         {
             var visibleBounds = this.VisibleBounds;
+            bool isActiveContent = this.__IsActiveContent;
             foreach (var item in Items)
-                item.RefreshVisibleItem(visibleBounds);
+                item.RefreshVisibleItem(visibleBounds, isActiveContent);
         }
+        /// <summary>
+        /// Obsahuje true, pokud obsah je aktivní, false pokud nikoliv. Výchozí je true.
+        /// Lze setovat, okamžitě se projeví.
+        /// Pokud bude setováno false, provede se screenshot aktuálního stavu do bitmapy a ta se bude vykreslovat, poté se zlikvidují controly.
+        /// </summary>
+        public bool IsActiveContent 
+        {
+            get { return __IsActiveContent; }
+            set 
+            {
+                if (value == __IsActiveContent) return;
 
+                if (__IsActiveContent) this.ContentPanel.CreateScreenshot();
+                else this.ContentPanel.ReleaseScreenshot(false);
+
+                __IsActiveContent = value; 
+                RefreshVisibleItems(); 
+            } 
+        }
+        private bool __IsActiveContent;
         /// <summary>
         /// Umístí svůj vizuální container do daného Parenta.
         /// Před tím prověří, zda v něm již není a pokud tam už je, pak nic nedělá. Lze tedy volat libovolně často.
@@ -844,11 +993,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="scrollPanel"></param>
         public DxDataFormContentPanel(DxDataFormScrollPanel scrollPanel)
+            : base()
         {
             this.__ScrollPanel = scrollPanel;
             this.Dock = WF.DockStyle.None;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.AutoScroll = false;
+            this.DoubleBuffered = true;
+            this.SetStyle(WF.ControlStyles.UserPaint, true);         // Aby se nám spolehlivě volal OnPaintBackground()
         }
         /// <summary>
         /// Dispose prvku
@@ -864,6 +1016,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ClearInstance()
         {
+            ReleaseScreenshot(false);
             __ScrollPanel = null;
         }
         /// <summary>
@@ -875,6 +1028,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
         private DxDataFormScrollPanel __ScrollPanel;
+        /// <summary>
+        /// Aktuálně viditelná oblast this controlu
+        /// </summary>
         public Rectangle ContentVisibleBounds { get { return _ContentVisibleBounds; } set { _SetContentVisibleBounds(value); } }
         private Rectangle _ContentVisibleBounds;
         private void _SetContentVisibleBounds(Rectangle contentVisibleBounds)
@@ -883,6 +1039,65 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _ContentVisibleBounds = contentVisibleBounds;
         }
+
+
+        #region Screenshot
+        /// <summary>
+        /// Z aktuálního stavu controlu vytvoří a uloží Screenshot, který se bude kreslit na pozadí controlu.
+        /// Poté mohou být všechny Child controly zahozeny a přitom this control bude vypadat jako by tam stále byly (ale budou to jen duchy).
+        /// </summary>
+        internal void CreateScreenshot()
+        {
+            ReleaseScreenshot(true);
+
+            Point empty = Point.Empty;
+            Size clientBounds = this.ClientSize;
+            Bitmap bmp = new Bitmap(clientBounds.Width, clientBounds.Height);
+            Rectangle target = new Rectangle(Point.Empty, clientBounds);
+            this.DrawToBitmap(bmp, target);
+
+            __Screenshot = bmp;
+        }
+        /// <summary>
+        /// Pokud máme uchovaný Screenshot, pak jej korektně zahodí a volitelně provede invalidaci = překreslení obsahu.
+        /// To je vhodné za provozu, ale není to vhodné v Dispose.
+        /// </summary>
+        /// <param name="withInvalidate"></param>
+        internal void ReleaseScreenshot(bool withInvalidate)
+        {
+            if (__Screenshot != null)
+            {
+                try { __Screenshot.Dispose(); }
+                catch { }
+                
+                __Screenshot = null;
+
+                if (withInvalidate)
+                    this.Invalidate();
+            }
+        }
+        /// <summary>
+        /// Po vykreslení pozadí přes něj mohu vykreslit Screenshot, pokud existuje
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaintBackground(WF.PaintEventArgs e)
+        {
+            base.OnPaintBackground(e);
+            PaintScreenshot(e);
+        }
+        /// <summary>
+        /// Volá se po vykreslení OnPaintBackground, vykreslí Screenshot pokud existuje
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintScreenshot(WF.PaintEventArgs e)
+        {
+            Bitmap bmp = __Screenshot;
+            if (bmp == null) return;
+
+            e.Graphics.DrawImage(bmp, Point.Empty);
+        }
+        private Bitmap __Screenshot;
+        #endregion
 
     }
     #endregion
@@ -955,6 +1170,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pak jej nemůžeme Disposovat a znovuvytvářet, ale musíme jej držet permanentně.
         /// </summary>
         private bool __ControlIsExternal;
+        /// <summary>
+        /// Definice jednoho prvku
+        /// </summary>
         public IDataFormItem DataFormItem { get { return __DataFormItem; } }
         private IDataFormItem __DataFormItem;
         #endregion
@@ -983,10 +1201,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí, že this prvek bude zobrazen podle toho, zda se nachází v dané viditelné oblasti
         /// </summary>
         /// <param name="visibleBounds"></param>
-        internal void RefreshVisibleItem(Rectangle visibleBounds)
+        /// <param name="isActiveContent"></param>
+        internal void RefreshVisibleItem(Rectangle visibleBounds, bool isActiveContent)
         {
-            var controlBounds = this.Bounds;
-            bool isVisible = DataForm.IsInVisibleBounds(controlBounds, visibleBounds); //.HasValue && IsInVisibleBounds( Rectangle.Intersect(visibleBounds, controlBounds.Value).HasPixels());
+            bool isVisible = _IsVisibleItem(visibleBounds, isActiveContent);
             bool isHosted = IsHosted && (__Control != null);
 
             if (isVisible)
@@ -1004,6 +1222,40 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ReleaseControl(DataForm.MemoryMode);
                 IsHosted = false;
             }
+        }
+        /// <summary>
+        /// Obsahuje true pokud this prvek má být aktuálně přítomen jako živý prvek v controlu <see cref="ContentPanel"/>.
+        /// </summary>
+        /// <returns></returns>
+        internal bool IsVisibleItem
+        {
+            get
+            {
+                Rectangle visibleBounds = this.ScrollPanel.VisibleBounds;
+                bool isActiveContent = this.ScrollPanel.IsActiveContent;
+                return _IsVisibleItem(visibleBounds, isActiveContent);
+            }
+        }
+        /// <summary>
+        /// Vrátí true pokud this prvek má být aktuálně přítomen jako živý prvek v controlu <see cref="ContentPanel"/>.
+        /// </summary>
+        /// <param name="visibleBounds"></param>
+        /// <param name="isActiveContent"></param>
+        /// <returns></returns>
+        private bool _IsVisibleItem(Rectangle visibleBounds, bool isActiveContent)
+        {
+            // Prvek má být vidět, pokud je aktivní obsah, a pokud v definici prvku není Visible = false:
+            if (!isActiveContent) return false;
+            var dataVisible = this.__DataFormItem.Visible;
+            if (dataVisible.HasValue && !dataVisible.Value) return false;
+
+            // Prvek má být vidět, pokud má klávesový Focus anebo jeho TabIndex je +1 / -1 od aktuálního focusovaného prvku (aby bylo možno na něj přejít klávesou):
+
+
+            // Prvek má být vidět, pokud jeho souřadnice jsou ve viditelné oblasti nebo blízko ní:
+            var controlBounds = this.Bounds;
+            bool isVisibleBounds = DataForm.IsInVisibleBounds(controlBounds, visibleBounds);
+            return isVisibleBounds;
         }
         /// <summary>
         /// Aktualizuje hodnoty na controlu, který je právě viditelný
