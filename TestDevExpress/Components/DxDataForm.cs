@@ -14,7 +14,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Panel reprezentující DataForm - včetně záložek a scrollování
     /// </summary>
-    public partial class DxDataForm : DxPanelControl
+    public partial class DxDataForm : DxPanelControl, IDxDataForm
     {
         #region Konstruktor a proměnné, Dispose
         /// <summary>
@@ -194,6 +194,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return (String.IsNullOrEmpty(name) ? "" : name.Trim().ToLower());
         }
+        /// <summary>
+        /// Vrátí index daného panelu
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <returns></returns>
+        int IDxDataForm.IndexOf(DxDataFormScrollPanel panel) { return __Pages.Values.ToList().FindIndex(p => Object.ReferenceEquals(p, panel)); }
+
         #endregion
 
         private void PrepareTabForPages()
@@ -233,8 +240,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _TabPane_PageChangingPrepare(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
         {
-            _TabPaneChangeStart = DateTime.Now;
+            _TabPaneChangeStart = DxComponent.LogTimeCurrent;
             DxDataFormPage page = GetDataFormPage(e.Item);
+            _TabPaneChangeNameOld = page?.DebugName;
             if (page != null) page.IsActiveContent = true;
         }
 
@@ -242,9 +250,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxDataFormPage page = GetDataFormPage(e.Item);
             if (page != null) page.IsActiveContent = false;
-            if (_TabPaneChangeStart.HasValue) RunTabChangeDone(DateTime.Now - _TabPaneChangeStart.Value);
+            RunTabChangeDone();
+            DxComponent.LogAddLineTime($"TabChange from {_TabPaneChangeNameOld} to {page?.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
         }
-        private DateTime? _TabPaneChangeStart;
+
+        private long? _TabPaneChangeStart;
+        private string _TabPaneChangeNameOld;
         /// <summary>
         /// Vrátí <see cref="DxDataFormPage"/> nacházející se na daném controlu
         /// </summary>
@@ -260,9 +271,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyvolá akce po dokončení změny stránky, vhodné i pro časomíru a refresh zdrojů
         /// </summary>
         /// <param name="time"></param>
-        private void RunTabChangeDone(TimeSpan time)
+        private void RunTabChangeDone()
         {
-            TEventArgs<TimeSpan> args = new TEventArgs<TimeSpan>(time);
+            EventArgs args = EventArgs.Empty;
             OnTabChangeDone(args);
             TabChangeDone?.Invoke(this, args);
         }
@@ -270,11 +281,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Akce po dokončení změny stránky, vhodné i pro časomíru a refresh zdrojů
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnTabChangeDone(TEventArgs<TimeSpan> args) { }
+        protected virtual void OnTabChangeDone(EventArgs args) { }
         /// <summary>
         /// Akce po dokončení změny stránky, vhodné i pro časomíru a refresh zdrojů
         /// </summary>
-        public event EventHandler<TEventArgs<TimeSpan>> TabChangeDone;
+        public event EventHandler TabChangeDone;
         /// <summary>
         /// Metoda vrátí true pro typ prvku, který může dostat klávesový Focus
         /// </summary>
@@ -300,8 +311,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return false;
         }
-
-
         #region Tvorba testovacích dat : CreateSamples()
         public static IEnumerable<IDataFormItem> CreateSample(int sampleId)
         {
@@ -855,7 +864,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
+    }
 
+    internal interface IDxDataForm
+    {
+        /// <summary>
+        /// Vrátí index daného panelu
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <returns></returns>
+        int IndexOf(DxDataFormScrollPanel panel);
     }
     #region class DxDataFormPage : Data jedné stránky (záložky) DataFormu
     /// <summary>
@@ -874,6 +892,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             : base(dataForm)
         {
         }
+        /// <summary>
+        /// Jméno panelu
+        /// </summary>
+        public override string DebugName { get { return $"DataFormPage 'PageText'"; } }
         /// <summary>
         /// Dispose
         /// </summary>
@@ -943,6 +965,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.DebugName;
+        }
+        /// <summary>
+        /// Jméno panelu
+        /// </summary>
+        public virtual string DebugName { get { return $"ScrollPanel [{IDataForm.IndexOf(this)}]"; } }
+        /// <summary>
         /// Dispose prvku
         /// </summary>
         /// <param name="disposing"></param>
@@ -968,6 +1002,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDataForm DataForm { get { return __DataForm; } }
         private DxDataForm __DataForm;
+        /// <summary>
+        /// Odkaz na main instanci DataForm typovanou pro interní přístup
+        /// </summary>
+        private IDxDataForm IDataForm { get { return __DataForm; } }
         /// <summary>
         /// Vizuální panel, který má velikost pokrývající všechny Controly, je umístěn v this, a je posouván pomocí AutoScrollu
         /// </summary>
@@ -1212,18 +1250,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RefreshVisibleItems()
         {
+            var startTime = DxComponent.LogTimeCurrent;
+
             var visibleBounds = this.VisibleBounds;
             bool isActiveContent = this.__IsActiveContent;
 
             this.SuspendLayout();
             this.BeginInit();
 
+            var refreshStart = DxComponent.LogTimeCurrent;
+            DxDataFormControlItem.StatisticInfo statisticInfo = new DxDataFormControlItem.StatisticInfo();
+
             foreach (var item in Items)
-                item.RefreshVisibleItem(visibleBounds, isActiveContent);
+                item.RefreshVisibleItem(visibleBounds, isActiveContent, statisticInfo);
+
+            string refreshLine = $"Refesh: {statisticInfo.Text}; Time: {DxComponent.LogTokenTimeMilisec}";
+            DxComponent.LogAddLineTime(refreshLine, refreshStart);
 
             this.EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
+
+            string line = $"ScrollPanel {DebugName} RefreshVisibleItems(): Items: {Items.Count}; Time: {DxComponent.LogTokenTimeMilisec}";
+            DxComponent.LogAddLineTime(line, startTime);
         }
         /// <summary>
         /// Obsahuje true, pokud obsah je aktivní, false pokud nikoliv. Výchozí je true.
@@ -1331,6 +1380,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Main DataForm
         /// </summary>
         public DxDataForm DataForm { get { return __ScrollPanel?.DataForm; } }
+        /// <summary>
+        /// Odkaz na main instanci DataForm typovanou pro interní přístup
+        /// </summary>
+        private IDxDataForm IDataForm { get { return DataForm; } }
         /// <summary>
         /// ScrollPanel, který řídí zobrazení zdejšího panelu
         /// </summary>
@@ -1460,7 +1513,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ClearInstance()
         {
-            ReleaseControl(DxDataFormMemoryMode.RemoveReleaseHandle | DxDataFormMemoryMode.RemoveDispose, true);
+            ReleaseControl(DxDataFormMemoryMode.RemoveReleaseHandle | DxDataFormMemoryMode.RemoveDispose, new StatisticInfo(), true);
             __ScrollPanel = null;
             __Control = null;
         }
@@ -1468,6 +1521,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Main DataForm
         /// </summary>
         public DxDataForm DataForm { get { return __ScrollPanel?.DataForm; } }
+        /// <summary>
+        /// Odkaz na main instanci DataForm typovanou pro interní přístup
+        /// </summary>
+        private IDxDataForm IDataForm { get { return DataForm; } }
+        /// <summary>
+        /// Režim práce s pamětí
+        /// </summary>
+        protected DxDataFormMemoryMode MemoryMode { get { return (DataForm?.MemoryMode ?? DxDataFormMemoryMode.Default); } }
         /// <summary>
         /// ScrollPanel, který řídí zobrazení našeho <see cref="ContentPanel"/>
         /// </summary>
@@ -1554,25 +1615,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="visibleBounds"></param>
         /// <param name="isActiveContent"></param>
-        internal void RefreshVisibleItem(Rectangle visibleBounds, bool isActiveContent)
+        /// <param name="statisticInfo"></param>
+        internal void RefreshVisibleItem(Rectangle visibleBounds, bool isActiveContent, StatisticInfo statisticInfo)
         {
-            bool isVisible = _IsVisibleItem(visibleBounds, isActiveContent);
+            var memoryMode = this.MemoryMode;
+            bool isVisible = _IsVisibleItem(visibleBounds, isActiveContent, memoryMode);
             bool isHosted = IsHosted && (__Control != null);
 
             if (isVisible)
             {
                 if (!isHosted)
                 {
-                    WF.Control control = GetOrCreateControl();
+                    WF.Control control = GetOrCreateControl(statisticInfo);
                     ContentPanel.Controls.Add(control);
                     IsHosted = true;
+                    statisticInfo.HostedCount++;
                 }
+                statisticInfo.VisibleCount++;
                 RefreshItemValues();
             }
             else if (isHosted && !isVisible)
             {
-                ReleaseControl(DataForm.MemoryMode);
-                IsHosted = false;
+                ReleaseControl(memoryMode, statisticInfo);
             }
         }
         /// <summary>
@@ -1599,7 +1663,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 Rectangle visibleBounds = this.ScrollPanel.VisibleBounds;
                 bool isActiveContent = this.ScrollPanel.IsActiveContent;
-                return _IsVisibleItem(visibleBounds, isActiveContent);
+                var memoryMode = this.MemoryMode;
+                return _IsVisibleItem(visibleBounds, isActiveContent, memoryMode);
             }
         }
         /// <summary>
@@ -1607,12 +1672,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="visibleBounds"></param>
         /// <param name="isActiveContent"></param>
+        /// <param name="memoryMode"></param>
         /// <returns></returns>
-        private bool _IsVisibleItem(Rectangle visibleBounds, bool isActiveContent)
+        private bool _IsVisibleItem(Rectangle visibleBounds, bool isActiveContent, DxDataFormMemoryMode memoryMode)
         {
+            // Pokud má být prvek Invisible, je to bez další diskuse:
+            if (!Visible) return false;
+
+            // Pokud MemoryMode říká Allways, pak musí být hostován vždy:
+            if (memoryMode.HasFlag(DxDataFormMemoryMode.HostAllways)) return true;
+
             // Prvek má být vidět, pokud je aktivní obsah, a pokud v definici prvku není Visible = false:
             if (!isActiveContent) return false;
-            if (!Visible) return false;
 
             // Prvek má být vidět, pokud má klávesový Focus anebo jeho TabIndex je +1 / -1 od aktuálního focusovaného prvku (aby bylo možno na něj přejít klávesou):
             if (this.IScrollPanel.IsNearFocusableItem(this)) return true;
@@ -1634,12 +1705,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Najde nebo vytvoří nový vizuální control a vrátí jej
         /// </summary>
+        /// <param name="statisticInfo"></param>
         /// <returns></returns>
-        private WF.Control GetOrCreateControl()
+        private WF.Control GetOrCreateControl(StatisticInfo statisticInfo)
         {
             WF.Control control = __Control;
             if (control == null || control.IsDisposed)
             {
+                statisticInfo.CreatedCount++;
+
                 __Control = DxComponent.CreateDataFormControl(__DataFormItem);
                 // Navázat eventy controlu k nám:
                 RegisterControlEvents(__Control);
@@ -1651,30 +1725,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální control (pokud existuje) odebere z <see cref="ContentPanel"/>, a pak podle daného režimu jej uvolní z paměti (Handle plus Dispose)
         /// </summary>
         /// <param name="memoryMode"></param>
+        /// <param name="statisticInfo"></param>
         /// <param name="isFinal"></param>
-        private void ReleaseControl(DxDataFormMemoryMode memoryMode, bool isFinal = false)
+        private void ReleaseControl(DxDataFormMemoryMode memoryMode, StatisticInfo statisticInfo, bool isFinal = false)
         {
             WF.Control control = __Control;
             if (control == null || control.IsDisposed || control.Disposing) return;
 
-            ContentPanel.Controls.Remove(control);
+            // Pokud MemoryMode říká Allways, pak musí být hostován vždy (kromě finálního release):
+            bool hostAlways = memoryMode.HasFlag(DxDataFormMemoryMode.HostAllways);
+            if (hostAlways && !isFinal) return;
 
-            if (memoryMode.HasFlag(DxDataFormMemoryMode.RemoveReleaseHandle))
+            ContentPanel?.Controls.Remove(control);
+            IsHosted = false;
+            statisticInfo.RemovedCount++;
+
+            if (memoryMode.HasFlag(DxDataFormMemoryMode.RemoveReleaseHandle) || isFinal)
             {
                 if (control != null && control.IsHandleCreated && !control.RecreatingHandle)
+                {
                     DestroyWindow(control.Handle);
+                    statisticInfo.DestroyedCount++;
+                }
             }
 
-            if (!__ControlIsExternal && memoryMode.HasFlag(DxDataFormMemoryMode.RemoveDispose))
-            {
+            if ((memoryMode.HasFlag(DxDataFormMemoryMode.RemoveDispose) && !__ControlIsExternal) || isFinal)
+            {   // V režimu RemoveDispose zlikvidujeme náš control, a při požadavku IsFinal taky (ale tam neprovedeme jeho Dispose, protože nejsme jeho autorem):
                 UnRegisterControlEvents(control);
-                try { control.Dispose(); }
-                catch { }
+                if (!__ControlIsExternal)
+                {
+                    try { control.Dispose(); }
+                    catch { }
+                    statisticInfo.DisposedCount++;
+                }
                 __Control = null;
-            }
-            else if (isFinal)
-            {
-                UnRegisterControlEvents(control);
             }
         }
         [DllImport("User32")]
@@ -1714,6 +1798,41 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (item != null && Object.ReferenceEquals(this.__DataFormItem, item));
         }
         #endregion
+        /// <summary>
+        /// Třída pro statisiku
+        /// </summary>
+        internal class StatisticInfo
+        {
+            public override string ToString()
+            {
+                return this.Text;
+            }
+            /// <summary>
+            /// Textové vyjádření
+            /// </summary>
+            public string Text
+            {
+                get
+                {
+                    string text = "";
+                    if (CreatedCount > 0) text += "; Created: " + CreatedCount;
+                    if (HostedCount > 0) text += "; Hosted: " + HostedCount;
+                    if (VisibleCount > 0) text += "; Visible: " + VisibleCount;
+                    if (RemovedCount > 0) text += "; Removed: " + RemovedCount;
+                    if (DestroyedCount > 0) text += "; Destroyed: " + DestroyedCount;
+                    if (DisposedCount > 0) text += "; Disposed: " + DisposedCount;
+                    if (text.Length > 0) text = text.Substring(2);
+                    else text = "No actions";
+                    return text;
+                }
+            }
+            public int CreatedCount { get; set; }
+            public int HostedCount { get; set; }
+            public int VisibleCount { get; set; }
+            public int RemovedCount { get; set; }
+            public int DestroyedCount { get; set; }
+            public int DisposedCount { get; set; }
+        }
     }
     #endregion
     #region class DataFormItem : Deklarace každého jednoho prvku v rámci DataFormu, implementace IDataFormItem
@@ -1837,7 +1956,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Optimální default pro runtime
         /// </summary>
-        Default = HostOnlyVisible | RemoveReleaseHandle | RemoveDispose
+        Default = HostOnlyVisible | RemoveReleaseHandle,
+        /// <summary>
+        /// Optimální default pro runtime
+        /// </summary>
+        Default2 = HostOnlyVisible | RemoveReleaseHandle | RemoveDispose
     }
     #endregion
 
@@ -1890,12 +2013,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 y += 30;
             }
 
-            if (!sample.NoAddControlsToPanel)
-            {
-                this.Controls.AddRange(_Controls.ToArray());
-                if (sample.Add50ControlsToPanel)
-                    RemoveSampleItems(50);
-            }
+            this.Controls.AddRange(_Controls.ToArray());
 
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -1944,8 +2062,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public int CheckCount { get; set; }
         public int RowsCount { get; set; }
         public int PagesCount { get; set; }
-        public bool NoAddControlsToPanel { get; set; }
-        public bool Add50ControlsToPanel { get; set; }
     }
     #endregion
 }

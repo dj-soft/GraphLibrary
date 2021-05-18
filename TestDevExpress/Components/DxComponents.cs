@@ -33,13 +33,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// <see cref="DxComponent"/> : Factory pro tvorbu DevExpress komponent
     /// </summary>
-    public class DxComponent
+    public sealed class DxComponent
     {
         #region Singleton
         /// <summary>
         /// Soukromý přístup k singletonu
         /// </summary>
-        protected static DxComponent Instance
+        private static DxComponent Instance
         {
             get
             {
@@ -58,6 +58,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DxComponent()
         {
+            this._InitLog();
             this._InitStyles();
             this._InitZoom();
             this._InitDrawing();
@@ -506,6 +507,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (parent != null) parent.Controls.Add(textEdit);
             if (shiftY) y = y + textEdit.Height + inst._DetailYSpaceText;
             return textEdit;
+        }
+        public static DxMemoEdit CreateDxMemoEdit(Control parent = null, DockStyle? dock = null, int? width = null, int? height = null, EventHandler textChanged = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? readOnly = null, bool? tabStop = null)
+        {
+            int x = 0;
+            int y = 0;
+            int w = width ?? 100;
+            int h = height ?? 100;
+            var memoEdit = CreateDxMemoEdit(x, ref y, w, h, parent, textChanged,
+                toolTipTitle, toolTipText,
+                visible, readOnly, tabStop, false);
+            if (dock.HasValue) memoEdit.Dock = dock.Value;
+            return memoEdit;
         }
         public static DxMemoEdit CreateDxMemoEdit(int x, int y, int w, int h, Control parent, EventHandler textChanged = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1034,6 +1049,141 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Control _CreateDataFormImage(IDataFormItem dataFormItem) { return null; }
         #endregion
         #endregion
+        #region LogTime
+        /// <summary>
+        /// Aktuální obsah Log textu.
+        /// Lze zaregistrovat eventhandler <see cref="LogTextChanged"/> pro hlídání všech změn
+        /// </summary>
+        public static string LogText { get { return Instance._LogText; } }
+        /// <summary>
+        /// Smaže dosavadní obsah logu
+        /// </summary>
+        public static void LogClear() { Instance._LogClear(); }
+        /// <summary>
+        /// Událost po každé změně obsahu textu <see cref="LogText"/>
+        /// </summary>
+        public static event  EventHandler LogTextChanged { add { Instance._LogTextChanged += value; } remove { Instance._LogTextChanged -= value; } }
+        /// <summary>
+        /// Obsahuje přesný aktuální čas jako Int64. 
+        /// Lze ho následně použít jako parametr 'long startTime' v metodě <see cref="LogAddLineTime(string, long?)"/> pro zápis uplynulého času.
+        /// </summary>
+        /// <returns></returns>
+        public static long LogTimeCurrent { get { return Instance._LogTimeCurrent; } }
+        /// <summary>
+        /// Přidá dodaný řádek do logu. 
+        /// Nepřidává se nic víc.
+        /// </summary>
+        /// <param name="line"></param>
+        public static void LogAddLine(string line) { Instance._LogAddLine(line); }
+        /// <summary>
+        /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:
+        /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeSec"/> vloží počet uplynulých sekund ve formě "25,651 sec";
+        /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeMilisec"/> vloží počet uplynulých milisekund ve formě "25,651 milisec";
+        /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeMicrosec"/> vloží počet uplynulých mikrosekund ve formě "98 354,25 mikrosec";
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="startTime"></param>
+        public static void LogAddLineTime(string line, long? startTime) { Instance._LogAddLineTime(line, startTime); }
+        /// <summary>
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long)"/>, za který se dosaví uplynulý čas v sekundách
+        /// </summary>
+        public static string LogTokenTimeSec { get { return "{SEC}"; } }
+        /// <summary>
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long)"/>, za který se dosaví uplynulý čas v milisekundách
+        /// </summary>
+        public static string LogTokenTimeMilisec { get { return "{MILISEC}"; } }
+        /// <summary>
+        /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long)"/>, za který se dosaví uplynulý čas v mikrosekundách
+        /// </summary>
+        public static string LogTokenTimeMicrosec { get { return "{MICROSEC}"; } }
+        /// <summary>
+        /// Init systému Log
+        /// </summary>
+        private void _InitLog()
+        {
+            _LogWatch = new System.Diagnostics.Stopwatch();
+            _LogFrequency = System.Diagnostics.Stopwatch.Frequency;
+            _LogSB = new StringBuilder();
+            _LogWatch.Start();
+        }
+        /// <summary>
+        /// Aktuální obsah Log textu.
+        /// </summary>
+        private string _LogText
+        {
+            get
+            {
+                string text = "";
+                lock (_LogSB)
+                    text = _LogSB.ToString();
+                return text;
+            }
+        }
+        /// <summary>
+        /// Smaže dosavadní obsah logu
+        /// </summary>
+        private void _LogClear()
+        {
+            lock (_LogSB)
+                _LogSB.Clear();
+            RunLogTextChanged();
+        }
+        /// <summary>
+        /// Obsahuje aktuální čas jako ElapsedTicks
+        /// </summary>
+        /// <returns></returns>
+        private long _LogTimeCurrent { get { return _LogWatch.ElapsedTicks; } }
+        /// <summary>
+        /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:
+        /// na místo tokenu {S} vloží počet uplynulých sekund ve formě "25,651 sec";
+        /// na místo tokenu {MS} vloží počet uplynulých milisekund ve formě "25,651 milisec";
+        /// na místo tokenu {US} vloží počet uplynulých mikrosekund ve formě "98 354,25 microsec";
+        /// </summary>
+        /// <param name="line"></param>
+        /// <param name="startTime"></param>
+        private void _LogAddLineTime(string line, long? startTime)
+        {
+            decimal seconds = (startTime.HasValue ? ((decimal)(_LogWatch.ElapsedTicks - startTime.Value)) / _LogFrequency : 0m);     // Počet sekund
+            if (line.Contains(LogTokenTimeSec))
+            {
+                string info = Math.Round(seconds, 3).ToString("### ### ### ##0.000").Trim() + " sec";
+                line = line.Replace(LogTokenTimeSec, info);
+            }
+            if (line.Contains(LogTokenTimeMilisec))
+            {
+                string info = Math.Round((seconds * 1000m), 3).ToString("### ### ### ##0.000").Trim() + " milisec";
+                line = line.Replace(LogTokenTimeMilisec, info);
+            }
+            if (line.Contains(LogTokenTimeMicrosec))
+            {
+                string info = Math.Round((seconds * 1000000m), 3).ToString("### ### ### ##0.000").Trim() + " microsec";
+                line = line.Replace(LogTokenTimeMicrosec, info);
+            }
+            _LogAddLine(line);
+        }
+        /// <summary>
+        /// Přidá daný text jako další řádek
+        /// </summary>
+        /// <param name="line"></param>
+        private void _LogAddLine(string line)
+        {
+            lock (_LogSB)
+                _LogSB.AppendLine(line);
+            RunLogTextChanged();
+        }
+        /// <summary>
+        /// Vyvolá event <see cref="_LogTextChanged"/>.
+        /// </summary>
+        private void RunLogTextChanged()
+        {
+            // Tady nemá smysl řešit standardní metodu : protected virtual void OnLogTextChanged(), protože tahle třída je sealed a singleton
+            _LogTextChanged?.Invoke(null, EventArgs.Empty);
+        }
+        private System.Diagnostics.Stopwatch _LogWatch;
+        private decimal _LogFrequency;
+        private StringBuilder _LogSB;
+        private event EventHandler _LogTextChanged;
+        #endregion
         #region Draw metody
         /// <summary>
         /// Vykreslí linku, která může být i gradientem kde <paramref name="color2"/> je barva u pravého okraje
@@ -1146,7 +1296,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="addPng">Akceptovat bitmapy (PNG)</param>
         /// <param name="addSvg">Akceptovat vektory (SVG)</param>
         /// <returns></returns>
-        protected string[] _GetResourceKeys(bool addPng, bool addSvg)
+        private string[] _GetResourceKeys(bool addPng, bool addSvg)
         {
             if (!addPng && !addSvg) return new string[0];
 
@@ -1216,7 +1366,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette">Paleta pro vykreslení SVG Image</param>
         /// <param name="svgState">Stav objektu pro vykreslení SVG Image, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
         /// <returns></returns>
-        protected Image _GetImageFromResource(string resourceName, out Size size,
+        private Image _GetImageFromResource(string resourceName, out Size size,
             Size? maxSize, Size? optimalSvgSize, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, DevExpress.Utils.Drawing.ObjectState? svgState)
         {
             System.Drawing.Image image = null;
@@ -1269,7 +1419,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
         public static DevExpress.Utils.Svg.SvgImage GetSvgImage(string key) { return Instance._GetSvgImage(key); }
         public static void ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize); }
-        protected void _ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null)
+        private void _ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null)
         {
             if (image != null)
             {
@@ -1294,7 +1444,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         public static void ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
-        protected void _ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
+        private void _ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
         {
             if (image != null)
             {
@@ -1329,7 +1479,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="imageUri"></param>
         /// <returns></returns>
-        protected static bool _IsImageNameSvg(string imageUri)
+        private static bool _IsImageNameSvg(string imageUri)
         {
             return (!String.IsNullOrEmpty(imageUri) && imageUri.EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
         }
@@ -1337,7 +1487,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Napravuje chybu DevExpress, kdy v <see cref="DevExpress.Images.ImageResourceCache"/> pro SVG zdroje po jejich použití je jejich zdrojový stream na konci, a další použití je tak znemožněno.
         /// </summary>
         /// <param name="resourceName"></param>
-        protected void _ImageResourceRewindStream(string resourceName)
+        private void _ImageResourceRewindStream(string resourceName)
         {
             if (String.IsNullOrEmpty(resourceName)) return;
 
@@ -1353,7 +1503,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (stream.Position > 0L && stream.CanSeek)
                 stream.Seek(0L, System.IO.SeekOrigin.Begin);
         }
-        protected DevExpress.Utils.Svg.SvgImage _GetSvgImage(string key)
+        private DevExpress.Utils.Svg.SvgImage _GetSvgImage(string key)
         {
             if (String.IsNullOrEmpty(key)) return null;
 
@@ -1367,11 +1517,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prefix pro ImageUri: "image://"
         /// </summary>
-        protected static string ImageUriPrefix { get { return "image://"; } }
+        private static string ImageUriPrefix { get { return "image://"; } }
         /// <summary>
         /// Cache systémových image resources
         /// </summary>
-        protected DevExpress.Images.ImageResourceCache _ImageResourceCache
+        private DevExpress.Images.ImageResourceCache _ImageResourceCache
         {
             get
             {
@@ -1388,7 +1538,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="resourceName"></param>
         /// <param name="extension"></param>
         /// <returns></returns>
-        protected bool _TryGetResourceExtension(string resourceName, out string extension)
+        private bool _TryGetResourceExtension(string resourceName, out string extension)
         {
             extension = null;
             if (String.IsNullOrEmpty(resourceName)) return false;
@@ -1400,7 +1550,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Dictionary obsahující všechny systémové zdroje (jako Key) 
         /// a jejich normalizovanou příponu (jako Value) ve formě "png", "svg" atd (bez tečky, lower, trim)
         /// </summary>
-        protected Dictionary<string, string> _ImageResourceDictionary
+        private Dictionary<string, string> _ImageResourceDictionary
         {
             get
             {
@@ -1427,7 +1577,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private Dictionary<string, string> __ImageResourceDictionary;
-        protected DevExpress.Utils.SvgImageCollection _SvgImageCollection 
+        private DevExpress.Utils.SvgImageCollection _SvgImageCollection 
         { 
             get 
             {
@@ -5080,6 +5230,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region enum DxTabPaneTransitionType
     /// <summary>
     /// Typ přechodového efektu v <see cref="DxTabPane"/>
     /// </summary>
@@ -5119,6 +5270,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         AllTimes = Fast | Medium | Slow | VerySlow,
         AllTypes = Fade | Slide | Push | Shape
     }
+    #endregion
     #endregion
     #region DxLabelControl
     /// <summary>

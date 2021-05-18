@@ -16,14 +16,24 @@ namespace TestDevExpress.Forms
         {
             this.InitializeForm();
         }
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
+        }
         protected void InitializeForm()
         {
             this.Size = new System.Drawing.Size(800, 600);
             this.Text = "TESTER DataForm";
 
-            _DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+            _DxMainSplit = DxComponent.CreateDxSplitContainer(this, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
+                fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 300, showSplitGlyph: true);
+
+            _DxMainPanel = DxComponent.CreateDxPanel(_DxMainSplit.Panel1, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
             _DxMainPanel.SizeChanged += _DxMainPanel_SizeChanged;
             DxComponent.CreateDxLabel(10, 10, 500, _DxMainPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
+
+            _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
             this._DxRibbonControl = new DxRibbonControl();
             this.Ribbon = _DxRibbonControl;
@@ -58,6 +68,8 @@ namespace TestDevExpress.Forms
             this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaShow);
 
             WinProcessInfoAfterInit = DxComponent.WinProcessInfo.GetCurent();
+
+            DxComponent.LogTextChanged += DxComponent_LogTextChanged;
         }
 
         private void _DxMainPanel_SizeChanged(object sender, EventArgs e)
@@ -67,7 +79,9 @@ namespace TestDevExpress.Forms
 
         private DxRibbonControl _DxRibbonControl;
         private DxRibbonStatusBar _DxRibbonStatusBar;
+        private DxSplitContainerControl _DxMainSplit;
         private DxPanelControl _DxMainPanel;
+        private DxMemoEdit _DxLogMemoEdit;
         private DevExpress.XtraBars.BarStaticItem CreateStatusBarItem(int? fontSizeDelta = null)
         {
             DevExpress.XtraBars.BarStaticItem item = new DevExpress.XtraBars.BarStaticItem();
@@ -109,9 +123,11 @@ namespace TestDevExpress.Forms
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample5", ItemText = "Ukázka 5", ItemImage = imageTest, Tag = "Sample5", ItemEnabled = false });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample6", ItemText = "Ukázka 6", ItemImage = imageTest, Tag = "Sample6", ItemEnabled = false });
 
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.AddControls", ItemText = "Vkládat Controly", ToolTip = "Vytvořit instance controlů ale NEPŘIDÁVAT JE do Panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+            _DxDataFormMemoryOptimized = true;
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.MemoryOptimized", ItemText = "MemoryOptimized", ToolTip = "Zaškrtnuto: používat optimalizaci paměti / Ne: bez optimalizací (může dojít k systémové chybě)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+          //  this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = null, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+            
 
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
@@ -153,8 +169,8 @@ namespace TestDevExpress.Forms
                 case "Dx.Basic.Clear":
                     _RemoveDataForms();
                     break;
-                case "Dx.Params.AddControls":
-                    _DxDataFormNoAdd = !(e.Item.ItemIsChecked ?? false);
+                case "Dx.Params.MemoryOptimized":
+                    _DxDataFormMemoryOptimized = (e.Item.ItemIsChecked ?? false);
                     break;
                 case "Dx.Params.Add50":
                     _DxDataFormAdd50 = (e.Item.ItemIsChecked ?? false);
@@ -164,6 +180,7 @@ namespace TestDevExpress.Forms
                     _DxDataUseWinForm = (e.Item.ItemIsChecked ?? false);
                     break;
                 default:
+                    DxComponent.LogClear();
                     if (e.Item.Tag is DxDataFormSample sampleData)
                         this._AddDataFormSampleData(sampleData);
                     else if (e.Item.Tag is string sampleName)
@@ -178,8 +195,7 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-            sampleData.NoAddControlsToPanel = _DxDataFormNoAdd;
-            sampleData.Add50ControlsToPanel = _DxDataFormAdd50;
+
             if (!_DxDataUseWinForm)
                 _AddDataFormDx(sampleData);
             else
@@ -192,28 +208,29 @@ namespace TestDevExpress.Forms
         }
         private void _AddDataFormSampleName(string sampleName)
         {
-
             int sampleId = 0;
             if (sampleName != null && sampleName.Length > 6 && sampleName.StartsWith("Sample"))
                 Int32.TryParse(sampleName.Substring(6), out sampleId);
             if (sampleId <= 0) return;
 
+            var sampleStartTime = DxComponent.LogTimeCurrent;
             var sampleItems = DxDataForm.CreateSample(sampleId);
             if (sampleItems == null) return;
+            int count = sampleItems.Count();
+            DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             _RemoveDataForms();
 
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-            DxDataForm dxDataForm = new DxDataForm();
-            dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-            dxDataForm.GotFocus += DxDataForm_GotFocus;
-            dxDataForm.TabChangeDone += DxDataForm_TabChangeDone;
+            DxDataForm dxDataForm = CreateValidDxDataForm();
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
             _DoLayoutAnyDataForm();
 
+            var addStartTime = DxComponent.LogTimeCurrent;
             dxDataForm.AddItems(sampleItems);
+            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             _DxMainPanel.Controls.Add(dxDataForm);
 
@@ -222,26 +239,23 @@ namespace TestDevExpress.Forms
 
             RefreshStatusCurrent();
         }
-
-        private void DxDataForm_TabChangeDone(object sender, TEventArgs<TimeSpan> e)
-        {
-            if (!_DxShowTimeSpan.HasValue) return;           // To je v době prvotní časomíry, a tu chceme zachovat = při vytváření PrepareTabForPages
-            _DxShowTimeSpan = e.Item;
-            RefreshStatusCurrent();
-        }
-
+   
         private void _AddDataFormDx(DxDataFormSample sample)
         {
-            DxDataForm dxDataForm = new DxDataForm();
-            dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-            dxDataForm.GotFocus += DxDataForm_GotFocus;
+            DxDataForm dxDataForm = CreateValidDxDataForm();
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
             _DoLayoutAnyDataForm();
 
-            var items = DxDataForm.CreateSample(sample);
-            dxDataForm.AddItems(items);
+            var sampleStartTime = DxComponent.LogTimeCurrent;
+            var sampleItems = DxDataForm.CreateSample(sample);
+            int count = sampleItems.Count();
+            DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+
+            var addStartTime = DxComponent.LogTimeCurrent;
+            dxDataForm.AddItems(sampleItems);
+            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
             _DxMainPanel.Controls.Add(dxDataForm);
         }
@@ -259,6 +273,29 @@ namespace TestDevExpress.Forms
 
             _DxMainPanel.Controls.Add(wfDataForm);
         }
+        private DxDataForm CreateValidDxDataForm()
+        {
+            DxDataForm dxDataForm = new DxDataForm();
+            dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+            dxDataForm.MemoryMode = (_DxDataFormMemoryOptimized ? DxDataFormMemoryMode.Default : DxDataFormMemoryMode.HostAllways);
+            dxDataForm.GotFocus += DxDataForm_GotFocus;
+            dxDataForm.TabChangeDone += DxDataForm_TabChangeDone;
+            return dxDataForm;
+        }
+
+        private void DxComponent_LogTextChanged(object sender, EventArgs e)
+        {
+            var logText = DxComponent.LogText;
+            if (logText != null)
+                _DxLogMemoEdit.Text = logText;
+            RefreshStatusCurrent();
+        }
+
+        private void DxDataForm_TabChangeDone(object sender, EventArgs e)
+        {
+            RefreshStatusCurrent();
+        }
+
         private void DxDataForm_GotFocus(object sender, EventArgs e)
         {
             if (!_DxShowTimeSpan.HasValue && _DxShowTimeStart.HasValue)
@@ -309,7 +346,7 @@ namespace TestDevExpress.Forms
         private DxDataForm _DxDataForm;
         private WfDataForm _WfDataForm;
         private System.Windows.Forms.Control _AnyDataForm;
-        private bool _DxDataFormNoAdd;
+        private bool _DxDataFormMemoryOptimized;
         private bool _DxDataFormAdd50;
         private bool _DxDataUseWinForm;
         private DateTime? _DxShowTimeStart;
