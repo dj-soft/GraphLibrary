@@ -1798,6 +1798,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (item != null && Object.ReferenceEquals(this.__DataFormItem, item));
         }
         #endregion
+        #region class StatisticInfo : třída pro statistiku
         /// <summary>
         /// Třída pro statisiku
         /// </summary>
@@ -1826,13 +1827,32 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return text;
                 }
             }
+            /// <summary>
+            /// Počet new instancí vytvořených Controlů
+            /// </summary>
             public int CreatedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů nyní umístěných do Parent containeru
+            /// </summary>
             public int HostedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů aktuálně viditelných (hostovaných v Containeru)
+            /// </summary>
             public int VisibleCount { get; set; }
+            /// <summary>
+            /// Počet Controlů odebraných z Parent Containeru
+            /// </summary>
             public int RemovedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů s uvolněným handle (DestroyWindow)
+            /// </summary>
             public int DestroyedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů disposovaných
+            /// </summary>
             public int DisposedCount { get; set; }
         }
+        #endregion
     }
     #endregion
     #region class DataFormItem : Deklarace každého jednoho prvku v rámci DataFormu, implementace IDataFormItem
