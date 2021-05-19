@@ -154,6 +154,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vytvoří a vrátí instanci <see cref="DxDataFormPage"/> podle dat v definici prvku.
+        /// Vytvoří prvek, který není aktivní = to proto, aby v rámci inicializací nebyly generovány zbytečně controly.
+        /// Pokud instance bude použita jako samostatná, musí ji aplikace aktivovat.
+        /// Pokud instance bude na TabPane, pak aktivaci řídí přepínání záložek.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
@@ -216,6 +219,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var pageData = pagesData[0];
                 pageData.PlaceToParent(this);
+                pageData.IsActiveContent = true;
             }
             else if (pagesData.Length > 1)
             {
@@ -236,13 +240,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                     pageData.PlaceToParent(pane);
                     pageData.Dock = WF.DockStyle.Fill;
                 }
+
+                DxDataFormPage selectedPage = this.SelectedPage;
+                if (selectedPage != null && !selectedPage.IsActiveContent)
+                    selectedPage.IsActiveContent = true;
+            }
+        }
+        public DxDataFormPage SelectedPage 
+        {
+            get
+            {
+                if (_TabPane != null && _TabPane.Visible) return GetDataFormPage(_TabPane.SelectedPage);
+                if (__Pages != null && __Pages.Count > 0) return __Pages.Values.ToArray()[0];
+                return null;
             }
         }
         private void _TabPane_PageChangingPrepare(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
         {
             _TabPaneChangeStart = DxComponent.LogTimeCurrent;
             DxDataFormPage page = GetDataFormPage(e.Item);
-            _TabPaneChangeNameOld = page?.DebugName;
+            _TabPaneChangeNameNew = page?.DebugName;
             if (page != null) page.IsActiveContent = true;
         }
 
@@ -250,12 +267,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxDataFormPage page = GetDataFormPage(e.Item);
             if (page != null) page.IsActiveContent = false;
+            _TabPaneChangeNameOld = page?.DebugName;
             RunTabChangeDone();
-            DxComponent.LogAddLineTime($"TabChange from {_TabPaneChangeNameOld} to {page?.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
+            DxComponent.LogAddLineTime($"TabChange from {_TabPaneChangeNameOld} to {_TabPaneChangeNameNew}; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
         }
 
         private long? _TabPaneChangeStart;
         private string _TabPaneChangeNameOld;
+        private string _TabPaneChangeNameNew;
         /// <summary>
         /// Vrátí <see cref="DxDataFormPage"/> nacházející se na daném controlu
         /// </summary>
@@ -891,11 +910,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxDataFormPage(DxDataForm dataForm)
             : base(dataForm)
         {
+            IsActiveContentInternal = false;
         }
         /// <summary>
         /// Jméno panelu
         /// </summary>
-        public override string DebugName { get { return $"DataFormPage 'PageText'"; } }
+        public override string DebugName { get { return $"DataFormPage '{PageText}'"; } }
         /// <summary>
         /// Dispose
         /// </summary>
@@ -1047,7 +1067,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!dataItem.IsHosted)
             {   // a pokud aktuálně není hostován = není přítomen v Parent containeru,
                 //  zajistíme, že Focusovaný prvek bude fyzicky vytvořen a umístěn do Parent containeru:
-                RefreshVisibleItems();
+                RefreshVisibleItems("SetFocusToItem");
             }
 
             // Tato metoda nemění obsah proměnných (__CurrentlyFocusedDataItem, __PreviousFocusableDataItem, __NextFocusableDataItem).
@@ -1068,7 +1088,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             __CurrentlyFocusedDataItem = dataItem;
             _SearchNearControls(dataItem);
-            _EnsureHostingFocusableItemd();
+            _EnsureHostingFocusableItems();
 
             if (isChange)
                 RunFocusedItemChanged();
@@ -1150,13 +1170,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se po změně objektů uložených v těchto proměnných.
         /// Metoda zjistí, zda všechny objekty (které nejsou null) mají IsHost true, a pokud ne pak vyvolá 
         /// </summary>
-        private void _EnsureHostingFocusableItemd()
+        private void _EnsureHostingFocusableItems()
         {
             bool needRefresh = ((__CurrentlyFocusedDataItem != null && !__CurrentlyFocusedDataItem.IsHosted) ||
                                 (__PreviousFocusableDataItem != null && !__PreviousFocusableDataItem.IsHosted) ||
                                 (__NextFocusableDataItem != null && !__NextFocusableDataItem.IsHosted));
             if (needRefresh)
-                RefreshVisibleItems();
+                RefreshVisibleItems("EnsureHostingFocusableItems");
         }
         /// <summary>
         /// Vrátí true pokud daný prvek má být zařazen mezi hostované prvky z důvodu Focusu (aktuální, předchozí, následující)
@@ -1196,7 +1216,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.ContentPanel == null) return;                   // Toto nastane, pokud je voláno v procesu konstruktoru (což je, protože se mění velikost)
             this.ContentPanel.ContentVisibleBounds = this.VisibleBounds;
-            RefreshVisibleItems();
+            RefreshVisibleItems("ContentViewChanged");
         }
         /// <summary>
         /// Do své evidence přidá control pro danou definici <paramref name="item"/>.
@@ -1219,7 +1239,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal void FinaliseContent()
         {
             RefreshContentSize();
-            RefreshVisibleItems();
+            RefreshVisibleItems("FinaliseContent");
         }
         /// <summary>
         /// Z jednotlivých controlů vypočte potřebnou velikost pro <see cref="ContentPanel"/> a vepíši ji do něj.
@@ -1248,31 +1268,79 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí refresh viditelnosti prvků podle aktuální viditelné oblasti a dalších parametrů.
         /// Výsledkem je vytvoření controlu nebo jeho uvolnění podle potřeby.
         /// </summary>
-        private void RefreshVisibleItems()
+        /// <param name="reason"></param>
+        private void RefreshVisibleItems(string reason)
         {
-            var startTime = DxComponent.LogTimeCurrent;
+            long beginTime = DxComponent.LogTimeCurrent;
+            long startTime;
 
-            var visibleBounds = this.VisibleBounds;
-            bool isActiveContent = this.__IsActiveContent;
+            RefreshItemsInfo refreshInfo = new RefreshItemsInfo(this.ClientSize, this.VisibleBounds, this.CanOptimizeControls, this.IsActiveContent, DataForm.MemoryMode);
 
-            this.SuspendLayout();
-            this.BeginInit();
-
-            var refreshStart = DxComponent.LogTimeCurrent;
-            DxDataFormControlItem.StatisticInfo statisticInfo = new DxDataFormControlItem.StatisticInfo();
-
+            // Tady proběhne příprava = vytvoření new instancí controlů, uložení controlů do refreshInfo pro hromadné přidání a pro hromadný release:
+            startTime = DxComponent.LogTimeCurrent;
             foreach (var item in Items)
-                item.RefreshVisibleItem(visibleBounds, isActiveContent, statisticInfo);
+                item.PrepareVisibleItem(refreshInfo);
+            DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' PrepareVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
-            string refreshLine = $"Refesh: {statisticInfo.Text}; Time: {DxComponent.LogTokenTimeMilisec}";
-            DxComponent.LogAddLineTime(refreshLine, refreshStart);
+            // Tady hromadně přidám a odeberu controly z daného pole:
+            if (refreshInfo.NeedRefreshContent)
+                this.ContentPanel.RefreshVisibleItems(refreshInfo);
 
-            this.EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            // Tady proběhne závěr = nastavení proměnných a uvolnění z paměti pro zahozené controly:
+            startTime = DxComponent.LogTimeCurrent;
+            foreach (var item in refreshInfo.AddedItems)
+                item.FinaliseVisibleItemAdd(refreshInfo);
+            foreach (var item in refreshInfo.RemovedItems)
+                item.FinaliseVisibleItemRemoved(refreshInfo);
+            DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' FinaliseVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
-            string line = $"ScrollPanel {DebugName} RefreshVisibleItems(): Items: {Items.Count}; Time: {DxComponent.LogTokenTimeMilisec}";
-            DxComponent.LogAddLineTime(line, startTime);
+            DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' RefreshVisibleItems({reason}); TotalTime: {DxComponent.LogTokenTimeMilisec}", beginTime);
+        }
+        /// <summary>
+        /// Tohle bychom měli umět...
+        /// </summary>
+        /// <param name="items"></param>
+        private void RemoveItems(IEnumerable<DxDataFormControlItem> items)
+        {
+
+        }
+        /// <summary>
+        /// Obsahuje true, pokud se v aktuální situaci má řešit optimalizace počtu vidielných controlů podle viditelné oblasti.
+        /// <para/>
+        /// True vrací tehdy, když prvek je NEaktivní <see cref="IsActiveContent"/> 
+        /// (protože neaktivní prvek má mít vždy nulový počet controlů bez ohledu na svoje rozměry).
+        /// Pak optimalizace zajistí odebrání všech prvků a úsporu paměti.
+        /// <para/>
+        /// True vrací tehdy, když prvek je AKTIVNÍ a jeho plná fyzická velikost je znatelně menší než velikost viditelná 
+        /// (protože pak optimalizace zajistí používání menšího počtu controlů než je plný obsah, a ušetří se systémové zdroje).
+        /// <para/>
+        /// False vrací tehdy, když prvek je AKTIVNÍ a jeho plná fyzická velikost je poměrně podobná velikosti viditelné 
+        /// (protože pak bude ve viditelné oblasti více než cca 90% controlů, a pak by režie s optimalizací neušetřila mnoho zdrojů).
+        /// </summary>
+        private bool CanOptimizeControls
+        {
+            get
+            {
+                if (!this.IsActiveContent) return true;              // Nejsem aktivní => optimalizace zajistí odebrání všech prvků => zásadní úspora paměti
+                Size contentSize = this.ContentPanel.ClientSize;
+                int contentWidth = contentSize.Width;
+                int contentHeight = contentSize.Height;
+                Size visibleSize = this.VisibleBounds.Size;
+                int visibleWidth = visibleSize.Width;
+                int visibleHeight = visibleSize.Height;
+
+                if (visibleWidth > contentWidth) visibleWidth = contentWidth;         // Pokud Visible prostor je širší než je obsah, pak pro další výpočet beru jen potřebné Content pixely
+                if (visibleHeight > contentHeight) visibleHeight = contentHeight;     //  aby optimalizace zabrala i tehdy, když Content je např. úzký a vysoký, a Visible je široký a nízký (pak reálně vidím třeba 30% obsahu, i když sumární počet pixelů je srovnatelný)
+
+                decimal contentPixel = (decimal)(contentWidth * contentHeight);
+                if (contentPixel < 100) return false;                // 100px (čtverečných) => nějaký minimalistický control => nebudeme optimalizovat
+                
+                decimal visiblePixel = (decimal)(visibleWidth * visibleHeight);
+                decimal visibleratio = visiblePixel / contentPixel;  // Poměr viditelné části k celkové ploše: čím méně vidime, tím víc scrollujeme, a tím víc potřebujeme optimalizaci!
+
+                return (visibleratio <= 0.9m);                       // Pokud vidíme 90% a méně, zapneme optimalizaci. POkud vidíme téměř nebo úplně vše, pak ji neřešíme = úspora paměti nestojí za tu práci.
+            }
+
         }
         /// <summary>
         /// Obsahuje true, pokud obsah je aktivní, false pokud nikoliv. Výchozí je true.
@@ -1290,9 +1358,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 else this.ContentPanel.ReleaseScreenshot(false);
 
                 __IsActiveContent = value; 
-                RefreshVisibleItems(); 
+                RefreshVisibleItems("IsActiveContent changed"); 
             } 
         }
+        /// <summary>
+        /// True značí aktivní obsah. Setování nevyvolá refresh obsahu.
+        /// </summary>
+        protected bool IsActiveContentInternal { get { return __IsActiveContent; } set { __IsActiveContent = value; } }
+        /// <summary>
+        /// True značí aktivní obsah
+        /// </summary>
         private bool __IsActiveContent;
         /// <summary>
         /// Umístí svůj vizuální container do daného Parenta.
@@ -1317,6 +1392,103 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (parent != null)
                 parent.Controls.Remove(this);
         }
+        #region class RefreshItemsInfo : sumarizační třída pro RefreshItems mezi ScrollPanel a ControlInfo
+        /// <summary>
+        /// Sumarizační třída pro RefreshItems mezi <see cref="DxDataFormScrollPanel"/> a <see cref="DxDataFormControlItem"/>
+        /// </summary>
+        internal class RefreshItemsInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="totalSize"></param>
+            /// <param name="visibleBounds"></param>
+            /// <param name="optimizeControls"></param>
+            /// <param name="isActiveContent"></param>
+            /// <param name="memoryMode"></param>
+            public RefreshItemsInfo(Size totalSize, Rectangle visibleBounds, bool optimizeControls, bool isActiveContent, DxDataFormMemoryMode memoryMode)
+            {
+                this.TotalSize = totalSize;
+                this.VisibleBounds = visibleBounds;
+                this.OptimizeControls = optimizeControls;
+                this.IsActiveContent = isActiveContent;
+                this.MemoryMode = memoryMode;
+                this.AddedItems = new List<DxDataFormControlItem>();
+                this.RemovedItems = new List<DxDataFormControlItem>();
+            }
+            public Size TotalSize { get; private set; }
+            public Rectangle VisibleBounds { get; private set; }
+            public bool OptimizeControls { get; private set; }
+            public bool IsActiveContent { get; private set; }
+            public DxDataFormMemoryMode MemoryMode { get; private set; }
+            public bool ModeIsHostAllways { get { return MemoryMode.HasFlag(DxDataFormMemoryMode.HostAllways); } }
+            public bool ModeIsRemoveReleaseHandle { get { return MemoryMode.HasFlag(DxDataFormMemoryMode.RemoveReleaseHandle); } }
+            public bool ModeIsRemoveDispose { get { return MemoryMode.HasFlag(DxDataFormMemoryMode.RemoveDispose); } }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return this.Text;
+            }
+            /// <summary>
+            /// Textové vyjádření
+            /// </summary>
+            public string Text
+            {
+                get
+                {
+                    string text = "";
+                    if (CreatedCount > 0) text += "; Created: " + CreatedCount;
+                    if (HostedCount > 0) text += "; Hosted: " + HostedCount;
+                    if (VisibleCount > 0) text += "; Visible: " + VisibleCount;
+                    if (RemovedCount > 0) text += "; Removed: " + RemovedCount;
+                    if (DestroyedCount > 0) text += "; Destroyed: " + DestroyedCount;
+                    if (DisposedCount > 0) text += "; Disposed: " + DisposedCount;
+                    if (text.Length > 0) text = text.Substring(2);
+                    else text = "No actions";
+                    return text;
+                }
+            }
+            /// <summary>
+            /// Pole controlů, které je třeba přidat hromadně do ContentPanelu
+            /// </summary>
+            public List<DxDataFormControlItem> AddedItems { get; private set; }
+            /// <summary>
+            /// Pole controlů, které je třeba přidat hromadně do ContentPanelu
+            /// </summary>
+            public List<DxDataFormControlItem> RemovedItems { get; private set; }
+            /// <summary>
+            /// Obsahuje true pokud je třeba změnit obsah Content panelu (tedy máme controly k přidání anebo k odebrání)
+            /// </summary>
+            public bool NeedRefreshContent { get { return (this.AddedItems.Count > 0 || this.RemovedItems.Count > 0); } }
+            /// <summary>
+            /// Počet new instancí vytvořených Controlů
+            /// </summary>
+            public int CreatedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů nyní umístěných do Parent containeru
+            /// </summary>
+            public int HostedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů aktuálně viditelných (hostovaných v Containeru)
+            /// </summary>
+            public int VisibleCount { get; set; }
+            /// <summary>
+            /// Počet Controlů odebraných z Parent Containeru
+            /// </summary>
+            public int RemovedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů s uvolněným handle (DestroyWindow)
+            /// </summary>
+            public int DestroyedCount { get; set; }
+            /// <summary>
+            /// Počet Controlů disposovaných
+            /// </summary>
+            public int DisposedCount { get; set; }
+        }
+        #endregion
 
     }
     /// <summary>
@@ -1400,8 +1572,51 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _ContentVisibleBounds = contentVisibleBounds;
         }
+        /// <summary>
+        /// Zajistí hromadné přidání nových controlů z <paramref name="refreshInfo"/> z <see cref="DxDataFormScrollPanel.RefreshItemsInfo.RemovedItems"/>, 
+        /// a odebrání (bohužel jednotkové) controlů z <see cref="DxDataFormScrollPanel.RefreshItemsInfo.RemovedItems"/>
+        /// </summary>
+        /// <param name="refreshInfo"></param>
+        internal void RefreshVisibleItems(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        {
+            long startTime;
+            int count;
 
+            // Následující dva řádky spotřebují řádově 4 mikrosekundy, nebudu s tím přetěžovat logovací informace:
+            //   startTime = DxComponent.LogTimeCurrent;
+            this.SuspendLayout();
+            this.BeginInit();
+            //   DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; SuspendBegin; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
+            count = refreshInfo.AddedItems.Count;
+            if (count > 0)
+            {
+                startTime = DxComponent.LogTimeCurrent;
+                var addControls = refreshInfo.AddedItems.Select(i => i.Control).ToArray();
+                this.Controls.AddRange(addControls);
+                refreshInfo.HostedCount += count;
+                DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; AddControls: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            }
+
+            count = refreshInfo.RemovedItems.Count;
+            if (count > 0)
+            {
+                startTime = DxComponent.LogTimeCurrent;
+                var removeControls = refreshInfo.RemovedItems.Select(i => i.Control).ToArray();
+                // this.Controls.RemoveRange( -- neexistuje :-( -- )
+                foreach (var removeControl in removeControls)
+                    this.Controls.Remove(removeControl);
+                refreshInfo.RemovedCount += count;
+                DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; RemoveControls: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            }
+
+            // Tohle vezme řádově 0,5 milisekundy, to do logu tedy dáme:
+            startTime = DxComponent.LogTimeCurrent;
+            this.EndInit();
+            this.ResumeLayout(false);
+            this.PerformLayout();
+            DxComponent.LogAddLineTime($"ContentPanel '{ScrollPanel?.DebugName}'; RefeshVisibleItems; SuspendEnd; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
         #region Screenshot
         /// <summary>
         /// Z aktuálního stavu controlu vytvoří a uloží Screenshot, který se bude kreslit na pozadí controlu.
@@ -1457,6 +1672,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             e.Graphics.DrawImage(bmp, Point.Empty);
         }
+
         private Bitmap __Screenshot;
         #endregion
 
@@ -1513,7 +1729,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ClearInstance()
         {
-            ReleaseControl(DxDataFormMemoryMode.RemoveReleaseHandle | DxDataFormMemoryMode.RemoveDispose, new StatisticInfo(), true);
+            ReleaseControl(null, true);
             __ScrollPanel = null;
             __Control = null;
         }
@@ -1596,7 +1812,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Obsahuje true pokud this prvek může dostat Focus.
-        /// Tedy prvek musí být obecně fokusovatelný (nikoli Label), musí být obecně Viditelný <see cref="Visible"/>,
+        /// Tedy prvek musí být obecně fokusovatelný (nikoli Label), musí být obecně Viditelný <see cref="ItemVisible"/>,
         /// musí být Enabled a TabStop.
         /// </summary>
         public bool CanGotFocus
@@ -1604,7 +1820,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 if (!IsFocusableControl) return false;
-                if (!Visible) return false;
+                if (!ItemVisible) return false;
 
 
                 return true;
@@ -1613,37 +1829,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zajistí, že this prvek bude zobrazen podle toho, zda se nachází v dané viditelné oblasti
         /// </summary>
-        /// <param name="visibleBounds"></param>
-        /// <param name="isActiveContent"></param>
-        /// <param name="statisticInfo"></param>
-        internal void RefreshVisibleItem(Rectangle visibleBounds, bool isActiveContent, StatisticInfo statisticInfo)
+        /// <param name="refreshInfo"></param>
+        internal void PrepareVisibleItem(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
         {
-            var memoryMode = this.MemoryMode;
-            bool isVisible = _IsVisibleItem(visibleBounds, isActiveContent, memoryMode);
-            bool isHosted = IsHosted && (__Control != null);
+            bool needHost = _IsVisibleItem(refreshInfo);             // Zdejší control MÁ BÝT umístěn v Content panelu?
+            bool isHosted = IsHosted && (__Control != null);         // Zdejší control JE NYNÍ umístěn v Content panelu?
 
-            if (isVisible)
+            if (needHost)
             {
                 if (!isHosted)
                 {
-                    WF.Control control = GetOrCreateControl(statisticInfo);
-                    ContentPanel.Controls.Add(control);
-                    IsHosted = true;
-                    statisticInfo.HostedCount++;
+                    PrepareControl(refreshInfo);
+                    refreshInfo.AddedItems.Add(this);
                 }
-                statisticInfo.VisibleCount++;
+                refreshInfo.VisibleCount++;
                 RefreshItemValues();
             }
-            else if (isHosted && !isVisible)
+            else if (isHosted && !needHost)
             {
-                ReleaseControl(memoryMode, statisticInfo);
+                refreshInfo.RemovedItems.Add(this);
             }
+        }
+        /// <summary>
+        /// Dokončovací práce po výměně komponenty v ContentPanelu - po přidání nové komponenty pro tento prvek
+        /// </summary>
+        /// <param name="refreshInfo"></param>
+        internal void FinaliseVisibleItemAdd(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        {
+            // Fyzické přidání controlu do ContentPanelu provedl ContentPanel hromadně, tady si jen označíme že jsme hostování:
+            IsHosted = true;
+        }
+        /// <summary>
+        /// Dokončovací práce po výměně komponenty v ContentPanelu - po odebrání zdejší komponenty pro tento prvek
+        /// </summary>
+        /// <param name="refreshInfo"></param>
+        internal void FinaliseVisibleItemRemoved(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        {
+            ReleaseControl(refreshInfo, false);
         }
         /// <summary>
         /// Obsahuje true pokud this prvek má být někdy viditelný podle definice dat <see cref="IDataFormItem.Visible"/>.
         /// Pokud je tam null, považuje se to za true.
         /// </summary>
-        internal bool Visible
+        internal bool ItemVisible
         {
             get
             {
@@ -1653,45 +1881,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Obsahuje true pokud this prvek má být aktuálně přítomen jako živý prvek v controlu <see cref="ContentPanel"/>,
-        /// z hlediska aktivity parent prvku i z hlediska souřadnic
-        /// </summary>
-        /// <returns></returns>
-        internal bool IsCurrentlyVisibleItem
-        {
-            get
-            {
-                Rectangle visibleBounds = this.ScrollPanel.VisibleBounds;
-                bool isActiveContent = this.ScrollPanel.IsActiveContent;
-                var memoryMode = this.MemoryMode;
-                return _IsVisibleItem(visibleBounds, isActiveContent, memoryMode);
-            }
-        }
-        /// <summary>
         /// Vrátí true pokud this prvek má být aktuálně přítomen jako živý prvek v controlu <see cref="ContentPanel"/>.
         /// </summary>
-        /// <param name="visibleBounds"></param>
-        /// <param name="isActiveContent"></param>
-        /// <param name="memoryMode"></param>
+        /// <param name="refreshInfo"></param>
         /// <returns></returns>
-        private bool _IsVisibleItem(Rectangle visibleBounds, bool isActiveContent, DxDataFormMemoryMode memoryMode)
+        private bool _IsVisibleItem(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
         {
             // Pokud má být prvek Invisible, je to bez další diskuse:
-            if (!Visible) return false;
+            if (!ItemVisible) return false;
 
             // Pokud MemoryMode říká Allways, pak musí být hostován vždy:
-            if (memoryMode.HasFlag(DxDataFormMemoryMode.HostAllways)) return true;
+            if (refreshInfo.ModeIsHostAllways) return true;
 
-            // Prvek má být vidět, pokud je aktivní obsah, a pokud v definici prvku není Visible = false:
-            if (!isActiveContent) return false;
+            // Prvek NEMÁ být vidět, pokud je obsah NEAKTIVNÍ (tj. panel je např. na skryté záložce):
+            if (!refreshInfo.IsActiveContent) return false;
 
             // Prvek má být vidět, pokud má klávesový Focus anebo jeho TabIndex je +1 / -1 od aktuálního focusovaného prvku (aby bylo možno na něj přejít klávesou):
             if (this.IScrollPanel.IsNearFocusableItem(this)) return true;
 
+            // Pokud se NEMÁ provádět optimalizace, pak má být prvek vidět bez ohledu na jeho souřadnice ve viditelném prostoru:
+            if (!refreshInfo.OptimizeControls) return true;
+
             // Prvek má být vidět, pokud jeho souřadnice jsou ve viditelné oblasti nebo blízko ní:
-            var controlBounds = this.Bounds;
-            bool isVisibleBounds = DataForm.IsInVisibleBounds(controlBounds, visibleBounds);
-            return isVisibleBounds;
+            return DataForm.IsInVisibleBounds(this.Bounds, refreshInfo.VisibleBounds);
         }
         /// <summary>
         /// Aktualizuje hodnoty na controlu, který je právě viditelný
@@ -1703,62 +1915,67 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (this.__DataFormItem != null && __Control.Bounds != this.__DataFormItem.Bounds) __Control.Bounds = this.__DataFormItem.Bounds;
         }
         /// <summary>
-        /// Najde nebo vytvoří nový vizuální control a vrátí jej
+        /// Zajistí, že pro this prvek bude existovat platný WF Control v <see cref="Control"/>
+        /// (tedy pokud je null, pak jej vytvoří a uloží).
+        /// Napočítá statistiku a zaregistruje eventy.
+        /// Nepřidává do Content panelu-
         /// </summary>
-        /// <param name="statisticInfo"></param>
+        /// <param name="refreshInfo"></param>
         /// <returns></returns>
-        private WF.Control GetOrCreateControl(StatisticInfo statisticInfo)
+        private void PrepareControl(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
         {
             WF.Control control = __Control;
             if (control == null || control.IsDisposed)
             {
-                statisticInfo.CreatedCount++;
-
                 __Control = DxComponent.CreateDataFormControl(__DataFormItem);
-                // Navázat eventy controlu k nám:
+                refreshInfo.CreatedCount++;
                 RegisterControlEvents(__Control);
-                control = __Control;
             }
-            return control;
         }
         /// <summary>
         /// Aktuální control (pokud existuje) odebere z <see cref="ContentPanel"/>, a pak podle daného režimu jej uvolní z paměti (Handle plus Dispose)
         /// </summary>
-        /// <param name="memoryMode"></param>
-        /// <param name="statisticInfo"></param>
+        /// <param name="refreshInfo"></param>
         /// <param name="isFinal"></param>
-        private void ReleaseControl(DxDataFormMemoryMode memoryMode, StatisticInfo statisticInfo, bool isFinal = false)
+        private void ReleaseControl(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo, bool isFinal)
         {
+            // Fyzické odebrání controlu z ContentPanelu provedl ContentPanel hromadně, tady si jen označíme že už NEJSME jsme hostování:
+            IsHosted = false;
+
             WF.Control control = __Control;
             if (control == null || control.IsDisposed || control.Disposing) return;
 
-            // Pokud MemoryMode říká Allways, pak musí být hostován vždy (kromě finálního release):
-            bool hostAlways = memoryMode.HasFlag(DxDataFormMemoryMode.HostAllways);
-            if (hostAlways && !isFinal) return;
+            // Co budeme dělat:
+            bool removeHandle = isFinal || (refreshInfo?.ModeIsRemoveReleaseHandle ?? false);
+            bool disposeControl = isFinal || (refreshInfo?.ModeIsRemoveDispose ?? false);
+            bool updateInfo = (refreshInfo != null);
+            bool controlIsInternal = !__ControlIsExternal;
 
-            ContentPanel?.Controls.Remove(control);
-            IsHosted = false;
-            statisticInfo.RemovedCount++;
-
-            if (memoryMode.HasFlag(DxDataFormMemoryMode.RemoveReleaseHandle) || isFinal)
+            if (removeHandle)
             {
-                if (control != null && control.IsHandleCreated && !control.RecreatingHandle)
+                if (control.IsHandleCreated && !control.RecreatingHandle)
                 {
                     DestroyWindow(control.Handle);
-                    statisticInfo.DestroyedCount++;
+                    if (updateInfo) refreshInfo.DestroyedCount++;
                 }
             }
 
-            if ((memoryMode.HasFlag(DxDataFormMemoryMode.RemoveDispose) && !__ControlIsExternal) || isFinal)
+            if (disposeControl)
             {   // V režimu RemoveDispose zlikvidujeme náš control, a při požadavku IsFinal taky (ale tam neprovedeme jeho Dispose, protože nejsme jeho autorem):
-                UnRegisterControlEvents(control);
-                if (!__ControlIsExternal)
-                {
+                if (controlIsInternal || isFinal)
+                {   // Interní control anebo finální zahození this instance:
+                    //  => Odvážeme eventy a kompletně zapomenu na control
+                    //    (pokud by to byl externí control a nejde o finální zahození, tak si externí control stále necháváme v paměti včetně eventů,
+                    //     ty se do externího controlu navázaly v konstruktoru)
+                    UnRegisterControlEvents(control);
+                    __Control = null;
+                }
+                if (controlIsInternal)
+                {   // Interní control (ten jsme vytvořili my) budeme plně Disposovat:
                     try { control.Dispose(); }
                     catch { }
-                    statisticInfo.DisposedCount++;
+                    if (updateInfo) refreshInfo.DisposedCount++;
                 }
-                __Control = null;
             }
         }
         [DllImport("User32")]
@@ -1796,61 +2013,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal bool ContainsItem(IDataFormItem item)
         {
             return (item != null && Object.ReferenceEquals(this.__DataFormItem, item));
-        }
-        #endregion
-        #region class StatisticInfo : třída pro statistiku
-        /// <summary>
-        /// Třída pro statisiku
-        /// </summary>
-        internal class StatisticInfo
-        {
-            public override string ToString()
-            {
-                return this.Text;
-            }
-            /// <summary>
-            /// Textové vyjádření
-            /// </summary>
-            public string Text
-            {
-                get
-                {
-                    string text = "";
-                    if (CreatedCount > 0) text += "; Created: " + CreatedCount;
-                    if (HostedCount > 0) text += "; Hosted: " + HostedCount;
-                    if (VisibleCount > 0) text += "; Visible: " + VisibleCount;
-                    if (RemovedCount > 0) text += "; Removed: " + RemovedCount;
-                    if (DestroyedCount > 0) text += "; Destroyed: " + DestroyedCount;
-                    if (DisposedCount > 0) text += "; Disposed: " + DisposedCount;
-                    if (text.Length > 0) text = text.Substring(2);
-                    else text = "No actions";
-                    return text;
-                }
-            }
-            /// <summary>
-            /// Počet new instancí vytvořených Controlů
-            /// </summary>
-            public int CreatedCount { get; set; }
-            /// <summary>
-            /// Počet Controlů nyní umístěných do Parent containeru
-            /// </summary>
-            public int HostedCount { get; set; }
-            /// <summary>
-            /// Počet Controlů aktuálně viditelných (hostovaných v Containeru)
-            /// </summary>
-            public int VisibleCount { get; set; }
-            /// <summary>
-            /// Počet Controlů odebraných z Parent Containeru
-            /// </summary>
-            public int RemovedCount { get; set; }
-            /// <summary>
-            /// Počet Controlů s uvolněným handle (DestroyWindow)
-            /// </summary>
-            public int DestroyedCount { get; set; }
-            /// <summary>
-            /// Počet Controlů disposovaných
-            /// </summary>
-            public int DisposedCount { get; set; }
         }
         #endregion
     }

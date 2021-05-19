@@ -1164,7 +1164,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Control _CreateDataFormImage(IDataFormItem dataFormItem) { return null; }
         #endregion
         #endregion
-        #region LogTime
+        #region LogText_ logování
         /// <summary>
         /// Aktuální obsah Log textu.
         /// Lze zaregistrovat eventhandler <see cref="LogTextChanged"/> pro hlídání všech změn
@@ -1218,8 +1218,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _LogWatch = new System.Diagnostics.Stopwatch();
             _LogFrequency = System.Diagnostics.Stopwatch.Frequency;
+            _LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
             _LogSB = new StringBuilder();
             _LogWatch.Start();
+            _LogLastWriteTime = _LogWatch.ElapsedTicks;
         }
         /// <summary>
         /// Aktuální obsah Log textu.
@@ -1282,8 +1284,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="line"></param>
         private void _LogAddLine(string line)
         {
+            long tick;
             lock (_LogSB)
+            {
+                tick = _LogWatch.ElapsedTicks;
+                if ((tick - _LogLastWriteTime) > _LogTimeSpanForEmptyRow)
+                    _LogSB.AppendLine();
                 _LogSB.AppendLine(line);
+            }
+            _LogLastWriteTime = tick;
             RunLogTextChanged();
         }
         /// <summary>
@@ -1298,6 +1307,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private decimal _LogFrequency;
         private StringBuilder _LogSB;
         private event EventHandler _LogTextChanged;
+        private long _LogLastWriteTime;
+        private long _LogTimeSpanForEmptyRow;
         #endregion
         #region Draw metody
         /// <summary>

@@ -167,6 +167,7 @@
     <Compile Include="Components\DxRibbon.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Components\DxThreadManager.cs" />
     <Compile Include="Components\DxTreeView.cs">
       <SubType>Component</SubType>
     </Compile>

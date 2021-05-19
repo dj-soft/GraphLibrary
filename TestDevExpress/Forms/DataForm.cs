@@ -126,8 +126,9 @@ namespace TestDevExpress.Forms
             _DxDataFormMemoryOptimized = true;
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.MemoryOptimized", ItemText = "MemoryOptimized", ToolTip = "Zaškrtnuto: používat optimalizaci paměti / Ne: bez optimalizací (může dojít k systémové chybě)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
           //  this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = null, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
-            
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+            _DxShowLog = true;
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.ShowLog", ItemText = "Zobrazit LOG", ToolTip = "Zobrazit log v pravé části hlavního okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
 
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
@@ -178,6 +179,11 @@ namespace TestDevExpress.Forms
                 case "Dx.Params.UseWinForm":
                     _RemoveDataForms();         // Změna zvolené komponenty musí vždy shodit aktuální komponentu, kvůli vizuální shodě Ribbon :: DataForm
                     _DxDataUseWinForm = (e.Item.ItemIsChecked ?? false);
+                    break;
+                case "Dx.Params.ShowLog":
+                    _DxShowLog = (e.Item.ItemIsChecked ?? false);
+                    _DxMainSplit.CollapsePanel = DevExpress.XtraEditors.SplitCollapsePanel.Panel2;
+                    _DxMainSplit.Collapsed = !_DxShowLog;
                     break;
                 default:
                     DxComponent.LogClear();
@@ -277,7 +283,7 @@ namespace TestDevExpress.Forms
         {
             DxDataForm dxDataForm = new DxDataForm();
             dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-            dxDataForm.MemoryMode = (_DxDataFormMemoryOptimized ? DxDataFormMemoryMode.Default : DxDataFormMemoryMode.HostAllways);
+            dxDataForm.MemoryMode = (_DxDataFormMemoryOptimized ? DxDataFormMemoryMode.Default2 : DxDataFormMemoryMode.HostAllways);
             dxDataForm.GotFocus += DxDataForm_GotFocus;
             dxDataForm.TabChangeDone += DxDataForm_TabChangeDone;
             return dxDataForm;
@@ -287,7 +293,12 @@ namespace TestDevExpress.Forms
         {
             var logText = DxComponent.LogText;
             if (logText != null)
+            {
                 _DxLogMemoEdit.Text = logText;
+                _DxLogMemoEdit.SelectionStart = logText.Length;
+                _DxLogMemoEdit.SelectionLength = 0;
+                _DxLogMemoEdit.ScrollToCaret();
+            }
             RefreshStatusCurrent();
         }
 
@@ -346,6 +357,7 @@ namespace TestDevExpress.Forms
         private DxDataForm _DxDataForm;
         private WfDataForm _WfDataForm;
         private System.Windows.Forms.Control _AnyDataForm;
+        private bool _DxShowLog;
         private bool _DxDataFormMemoryOptimized;
         private bool _DxDataFormAdd50;
         private bool _DxDataUseWinForm;

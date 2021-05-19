@@ -1,11 +1,16 @@
-﻿using System;
+﻿// Supervisor: David Janáček, od 01.02.2021
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TestDevExpress.Components.Removed
+namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
     /// ThreadManager : slouží ke spouštění akcí ve vláknech na pozadí = asynchronně.
@@ -296,19 +301,19 @@ namespace TestDevExpress.Components.Removed
 
             lock (__ActionQueue)
             {
-                if (__ActionId == Int32.MaxValue) __ActionId = 0;    // K tomuhle dojde maximálně 1x za 10 let, že - pane Chocholoušku :-)  -  ale jen, když nás příliš zásobujete, pane Karlík... :-D  ... Pokud stihneme dávat 6,8051103632714786902336971852488 akcí za 1 sekundu, tak Int32.Max opravdu přetečeme za 10 let.
+                if (__ActionId == Int32.MaxValue) __ActionId = 0;    // K tomuhle dojde maximálně 1x za 10 let, že - pane Chocholoušku :-)  -  ale jen, když nás příliš zásobujete, pane Karlík... :-D  ... Pokud stihneme dávat 6,80.. akcí za 1 sekundu, tak Int32.Max opravdu přetečeme za 10 let.
                 actionInfo.Id = ++__ActionId;
                 actionInfo.Owner = this;
-                if (__LogActive) App.AddLog(__Source, $"Add {actionInfo}; Queue.Count: {(__ActionQueue.Count + 1)}");
+                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Queue.Count: {(__ActionQueue.Count + 1)}");
                 __ActionQueue.Enqueue(actionInfo);
                 actionInfo.ActionState = ThreadActionState.WaitingInQueue;
             }
-            if (__LogActive) App.AddLog(__Source, $"Add {actionInfo}; Lock on Queue released, set signal NewActionIncome and AnyThreadDisponible ...");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Lock on Queue released, set signal NewActionIncome and AnyThreadDisponible ...");
             __ActionAcceptedSignal.Reset();                          // Smažeme staré signály, počkáme si na aktuální...
             __NewActionIncomeSignal.Set();                           // To probudí thread __ActionDispatcherThread, který možná čeká na přidání další akce do fronty v metodě _ActionWaitToAnyAction()...
             __AnyThreadDisponibleSignal.Set();                       // To probudí thread __ActionDispatcherThread, který možná čeká na nějaký disponibilní thread v metodě __GetDisponibleThread()...
 
-            if (__LogActive) App.AddLog(__Source, $"Add {actionInfo}; Waiting for ActionAccepted signal...");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Waiting for ActionAccepted signal...");
 
             //  bez žádného kódu ...                       Nečeká vůbec, nepředá řízení do threadu Dispatcher
             // __ActionAcceptedSignal.WaitOne(1);          Občas zablokuje current thread na 15ms = nad rámec timeoutu, ale ihned předá řízení do Dispatcher a odstartuje provádění práce
@@ -319,7 +324,7 @@ namespace TestDevExpress.Components.Removed
 
             __ActionAcceptedSignal.WaitOne(1);                       // Tenhle signál posílá metoda pro čtení akcí i pro získání threadu. Oběma metodám jsme poslali signál a nyní se provádějí.
 
-            if (__LogActive) App.AddLog(__Source, $"Add {actionInfo}; Done.");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Add {actionInfo}; Done.");
         }
         /// <summary>
         /// Smyčka vlákna, které je dispečerem spouštění akcí.
@@ -347,12 +352,12 @@ namespace TestDevExpress.Components.Removed
         {
             while (!__IsStopped)
             {
-                if (__LogActive) App.AddLog(__Source, $"Test any Action...");
+                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Test any Action...");
                 if (__ActionQueueLockCount > 0) break;
-                if (__LogActive) App.AddLog(__Source, $"Wait to any Action...");
+                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Wait to any Action...");
                 __NewActionIncomeSignal.WaitOne(3000);
             }
-            if (__LogActive) App.AddLog(__Source, $"Any action exists, set signal ActionAccepted.");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Any action exists, set signal ActionAccepted.");
             __ActionAcceptedSignal.Set();
         }
         /// <summary>
@@ -370,7 +375,7 @@ namespace TestDevExpress.Components.Removed
                     actionInfo.ActionState = ThreadActionState.WaitingToThread;
                 }
             }
-            if (__LogActive) App.AddLog(__Source, $"Found {actionInfo} to Run; Queue.Count: {(__ActionQueue.Count + 1)}");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Found {actionInfo} to Run; Queue.Count: {(__ActionQueue.Count + 1)}");
             return actionInfo;
         }
         /// <summary>
@@ -383,7 +388,7 @@ namespace TestDevExpress.Components.Removed
         {
             if (actionInfo != null)
             {
-                if (__LogActive) App.AddLog(__Source, $"Run {actionInfo} in {threadWrap}");
+                if (__LogActive) DxComponent.LogAddLine($"{__Source}: Run {actionInfo} in {threadWrap}");
                 threadWrap.RunAction(actionInfo);
             }
             else
@@ -458,7 +463,7 @@ namespace TestDevExpress.Components.Removed
                 {
                     runningCount = actions.Where(a => a.State != ThreadActionState.Completed).Count();
                     if (runningCount == 0) break;
-                    if (__LogActive) App.AddLog(__Source, $"WaitToActionsDone : waiting for {runningCount} actions...");
+                    if (__LogActive) DxComponent.LogAddLine($"{__Source}: WaitToActionsDone : waiting for {runningCount} actions...");
                     signal.WaitOne(1000);
                     if (hasTimeout && DateTime.UtcNow >= end.Value) break;
                 }
@@ -470,7 +475,7 @@ namespace TestDevExpress.Components.Removed
                     action?.StateChangedSignalsRemove(signal);
             }
 
-            if (__LogActive) App.AddLog(__Source, (runningCount == 0 ? $"WaitToActionsDone : all actions completed." : $"WaitToActionsDone : Timeout {timeout} expired, {runningCount} actions are still incomplete."));
+            if (__LogActive) DxComponent.LogAddLine(__Source + ": " + (runningCount == 0 ? $"WaitToActionsDone : all actions completed." : $"WaitToActionsDone : Timeout {timeout} expired, {runningCount} actions are still incomplete."));
         }
         /// <summary>
         /// ID posledně přidané akce, příští bude mít +1
@@ -621,7 +626,7 @@ namespace TestDevExpress.Components.Removed
                 }
                 catch (Exception exc)
                 {
-                    App.AddLog(exc);
+                    DxComponent.LogAddLine(exc.ToString());
                 }
                 finally
                 {
@@ -742,7 +747,7 @@ namespace TestDevExpress.Components.Removed
         {
             if (__IsStopped) return null;
 
-            if (__LogActive) App.AddLog(__Source, $"Search for disponible thread, current ThreadCount: {__Threads.Count} ...");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Search for disponible thread, current ThreadCount: {__Threads.Count} ...");
             ThreadWrap threadWrap = null;
             bool logThread = false;
             while (true)
@@ -754,7 +759,7 @@ namespace TestDevExpress.Components.Removed
 
                 if (__TryGetDisponibleThread(out threadWrap)) break;                               // Najde volný thread / vytvoří nový thread a vrátí jej. Podmínečně píše do logu způsob získání threadu
                 if (__IsStopped) break;                                                            // Končíme jako celek? Vrátíme null...
-                App.AddLog(__Source, $"ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");        // Tohle loguju povinně...
+                DxComponent.LogAddLine($"{__Source}: ThreadManager Waiting for disponible thread, current ThreadCount: {__Threads.Count} ...");        // Tohle loguju povinně...
                 __AnyThreadDisponibleSignal.WaitOne(3000);                                         //  ... počká na uvolnění některého threadu ... (anebo na signál o nové akci)
 
                 // Zvenku zadaná akce (v metodě _AddAction(ActionInfo actionInfo)) přidala novou akci, poslala signály a AnyThreadDisponible) a nyní čeká na signál ActionAccepted.
@@ -768,7 +773,7 @@ namespace TestDevExpress.Components.Removed
                 // A protože jsme do logu dali info o čekání, dáme tam i nalezený thread:
                 logThread = true;
             }
-            if (!__LogActive && logThread) App.AddLog(__Source, $"Allocated: {threadWrap}");// Tohle loguju jen když není log aktivní a čekali jsme na thread, to se loguje povinně, ale neloguje se druh získání threadu...
+            if (!__LogActive && logThread) DxComponent.LogAddLine($"{__Source}: Allocated: {threadWrap}");// Tohle loguju jen když není log aktivní a čekali jsme na thread, to se loguje povinně, ale neloguje se druh získání threadu...
             return threadWrap;
         }
         /// <summary>
@@ -789,7 +794,7 @@ namespace TestDevExpress.Components.Removed
                 threadWrap = threadList.FirstOrDefault(t => t.TryAllocate());                      // Najdeme první thread, který je možno alokovat a rovnou jej Alokujeme
                 if (threadWrap != null)
                 {
-                    if (__LogActive) App.AddLog(__Source, $"Allocated existing: {threadWrap}");
+                    if (__LogActive) DxComponent.LogAddLine($"{__Source}: Allocated existing: {threadWrap}");
                 }
                 else
                 {
@@ -797,10 +802,10 @@ namespace TestDevExpress.Components.Removed
                     if (count < __MaxThreadCount)
                     {   // Můžeme ještě přidat další thread:
                         string name = $"ThreadInPool{(count + 1)}";
-                        if (__LogActive) App.AddLog(__Source, $"Preparing new thread: {name}");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: Preparing new thread: {name}");
                         threadWrap = new ThreadWrap(this, name, ThreadWrapState.Allocated);       // Vytvoříme nový thread, a rovnou jako Alokovaný
                         __Threads.Add(threadWrap);
-                        if (__LogActive) App.AddLog(__Source, $"Created new: {threadWrap}");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: Created new: {threadWrap}");
                     }
                     // Pokud již nemůžeme přidat další thread a všechny existující jsou právě nyní obsazené, 
                     //  pak vrátíme false a nadřízená metoda počká ve smyčce (s pomocí semaforu __AnyThreadDisponibleSemaphore) na uvolnění některého threadu.
@@ -908,7 +913,7 @@ namespace TestDevExpress.Components.Removed
         /// <param name="abortNow"></param>
         private void __StopAll(bool abortNow = false)
         {
-            if (__LogActive) App.AddLog(__Source, $"Stop all threads...");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: Stop all threads...");
             lock (__Threads)
             {
                 foreach (var threadWrap in __Threads)
@@ -920,7 +925,7 @@ namespace TestDevExpress.Components.Removed
                 __IsStopped = true;
                 __AnyThreadDisponibleSignal.Set();
             }
-            if (__LogActive) App.AddLog(__Source, $"All threads is stopped.");
+            if (__LogActive) DxComponent.LogAddLine($"{__Source}: All threads is stopped.");
         }
         /// <summary>
         /// Soupis dosud vytvořených threadů.
@@ -1032,7 +1037,7 @@ namespace TestDevExpress.Components.Removed
                     var state = __State;
                     if (!__End && __State == ThreadWrapState.Disponible)
                     {
-                        if (__LogActive) App.AddLog(__Source, $"Allocate current: {this}");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: Allocate current: {this}");
                         __State = ThreadWrapState.Allocated;
                         isAllocated = true;
                     }
@@ -1092,7 +1097,7 @@ namespace TestDevExpress.Components.Removed
                     var state = __State;
                     if (state == ThreadWrapState.Allocated)
                     {
-                        if (__LogActive) App.AddLog(__Source, $"{this} : Released");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Released");
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
                         isReleased = true;
@@ -1106,7 +1111,7 @@ namespace TestDevExpress.Components.Removed
 
                 if (isReleased)
                 {
-                    if (__LogActive) App.AddLog(__Source, $"{this} : Disponible");
+                    if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Disponible");
                     AfterThreadDisponible();
                 }
             }
@@ -1155,16 +1160,16 @@ namespace TestDevExpress.Components.Removed
                 {   // Běh aplikační akce probíhá už bez zámku:
                     try
                     {
-                        if (__LogActive) App.AddLog(__Source, $"{this} : Run {actionInfo}");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Run {actionInfo}");
                         actionInfo.Run();
-                        if (__LogActive) App.AddLog(__Source, $"{this} : Done {actionInfo}");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Done {actionInfo}");
                     }
-                    catch (Exception exc) { App.AddLog(exc); }
+                    catch (Exception exc) { DxComponent.LogAddLine(exc.ToString()); }
                     finally
                     {
                         __DisponibleFrom = DateTime.UtcNow;
                         __State = ThreadWrapState.Disponible;
-                        if (__LogActive) App.AddLog(__Source, $"{this} : Disponible");
+                        if (__LogActive) DxComponent.LogAddLine($"{__Source}: {this} : Disponible");
                         AfterThreadDisponible();
                     }
                 }
@@ -1500,17 +1505,4 @@ namespace TestDevExpress.Components.Removed
         void StateChangedSignalsRemove(ISignal signal);
     }
     #endregion
-
-
-
-    public class App
-    {
-        internal static void AddLog(string source, string info)
-        {
-        }
-        internal static void AddLog(Exception exc)
-        {
-        }
-    }
 }
-
