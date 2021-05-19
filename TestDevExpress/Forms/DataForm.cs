@@ -15,12 +15,15 @@ namespace TestDevExpress.Forms
         public DataForm()
         {
             this.InitializeForm();
+            System.Windows.Forms.Application.Idle += Application_Idle;
         }
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
+            System.Windows.Forms.Application.Idle -= Application_Idle;
         }
+
         protected void InitializeForm()
         {
             this.Size = new System.Drawing.Size(800, 600);
@@ -128,7 +131,7 @@ namespace TestDevExpress.Forms
           //  this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.Add50", ItemText = "Spořit Controly", ToolTip = "Vytvořit instance controlů, vložit do Panelu, a pak 50% odebrat z panelu (test rychlosti)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
             _DxShowLog = true;
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.ShowLog", ItemText = "Zobrazit LOG", ToolTip = "Zobrazit log v pravé části hlavního okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "params", GroupText = "PARAMETRY", ItemId = "Dx.Params.ShowLog", ItemText = "Zobrazit LOG", ToolTip = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText });
 
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "l1t0", GroupText = "LABEL", ItemId = "Dx.L1T0.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
@@ -184,6 +187,7 @@ namespace TestDevExpress.Forms
                     _DxShowLog = (e.Item.ItemIsChecked ?? false);
                     _DxMainSplit.CollapsePanel = DevExpress.XtraEditors.SplitCollapsePanel.Panel2;
                     _DxMainSplit.Collapsed = !_DxShowLog;
+                    _RefreshLog();
                     break;
                 default:
                     DxComponent.LogClear();
@@ -291,15 +295,31 @@ namespace TestDevExpress.Forms
 
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
         {
-            var logText = DxComponent.LogText;
-            if (logText != null)
+            // _RefreshLog();
+            _LogContainChanges = true;
+        }
+        bool _LogContainChanges;
+        private void Application_Idle(object sender, EventArgs e)
+        {
+            if (_LogContainChanges)
+                _RefreshLog();
+        }
+
+        private void _RefreshLog()
+        {
+            if (_DxShowLog)
             {
-                _DxLogMemoEdit.Text = logText;
-                _DxLogMemoEdit.SelectionStart = logText.Length;
-                _DxLogMemoEdit.SelectionLength = 0;
-                _DxLogMemoEdit.ScrollToCaret();
+                var logText = DxComponent.LogText;
+                if (logText != null)
+                {
+                    _DxLogMemoEdit.Text = logText;
+                    _DxLogMemoEdit.SelectionStart = logText.Length;
+                    _DxLogMemoEdit.SelectionLength = 0;
+                    _DxLogMemoEdit.ScrollToCaret();
+                }
             }
             RefreshStatusCurrent();
+            _LogContainChanges = false;
         }
 
         private void DxDataForm_TabChangeDone(object sender, EventArgs e)

@@ -133,6 +133,8 @@ namespace TestDevExpress.Forms
 
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
             DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
+
+            // DevExpress.XtraEditors.WindowsFormsSettings.DefaultFont = new Font(FontFamily.GenericSerif, 7f);
         }
         private void InitSkinList()
         {

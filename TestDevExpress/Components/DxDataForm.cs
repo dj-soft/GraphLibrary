@@ -79,28 +79,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDataFormMemoryMode MemoryMode { get; set; }
 
-        /// <summary>
-        /// Vrátí true pokud se control (s danými souřadnicemi) má brát jako viditelný v dané oblasti.
-        /// Tato metoda může provádět optimalizaci v tom, že jako "viditelné" určí i controly nedaleko od reálně viditelné souřadnice.
-        /// </summary>
-        /// <param name="controlBounds"></param>
-        /// <param name="visibleBounds"></param>
-        /// <returns></returns>
-        internal bool IsInVisibleBounds(Rectangle? controlBounds, Rectangle visibleBounds)
-        {
-            if (!controlBounds.HasValue) return false;
-            int distX = 90;                                // Vzdálenost na ose X, kterou akceptujeme jako viditelnou 
-            int distY = 60;                                //  ...Y... = (=rezerva okolo viditelné oblasti, kde už máme připravené fyzické controly)
-            var cb = controlBounds.Value;
-
-            if ((cb.Bottom + distY) < visibleBounds.Y) return false;
-            if ((cb.Y - distY) > visibleBounds.Bottom) return false;
-
-            if ((cb.Right + distX) < visibleBounds.X) return false;
-            if ((cb.X - distX) > visibleBounds.Right) return false;
-
-            return true;
-        }
         #region Přidání / odebrání controlů do logických stránek (AddItems), tvorba nových stránek, 
         /// <summary>
         /// Přidá řadu controlů, řeší záložky
@@ -203,7 +181,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="panel"></param>
         /// <returns></returns>
         int IDxDataForm.IndexOf(DxDataFormScrollPanel panel) { return __Pages.Values.ToList().FindIndex(p => Object.ReferenceEquals(p, panel)); }
+        /// <summary>
+        /// Vrátí true pokud se control (s danými souřadnicemi) má brát jako viditelný v dané oblasti.
+        /// Tato metoda může provádět optimalizaci v tom, že jako "viditelné" určí i controly nedaleko od reálně viditelné souřadnice.
+        /// </summary>
+        /// <param name="controlBounds"></param>
+        /// <param name="visibleBounds"></param>
+        /// <returns></returns>
+        bool IDxDataForm.IsInVisibleBounds(Rectangle? controlBounds, Rectangle visibleBounds)
+        {
+            if (!controlBounds.HasValue) return false;
+            int distX = 90;                                // Vzdálenost na ose X, kterou akceptujeme jako viditelnou 
+            int distY = 60;                                //  ...Y... = (=rezerva okolo viditelné oblasti, kde už máme připravené fyzické controly)
+            var cb = controlBounds.Value;
 
+            if ((cb.Bottom + distY) < visibleBounds.Y) return false;
+            if ((cb.Y - distY) > visibleBounds.Bottom) return false;
+
+            if ((cb.Right + distX) < visibleBounds.X) return false;
+            if ((cb.X - distX) > visibleBounds.Right) return false;
+
+            return true;
+        }
         #endregion
 
         private void PrepareTabForPages()
@@ -893,6 +892,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="panel"></param>
         /// <returns></returns>
         int IndexOf(DxDataFormScrollPanel panel);
+        /// <summary>
+        /// Vrátí true pokud se control (s danými souřadnicemi) má brát jako viditelný v dané oblasti.
+        /// Tato metoda může provádět optimalizaci v tom, že jako "viditelné" určí i controly nedaleko od reálně viditelné souřadnice.
+        /// </summary>
+        /// <param name="controlBounds"></param>
+        /// <param name="visibleBounds"></param>
+        /// <returns></returns>
+        bool IsInVisibleBounds(Rectangle? controlBounds, Rectangle visibleBounds);
     }
     #region class DxDataFormPage : Data jedné stránky (záložky) DataFormu
     /// <summary>
@@ -1274,6 +1281,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             long beginTime = DxComponent.LogTimeCurrent;
             long startTime;
 
+            DxComponent.LogAddTitle($"ScrollPanel '{DebugName}' RefreshVisibleItems");
+
             RefreshItemsInfo refreshInfo = new RefreshItemsInfo(this.ClientSize, this.VisibleBounds, this.CanOptimizeControls, this.IsActiveContent, DataForm.MemoryMode);
 
             // Tady proběhne příprava = vytvoření new instancí controlů, uložení controlů do refreshInfo pro hromadné přidání a pro hromadný release:
@@ -1287,12 +1296,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.ContentPanel.RefreshVisibleItems(refreshInfo);
 
             // Tady proběhne závěr = nastavení proměnných a uvolnění z paměti pro zahozené controly:
-            startTime = DxComponent.LogTimeCurrent;
-            foreach (var item in refreshInfo.AddedItems)
-                item.FinaliseVisibleItemAdd(refreshInfo);
-            foreach (var item in refreshInfo.RemovedItems)
-                item.FinaliseVisibleItemRemoved(refreshInfo);
-            DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' FinaliseVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (refreshInfo.NeedFinaliseItems)
+            {
+                startTime = DxComponent.LogTimeCurrent;
+                foreach (var item in refreshInfo.AddedItems)
+                    item.FinaliseVisibleItemAdd(refreshInfo);
+                foreach (var item in refreshInfo.RemovedItems)
+                    item.FinaliseVisibleItemRemoved(refreshInfo);
+                DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' FinaliseVisibleItems(): Items: {Items.Count}; {refreshInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            }
 
             DxComponent.LogAddLineTime($"ScrollPanel '{DebugName}' RefreshVisibleItems({reason}); TotalTime: {DxComponent.LogTokenTimeMilisec}", beginTime);
         }
@@ -1463,6 +1475,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Obsahuje true pokud je třeba změnit obsah Content panelu (tedy máme controly k přidání anebo k odebrání)
             /// </summary>
             public bool NeedRefreshContent { get { return (this.AddedItems.Count > 0 || this.RemovedItems.Count > 0); } }
+            /// <summary>
+            /// Obsahuje true pokud je třeba volat Finalise pro jednotlivé prvky
+            /// </summary>
+            public bool NeedFinaliseItems { get { return (this.AddedItems.Count > 0 || this.RemovedItems.Count > 0); } }
             /// <summary>
             /// Počet new instancí vytvořených Controlů
             /// </summary>
@@ -1903,7 +1919,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!refreshInfo.OptimizeControls) return true;
 
             // Prvek má být vidět, pokud jeho souřadnice jsou ve viditelné oblasti nebo blízko ní:
-            return DataForm.IsInVisibleBounds(this.Bounds, refreshInfo.VisibleBounds);
+            return IDataForm.IsInVisibleBounds(this.Bounds, refreshInfo.VisibleBounds);
         }
         /// <summary>
         /// Aktualizuje hodnoty na controlu, který je právě viditelný

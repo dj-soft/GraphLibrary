@@ -68,6 +68,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static object _InstanceLock = new object();
         #endregion
         #region Styly
+        /// <summary>
+        /// Provede inicializaci standardních stylů
+        /// </summary>
         private void _InitStyles()
         {
             var mainTitleStyle = new DevExpress.XtraEditors.StyleController();
@@ -260,6 +263,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void Host_InteractiveZoomChanged(object sender, EventArgs e)
         {
             _ReloadZoom();
+            _CallListeners<IListenerZoomChange>();
             _CallSubscriberToZoomChange();
         }
         /// <summary>
@@ -352,7 +356,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __Listeners = new List<_ListenerInstance>();
             __ListenersLastClean = DateTime.Now;
+            DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged += DevExpress_StyleChanged;
+
         }
+
+        private void DevExpress_StyleChanged(object sender, EventArgs e)
+        {
+            _CallListeners<IListenerStyleChanged>();
+        }
+
         private void _RegisterListener(IListener listener)
         {
             if (listener == null) return;
@@ -362,9 +374,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __Listeners.Add(new _ListenerInstance(listener));
         }
         private void _CallListeners<T>() where T : IListener
-        { }
+        {
+            var listeners = _GetListeners<T>();
+            if (listeners.Length == 0) return;
+            var method = _GetListenerMethod(typeof(T), 0);
+            foreach (var listener in listeners)
+                method.Invoke(listener, null);
+        }
         private void _CallListeners<T>(object args) where T : IListener
-        { }
+        {
+            var listeners = _GetListeners<T>();
+            if (listeners.Length == 0) return;
+            var method = _GetListenerMethod(typeof(T), 1);
+            foreach (var listener in listeners)
+                method.Invoke(listener, null);
+        }
+        /// <summary>
+        /// Metoda najde jedinou metodu daného typu, a ověří že má přesně daný počet parametrů.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="parameterCount"></param>
+        /// <returns></returns>
+        private System.Reflection.MethodInfo _GetListenerMethod(Type type, int parameterCount)
+        {
+            var methods = type.GetMethods();
+            if (methods.Length != 1)
+                throw new InvalidOperationException($"Interface '{type.Name}' is not valid IListener interface, must have exact one method.");
+            var method = methods[0];
+            var parameters = method.GetParameters();
+            if (parameters.Length != parameterCount)
+                throw new InvalidOperationException($"Interface '{type.Name}' is not valid IListener interface for call with {parameterCount} parameters, has {parameters.Length} parameters.");
+            return method;
+        }
         private void _UnregisterListener(IListener listener)
         {
             lock (__Listeners)
@@ -1177,7 +1218,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Událost po každé změně obsahu textu <see cref="LogText"/>
         /// </summary>
-        public static event  EventHandler LogTextChanged { add { Instance._LogTextChanged += value; } remove { Instance._LogTextChanged -= value; } }
+        public static event EventHandler LogTextChanged { add { Instance._LogTextChanged += value; } remove { Instance._LogTextChanged -= value; } }
         /// <summary>
         /// Obsahuje přesný aktuální čas jako Int64. 
         /// Lze ho následně použít jako parametr 'long startTime' v metodě <see cref="LogAddLineTime(string, long?)"/> pro zápis uplynulého času.
@@ -1185,11 +1226,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static long LogTimeCurrent { get { return Instance._LogTimeCurrent; } }
         /// <summary>
-        /// Přidá dodaný řádek do logu. 
-        /// Nepřidává se nic víc.
+        /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
-        /// <param name="line"></param>
-        public static void LogAddLine(string line) { Instance._LogAddLine(line); }
+        /// <param name="title"></param>
+        /// <param name="liner"></param>
+        public static void LogAddTitle(string title, char? liner = null) { Instance._LogAddTitle(title, liner); }
         /// <summary>
         /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:
         /// na místo tokenu z property <see cref="DxComponent.LogTokenTimeSec"/> vloží počet uplynulých sekund ve formě "25,651 sec";
@@ -1199,6 +1240,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="line"></param>
         /// <param name="startTime"></param>
         public static void LogAddLineTime(string line, long? startTime) { Instance._LogAddLineTime(line, startTime); }
+        /// <summary>
+        /// Přidá dodaný řádek do logu. 
+        /// Nepřidává se nic víc.
+        /// </summary>
+        /// <param name="line"></param>
+        public static void LogAddLine(string line) { Instance._LogAddLine(line, false); }
         /// <summary>
         /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long)"/>, za který se dosaví uplynulý čas v sekundách
         /// </summary>
@@ -1251,6 +1298,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private long _LogTimeCurrent { get { return _LogWatch.ElapsedTicks; } }
         /// <summary>
+        /// Přidá titulek (mezera + daný text ohraničený znaky ===)
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="liner"></param>
+        private void _LogAddTitle(string title, char? liner)
+        {
+            string margins = "".PadRight(15, (liner ?? '='));
+            string line = $"{margins}  {title}  {margins}";
+            _LogAddLine(line, true);
+        }
+        /// <summary>
         /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:
         /// na místo tokenu {S} vloží počet uplynulých sekund ve formě "25,651 sec";
         /// na místo tokenu {MS} vloží počet uplynulých milisekund ve formě "25,651 milisec";
@@ -1276,19 +1334,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string info = Math.Round((seconds * 1000000m), 3).ToString("### ### ### ##0.000").Trim() + " microsec";
                 line = line.Replace(LogTokenTimeMicrosec, info);
             }
-            _LogAddLine(line);
+            _LogAddLine(line, false);
         }
         /// <summary>
         /// Přidá daný text jako další řádek
         /// </summary>
         /// <param name="line"></param>
-        private void _LogAddLine(string line)
+        /// <param name="forceEmptyRow"></param>
+        private void _LogAddLine(string line, bool forceEmptyRow)
         {
             long tick;
             lock (_LogSB)
             {
                 tick = _LogWatch.ElapsedTicks;
-                if ((tick - _LogLastWriteTime) > _LogTimeSpanForEmptyRow)
+                if (forceEmptyRow || ((tick - _LogLastWriteTime) > _LogTimeSpanForEmptyRow))
                     _LogSB.AppendLine();
                 _LogSB.AppendLine(line);
             }
@@ -1866,7 +1925,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         void ZoomChanged();
     }
-
+    /// <summary>
+    /// Interface pro listener události Změna Skinu/Stylu
+    /// </summary>
+    public interface IListenerStyleChanged : IListener
+    {
+        /// <summary>
+        /// Metoda je volaná po změně stylu do všech instancí, které se zaregistrovaly pomocí <see cref="DxComponent.RegisterListener"/>
+        /// </summary>
+        void StyleChanged();
+    }
 
     /// <summary>
     /// Objekt, který chce být informován o změně Zoomu.
@@ -5016,7 +5084,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// PanelControl
     /// </summary>
-    public class DxPanelControl : DevExpress.XtraEditors.PanelControl
+    public class DxPanelControl : DevExpress.XtraEditors.PanelControl, IListenerZoomChange, IListenerStyleChanged
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -5027,6 +5095,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.Margin = new Padding(0);
             this.Padding = new Padding(0);
+            DxComponent.RegisterListener(this);
+        }
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            DxComponent.UnregisterListener(this);
         }
         /// <summary>
         /// Barva pozadí uživatelská, má přednost před skinem, aplikuje se na hotový skin, může obsahovat Alpha kanál = pak skrz tuto barvu prosvítá podkladový skin
@@ -5054,6 +5128,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!backColorUser.HasValue) return;
             e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColorUser.Value), this.ClientRectangle);
         }
+        #endregion
+        #region Style & Zoom Changed
+        void IListenerZoomChange.ZoomChanged()
+        { }
+        void IListenerStyleChanged.StyleChanged()
+        { }
         #endregion
         #region Rozšířené property
         /// <summary>
