@@ -62,6 +62,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitStyles();
             this._InitZoom();
             this._InitDrawing();
+            this._InitListeners();
         }
         private static DxComponent _Instance;
         private static object _InstanceLock = new object();
@@ -312,6 +313,119 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ReloadZoom() { _Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; }
         private decimal _Zoom;
         #endregion
+        #region Listenery
+        /// <summary>
+        /// Jakýkoli objekt se může touto metodou přihlásit k odběru zpráv o událostech systému.
+        /// Když v systému dojde k obecné události, například "Změna Zoomu" nebo "Změna Skinu", pak zdroj této události zavolá systém <see cref="DxComponent"/>,
+        /// ten vyhledá odpovídající listenery (které jsou naživu) a vyvolá jejich odpovídající metodu.
+        /// <para/>
+        /// Typy událostí jsou určeny tím, který konkrétní interface (potomek <see cref="IListener"/>) daný posluchač implementuje.
+        /// Na příkladu Změny Zoomu: tam, kde dojde ke změně Zoomu (Desktop) bude vyvolaná metoda <see cref="DxComponent.CallListeners{T}"/>,
+        /// tato metoda vyhledá ve svém seznamu Listenerů ty, které implementují <see cref="IListenerZoomChange"/>, a vyvolá jejich výkonnou metodu.
+        /// </summary>
+        /// <param name="listener"></param>
+        public static void RegisterListener(IListener listener) { Instance._RegisterListener(listener); }
+        /// <summary>
+        /// Zavolá Listenery daného typu a předá jim daný argumen
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="args"></param>
+        public static void CallListeners<T>() where T : IListener { Instance._CallListeners<T>(); }
+        /// <summary>
+        /// Zavolá Listenery daného typu a předá jim daný argumen
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="args"></param>
+        public static void CallListeners<T>(object args) where T : IListener { Instance._CallListeners<T>(args); }
+        /// <summary>
+        /// Odregistruje daný objekt z příjmu zpráv systému.
+        /// Typicky se volá při Dispose.
+        /// Dokud se objekt neodregistruje a pokud je naživu, bude dostávat zprávy.
+        /// Zde se udržuje pouze WeakReference na Listener, takže nebráníme uvolnění Listeneru z paměti.
+        /// </summary>
+        /// <param name="listener"></param>
+        public static void UnregisterListener(IListener listener) { Instance._UnregisterListener(listener); }
+        /// <summary>
+        /// Inicializace subsystému Listeners
+        /// </summary>
+        private void _InitListeners()
+        {
+            __Listeners = new List<_ListenerInstance>();
+            __ListenersLastClean = DateTime.Now;
+        }
+        private void _RegisterListener(IListener listener)
+        {
+            if (listener == null) return;
+
+            _ClearDeadListeners();
+            lock (__Listeners)
+                __Listeners.Add(new _ListenerInstance(listener));
+        }
+        private void _CallListeners<T>() where T : IListener
+        { }
+        private void _CallListeners<T>(object args) where T : IListener
+        { }
+        private void _UnregisterListener(IListener listener)
+        {
+            lock (__Listeners)
+                __Listeners.RemoveAll(s => !s.IsAlive || s.ContainsListener(listener));
+            __ListenersLastClean = DateTime.Now;
+        }
+        /// <summary>
+        /// Vrátí pole živých Listenerů daného typu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        private T[] _GetListeners<T>() where T : IListener
+        {
+            _ClearDeadListeners();
+            T[] listeners = null;
+            lock (__Listeners)
+                listeners = __Listeners.Where(l => l.IsAlive).Select(l => l.Listener).OfType<T>().ToArray();
+            return listeners;
+        }
+        /// <summary>
+        /// Odebere mrtvé Listenery z pole <see cref="__Listeners"/>.
+        /// Bez parametru <paramref name="force"/> se reálně provede až po 30 sekundách od posledního reálného provedení úklidu.
+        /// </summary>
+        /// <param name="force"></param>
+        private void _ClearDeadListeners(bool force = false)
+        {
+            if (!force && ((TimeSpan)(DateTime.Now - __ListenersLastClean)).TotalSeconds < 30d) return;  // Když to není nutné, nebudeme to řešit
+            lock (__Listeners)
+                __Listeners.RemoveAll(s => !s.IsAlive);
+            __ListenersLastClean = DateTime.Now;
+        }
+        private List<_ListenerInstance> __Listeners;
+        private DateTime __ListenersLastClean;
+        /// <summary>
+        /// Evidence jednoho listenera (posluchače zpráv), obsahuje WeakReferenci na něj
+        /// </summary>
+        private class _ListenerInstance
+        {
+            public _ListenerInstance(IListener listener)
+            {
+                __Listener = new WeakTarget<IListener>(listener);
+            }
+            private WeakTarget<IListener> __Listener;
+            /// <summary>
+            /// true pokud je objekt použitelný
+            /// </summary>
+            public bool IsAlive { get { return __Listener.IsAlive; } }
+            /// <summary>
+            /// Reference na instanci
+            /// </summary>
+            public IListener Listener { get { return __Listener?.Target; } }
+            /// <summary>
+            /// Vrátí true, pokud this instance drží odkaz na daného subscribera.
+            /// </summary>
+            public bool ContainsListener(IListener testListener)
+            {
+                IListener mySubscriber = __Listener.Target;
+                return (mySubscriber != null && Object.ReferenceEquals(mySubscriber, testListener));
+            }
+        }
+        #endregion
         #region SubscriberToZoomChange
         /// <summary>
         /// Zaeviduje si dalšího žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> po změně Zoomu
@@ -349,6 +463,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             lock (_SubscribersToZoomChange)
                 _SubscribersToZoomChange.RemoveAll(s => !s.IsAlive || s.ContainsSubscriber(subscriber));
+            _SubscribersToZoomLastClean = DateTime.Now;
         }
         /// <summary>
         /// Odebere mrtvé Subscribery z pole <see cref="_SubscribersToZoomChange"/>
@@ -1722,6 +1837,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
+    }
+    #endregion
+    #region interface
+    /// <summary>
+    /// Formální interface, předek pro konkrétní listenery
+    /// </summary>
+    public interface IListener
+    { }
+    /// <summary>
+    /// Interface pro listener události Změna Zoomu
+    /// </summary>
+    public interface IListenerZoomChange : IListener
+    {
+        /// <summary>
+        /// Metoda je volaná po změně Zoomu do všech instancí, které se zaregistrovaly pomocí <see cref="DxComponent.RegisterListener"/>
+        /// </summary>
+        void ZoomChanged();
+    }
+
+
+    /// <summary>
+    /// Objekt, který chce být informován o změně Zoomu.
+    /// Při své iniciaizaci má objekt zavolat <see cref="DxComponent.SubscribeToZoomChange(ISubscriberToZoomChange)"/>.
+    /// Pak po změně Zoomu dostane řízení do své metody <see cref="ISubscriberToZoomChange.ZoomChanged"/>.
+    /// Objekt se může odregistrovat (typicky v Dispose()) metodou <see cref="DxComponent.UnSubscribeToZoomChange(ISubscriberToZoomChange)"/>, ale není to povinné.
+    /// </summary>
+    public interface ISubscriberToZoomChange
+    {
+        /// <summary>
+        /// Došlo ke změně Zoomu
+        /// </summary>
+        void ZoomChanged();
     }
     #endregion
     #region class DrawingExtensions : Extensions metody pro grafické třídy (z namespace System.Drawing)
@@ -4626,21 +4773,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Interaktivní akce uživatele
         /// </summary>
         User
-    }
-    #endregion
-    #region interface
-    /// <summary>
-    /// Objekt, který chce být informován o změně Zoomu.
-    /// Při své iniciaizaci má objekt zavolat <see cref="DxComponent.SubscribeToZoomChange(ISubscriberToZoomChange)"/>.
-    /// Pak po změně Zoomu dostane řízení do své metody <see cref="ISubscriberToZoomChange.ZoomChanged"/>.
-    /// Objekt se může odregistrovat (typicky v Dispose()) metodou <see cref="DxComponent.UnSubscribeToZoomChange(ISubscriberToZoomChange)"/>, ale není to povinné.
-    /// </summary>
-    public interface ISubscriberToZoomChange
-    {
-        /// <summary>
-        /// Došlo ke změně Zoomu
-        /// </summary>
-        void ZoomChanged();
     }
     #endregion
     #region Enumy
