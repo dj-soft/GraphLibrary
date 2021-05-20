@@ -123,26 +123,10 @@ namespace TestDevExpress.Forms
         }
         private void InitDevExpress()
         {
-            DevExpress.UserSkins.BonusSkins.Register();
-            DS.SkinManager.EnableFormSkins();
-            DS.SkinManager.EnableMdiFormSkins();
 
-            // var skins = DS.SkinManager.Default.Skins;
-            // DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "Stardust";
-
-
-            DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
-            DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
-
-            // DevExpress.XtraEditors.WindowsFormsSettings.DefaultFont = new Font(FontFamily.GenericSerif, 7f);
         }
         private void InitSkinList()
         {
-
-            DevExpress.UserSkins.BonusSkins.Register();
-            DevExpress.Skins.SkinManager.EnableFormSkins();
-            DevExpress.Skins.SkinManager.EnableMdiFormSkins();
-
             this.Skins = new List<DS.SkinContainer>();
 
             this.SkinList.Items.Clear();

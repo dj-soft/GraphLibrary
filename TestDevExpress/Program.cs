@@ -17,13 +17,26 @@ namespace TestDevExpress
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Application.Run(new TestDevExpress.Forms.MainForm());
-            // Application.Run(new TestDevExpress.Forms.ImagePickerForm());
+            try
+            {
+                Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
 
-            // Application.Run(new TestDevExpress.Forms.GraphForm());
+                // Application.Run(new TestDevExpress.Forms.MainForm());
 
-            // Application.Run(new TestDevExpress.Forms.MdiParentForm());
 
+                TestDevExpress.Forms.DataForm.PrepareSkin();
+                Application.Run(new TestDevExpress.Forms.DataForm());
+
+                // Application.Run(new TestDevExpress.Forms.ImagePickerForm());
+
+                // Application.Run(new TestDevExpress.Forms.GraphForm());
+
+                // Application.Run(new TestDevExpress.Forms.MdiParentForm());
+            }
+            finally
+            {
+                Noris.Clients.Win.Components.AsolDX.DxComponent.Done();
+            }
         }
     }
 }

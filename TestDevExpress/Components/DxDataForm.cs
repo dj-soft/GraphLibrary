@@ -245,6 +245,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     selectedPage.IsActiveContent = true;
             }
         }
+        /// <summary>
+        /// Aktuálně viditelná stránka (záložka), resp. její obsah
+        /// </summary>
         public DxDataFormPage SelectedPage 
         {
             get
@@ -268,7 +271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (page != null) page.IsActiveContent = false;
             _TabPaneChangeNameOld = page?.DebugName;
             RunTabChangeDone();
-            DxComponent.LogAddLineTime($"TabChange from {_TabPaneChangeNameOld} to {_TabPaneChangeNameNew}; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
+            DxComponent.LogAddLineTime($"TabChange from '{_TabPaneChangeNameOld}' to '{_TabPaneChangeNameNew}'; Time: {DxComponent.LogTokenTimeMilisec}", _TabPaneChangeStart);
         }
 
         private long? _TabPaneChangeStart;
@@ -330,6 +333,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         #region Tvorba testovacích dat : CreateSamples()
+        /// <summary>
+        /// Vytvoří a vrátí pole prků pro určitý vzorek (ukázku)
+        /// </summary>
+        /// <param name="sampleId"></param>
+        /// <returns></returns>
         public static IEnumerable<IDataFormItem> CreateSample(int sampleId)
         {
             switch (sampleId)
@@ -359,18 +367,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             int h1 = 30;
             int h2 = 20;
 
-            _CreateSampleAddReferName1(items, "Reference:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Dodavatel:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Náš provoz:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Útvar:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Sklad:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Odpovědná osoba:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Expediční sklad:", x1, y1); y1 += h1;
-            _CreateSampleAddReferName1(items, "Odběratel:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Reference:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Dodavatel:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Náš provoz:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Útvar:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Sklad:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Odpovědná osoba:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Expediční sklad:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Odběratel:", x1, y1); y1 += h1;
 
             y1 += h2;
 
-            _CreateSampleAddMemo(items, "Poznámka nákupní:", x2, y2, 550, 7 * h1 + h0); y2 += 8 * h1;
+            _CreateSampleAddMemo1(items, "Poznámka nákupní:", x2, y2, 550, 7 * h1 + h0); y2 += 8 * h1;
 
             _CreateSampleAddPrice3(items, "Cena nákupní:", x1, y1); y1 += h1;
             _CreateSampleAddPrice3(items, "Cena DPH 0:", x1, y1); y1 += h1;
@@ -380,18 +388,18 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             y1 += h2;
 
-            _CreateSampleAddMemo(items, "Poznámka cenová:", x2, y2, 550, 4 * h1 + h0); y2 += 5 * h1;
+            _CreateSampleAddMemo1(items, "Poznámka cenová:", x2, y2, 550, 4 * h1 + h0); y2 += 5 * h1;
 
             _CreateSampleAddLabel1(items, "Rabaty:", x1, y1);
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat dodavatele", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat skladu", DevExpress.XtraEditors.Controls.CheckBoxStyle.Default, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat odběratele", null, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat uživatele", null, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Aplikovat rabat termínový", null, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat dodavatele", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat skladu", DevExpress.XtraEditors.Controls.CheckBoxStyle.Default, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat odběratele", null, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat uživatele", null, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Aplikovat rabat termínový", null, x1, y1, 186); y1 += h1;
 
             y1 += h2;
 
-            _CreateSampleAddMemo(items, "Poznámka k rabatům:", x2, y2, 550, 4 * h1 + h0); y2 += 5 * h1;
+            _CreateSampleAddMemo1(items, "Poznámka k rabatům:", x2, y2, 550, 4 * h1 + h0); y2 += 5 * h1;
 
             _CreateSampleAddDate2(items, "Datum objednávky", x1, y1); y1 += h1;
             _CreateSampleAddDate2(items, "Datum potvrzení", x1, y1); y1 += h1;
@@ -404,7 +412,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             y1 += h2;
 
-            _CreateSampleAddMemo(items, "Předvolby:", x2, y2, 550, 120); y2 += 135;
+            _CreateSampleAddMemo1(items, "Předvolby:", x2, y2, 550, 120); y2 += 135;
             _CreateSampleAddCheckBox3(items, "Tuzemský dodavatel", "Akciovka", "S.r.o.", x1, y1); y1 += h1;
             _CreateSampleAddCheckBox3(items, "Dodavatel v EU", "Majitel v EU", "Daně z příjmu v EU", x1, y1); y1 += h1;
             _CreateSampleAddCheckBox3(items, "Dodavatel v US", "Majitel v US", "Daně z příjmu v US", x1, y1); y1 += h1;
@@ -431,20 +439,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CreateSampleAddPrice3(items, "Cena DPH 2 €:", x1, y1); y1 += h1;
             _CreateSampleAddPrice3(items, "Cena evidenční €:", x1, y1); y1 += h1;
 
-            _CreateSampleAddMemo(items, "Poznámka k cizí měně:", x1, y1, 550, 4 * h1 + h0); y1 += 5 * h1;
+            _CreateSampleAddMemo1(items, "Poznámka k cizí měně:", x1, y1, 550, 4 * h1 + h0); y1 += 5 * h1;
 
-            _CreateSampleAddMemo(items, "Poznámka k účtování:", x1, y1, 550, 4 * h1 + h0); y1 += 5 * h1;
+            _CreateSampleAddMemo1(items, "Poznámka k účtování:", x1, y1, 550, 4 * h1 + h0); y1 += 5 * h1;
 
             y1 += h2;
 
             _CreateSampleAddLabel1(items, "Účtování:", x1, y1);
-            _CreateSampleAddCheckBox1(items, "Účtovat do běžného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Účtovat do reálného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Účtovat jako rozpočtová organizace", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Účtovat až po schválení majitelem", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Účtovat do černého účetního rozvrhu", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Účtovat až po zaplacení", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
-            _CreateSampleAddCheckBox1(items, "Účtovat jen 30. února", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat do běžného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat do reálného deníku", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat jako rozpočtová organizace", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat až po schválení majitelem", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat do černého účetního rozvrhu", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat až po zaplacení", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
+            _CreateSampleAddCheckBox1(items, "Účtovat jen 30. února", DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, x1, y1, 186); y1 += h1;
 
             _CreateSampleSetPage(items, "page1", "CENOVÉ ÚDAJE v €", "Tato záložka obsahuje údaje o cenách v €urech", null);
 
@@ -454,7 +462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             x2 = 700;
             y2 = 8;
 
-            _CreateSampleAddReferName1(items, "Zapsal:", x1, y1); y1 += h1;
+            _CreateSampleAddRelation1(items, "Zapsal:", x1, y1); y1 += h1;
             _CreateSampleAddDate2(items, "Datum zadání do systému", x1, y1); y1 += h1;
 
             _CreateSampleSetPage(items, "page2", "SYSTÉMOVÉ ÚDAJE", "Tato záložka obsahuje údaje o osobě a času zadání do systému", null);
@@ -522,11 +530,98 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private static IEnumerable<IDataFormItem> _CreateSample3()
         {
-            List<IDataFormItem> items = new List<IDataFormItem>();
             Random rand = _SampleRandom;
+
+            int x1, y1, x2, y2;
+            List<DataFormItem> items = new List<DataFormItem>();
+
+            // Stránka 0
+            x1 = 6;
+            y1 = 8;
+            x2 = 700;
+            y2 = 8;
+
+            int ha = 44;
+            int hl = 18;
+            int hs = 7;
+
+            _CreateSampleAddRelation2(items, "Dílec VTPV:", x1, y1, 166, 317); y1 += ha;
+            _CreateSampleAddRelation2(items, "Výrobní příkaz:", x1, y1, 166, 317); y1 += ha;
+
+            _CreateSampleAddAttributeText(items, "Datum kalkulace:", x1, y1, 166);
+            _CreateSampleAddAttributeText(items, "Datum dokumentace:", x1 + 168, y1, 166); y1 += ha;
+
+            _CreateSampleAddAttributeText(items, "Datum platnosti od:", x1, y1, 166);
+            _CreateSampleAddAttributeText(items, "Datum revize:", x1 + 168, y1, 166); y1 += ha;
+
+            _CreateSampleAddAttributeText(items, "Typ kalkulace:", x1, y1, 166);
+            _CreateSampleAddAttributeCheck(items, "Standardní kalkulace:", "", x1 + 166 + 2, y1, 129);
+            _CreateSampleAddAttributeCheck(items, "Kalkulovány i nadnorm. náklady:", "", x1 + 166 + 2 + 129 + 2, y1, 187); y1 += ha;
+
+            _CreateSampleAddMemo2(items, "Poznámka:", x1, y1, 485, 82); y1 += (hl + 82 + hs);
+
+            _CreateSample3Naklady(items, "Na MJ", x1, ref y1);
+            _CreateSample3Naklady(items, "Na kalkulované množství", x1, ref y1);
+
+            y1 += 16;
+            _CreateSampleAddLabel1(items, "Doplňující údaje", x1, y1, 300, DevExpress.Utils.HorzAlignment.Near, LabelStyleType.SubTitle); y1 += 32;
+
+            _CreateSampleAddRelation2(items, "Parametry kalkulací:", x1, y1, 166, 317); y1 += ha;
+            _CreateSampleAddRelation2(items, "Protokol:", x1, y1, 166, 317); y1 += ha;
+            _CreateSampleAddRelation2(items, "T modifikace VTPV:", x1, y1, 166, 317); y1 += ha;
+            _CreateSampleAddRelation2(items, "T modifikace STPV:", x1, y1, 166, 317); y1 += ha;
+            _CreateSampleAddRelation2(items, "Plán. kalkulace:", x1, y1, 166, 317); y1 += ha;
+            _CreateSampleAddRelation2(items, "Pořídil:", x1, y1, 166, 317); y1 += ha;
+
+            _CreateSampleSetPage(items, "page0", "Kalkulace", "Tato záložka obsahuje údaje o kalkulaci obecně", null);
+
+            _CreateSample3CenovyVektor(items, "page1", "Náklady za kalkulované množství");
+            _CreateSample3CenovyVektor(items, "page2", "Jednotkové náklady");
 
 
             return items;
+        }
+
+        private static void _CreateSample3Naklady(List<DataFormItem> items, string label, int x, ref int y)
+        {
+            int ha = 44;
+
+            y += 16;
+
+            _CreateSampleAddLabel1(items, label, x, y, 300, DevExpress.Utils.HorzAlignment.Near, LabelStyleType.SubTitle); y += 32;
+
+            _CreateSampleAddAttributeText(items, "Kalkulované množství:", x, y, 166); y += ha;
+
+            _CreateSampleAddAttributeText(items, "Vlastní náklady na kalkulova", x, y, 166);
+            _CreateSampleAddAttributeText(items, "Úplné vlastní náklady", x + 2 + 166, y, 166);
+            _CreateSampleAddAttributeText(items, "Celkem", x + 2 + 166 + 2 + 166, y, 166); y += ha;
+
+            _CreateSampleAddAttributeText(items, "Skladová cena:", x, y, 166); y += ha;
+        }
+        private static void _CreateSample3CenovyVektor(List<DataFormItem> items, string pageName, string pageText)
+        {
+            int x = 6;
+            int y = 6;
+            int w0 = 222;
+            int w1 = 151;
+            _CreateSampleAddLabel1(items, "Reference složky", x + 2, y, w0 - 4, DevExpress.Utils.HorzAlignment.Near);
+            _CreateSampleAddLabel1(items, "Bez nižších dílců", x + w0 + 2, y, w1 - 4, DevExpress.Utils.HorzAlignment.Near);
+            _CreateSampleAddLabel1(items, "Nižší dílce", x + w0 + 2 + w1 + 2, y, w1 - 4, DevExpress.Utils.HorzAlignment.Near);
+            _CreateSampleAddLabel1(items, "Celkem", x + w0 + 2 + w1 + 2 + w1 + 2, y, w1 - 4, DevExpress.Utils.HorzAlignment.Near); y += 20;
+
+            for (int c = 0; c < 13; c++)
+            {
+                if (c < 12)
+                    _CreateSampleAddText1(items, x, y, w0);
+                else
+                    _CreateSampleAddLabel1(items, "Celkem", x + 2, y, w0 - 4, DevExpress.Utils.HorzAlignment.Near);
+                _CreateSampleAddText1(items, x + w0 + 2, y, w1);
+                _CreateSampleAddText1(items, x + w0 + 2 + w1 + 2, y, w1);
+                _CreateSampleAddText1(items, x + w0 + 2 + w1 + 2 + w1 + 2, y, w1);
+                y += 21;
+            }
+
+            _CreateSampleSetPage(items, pageName, pageText, "Tato záložka obsahuje údaje o cenovém vektoru", null);
         }
         private static IEnumerable<IDataFormItem> _CreateSample4()
         {
@@ -552,7 +647,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return items;
         }
-        private static void _CreateSampleAddLabel1(List<DataFormItem> items, string label, int x, int y, int? w = null, DevExpress.Utils.HorzAlignment? labelHalignment = null)
+        private static void _CreateSampleAddLabel1(List<DataFormItem> items, string label, int x, int y, int? w = null, DevExpress.Utils.HorzAlignment? labelHalignment = null, LabelStyleType? labelStyle = null)
         {
             items.Add(new DataFormItem()
             {
@@ -561,7 +656,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Bounds = new Rectangle(x, y, (w ?? 180), 20),
                 Text = label,
                 LabelHAlignment = (labelHalignment ?? DevExpress.Utils.HorzAlignment.Far),
-                LabelAutoSize = LabelAutoSizeMode.None
+                LabelAutoSize = LabelAutoSizeMode.None,
+                LabelStyle = labelStyle
             });
         }
         private static void _CreateSampleAddText1(List<DataFormItem> items, int x, int y, int? w = null, DevExpress.XtraEditors.Mask.MaskType? maskType = null, string mask = null, 
@@ -578,7 +674,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ToolTipTitle = toolTipTitle
             });
         }
-        private static void _CreateSampleAddReferName1(List<DataFormItem> items, string label, int x, int y)
+        private static void _CreateSampleAddRelation1(List<DataFormItem> items, string label, int x, int y)
         {
             _CreateSampleAddLabel1(items, label, x, y);
 
@@ -655,7 +751,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ToolTipText = "Tento den se událost skončila"
             });
         }
-        private static void _CreateSampleAddMemo(List<DataFormItem> items, string label, int x, int y, int w, int h)
+        private static void _CreateSampleAddMemo1(List<DataFormItem> items, string label, int x, int y, int w, int h)
         {
             _CreateSampleAddLabel1(items, label, x, y);
 
@@ -668,7 +764,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ToolTipText = "Zde můžete zadat libovolný text"
             });
         }
-        private static void _CreateSampleAddCheckBox1(List<DataFormItem> items, string label, DevExpress.XtraEditors.Controls.CheckBoxStyle? style, int x, int y)
+        private static void _CreateSampleAddMemo2(List<DataFormItem> items, string label, int x, int y, int w, int h)
+        {
+            _CreateSampleAddLabel1(items, label, x + 2, y, w - 4, DevExpress.Utils.HorzAlignment.Near);
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.EditBox,
+                Bounds = new Rectangle(x, y + 20, w, h),
+                ToolTipTitle = "POZNÁMKA",
+                ToolTipText = "Zde můžete zadat libovolný text"
+            });
+        }
+        private static void _CreateSampleAddCheckBox1(List<DataFormItem> items, string label, DevExpress.XtraEditors.Controls.CheckBoxStyle? style, int x, int y, int addx)
         {
             if (!style.HasValue) style = _SampleCheckBoxStyle();
 
@@ -676,7 +785,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.CheckBox,
-                Bounds = new Rectangle(x + 183, y, 350, 20),
+                Bounds = new Rectangle(x + addx, y, 350, 20),
+                Text = label,
+                CheckBoxStyle = style
+            });
+        }
+        private static void _CreateSampleAddCheckBox(List<DataFormItem> items, int x, int y, int w, string label, DevExpress.XtraEditors.Controls.CheckBoxStyle? style)
+        {
+            if (!style.HasValue) style = _SampleCheckBoxStyle();
+
+            items.Add(new DataFormItem()
+            {
+                ItemName = _SampleItemName(items),
+                ItemType = DataFormItemType.CheckBox,
+                Bounds = new Rectangle(x, y, w, 20),
                 Text = label,
                 CheckBoxStyle = style
             });
@@ -711,6 +833,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Text = label3,
                 CheckBoxStyle = style
             });
+        }
+        private static void _CreateSampleAddAttributeText(List<DataFormItem> items, string label, int x, int y, int w, string tooltip = null)
+        {
+            _CreateSampleAddLabel1(items, label, x + 2, y, w - 4, DevExpress.Utils.HorzAlignment.Near);
+            _CreateSampleAddText1(items, x, y + 20, w, toolTipText: tooltip ?? "zde vyplňte atribut " + label);
+        }
+        private static void _CreateSampleAddAttributeCheck(List<DataFormItem> items, string label, string text, int x, int y, int w, string tooltip = null)
+        {
+            _CreateSampleAddLabel1(items, label, x + 2, y, w - 4, DevExpress.Utils.HorzAlignment.Near);
+            _CreateSampleAddCheckBox(items, x, y + 20, w, text, DevExpress.XtraEditors.Controls.CheckBoxStyle.Default);
+        }
+        private static void _CreateSampleAddRelation2(List<DataFormItem> items, string label, int x, int y, int wr, int wn, string tooltip = null)
+        {
+            _CreateSampleAddLabel1(items, label, x + 2, y, wr - 4, DevExpress.Utils.HorzAlignment.Near);
+            _CreateSampleAddText1(items, x, y + 20, wr, toolTipText: tooltip ?? "zde vyplňte referenci vztahu " + label);
+            _CreateSampleAddText1(items, x + wr + 2, y + 20, wn, toolTipText: tooltip ?? "zde vyplňte název vztahu " + label);
         }
         private static void _CreateSampleAddSampleRow(List<DataFormItem> items, string label, int[] widths, ref int x, ref int y)
         {
@@ -883,7 +1021,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
-
+    /// <summary>
+    /// Interní přístup do <see cref="DxDataForm"/> pro jeho podřízené třídy
+    /// </summary>
     internal interface IDxDataForm
     {
         /// <summary>
@@ -922,7 +1062,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jméno panelu
         /// </summary>
-        public override string DebugName { get { return $"DataFormPage '{PageText}'"; } }
+        public override string DebugName { get { return PageText; } }
         /// <summary>
         /// Dispose
         /// </summary>
@@ -1200,9 +1340,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return false;
         }
-
+        /// <summary>
+        /// Prvek, který má aktuálně focus
+        /// </summary>
         DxDataFormControlItem __CurrentlyFocusedDataItem;
+        /// <summary>
+        /// Prvek, který je vlevo od focusu (má být zobrazen i když není vidět)
+        /// </summary>
         DxDataFormControlItem __PreviousFocusableDataItem;
+        /// <summary>
+        /// Prvek, který je vpravo od focusu (má být zobrazen i když není vidět)
+        /// </summary>
         DxDataFormControlItem __NextFocusableDataItem;
 
         #endregion

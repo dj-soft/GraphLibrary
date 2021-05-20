@@ -67,6 +67,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static DxComponent _Instance;
         private static object _InstanceLock = new object();
         #endregion
+        #region Init a Done
+        public static void Init() { Instance._Init(); }
+        private void _Init()
+        {
+            DevExpress.UserSkins.BonusSkins.Register();
+            DevExpress.Skins.SkinManager.EnableFormSkins();
+            DevExpress.Skins.SkinManager.EnableMdiFormSkins();
+            DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
+            DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
+
+        }
+        public static void Done() { Instance._Done(); }
+        private void _Done()
+        { }
+        #endregion
         #region Styly
         /// <summary>
         /// Provede inicializaci standardních stylů
