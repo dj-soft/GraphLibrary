@@ -82,6 +82,82 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Done()
         { }
         #endregion
+        #region Splash Screen
+        public static void SplashShow(string title, string subTitle = null, string leftFooter = null, string rightFooter = null,
+            Form owner = null, Image image = null, DevExpress.Utils.Svg.SvgImage svgImage = null,
+            DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator = null, Color? opacityColor = null, int? opacity = null)
+        { Instance._SplashShow(title, subTitle, leftFooter, rightFooter,
+            owner, image, svgImage,
+            indicator, opacityColor, opacity); }
+        public static void SplashUpdate(string title = null, string subTitle = null, string leftFooter = null, string rightFooter = null,
+            Color? opacityColor = null, int? opacity = null)
+        {
+            Instance._SplashUpdate(title, subTitle, leftFooter, rightFooter, opacityColor, opacity);
+        }
+        public static void SplashHide() { Instance._SplashHide(); }
+
+        private void _SplashShow(string title, string subTitle, string leftFooter, string rightFooter,
+            Form owner, Image image, DevExpress.Utils.Svg.SvgImage svgImage,
+            DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator, Color? opacityColor, int? opacity)
+        {
+            DevExpress.XtraSplashScreen.FluentSplashScreenOptions options = new DevExpress.XtraSplashScreen.FluentSplashScreenOptions();
+            options.Title = title;
+            options.Subtitle = subTitle ?? "Asseco Solutions";
+            options.LeftFooter = leftFooter ?? "Copyright © 1995 - 2021" + Environment.NewLine + "All Rights reserved.";
+            options.RightFooter = rightFooter ?? "starting...";
+            options.LoadingIndicatorType = indicator ?? DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots;
+            options.OpacityColor = opacityColor ?? Color.DarkBlue;
+            options.Opacity = opacity ?? 40;
+
+            if (svgImage != null)
+            {
+                options.LogoImageOptions.SvgImage = svgImage;
+                options.LogoImageOptions.SvgImageSize = new Size(80, 80);
+            }
+            else if (image != null)
+            {
+                options.LogoImageOptions.Image = image;
+            }
+
+            DevExpress.XtraSplashScreen.SplashScreenManager.ShowFluentSplashScreen(
+                options,
+                parentForm: owner,
+                startPos: DevExpress.XtraSplashScreen.SplashFormStartPosition.CenterScreen,
+                useFadeIn: true,
+                useFadeOut: true
+            );
+
+            _SplashOptions = options;
+        }
+        private void _SplashUpdate(string title = null, string subTitle = null, string leftFooter = null, string rightFooter = null,
+            Color? opacityColor = null, int? opacity = null)
+        {
+            var currentOptions = _SplashOptions;
+            if (currentOptions == null) return;
+
+            DevExpress.XtraSplashScreen.FluentSplashScreenOptions options = new DevExpress.XtraSplashScreen.FluentSplashScreenOptions();
+            options.Assign(currentOptions);
+            if (title != null) options.Title = title;
+            if (subTitle != null) options.Subtitle = subTitle;
+            if (leftFooter != null) options.LeftFooter = leftFooter;
+            if (rightFooter != null) options.RightFooter = rightFooter;
+            if (opacityColor != null) options.OpacityColor = opacityColor.Value;
+            if (opacity != null) options.Opacity = opacity.Value;
+
+            DevExpress.XtraSplashScreen.SplashScreenManager.Default?.SendCommand(DevExpress.XtraSplashScreen.FluentSplashScreenCommand.UpdateOptions, options);
+
+            _SplashOptions = options;
+        }
+        private void _SplashHide()
+        {
+            if (_SplashOptions != null)
+            {
+                DevExpress.XtraSplashScreen.SplashScreenManager.CloseForm();
+                _SplashOptions = null;
+            }
+        }
+        private DevExpress.XtraSplashScreen.FluentSplashScreenOptions _SplashOptions;
+        #endregion
         #region Styly
         /// <summary>
         /// Provede inicializaci standardních stylů

@@ -60,57 +60,16 @@ namespace TestDevExpress.Forms
         }
         private static void ShowSplash(Form owner)
         {
-            DevExpress.XtraSplashScreen.FluentSplashScreenOptions options = new DevExpress.XtraSplashScreen.FluentSplashScreenOptions();
-            options.Title = "Testovací aplikace Helios Nephrite";
-            options.Subtitle = "DJ soft & ASOL";
-            options.RightFooter = "Začínáme...";
-            options.LeftFooter = "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.";
-            options.LoadingIndicatorType = DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots;
-            options.OpacityColor = Color.DarkBlue;
-            options.Opacity = 40;
-            
-            // options.LoadingIndicatorType = DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Ring;
-            // options.LoadingIndicatorType = DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Spinner;
-
-
-            // op.LogoImageOptions.SvgImage = Properties.Resources.homer_simpson;
-            // op.LogoImageOptions.SvgImageSize = new Size(80, 80);
-
-            options.LogoImageOptions.Image = Properties.Resources.Moon10;
-
-
-            DevExpress.XtraSplashScreen.SplashScreenManager.ShowFluentSplashScreen(
-                options,
-                parentForm: owner,
-                startPos: DevExpress.XtraSplashScreen.SplashFormStartPosition.CenterScreen,
-                useFadeIn: true,
-                useFadeOut: true
-            );
-
-            _SplashOptions = options;
-            SplashUpdate("Incializace");
+            DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
+                owner, Properties.Resources.Moon10);
         }
         private static void SplashUpdate(string rightFooter = null, string leftFooter = null, string title = null)
         {
-            var options = _SplashOptions;
-            if (options != null)
-            {
-                DevExpress.XtraSplashScreen.FluentSplashScreenOptions op = new DevExpress.XtraSplashScreen.FluentSplashScreenOptions();
-                op.Assign(options);
-                if (rightFooter != null) op.RightFooter = rightFooter;
-                if (leftFooter != null) op.LeftFooter = leftFooter;
-                if (title != null) op.Title = title;
-                DevExpress.XtraSplashScreen.SplashScreenManager.Default.SendCommand(DevExpress.XtraSplashScreen.FluentSplashScreenCommand.UpdateOptions, op);
-            }
+            DxComponent.SplashUpdate(title: title, leftFooter: leftFooter, rightFooter: rightFooter);
         }
-        private static DevExpress.XtraSplashScreen.FluentSplashScreenOptions _SplashOptions;
         private static void HideSplash()
         {
-            if (_SplashOptions != null)
-            {
-                DevExpress.XtraSplashScreen.SplashScreenManager.CloseForm();
-                _SplashOptions = null;
-            }
+            DxComponent.SplashHide();
         }
         protected override void OnShown(EventArgs e)
         {

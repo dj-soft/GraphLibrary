@@ -14,8 +14,14 @@ namespace TestDevExpress.Forms
 
         public DataForm()
         {
+            DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", 
+                "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
+                this, Properties.Resources.Moon10);
+
             this.InitializeForm();
             System.Windows.Forms.Application.Idle += Application_Idle;
+
+            DxComponent.SplashUpdate(rightFooter: "Už to jede...");
         }
         protected override void Dispose(bool disposing)
         {
@@ -23,7 +29,6 @@ namespace TestDevExpress.Forms
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
             System.Windows.Forms.Application.Idle -= Application_Idle;
         }
-
         public static void PrepareSkin()
         {
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "iMaginary";
@@ -395,6 +400,9 @@ namespace TestDevExpress.Forms
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
+
+            DxComponent.SplashHide();
+
             if (WinProcessInfoAfterShown == null)
                 WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
             RefreshStatus();
