@@ -798,17 +798,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             return spinEdit;
         }
         public static DxCheckEdit CreateDxCheckEdit(int x, int y, int w, Control parent, string text, EventHandler checkedChanged = null,
-            DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
+            DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null)
         {
             return CreateDxCheckEdit(x, ref y, w, parent, text, checkedChanged,
-                checkBoxStyle, borderStyles,
+                checkBoxStyle, borderStyles, hAlignment,
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
         }
         public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
-            DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
+            DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
         {
@@ -821,6 +821,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (tabStop.HasValue) checkEdit.TabStop = tabStop.Value;
 
             if (checkBoxStyle.HasValue) checkEdit.Properties.CheckBoxOptions.Style = checkBoxStyle.Value;
+            if (hAlignment.HasValue)
+            {
+                checkEdit.Properties.GlyphAlignment = hAlignment.Value;                       // Kde bude ikonka?
+                checkEdit.Properties.Appearance.TextOptions.HAlignment = hAlignment.Value;    // Kde bude text?
+                checkEdit.Properties.Appearance.Options.UseTextOptions = true;                // Použít zarovnání textu!
+                // checkEdit.Properties.GlyphVAlignment = VertAlignment.Top;              // Vertikální pozice ikony...
+            }
             if (borderStyles.HasValue) checkEdit.BorderStyle = borderStyles.Value;
 
             checkEdit.SetToolTip(toolTipTitle ?? text, toolTipText);
@@ -1153,7 +1160,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxCheckEdit(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text, null,
-                dataFormItem.CheckBoxStyle, dataFormItem.BorderStyle,
+                dataFormItem.CheckBoxStyle, dataFormItem.BorderStyle, dataFormItem.LabelHAlignment,
                 dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
             return checkBox;
         }

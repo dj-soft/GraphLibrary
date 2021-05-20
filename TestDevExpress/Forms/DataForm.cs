@@ -129,7 +129,7 @@ namespace TestDevExpress.Forms
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample1", ItemText = "Ukázka 1", ItemImage = imageTest, Tag = "Sample1", ItemEnabled = true });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample2", ItemText = "Ukázka 2", ItemImage = imageTest, Tag = "Sample2", ItemEnabled = true });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample3", ItemText = "Ukázka 3", ItemImage = imageTest, Tag = "Sample3", ItemEnabled = true });
-            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample4", ItemText = "Ukázka 4", ItemImage = imageTest, Tag = "Sample4", ItemEnabled = false });
+            this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample4", ItemText = "Ukázka 4", ItemImage = imageTest, Tag = "Sample4", ItemEnabled = true });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample5", ItemText = "Ukázka 5", ItemImage = imageTest, Tag = "Sample5", ItemEnabled = false });
             this._DxRibbonControl.AddItem(new RibbonItem() { PageText = "DevExpress", GroupId = "sample", GroupText = "VZORKY", ItemId = "Dx.Sample.Sample6", ItemText = "Ukázka 6", ItemImage = imageTest, Tag = "Sample6", ItemEnabled = false });
 
