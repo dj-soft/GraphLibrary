@@ -110,6 +110,8 @@ namespace TestDevExpress.Forms
 
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.Refill", ItemText = "Refill ribbonu", ItemImage = imgReload });
+            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.ClearRefill", ItemText = "Clear a Refill", ItemImage = imgReload });
+            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.EmptyRefill", ItemText = "Empty a Refill", ItemImage = imgReload });
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ItemImage = imgZoom });
 
             DxRibbonSample.CreateItemsTo(items, 68);
@@ -119,22 +121,48 @@ namespace TestDevExpress.Forms
             this._DxRibbonControl.AddItems(items);
         }
 
-        private void _RibbonTestRefill()
+        private void _RibbonTestRefill(RefillCommand command)
         {
             var pageId = this._DxRibbonControl.SelectedPageId;
-
-            this._DxRibbonControl.Clear();
-            ThreadManager.AddAction(_RibbonTestRefill2, pageId);
+            switch (command)
+            {
+                case RefillCommand.Fast:
+                case RefillCommand.Slow:
+                    this._DxRibbonControl.Clear();
+                    break;
+                case RefillCommand.Empty:
+                    this._DxRibbonControl.Empty();
+                    break;
+            }
+            ThreadManager.AddAction(_RibbonTestRefill2, pageId, command);
         }
-
         private void _RibbonTestRefill2(object[] pars)
         {
-            // System.Threading.Thread.Sleep(500);
-            this.RunInGui(() => _RibbonTestRefill3(pars[0] as string));
+            RefillCommand command = (RefillCommand)pars[1];
+            switch (command)
+            {
+                case RefillCommand.Fast:
+                    break;
+                case RefillCommand.Slow:
+                case RefillCommand.Empty:
+                    System.Threading.Thread.Sleep(650);
+                    break;
+            }
+
+            this.RunInGui(() => _RibbonTestRefill3(pars[0] as string, command));
         }
-        private void _RibbonTestRefill3(string pageId)
+        private void _RibbonTestRefill3(string pageId, RefillCommand command)
         {
             _DxRibbonFill();
+            switch (command)
+            {
+                case RefillCommand.Fast:
+                case RefillCommand.Slow:
+                    break;
+                case RefillCommand.Empty:
+                    this._DxRibbonControl.Final();
+                    break;
+            }
             this._DxRibbonControl.SelectedPageId = pageId;
         }
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
@@ -146,13 +174,22 @@ namespace TestDevExpress.Forms
                     break;
                 case "Dx.Test.Refill":
                     DxComponent.LogClear();
-                    _RibbonTestRefill();
+                    _RibbonTestRefill(RefillCommand.Fast);
+                    break;
+                case "Dx.Test.ClearRefill":
+                    DxComponent.LogClear();
+                    _RibbonTestRefill(RefillCommand.Slow);
+                    break;
+                case "Dx.Test.EmptyRefill":
+                    DxComponent.LogClear();
+                    _RibbonTestRefill(RefillCommand.Empty);
                     break;
                 case "Dx.Test.ImgPick":
                     ImagePickerForm.ShowForm(this);
                     break;
             }
         }
+        private enum RefillCommand { None, Fast, Slow, Empty }
         /// <summary>
         /// Bude se používat LazyLoad
         /// </summary>

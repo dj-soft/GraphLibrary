@@ -147,6 +147,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Items.Clear();
         }
         /// <summary>
+        /// Smaže pouze prvky z Ribbonu.
+        /// </summary>
+        public void Empty()
+        {
+            //this.Pages.Clear();
+            //this.Categories.Clear();
+            //this.PageCategories.Clear();
+            this.Items.Clear();
+        }
+        /// <summary>
+        /// Smaže pouze prvky z Ribbonu.
+        /// </summary>
+        public void Final()
+        { }
+        /// <summary>
         /// Přidá dodané prvky do this ribbonu, zakládá stránky, kategorie, grupy...
         /// Pokud má být aktivní <see cref="UseLazyContentCreate"/>, musí být nastaveno na true před přidáním prvku.
         /// </summary>
