@@ -449,14 +449,34 @@ namespace TestDevExpress
                 checkItem.Checked = item.ItemIsChecked ?? false;
             }
 
-            barItem.PaintStyle = item.ItemPaintStyle;
-            if (item.RibbonStyle != XR.RibbonItemStyles.Default)
-                barItem.RibbonStyle = item.RibbonStyle;
+            barItem.PaintStyle = Convert(item.ItemPaintStyle);
+            if (item.RibbonStyle != RibbonItemStyles.Default)
+                barItem.RibbonStyle = Convert(item.RibbonStyle);
 
             if (item.ToolTip != null)
                 barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ToolTipIcon);
 
             barItem.Tag = item;
+        }
+        /// <summary>
+        /// Konvertuje typ <see cref="BarItemPaintStyle"/> na typ <see cref="DevExpress.XtraBars.BarItemPaintStyle"/>
+        /// </summary>
+        /// <param name="itemPaintStyle"></param>
+        /// <returns></returns>
+        private DevExpress.XtraBars.BarItemPaintStyle Convert(BarItemPaintStyle itemPaintStyle)
+        {
+            int styles = (int)itemPaintStyle;
+            return (DevExpress.XtraBars.BarItemPaintStyle)styles;
+        }
+        /// <summary>
+        /// Konvertuje typ <see cref="RibbonItemStyles"/> na typ <see cref="DevExpress.XtraBars.Ribbon.RibbonItemStyles"/>
+        /// </summary>
+        /// <param name="ribbonStyle"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.Ribbon.RibbonItemStyles Convert(RibbonItemStyles ribbonStyle)
+        {
+            int styles = (int)ribbonStyle;
+            return (DevExpress.XtraBars.Ribbon.RibbonItemStyles)styles;
         }
         protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string image)
         {
@@ -666,10 +686,10 @@ namespace TestDevExpress
             int group = Rand.Next(GroupNames.Length);
             string groupId = pageId + "." + "Group" + group;
             string groupText = GroupNames[group];
-            XR.RibbonItemStyles ribbonStyle = XR.RibbonItemStyles.All;
+            RibbonItemStyles ribbonStyle = RibbonItemStyles.All;
             _AddItems(items, pageId, pageText, pageOrder, groupId, groupText, ribbonStyle, count);
         }
-        private static void _AddItems(List<IRibbonItem> items, string pageId, string pageText, int pageOrder, string groupId, string groupText, XR.RibbonItemStyles ribbonStyle, int count)
+        private static void _AddItems(List<IRibbonItem> items, string pageId, string pageText, int pageOrder, string groupId, string groupText, RibbonItemStyles ribbonStyle, int count)
         {
             int radioCount = 0;
             bool hasRadio = false;
@@ -707,7 +727,7 @@ namespace TestDevExpress
                 if (radioCount > 0)
                 {
                     item.ItemType = RibbonItemType.RadioItem;
-                    item.RibbonStyle = XR.RibbonItemStyles.SmallWithText;
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
                     radioCount--;
                     if (radioCount == 0) nextIsFirst = true;
                 }
@@ -732,7 +752,7 @@ namespace TestDevExpress
                     }
 
                     if (Rand.Next(10) < 3)
-                        item.RibbonStyle = XR.RibbonItemStyles.SmallWithText;
+                        item.RibbonStyle = RibbonItemStyles.SmallWithText;
 
                     if (NeedSubItem(itemType))
                         item.SubItems = _CreateSubItems(13);
@@ -764,7 +784,7 @@ namespace TestDevExpress
                     ItemId = "Item" + (++_RibbonItemId),
                     ItemText = itemText,
                     ItemIsFirstInGroup = isFirst,
-                    RibbonStyle = XR.RibbonItemStyles.Default,
+                    RibbonStyle = RibbonItemStyles.Default,
                     ToolTip = toolTip,
                     ToolTipTitle = toolTipTitle,
                     ToolTipIcon = "help_hint_48_",

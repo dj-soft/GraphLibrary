@@ -27,6 +27,17 @@ namespace TestDevExpress.Forms
             InitDevExpressComponents();
 
         }
+        /// <summary>
+        /// Zobrazí ImagePicker
+        /// </summary>
+        /// <param name="owner"></param>
+        public static void ShowForm(WF.IWin32Window owner = null)
+        {
+            using (ImagePickerForm form = new ImagePickerForm())
+            {
+                form.ShowDialog(owner);
+            }
+        }
         #region WinForm designer
         /// <summary>
         /// Required designer variable.

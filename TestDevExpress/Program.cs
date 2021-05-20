@@ -21,11 +21,10 @@ namespace TestDevExpress
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
 
-                // Application.Run(new TestDevExpress.Forms.MainForm());
+                Application.Run(new TestDevExpress.Forms.MainForm());
 
 
-                TestDevExpress.Forms.DataForm.PrepareSkin();
-                Application.Run(new TestDevExpress.Forms.DataForm());
+                // Application.Run(new TestDevExpress.Forms.DataForm());
 
                 // Application.Run(new TestDevExpress.Forms.ImagePickerForm());
 

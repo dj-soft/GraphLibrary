@@ -1791,6 +1791,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TestDataFormNormalButton.Click += _TestDataFormNormalButton_Click;
             _EditorsPanel.Controls.Add(_TestDataFormNormalButton);
 
+            _TestDxRibbonFormModalButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 154, 190, 50), Text = "Test Ribbon" };
+            _TestDxRibbonFormModalButton.Click += _TestDxRibbonFormModalButton_Click;
+            _EditorsPanel.Controls.Add(_TestDxRibbonFormModalButton);
+
             // _DxImagePicker = new DxImagePickerListBox() { Bounds = new Rectangle(20, 100, 640, 480) };
             // _EditorsPanel.Controls.Add(_DxImagePicker);
 
@@ -1846,6 +1850,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             dataForm.Size = new Size(1400, 900);
             dataForm.StartPosition = FormStartPosition.WindowsDefaultLocation;
             dataForm.Show();
+        }
+        private void _TestDxRibbonFormModalButton_Click(object sender, EventArgs e)
+        {
+            using (var ribbonForm = new RibbonForm())
+            {
+                ribbonForm.WindowState = FormWindowState.Maximized;
+                ribbonForm.ShowDialog();
+            }
         }
         private void _TokenAddButtonGreen_Click(object sender, EventArgs e)
         {
@@ -1943,6 +1955,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.SimpleButton _OpenImagePickerFormButton;
         private DevExpress.XtraEditors.SimpleButton _TestDataFormModalButton;
         private DevExpress.XtraEditors.SimpleButton _TestDataFormNormalButton;
+        private DevExpress.XtraEditors.SimpleButton _TestDxRibbonFormModalButton;
         private DxImagePickerListBox _DxImagePicker;
         #endregion
         #region TreeView

@@ -71,12 +71,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static void Init() { Instance._Init(); }
         private void _Init()
         {
+            System.Threading.Thread.CurrentThread.Name = "GUI thread";
             DevExpress.UserSkins.BonusSkins.Register();
             DevExpress.Skins.SkinManager.EnableFormSkins();
             DevExpress.Skins.SkinManager.EnableMdiFormSkins();
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
             DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
-
+            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "iMaginary";
         }
         public static void Done() { Instance._Done(); }
         private void _Done()
@@ -85,10 +86,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Splash Screen
         public static void SplashShow(string title, string subTitle = null, string leftFooter = null, string rightFooter = null,
             Form owner = null, Image image = null, DevExpress.Utils.Svg.SvgImage svgImage = null,
-            DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator = null, Color? opacityColor = null, int? opacity = null)
+            DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator = null, Color? opacityColor = null, int? opacity = null,
+            bool useFadeIn = true, bool useFadeOut = true)
         { Instance._SplashShow(title, subTitle, leftFooter, rightFooter,
             owner, image, svgImage,
-            indicator, opacityColor, opacity); }
+            indicator, opacityColor, opacity,
+            useFadeIn, useFadeOut); }
         public static void SplashUpdate(string title = null, string subTitle = null, string leftFooter = null, string rightFooter = null,
             Color? opacityColor = null, int? opacity = null)
         {
@@ -98,7 +101,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _SplashShow(string title, string subTitle, string leftFooter, string rightFooter,
             Form owner, Image image, DevExpress.Utils.Svg.SvgImage svgImage,
-            DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator, Color? opacityColor, int? opacity)
+            DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator, Color? opacityColor, int? opacity,
+            bool useFadeIn, bool useFadeOut)
         {
             DevExpress.XtraSplashScreen.FluentSplashScreenOptions options = new DevExpress.XtraSplashScreen.FluentSplashScreenOptions();
             options.Title = title;
@@ -123,8 +127,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 options,
                 parentForm: owner,
                 startPos: DevExpress.XtraSplashScreen.SplashFormStartPosition.CenterScreen,
-                useFadeIn: true,
-                useFadeOut: true
+                useFadeIn: useFadeIn,
+                useFadeOut: useFadeOut
             );
 
             _SplashOptions = options;
@@ -1362,11 +1366,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitLog()
         {
             _LogWatch = new System.Diagnostics.Stopwatch();
-            _LogFrequency = System.Diagnostics.Stopwatch.Frequency;
+            _LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
+            _LogFrequency = _LogFrequencyLong;
             _LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
             _LogSB = new StringBuilder();
             _LogWatch.Start();
-            _LogLastWriteTime = _LogWatch.ElapsedTicks;
+            _LogStartTicks = _LogWatch.ElapsedTicks;
+            _LogLastWriteTicks = _LogStartTicks;
         }
         /// <summary>
         /// Aktuální obsah Log textu.
@@ -1416,7 +1422,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="startTime"></param>
         private void _LogAddLineTime(string line, long? startTime)
         {
-            decimal seconds = (startTime.HasValue ? ((decimal)(_LogWatch.ElapsedTicks - startTime.Value)) / _LogFrequency : 0m);     // Počet sekund
+            long nowTime = _LogWatch.ElapsedTicks;
+            decimal seconds = (startTime.HasValue ? ((decimal)(nowTime - startTime.Value)) / _LogFrequency : 0m);     // Počet sekund
             if (line.Contains(LogTokenTimeSec))
             {
                 string info = Math.Round(seconds, 3).ToString("### ### ### ##0.000").Trim() + " sec";
@@ -1432,25 +1439,43 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string info = Math.Round((seconds * 1000000m), 3).ToString("### ### ### ##0.000").Trim() + " microsec";
                 line = line.Replace(LogTokenTimeMicrosec, info);
             }
-            _LogAddLine(line, false);
+            _LogAddLine(line, false, startTime, nowTime);
         }
         /// <summary>
         /// Přidá daný text jako další řádek
         /// </summary>
         /// <param name="line"></param>
         /// <param name="forceEmptyRow"></param>
-        private void _LogAddLine(string line, bool forceEmptyRow)
+        /// <param name="startTime"></param>
+        /// <param name="nowTime"></param>
+        private void _LogAddLine(string line, bool forceEmptyRow, long? startTime = null, long? nowTime = null)
         {
-            long tick;
+            // | mikrosekund od startu | mikrosekund od posledně | mikrosekund od starTime | Thread | ...
+            long nowTick = nowTime ?? _LogWatch.ElapsedTicks;
+            string totalUs = _LogGetMicroseconds(_LogStartTicks, nowTick).ToString();              // mikrosekund od startu
+            string stepUs = _LogGetMicroseconds(_LogLastWriteTicks, nowTick).ToString();           // mikrosekund od posledního logu
+            string timeUs = (startTime.HasValue ? _LogGetMicroseconds(startTime.Value, nowTick).ToString() : "");    // mikrosekund od daného času
+            string thread = System.Threading.Thread.CurrentThread.Name;
+            string tab = "\t";
+            string logLine = totalUs + tab + stepUs + tab + timeUs + tab + thread + tab + line;
             lock (_LogSB)
             {
-                tick = _LogWatch.ElapsedTicks;
-                if (forceEmptyRow || ((tick - _LogLastWriteTime) > _LogTimeSpanForEmptyRow))
+                if (forceEmptyRow || ((nowTick - _LogLastWriteTicks) > _LogTimeSpanForEmptyRow))
                     _LogSB.AppendLine();
-                _LogSB.AppendLine(line);
+                _LogSB.AppendLine(logLine);
             }
-            _LogLastWriteTime = tick;
+            _LogLastWriteTicks = _LogWatch.ElapsedTicks;
             RunLogTextChanged();
+        }
+        /// <summary>
+        /// Vrací počet mikrosekund od času <paramref name="start"/> do <paramref name="stop"/>
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="stop"></param>
+        /// <returns></returns>
+        private long _LogGetMicroseconds(long start, long stop)
+        {
+            return (1000000L * (stop - start)) / _LogFrequencyLong;
         }
         /// <summary>
         /// Vyvolá event <see cref="_LogTextChanged"/>.
@@ -1462,9 +1487,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private System.Diagnostics.Stopwatch _LogWatch;
         private decimal _LogFrequency;
+        private long _LogFrequencyLong;
         private StringBuilder _LogSB;
         private event EventHandler _LogTextChanged;
-        private long _LogLastWriteTime;
+        private long _LogStartTicks;
+        private long _LogLastWriteTicks;
         private long _LogTimeSpanForEmptyRow;
         #endregion
         #region Draw metody
