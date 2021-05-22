@@ -25,7 +25,6 @@ namespace TestDevExpress.Forms
         {
             InitializeComponent();
             InitDevExpressComponents();
-
         }
         /// <summary>
         /// Zobrazí ImagePicker

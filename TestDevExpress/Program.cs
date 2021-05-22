@@ -21,8 +21,9 @@ namespace TestDevExpress
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
 
-                Application.Run(new TestDevExpress.Forms.MainForm());
+                // Application.Run(new TestDevExpress.Forms.MainForm());
 
+                Application.Run(new TestDevExpress.Forms.RibbonForm());
 
                 // Application.Run(new TestDevExpress.Forms.DataForm());
 

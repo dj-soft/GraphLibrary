@@ -968,18 +968,67 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return listBox;
         }
+        public static DxCheckButton CreateDxCheckButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            bool isChecked = false,
+            Image image = null, string resourceName = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null)
+        {
+            return CreateDxCheckButton(x, ref y, w, h, parent, text, click,
+                paintStyles,
+                isChecked,
+                image, resourceName,
+                toolTipTitle, toolTipText,
+                visible, enabled, tabStop, false);
+        }
+        public static DxCheckButton CreateDxCheckButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            bool isChecked = false,
+            Image image = null, string resourceName = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            var checkButton = new DxCheckButton() { Bounds = new Rectangle(x, y, w, h) };
+            checkButton.StyleController = inst._InputStyle;
+            checkButton.Text = text;
+            checkButton.Checked = isChecked;
+            if (visible.HasValue) checkButton.Visible = visible.Value;
+            if (enabled.HasValue) checkButton.Enabled = enabled.Value;
+            if (tabStop.HasValue) checkButton.TabStop = tabStop.Value;
+            if (paintStyles.HasValue) checkButton.PaintStyle = paintStyles.Value;
+
+            int s = (w < h ? w : h) - 10;
+            DxComponent.ApplyImage(checkButton.ImageOptions, image, resourceName, new Size(s, s), true);
+            checkButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+            checkButton.ImageOptions.ImageToTextIndent = 3;
+            checkButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
+
+            checkButton.SetToolTip(toolTipTitle ?? text, toolTipText);
+
+            if (click != null) checkButton.Click += click;
+            if (parent != null) parent.Controls.Add(checkButton);
+            if (shiftY) y = y + checkButton.Height + inst._DetailYSpaceText;
+
+            return checkButton;
+        }
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? enabled = null, bool? tabStop = null)
         {
             return CreateDxSimpleButton(x, ref y, w, h, parent, text, click,
                 paintStyles,
+                image, resourceName,
                 toolTipTitle, toolTipText,
                 visible, enabled, tabStop, false);
         }
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? enabled = null, bool? tabStop = null, bool shiftY = false)
         {
@@ -992,6 +1041,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (enabled.HasValue) simpleButton.Enabled = enabled.Value;
             if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
             if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
+
+            int s = (w < h ? w : h) - 10;
+            DxComponent.ApplyImage(simpleButton.ImageOptions, image, resourceName, new Size(s, s), true);
+            simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+            simpleButton.ImageOptions.ImageToTextIndent = 3;
+            simpleButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
 
             simpleButton.SetToolTip(toolTipTitle ?? text, toolTipText);
 
@@ -1140,6 +1195,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static Control CreateDataFormButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormButton(dataFormItem); }
         /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static Control CreateDataFormCheckButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormCheckButton(dataFormItem); }
+        /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu DropDownButton pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
@@ -1174,6 +1235,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DataFormItemType.TreeView: return _CreateDataFormTreeView(dataFormItem);
                 case DataFormItemType.RadioButtonBox: return _CreateDataFormRadioButtonBox(dataFormItem);
                 case DataFormItemType.Button: return _CreateDataFormButton(dataFormItem);
+                case DataFormItemType.CheckButton: return _CreateDataFormCheckButton(dataFormItem);
                 case DataFormItemType.DropDownButton: return _CreateDataFormDropDownButton(dataFormItem);
                 case DataFormItemType.Image: return _CreateDataFormImage(dataFormItem);
             }
@@ -1290,6 +1352,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxSimpleButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
                 DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                null, dataFormItem.ButtonImageName,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private Control _CreateDataFormCheckButton(IDataFormItem dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxCheckButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                false,
+                null, dataFormItem.ButtonImageName,
                 dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
             return checkBox;
         }
@@ -4624,6 +4702,26 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     }
     #endregion
+    #region class EnumerableExtensions
+    /// <summary>
+    /// Extension metody pro IEnumerable
+    /// </summary>
+    public static class EnumerableExtensions
+    {
+        /// <summary>
+        /// Pro každý prvek this kolekce proede danou akci
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="action"></param>
+        public static void ForEachExec<T>(this IEnumerable<T> items, Action<T> action)
+        {
+            if (items == null || action == null) return;
+            foreach (T item in items)
+                action(item);
+        }
+    }
+    #endregion
     #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd
     /// <summary>
     /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
@@ -6176,6 +6274,41 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// SimpleButton
     /// </summary>
     public class DxSimpleButton : DevExpress.XtraEditors.SimpleButton
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        #endregion
+        #region Resize a SvgImage
+
+        #endregion
+    }
+    #endregion
+    #region DxCheckButton
+    /// <summary>
+    /// CheckButton
+    /// </summary>
+    public class DxCheckButton : DevExpress.XtraEditors.CheckButton
     {
         #region Rozšířené property
         /// <summary>

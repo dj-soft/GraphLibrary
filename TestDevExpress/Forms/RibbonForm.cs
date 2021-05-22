@@ -13,9 +13,9 @@ namespace TestDevExpress.Forms
         #region Konstruktor a proměnné
         public RibbonForm()
         {
-            DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL",
+            DxComponent.SplashShow("Testovací okno Ribbonů Nephrite", "DJ soft & ASOL",
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                this, Properties.Resources.Moon10,
+                this, Properties.Resources.Moon10,opacityColor: System.Drawing.Color.BlueViolet,
                 useFadeOut: false);
 
             this.UseLazyLoad = true;
@@ -43,23 +43,46 @@ namespace TestDevExpress.Forms
         {
             this.Size = new System.Drawing.Size(800, 600);
             this.Text = "TESTER DataForm";
+            this.AllowMdiBar = true;
 
             _DxMainSplit = DxComponent.CreateDxSplitContainer(this, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
-                fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 300, showSplitGlyph: true);
+                fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 400, showSplitGlyph: true);
 
-            _DxMainPanel = DxComponent.CreateDxPanel(_DxMainSplit.Panel1, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
-            _DxMainPanel.SizeChanged += _DxMainPanel_SizeChanged;
-            DxComponent.CreateDxLabel(10, 10, 500, _DxMainPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
+            _DxLeftSplit = DxComponent.CreateDxSplitContainer(_DxMainSplit.Panel1, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Horizontal,
+                fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel1, splitPosition: 400, showSplitGlyph: true);
+
+            _DxBottomSplit = DxComponent.CreateDxSplitContainer(_DxLeftSplit.Panel2, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
+                fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.None, splitPosition: 400, showSplitGlyph: true);
 
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
-            this._DxRibbonControl = new DxRibbonControl();
+            this._DxRibbonControl = new DxRibbonControl() { DebugName = "MainRibbon" };
             this.Ribbon = _DxRibbonControl;
             this.Controls.Add(this._DxRibbonControl);
 
             _DxRibbonFill();
             this._DxRibbonControl.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
 
+            _TestPanel1 = new RibbonTestPanel();
+            _TestPanel1.UseLazyLoad = this.UseLazyLoad;
+            _TestPanel1.Ribbon.DebugName = "Slave 1";
+            _TestPanel1.ParentRibbon = _DxRibbonControl;
+            _TestPanel1.FillRibbon();
+            _DxLeftSplit.Panel1.Controls.Add(_TestPanel1);
+
+            _TestPanel2a = new RibbonTestPanel();
+            _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
+            _TestPanel2a.Ribbon.DebugName = "Slave 2A";
+            _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
+            _TestPanel2a.FillRibbon();
+            _DxBottomSplit.Panel1.Controls.Add(_TestPanel2a);
+
+            _TestPanel2b = new RibbonTestPanel();
+            _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
+            _TestPanel2b.Ribbon.DebugName = "Slave 2B";
+            _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
+            _TestPanel2b.FillRibbon();
+            _DxBottomSplit.Panel2.Controls.Add(_TestPanel2b);
 
             this._DxRibbonStatusBar = new DxRibbonStatusBar();
             this._DxRibbonStatusBar.Ribbon = this._DxRibbonControl;
@@ -68,7 +91,7 @@ namespace TestDevExpress.Forms
 
             this._StatusItemTitle = CreateStatusBarItem();
           
-            // V tomto pořadí budou viditelné:
+            // V tomto pořadí budou StatusItemy viditelné (tady je zatím jen jeden):
             this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemTitle);
             
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
@@ -79,7 +102,11 @@ namespace TestDevExpress.Forms
         private DxRibbonControl _DxRibbonControl;
         private DxRibbonStatusBar _DxRibbonStatusBar;
         private DxSplitContainerControl _DxMainSplit;
-        private DxPanelControl _DxMainPanel;
+        private DxSplitContainerControl _DxLeftSplit;
+        private DxSplitContainerControl _DxBottomSplit;
+        private RibbonTestPanel _TestPanel1;
+        private RibbonTestPanel _TestPanel2a;
+        private RibbonTestPanel _TestPanel2b;
         private DxMemoEdit _DxLogMemoEdit;
         private DevExpress.XtraBars.BarStaticItem CreateStatusBarItem(int? fontSizeDelta = null)
         {
@@ -91,16 +118,12 @@ namespace TestDevExpress.Forms
             item.AllowHtmlText = DevExpress.Utils.DefaultBoolean.True;
             return item;
         }
-        private void _DxMainPanel_SizeChanged(object sender, EventArgs e)
-        {
-            
-        }
+        
         private DevExpress.XtraBars.BarStaticItem _StatusItemTitle;
         #endregion
         #region Ribbon - obsah a rozcestník
         private void _DxRibbonFill()
         {
-            string imgReload = "images/xaf/action_reload_32x32.png";
             string imgZoom = "images/zoom/zoom_32x32.png";
 
             List<IRibbonItem> items = new List<IRibbonItem>();
@@ -109,61 +132,11 @@ namespace TestDevExpress.Forms
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
 
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.Refill", ItemText = "Refill ribbonu", ItemImage = imgReload });
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.ClearRefill", ItemText = "Clear a Refill", ItemImage = imgReload });
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.EmptyRefill", ItemText = "Empty a Refill", ItemImage = imgReload });
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ItemImage = imgZoom });
-
-            DxRibbonSample.CreateItemsTo(items, 68);
 
             this._DxRibbonControl.Clear();
             this._DxRibbonControl.UseLazyContentCreate = this.UseLazyLoad;
             this._DxRibbonControl.AddItems(items);
-        }
-
-        private void _RibbonTestRefill(RefillCommand command)
-        {
-            var pageId = this._DxRibbonControl.SelectedPageId;
-            switch (command)
-            {
-                case RefillCommand.Fast:
-                case RefillCommand.Slow:
-                    this._DxRibbonControl.Clear();
-                    break;
-                case RefillCommand.Empty:
-                    this._DxRibbonControl.Empty();
-                    break;
-            }
-            ThreadManager.AddAction(_RibbonTestRefill2, pageId, command);
-        }
-        private void _RibbonTestRefill2(object[] pars)
-        {
-            RefillCommand command = (RefillCommand)pars[1];
-            switch (command)
-            {
-                case RefillCommand.Fast:
-                    break;
-                case RefillCommand.Slow:
-                case RefillCommand.Empty:
-                    System.Threading.Thread.Sleep(650);
-                    break;
-            }
-
-            this.RunInGui(() => _RibbonTestRefill3(pars[0] as string, command));
-        }
-        private void _RibbonTestRefill3(string pageId, RefillCommand command)
-        {
-            _DxRibbonFill();
-            switch (command)
-            {
-                case RefillCommand.Fast:
-                case RefillCommand.Slow:
-                    break;
-                case RefillCommand.Empty:
-                    this._DxRibbonControl.Final();
-                    break;
-            }
-            this._DxRibbonControl.SelectedPageId = pageId;
         }
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
         {
@@ -171,25 +144,14 @@ namespace TestDevExpress.Forms
             {
                 case "Dx.Test.UseLazyInit":
                     UseLazyLoad = e.Item.ItemIsChecked ?? false;
-                    break;
-                case "Dx.Test.Refill":
-                    DxComponent.LogClear();
-                    _RibbonTestRefill(RefillCommand.Fast);
-                    break;
-                case "Dx.Test.ClearRefill":
-                    DxComponent.LogClear();
-                    _RibbonTestRefill(RefillCommand.Slow);
-                    break;
-                case "Dx.Test.EmptyRefill":
-                    DxComponent.LogClear();
-                    _RibbonTestRefill(RefillCommand.Empty);
+                    _TestPanel1.UseLazyLoad = UseLazyLoad;
+                    _TestPanel2a.UseLazyLoad = UseLazyLoad;
                     break;
                 case "Dx.Test.ImgPick":
                     ImagePickerForm.ShowForm(this);
                     break;
             }
         }
-        private enum RefillCommand { None, Fast, Slow, Empty }
         /// <summary>
         /// Bude se používat LazyLoad
         /// </summary>
@@ -219,6 +181,167 @@ namespace TestDevExpress.Forms
         }
         bool _LogContainChanges;
         #endregion
+    }
+    /// <summary>
+    /// Testovací panel
+    /// </summary>
+    public class RibbonTestPanel : DxPanelControl, IMenuItemActionHandler
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public RibbonTestPanel()
+        {
+            InitializeContent();
+        }
+        /// <summary>
+        /// Inicializaace obsahu
+        /// </summary>
+        protected void InitializeContent()
+        {
+            this.Dock = System.Windows.Forms.DockStyle.Fill;
+            _Ribbon = new DxRibbonControl() { Dock = System.Windows.Forms.DockStyle.Top, ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False };
+            this.Controls.Add(_Ribbon);
+
+            int x = 20;
+            _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear All", _RunClear); x += 160;
+            _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
+            _ButtonAdd5 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 7 groups", _RunAdd5Groups); x += 160;
+            _ButtonAdd30 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 30 groups", _RunAdd30Groups); x += 160;
+            _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
+
+            x += 60;
+            _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge); x += 160;
+            _ButtonUnMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Unmerge", _RunUnMerge, isChecked: true); x += 160;
+
+            DoLayoutButtons();
+        }
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this.DoLayoutButtons();
+        }
+        private void DoLayoutButtons()
+        {
+            int width = this.ClientSize.Width;
+            bool isSmall = (width < 1200);
+            int x0 = (isSmall ? 10 : 20);
+            int y0 = 160;
+            int w = (isSmall ? 112 : 150);
+            int h = (isSmall ? 44 : 54);
+            int s = (isSmall ? 5 : 10);
+            int xs = w + s;
+            int ds = (isSmall ? 25 : 60);
+            int tw = (5 * w + 4 * s) + (isSmall ? 0 : (ds + 2 * w + s));
+            if ((2 * x0 + tw) < width)
+                x0 = (width - tw) / 2;
+
+            int x = x0;
+            int y = y0;
+            _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+            _ButtonEmpty.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+            _ButtonAdd5.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+            _ButtonAdd30.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+            _ButtonFinal.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+
+            if (isSmall)
+            {
+                x = x0 + xs;
+                y = y0 + h + 6;
+                w = 3 * w / 2;
+                xs = w + 10;
+            }
+            else
+            {
+                x += ds;
+            }
+
+            _ButtonMerge.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+            _ButtonUnMerge.Bounds = new System.Drawing.Rectangle(x, y, w, h); x += xs;
+
+            System.Drawing.Size imageSize = new System.Drawing.Size(h - 8, h - 8);
+            DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonEmpty.ImageOptions, resourceName: "images/xaf/templatesv2images/action_delete.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonAdd5.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonAdd30.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonFinal.ImageOptions, resourceName: "svgimages/icon%20builder/actions_send.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: imageSize);
+        }
+        /// <summary>
+        /// Zdejší Ribbon
+        /// </summary>
+        public DxRibbonControl Ribbon { get { return _Ribbon; } }
+        /// <summary>
+        /// Parent Ribbon, do něhož se mergujeme
+        /// </summary>
+        public DxRibbonControl ParentRibbon { get; set; }
+        /// <summary>
+        /// Bude se používat LazyLoad
+        /// </summary>
+        public bool UseLazyLoad { get { return this._Ribbon.UseLazyContentCreate; } set { this._Ribbon.UseLazyContentCreate = value; } }
+        /// <summary>
+        /// Naplní Robbon daným épočtem grup
+        /// </summary>
+        /// <param name="groups"></param>
+        public void FillRibbon(int groups = 30)
+        {
+            var items = DxRibbonSample.CreateItems(groups);
+            items.Cast<RibbonItem>().ForEachExec(i => i.ActionHandler = this);
+            _Ribbon.AddItems(items);
+        }
+        private DxRibbonControl _Ribbon;
+        private DxSimpleButton _ButtonClear;
+        private DxSimpleButton _ButtonEmpty;
+        private DxSimpleButton _ButtonAdd5;
+        private DxSimpleButton _ButtonAdd30;
+        private DxSimpleButton _ButtonFinal;
+        private DxCheckButton _ButtonMerge;
+        private DxCheckButton _ButtonUnMerge;
+        private void _RunClear(object sender, EventArgs args) 
+        {
+            this._Ribbon.Clear();
+        }
+        private void _RunEmpty(object sender, EventArgs args)
+        {
+            this._Ribbon.Empty();
+        }
+        private void _RunAdd5Groups(object sender, EventArgs args) 
+        {
+            FillRibbon(5);
+        }
+        private void _RunAdd30Groups(object sender, EventArgs args)
+        {
+            FillRibbon(30);
+        }
+        private void _RunFinal(object sender, EventArgs args) 
+        {
+            this._Ribbon.Final(); 
+        }
+        private void _RunMerge(object sender, EventArgs args)
+        {
+            if (ParentRibbon == null) return;
+            ParentRibbon.MergeRibbon(this.Ribbon);
+            // this._ButtonMerge.Checked = true;
+            this._ButtonUnMerge.Checked = false;
+        }
+        private void _RunUnMerge(object sender, EventArgs args) 
+        {
+            if (ParentRibbon == null) return;
+            ParentRibbon.UnMergeRibbon();
+            this._ButtonMerge.Checked = false;
+            // this._ButtonUnMerge.Checked = true;
+        }
+        void IMenuItemActionHandler.MenuItemAction(IMenuItem menuItem)
+        {
+            Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
+            dialogArgs.Title = "Ribbon Click";
+            dialogArgs.MessageTextContainsHtml = true;
+            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>.";
+            dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
+            dialogArgs.Owner = this.FindForm();
+            Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
+        }
     }
     #region RibbonSample : testovací zdroj dat pro Ribbon
     /// <summary>
@@ -259,6 +382,11 @@ namespace TestDevExpress.Forms
         }
         private static void _AddItems(List<IRibbonItem> items, string pageId, string pageText, int pageOrder, string groupId, string groupText, RibbonItemStyles ribbonStyle, int count)
         {
+            bool isCategory = (pageText == "VZTAHY" || pageText == "MODIFIKACE");
+            string categoryId = (isCategory ? "Extend1" : null);
+            string categoryText = (isCategory ? "...rozšířené informace..." : null);
+            System.Drawing.Color categoryColor = (isCategory ? System.Drawing.Color.DarkViolet : System.Drawing.Color.Empty);
+            bool categoryVisible = (isCategory ? true : false);
             int radioCount = 0;
             bool hasRadio = false;
             bool nextIsFirst = false;
@@ -275,6 +403,10 @@ namespace TestDevExpress.Forms
                 bool isFirst = (radioCount == 0 ? nextIsFirst || (Rand.Next(10) < 3) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
                 RibbonItem item = new RibbonItem()
                 {
+                    CategoryId = categoryId,
+                    CategoryText = categoryText,
+                    CategoryColor = categoryColor,
+                    CategoryVisible = categoryVisible,
                     PageId = pageId,
                     PageText = pageText,
                     PageOrder = pageOrder,
@@ -407,7 +539,7 @@ namespace TestDevExpress.Forms
         }
         public static System.Random Rand { get { if (_Rand is null) _Rand = new System.Random(); return _Rand; } }
         private static System.Random _Rand;
-        public static string[] PageNames { get { if (_PageNames is null) _PageNames = "DOMŮ;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
+        public static string[] PageNames { get { if (_PageNames is null) _PageNames = "ASTROLOGIE;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
         private static string[] _PageNames;
         public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky".Split(';'); return _GroupNames; } }
         private static string[] _GroupNames;

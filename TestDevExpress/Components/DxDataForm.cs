@@ -1523,6 +1523,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public decimal? SpinMaxValue { get; set; }
         public decimal? SpinIncrement { get; set; }
         public DevExpress.XtraEditors.Controls.SpinStyles? SpinStyle { get; set; }
+        public string ButtonImageName { get; set; }
         public string ToolTipTitle { get; set; }
         public string ToolTipText { get; set; }
         public bool? Enabled { get; set; }
@@ -1558,6 +1559,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         decimal? SpinMaxValue { get; }
         decimal? SpinIncrement { get; }
         DevExpress.XtraEditors.Controls.SpinStyles? SpinStyle { get; }
+        string ButtonImageName { get; }
         string ToolTipTitle { get; } 
         string ToolTipText { get; }
         bool? Enabled { get; }
@@ -1583,6 +1585,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         TreeView,
         RadioButtonBox,
         Button,
+        CheckButton,
         DropDownButton,
         Image
     }

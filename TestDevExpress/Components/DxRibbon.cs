@@ -59,7 +59,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowToolbarCustomizeItem = true;
             ShowPageHeadersMode = DevExpress.XtraBars.Ribbon.ShowPageHeadersMode.Show;
             ShowSearchItem = true;
-
             ShowToolbarCustomizeItem = true;
             ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
 
@@ -89,6 +88,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnPaint(e);
             this.PaintAfter(e);
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.GetType().Name + ": " + (DebugName ?? "NULL");
+        }
+        /// <summary>
+        /// Jméno Ribbonu pro debugování
+        /// </summary>
+        public string DebugName { get; set; }
         #endregion
         #region LazyLoad page content
         /// <summary>
@@ -98,39 +109,98 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud tedy byla hodnota false (=výchozí stav), pak se přidá 600 prvků, a teprve pak se nastaví <see cref="UseLazyContentCreate"/> = true, je to fakt pozdě.
         /// </summary>
         public bool UseLazyContentCreate { get; set; }
+        /// <summary>
+        /// Při aktivaci stránky (těsně před tím) zajistí vygenerování prvků LazyLoad
+        /// </summary>
+        /// <param name="prev"></param>
         protected override void OnSelectedPageChanged(DevExpress.XtraBars.Ribbon.RibbonPage prev)
         {
-            this.CheckLazyLoadPageContent(this.SelectedPage);
+            this.CheckLazyContentItems(this.SelectedPage);
             base.OnSelectedPageChanged(prev);
         }
-
+        /// <summary>
+        /// Prověří, zda aktuální stránka má nějaké HasLazyContentItems, a pokud ano tak je fyzicky vytvoří
+        /// </summary>
         protected virtual void CheckLazyLoadCurrentPageContent()
         {
-            this.CheckLazyLoadPageContent(this.SelectedPage);
+            this.CheckLazyContentItems(this.SelectedPage);
         }
-        protected virtual void CheckLazyLoadPageContent(DevExpress.XtraBars.Ribbon.RibbonPage page)
+        /// <summary>
+        /// Prověří, zda daná stránka má nějaké HasLazyContentItems, a pokud ano tak je fyzicky vytvoří
+        /// </summary>
+        /// <param name="page"></param>
+        protected virtual void CheckLazyContentItems(DevExpress.XtraBars.Ribbon.RibbonPage page)
         {
-            if (page == null) return;
-            if (!(page is DxRibbonPage dxRibbonPage)) return;
-            if (!dxRibbonPage.HasLazyContentItems) return;
-            List<IRibbonItem> list = null;
-            lock (this)
-            {
-                list = dxRibbonPage.LazyContentItems.ToList();
-                dxRibbonPage.LazyContentItems.Clear();
-            }
-            if (list.Count == 0) return;
+            // Něco k DevExpress a k Ribbonům si přečti v komentáři k metodě DxRibbonPageLazyGroupInfo.TryGetLazyContentForPage!
 
+            if (!DxRibbonPageLazyGroupInfo.TryGetLazyContentForPage(page, out var lazyGroups)) return;
+
+            foreach (var lazyGroup in lazyGroups)
+                lazyGroup.CreateRealItems(this, page);
+
+           
+
+        //    if (!dxRibbonPage.HasLazyContentItems) return;
+        //    List<IRibbonItem> list = null;
+        //    lock (this)
+        //    {
+        //        list = dxRibbonPage.LazyContentItems.ToList();
+        //        dxRibbonPage.LazyContentItems.Clear();
+        //    }
+        //    if (list.Count == 0) return;
+
+        //    var startTime = DxComponent.LogTimeCurrent;
+        //    this.SuspendLayout();
+        //    this.Manager.BeginUpdate();
+        //    int count = 0;
+        //    foreach (var item in list)
+        //        _AddItem(item, false, ref count);
+        //    this.Manager.EndUpdate();
+        //    this.ResumeLayout(false);
+        //    this.PerformLayout();
+        //    DxComponent.LogAddLineTime($" === RIBBON Page '{dxRibbonPage.Text}': LazyFill {list.Count} item[s]; Create: {count} BarItem[s] {DxComponent.LogTokenTimeMilisec} === ", startTime);
+        
+
+        }
+
+
+        public override void MergeRibbon(DevExpress.XtraBars.Ribbon.RibbonControl ribbon)
+        {
             var startTime = DxComponent.LogTimeCurrent;
-            this.SuspendLayout();
-            this.Manager.BeginUpdate();
-            int count = 0;
-            foreach (var item in list)
-                _AddItem(item, false, ref count);
-            this.Manager.EndUpdate();
-            this.ResumeLayout(false);
-            this.PerformLayout();
-            DxComponent.LogAddLineTime($" === RIBBON Page '{dxRibbonPage.Text}': LazyFill {list.Count} item[s]; Create: {count} BarItem[s] {DxComponent.LogTokenTimeMilisec} === ", startTime);
+
+            string slaveSelectedPage = (ribbon is DxRibbonControl dxRibbon) ? dxRibbon.SelectedPageId : null;
+
+            int mainPageCount1 = this.Pages.Count;
+            int mainMergesPageCount1 = this.MergedPages.Count;
+            int slavePageCount1 = ribbon?.Pages.Count ?? -1;
+            int slaveMergesPageCount1 = ribbon?.MergedPages.Count ?? -1;
+
+            base.MergeRibbon(ribbon);
+
+            int mainPageCount2 = this.Pages.Count;
+            int mainMergesPageCount2 = this.MergedPages.Count;
+            int slavePageCount2 = ribbon?.Pages.Count ?? -1;
+            int slaveMergesPageCount2 = ribbon?.MergedPages.Count ?? -1;
+
+            if (slaveSelectedPage != null) this.SelectedPageId = slaveSelectedPage;
+
+            DxComponent.LogAddLineTime($"MergeRibbon: Master: {this.DebugName}; Slave: {(ribbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        public override void UnMergeRibbon()
+        {
+            var startTime = DxComponent.LogTimeCurrent;
+
+            base.UnMergeRibbon();
+
+            DxComponent.LogAddLineTime($"UnMergeRibbon: Master: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        protected override void RaiseMerge(DevExpress.XtraBars.Ribbon.RibbonMergeEventArgs e)
+        {
+            base.RaiseMerge(e);
+        }
+        protected override void RaiseUnMerge(DevExpress.XtraBars.Ribbon.RibbonMergeEventArgs e)
+        {
+            base.RaiseUnMerge(e);
         }
         #endregion
         #region Tvorba obsahu Ribbonu
@@ -141,20 +211,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void Clear()
         {
+            var startTime = DxComponent.LogTimeCurrent;
             this.Pages.Clear();
             this.Categories.Clear();
             this.PageCategories.Clear();
             this.Items.Clear();
+            DxComponent.LogAddLineTime($" === RIBBON Clear: {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
-        /// Smaže pouze prvky z Ribbonu.
+        /// Smaže výhradně jednotlivé prvky z Ribbonu (Items a LazyLoadContent) a grupy prvků (Page.Groups).
+        /// Ponechává naživu Pages, Categories a PageCategories.
         /// </summary>
         public void Empty()
         {
-            //this.Pages.Clear();
-            //this.Categories.Clear();
-            //this.PageCategories.Clear();
+            var startTime = DxComponent.LogTimeCurrent;
             this.Items.Clear();
+            foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.Pages)
+            {
+                page.Groups.Clear();
+                if (page is DxRibbonPage dxRibbonPage)
+                {
+                    dxRibbonPage.Empty();
+                }
+            }
+            DxComponent.LogAddLineTime($" === RIBBON Empty: {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Smaže pouze prvky z Ribbonu.
@@ -168,17 +248,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="items"></param>
         public void AddItems(IEnumerable<IRibbonItem> items)
         {
+            _AddItems(items, this.UseLazyContentCreate, "Fill");
+            CheckLazyLoadCurrentPageContent();
+        }
+        /// <summary>
+        /// Přidá prvky do this Ribbonu z dodané LazyGroup do this Ribbonu. Zde se prvky přidávají vždy jako reálné, už ne Lazy.
+        /// </summary>
+        /// <param name="lazyGroup"></param>
+        internal void AddItems(DxRibbonPageLazyGroupInfo lazyGroup)
+        {
+            _AddItems(lazyGroup.Items, false, "LazyFill");
+        }
+        /// <summary>
+        /// Přidá prvky do this Ribbonu z dodané kolekce, v daném režimu LazyLoad
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="useLazyContentCreate"></param>
+        /// <param name="logText"></param>
+        private void _AddItems(IEnumerable<IRibbonItem> items, bool useLazyContentCreate, string logText)
+        {
             if (items is null) return;
             var startTime = DxComponent.LogTimeCurrent;
-            bool useLazyContentCreate = this.UseLazyContentCreate;
             List<IRibbonItem> list = items.Where(i => i != null).ToList();
             SortItems(list);
             int count = 0;
             foreach (var item in list)
                 _AddItem(item, useLazyContentCreate, ref count);
-            DxComponent.LogAddLineTime($" === RIBBON: Fill {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
-
-            CheckLazyLoadCurrentPageContent();
+            DxComponent.LogAddLineTime($" === RIBBON: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Přidá jeden prvek do Ribbonu, zakládá stránky, kategorie, grupy...
@@ -224,9 +320,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (!String.IsNullOrEmpty(value))
                 {
-                    var page = Pages.FirstOrDefault(p => p.Name == value);
-                    if (page != null) this.SelectedPage = page;
+                    var page = AllPages.FirstOrDefault(p => p.Name == value);
+                    if (page != null) 
+                        this.SelectedPage = page;
                 }
+            }
+        }
+        public List<DevExpress.XtraBars.Ribbon.RibbonPage> AllPages
+        {
+            get
+            {
+                List<DevExpress.XtraBars.Ribbon.RibbonPage> pages = new List<DevExpress.XtraBars.Ribbon.RibbonPage>();
+                pages.AddRange(this.Pages);
+                foreach (DevExpress.XtraBars.Ribbon.RibbonPageCategory category in this.Categories)
+                    pages.AddRange(category.Pages);
+                pages.AddRange(this.MergedPages);
+                foreach (DevExpress.XtraBars.Ribbon.RibbonPageCategory category in this.MergedCategories)
+                    pages.AddRange(category.Pages);
+                return pages;
             }
         }
         private void _AddItem(IRibbonItem item, bool useLazyContentCreate, ref int count)
@@ -241,7 +352,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                page.LazyContentItems.Add(item);
+                page.AddLazyContentItem(item);
             }
         }
         /// <summary>
@@ -286,7 +397,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             page = (isCategory ? category.Pages.FirstOrDefault(r => (r.Name == item.PageId)) : Pages.FirstOrDefault(r => r.Name == item.PageId)) as DxRibbonPage;
             if (page is null && enableNew)
             {
-                page = new DxRibbonPage(item.PageText)
+                page = new DxRibbonPage(this, item.PageText)
                 {
                     Name = item.PageId,
                     Tag = item
@@ -307,7 +418,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 group = new DevExpress.XtraBars.Ribbon.RibbonPageGroup(item.GroupText)
                 {
                     Name = item.GroupId,
-                    ShowCaptionButton = false
+                    CaptionButtonVisible = DefaultBoolean.False
                 };
                 group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.GroupImage, ImagesSize, item.GroupText);
                 page.Groups.Add(group);
@@ -626,6 +737,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal void RaiseRibbonItemClick(IMenuItem menuItem) { _RibbonItemClick(menuItem); }
         private void _RibbonItemClick(IMenuItem menuItem)
         {
+            var handler = menuItem.ActionHandler;
+            if (handler != null) handler.MenuItemAction(menuItem);
+
             var args = new TEventArgs<IMenuItem>(menuItem);
             OnRibbonItemClick(args);
             RibbonItemClick?.Invoke(this, args);
@@ -770,32 +884,200 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxRibbonPage : stránka Ribbonu s podporou LazyContentItems
     /// <summary>
-    /// Stránka Ribbonu s vlastností LazyLoadingContent
+    /// Stránka Ribbonu s vlastností LazyContentItems
     /// </summary>
     public class DxRibbonPage : DevExpress.XtraBars.Ribbon.RibbonPage
     {
-        public DxRibbonPage() : base()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="ribbon"></param>
+        /// <param name="text"></param>
+        public DxRibbonPage(DxRibbonControl ribbon, string text) : base(text)
         {
-            this.Init();
-        }
-        public DxRibbonPage(string text) : base(text)
-        {
-            this.Init();
-        }
-        protected void Init()
-        {
-            LazyContentItems = new List<IRibbonItem>();
+            this.Init(ribbon);
         }
         /// <summary>
-        /// Obsahuje true pokud v této stránce jsou nějaké prvky pro LazyLoad
+        /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
         /// </summary>
-        public bool HasLazyContentItems { get { return (LazyContentItems != null && LazyContentItems.Count > 0); } }
+        protected DxRibbonControl OwnerRibbon { get; private set; }
         /// <summary>
-        /// Seznam prvků, které by se měly vygenerovat do this stránky před její aktivací
+        /// Inicializace
         /// </summary>
-        public List<IRibbonItem> LazyContentItems { get; private set; }
+        /// <param name="ribbon"></param>
+        protected void Init(DxRibbonControl ribbon)
+        {
+            this.OwnerRibbon = ribbon;
+            LazyGroupInfo = null;
+        }
+        /// <summary>
+        /// Přidá do this stránky další prvek do seznamu LazyContent
+        /// </summary>
+        /// <param name="item"></param>
+        public void AddLazyContentItem(IRibbonItem item)
+        {
+            var lazyGroupInfo = GetLazyGroupInfo();
+            lazyGroupInfo.Items.Add(item);
+        }
+        /// <summary>
+        /// Odstraní z this stránky celou LazyGroup - data i reálnou grupu
+        /// </summary>
+        public void RemoveLazyGroup()
+        {
+            var lazyGroupInfo = LazyGroupInfo;
+            if (lazyGroupInfo != null)
+            {
+                this.Groups.Remove(lazyGroupInfo.Group);
+                lazyGroupInfo.Clear();
+                LazyGroupInfo = null;
+            }
+        }
+        /// <summary>
+        /// Vytvoří (pokud je třeba) a vrátí instanci <see cref="DxRibbonPageLazyGroupInfo"/> pro ukládání informací pro LazyContent
+        /// </summary>
+        /// <returns></returns>
+        protected DxRibbonPageLazyGroupInfo GetLazyGroupInfo()
+        {
+            DxRibbonPageLazyGroupInfo lazyGroupInfo = LazyGroupInfo;
+            if (lazyGroupInfo == null)
+            {
+                lazyGroupInfo = new DxRibbonPageLazyGroupInfo(OwnerRibbon, this);
+                this.Groups.Add(lazyGroupInfo.Group);
+                LazyGroupInfo = lazyGroupInfo;
+            }
+            return lazyGroupInfo;
+        }
+        /// <summary>
+        /// Definice dat pro LazyLoad content pro tuto Page. Obsahuje deklarace prvků i referenci na grupu, která LazyLoad zajistí.
+        /// </summary>
+        protected DxRibbonPageLazyGroupInfo LazyGroupInfo { get; private set; }
+        /// <summary>
+        /// Smaže obsah <see cref="LazyGroupInfo"/>.
+        /// </summary>
+        public void Empty()
+        {
+            if (LazyGroupInfo == null) return;
+            this.Groups.Remove(LazyGroupInfo.Group);
+            LazyGroupInfo.Clear();
+            LazyGroupInfo = null;
+        }
     }
+    /// <summary>
+    /// Třída, která obsahuje data o LazyContent prvcích jedné stránky Ribbonu
+    /// </summary>
+    public class DxRibbonPageLazyGroupInfo
+    {
+        /// <summary>
+        /// Konstuktor
+        /// </summary>
+        /// <param name="ownerRibbon"></param>
+        /// <param name="ownerPage"></param>
+        public DxRibbonPageLazyGroupInfo(DxRibbonControl ownerRibbon, DxRibbonPage ownerPage)
+        {
+            this.OwnerRibbon = ownerRibbon;
+            this.OwnerPage = ownerPage;
+            this.Group = new DevExpress.XtraBars.Ribbon.RibbonPageGroup("INVISIBLE")
+            {
+                Name = this.OwnerPage.Name + "___LazyLoadGroup",
+                // Visible = false,
+                CaptionButtonVisible = DefaultBoolean.False,
+                Tag = this
+            };
+            this.Items = new List<IRibbonItem>();
+        }
+        /// <summary>
+        /// Metoda zjistí, zda na dané stránce jsou nějaké prvky k vytvoření v režimu LazyLoad.
+        /// Pokud jsou, vrátí true a prvky dá do out parametru.
+        /// Jinak vrací false.
+        /// <para/>
+        ///  DevExpress, Ribbony, Stránky a Mergování, podle zjištění Davida Janáčka:
+        /// 1. Vytvořím Ribbon, v něm Pages a v nich Groups, a do nich dávám BarItems = docela jednoduchá pohoda
+        /// 2. Tvorba BarItems žere čas, slušně velké rozhraní se generuje 0.6 - 1.0 sekundy
+        /// 3. Zajistíme, že BarItems se budou generovat "až to bude zapotřebí" = při prvním otevření stránky
+        /// 4. Tím se dostaneme na čas vytvoření Ribbonu cca 5 milisekund (=generujeme jen Pages), 
+        /// 5.  a pak potřebujeme čas prvního otevření Page cca 80 miliskund (generujeme jen potřebné Groups a BarItems), to uživatel akceptuje
+        /// 6. Aby fungovalo generování BarItems "OnDemand", máme někde (!) uložené podklady pro tvorbu BarItems (někde = v instanci <see cref="DxRibbonPageLazyGroupInfo"/>)
+        /// <para/>
+        ///  Mergování do ale toho hodilo widle:
+        /// 1. Když mám "Primární Ribbon A", jehož stránky dosud nebyly zobrazeny, tak dosud neexistují reálné BarItems pro naše stránky. 
+        ///    Existují odpovídající Pages, ale jsou prázdné. Existuje seznam podkladů pro tvorbu BarItems pro každou stránku.
+        /// 2. Pak najdu "Parent Ribbon B", do kterého chci mergovat náš Ribbon "A", a pustím Merge()
+        /// 3. Do "Parent Ribbonu B" se vepíšou stránky z "Primárního Ribbon A", ale:
+        ///     - nedostávají se tam živé reference na stránky "Ribbonu A", ale vytvoří se new instance pro MergedPages
+        ///     - pokud "Parent Ribbon B" obsahuje svoje vlastní stránky shodného textu jako má "Primární Ribbon A", pak se do Parent Ribbonu ani nevytváří Mergované stránky,
+        ///        ale do jeho nativních stránek (Parent.Pages) se přidají grupy a BarItemy z Primární stránky (se shodným textem titulku).
+        /// <para/>
+        ///  Řešení:
+        /// 1. Podklady pro tvorbu BarItems (typ <see cref="IRibbonItem"/>) ukládám do instance <see cref="DxRibbonPageLazyGroupInfo"/> (spolu s dalšími referencemi);
+        /// 2. Primární stránka je typu <see cref="DxRibbonPage"/> a tyto podklady má ve své property <see cref="DxRibbonPage.LazyGroupInfo"/>;
+        /// 3. Tyto podklady "uložím" navíc do speciální Grupy v primárním Ribbonu v odpovídající stránce, do Group.Tag
+        /// 4. Při aktivaci stránky Ribbonu jsou dvě možnosti:
+        ///  a) Jde o stránku primárního Ribbonu, tedy jde o stránku typu <see cref="DxRibbonPage"/>: 
+        ///     - pak do ní vygenerují BarItemy vcelku jednoduše
+        ///  b) Jde o stránku jiného Ribbonu, kde jsou mergována data z jiných Ribbonů, a je jedno zda jde o primární stránku jiného (Parent) ribbonu,
+        ///      anebo jde o stránky MergedPages v Parent Ribbonu: 
+        ///     - pak musím vygenerovat BarItemy do jejich primární stránky a tu pak znovu mergovat (netestováno ???)
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        internal static bool TryGetLazyContentForPage(DevExpress.XtraBars.Ribbon.RibbonPage page, out List<DxRibbonPageLazyGroupInfo> items)
+        {
+            items = null;
+            if (page == null) return false;
+            var groups = page.Groups.Where(g => g.Tag is DxRibbonPageLazyGroupInfo).ToArray();
+            items = new List<DxRibbonPageLazyGroupInfo>();
+            foreach (var group in groups)
+            {
+                DxRibbonPageLazyGroupInfo lazyGroup = group.Tag as DxRibbonPageLazyGroupInfo;
+                if (lazyGroup.IsEmpty)
+                    page.Groups.Remove(group);
+                else
+                    items.Add(lazyGroup);
+            }
+            return (items.Count > 0);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="currentRibbon"></param>
+        /// <param name="currentPage"></param>
+        internal void CreateRealItems(DxRibbonControl currentRibbon, DevExpress.XtraBars.Ribbon.RibbonPage currentPage)
+        {
+            this.OwnerRibbon.AddItems(this);
+            if (!Object.ReferenceEquals(this.OwnerRibbon, currentRibbon))
+                this.MergeOwnerTo(currentRibbon);          // Pokud aktuálně pracujeme s jiným Ribbonem, než je náš vlastní, pak do nového zkusíme náš Ribbon znovu mergovat!
+            this.OwnerPage?.RemoveLazyGroup();
+        }
+        protected void MergeOwnerTo(DxRibbonControl currentRibbon)
+        {
+            currentRibbon.UnMergeRibbon();
+            currentRibbon.MergeRibbon(this.OwnerRibbon);
+        }
+        /// <summary>
+        /// Zahodí všechny svoje reference
+        /// </summary>
+        public void Clear()
+        {
+            this.OwnerRibbon = null;
+            this.OwnerPage = null;
+            this.Group = null;
+            this.Items.Clear();
+            this.Items = null;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this instance už je prázdná = její Items byly už použity pro tvorbu BarItems a z instance byly odebrány reference na Ribbon i Page i Group.
+        /// Taková instance může někde viset uložená v Tagu některé Mergované grupy.
+        /// </summary>
+        public bool IsEmpty { get { return (OwnerRibbon == null || OwnerPage == null || Items == null || Items.Count == 0); } }
+        public DxRibbonControl OwnerRibbon { get; private set; }
+        public DxRibbonPage OwnerPage { get; private set; }
+        public DevExpress.XtraBars.Ribbon.RibbonPageGroup Group { get; private set; }
+        public List<IRibbonItem> Items { get; private set; }
+    }
+    #endregion
     #region class DxCheckBoxToggle : Button reprezentující hodnotu "Checked" { NULL - false - true } s využitím tří ikonek 
     /// <summary>
     /// Button reprezentující hodnotu <see cref="Checked"/> { NULL - false - true } s využitím tří ikonek 
@@ -1040,6 +1322,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public string ToolTipIcon { get; set; }
         public IMenuItem[] SubItems { get; set; }
         public object Tag { get; set; }
+        public IMenuItemActionHandler ActionHandler { get { return __ActionHandler?.Target; } set { __ActionHandler = (value != null ? new WeakTarget<IMenuItemActionHandler>(value) : null); } }
+        private WeakTarget<IMenuItemActionHandler> __ActionHandler;
     }
     #endregion
     #region Interface IRibbonItem a IRibbonData;  Enumy RibbonItemType a RibbonPageType
@@ -1103,9 +1387,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         string ToolTipIcon { get; }
         IMenuItem[] SubItems { get; }
         object Tag { get; set; }
+        IMenuItemActionHandler ActionHandler { get; }
+    }
+    /// <summary>
+    /// Předpis rozhraní pro třídu, jejíž instance bude dostávat informaci o kliknutí na daný prvek menu
+    /// </summary>
+    public interface IMenuItemActionHandler
+    {
+        /// <summary>
+        /// Uživatel kliknul na prvek menu (je v parametru).
+        /// </summary>
+        /// <param name="menuItem"></param>
+        void MenuItemAction(IMenuItem menuItem);
     }
 
-   
     /// <summary>
     /// Typ stránky
     /// </summary>
