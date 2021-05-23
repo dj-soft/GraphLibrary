@@ -101,6 +101,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string DebugName { get; set; }
         #endregion
+        #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
+        /*
+           1. LAZY CREATE CONTENT :
+        Vytvoření Ribbonu s 8 stránkami, 30 group, 142 BarItem, celkem včetně SubItems 1131 prvků: 450 ms
+           v dalším uvádím počty ve tvaru: {Page/Group/Itm/SubItem}
+        Vytvoření Lazy Ribbonu s {8/30/0/0} = ale bez BarItems : 0,8 ms
+        OnDemand tvorba pro jednu aktivní stránku: {0/0/34/233} : 92 ms
+        ... {0/0/18/92}: 69 ms
+
+           2. MERGOVÁNÍ :
+        Tvorba Ribbonu {7/30/144/1132} : 435 ms
+        MERGE do Parenta: 9 ms
+        UNMEGE z Parenta: 5 ms
+          druhý pokus
+        MERGE do Parenta: 4.5 ms
+        UNMEGE z Parenta: 3.5 ms
+
+        MERGOVÁNÍ a vliv na funkce:
+        a) mějme Ribbon Child "Child" a Ribbon Parent "Parent"
+        b) Provedu Parent.Merge(Child)
+            - do Parenta se vytvoří new instance RibbonPage = MergedPages
+            - do MergedPages se vytvoří new instance grup podle grup v Child, 
+                přetáhne s sebou i Tag s původní grupy = vznikne zde kopie reference na původní objekt
+                Tady používám třídu DxRibbonPageLazyGroupInfo
+            - do MergedPage.Group se vytvoří new BarItemLink = linky na prvky primárně definované v Child.RibbonPage
+        c) Pokud provedu Merge na stránku s LazyContent grupou (obsahuje v Tagu DxRibbonPageLazyGroupInfo):
+            - Tag v Mergované grupě obsahuje referenci na DxRibbonPageLazyGroupInfo
+            - ale do MergedPages už nemohu dostat LazyContent
+            - Musím Ribbon UnMergovat až do základního Child Ribbonu
+            - v Child Ribbonu musím vytvořit LazyContent
+            - pak musím zase Mergovat spojený obsah nahoru
+
+        d) Pořadí:
+            - Mergování:  od nejspodnějšího Child (DynamicPage) do jeho Parenta a toho až pak do nejvyššího Parenta (Desktop)
+               V jiném pořadí nelze (když bych nejspodnějšího Childa mergoval až později, už se nedostane do nejvyššího Parenta)
+            - UnMerge:    správný postup je od nejvyššího Parenta (Desktop), v něm dát UnMerge, 
+                          a potom prostřeední Parent UnMerge, tím se dostane obsah do nejspodnějšího Childa
+               V jiném pořadí to kupodivu jde, ale je to divné: když dám UnMerge na prostředním Parentu, pak se obsah vrátí do nejspodnějšího Childa,
+                          ale přitom je stále zobrazen v nejvyším Parentu = je vidět duplicitně.
+
+        d) Obecně:
+            - Když dám Parent.Megre(Child), tak Child Ribbon zmizí
+            - Mergování může být vícestupňové
+            - Vždycky lze do jednoho Parenta mergovat jen jeden Child
+            - Jakmile do toho samého Parenta dám mergovat jiný Child, tak ten Parent toho předchozího v sobě mergovaného Childa vyplivne a vrátí na jeho původní místo
+            - Když má Parent v sobě mergovaného Childa:
+               - pak jeho Clear (v rámci Parenta): neprovede Clear těch dat z Childa, ty v něm zůstanou
+               - pak Clear provedený v Childu (!): smaže BarItemy (tlačítka), ale v Parentu zůstanou prázdné stránky a v nich prázdné grupy od Childa
+               - pak AddItems v Childu (tvorba nových stránek, grup, baritemů) se nepřenáší do parenta, kde jsou jeho dosavadní prvky mergované
+                   => nově vytvořené prvky jsou ve vzduchoprázdnu, protože nejsou vidět ani v Childu (ten je neviditelný), ani v Parentu (ten na ně nereaguje)
+            - Pokud v Parentu je mergován Child, a pak do Childu přidám další data, a pak znovu zavolám Merge, 
+               - pak se v Parentu ta nová data nezobrazí - protože náš Child už v Parentu je mergován (=nedojde k vyplivnutí Childa jako když jde o jinou instanci)
+               - V tom případě se nejdřív musí provést UnMerge a pak znovu Merge
+               - ale může to proběhnout v pořadí: { Add - UnMerge - Merge }, není nutno provádět: { UnMerge - Add - Merge }
+
+        e) Slučování při Mergování:
+            - Pokud dvě Pages mají shodné PageId, budou sloučeny do jedné stránky
+            - Pokud dvě Pages mají rozdílné PageId a přitom mají shodný PageText, budou existovat dvě Pages se shodným vizuálním titulkem PageText
+            - Totéž platí pro Grupy: merguje se na základě GroupId, a popisný text GroupText je jen viditelným popisem (mohou tedy být zobrazeny dvě grupy se stejným titulkem)
+
+        */
+        #endregion
         #region LazyLoad page content
         /// <summary>
         /// Požadavek na používání opožděné tvorby obsahu stránek Ribbonu.
@@ -164,46 +226,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
 
-        public override void MergeRibbon(DevExpress.XtraBars.Ribbon.RibbonControl ribbon)
+        public override void MergeRibbon(DevExpress.XtraBars.Ribbon.RibbonControl childRibbon)
         {
             var startTime = DxComponent.LogTimeCurrent;
 
-            string slaveSelectedPage = (ribbon is DxRibbonControl dxRibbon) ? dxRibbon.SelectedPageId : null;
+            string slaveSelectedPage = (childRibbon is DxRibbonControl dxRibbon) ? dxRibbon.SelectedPageId : null;
 
             int mainPageCount1 = this.Pages.Count;
             int mainMergesPageCount1 = this.MergedPages.Count;
-            int slavePageCount1 = ribbon?.Pages.Count ?? -1;
-            int slaveMergesPageCount1 = ribbon?.MergedPages.Count ?? -1;
+            int slavePageCount1 = childRibbon?.Pages.Count ?? -1;
+            int slaveMergesPageCount1 = childRibbon?.MergedPages.Count ?? -1;
 
-            base.MergeRibbon(ribbon);
+            base.MergeRibbon(childRibbon);
+            this.MergedDxRibbon = childRibbon as DxRibbonControl;
 
             int mainPageCount2 = this.Pages.Count;
             int mainMergesPageCount2 = this.MergedPages.Count;
-            int slavePageCount2 = ribbon?.Pages.Count ?? -1;
-            int slaveMergesPageCount2 = ribbon?.MergedPages.Count ?? -1;
+            int slavePageCount2 = childRibbon?.Pages.Count ?? -1;
+            int slaveMergesPageCount2 = childRibbon?.MergedPages.Count ?? -1;
 
             if (slaveSelectedPage != null) this.SelectedPageId = slaveSelectedPage;
 
-            DxComponent.LogAddLineTime($"MergeRibbon: Master: {this.DebugName}; Slave: {(ribbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime($"MergeRibbon: Master: {this.DebugName}; Slave: {(childRibbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
+        /// <summary>
+        /// Odebere mergovaný Ribbon a vepíše čas do Logu
+        /// </summary>
         public override void UnMergeRibbon()
         {
             var startTime = DxComponent.LogTimeCurrent;
 
             base.UnMergeRibbon();
+            this.MergedDxRibbon = null;
 
             DxComponent.LogAddLineTime($"UnMergeRibbon: Master: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
-        protected override void RaiseMerge(DevExpress.XtraBars.Ribbon.RibbonMergeEventArgs e)
-        {
-            base.RaiseMerge(e);
-        }
-        protected override void RaiseUnMerge(DevExpress.XtraBars.Ribbon.RibbonMergeEventArgs e)
-        {
-            base.RaiseUnMerge(e);
-        }
+        /// <summary>
+        /// Aktuálně mergovaný <see cref="DxRibbonControl"/>
+        /// </summary>
+        public DxRibbonControl MergedDxRibbon { get; private set; }
         #endregion
-        #region Tvorba obsahu Ribbonu
+        #region Tvorba obsahu Ribbonu: Clear, Empty, Final, Add
         /// <summary>
         /// Smaže celý obsah Ribbonu. Ribbon se zmenší na řádek pro záhlaví a celé okno pod ním se přeuspořádá.
         /// Důvodem je smazání všech stránek.
@@ -216,6 +279,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Categories.Clear();
             this.PageCategories.Clear();
             this.Items.Clear();
+
+            this.PageHeaderItemLinks.Clear();
+            this.Toolbar.ItemLinks.Clear();
+
+            this.MergedCategories.Clear();
+            this.MergedPages.Clear();
+
             DxComponent.LogAddLineTime($" === RIBBON Clear: {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
@@ -226,7 +296,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var startTime = DxComponent.LogTimeCurrent;
             this.Items.Clear();
-            foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.Pages)
+            foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.AllPages)
             {
                 page.Groups.Clear();
                 if (page is DxRibbonPage dxRibbonPage)
@@ -236,6 +306,55 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             DxComponent.LogAddLineTime($" === RIBBON Empty: {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
+        public void UnMergeRibbon(bool leavePageHeaders)
+        {
+            if (!leavePageHeaders)
+            {
+                this.UnMergeRibbon();
+                return;
+            }
+
+            _TemporaryPages = new List<DxRibbonPage>();
+            var mergedPages = this.MergedPages.ToArray();            // Toto jsou čistě přidané stránky = tedy ty, které v this Ribbonu nebyl (podle PageId) a this Ribbon si je musel vytvořit jako nové, aby mohl zobrazit prvky Child ribbonu.
+            foreach (var mergedPage in mergedPages)
+            {
+                var page = new DxRibbonPage(this, mergedPage.Text) { Name = mergedPage.Name };
+                Pages.Add(page);
+                _TemporaryPages.Add(page);
+            }
+
+            _TemporaryCategories = new List<DxRibbonPageCategory>();
+            var mergedCategories = this.MergedCategories;
+            foreach (DevExpress.XtraBars.Ribbon.RibbonPageCategory mergedCategory in mergedCategories)
+            {
+                var category = new DxRibbonPageCategory(mergedCategory.Text, mergedCategory.Color, mergedCategory.Visible);
+                category.Name = mergedCategory.Name;
+                PageCategories.Add(category);
+                _TemporaryCategories.Add(category);
+
+                foreach (DevExpress.XtraBars.Ribbon.RibbonPage mergedCategoryPage in mergedCategory.Pages)
+                {
+                    var page = new DxRibbonPage(this, mergedCategoryPage.Text) { Name = mergedCategoryPage.Name };
+                    category.Pages.Add(page);
+                }
+            }
+
+            var nativePages = this.Pages.ToArray();
+
+
+            this.UnMergeRibbon();
+        }
+        public void MergeRibbon(DxRibbonControl childRibbon, bool acceptPageHeaders)
+        {
+            if (_TemporaryPages != null) _TemporaryPages.ForEachExec(p => this.Pages.Remove(p));
+            _TemporaryPages = null;
+            if (_TemporaryCategories != null) _TemporaryCategories.ForEachExec(c => this.PageCategories.Remove(c));
+            _TemporaryPages = null;
+
+            this.MergeRibbon(childRibbon);
+        }
+        private List<DxRibbonPage> _TemporaryPages;
+        private List<DxRibbonPageCategory> _TemporaryCategories;
         /// <summary>
         /// Smaže pouze prvky z Ribbonu.
         /// </summary>
@@ -326,6 +445,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Úplně všechny stránky v Ribbonu
+        /// </summary>
         public List<DevExpress.XtraBars.Ribbon.RibbonPage> AllPages
         {
             get
@@ -368,14 +490,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (cmp == 0) cmp = a.ItemOrder.CompareTo(b.ItemOrder);
             return cmp;
         }
-        protected DevExpress.XtraBars.Ribbon.RibbonPageCategory GetCategory(IRibbonItem item, bool enableNew = true)
+        protected DxRibbonPageCategory GetCategory(IRibbonItem item, bool enableNew = true)
         {
             if (item is null) return null;
             if (String.IsNullOrEmpty(item.CategoryId)) return null;
-            DevExpress.XtraBars.Ribbon.RibbonPageCategory category = PageCategories.GetCategoryByName(item.CategoryId);
+            DxRibbonPageCategory category = PageCategories.GetCategoryByName(item.CategoryId) as DxRibbonPageCategory;
             if (category is null && enableNew)
             {
-                category = new DevExpress.XtraBars.Ribbon.RibbonPageCategory(item.CategoryText, item.CategoryColor, item.CategoryVisible);
+                category = new DxRibbonPageCategory(item.CategoryText, item.CategoryColor, item.CategoryVisible);
                 category.Name = item.CategoryId;
                 PageCategories.Add(category);
             }
@@ -884,7 +1006,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region DxRibbonPage : stránka Ribbonu s podporou LazyContentItems
+    #region DxRibbonPage : stránka Ribbonu s podporou LazyContentItems, class DxRibbonPageLazyGroupInfo
     /// <summary>
     /// Stránka Ribbonu s vlastností LazyContentItems
     /// </summary>
@@ -1076,6 +1198,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxRibbonPage OwnerPage { get; private set; }
         public DevExpress.XtraBars.Ribbon.RibbonPageGroup Group { get; private set; }
         public List<IRibbonItem> Items { get; private set; }
+    }
+    public class DxRibbonPageCategory : DevExpress.XtraBars.Ribbon.RibbonPageCategory
+    {
+        public DxRibbonPageCategory() : base() { }
+        public DxRibbonPageCategory(string text, Color color) : base(text, color) { }
+        public DxRibbonPageCategory(string text, Color color, bool visible) : base(text, color, visible) { }
     }
     #endregion
     #region class DxCheckBoxToggle : Button reprezentující hodnotu "Checked" { NULL - false - true } s využitím tří ikonek 

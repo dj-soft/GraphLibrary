@@ -1387,6 +1387,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region LogText_ logování
         /// <summary>
+        /// Obsahuje true, pokud log je aktivní.
+        /// Není dobré to testovat před voláním běžných metod, ty to testují uvnitř.
+        /// Je vhodné to testovat jen tehdy, když bychom pro Log měli v aplikaci chystat složitá data, protože v případě neaktivního logu to je zbytečná práce.
+        /// <para/>
+        /// Pokud je Log neaktivní, pak <see cref="LogText"/> je null, <see cref="LogTimeCurrent"/> je vždy 0
+        /// </summary>
+        public static bool LogActive { get { return Instance._LogActive; } }
+        /// <summary>
         /// Aktuální obsah Log textu.
         /// Lze zaregistrovat eventhandler <see cref="LogTextChanged"/> pro hlídání všech změn
         /// </summary>
@@ -1443,6 +1451,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitLog()
         {
+            _LogActive = System.Diagnostics.Debugger.IsAttached;
+            if (!_LogActive) return;
+
             _LogWatch = new System.Diagnostics.Stopwatch();
             _LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
             _LogFrequency = _LogFrequencyLong;
@@ -1459,6 +1470,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
+                if (!_LogActive) return null;
+
                 string text = "";
                 lock (_LogSB)
                     text = _LogSB.ToString();
@@ -1470,6 +1483,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _LogClear()
         {
+            if (!_LogActive) return;
+
             lock (_LogSB)
                 _LogSB.Clear();
             RunLogTextChanged();
@@ -1478,7 +1493,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje aktuální čas jako ElapsedTicks
         /// </summary>
         /// <returns></returns>
-        private long _LogTimeCurrent { get { return _LogWatch.ElapsedTicks; } }
+        private long _LogTimeCurrent { get { return (_LogActive ? _LogWatch.ElapsedTicks : 0L); } }
         /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
@@ -1486,6 +1501,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="liner"></param>
         private void _LogAddTitle(string title, char? liner)
         {
+            if (!_LogActive) return;
+
             string margins = "".PadRight(15, (liner ?? '='));
             string line = $"{margins}  {title}  {margins}";
             _LogAddLine(line, true);
@@ -1500,6 +1517,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="startTime"></param>
         private void _LogAddLineTime(string line, long? startTime)
         {
+            if (!_LogActive) return;
+
             long nowTime = _LogWatch.ElapsedTicks;
             decimal seconds = (startTime.HasValue ? ((decimal)(nowTime - startTime.Value)) / _LogFrequency : 0m);     // Počet sekund
             if (line.Contains(LogTokenTimeSec))
@@ -1528,6 +1547,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nowTime"></param>
         private void _LogAddLine(string line, bool forceEmptyRow, long? startTime = null, long? nowTime = null)
         {
+            if (!_LogActive) return;
+
             // | mikrosekund od startu | mikrosekund od posledně | mikrosekund od starTime | Thread | ...
             long nowTick = nowTime ?? _LogWatch.ElapsedTicks;
             string totalUs = _LogGetMicroseconds(_LogStartTicks, nowTick).ToString();              // mikrosekund od startu
@@ -1563,6 +1584,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Tady nemá smysl řešit standardní metodu : protected virtual void OnLogTextChanged(), protože tahle třída je sealed a singleton
             _LogTextChanged?.Invoke(null, EventArgs.Empty);
         }
+        private bool _LogActive;
         private System.Diagnostics.Stopwatch _LogWatch;
         private decimal _LogFrequency;
         private long _LogFrequencyLong;
