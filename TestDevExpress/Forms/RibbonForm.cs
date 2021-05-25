@@ -356,7 +356,7 @@ namespace TestDevExpress.Forms
 
             IRibbonItem ribbonItem = args[0] as IRibbonItem;
             int pageIndex = DxRibbonSample.FindPageIndex(ribbonItem.PageText);
-            var items = DxRibbonSample.CreateItems(7, CategoryName, CategoryName, CategoryColor, pageIndex);
+            var items = DxRibbonSample.CreateItems(2, CategoryName, CategoryName, CategoryColor, pageIndex);
             items.Cast<RibbonItem>().ForEachExec(i => i.ActionHandler = this);
             this._Ribbon.ReFillPageItems(items);
         }
