@@ -67,7 +67,7 @@ namespace TestDevExpress.Forms
             _TestPanel1.UseLazyLoad = this.UseLazyLoad;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
             _TestPanel1.ParentRibbon = _DxRibbonControl;
-            _TestPanel1.CategorySuffix = " hlavní ";
+            _TestPanel1.CategoryName = "SKUPINA 1";
             _TestPanel1.CategoryColor = System.Drawing.Color.LightBlue;
             _TestPanel1.FillRibbon();
             _DxLeftSplit.Panel1.Controls.Add(_TestPanel1);
@@ -76,7 +76,7 @@ namespace TestDevExpress.Forms
             _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2a.Ribbon.DebugName = "Slave 2A";
             _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
-            _TestPanel2a.CategorySuffix = " vedlejší A ";
+            _TestPanel2a.CategoryName = "SKUPINA 2A";
             _TestPanel2a.CategoryColor = System.Drawing.Color.LightYellow;
             _TestPanel2a.FillRibbon();
             _DxBottomSplit.Panel1.Controls.Add(_TestPanel2a);
@@ -85,7 +85,7 @@ namespace TestDevExpress.Forms
             _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2b.Ribbon.DebugName = "Slave 2B";
             _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
-            _TestPanel2b.CategorySuffix = " vedlejší B ";
+            _TestPanel2b.CategoryName = "SKUPINA 2B";
             _TestPanel2b.CategoryColor = System.Drawing.Color.LightGreen;
             _TestPanel2b.FillRibbon();
             _DxBottomSplit.Panel2.Controls.Add(_TestPanel2b);
@@ -132,6 +132,7 @@ namespace TestDevExpress.Forms
         {
             string imgZoom = "images/zoom/zoom_32x32.png";
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
+            string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
 
             List<IRibbonItem> items = new List<IRibbonItem>();
 
@@ -141,6 +142,8 @@ namespace TestDevExpress.Forms
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ToolTip = "Otevře nabídku systémových ikon", ItemImage = imgZoom });
             items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.LogClear", ItemText = "Clear log", ToolTip = "Smaže obsah logu vpravo", ItemImage = imgLogClear });
+
+            items.Add(new RibbonItem() { PageId = "HELP", PageText = "Nápověda", GroupId = "help", GroupText = "NÁPOVĚDA", ItemId = "Help.Help.Show", ItemText = "Nápovědda", ToolTip = "Zobrazí okno s nápovědou", ItemImage = imgInfo });
 
             this._DxRibbonControl.Clear();
             this._DxRibbonControl.UseLazyContentCreate = this.UseLazyLoad;
@@ -213,6 +216,7 @@ namespace TestDevExpress.Forms
         {
             this.Dock = System.Windows.Forms.DockStyle.Fill;
             _Ribbon = new DxRibbonControl() { Dock = System.Windows.Forms.DockStyle.Top, ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False };
+            _Ribbon.PageOnDemandLoad += _Ribbon_PageOnDemandLoad;
             this.Controls.Add(_Ribbon);
 
             int x = 20;
@@ -295,7 +299,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Suffix kategorie, dovolí odlišit kategorie parenta od kategorie child ribbonu
         /// </summary>
-        public string CategorySuffix { get; set; }
+        public string CategoryName { get; set; }
         /// <summary>
         /// Barva kategorií
         /// </summary>
@@ -313,9 +317,11 @@ namespace TestDevExpress.Forms
             if (ParentRibbon != null)
             {
                 if (isMerged)
-                    ParentRibbon.MergeRibbon(this.Ribbon, true);
+                    this.Ribbon.MergeCurrentDxToParent(ParentRibbon);
+                    // ParentRibbon.MergeChildDxRibbon(this.Ribbon);
                 else
-                    ParentRibbon.UnMergeRibbon();
+                    this.Ribbon.UnMergeCurrentDxFromParent();
+                    // ParentRibbon.UnMergeDxRibbon();
                 _IsMerged = isMerged;
             }
             else
@@ -335,10 +341,26 @@ namespace TestDevExpress.Forms
         /// <param name="groups"></param>
         public void FillRibbon(int groups = 30)
         {
-            var items = DxRibbonSample.CreateItems(groups, CategorySuffix, CategorySuffix, CategoryColor);
+            var items = DxRibbonSample.CreateItems(groups, CategoryName, CategoryName, CategoryColor);
             items.Cast<RibbonItem>().ForEachExec(i => i.ActionHandler = this);
             _Ribbon.AddItems(items);
         }
+
+        private void _Ribbon_PageOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
+        {
+            ThreadManager.AddAction(_LoadItemsFromServer, e.Item);
+        }
+        private void _LoadItemsFromServer(object[] args)
+        {
+            System.Threading.Thread.Sleep(850);
+
+            IRibbonItem ribbonItem = args[0] as IRibbonItem;
+            int pageIndex = DxRibbonSample.FindPageIndex(ribbonItem.PageText);
+            var items = DxRibbonSample.CreateItems(7, CategoryName, CategoryName, CategoryColor, pageIndex);
+            items.Cast<RibbonItem>().ForEachExec(i => i.ActionHandler = this);
+            this._Ribbon.ReFillPageItems(items);
+        }
+
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
         private DxSimpleButton _ButtonEmpty;
@@ -355,7 +377,7 @@ namespace TestDevExpress.Forms
         {
             //this._Ribbon.Empty();
 
-            this._Ribbon.UnMergeRibbon(true);
+            // this._Ribbon.UnMergeContent();
         }
         private void _RunAdd4Groups(object sender, EventArgs args) 
         {
@@ -367,25 +389,25 @@ namespace TestDevExpress.Forms
         }
         private void _RunFinal(object sender, EventArgs args) 
         {
-            this._Ribbon.Final(); 
+            // this._Ribbon.Final(); 
         }
         private void _RunMerge(object sender, EventArgs args)
         {
             IsMerged = true;
             // Obezlička kvůli DevExpress, kde Click akce na CheckedButtonu provede { Checked = !Checked; }
-            // Ale my chceme, aby button měl hodnotu _IsMerged:
+            // Ale my chceme, aby button měl ve výsledku hodnotu _IsMerged, takže mu musíme předem nastavit hodnotu opačnou (on si ji pak sám obrátí na tu požadovanou):
             this._ButtonMerge.Checked = !_IsMerged;        // Takže nyní dáme do buttonu opačnou hodnotu, logika DevExpress ji otočí:
-            this._ButtonUnMerge.Checked = !_IsMerged;      // V druhém buttonu se hodnota neotočí, dáme tam tedy hodnotu požadovanou
+            this._ButtonUnMerge.Checked = !_IsMerged;      // V druhém buttonu se hodnota neotočí (tam jsme neklikli), dáme tam tedy hodnotu požadovanou
         }
         private void _RunUnMerge(object sender, EventArgs args) 
         {
             // Abych nemohl já provést Parent.UnMerge, když v Parentu nejsem já Mergován = to bych UnMergoval cizí Ribbon !!!  :
             if (IsMerged)
                 IsMerged = false;
-            // Obezlička kvůli DevExpress, kde Click akce na CheckedButtonu provede { Checked = !Checked; }
-            // Ale my chceme, aby button měl hodnotu _IsMerged:
+            // Obezlička kvůli DevExpress, kde po Click akci na CheckedButtonu se následně provede { Checked = !Checked; }
+            // Ale my chceme, aby button měl ve výsledku hodnotu !_IsMerged, takže mu musíme předem nastavit hodnotu opačnou (on si ji pak sám obrátí na tu požadovanou):
             this._ButtonUnMerge.Checked = _IsMerged;       // Takže nyní dáme do buttonu opačnou hodnotu, logika DevExpress ji otočí:
-            this._ButtonMerge.Checked = _IsMerged;         // V druhém buttonu se hodnota neotočí, dáme tam tedy hodnotu požadovanou
+            this._ButtonMerge.Checked = _IsMerged;         // V druhém buttonu se hodnota neotočí (tam jsme neklikli), dáme tam tedy hodnotu požadovanou
         }
         void IMenuItemActionHandler.MenuItemAction(IMenuItem menuItem)
         {
@@ -404,46 +426,95 @@ namespace TestDevExpress.Forms
     /// </summary>
     public class DxRibbonSample
     {
-        public static List<IRibbonItem> CreateItems(int groupCount, string categoryIdSuffix = null, string categoryTextSuffix = null, System.Drawing.Color? categoryColor = null)
+        /// <summary>
+        /// Metoda najde a vrátí index stránky s daným textem
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <returns></returns>
+        public static int FindPageIndex(string pageText)
+        {
+            if (String.IsNullOrEmpty(pageText)) return -1;
+            return PageNames.ToList().FindIndex(p => String.Equals(p, pageText));
+        }
+        public static List<IRibbonItem> CreateItems(int groupCount, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
             List<IRibbonItem> items = new List<IRibbonItem>();
-            _AddItems(items, groupCount, categoryIdSuffix, categoryTextSuffix, categoryColor);
+            _AddItems(items, groupCount, pageIndex, categoryId, categoryText, categoryColor);
             return items;
         }
-        public static void CreateItemsTo(List<IRibbonItem> items, int groupCount, string categoryIdSuffix = null, string categoryTextSuffix = null, System.Drawing.Color? categoryColor = null)
+        public static void CreateItemsTo(List<IRibbonItem> items, int groupCount, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
-            _AddItems(items, groupCount, categoryIdSuffix, categoryTextSuffix, categoryColor);
+            _AddItems(items, groupCount, pageIndex, categoryId, categoryText, categoryColor);
         }
-        private static void _AddItems(List<IRibbonItem> items, int groupCount, string categoryIdSuffix = null, string categoryTextSuffix = null, System.Drawing.Color? categoryColor = null)
+        private static void _AddItems(List<IRibbonItem> items, int groupCount, int? pageIndex, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
         {
             _RibbonItemCount = 0;
-            if (categoryIdSuffix == null) categoryIdSuffix = "";
-            if (categoryTextSuffix == null) categoryTextSuffix = "";
             if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
             for (int g = 0; g < groupCount; g++)
             {
                 int count = Rand.Next(3, 7);
-                _AddGroups(items, count, categoryIdSuffix, categoryTextSuffix, categoryColor.Value);
+                _AddGroups(items, count, pageIndex, categoryId, categoryText, categoryColor.Value);
             }
         }
-        private static void _AddGroups(List<IRibbonItem> items, int count, string categoryIdSuffix, string categoryTextSuffix, System.Drawing.Color categoryColor)
+        private static void _AddGroups(List<IRibbonItem> items, int count, int? pageIndex, string categoryId, string categoryText, System.Drawing.Color categoryColor)
         {
-            int page = Rand.Next(PageNames.Length);
+            int pageCount = PageNames.Length;
+            int page = pageIndex ?? Rand.Next(pageCount);
+            if (page < 0 || page >= pageCount) throw new ArgumentException($"Požadovaný index stránky {page} je mimo rozsah 0 až {pageCount}");
             int pageOrder = page + 1;
-            string pageId = "Page" + page;                      // PageId je vždy stejné pokud je stený text PageText (obsahuje index textu Pages)
+            string pageId = "Page" + page;                      // PageId je vždy stejné pokud je stejný text PageText (obsahuje index textu Pages)
             string pageText = PageNames[page];
+            RibbonContentMode contentMode = (pageText == "ON.DEMAND" ? RibbonContentMode.OnDemandLoadOnce:
+                                            (pageText == "RANDOM" ? RibbonContentMode.OnDemandLoadEveryTime : RibbonContentMode.Static));
+
+            // Pokud NENÍ explicitně daná stránka (pageIndex je null), a my jsme náhodně určili stránku v režimu OnDemandLoad:
+            //  Pak do této stránky nebdu dávat nyní žádný viditelný obsah (protože je OnDemand!),
+            //  ale jen zajistím, že seznam bude obsahovat právě jeden záznam pro tuto stránku s prvkem typu None:
+            if (!pageIndex.HasValue && (contentMode == RibbonContentMode.OnDemandLoadOnce || contentMode == RibbonContentMode.OnDemandLoadEveryTime))
+            {
+                _AddOneItemNone(items, categoryId, categoryText, categoryColor, pageId, pageText, pageOrder, contentMode);
+                return;
+            }
+
             int group = Rand.Next(GroupNames.Length);
-            string groupId = pageId + "." + "Group" + group;    // GroupId je shodné pro grupy konkrétního názvu n shodné stránce = pro Mergování!
+            string groupId = pageId + "." + "Group" + group;    // GroupId je shodné pro grupy konkrétního názvu na shodné stránce = pro Mergování!
             string groupText = GroupNames[group];
             RibbonItemStyles ribbonStyle = RibbonItemStyles.All;
-            _AddItems(items, pageId, pageText, pageOrder, groupId, groupText, ribbonStyle, count, categoryIdSuffix, categoryTextSuffix, categoryColor);
+            _AddItems(items, categoryId, categoryText, categoryColor, pageId, pageText, pageOrder, contentMode, groupId, groupText, ribbonStyle, count);
         }
-        private static void _AddItems(List<IRibbonItem> items, string pageId, string pageText, int pageOrder, string groupId, string groupText, RibbonItemStyles ribbonStyle, 
-            int count, string categoryIdSuffix, string categoryTextSuffix, System.Drawing.Color categoryColor)
+        private static void _AddOneItemNone(List<IRibbonItem> items, string categoryId, string categoryText, System.Drawing.Color categoryColor, string pageId, string pageText, int pageOrder, RibbonContentMode contentMode)
+        {
+            if (items.Exists(i => i.PageId == pageId)) return;  // Máme zajistit existenci jednoho prvku, a ten tam je!
+
+            bool isCategory = (pageText == "VZTAHY" || pageText == "MODIFIKACE");
+            if (String.IsNullOrEmpty(categoryId)) categoryId = "Extend1";
+            if (String.IsNullOrEmpty(categoryText)) categoryText = "DALŠÍ VOLBY";
+            bool categoryVisible = (isCategory ? true : false);
+
+            RibbonItem item = new RibbonItem()
+            {
+                CategoryId = (isCategory ? categoryId : null),
+                CategoryText = (isCategory ? categoryText : null),
+                CategoryColor = categoryColor,
+                CategoryVisible = categoryVisible,
+                PageId = pageId,
+                PageText = pageText,
+                PageOrder = pageOrder,
+                PageType = RibbonPageType.Default,
+                PageContentMode = contentMode,
+                ItemId = "Item" + (++_RibbonItemId),
+                ItemType = RibbonItemType.None
+            };
+            _RibbonItemCount++;
+
+            items.Add(item);
+        }
+        private static void _AddItems(List<IRibbonItem> items, string categoryId, string categoryText, System.Drawing.Color categoryColor, string pageId, string pageText, int pageOrder, RibbonContentMode contentMode,
+            string groupId, string groupText, RibbonItemStyles ribbonStyle, int count)
         {
             bool isCategory = (pageText == "VZTAHY" || pageText == "MODIFIKACE");
-            string categoryId = (isCategory ? "Extend1" + categoryIdSuffix : null);
-            string categoryText = (isCategory ? "...rozšířené informace" + categoryTextSuffix + "..." : null);
+            if (String.IsNullOrEmpty(categoryId)) categoryId = "Extend1";
+            if (String.IsNullOrEmpty(categoryText)) categoryText = "DALŠÍ VOLBY";
             bool categoryVisible = (isCategory ? true : false);
             int radioCount = 0;
             bool hasRadio = false;
@@ -461,13 +532,15 @@ namespace TestDevExpress.Forms
                 bool isFirst = (radioCount == 0 ? nextIsFirst || (Rand.Next(10) < 3) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
                 RibbonItem item = new RibbonItem()
                 {
-                    CategoryId = categoryId,
-                    CategoryText = categoryText,
+                    CategoryId = (isCategory ? categoryId : null),
+                    CategoryText = (isCategory? categoryText : null),
                     CategoryColor = categoryColor,
                     CategoryVisible = categoryVisible,
                     PageId = pageId,
                     PageText = pageText,
                     PageOrder = pageOrder,
+                    PageType = RibbonPageType.Default,
+                    PageContentMode = contentMode,
                     GroupId = groupId,
                     GroupText = groupText,
                     ItemId = "Item" + (++_RibbonItemId),
@@ -596,7 +669,7 @@ namespace TestDevExpress.Forms
         }
         public static System.Random Rand { get { if (_Rand is null) _Rand = new System.Random(); return _Rand; } }
         private static System.Random _Rand;
-        public static string[] PageNames { get { if (_PageNames is null) _PageNames = "ASTROLOGIE;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
+        public static string[] PageNames { get { if (_PageNames is null) _PageNames = "ASTROLOGIE;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;ON.DEMAND;RANDOM;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
         private static string[] _PageNames;
         public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky".Split(';'); return _GroupNames; } }
         private static string[] _GroupNames;

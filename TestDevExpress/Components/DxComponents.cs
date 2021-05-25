@@ -2275,7 +2275,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Invoke to GUI: run, get, set
         /// <summary>
-        /// Metoda provede danou akci v GUI threadu
+        /// Metoda provede danou akci v GUI threadu.
+        /// Pokud aktuální thread je GUI thread (tedy this control nepotřebuje invokaci), pak se akce provede nativně v Current threadu.
+        /// Jinak se použije synchronní Invoke().
         /// </summary>
         /// <param name="control"></param>
         /// <param name="action"></param>
