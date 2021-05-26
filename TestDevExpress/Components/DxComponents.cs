@@ -1393,7 +1393,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud je Log neaktivní, pak <see cref="LogText"/> je null, <see cref="LogTimeCurrent"/> je vždy 0
         /// </summary>
-        public static bool LogActive { get { return Instance._LogActive; } }
+        public static bool LogActive { get { return Instance._LogActive; } set { Instance._LogActive = value; } }
         /// <summary>
         /// Aktuální obsah Log textu.
         /// Lze zaregistrovat eventhandler <see cref="LogTextChanged"/> pro hlídání všech změn
@@ -1452,16 +1452,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitLog()
         {
             _LogActive = System.Diagnostics.Debugger.IsAttached;
-            if (!_LogActive) return;
+        }
+        /// <summary>
+        /// Aktivita logu
+        /// </summary>
+        private bool _LogActive 
+        {
+            get { return __LogActive; }
+            set 
+            {
+                if (value && (_LogWatch == null || _LogSB == null))
+                {   // Inicializace:
+                    _LogWatch = new System.Diagnostics.Stopwatch();
+                    _LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
+                    _LogFrequency = _LogFrequencyLong;
+                    _LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
+                    _LogSB = new StringBuilder();
+                }
+                if (value && !__LogActive)
+                {   // Restart:
+                    _LogWatch.Start();
+                    _LogStartTicks = _LogWatch.ElapsedTicks;
+                    _LogLastWriteTicks = _LogStartTicks;
+                }
+                if (!value && __LogActive)
+                {   // Stop:
+                    if (_LogWatch != null)
+                        _LogWatch.Stop();
+                    if (_LogSB != null)
+                        _LogSB.Clear();
+                    // Instance nechávám existovat, ale klidné a prázdné.
+                }
 
-            _LogWatch = new System.Diagnostics.Stopwatch();
-            _LogFrequencyLong = System.Diagnostics.Stopwatch.Frequency;
-            _LogFrequency = _LogFrequencyLong;
-            _LogTimeSpanForEmptyRow = System.Diagnostics.Stopwatch.Frequency / 10L;   // Pokud mezi dvěma zápisy do logu bude časová pauza 1/10 sekundy a víc, vložím EmptyRow
-            _LogSB = new StringBuilder();
-            _LogWatch.Start();
-            _LogStartTicks = _LogWatch.ElapsedTicks;
-            _LogLastWriteTicks = _LogStartTicks;
+                __LogActive = value;
+            }
         }
         /// <summary>
         /// Aktuální obsah Log textu.
@@ -1584,7 +1608,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Tady nemá smysl řešit standardní metodu : protected virtual void OnLogTextChanged(), protože tahle třída je sealed a singleton
             _LogTextChanged?.Invoke(null, EventArgs.Empty);
         }
-        private bool _LogActive;
+        private bool __LogActive;
         private System.Diagnostics.Stopwatch _LogWatch;
         private decimal _LogFrequency;
         private long _LogFrequencyLong;

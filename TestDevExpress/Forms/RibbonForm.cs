@@ -412,9 +412,19 @@ namespace TestDevExpress.Forms
         void IMenuItemActionHandler.MenuItemAction(IMenuItem menuItem)
         {
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
-            dialogArgs.Title = "Ribbon Click";
+            dialogArgs.Title = "Ribbon Item Click";
             dialogArgs.MessageTextContainsHtml = true;
             dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
+            dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
+            dialogArgs.Owner = this.FindForm();
+            Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
+        }
+        void IMenuItemActionHandler.MenuGroupAction(IRibbonItem ribbonItem)
+        {
+            Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
+            dialogArgs.Title = "Ribbon Group Click";
+            dialogArgs.MessageTextContainsHtml = true;
+            dialogArgs.MessageText = $"Uživatel kliknul na tlačítko skupiny <b>{ribbonItem.GroupId}</b>, s textem <b>{ribbonItem.GroupText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
@@ -516,6 +526,8 @@ namespace TestDevExpress.Forms
             if (String.IsNullOrEmpty(categoryId)) categoryId = "Extend1";
             if (String.IsNullOrEmpty(categoryText)) categoryText = "DALŠÍ VOLBY";
             bool categoryVisible = (isCategory ? true : false);
+            bool groupButtonVisible = (groupText == "Rozšířené" || groupText == "Údržba" || groupText == "Oblíbené" || groupText == "Systém" || groupText == "Systém");
+            // Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky;Další vlastnosti
             int radioCount = 0;
             bool hasRadio = false;
             bool nextIsFirst = false;
@@ -543,6 +555,7 @@ namespace TestDevExpress.Forms
                     PageContentMode = contentMode,
                     GroupId = groupId,
                     GroupText = groupText,
+                    GroupButtonVisible = groupButtonVisible,
                     ItemId = "Item" + (++_RibbonItemId),
                     ItemText = itemText,
                     ItemImage = itemImageName,
@@ -671,7 +684,7 @@ namespace TestDevExpress.Forms
         private static System.Random _Rand;
         public static string[] PageNames { get { if (_PageNames is null) _PageNames = "ASTROLOGIE;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;ON.DEMAND;RANDOM;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
         private static string[] _PageNames;
-        public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky".Split(';'); return _GroupNames; } }
+        public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky;Další vlastnosti".Split(';'); return _GroupNames; } }
         private static string[] _GroupNames;
         public static string[] ResourceImages { get { if (_ResourceImages is null) _ResourceImages = _GetResourceImages(); return _ResourceImages; } }
         private static string[] _ResourceImages;
