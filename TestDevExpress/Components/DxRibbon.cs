@@ -473,6 +473,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (items is null) return;
             bool needReactivateSearch = (this.Pages.Count == 0 && this.ShowSearchItem);
+            if (needReactivateSearch) _ReactivateSearchItem();
+
             var startTime = DxComponent.LogTimeCurrent;
             List<IRibbonItem> list = items.Where(i => i != null).ToList();
             _SortItems(list);
@@ -540,8 +542,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ReactivateSearchItem()
         {
             this.ShowSearchItem = false;
-            this.CreateSearchItem();
-            this.CreateSearchMenu();
+            this.Refresh();
             this.ShowSearchItem = true;
             this.Refresh();
         }
@@ -1841,12 +1842,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Group = new DevExpress.XtraBars.Ribbon.RibbonPageGroup(LazyLoadGroupText)
             {
                 Name = LazyLoadGroupId,
-                // Visible = false,
+                Visible = false,
                 CaptionButtonVisible = DefaultBoolean.False
             };
             this.BarItem = OwnerRibbon.Items.CreateButton(LazyLoadButtonText);
             uint id = ++_LastLazyId;
             this.BarItem.Name = $"{ribbonItem.PageId}_{ribbonItem.GroupId}_Wait_{id}";
+            this.BarItem.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;
             this.BarItem.Tag = OwnerPage;
 
             Group.ItemLinks.Add(BarItem);
