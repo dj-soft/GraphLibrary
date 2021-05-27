@@ -42,7 +42,9 @@ namespace TestDevExpress.Forms
         protected void InitializeForm()
         {
             this.Size = new System.Drawing.Size(800, 600);
-            this.Text = "TESTER DataForm";
+
+            this.Text = "Test Ribbons FW 4.8";
+
             this.AllowMdiBar = true;
 
             _DxMainSplit = DxComponent.CreateDxSplitContainer(this, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
@@ -57,6 +59,9 @@ namespace TestDevExpress.Forms
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
             this._DxRibbonControl = new DxRibbonControl() { DebugName = "MainRibbon" };
+            this._DxRibbonControl.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
+            this._DxRibbonControl.ApplicationButtonText = " SYSTEM ";
+
             this.Ribbon = _DxRibbonControl;
             this.Controls.Add(this._DxRibbonControl);
 

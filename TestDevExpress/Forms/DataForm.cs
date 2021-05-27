@@ -44,7 +44,8 @@ namespace TestDevExpress.Forms
         protected void InitializeForm()
         {
             this.Size = new System.Drawing.Size(800, 600);
-            this.Text = "TESTER DataForm";
+
+            this.Text = "Test DataForm FW 4.8";
 
             _DxMainSplit = DxComponent.CreateDxSplitContainer(this, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
                 fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 300, showSplitGlyph: true);

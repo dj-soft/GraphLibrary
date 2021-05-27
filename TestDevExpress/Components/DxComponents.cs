@@ -63,6 +63,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitZoom();
             this._InitDrawing();
             this._InitListeners();
+            this._ImageNameInit();
         }
         private static DxComponent _Instance;
         private static object _InstanceLock = new object();
@@ -1704,6 +1705,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private SolidBrush _SolidBrush;
         private Pen _Pen;
+        #endregion
+        #region Standardní jména obrázků
+        /// <summary>
+        /// Jméno ikony formuláře
+        /// </summary>
+        public static string ImageNameFormIcon { get { return Instance._ImageNameFormIcon; } set { Instance._ImageNameFormIcon = value; } }
+        /// <summary>
+        /// Inicializace výchozích názvů obrázků
+        /// </summary>
+        private void _ImageNameInit()
+        {
+            _ImageNameFormIcon = "svgimages/business%20objects/bo_appearance.svg";
+        }
+        private string _ImageNameFormIcon;
         #endregion
         #region ImageResource
         /// <summary>
@@ -5239,14 +5254,24 @@ namespace Noris.Clients.Win.Components.AsolDX
     #endregion
     #region DxStdForm
     public class DxStdForm : DevExpress.XtraEditors.XtraForm
-    { }
+    {
+        public DxStdForm()
+        {
+            this.IconOptions.SvgImage = DxComponent.GetSvgImage(DxComponent.ImageNameFormIcon);
+        }
+    }
     #endregion
     #region DxRibbonForm
     /// <summary>
     /// Formulář s ribbonem
     /// </summary>
     public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
-    { }
+    {
+        public DxRibbonForm()
+        {
+            this.IconOptions.SvgImage = DxComponent.GetSvgImage(DxComponent.ImageNameFormIcon);
+        }
+    }
     #endregion
     #region DxAutoScrollPanelControl
     /// <summary>

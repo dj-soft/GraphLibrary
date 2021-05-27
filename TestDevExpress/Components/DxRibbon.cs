@@ -61,7 +61,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowToolbarCustomizeItem = true;
             ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
 
-            ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
+            ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             ApplicationButtonText = " HELIOS ";
 
             ToolTipController = new DevExpress.Utils.ToolTipController
@@ -77,6 +77,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             };
 
             Visible = true;
+
+            this.AllowCustomization = true;
+            this.AllowGlyphSkinning = false;       // nikdy ne true!
+            this.ShowItemCaptionsInQAT = true;
+            this.ShowQatLocationSelector = true;
 
             this.SelectChildActivePageOnMerge = true;
             this.CheckLazyContentEnabled = true;
@@ -1075,7 +1080,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ApplicationButtonClick()
         {
             OnRibbonApplicationButtonClick();
-            RibbonApplicationButtonClick(this, EventArgs.Empty);
+            RibbonApplicationButtonClick?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
         /// Proběhne po kliknutí na button aplikace
@@ -1094,19 +1099,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void RibbonControl_PageCategoryClick(object sender, DevExpress.XtraBars.Ribbon.PageCategoryClickEventArgs e)
         {
-            if (_TryGetIRibbonItem(e.Category, out IRibbonItem ribbonItem))
-                _RibbonPageCategoryClick(ribbonItem);
+            if (_TryGetIRibbonItem(e.Category, out IRibbonItem ribbonItem, out DxRibbonControl dxRibbon))
+                _RibbonPageCategoryClick(ribbonItem, dxRibbon);
         }
         /// <summary>
         /// Vyvolá reakce na kliknutí na záhlaví kategorie:
         /// event <see cref="RibbonItemClick"/>.
         /// </summary>
         /// <param name="ribbonItem"></param>
-        private void _RibbonPageCategoryClick(IRibbonItem ribbonItem)
+        /// <param name="ownerDxRibbon"></param>
+        private void _RibbonPageCategoryClick(IRibbonItem ribbonItem, DxRibbonControl ownerDxRibbon = null)
         {
-            var args = new TEventArgs<IRibbonItem>(ribbonItem);
-            OnRibbonPageCategoryClick(args);
-            RibbonPageCategoryClick?.Invoke(this, args);
+            if (ownerDxRibbon != null)
+                ownerDxRibbon._RibbonPageCategoryClick(ribbonItem);
+            else
+            {
+                var args = new TEventArgs<IRibbonItem>(ribbonItem);
+                OnRibbonPageCategoryClick(args);
+                RibbonPageCategoryClick?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Proběhne po kliknutí na prvek Ribbonu
@@ -1195,12 +1206,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="category"></param>
         /// <param name="ribbonItem"></param>
+        /// <param name="definingRibbon"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(DevExpress.XtraBars.Ribbon.RibbonPageCategory category, out IRibbonItem ribbonItem)
+        private bool _TryGetIRibbonItem(DevExpress.XtraBars.Ribbon.RibbonPageCategory category, out IRibbonItem ribbonItem, out DxRibbonControl definingRibbon)
         {
             ribbonItem = null;
+            definingRibbon = null;
             if (category == null) return false;
-            if (category.Tag is IRibbonItem iRibbonItem) { ribbonItem = iRibbonItem; return true; }
 
             if (category.Pages.Count == 0 && category.MergedPages.Count == 0)
             {   // DevExpress mají chybku: pokud uživatel klikne na záhlaví kategorie po mergování Child Ribbonu a před tím kliknutím na kategorii nepřepne aktivní Page,
@@ -1212,8 +1224,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (category == null) return false;
             }
 
+            _TryGetDxRibbon(category, out definingRibbon); 
+
+            if (category.Tag is IRibbonItem iRibbonItem) { ribbonItem = iRibbonItem; return true; }
+
             if (_TryGetIRibbonItem(category.Pages, out ribbonItem)) return true;
             if (_TryGetIRibbonItem(category.MergedPages, out ribbonItem)) return true;
+
             return false;
         }
         /// <summary>
@@ -1252,6 +1269,26 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
             return false;
+        }
+        /// <summary>
+        /// Metoda zkusí najít <see cref="DxRibbonControl"/>, který první přispěl ke vzniku dané kategorie
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="definingRibbon"></param>
+        private bool _TryGetDxRibbon(DevExpress.XtraBars.Ribbon.RibbonPageCategory category, out DxRibbonControl definingRibbon)
+        {
+            definingRibbon = null;
+            if (category == null) return false;
+            definingRibbon = _SearchRibbonInPages(category.Pages);
+            if (definingRibbon == null)
+                definingRibbon = _SearchRibbonInPages(category.MergedPages);
+            return (definingRibbon != null);
+        }
+        private DxRibbonControl _SearchRibbonInPages(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages)
+        {
+            var items = pages.SelectMany(p => p.Groups).SelectMany(g => g.ItemLinks).Select(l => l.Item).OfType<DevExpress.XtraBars.BarItem>().ToArray();
+            DxRibbonControl ribbon = items.Select(i => i.Manager).OfType<DevExpress.XtraBars.Ribbon.RibbonBarManager>().Select(m => m.Ribbon).OfType<DxRibbonControl>().FirstOrDefault();
+            return ribbon;
         }
         #endregion
         #region Mergování, Unmergování, podpora pro ReMerge (Unmerge - Modify - Merge back)
