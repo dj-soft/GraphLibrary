@@ -633,7 +633,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonItem>> PageOnDemandLoad;
         #endregion
-        #region Fyzická tvorba prvků Ribbonu (kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...)
+        #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...)
         protected DxRibbonPageCategory GetCategory(IRibbonItem item, bool enableNew = true)
         {
             if (item is null) return null;
@@ -908,12 +908,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
                 {
-                    DxComponent.ApplyImage(barItem.ImageOptions, resourceName: item.ItemImage);
+                    DxComponent.ApplyImage(barItem.ImageOptions, resourceName: imageName);
                 }
                 else
                 {
-                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage, ImagesSize, item.ItemText);
-                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage, LargeImagesSize, item.ItemText);
+                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, ImagesSize, item.ItemText);
+                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, LargeImagesSize, item.ItemText);
                 }
             }
 
@@ -952,6 +952,25 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             barItem.Tag = item;
         }
+        protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string itemText, string image)
+        {
+            if (text is null) return null;
+            if (title == null) title = itemText;
+            var superTip = new DevExpress.Utils.SuperToolTip();
+            if (title != null)
+            {
+                var dxTitle = superTip.Items.AddTitle(title);
+                if (image != null)
+                {
+                    dxTitle.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
+                    dxTitle.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(image, WinFormServices.Drawing.UserGraphicsSize.Large);
+                    dxTitle.ImageOptions.ImageToTextDistance = 12;
+                }
+                superTip.Items.AddSeparator();
+            }
+            var dxText = superTip.Items.Add(text);
+            return superTip;
+        }
         /// <summary>
         /// Konvertuje typ <see cref="BarItemPaintStyle"/> na typ <see cref="DevExpress.XtraBars.BarItemPaintStyle"/>
         /// </summary>
@@ -972,25 +991,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             int styles = (int)ribbonStyle;
             return (DevExpress.XtraBars.Ribbon.RibbonItemStyles)styles;
         }
-        protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string itemText, string image)
-        {
-            if (text is null) return null;
-            if (title == null) title = itemText;
-            var superTip = new DevExpress.Utils.SuperToolTip();
-            if (title != null)
-            {
-                var dxTitle = superTip.Items.AddTitle(title);
-                if (image != null)
-                {
-                    dxTitle.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
-                    dxTitle.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(image, WinFormServices.Drawing.UserGraphicsSize.Large);
-                    dxTitle.ImageOptions.ImageToTextDistance = 12;
-                }
-                superTip.Items.AddSeparator();
-            }
-            var dxText = superTip.Items.Add(text);
-            return superTip;
-        }
+        /// <summary>
+        /// BarManager
+        /// </summary>
         protected DevExpress.XtraBars.Ribbon.RibbonBarManager BarManager
         {
             get
@@ -1731,7 +1734,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Definice dat pro LazyLoad content pro tuto Page. Obsahuje deklarace prvků i referenci na grupu, která LazyLoad zajistí.
         /// </summary>
         protected DxRibbonLazyLoadInfo LazyLoadInfo { get; private set; }
-     
 
         internal static void ClearContentPage(DevExpress.XtraBars.Ribbon.RibbonPage page)
         {

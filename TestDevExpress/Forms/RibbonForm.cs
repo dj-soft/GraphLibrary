@@ -15,7 +15,7 @@ namespace TestDevExpress.Forms
         {
             DxComponent.SplashShow("Testovací okno Ribbonů Nephrite", "DJ soft & ASOL",
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                this, Properties.Resources.Moon10, opacityColor: System.Drawing.Color.FromArgb(160, 160, 220), opacity: 120,
+                this, Properties.Resources.Moon10, opacityColor: System.Drawing.Color.FromArgb(80, 80, 180), opacity: 120,
                 useFadeOut: false);
 
             this.UseLazyLoad = true;
@@ -353,20 +353,7 @@ namespace TestDevExpress.Forms
             _Ribbon.AddItems(items);
         }
 
-        private void _Ribbon_PageOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
-        {
-            ThreadManager.AddAction(_LoadItemsFromServer, e.Item);
-        }
-        private void _LoadItemsFromServer(object[] args)
-        {
-            System.Threading.Thread.Sleep(850);
-
-            IRibbonItem ribbonItem = args[0] as IRibbonItem;
-            int pageIndex = DxRibbonSample.FindPageIndex(ribbonItem.PageText);
-            var items = DxRibbonSample.CreateItems(2, CategoryName, CategoryName, CategoryColor, pageIndex);
-            this._Ribbon.ReFillPageItems(items);
-        }
-
+     
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
         // private DxSimpleButton _ButtonEmpty;
@@ -417,7 +404,19 @@ namespace TestDevExpress.Forms
         }
 
 
-   
+        private void _Ribbon_PageOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
+        {
+            ThreadManager.AddAction(_LoadItemsFromServer, e.Item);
+        }
+        private void _LoadItemsFromServer(object[] args)
+        {
+            System.Threading.Thread.Sleep(850);
+
+            IRibbonItem ribbonItem = args[0] as IRibbonItem;
+            int pageIndex = DxRibbonSample.FindPageIndex(ribbonItem.PageText);
+            var items = DxRibbonSample.CreateItems(2, CategoryName, CategoryName, CategoryColor, pageIndex);
+            this._Ribbon.ReFillPageItems(items);
+        }
         private void _Ribbon_RibbonApplicationButtonClick(object sender, EventArgs e)
         {
         }
