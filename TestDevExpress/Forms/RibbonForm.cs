@@ -454,7 +454,10 @@ namespace TestDevExpress.Forms
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Item Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
+            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
+            if (menuItem is IRibbonItem ribbonItem)
+                dialogArgs.MessageText += $"\r\n, stránka <b>{ribbonItem.PageText}</b>, skupina <b>{ribbonItem.GroupText}</b>";
+            dialogArgs.MessageText += ".";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
@@ -567,7 +570,7 @@ namespace TestDevExpress.Forms
                 string itemImageName = GetRandomImageName();
                 string toolTip = Random.GetSentence(Rand.Next(5, 16));
                 string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
-                int? inToolbar = ((Rand.Next(100) < 2) ? (int?)10 : null);
+                int? inToolbar = ((Rand.Next(100) < 3) ? (int?)10 : null);
                 if (inToolbar.HasValue)
                 { }
 

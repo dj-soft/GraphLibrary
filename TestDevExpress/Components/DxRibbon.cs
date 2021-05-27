@@ -181,16 +181,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Clear()
         { 
             var startTime = DxComponent.LogTimeCurrent;
-
+            int removeItemsCount = 0;
             try
             {
                 _ClearingNow = true;
                 this.Pages.Clear();
                 this.Categories.Clear();
                 this.PageCategories.Clear();
-                this.Items.Clear();
 
-                this.PageHeaderItemLinks.Clear();
+                // var itns = this.Items.Select(i => i.GetType().FullName).ToArray();
+
+                // Pokud bych dal this.Items.Clear(), tak přijdu o všechny prvky celého Ribbonu, a to i o "servisní" = RibbonSearchEditItem, RibbonExpandCollapseItem, AutoHiddenPagesMenuItem.
+                // Ale když nevyčistím Itemy, budou tady pořád strašit...
+                // Ponecháme prvky těchto typů: "DevExpress.XtraBars.RibbonSearchEditItem", "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem", "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem"
+                // Následující algoritmus NENÍ POMALÝ: smazání 700 Itemů trvá 11 milisekund.
+                // Pokud by Clear smazal i další sytémové prvky, je nutno je určit, určit jejich FullType a přidat jej do metody _IsSystemItem() !
+                int count = this.Items.Count;
+                for (int i = count - 1; i >= 0; i--)
+                {
+                    if (!_IsSystemItem(this.Items[i]))
+                    {
+                        this.Items.RemoveAt(i);
+                        removeItemsCount++;
+                    }
+                }
+
+                var x = this.PageHeaderItemLinks.ToArray();
+
                 this.Toolbar.ItemLinks.Clear();
 
                 //this.MergedCategories.Clear();
@@ -201,7 +218,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ClearingNow = false;
             }
 
-            DxComponent.LogAddLineTime($" === ClearRibbon {this.DebugName}: {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            DxComponent.LogAddLineTime($" === ClearRibbon {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný objekt je takového typu, že se má považovat za systémový = nesmazatelný z Items
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private bool _IsSystemItem(object item)
+        {
+            string fullType = item.GetType().FullName;
+            switch (fullType)
+            {
+                case "DevExpress.XtraBars.RibbonSearchEditItem":
+                case "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem":
+                case "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem":
+                    return true;
+            }
+            return false;
         }
         private bool _ClearingNow;
         /// <summary>
@@ -527,7 +561,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (item.ItemType != RibbonItemType.None)            // Prvek typu None slouží jen k deklaraci Kategorie a Stránky, ale ne Grupy a Prvku.
             {
                 bool isSelectedPage = (this.SelectedPageId == page.Name);
-                if (isSelectedPage || !isLazyContent)
+                bool isToolbarItem = (item.ItemToolbarOrder.HasValue);
+                if (isSelectedPage || !isLazyContent || isToolbarItem)
                 {   // Pokud aktuální stránka je Selected, pak do ní rovnou nasypu reálné BarItems (anebo pokud není dán režim LazyLoad),
                     // protože bych beztak BarItems generoval hned po vrácení řízení do GUI v akci SelectedPageChanged:
                     var group = GetGroup(item, page);
