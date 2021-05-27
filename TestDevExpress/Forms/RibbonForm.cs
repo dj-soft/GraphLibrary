@@ -15,7 +15,7 @@ namespace TestDevExpress.Forms
         {
             DxComponent.SplashShow("Testovací okno Ribbonů Nephrite", "DJ soft & ASOL",
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                this, Properties.Resources.Moon10,opacityColor: System.Drawing.Color.BlueViolet,
+                this, Properties.Resources.Moon10, opacityColor: System.Drawing.Color.FromArgb(160, 160, 220), opacity: 120,
                 useFadeOut: false);
 
             this.UseLazyLoad = true;
@@ -200,7 +200,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Testovací panel
     /// </summary>
-    public class RibbonTestPanel : DxPanelControl, IMenuItemActionHandler
+    public class RibbonTestPanel : DxPanelControl
     {
         /// <summary>
         /// Konstruktor
@@ -217,14 +217,19 @@ namespace TestDevExpress.Forms
             this.Dock = System.Windows.Forms.DockStyle.Fill;
             _Ribbon = new DxRibbonControl() { Dock = System.Windows.Forms.DockStyle.Top, ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False };
             _Ribbon.PageOnDemandLoad += _Ribbon_PageOnDemandLoad;
+            _Ribbon.RibbonApplicationButtonClick += _Ribbon_RibbonApplicationButtonClick;
+            _Ribbon.RibbonPageCategoryClick += _Ribbon_RibbonPageCategoryClick;
+            _Ribbon.RibbonGroupButtonClick += _Ribbon_RibbonGroupButtonClick;
+            _Ribbon.RibbonItemClick += _Ribbon_RibbonItemClick;
+
             this.Controls.Add(_Ribbon);
 
             int x = 20;
             _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear All", _RunClear); x += 160;
-            _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
+            // _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
             _ButtonAdd4 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
             _ButtonAdd36 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 36 groups", _RunAdd36Groups); x += 160;
-            _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
+            // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
 
             x += 60;
             _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge); x += 160;
@@ -242,33 +247,36 @@ namespace TestDevExpress.Forms
         private void DoLayoutButtons()
         {
             int width = this.ClientSize.Width;
-            bool isSmall = (width < 1200);
-            int x0 = (isSmall ? 10 : 20);
+            int count1 = 3;
+            int count2 = 2;
+            bool isSmall = (width < 825);
             int y0 = 160;
             int w = (isSmall ? 112 : 150);
             int h1 = (isSmall ? 38 : 54);
             int h2 = (isSmall ? 44 : 54);
             int s = (isSmall ? 5 : 10);
             int xs = w + s;
-            int ds = (isSmall ? 25 : 60);
-            int tw = (5 * w + 4 * s) + (isSmall ? 0 : (ds + 2 * w + s));
-            if ((2 * x0 + tw) < width)
-                x0 = (width - tw) / 2;
+            int ds = (isSmall ? 0 : 35);
+
+            int wc = (count1 * w + (count1 - 1) * s) + (isSmall ? 0 : (ds + (count2 * w + (count2 - 1) * s)));
+            int x0 = (width - wc) / 2;
 
             int x = x0;
             int y = y0;
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonEmpty.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
+            // _ButtonEmpty.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             _ButtonAdd4.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             _ButtonAdd36.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonFinal.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
+            // _ButtonFinal.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
 
             if (isSmall)
             {
-                x = x0 + xs;
-                y = y0 + h1 + 6;
                 w = 3 * w / 2;
-                xs = w + 10;
+                xs = w + s;
+                wc = (count2 * w + (count2 - 1) * s);
+                x0 = (width - wc) / 2;
+                x = x0;
+                y = y0 + h1 + 6;
             }
             else
             {
@@ -281,10 +289,10 @@ namespace TestDevExpress.Forms
             int svgS = (isSmall ? h1 - 8 : h1 - 12);
             System.Drawing.Size imageSize = new System.Drawing.Size(svgS, svgS);
             DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonEmpty.ImageOptions, resourceName: "images/xaf/templatesv2images/action_delete.svg", imageSize: imageSize);
+            // DxComponent.ApplyImage(_ButtonEmpty.ImageOptions, resourceName: "images/xaf/templatesv2images/action_delete.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonAdd4.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonAdd36.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonFinal.ImageOptions, resourceName: "svgimages/icon%20builder/actions_send.svg", imageSize: imageSize);
+            // DxComponent.ApplyImage(_ButtonFinal.ImageOptions, resourceName: "svgimages/icon%20builder/actions_send.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: imageSize);
         }
@@ -342,7 +350,6 @@ namespace TestDevExpress.Forms
         public void FillRibbon(int groups = 30)
         {
             var items = DxRibbonSample.CreateItems(groups, CategoryName, CategoryName, CategoryColor);
-            items.Cast<RibbonItem>().ForEachExec(i => i.ActionHandler = this);
             _Ribbon.AddItems(items);
         }
 
@@ -357,16 +364,15 @@ namespace TestDevExpress.Forms
             IRibbonItem ribbonItem = args[0] as IRibbonItem;
             int pageIndex = DxRibbonSample.FindPageIndex(ribbonItem.PageText);
             var items = DxRibbonSample.CreateItems(2, CategoryName, CategoryName, CategoryColor, pageIndex);
-            items.Cast<RibbonItem>().ForEachExec(i => i.ActionHandler = this);
             this._Ribbon.ReFillPageItems(items);
         }
 
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
-        private DxSimpleButton _ButtonEmpty;
+        // private DxSimpleButton _ButtonEmpty;
         private DxSimpleButton _ButtonAdd4;
         private DxSimpleButton _ButtonAdd36;
-        private DxSimpleButton _ButtonFinal;
+        // private DxSimpleButton _ButtonFinal;
         private DxCheckButton _ButtonMerge;
         private DxCheckButton _ButtonUnMerge;
         private void _RunClear(object sender, EventArgs args) 
@@ -409,22 +415,47 @@ namespace TestDevExpress.Forms
             this._ButtonUnMerge.Checked = _IsMerged;       // Takže nyní dáme do buttonu opačnou hodnotu, logika DevExpress ji otočí:
             this._ButtonMerge.Checked = _IsMerged;         // V druhém buttonu se hodnota neotočí (tam jsme neklikli), dáme tam tedy hodnotu požadovanou
         }
-        void IMenuItemActionHandler.MenuItemAction(IMenuItem menuItem)
+
+
+   
+        private void _Ribbon_RibbonApplicationButtonClick(object sender, EventArgs e)
         {
+        }
+   
+        private void _Ribbon_RibbonPageCategoryClick(object sender, TEventArgs<IRibbonItem> e)
+        {
+            IRibbonItem ribbonItem = e.Item;
+
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
-            dialogArgs.Title = "Ribbon Item Click";
+            dialogArgs.Title = "Ribbon Category Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
+            dialogArgs.MessageText = $"Uživatel kliknul na záhlaví kategorie <b>{ribbonItem.CategoryId}</b>, s textem <b>{ribbonItem.CategoryText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
-        void IMenuItemActionHandler.MenuGroupAction(IRibbonItem ribbonItem)
+        private void _Ribbon_RibbonGroupButtonClick(object sender, TEventArgs<IRibbonItem> e)
         {
+            IRibbonItem ribbonItem = e.Item;
+
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Group Click";
             dialogArgs.MessageTextContainsHtml = true;
             dialogArgs.MessageText = $"Uživatel kliknul na tlačítko skupiny <b>{ribbonItem.GroupId}</b>, s textem <b>{ribbonItem.GroupText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
+            dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
+            dialogArgs.Owner = this.FindForm();
+            Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
+        }
+        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
+        {
+            IMenuItem menuItem = e.Item;
+
+            if (menuItem.ItemType == RibbonItemType.Menu) return;
+
+            Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
+            dialogArgs.Title = "Ribbon Item Click";
+            dialogArgs.MessageTextContainsHtml = true;
+            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
@@ -599,7 +630,7 @@ namespace TestDevExpress.Forms
                         item.RibbonStyle = RibbonItemStyles.SmallWithText;
 
                     if (NeedSubItem(itemType, 0))
-                        item.SubItems = _CreateSubItems(13);
+                        item.SubItems = _CreateSubItems(itemType, 13);
 
                     nextIsFirst = false;
                 }
@@ -608,7 +639,7 @@ namespace TestDevExpress.Forms
                 items.Add(item);
             }
         }
-        protected static IMenuItem[] _CreateSubItems(int maxCount, int level = 0)
+        protected static IMenuItem[] _CreateSubItems(RibbonItemType itemType, int maxCount, int level = 0)
         {
             List<IMenuItem> subItems = new List<IMenuItem>();
 
@@ -635,11 +666,13 @@ namespace TestDevExpress.Forms
                 };
                 _RibbonItemCount++;
 
-                item.ItemType = GetRandomItemType();
-                if (NeedSubItem(item.ItemType, level))
+                item.ItemType = (itemType == RibbonItemType.InRibbonGallery ? RibbonItemType.Button : GetRandomItemType());
+
+                int nextLevel = level + 1;
+                if (NeedSubItem(item.ItemType, nextLevel))
                 {
                     if (level <= 4)
-                        item.SubItems = _CreateSubItems(7, (level + 1));
+                        item.SubItems = _CreateSubItems(itemType, 7, nextLevel);
                     else
                         item.ItemType = RibbonItemType.Button;
                 }
@@ -661,20 +694,22 @@ namespace TestDevExpress.Forms
         {
             int rand = Rand.Next(100);
             if (rand < 60) return RibbonItemType.Button;
-            if (rand < 70) return RibbonItemType.CheckBoxStandard;
-            if (rand < 73) return RibbonItemType.RadioItem;
+            if (rand < 67) return RibbonItemType.CheckBoxStandard;
+            if (rand < 74) return RibbonItemType.CheckBoxToggle;
+            if (rand < 80) return RibbonItemType.RadioItem;
             // if (rand < 85) return RibbonItemType.ButtonGroup;         nějak se mi nelíbí
+            if (rand < 85) return RibbonItemType.InRibbonGallery;
             if (rand < 90) return RibbonItemType.SplitButton;
             if (rand < 100) return RibbonItemType.Menu;
             return RibbonItemType.Button;
         }
         public static bool NeedSubItem(RibbonItemType itemType, int level)
         {
+            if (itemType == RibbonItemType.InRibbonGallery && level == 0) return true;
             bool canSubItem = (itemType == RibbonItemType.ButtonGroup || itemType == RibbonItemType.SplitButton || itemType == RibbonItemType.Menu);
             if (canSubItem && (level == 0 || Rand.Next(100) < 40)) return true;
             return false;
         }
-
         public static string GetRandomImageName(int randomEmpty = 0)
         {
             if ((randomEmpty > 0) && (Rand.Next(100) < randomEmpty)) return null;

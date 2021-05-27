@@ -68,6 +68,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static object _InstanceLock = new object();
         #endregion
         #region Init a Done
+        /// <summary>
+        /// Inicializace subsystému: pojmenuje CurrentThread, registruje a povoluje DevEpxress skiny, nastavuje animace a výchozí skin
+        /// </summary>
         public static void Init() { Instance._Init(); }
         private void _Init()
         {

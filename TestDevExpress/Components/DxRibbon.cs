@@ -16,7 +16,7 @@ using DevExpress.Utils;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
-    #region DxRibbonControl
+    #region DxRibbonControl : potomek RibbonControl s rozšířenou funkcionalitou
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
@@ -401,20 +401,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             List<DevExpress.XtraBars.Ribbon.RibbonPage> result = new List<DevExpress.XtraBars.Ribbon.RibbonPage>();
 
-            if (position.HasFlag(PagePosition.Default))
+            bool withDefault = position.HasFlag(PagePosition.Default);
+            bool withCategories = position.HasFlag(PagePosition.Categories);
+            bool withMergedDefault = position.HasFlag(PagePosition.MergedDefault);
+            bool withMergedCategories = position.HasFlag(PagePosition.MergedCategories);
+
+            if (withDefault)
                 result.AddRange(this.Pages);
 
-            if (position.HasFlag(PagePosition.Categories))
+            if (withCategories)
                 result.AddRange(this.Categories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.Pages));
 
-            if (position.HasFlag(PagePosition.MergedDefault))
+            if (withCategories && (withMergedDefault || withMergedCategories))
+                result.AddRange(this.Categories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.MergedPages));
+
+
+            if (withMergedDefault)
                 result.AddRange(this.MergedPages);
 
-            if (position.HasFlag(PagePosition.MergedCategories))
+            if (withMergedCategories)
                 result.AddRange(this.MergedCategories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.Pages));
+
+            if (withMergedCategories)
+                result.AddRange(this.MergedCategories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.MergedPages));
 
             return result;
         }
+        /// <summary>
+        /// Vrátí pozici, na které se v this Ribbonu nachází daná stránka
+        /// </summary>
+        /// <param name="page"></param>
+        /// <returns></returns>
         public PagePosition GetPagePosition(DevExpress.XtraBars.Ribbon.RibbonPage page)
         {
             if (page == null) return PagePosition.None;
@@ -455,6 +472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _AddItems(IEnumerable<IRibbonItem> items, bool isLazyContent, bool isOnDemand, string logText)
         {
             if (items is null) return;
+            bool needReactivateSearch = (this.Pages.Count == 0 && this.ShowSearchItem);
             var startTime = DxComponent.LogTimeCurrent;
             List<IRibbonItem> list = items.Where(i => i != null).ToList();
             _SortItems(list);
@@ -462,6 +480,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var item in list)
                 _AddItem(item, isLazyContent, isOnDemand, ref count);
             DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (needReactivateSearch) _ReactivateSearchItem();
         }
         /// <summary>
         /// Zajistí správné setřídění prvků v poli
@@ -517,6 +536,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                     page.AddLazyLoadItem(item);
                 }
             }
+        }
+        private void _ReactivateSearchItem()
+        {
+            this.ShowSearchItem = false;
+            this.CreateSearchItem();
+            this.CreateSearchMenu();
+            this.ShowSearchItem = true;
+            this.Refresh();
         }
         #endregion
         #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent
@@ -615,6 +642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 category = new DxRibbonPageCategory(item.CategoryText, item.CategoryColor, item.CategoryVisible);
                 category.Name = item.CategoryId;
+                category.Tag = item;
                 PageCategories.Add(category);
             }
             return category;
@@ -735,6 +763,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     barItem = menu;
                     break;
+                case RibbonItemType.InRibbonGallery:
+                    count++;
+                    var galleryItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
+                    var gallery = new DevExpress.XtraBars.Ribbon.Gallery.InRibbonGallery(galleryItem);
+                    gallery.ItemCheckMode = DevExpress.XtraBars.Ribbon.Gallery.ItemCheckMode.Multiple;
+                    var galleryGroup = new DevExpress.XtraBars.Ribbon.GalleryItemGroup();
+                    gallery.Groups.Add(galleryGroup);
+                    galleryGroup.Items.AddRange(GetGalleryItems(item.SubItems, ref count));
+                    barItem = galleryItem;
+                    break;
+
                 case RibbonItemType.SkinSetDropDown:
                     count++;
                     barItem = new DevExpress.XtraBars.SkinDropDownButtonItem();
@@ -784,50 +823,77 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return baseButton;
         }
-        protected DevExpress.XtraBars.BarItem[] GetBarSubItems(IMenuItem[] items, ref int count)
+        protected DevExpress.XtraBars.BarItem[] GetBarSubItems(IMenuItem[] subItems, ref int count)
         {
             List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
-            if (items != null)
+            if (subItems != null)
             {
-                foreach (IMenuItem item in items)
+                foreach (IMenuItem subItem in subItems)
                 {
-                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(item, ref count);
+                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, ref count);
                     if (barItem != null)
+                    {
+                     // tohle není opakovaně potřeba, to zařizuje Ribbon nativně!   barItem.ItemClick += this.RibbonControl_SubItemClick;
+                        barItem.Tag = subItem;
                         barItems.Add(barItem);
+                    }
                 }
             }
             return barItems.ToArray();
         }
-        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem[] items, ref int count)
+        private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            RibbonControl_ItemClick(sender, e);
+        }
+        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem[] subItems, ref int count)
         {
             List<DevExpress.XtraBars.BarBaseButtonItem> baseButtons = new List<DevExpress.XtraBars.BarBaseButtonItem>();
-            if (items != null)
+            if (subItems != null)
             {
-                foreach (IMenuItem item in items)
+                foreach (IMenuItem subItem in subItems)
                 {
-                    DevExpress.XtraBars.BarBaseButtonItem baseButton = CreateBaseButton(item);
+                    DevExpress.XtraBars.BarBaseButtonItem baseButton = CreateBaseButton(subItem);
                     if (baseButton != null)
+                    {
+                        baseButton.Tag = subItem;
                         baseButtons.Add(baseButton);
+                    }
                 }
             }
             return baseButtons.ToArray();
         }
-        protected DevExpress.XtraBars.PopupMenu GetPopupSubItems(IMenuItem[] items, ref int count)
+        protected DevExpress.XtraBars.PopupMenu GetPopupSubItems(IMenuItem[] subItems, ref int count)
         {
             DevExpress.XtraBars.PopupMenu dxPopup = new DevExpress.XtraBars.PopupMenu(BarManager);
-            if (items != null)
+            if (subItems != null)
             {
-                foreach (IMenuItem item in items)
+                foreach (IMenuItem subItem in subItems)
                 {
-                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(item, ref count);
+                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, ref count);
                     if (barItem != null)
                     {
+                        barItem.Tag = subItem;
                         var barLink = dxPopup.AddItem(barItem);
-                        if (item.ItemIsFirstInGroup) barLink.BeginGroup = true;
+                        if (subItem.ItemIsFirstInGroup) barLink.BeginGroup = true;
                     }
                 }
             }
             return dxPopup;
+        }
+        protected DevExpress.XtraBars.Ribbon.GalleryItem[] GetGalleryItems(IMenuItem[] subItems, ref int count)
+        {
+            var  galleryItems = new List<DevExpress.XtraBars.Ribbon.GalleryItem>();
+            if (subItems != null)
+            {
+                foreach (var subItem in subItems)
+                {
+                    var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem(null, subItem.ItemText, subItem.ToolTip);
+                    galleryItem.Tag = subItem;
+                    DxComponent.ApplyImage(galleryItem.ImageOptions, resourceName: subItem.ItemImage);
+                    galleryItems.Add(galleryItem);
+                }
+            }
+            return galleryItems.ToArray();
         }
         protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IMenuItem item)
         {
@@ -955,55 +1021,199 @@ namespace Noris.Clients.Win.Components.AsolDX
             PageCategoryClick += RibbonControl_PageCategoryClick;
             PageGroupCaptionButtonClick += RibbonControl_PageGroupCaptionButtonClick;
         }
-
+        /// <summary>
+        /// Uživatel kliknul na button aplikace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void RibbonControl_ApplicationButtonClick(object sender, EventArgs e)
         {
+            _ApplicationButtonClick();
         }
-
-        private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        /// <summary>
+        /// Vyvolá reakce na kliknutí na button aplikace
+        /// </summary>
+        private void _ApplicationButtonClick()
         {
-            if (e.Item is null) return;
-            if (!(e.Item.Tag is IMenuItem menuItem)) return;
-            if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
-                menuItem.ItemIsChecked = checkItem.Checked;
-
-            _RibbonItemClick(menuItem);
+            OnRibbonApplicationButtonClick();
+            RibbonApplicationButtonClick(this, EventArgs.Empty);
         }
-        internal void RaiseRibbonItemClick(IMenuItem menuItem) { _RibbonItemClick(menuItem); }
-        private void _RibbonItemClick(IMenuItem menuItem)
-        {
-            var handler = menuItem.ActionHandler;
-            if (handler != null) handler.MenuItemAction(menuItem);
+        /// <summary>
+        /// Proběhne po kliknutí na button aplikace
+        /// </summary>
+        protected virtual void OnRibbonApplicationButtonClick() { }
+        /// <summary>
+        /// Událost volaná po kliknutí na button aplikace
+        /// </summary>
+        public event EventHandler RibbonApplicationButtonClick;
 
-            var args = new TEventArgs<IMenuItem>(menuItem);
-            OnRibbonItemClick(args);
-            RibbonItemClick?.Invoke(this, args);
-        }
-        protected virtual void OnRibbonItemClick(TEventArgs<IMenuItem> args) { }
-        public event EventHandler<TEventArgs<IMenuItem>> RibbonItemClick;
-
+        /// <summary>
+        /// Uživatel kliknul na záhlaví kategorie = barevný pruh nad barevnými stránkami kategorií.
+        /// Ten pruh je vidět jen v Ribbonu umístěném nahoře na formuláři RibbonForm, není vidět na Ribbonu umístěném v panelu.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void RibbonControl_PageCategoryClick(object sender, DevExpress.XtraBars.Ribbon.PageCategoryClickEventArgs e)
         {
+            if (_TryGetIRibbonItem(e.Category, out IRibbonItem ribbonItem))
+                _RibbonPageCategoryClick(ribbonItem);
         }
+        /// <summary>
+        /// Vyvolá reakce na kliknutí na záhlaví kategorie:
+        /// event <see cref="RibbonItemClick"/>.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        private void _RibbonPageCategoryClick(IRibbonItem ribbonItem)
+        {
+            var args = new TEventArgs<IRibbonItem>(ribbonItem);
+            OnRibbonPageCategoryClick(args);
+            RibbonPageCategoryClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po kliknutí na prvek Ribbonu
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnRibbonPageCategoryClick(TEventArgs<IRibbonItem> args) { }
+        /// <summary>
+        /// Událost volaná po kliknutí na prvek Ribbonu
+        /// </summary>
+        public event EventHandler<TEventArgs<IRibbonItem>> RibbonPageCategoryClick;
 
+        /// <summary>
+        /// Uživatel kliknul na GroupButton = tlačítko v grupě v Ribbonu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void RibbonControl_PageGroupCaptionButtonClick(object sender, DevExpress.XtraBars.Ribbon.RibbonPageGroupEventArgs e)
         {
-            if (e.PageGroup is null) return;
-            if (!(e.PageGroup.Tag is IRibbonItem ribbonItem)) return;
-
-            _RibbonGroupButtonClick(ribbonItem);
+            if (_TryGetIRibbonItem(e.PageGroup, out IRibbonItem ribbonItem))
+                _RibbonGroupButtonClick(ribbonItem);
         }
+        /// <summary>
+        /// Vyvolá reakce na kliknutí na GroupButton = tlačítko v grupě v Ribbonu:
+        /// event <see cref="RibbonGroupButtonClick"/>.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
         private void _RibbonGroupButtonClick(IRibbonItem ribbonItem)
         {
-            var handler = ribbonItem.ActionHandler;
-            if (handler != null) handler.MenuGroupAction(ribbonItem);
-
             var args = new TEventArgs<IRibbonItem>(ribbonItem);
             OnRibbonGroupButtonClick(args);
             RibbonGroupButtonClick?.Invoke(this, args);
         }
+        /// <summary>
+        /// Proběhne po kliknutí na GroupButton = tlačítko v grupě v Ribbonu
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnRibbonGroupButtonClick(TEventArgs<IRibbonItem> args) { }
+        /// <summary>
+        /// Událost volaná po kliknutí na GroupButton = tlačítko v grupě v Ribbonu
+        /// </summary>
         public event EventHandler<TEventArgs<IRibbonItem>> RibbonGroupButtonClick;
+
+        /// <summary>
+        /// Uživatel kliknul na kterýkoli button v Ribbonu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            if (_TryGetIRibbonItem(e.Item, out IMenuItem menuItem))
+            {
+                if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
+                    menuItem.ItemIsChecked = checkItem.Checked;
+
+                _RibbonItemClick(menuItem);
+            }
+        }
+        /// <summary>
+        /// Provede akci odpovídající kliknutí na prvek Ribbonu, na vstupu jsou data prvku
+        /// </summary>
+        /// <param name="menuItem"></param>
+        internal void RaiseRibbonItemClick(IMenuItem menuItem) { _RibbonItemClick(menuItem); }
+        /// <summary>
+        /// Vyvolá reakce na kliknutí na prvek Ribbonu:
+        /// event <see cref="RibbonItemClick"/>.
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void _RibbonItemClick(IMenuItem menuItem)
+        {
+            var args = new TEventArgs<IMenuItem>(menuItem);
+            OnRibbonItemClick(args);
+            RibbonItemClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po kliknutí na prvek Ribbonu
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnRibbonItemClick(TEventArgs<IMenuItem> args) { }
+        /// <summary>
+        /// Událost volaná po kliknutí na prvek Ribbonu
+        /// </summary>
+        public event EventHandler<TEventArgs<IMenuItem>> RibbonItemClick;
+
+        /// <summary>
+        /// V rámci dané kategorie se pokusí najít odpovídající definici kategorie <see cref="IRibbonItem"/> v některém tagu.
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        private bool _TryGetIRibbonItem(DevExpress.XtraBars.Ribbon.RibbonPageCategory category, out IRibbonItem ribbonItem)
+        {
+            ribbonItem = null;
+            if (category == null) return false;
+            if (category.Tag is IRibbonItem iRibbonItem) { ribbonItem = iRibbonItem; return true; }
+
+            if (category.Pages.Count == 0 && category.MergedPages.Count == 0)
+            {   // DevExpress mají chybku: pokud uživatel klikne na záhlaví kategorie po mergování Child Ribbonu a před tím kliknutím na kategorii nepřepne aktivní Page,
+                //  pak ve zdejším parametru (tj. v eventu PageCategoryClick v parametru DevExpress.XtraBars.Ribbon.PageCategoryClickEventArgs) je sice Category,
+                //  ale ta má category.Pages.Count = 0 i category.MergedPages.Count = 0, a já pak nenajdu stránku dané kategorie a ta ani nenajdu definující IRibbonItem.
+                // Ale když požádám Ribbon o GetPageCategories(), pak si tam najdu odpovídající kategorii, tak už má Pages správně naplněné:
+                var categories = this.GetPageCategories();
+                category = categories.FirstOrDefault(c => c.Name == category.Name);
+                if (category == null) return false;
+            }
+
+            if (_TryGetIRibbonItem(category.Pages, out ribbonItem)) return true;
+            if (_TryGetIRibbonItem(category.MergedPages, out ribbonItem)) return true;
+            return false;
+        }
+        /// <summary>
+        /// V rámci dané kategorie se pokusí najít odpovídající definici kategorie <see cref="IRibbonItem"/> v některém tagu.
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonItem ribbonItem)
+        {
+            ribbonItem = null;
+            if (pages == null) return false;
+            var page = pages.FirstOrDefault(p => p.Tag is IRibbonItem);
+            if (page == null) return false;
+            ribbonItem = page.Tag as IRibbonItem;
+            return true;
+        }
+        /// <summary>
+        /// V rámci dané grupy se pokusí najít odpovídající definici grupy <see cref="IRibbonItem"/> v některém tagu.
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        private bool _TryGetIRibbonItem(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out IRibbonItem ribbonItem)
+        {
+            ribbonItem = null;
+            if (group == null) return false;
+            if (group.Tag is IRibbonItem iRibbonItem) { ribbonItem = iRibbonItem; return true; }
+            return false;
+        }
+        private bool _TryGetIRibbonItem(DevExpress.XtraBars.BarItem item, out IMenuItem menuItem)
+        {
+            menuItem = null;
+            if (item == null) return false;
+            if (item.Tag is IRibbonItem iRibbonItem) { menuItem = iRibbonItem; return true; }
+
+
+            return false;
+        }
         #endregion
         #region Mergování, Unmergování, podpora pro ReMerge (Unmerge - Modify - Merge back)
         /// <summary>
@@ -1187,6 +1397,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             try
             {
+                // Top Ribbon pozastaví svoji práci:
+                topRibbon.BarManager.BeginUpdate();
+
                 // Všem Ribonům v řadě potlačíme CheckLazyContentEnabled:
                 ribbonsUp.ForEach(r => r.CheckLazyContentEnabled = false);
 
@@ -1196,7 +1409,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ribbonsUp[u].UnMergeDxRibbon();
                 }
 
-                // Nyní máme náš Ribbon UnMergovaný...
+                // Konečně máme this Ribbon osamocený (není Merge nahoru, ani neobsahuje MergedChild), provedeme tedy akci:
                 _RunLogAction(action);
 
                 // Nazpátek se bude mergovat (mergeBack) i this Ribbon do svého Parenta? Anebo jen náš Parent do jeho Parenta a náš Ribbon zůstane UnMergovaný?
@@ -1211,6 +1424,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 // Všem Ribonům v řadě nastavím CheckLazyContentEnabled = true:
                 ribbonsUp.ForEach(r => r.CheckLazyContentEnabled = true);
+
+                // Top Ribbon obnoví svoji práci:
+                topRibbon.BarManager.EndUpdate();
             }
 
             // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně:
@@ -1227,9 +1443,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _RunLogAction(Action action)
         {
             if (action == null) return;
+
+            // Nyní máme náš Ribbon UnMergovaný, ale i on v sobě může mít mergovaného Childa:
+            var childRibbon = this.MergedChildRibbon;
+            if (childRibbon != null) this.UnMergeDxRibbon();
+
             var startTime = DxComponent.LogTimeCurrent;
             action();
             DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+
+            // Do this Ribbonu vrátíme jeho Child Ribbon:
+            if (childRibbon != null) this.MergeChildRibbon(childRibbon, false);
         }
         /// <summary>
         /// Odmerguje z this Ribbonu jeho případně mergovaný obsah, nic dalšího nedělá
@@ -2012,8 +2236,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public RibbonContentMode SubItemsContentMode { get; set; }
         public IMenuItem[] SubItems { get; set; }
         public object Tag { get; set; }
-        public IMenuItemActionHandler ActionHandler { get { return __ActionHandler?.Target; } set { __ActionHandler = (value != null ? new WeakTarget<IMenuItemActionHandler>(value) : null); } }
-        private WeakTarget<IMenuItemActionHandler> __ActionHandler;
     }
     #endregion
     #region Interface IRibbonItem a IRibbonData;  Enumy RibbonItemType a RibbonPageType
@@ -2080,25 +2302,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         RibbonContentMode SubItemsContentMode { get; }
         IMenuItem[] SubItems { get; }
         object Tag { get; set; }
-        IMenuItemActionHandler ActionHandler { get; }
     }
-    /// <summary>
-    /// Předpis rozhraní pro třídu, jejíž instance bude dostávat informaci o kliknutí na daný prvek menu
-    /// </summary>
-    public interface IMenuItemActionHandler
-    {
-        /// <summary>
-        /// Uživatel kliknul na prvek menu (tlačítko, položka), aktivní prvek je v parametru.
-        /// </summary>
-        /// <param name="menuItem"></param>
-        void MenuItemAction(IMenuItem menuItem);
-        /// <summary>
-        /// Uživatel kliknul na tlačítko skupiny menu, první prvek který deklaruje danou grupu je v parametru.
-        /// Pozor při mergování více Ribbonů, pak dochází i k mergování stejnojmenných skupin na stejnojmenné stránce, a tady dostává řízení první kdo danou grupu založil!        /// </summary>
-        /// <param name="ribbonItem"></param>
-        void MenuGroupAction(IRibbonItem ribbonItem);
-    }
-
     /// <summary>
     /// Typ stránky
     /// </summary>
@@ -2223,6 +2427,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         CheckBoxToggle,
         RadioItem,
         Menu,
+        InRibbonGallery,
         SkinSetDropDown,
         SkinPaletteDropDown,
         SkinPaletteGallery
