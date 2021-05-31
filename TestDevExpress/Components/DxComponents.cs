@@ -1005,7 +1005,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (paintStyles.HasValue) checkButton.PaintStyle = paintStyles.Value;
 
             int s = (w < h ? w : h) - 10;
-            DxComponent.ApplyImage(checkButton.ImageOptions, image, resourceName, new Size(s, s), true);
+            DxComponent.ApplyImage(checkButton.ImageOptions, resourceName, image, new Size(s, s), true);
             checkButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
             checkButton.ImageOptions.ImageToTextIndent = 3;
             checkButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
@@ -1047,7 +1047,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
 
             int s = (w < h ? w : h) - 10;
-            DxComponent.ApplyImage(simpleButton.ImageOptions, image, resourceName, new Size(s, s), true);
+            DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, new Size(s, s), true);
             simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
             simpleButton.ImageOptions.ImageToTextIndent = 3;
             simpleButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
@@ -1079,7 +1079,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             miniButton.TabStop = tabStop ?? false;
             miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
 
-            DxComponent.ApplyImage(miniButton.ImageOptions, image, resourceName, new Size(w - 4, h - 4), true);
+            DxComponent.ApplyImage(miniButton.ImageOptions, resourceName, image, new Size(w - 4, h - 4), true);
 
             miniButton.Padding = new Padding(0);
             miniButton.Margin = new Padding(0);
@@ -1720,7 +1720,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private string _ImageNameFormIcon;
         #endregion
-        #region ImageResource
+        #region ImageResource, obecně aplikace obrázků do Controlů
         /// <summary>
         /// Vrací setříděný seznam DevExpress resources
         /// </summary>
@@ -1857,7 +1857,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return image;
         }
         /// <summary>
-        /// Vrátí SVG paletu [volitelně pro daný skin a pro daný stav objektu]
+        /// Vrátí SVG paletu [volitelně pro daný skin a pro daný stav objektu], defaultně pro aktuální skin
         /// </summary>
         /// <param name="skinProvider">Cílový skin, implicitně bude použit <see cref="DevExpress.LookAndFeel.UserLookAndFeel.Default"/></param>
         /// <param name="svgState">Stav objektu, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
@@ -1870,32 +1870,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
         public static DevExpress.Utils.Svg.SvgImage GetSvgImage(string key) { return Instance._GetSvgImage(key); }
-        public static void ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize); }
-        private void _ApplyImage(ImageCollectionImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null)
+        public static void ApplyImage(ImageCollectionImageOptions imageOptions, string resourceName = null, Image image = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, resourceName, image, imageSize, smallButton); }
+
+        private void _ApplyImage(ImageCollectionImageOptions imageOptions, string resourceName, Image image, Size? imageSize, bool smallButton)
         {
             if (image != null)
             {
                 imageOptions.Image = image;
             }
+
             else if (!String.IsNullOrEmpty(resourceName))
             {
                 try
                 {
-                    if (_IsImageNameSvg(resourceName))
-                    {
-                        _ImageResourceRewindStream(resourceName);
-                        imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
-                        if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
+                    if (_TryGetResourceExtension(resourceName, out string extension))
+                    {   // Interní DevExpress Resources:
+                        if (extension == "svg")
+                            _ApplyImageSvg(imageOptions, resourceName, imageSize);
+                        else
+                            _ApplyImageBmp(imageOptions, resourceName, imageSize);
                     }
                     else
-                    {
-                        imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
+                    {   // Externí zdroje:
+                        imageOptions.Image = ComponentConnector.GraphicsCache.GetResourceContent(resourceName, WinFormServices.Drawing.UserGraphicsSize.Medium);
+                        
                     }
                 }
                 catch { }
             }
+
+            if (smallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
+            {
+                buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
+            }
         }
-        public static void ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
+        private void _ApplyImageSvg(ImageCollectionImageOptions imageOptions, string resourceName, Size? imageSize)
+        {
+            _ImageResourceRewindStream(resourceName);
+            imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
+            if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
+        }
+        private void _ApplyImageBmp(ImageCollectionImageOptions imageOptions, string resourceName, Size? imageSize)
+        {
+            imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
+        }
+
+
+
+        public static void xxxApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
         private void _ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
         {
             if (image != null)
@@ -6924,14 +6946,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SetLayoutToControlDirect(emptyLayout);
 
             this.ResetLegendTextPattern();
-                    this.Series.Clear();
-                    this.Legends.Clear();
-                    this.Titles.Clear();
+            this.Series.Clear();
+            this.Legends.Clear();
+            this.Titles.Clear();
             this.AutoLayout = false;
             this.CalculatedFields.Clear();
             this.ClearCache();
             this.Diagram = null;
-                }
+        }
         /// <summary>
         /// Fyzicky vloží daný string do layoutu grafu
         /// </summary>

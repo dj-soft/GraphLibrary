@@ -17,6 +17,8 @@ namespace TestDevExpress
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            TryRun(new Action(() => System.Windows.Forms.MessageBox.Show("xxx")));
+
             try
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
@@ -38,6 +40,13 @@ namespace TestDevExpress
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Done();
             }
+        }
+
+        private static object TryRun(Delegate d)
+        {
+            d.DynamicInvoke();
+
+            return null;
         }
     }
 }

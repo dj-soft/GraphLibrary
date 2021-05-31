@@ -34,7 +34,18 @@ namespace TestDevExpress.Forms
         {
             using (ImagePickerForm form = new ImagePickerForm())
             {
-                form.ShowDialog(owner);
+                try
+                {
+                    form.ShowDialog(owner);
+                }
+                catch (Exception exc)
+                {
+                    Noris.Clients.Win.Components.DialogArgs args = new Noris.Clients.Win.Components.DialogArgs();
+                    args.Title = "Error";
+                    args.MessageText = exc.Message;
+                    args.PrepareButtons(WF.MessageBoxButtons.OK);
+                    Noris.Clients.Win.Components.DialogForm.ShowDialog(args);
+                }
             }
         }
         #region WinForm designer
