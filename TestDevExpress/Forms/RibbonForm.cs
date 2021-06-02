@@ -482,8 +482,9 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Ribbon Item Click";
             dialogArgs.MessageTextContainsHtml = true;
             dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{iMenuItem.ItemType}</b>, s textem <b>{iMenuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
-            if (iMenuItem.ParentGroup != null) dialogArgs.MessageText += $",\r\nSkupina <b>{iMenuItem.ParentGroup.GroupText}</b>";
-            if (iMenuItem.ParentGroup?.ParentPage != null) dialogArgs.MessageText += $"\r\n, stránka <b>{iMenuItem.ParentGroup.ParentPage.PageText}</b>";
+            if (iMenuItem.ParentGroup != null) dialogArgs.MessageText += $",\r\nskupina <b>{iMenuItem.ParentGroup.GroupText}</b>";
+            if (iMenuItem.ParentGroup?.ParentPage != null) dialogArgs.MessageText += $", stránka <b>{iMenuItem.ParentGroup.ParentPage.PageText}</b>";
+            if (iMenuItem.ParentGroup?.ParentPage?.Category != null) dialogArgs.MessageText += $", kategorie <b>{iMenuItem.ParentGroup.ParentPage.Category.CategoryText}</b>";
             dialogArgs.MessageText += ".";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();

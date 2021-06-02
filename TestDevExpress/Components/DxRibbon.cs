@@ -1169,11 +1169,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// event <see cref="RibbonItemClick"/>.
         /// </summary>
         /// <param name="iRibbonCategory"></param>
-        /// <param name="ownerDxRibbon"></param>
+        /// <param name="ownerDxRibbon">Ribbon, který jako první deklaroval tuto kategorii</param>
         private void _RibbonPageCategoryClick(IRibbonCategory iRibbonCategory, DxRibbonControl ownerDxRibbon = null)
         {
-            if (ownerDxRibbon != null)
-                ownerDxRibbon._RibbonPageCategoryClick(iRibbonCategory);
+            if (ownerDxRibbon != null)                                    // Nyní jsme v instanci, kde je zrovna vidět daná kategorie - ale událost máme řešit v té instanci Ribbonu...
+                ownerDxRibbon._RibbonPageCategoryClick(iRibbonCategory);  //  ... kde byla grupa definována = tam je navázaný patřičný eventhandler!
             else
             {
                 var args = new TEventArgs<IRibbonCategory>(iRibbonCategory);
@@ -1198,19 +1198,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void RibbonControl_PageGroupCaptionButtonClick(object sender, DevExpress.XtraBars.Ribbon.RibbonPageGroupEventArgs e)
         {
-            if (_TryGetIRibbonGroup(e.PageGroup, out IRibbonGroup iRibbonGroup))
-                _RibbonGroupButtonClick(iRibbonGroup);
+            if (_TryGetIRibbonGroup(e.PageGroup, out IRibbonGroup iRibbonGroup, out DxRibbonControl dxRibbon))
+                _RibbonGroupButtonClick(iRibbonGroup, dxRibbon);
         }
         /// <summary>
         /// Vyvolá reakce na kliknutí na GroupButton = tlačítko v grupě v Ribbonu:
         /// event <see cref="RibbonGroupButtonClick"/>.
         /// </summary>
         /// <param name="iRibbonGroup"></param>
-        private void _RibbonGroupButtonClick(IRibbonGroup iRibbonGroup)
+        /// <param name="ownerDxRibbon">Ribbon, který jako první deklaroval tuto kategorii</param>
+        private void _RibbonGroupButtonClick(IRibbonGroup iRibbonGroup, DxRibbonControl ownerDxRibbon = null)
         {
-            var args = new TEventArgs<IRibbonGroup>(iRibbonGroup);
-            OnRibbonGroupButtonClick(args);
-            RibbonGroupButtonClick?.Invoke(this, args);
+            if (ownerDxRibbon != null)                                    // Nyní jsme v instanci, kde je zrovna vidět daná grupa - ale událost máme řešit v té instanci Ribbonu...
+                ownerDxRibbon._RibbonGroupButtonClick(iRibbonGroup);      //  ... kde byla grupa definována = tam je navázaný patřičný eventhandler!
+            else
+            {
+                var args = new TEventArgs<IRibbonGroup>(iRibbonGroup);
+                OnRibbonGroupButtonClick(args);
+                RibbonGroupButtonClick?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Proběhne po kliknutí na GroupButton = tlačítko v grupě v Ribbonu
@@ -1229,6 +1235,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            // poznámka: tady nemusím řešit přechod z Ribbonu "ke se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
             if (_TryGetIRibbonItem(e.Item, out IMenuItem menuItem))
             {
                 if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
@@ -1301,11 +1308,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="group"></param>
         /// <param name="iRibbonGroup"></param>
+        /// <param name="definingRibbon"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonGroup(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out IRibbonGroup iRibbonGroup)
+        private bool _TryGetIRibbonGroup(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out IRibbonGroup iRibbonGroup, out DxRibbonControl definingRibbon)
         {
             iRibbonGroup = null;
+            definingRibbon = null;
             if (group == null) return false;
+            _TryGetDxRibbon(group, out definingRibbon);
             if (group.Tag is IRibbonGroup iRibbonItem) { iRibbonGroup = iRibbonItem; return true; }
             if (_TryGetIRibbonItem(group.ItemLinks, out var iMenuItem)) { iRibbonGroup = iMenuItem.ParentGroup; return (iRibbonGroup != null); }
             return false;
@@ -1415,6 +1425,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (definingRibbon != null);
         }
         /// <summary>
+        /// Metoda zkusí najít <see cref="DxRibbonControl"/>, který první přispěl ke vzniku dané grupy
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="definingRibbon"></param>
+        private bool _TryGetDxRibbon(DevExpress.XtraBars.Ribbon.RibbonPageGroup group, out DxRibbonControl definingRibbon)
+        {
+            definingRibbon = null;
+            if (group == null) return false;
+
+            // Najdu všechny BarItem v naší grupě:
+            var items = group.ItemLinks
+                         .Select(l => l.Item)
+                         .OfType<DevExpress.XtraBars.BarItem>();
+            // Najdu první DxRibbonControl, který grupu deklaroval (ono jich ale může být víc, pokud grupa je mergovaná):
+            definingRibbon = _SearchRibbonInItems(items);
+            return (definingRibbon != null);
+        }
+        /// <summary>
         /// V daných stránkách vyhledá prvky a jejich nativní Ribbon = ten, který je eviduje na svých vlastních stránkách.
         /// Hledá tedy takový (Child) mergovaný Ribbon, který svoje vlastní stránky mergoval kamsi nahoru.
         /// </summary>
@@ -1422,8 +1450,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private DxRibbonControl _SearchRibbonInPages(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages)
         {
-            var items = pages.SelectMany(p => p.Groups).SelectMany(g => g.ItemLinks).Select(l => l.Item).OfType<DevExpress.XtraBars.BarItem>().ToArray();
-            DxRibbonControl ribbon = items.Select(i => i.Manager).OfType<DevExpress.XtraBars.Ribbon.RibbonBarManager>().Select(m => m.Ribbon).OfType<DxRibbonControl>().FirstOrDefault();
+            var items = pages
+                         .SelectMany(p => p.Groups)
+                         .SelectMany(g => g.ItemLinks)
+                         .Select(l => l.Item)
+                         .OfType<DevExpress.XtraBars.BarItem>();
+            return _SearchRibbonInItems(items);
+        }
+        /// <summary>
+        /// V daných prvcích vyhledá jejich nativní Ribbon = ten, který je eviduje na svých vlastních stránkách.
+        /// Hledá tedy takový (Child) mergovaný Ribbon, který svoje vlastní stránky mergoval kamsi nahoru.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        private DxRibbonControl _SearchRibbonInItems(IEnumerable<DevExpress.XtraBars.BarItem> items)
+        {
+            var ribbon = items
+                         .Select(i => i.Manager)
+                         .OfType<DevExpress.XtraBars.Ribbon.RibbonBarManager>()
+                         .Select(m => m.Ribbon)
+                         .OfType<DxRibbonControl>()
+                         .FirstOrDefault();
             return ribbon;
         }
         #endregion
@@ -2598,6 +2645,19 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DataRibbonCategory : IRibbonCategory
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataRibbonCategory()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Category: {this.CategoryText}";
+        }
         /// <summary>
         /// ID kategorie, jednoznačné per Ribbon
         /// </summary>
