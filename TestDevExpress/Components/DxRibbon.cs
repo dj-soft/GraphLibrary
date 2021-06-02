@@ -262,46 +262,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Clear()
         { 
             var startTime = DxComponent.LogTimeCurrent;
+
+            string lastSelectedPageId = this.SelectedPageId;
             int removeItemsCount = 0;
             try
             {
                 _ClearingNow = true;
-                string lastActivePageId = this.SelectedPageId;
 
                 this.Pages.Clear();
                 this.Categories.Clear();
                 this.PageCategories.Clear();
-
-                // var itns = this.Items.Select(i => i.GetType().FullName).ToArray();
-
-                // Pokud bych dal this.Items.Clear(), tak přijdu o všechny prvky celého Ribbonu, a to i o "servisní" = RibbonSearchEditItem, RibbonExpandCollapseItem, AutoHiddenPagesMenuItem.
-                // Ale když nevyčistím Itemy, budou tady pořád strašit...
-                // Ponecháme prvky těchto typů: "DevExpress.XtraBars.RibbonSearchEditItem", "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem", "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem"
-                // Následující algoritmus NENÍ POMALÝ: smazání 700 Itemů trvá 11 milisekund.
-                // Pokud by Clear smazal i další sytémové prvky, je nutno je určit, určit jejich FullType a přidat jej do metody _IsSystemItem() !
-                int count = this.Items.Count;
-                for (int i = count - 1; i >= 0; i--)
-                {
-                    if (!_IsSystemItem(this.Items[i]))
-                    {
-                        this.Items.RemoveAt(i);
-                        removeItemsCount++;
-                    }
-                }
-
-                // var x = this.PageHeaderItemLinks.ToArray();
-
                 this.Toolbar.ItemLinks.Clear();
-
-                //this.MergedCategories.Clear();
-                //this.MergedPages.Clear();
+                this._ClearItems(ref removeItemsCount);
             }
             finally
             {
+                this.LastSelectedPageId = lastSelectedPageId;
                 _ClearingNow = false;
             }
 
             DxComponent.LogAddLineTime($" === ClearRibbon {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+        }
+        /// <summary>
+        /// Korektně smaže BarItemy z this.Items.
+        /// Ponechává tam sysstémové prvky!
+        /// </summary>
+        /// <param name="removeItemsCount"></param>
+        private void _ClearItems(ref int removeItemsCount)
+        {
+            // var itns = this.Items.Select(i => i.GetType().FullName).ToArray();
+
+            // Pokud bych dal this.Items.Clear(), tak přijdu o všechny prvky celého Ribbonu,
+            //   a to i o "servisní" = RibbonSearchEditItem, RibbonExpandCollapseItem, AutoHiddenPagesMenuItem.
+            // Ale když nevyčistím Itemy, budou tady pořád strašit...
+            // Ponecháme prvky těchto typů: "DevExpress.XtraBars.RibbonSearchEditItem", "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem", "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem"
+            // Následující algoritmus NENÍ POMALÝ: smazání 700 Itemů trvá 11 milisekund.
+            // Pokud by Clear náhodou smazal i nějaké další sytémové prvky, je nutno je určit = určit jejich FullType a přidat jej do metody _IsSystemItem() !
+            int count = this.Items.Count;
+            for (int i = count - 1; i >= 0; i--)
+            {
+                if (!_IsSystemItem(this.Items[i]))
+                {
+                    this.Items.RemoveAt(i);
+                    removeItemsCount++;
+                }
+            }
+
+            // var x = this.PageHeaderItemLinks.ToArray();
         }
         /// <summary>
         /// Vrátí true, pokud daný objekt (pochází z kolekce RibbonControl.Items) je takového typu, že se má považovat za systémový = nesmazatelný z Items
@@ -324,20 +331,62 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Smaže výhradně jednotlivé prvky z Ribbonu (Items a LazyLoadContent) a grupy prvků (Page.Groups).
         /// Ponechává naživu Pages, Categories a PageCategories.
+        /// Tím zabraňuje blikání.
         /// </summary>
         public void ClearPageContents()
         {
+            ModifyCurrentDxContent(_ClearPageContents);
+        }
+        /// <summary>
+        /// Smaže obsah (itemy a grupy) ale ponechá Pages a Categories
+        /// </summary>
+        private void _ClearPageContents()
+        {
             var startTime = DxComponent.LogTimeCurrent;
-            this.Items.Clear();
-            foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.AllPages)
+
+            foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.AllOwnPages)
+                DxRibbonPage.ClearContentPage(page);
+
+            int removeItemsCount = 0;
+            this._ClearItems(ref removeItemsCount);
+
+            DxComponent.LogAddLineTime($" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+        }
+        /// <summary>
+        /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
+        /// Dovoluje provádět výměnu obsahu Ribbonu bez blikání, procesem: 
+        /// <see cref="ClearPageContents()"/>; 
+        /// <see cref="AddPages(IEnumerable{IRibbonPage}, bool)"/>;
+        /// <see cref="RemoveVoidContainers()"/>;
+        /// <para/>
+        /// Výměnu obsahu je možno provést i pomocí <see cref="AddPages(IEnumerable{IRibbonPage}, bool)"/> s parametrem clearCurrentContent = true.
+        /// </summary>
+        public void RemoveVoidContainers()
+        {
+            ModifyCurrentDxContent(_ClearPageContents);
+        }
+        /// <summary>
+        /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
+        /// </summary>
+        private void _RemoveVoidContainers()
+        {
+            var categories = this.Categories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().ToArray();
+            foreach (var category in categories)
             {
-                page.Groups.Clear();
-                if (page is DxRibbonPage dxRibbonPage)
+                var cPages = category.Pages.Where(p => p.Groups.Count == 0).ToArray();
+                foreach (var cPage in cPages)
+                    category.Pages.Remove(cPage);
+                if (category.Pages.Count == 0)
                 {
-                    dxRibbonPage.RemoveLazyLoadInfo();
+                    int index = this.Categories.IndexOf(category.Name);
+                    if (index >= 0)
+                        this.Categories.RemoveAt(index);
                 }
             }
-            DxComponent.LogAddLineTime($" === EmptyRibbon {this.DebugName}: {DxComponent.LogTokenTimeMilisec} === ", startTime);
+
+            var nPages = this.Pages.Where(p => p.Groups.Count == 0).ToArray();
+            foreach (var nPage in nPages)
+                this.Pages.Remove(nPage);
         }
         /// <summary>
         /// Přidá dodané prvky do this ribbonu, zakládá stránky, kategorie, grupy...
@@ -346,14 +395,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tato metoda si sama dokáže zajistit invokaci GUI threadu.
         /// Pokud v době volání je aktuální Ribbon mergovaný v parent ribbonech, pak si korektně zajistí re-merge (=promítnutí nového obsahu do parent ribbonu).
         /// </summary>
-        /// <param name="iRibbonPages"></param>
-        public void AddPages(IEnumerable<IRibbonPage> iRibbonPages)
+        /// <param name="iRibbonPages">Definice obsahu</param>
+        /// <param name="clearCurrentContent">Smazat stávající obsah Ribbonu, smaže se bez bliknutí</param>
+        public void AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool clearCurrentContent = false)
         {
             this.RunInGui(() =>
             {
                 this.ModifyCurrentDxContent(() =>
                 {
+                    if (clearCurrentContent) _ClearPageContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
+                    if (clearCurrentContent) _RemoveVoidContainers();
                     CheckLazyContentCurrentPage(true);
                 });
             });
@@ -2075,20 +2127,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Definice dat pro LazyLoad content pro tuto Page. Obsahuje deklarace prvků i referenci na grupu, která LazyLoad zajistí.
         /// </summary>
         protected DxRibbonLazyLoadInfo LazyLoadInfo { get; private set; }
-
-        internal static void ClearContentPage(DevExpress.XtraBars.Ribbon.RibbonPage page)
+        /// <summary>
+        /// Smaže obsah dané stránky.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="clearUserItems">Smazat uživatelské prvky</param>
+        /// <param name="clearLazyGroup">Smazat LazyInfo</param>
+        internal static void ClearContentPage(DevExpress.XtraBars.Ribbon.RibbonPage page, bool clearUserItems = true, bool clearLazyGroup = true)
         {
             if (page is DxRibbonPage dxRibbonPage)
-                dxRibbonPage.ClearContent();
+                dxRibbonPage.ClearContent(clearUserItems, clearLazyGroup);
             else
             {
                 page.Groups.Clear();
             }
         }
+        /// <summary>
+        /// Smaže obsah this stránky: grupy i jejich Itemy i LazyInfo.
+        /// </summary>
         internal void ClearContent()
         {
             ClearContent(true, true);
         }
+        /// <summary>
+        /// Smaže obsah this stránky: grupy i jejich Itemy. Volitelně i LazyInfo.
+        /// </summary>
+        /// <param name="clearUserItems">Smazat uživatelské prvky</param>
+        /// <param name="clearLazyGroup">Smazat LazyInfo</param>
         internal void ClearContent(bool clearUserItems, bool clearLazyGroup)
         {
             if (clearUserItems)

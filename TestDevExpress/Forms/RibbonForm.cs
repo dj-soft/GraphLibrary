@@ -379,10 +379,11 @@ namespace TestDevExpress.Forms
         /// <param name="pageCountMax"></param>
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
-        public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax)
+        /// <param name="clearCurrentContent"></param>
+        public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, bool clearCurrentContent = false)
         {
             var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, CategoryName, CategoryName, CategoryColor);
-            _Ribbon.AddPages(items);
+            _Ribbon.AddPages(items, clearCurrentContent);
         }
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
@@ -408,7 +409,7 @@ namespace TestDevExpress.Forms
         }
         private void _RunAdd36Groups(object sender, EventArgs args)
         {
-            FillRibbon(3, 6, 2, 5);
+            FillRibbon(3, 6, 2, 5, true);
         }
         private void _RunFinal(object sender, EventArgs args) 
         {
