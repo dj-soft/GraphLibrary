@@ -8,6 +8,9 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
+    /// <summary>
+    /// Formukář pro testy Ribbonů
+    /// </summary>
     public class RibbonForm : DxRibbonForm
     {
         #region Konstruktor a proměnné
@@ -139,20 +142,33 @@ namespace TestDevExpress.Forms
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
 
-            List<IRibbonItem> items = new List<IRibbonItem>();
+            List<IRibbonPage> pages = new List<IRibbonPage>();
+            DataRibbonPage page;
+            DataRibbonGroup group;
 
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown });
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "design", GroupText = "DESIGN", ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
+            page = new DataRibbonPage() { PageId = "DX", PageText = "DevExpress" };
+            pages.Add(page);
 
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ToolTip = "Otevře nabídku systémových ikon", ItemImage = imgZoom });
-            items.Add(new RibbonItem() { PageId = "DX", PageText = "DevExpress", GroupId = "params", GroupText = "RIBBON TEST", ItemId = "Dx.Test.LogClear", ItemText = "Clear log", ToolTip = "Smaže obsah logu vpravo", ItemImage = imgLogClear });
+            group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown });
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
 
-            items.Add(new RibbonItem() { PageId = "HELP", PageText = "Nápověda", GroupId = "help", GroupText = "NÁPOVĚDA", ItemId = "Help.Help.Show", ItemText = "Nápovědda", ToolTip = "Zobrazí okno s nápovědou", ItemImage = imgInfo });
+            group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ToolTip = "Otevře nabídku systémových ikon", ItemImage = imgZoom });
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.LogClear", ItemText = "Clear log", ToolTip = "Smaže obsah logu vpravo", ItemImage = imgLogClear });
+
+            page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda" };
+            pages.Add(page);
+            group = new DataRibbonGroup() { GroupId = "help", GroupText = "NÁPOVĚDA" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataMenuItem() { ItemId = "Help.Help.Show", ItemText = "Nápovědda", ToolTip = "Zobrazí okno s nápovědou", ItemImage = imgInfo });
 
             this._DxRibbonControl.Clear();
             this._DxRibbonControl.UseLazyContentCreate = this.UseLazyLoad;
-            this._DxRibbonControl.AddItems(items);
+            this._DxRibbonControl.AddPages(pages);
         }
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
         {
@@ -202,8 +218,9 @@ namespace TestDevExpress.Forms
         bool _LogContainChanges;
         #endregion
     }
+    #region class RibbonTestPanel : Testovací panel s Ribbonem a tlačítky pro mergování
     /// <summary>
-    /// Testovací panel
+    /// Testovací panel s Ribbonem a tlačítky pro mergování
     /// </summary>
     public class RibbonTestPanel : DxPanelControl
     {
@@ -349,16 +366,24 @@ namespace TestDevExpress.Forms
         /// </summary>
         public bool UseLazyLoad { get { return this._Ribbon.UseLazyContentCreate; } set { this._Ribbon.UseLazyContentCreate = value; } }
         /// <summary>
-        /// Naplní Ribbon daným počtem grup
+        /// Naplní Ribbon nějakým počtem stránek a grup
         /// </summary>
-        /// <param name="groups"></param>
-        public void FillRibbon(int groups = 30)
+        public void FillRibbon()
         {
-            var items = DxRibbonSample.CreateItems(groups, CategoryName, CategoryName, CategoryColor);
-            _Ribbon.AddItems(items);
+            FillRibbon(3, 6, 2, 3);
         }
-
-     
+        /// <summary>
+        /// Naplní Ribbon daným počtem stránek a grup
+        /// </summary>
+        /// <param name="pageCountMin"></param>
+        /// <param name="pageCountMax"></param>
+        /// <param name="groupCountMin"></param>
+        /// <param name="groupCountMax"></param>
+        public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax)
+        {
+            var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, CategoryName, CategoryName, CategoryColor);
+            _Ribbon.AddPages(items);
+        }
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
         // private DxSimpleButton _ButtonEmpty;
@@ -379,11 +404,11 @@ namespace TestDevExpress.Forms
         }
         private void _RunAdd4Groups(object sender, EventArgs args) 
         {
-            FillRibbon(4);
+            FillRibbon(1, 2, 2, 3);
         }
         private void _RunAdd36Groups(object sender, EventArgs args)
         {
-            FillRibbon(36);
+            FillRibbon(3, 6, 2, 5);
         }
         private void _RunFinal(object sender, EventArgs args) 
         {
@@ -407,9 +432,7 @@ namespace TestDevExpress.Forms
             this._ButtonUnMerge.Checked = _IsMerged;       // Takže nyní dáme do buttonu opačnou hodnotu, logika DevExpress ji otočí:
             this._ButtonMerge.Checked = _IsMerged;         // V druhém buttonu se hodnota neotočí (tam jsme neklikli), dáme tam tedy hodnotu požadovanou
         }
-
-
-        private void _Ribbon_PageOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
+        private void _Ribbon_PageOnDemandLoad(object sender, TEventArgs<IRibbonPage> e)
         {
             ThreadManager.AddAction(_LoadItemsFromServer, e.Item);
         }
@@ -417,57 +440,57 @@ namespace TestDevExpress.Forms
         {
             System.Threading.Thread.Sleep(850);
 
-            IRibbonItem ribbonItem = args[0] as IRibbonItem;
-            int pageIndex = DxRibbonSample.FindPageIndex(ribbonItem.PageText);
-            var items = DxRibbonSample.CreateItems(2, CategoryName, CategoryName, CategoryColor, pageIndex);
-            this._Ribbon.ReFillPageItems(items);
+            IRibbonPage ribbonPage = args[0] as IRibbonPage;
+            int pageIndex = DxRibbonSample.FindPageIndex(ribbonPage.PageText);
+            var pages = DxRibbonSample.CreatePages(1, 1, 4, 8, CategoryName, CategoryName, CategoryColor, pageIndex);
+            this._Ribbon.ReFillPages(pages);
         }
         private void _Ribbon_RibbonApplicationButtonClick(object sender, EventArgs e)
         {
         }
-   
-        private void _Ribbon_RibbonPageCategoryClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _Ribbon_RibbonPageCategoryClick(object sender, TEventArgs<IRibbonCategory> e)
         {
-            IRibbonItem ribbonItem = e.Item;
+            IRibbonCategory ribbonCategory = e.Item;
 
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Category Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na záhlaví kategorie <b>{ribbonItem.CategoryId}</b>, s textem <b>{ribbonItem.CategoryText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
+            dialogArgs.MessageText = $"Uživatel kliknul na záhlaví kategorie <b>{ribbonCategory.CategoryId}</b>, s textem <b>{ribbonCategory.CategoryText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
-        private void _Ribbon_RibbonGroupButtonClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _Ribbon_RibbonGroupButtonClick(object sender, TEventArgs<IRibbonGroup> e)
         {
-            IRibbonItem ribbonItem = e.Item;
+            IRibbonGroup ribbonGroup = e.Item;
 
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Group Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na tlačítko skupiny <b>{ribbonItem.GroupId}</b>, s textem <b>{ribbonItem.GroupText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
+            dialogArgs.MessageText = $"Uživatel kliknul na tlačítko skupiny <b>{ribbonGroup.GroupId}</b>, s textem <b>{ribbonGroup.GroupText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>.";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
         private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
         {
-            IMenuItem menuItem = e.Item;
+            IMenuItem iMenuItem = e.Item;
 
-            if (menuItem.ItemType == RibbonItemType.Menu) return;
+            if (iMenuItem.ItemType == RibbonItemType.Menu) return;
 
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Item Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{menuItem.ItemType}</b>, s textem <b>{menuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
-            if (menuItem is IRibbonItem ribbonItem)
-                dialogArgs.MessageText += $"\r\n, stránka <b>{ribbonItem.PageText}</b>, skupina <b>{ribbonItem.GroupText}</b>";
+            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{iMenuItem.ItemType}</b>, s textem <b>{iMenuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
+            if (iMenuItem.ParentGroup != null) dialogArgs.MessageText += $",\r\nSkupina <b>{iMenuItem.ParentGroup.GroupText}</b>";
+            if (iMenuItem.ParentGroup?.ParentPage != null) dialogArgs.MessageText += $"\r\n, stránka <b>{iMenuItem.ParentGroup.ParentPage.PageText}</b>";
             dialogArgs.MessageText += ".";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
     }
+    #endregion
     #region RibbonSample : testovací zdroj dat pro Ribbon
     /// <summary>
     /// RibbonSample : testovací zdroj dat pro Ribbon
@@ -484,185 +507,289 @@ namespace TestDevExpress.Forms
             if (String.IsNullOrEmpty(pageText)) return -1;
             return PageNames.ToList().FindIndex(p => String.Equals(p, pageText));
         }
-        public static List<IRibbonItem> CreateItems(int groupCount, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
+        /// <summary>
+        /// Metoda vytvoří soupis stránek s obsah pro ribbon
+        /// </summary>
+        /// <param name="pageCountMin"></param>
+        /// <param name="pageCountMax"></param>
+        /// <param name="groupCountMin"></param>
+        /// <param name="groupCountMax"></param>
+        /// <param name="categoryId"></param>
+        /// <param name="categoryText"></param>
+        /// <param name="categoryColor"></param>
+        /// <param name="pageIndex"></param>
+        /// <returns></returns>
+        public static List<IRibbonPage> CreatePages(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
-            List<IRibbonItem> items = new List<IRibbonItem>();
-            _AddItems(items, groupCount, pageIndex, categoryId, categoryText, categoryColor);
-            return items;
+            List<IRibbonPage> pages = new List<IRibbonPage>();
+            _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, categoryId, categoryText, categoryColor);
+            return pages;
         }
-        public static void CreateItemsTo(List<IRibbonItem> items, int groupCount, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
+        /// <summary>
+        /// Metoda vytvoří soupis stránek s obsahem pro ribbon
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="pageCountMin"></param>
+        /// <param name="pageCountMax"></param>
+        /// <param name="groupCountMin"></param>
+        /// <param name="groupCountMax"></param>
+        /// <param name="categoryId"></param>
+        /// <param name="categoryText"></param>
+        /// <param name="categoryColor"></param>
+        /// <param name="pageIndex"></param>
+        public static void CreatePagesTo(List<IRibbonPage> pages, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
-            _AddItems(items, groupCount, pageIndex, categoryId, categoryText, categoryColor);
+            _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, categoryId, categoryText, categoryColor);
         }
-        private static void _AddItems(List<IRibbonItem> items, int groupCount, int? pageIndex, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
+        /// <summary>
+        /// Do pole přidá stránky
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="pageCountMin"></param>
+        /// <param name="pageCountMax"></param>
+        /// <param name="groupCountMin"></param>
+        /// <param name="groupCountMax"></param>
+        /// <param name="pageIndex"></param>
+        /// <param name="categoryId"></param>
+        /// <param name="categoryText"></param>
+        /// <param name="categoryColor"></param>
+        private static void _AddPages(List<IRibbonPage> pages, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, int? pageIndex, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
         {
-            _RibbonItemCount = 0;
+            var startTime = DxComponent.LogTimeCurrent;
             if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
-            for (int g = 0; g < groupCount; g++)
+            _RibbonItemCount = 0;
+
+            int pc = Rand.Next(pageCountMin, pageCountMax + 1);
+            for (int p = 0; p < pc; p++)
             {
-                int count = Rand.Next(3, 7);
-                _AddGroups(items, count, pageIndex, categoryId, categoryText, categoryColor.Value);
+                DataRibbonPage page = _GetPage(pageIndex, categoryId, categoryText, categoryColor);
+                pages.Add(page);
+
+                // Pokud NENÍ explicitně daná stránka (pageIndex je null), a my jsme náhodně určili stránku v režimu OnDemandLoad:
+                //  Pak do této stránky nebudu dávat nyní žádný viditelný obsah (protože je OnDemand!),
+                //  ale jen zajistím, že seznam bude obsahovat právě jeden záznam pro tuto stránku s prvkem typu None:
+                bool isFirstOnDemand = (!pageIndex.HasValue && (page.PageContentMode == RibbonContentMode.OnDemandLoadOnce || page.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime));
+                if (isFirstOnDemand) continue;
+
+                _AddGroups(page, groupCountMin, groupCountMax);
+            }
+
+            DxComponent.LogAddLineTime($"Vygenerováno {_RibbonItemCount} prvků v čase {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Do stránky přidá grupy
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="groupCountMin"></param>
+        /// <param name="groupCountMax"></param>
+        private static void _AddGroups(DataRibbonPage page, int groupCountMin, int groupCountMax)
+        {
+            int gc = Rand.Next(groupCountMin, groupCountMax + 1);
+            for (int g = 0; g < gc; g++)
+            {
+                DataRibbonGroup group = _GetGroup(page.PageId);
+                page.Groups.Add(group);
+
+                _AddItems(group, 1, 6);
             }
         }
-        private static void _AddGroups(List<IRibbonItem> items, int count, int? pageIndex, string categoryId, string categoryText, System.Drawing.Color categoryColor)
+        /// <summary>
+        /// Do grupy přidá prvky
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="itemCountMin"></param>
+        /// <param name="itemCountMax"></param>
+        private static void _AddItems(DataRibbonGroup group, int itemCountMin, int itemCountMax)
         {
-            int pageCount = PageNames.Length;
-            int page = pageIndex ?? Rand.Next(pageCount);
-            if (page < 0 || page >= pageCount) throw new ArgumentException($"Požadovaný index stránky {page} je mimo rozsah 0 až {pageCount}");
-            int pageOrder = page + 1;
-            string pageId = "Page" + page;                      // PageId je vždy stejné pokud je stejný text PageText (obsahuje index textu Pages)
-            string pageText = PageNames[page];
-            RibbonContentMode contentMode = (pageText == "ON.DEMAND" ? RibbonContentMode.OnDemandLoadOnce:
+            bool containsRadioGroup = false;
+            int remainingRadioCount = 0;
+            bool forceFirstInGroup = false;
+            int ic = Rand.Next(itemCountMin, itemCountMax + 1);
+            for (int i = 0; i < ic; i++)
+            {
+                DataMenuItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup);
+                group.Items.Add(item);
+                if (remainingRadioCount > 0 && i == (ic - 1))   // Dokud zrovna generuji RadioGrupu (mám remainingRadioCount kladné) a blížím se ke konci počtu našich prvků,
+                    ic++;                                       //   pak přidám ještě další prvek, abych RadioGrupu dotáhl do konce.
+            }
+        }
+        /// <summary>
+        /// Pro daný titulek stránky určí, zda jde nebo nejde o kategorii, a vrací null nebo instanci kategorie
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <param name="categoryId"></param>
+        /// <param name="categoryText"></param>
+        /// <param name="categoryColor"></param>
+        /// <returns></returns>
+        private static DataRibbonCategory _GetCategory(string pageText, string categoryId, string categoryText, System.Drawing.Color? categoryColor)
+        {
+            bool isCategory = (pageText == "VZTAHY" || pageText == "MODIFIKACE");
+            if (!isCategory) return null;
+
+            if (String.IsNullOrEmpty(categoryId)) categoryId = "Extend1";
+            if (String.IsNullOrEmpty(categoryText)) categoryText = "DALŠÍ VOLBY";
+
+            return new DataRibbonCategory()
+            {
+                CategoryId = categoryId,
+                CategoryText = categoryText,
+                CategoryColor = categoryColor ?? System.Drawing.Color.PaleVioletRed,
+                CategoryVisible = true
+            };
+        }
+        /// <summary>
+        /// Vytvoří a vrátí stránku Ribbonu, podle potřeby ji zařadí do patřičné kategorie. Bez Groups.
+        /// </summary>
+        /// <param name="pageIndex"></param>
+        /// <param name="categoryId"></param>
+        /// <param name="categoryText"></param>
+        /// <param name="categoryColor"></param>
+        /// <returns></returns>
+        private static DataRibbonPage _GetPage(int? pageIndex, string categoryId, string categoryText, System.Drawing.Color? categoryColor)
+        {
+            int pageTotal = PageNames.Length;
+            int pi = pageIndex ?? Rand.Next(pageTotal);
+            if (pi < 0 || pi >= pageTotal) throw new ArgumentException($"Požadovaný index stránky {pi} je mimo rozsah 0 až {pageTotal}");
+
+            string pageText = PageNames[pi];
+            IRibbonCategory category = _GetCategory(pageText, categoryId, categoryText, categoryColor);
+            RibbonContentMode contentMode = (pageText == "ON.DEMAND" ? RibbonContentMode.OnDemandLoadOnce :
                                             (pageText == "RANDOM" ? RibbonContentMode.OnDemandLoadEveryTime : RibbonContentMode.Static));
 
-            // Pokud NENÍ explicitně daná stránka (pageIndex je null), a my jsme náhodně určili stránku v režimu OnDemandLoad:
-            //  Pak do této stránky nebdu dávat nyní žádný viditelný obsah (protože je OnDemand!),
-            //  ale jen zajistím, že seznam bude obsahovat právě jeden záznam pro tuto stránku s prvkem typu None:
-            if (!pageIndex.HasValue && (contentMode == RibbonContentMode.OnDemandLoadOnce || contentMode == RibbonContentMode.OnDemandLoadEveryTime))
+            return new DataRibbonPage()
             {
-                _AddOneItemNone(items, categoryId, categoryText, categoryColor, pageId, pageText, pageOrder, contentMode);
-                return;
-            }
-
-            int group = Rand.Next(GroupNames.Length);
-            string groupId = pageId + "." + "Group" + group;    // GroupId je shodné pro grupy konkrétního názvu na shodné stránce = pro Mergování!
-            string groupText = GroupNames[group];
-            RibbonItemStyles ribbonStyle = RibbonItemStyles.All;
-            _AddItems(items, categoryId, categoryText, categoryColor, pageId, pageText, pageOrder, contentMode, groupId, groupText, ribbonStyle, count);
-        }
-        private static void _AddOneItemNone(List<IRibbonItem> items, string categoryId, string categoryText, System.Drawing.Color categoryColor, string pageId, string pageText, int pageOrder, RibbonContentMode contentMode)
-        {
-            if (items.Exists(i => i.PageId == pageId)) return;  // Máme zajistit existenci jednoho prvku, a ten tam je!
-
-            bool isCategory = (pageText == "VZTAHY" || pageText == "MODIFIKACE");
-            if (String.IsNullOrEmpty(categoryId)) categoryId = "Extend1";
-            if (String.IsNullOrEmpty(categoryText)) categoryText = "DALŠÍ VOLBY";
-            bool categoryVisible = (isCategory ? true : false);
-
-            RibbonItem item = new RibbonItem()
-            {
-                CategoryId = (isCategory ? categoryId : null),
-                CategoryText = (isCategory ? categoryText : null),
-                CategoryColor = categoryColor,
-                CategoryVisible = categoryVisible,
-                PageId = pageId,
+                Category = category,
+                PageId = "Page" + pi,
                 PageText = pageText,
-                PageOrder = pageOrder,
-                PageType = RibbonPageType.Default,
+                PageOrder = pi + 1,
                 PageContentMode = contentMode,
-                ItemId = "Item" + (++_RibbonItemId),
-                ItemType = RibbonItemType.None
+                PageType = RibbonPageType.Default
             };
-            _RibbonItemCount++;
-
-            items.Add(item);
         }
-        private static void _AddItems(List<IRibbonItem> items, string categoryId, string categoryText, System.Drawing.Color categoryColor, string pageId, string pageText, int pageOrder, RibbonContentMode contentMode,
-            string groupId, string groupText, RibbonItemStyles ribbonStyle, int count)
+        /// <summary>
+        /// Vytvoří a vrátí grupu Ribbonu (bez Items)
+        /// </summary>
+        /// <param name="pageId"></param>
+        /// <returns></returns>
+        private static DataRibbonGroup _GetGroup(string pageId)
         {
-            bool isCategory = (pageText == "VZTAHY" || pageText == "MODIFIKACE");
-            if (String.IsNullOrEmpty(categoryId)) categoryId = "Extend1";
-            if (String.IsNullOrEmpty(categoryText)) categoryText = "DALŠÍ VOLBY";
-            bool categoryVisible = (isCategory ? true : false);
+            int groupTotal = GroupNames.Length;
+            int gi = Rand.Next(groupTotal);
+            string groupId = pageId + "." + "Group" + gi;    // GroupId je shodné pro grupy konkrétního názvu na shodné stránce = pro Mergování!
+            string groupText = GroupNames[gi];
             bool groupButtonVisible = (groupText == "Rozšířené" || groupText == "Údržba" || groupText == "Oblíbené" || groupText == "Systém" || groupText == "Systém");
-            // Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky;Další vlastnosti
-            int radioCount = 0;
-            bool hasRadio = false;
-            bool nextIsFirst = false;
-            for (int w = 0; (w < count || radioCount > 0); w++)
+
+            return new DataRibbonGroup()
             {
-                string itemText = Random.GetWord(true);
-                string itemImageName = GetRandomImageName();
-                string toolTip = Random.GetSentence(Rand.Next(5, 16));
-                string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
-                int? inToolbar = ((Rand.Next(100) < 3) ? (int?)10 : null);
-                if (inToolbar.HasValue)
-                { }
-
-                bool isFirst = (radioCount == 0 ? nextIsFirst || (Rand.Next(10) < 3) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
-                RibbonItem item = new RibbonItem()
-                {
-                    CategoryId = (isCategory ? categoryId : null),
-                    CategoryText = (isCategory? categoryText : null),
-                    CategoryColor = categoryColor,
-                    CategoryVisible = categoryVisible,
-                    PageId = pageId,
-                    PageText = pageText,
-                    PageOrder = pageOrder,
-                    PageType = RibbonPageType.Default,
-                    PageContentMode = contentMode,
-                    GroupId = groupId,
-                    GroupText = groupText,
-                    GroupButtonVisible = groupButtonVisible,
-                    ItemId = "Item" + (++_RibbonItemId),
-                    ItemText = itemText,
-                    ItemImage = itemImageName,
-                    ItemIsFirstInGroup = isFirst,
-                    RibbonStyle = ribbonStyle,
-                    ItemToolbarOrder = inToolbar,
-                    ToolTip = toolTip,
-                    ToolTipTitle = toolTipTitle,
-                    ToolTipIcon = "help_hint_48_"
-                };
-                _RibbonItemCount++;
-
-                if (radioCount > 0)
-                {
-                    item.ItemType = RibbonItemType.RadioItem;
-                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
-                    radioCount--;
-                    if (radioCount == 0) nextIsFirst = true;
-                }
-                else
-                {
-                    RibbonItemType itemType = GetRandomItemType();
-                    if (itemType == RibbonItemType.RadioItem && hasRadio)
-                        itemType = RibbonItemType.CheckBoxStandard;
-
-                    if (itemType == RibbonItemType.RadioItem)
-                    {
-                        item.ItemIsFirstInGroup = true;              // RadioItem si zahajuje svoji sub-grupu
-                        radioCount = Rand.Next(3, 6);                // RadioItemů do jedné grupy dám 3 - 5 za sebou
-                    }
-
-                    item.ItemType = itemType;
-
-                    if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
-                    {
-                        if (Rand.Next(100) < 15) item.ItemImage = null;
-                        if (Rand.Next(100) < 50) item.ItemIsChecked = true;
-                    }
-
-                    if (Rand.Next(10) < 3)
-                        item.RibbonStyle = RibbonItemStyles.SmallWithText;
-
-                    if (NeedSubItem(itemType, 0))
-                        item.SubItems = _CreateSubItems(itemType, 13);
-
-                    nextIsFirst = false;
-                }
-                item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
-
-                items.Add(item);
-            }
+                GroupId = groupId,
+                GroupText = groupText,
+                GroupButtonVisible = groupButtonVisible
+            };
         }
-        protected static IMenuItem[] _CreateSubItems(RibbonItemType itemType, int maxCount, int level = 0)
+        /// <summary>
+        /// Vytvoří a vrátí prvek Ribbonu. Prvek podle potřeby obsahuje i SubItems.
+        /// Další parametry řídí tvorbu RadioGrupy.
+        /// </summary>
+        /// <param name="groupId"></param>
+        /// <param name="containsRadioGroup"></param>
+        /// <param name="remainingRadioCount"></param>
+        /// <param name="forceFirstInGroup"></param>
+        /// <returns></returns>
+        private static DataMenuItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup)
+        {
+            _RibbonItemCount++;
+            string itemId = "Item" + (++_RibbonItemId);
+            string itemText = Random.GetWord(true);
+            string itemImageName = GetRandomImageName();
+            string toolTip = Random.GetSentence(Rand.Next(5, 16));
+            string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
+            bool isFirst = (remainingRadioCount == 0 ? (forceFirstInGroup || (Rand.Next(10) < 3)) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
+            int? toolbarOrder = ((Rand.Next(100) < 3) ? (int?)Rand.Next(1, 101) : null);
+
+            DataMenuItem item = new DataMenuItem()
+            {
+                ItemId = itemId,
+                ItemText = itemText,
+                ItemImage = itemImageName,
+                RibbonStyle = RibbonItemStyles.All,
+                ToolTip = toolTip,
+                ToolTipTitle = toolTipTitle,
+                ToolTipIcon = "help_hint_48_"
+            };
+
+            if (remainingRadioCount > 0)
+            {   // Pokračujeme v přípravě skupiny RadioButtonů:
+                item.ItemType = RibbonItemType.RadioItem;
+                item.RibbonStyle = RibbonItemStyles.SmallWithText;
+                isFirst = false;
+                toolbarOrder = null;                                      // RadioButtony nedávám do Toolbaru
+                remainingRadioCount--;
+                if (remainingRadioCount == 0) forceFirstInGroup = true;   // Dokončili jsme počet RadioButtonů: příští prvek bude ForceFirst!
+            }
+            else
+            {
+                RibbonItemType itemType = GetRandomItemType();
+                if (itemType == RibbonItemType.RadioItem && containsRadioGroup) 
+                    itemType = RibbonItemType.CheckBoxStandard;           // V jedné grupě Ribbonu bude nanejvýše jedna RadioButton grupa
+
+                item.ItemType = itemType;
+
+                if (itemType == RibbonItemType.RadioItem)                 // Zde začíná RadioButton grupa
+                {
+                    isFirst = true;                                       // První RadioItem si zahajuje svoji sub-grupu
+                    toolbarOrder = null;                                  // RadioButtony nedávám do Toolbaru
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
+                    remainingRadioCount = Rand.Next(3, 6);                // RadioItemů do jedné grupy dám 3 - 5 za sebou
+                    containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
+                }
+
+                if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
+                {
+                    if (Rand.Next(100) < 15) item.ItemImage = null;
+                    if (Rand.Next(100) < 50) item.ItemIsChecked = true;
+                }
+
+                if (Rand.Next(10) < 3)
+                {
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
+                }
+
+                if (NeedSubItem(itemType))
+                    item.SubItems = _CreateSubItems(itemType, 4, 15);
+            }
+
+            item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
+            item.ItemIsFirstInGroup = isFirst;
+            item.ItemToolbarOrder = toolbarOrder;
+
+            return item;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí pole SubItems, možná i rekurzivně
+        /// </summary>
+        /// <param name="itemType"></param>
+        /// <param name="subItemsCountMin"></param>
+        /// <param name="subItemsCountMax"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        protected static List<IMenuItem> _CreateSubItems(RibbonItemType itemType, int subItemsCountMin, int subItemsCountMax, int level = 0)
         {
             List<IMenuItem> subItems = new List<IMenuItem>();
 
-            if (maxCount < 5) maxCount = 5;
-            int count = Rand.Next(3, maxCount);
-            for (int i = 0; i < count; i++)
+            int sc = Rand.Next(subItemsCountMin, subItemsCountMax + 1);
+            for (int i = 0; i < sc; i++)
             {
+                _RibbonItemCount++;
+                string itemId = "Item" + (++_RibbonItemId);
                 string itemText = Random.GetWord(true);
                 string itemImage = GetRandomImageName(33);
                 string toolTip = Random.GetSentence(Rand.Next(5, 16));
                 string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
                 bool isFirst = (Rand.Next(10) < 3);
 
-                RibbonItem item = new RibbonItem()
+                DataMenuItem item = new DataMenuItem()
                 {
-                    ItemId = "Item" + (++_RibbonItemId),
+                    ItemId = itemId,
                     ItemText = itemText,
                     ItemIsFirstInGroup = isFirst,
                     RibbonStyle = RibbonItemStyles.Default,
@@ -671,15 +798,14 @@ namespace TestDevExpress.Forms
                     ToolTipIcon = "help_hint_48_",
                     ItemImage = itemImage
                 };
-                _RibbonItemCount++;
-
-                item.ItemType = (itemType == RibbonItemType.InRibbonGallery ? RibbonItemType.Button : GetRandomItemType());
+          
+                item.ItemType = (itemType == RibbonItemType.InRibbonGallery ? RibbonItemType.Button : GetRandomSubItemType());
 
                 int nextLevel = level + 1;
                 if (NeedSubItem(item.ItemType, nextLevel))
                 {
                     if (level <= 4)
-                        item.SubItems = _CreateSubItems(itemType, 7, nextLevel);
+                        item.SubItems = _CreateSubItems(itemType, 3, 7, nextLevel);
                     else
                         item.ItemType = RibbonItemType.Button;
                 }
@@ -695,8 +821,12 @@ namespace TestDevExpress.Forms
                 subItems.Add(item);
             }
 
-            return subItems.ToArray();
+            return subItems;
         }
+        /// <summary>
+        /// Vrátí náhodný typ prvku v Ribbonu
+        /// </summary>
+        /// <returns></returns>
         public static RibbonItemType GetRandomItemType()
         {
             int rand = Rand.Next(100);
@@ -710,29 +840,64 @@ namespace TestDevExpress.Forms
             if (rand < 100) return RibbonItemType.Menu;
             return RibbonItemType.Button;
         }
-        public static bool NeedSubItem(RibbonItemType itemType, int level)
+        /// <summary>
+        /// Vrátí náhodný typ prvku v SubItems
+        /// </summary>
+        /// <returns></returns>
+        public static RibbonItemType GetRandomSubItemType()
+        {
+            int rand = Rand.Next(100);
+            if (rand < 60) return RibbonItemType.Button;
+            if (rand < 67) return RibbonItemType.CheckBoxStandard;
+            if (rand < 74) return RibbonItemType.CheckBoxToggle;
+            if (rand < 90) return RibbonItemType.SplitButton;
+            if (rand < 100) return RibbonItemType.Menu;
+            return RibbonItemType.Button;
+        }
+        /// <summary>
+        /// Potřebuje daný typ nějaké SubItems?
+        /// </summary>
+        /// <param name="itemType"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        public static bool NeedSubItem(RibbonItemType itemType, int level = 0)
         {
             if (itemType == RibbonItemType.InRibbonGallery && level == 0) return true;
             bool canSubItem = (itemType == RibbonItemType.ButtonGroup || itemType == RibbonItemType.SplitButton || itemType == RibbonItemType.Menu);
             if (canSubItem && (level == 0 || Rand.Next(100) < 40)) return true;
             return false;
         }
+        /// <summary>
+        /// Vrátí jméno náhodného obrázku
+        /// </summary>
+        /// <param name="randomEmpty"></param>
+        /// <returns></returns>
         public static string GetRandomImageName(int randomEmpty = 0)
         {
             if ((randomEmpty > 0) && (Rand.Next(100) < randomEmpty)) return null;
             return ResourceImages[Rand.Next(ResourceImages.Length)];
         }
-        public static System.Random Rand { get { if (_Rand is null) _Rand = new System.Random(); return _Rand; } }
-        private static System.Random _Rand;
+        /// <summary>
+        /// Konstantní pole se jmény stránek
+        /// </summary>
         public static string[] PageNames { get { if (_PageNames is null) _PageNames = "ASTROLOGIE;PŘÍRODA;TECHNIKA;VOLNÝ ČAS;ON.DEMAND;RANDOM;LITERATURA;VZTAHY;MODIFIKACE;WIKI".Split(';'); return _PageNames; } }
         private static string[] _PageNames;
+        /// <summary>
+        /// Konstantní pole se jmény skupin
+        /// </summary>
         public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky;Další vlastnosti".Split(';'); return _GroupNames; } }
         private static string[] _GroupNames;
+        /// <summary>
+        /// Konstantní pole se jmény obrázků
+        /// </summary>
         public static string[] ResourceImages { get { if (_ResourceImages is null) _ResourceImages = _GetResourceImages(); return _ResourceImages; } }
         private static string[] _ResourceImages;
+        /// <summary>
+        /// Vrací seznam Images v Properties.Resources
+        /// </summary>
+        /// <returns></returns>
         private static string[] _GetResourceImages()
         {
-            // TestDevExpress.Properties.Resources.address_book_new
             List<string> names = new List<string>();
             var properties = typeof(TestDevExpress.Properties.Resources).GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
             foreach (var property in properties)
@@ -745,6 +910,11 @@ namespace TestDevExpress.Forms
         }
         private static int _RibbonItemId = 0;
         private static int _RibbonItemCount = 0;
+        /// <summary>
+        /// Random
+        /// </summary>
+        public static System.Random Rand { get { if (_Rand is null) _Rand = new System.Random(); return _Rand; } }
+        private static System.Random _Rand;
     }
     #endregion
 }

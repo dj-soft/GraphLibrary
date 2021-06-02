@@ -1439,6 +1439,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="line"></param>
         public static void LogAddLine(string line) { Instance._LogAddLine(line, false); }
         /// <summary>
+        /// Poslední řádek v logu
+        /// </summary>
+        public static string LogLastLine { get { return Instance._LogLastLine; } }
+        /// <summary>
         /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long)"/>, za který se dosaví uplynulý čas v sekundách
         /// </summary>
         public static string LogTokenTimeSec { get { return "{SEC}"; } }
@@ -1514,7 +1518,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_LogActive) return;
 
             lock (_LogSB)
+            {
                 _LogSB.Clear();
+                _LogLastLine = null;
+            }
+
             RunLogTextChanged();
         }
         /// <summary>
@@ -1590,10 +1598,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (forceEmptyRow || ((nowTick - _LogLastWriteTicks) > _LogTimeSpanForEmptyRow))
                     _LogSB.AppendLine();
                 _LogSB.AppendLine(logLine);
+                _LogLastLine = logLine;
             }
             _LogLastWriteTicks = _LogWatch.ElapsedTicks;
             RunLogTextChanged();
         }
+        /// <summary>
+        /// Poslední řádek v logu
+        /// </summary>
+        private string _LogLastLine = null;
         /// <summary>
         /// Vrací počet mikrosekund od času <paramref name="start"/> do <paramref name="stop"/>
         /// </summary>

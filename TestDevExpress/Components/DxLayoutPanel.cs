@@ -3439,7 +3439,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void RefreshButton(DxSimpleButton button, Size buttonSize, string imageName, Size imageSize, string toolTip)
         {
             button.Size = buttonSize;
-            DxComponent.ApplyImage(button.ImageOptions, null, imageName, imageSize, true);
+            DxComponent.ApplyImage(button.ImageOptions, imageName, null, imageSize, true);
             button.SetToolTip(toolTip);
         }
         /// <summary>

@@ -22,7 +22,6 @@ namespace TestDevExpress.Forms
         }
         protected override void AsolInitializeControls()
         {
-            InitSkinControls();
             InitFormControls();
         }
         #region Ribbon
@@ -32,149 +31,34 @@ namespace TestDevExpress.Forms
         }
         protected void AsolFillRibbonData()
         {
-            List<IRibbonItem> ribbonItems = new List<IRibbonItem>();
-            AddBasicItemsToRibbon(ribbonItems);
-            RibbonSample.CreateItemsTo(ribbonItems, 8);
-            AsolRibbon.AddItems(ribbonItems);
+            List<IRibbonPage> iRibbonPages = new List<IRibbonPage>();
+            AddBasicItemsToRibbon(iRibbonPages);
+            DxRibbonSample.CreatePagesTo(iRibbonPages, 2, 4, 2, 5);
+            AsolRibbon.AddPages(iRibbonPages);
         }
-        protected void AddBasicItemsToRibbon(List<IRibbonItem> items)
+        protected void AddBasicItemsToRibbon(List<IRibbonPage> iRibbonPages)
         {
-            AddFormItemsToRibbon(items);
-            AddSkinItemsToRibbon(items);
-            AddRibbonItemsToRibbon(items);
-        }
-        protected IRibbonItem CreateMainRibbonItem(string itemId, string itemText, string itemImage, string toolTip, object tag = null, Action<RibbonItem> action = null)
-        {
-            RibbonItem item = new RibbonItem()
-            {
-                PageId = "MainPage",
-                PageOrder = 0,
-                PageText = "ZÁKLADNÍ",
-                GroupId = "MainGroupForm",
-                GroupText = "Okna",
-                ItemId = itemId,
-                ItemText = itemText,
-                ItemImage = itemImage,
-                ToolTip = toolTip,
-                Tag = tag
-            };
-            action?.Invoke(item);
-            return item;
+            DataRibbonPage page;
+            DataRibbonGroup group;
+
+            page = new DataRibbonPage() { PageId = "DX", PageText = "DevExpress" };
+            iRibbonPages.Add(page);
+
+            group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown });
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteGallery });
+
+            group = new DataRibbonGroup() { GroupId = "forms", GroupText = "FORMULÁŘE" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataMenuItem() { ItemId = "forms.newTab", ItemText = "Nový TAB", ToolTip = "Otevře nové okno jako TAB document", ItemImage = "", Tag = FormCommands.NewTab });
+            group.Items.Add(new DataMenuItem() { ItemId = "forms.newFloat", ItemText = "Nový FLOAT", ToolTip = "Otevře nové okno jako plovoucí okno", ItemImage = "", Tag = FormCommands.NewFree });
         }
         protected override void OnRibbonItemClick(IMenuItem ribbonData)
         {
             base.OnRibbonItemClick(ribbonData);
-            if (ribbonData.Tag is SkinInfo skinInfo) SelectSkin(skinInfo);
             if (ribbonData.Tag is FormCommands formCommand) FormAction(formCommand);
-            if (ribbonData.Tag is RibbonCommands ribbonCommand) RibbonAction(ribbonCommand);
         }
-        #endregion
-        #region Skiny
-        protected void InitSkinControls()
-        {
-            DevExpress.UserSkins.BonusSkins.Register();
-            DS.SkinManager.EnableFormSkins();
-            DS.SkinManager.EnableMdiFormSkins();
-
-            _Skins = null;
-
-            SelectSkin("Black");
-        }
-        protected void AddSkinItemsToRibbon(List<IRibbonItem> items)
-        {
-            items.Add(CreateMainRibbonItem("MainItem80", "Vzhled", nameof(Properties.Resources.colorize_24_), "Změní vzhled okna atd", action: item => PrepareSkinRibbonItem(item)));
-        }
-        protected void PrepareSkinRibbonItem(RibbonItem item)
-        {
-            item.ItemIsFirstInGroup = true;
-            item.ItemType = RibbonItemType.Menu;
-            List<RibbonItem> subItems = new List<RibbonItem>();
-            foreach (var skinGroup in this.Skins)
-            {
-                var firstItem = skinGroup[0];
-                if (skinGroup.Length == 1)
-                {   // V grupě je jen jeden prvek => dáme jej přímo:
-                    subItems.Add(CreateSkinRibbonItem(firstItem));
-                }
-                else
-                {   // V grupě je více prvků => do pole subItems dáme Group prvek jako Titulek, a do něj potom všechny Skiny dané grupy:
-                    RibbonItem subItem = new RibbonItem() { ItemId = firstItem.FamilyOrder, ItemText = firstItem.FamilyName, ItemType = RibbonItemType.Menu };
-                    subItems.Add(subItem);
-                    List<RibbonItem> subSubItems = new List<RibbonItem>();
-                    foreach (var skinItem in skinGroup)
-                        subSubItems.Add(CreateSkinRibbonItem(skinItem));
-                    subItem.SubItems = subSubItems.ToArray();
-                }
-            
-            }
-            item.SubItems = subItems.ToArray();
-        }
-        protected RibbonItem CreateSkinRibbonItem(SkinInfo skinInfo)
-        {
-            RibbonItem item = new RibbonItem()
-            {
-                ItemId = skinInfo.SkinOrder,
-                ItemText = skinInfo.SkinName,
-                ItemIsFirstInGroup = skinInfo.FirstInGroup,
-                Tag = skinInfo
-            };
-            return item;
-        }
-        protected void SelectSkin(SkinInfo skinInfo)
-        {
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinInfo.SkinName;
-        }
-        protected void SelectSkin(DS.SkinContainer skinContainer)
-        {
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinContainer.SkinName;
-        }
-        protected void SelectSkin(string skinName)
-        {
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
-        }
-        /// <summary>
-        /// Pole dostupných skinů
-        /// </summary>
-        protected SkinInfo[][] Skins { get { if (_Skins is null) _Skins = SkinInfo.Skins; return _Skins; } }
-        private SkinInfo[][] _Skins;
-        #endregion
-        #region Random Ribbon Content
-        protected void AddRibbonItemsToRibbon(List<IRibbonItem> items)
-        {
-            items.Add(CreateMainRibbonItem("RibbonItem01", "Clear Ribbon", nameof(Properties.Resources.bookmark_24_), "Smaže vše z Ribbonu a pak pouze základní prvky", RibbonCommands.ClearAddBasic, action: r => r.ItemIsFirstInGroup = true));
-            items.Add(CreateMainRibbonItem("RibbonItem02", "Reset Ribbon", nameof(Properties.Resources.bookmark_3_24_), "Smaže vše z Ribbonu a pak jej přiměřeně naplní", RibbonCommands.ClearAddRandom));
-            items.Add(CreateMainRibbonItem("RibbonItem03", "Add1 Ribbon", nameof(Properties.Resources.bookmark_toolbar_2_24_), "Přidá něco málo položek", RibbonCommands.Add1));
-            items.Add(CreateMainRibbonItem("RibbonItem04", "Add5 Ribbon", nameof(Properties.Resources.bookmark_toolbar_4_24_), "Přidá hodně položek", RibbonCommands.Add5));
-        }
-        protected void RibbonAction(RibbonCommands ribbonCommand)
-        {
-            // AsolRibbon.Freeze = false;
-
-            List<IRibbonItem> ribbonItems = new List<IRibbonItem>();
-            switch (ribbonCommand)
-            {
-                case RibbonCommands.ClearAddBasic:
-                    AsolRibbon.Clear();
-                    AddBasicItemsToRibbon(ribbonItems);
-                    break;
-                case RibbonCommands.ClearAddRandom:
-                    AsolRibbon.Clear();
-                    AddBasicItemsToRibbon(ribbonItems);
-                    RibbonSample.CreateItemsTo(ribbonItems, 8);
-                    break;
-                case RibbonCommands.Add1:
-                    RibbonSample.CreateItemsTo(ribbonItems, 3);
-                    break;
-                case RibbonCommands.Add5:
-                    RibbonSample.CreateItemsTo(ribbonItems, 12);
-                    break;
-            }
-            AsolRibbon.AddItems(ribbonItems);
-
-            // AsolRibbon.Freeze = false;
-        }
-
-        protected enum RibbonCommands { None, ClearAddBasic, ClearAddRandom, Add1, Add5 }
         #endregion
         #region Okna a MDI Manager
         protected void InitFormControls()
@@ -186,13 +70,7 @@ namespace TestDevExpress.Forms
 
             this.AsolPanel.Controls.Add(new Label() { Text = "Toto je základní AsolPanel...", AutoSize = true, Location = new Point(10, 10) });
         }
-        protected void AddFormItemsToRibbon(List<IRibbonItem> items)
-        {
-            items.Add(CreateMainRibbonItem("FormItem01", "Nový TAB", nameof(Properties.Resources.document_new_24_), "Otevře nové okno jako TAB document", FormCommands.NewTab));
-            items.Add(CreateMainRibbonItem("FormItem02", "Změň TAB", nameof(Properties.Resources.document_export_3_24_), "Aktivuje některý existující TAB document", FormCommands.ChangeTab));
-            items.Add(CreateMainRibbonItem("FormItem03", "Zavři TAB", nameof(Properties.Resources.document_close_2_24_), "Zavře některý existující TAB document", FormCommands.CloseTab));
-            items.Add(CreateMainRibbonItem("FormItem04", "Nový FREE", nameof(Properties.Resources.document_new_5_24_), "Otevře nové okno jako FREE WINDOW", FormCommands.NewFree));
-        }
+      
         protected void FormAction(FormCommands command)
         {
             switch (command)

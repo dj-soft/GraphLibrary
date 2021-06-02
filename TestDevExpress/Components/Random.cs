@@ -4,6 +4,8 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Noris.Clients.Win.Components;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress
 {

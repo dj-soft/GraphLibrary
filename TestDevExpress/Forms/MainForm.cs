@@ -702,7 +702,8 @@ namespace TestDevExpress.Forms
         }
         private Image _GetImage(int i)
         {
-            return RibbonSample.GetRandomImage();
+            string imageName = DxRibbonSample.GetRandomImageName();
+            return DxComponent.GetImageFromResource(imageName);
         }
         private int _TabStrip1BtnItem = 0;
         /// <summary>
@@ -1201,9 +1202,9 @@ namespace TestDevExpress.Forms
         #region Ribbon : tvorba, eventy
         protected void InitRibbon()
         {
-            _Ribbon = new RibbonControl();
+            _Ribbon = new DxRibbonControl();
             _Ribbon.RibbonItemClick += _Ribbon_RibbonItemClick;
-            _PanelRibbon.Controls.Add(_Ribbon.Control);
+            _PanelRibbon.Controls.Add(_Ribbon);
             _RibbonBoundsText.Font = SystemFonts.StatusFont;
         }
         protected void ActivateRibbonPage()
@@ -1212,9 +1213,9 @@ namespace TestDevExpress.Forms
             {
                 IsRibbonFilled = true;
 
-                var items = RibbonSample.CreateItems(4, out string info);
-                _AddRibbonText(info);
-                _RibbonAddItems(items, false);
+                var pages = DxRibbonSample.CreatePages(2, 4, 1, 3);
+                _AddRibbonText(DxComponent.LogLastLine);
+                _RibbonAddItems(pages, false);
             }
         }
         protected bool IsRibbonFilled = false;
@@ -1228,27 +1229,27 @@ namespace TestDevExpress.Forms
         {
             bool useFreeze = _RibbonFreezeCheck.Checked;
 
-            _Ribbon.Freeze = useFreeze;
+            // _Ribbon.Freeze = useFreeze;
 
             string selectedPageId = _Ribbon.SelectedPageId;
-            var items = RibbonSample.CreateItems(12, out string info);
-            _AddRibbonText(info);
+            var items = DxRibbonSample.CreatePages(2, 6, 2, 5);
+            _AddRibbonText(DxComponent.LogLastLine);
 
             _RibbonAddItems(items, true);
             _Ribbon.SelectedPageId = selectedPageId;
 
-            _Ribbon.Freeze = false;
+            // _Ribbon.Freeze = false;
         }
         private void _RibbonAdd1Btn_Click(object sender, EventArgs e)
         {
-            var items = RibbonSample.CreateItems(2, out string info);
-            _AddRibbonText(info);
+            var items = DxRibbonSample.CreatePages(1, 1, 1, 3);
+            _AddRibbonText(DxComponent.LogLastLine);
             _RibbonAddItems(items, false);
         }
         private void _RibbonAdd2Btn_Click(object sender, EventArgs e)
         {
-            var items = RibbonSample.CreateItems(6, out string info);
-            _AddRibbonText(info);
+            var items = DxRibbonSample.CreatePages(1, 3, 2, 6);
+            _AddRibbonText(DxComponent.LogLastLine);
             _RibbonAddItems(items, false);
         }
         private void _RunMdiFormBtn_Click(object sender, EventArgs e)
@@ -1274,12 +1275,12 @@ namespace TestDevExpress.Forms
             _DynamicPageSizeText = "";
             _RibbonBoundsText.Text = _DynamicPageSizeText;
         }
-        private void _RibbonAddItems(List<IRibbonItem> items, bool clear = false)
+        private void _RibbonAddItems(List<IRibbonPage> pages, bool clear = false)
         {
             DateTime begin = DateTime.Now;
             if (clear)
                 _Ribbon.Clear();
-            _Ribbon.AddItems(items);
+            _Ribbon.AddPages(pages);
             TimeSpan time = DateTime.Now - begin;
             _AddRibbonText((clear ? "Smazán Ribbon a vloženy " : "Přidány ") + $"prvky do Ribbonu v čase {time.TotalMilliseconds} milisec");
         }
@@ -1297,7 +1298,7 @@ namespace TestDevExpress.Forms
             _DynamicPageSizeText += line + Environment.NewLine;
             _RibbonBoundsText.Text = _DynamicPageSizeText;
         }
-        private TestDevExpress.RibbonControl _Ribbon;
+        private DxRibbonControl _Ribbon;
         #endregion
         #region MDI Tabbed
         protected void InitMdiTab()

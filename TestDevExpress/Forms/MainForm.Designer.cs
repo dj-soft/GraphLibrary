@@ -72,7 +72,7 @@
             this._TreeViewPanel = new TestDevExpress.AsolPanel();
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.SkinList = new System.Windows.Forms.ListBox();
-            this.ribbonControl1 = new TestDevExpress.RibbonControl();
+            this.ribbonControl1 = new Noris.Clients.Win.Components.AsolDX.DxRibbonControl();
             this._RunDataFormBtn = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._SplitTabHeaders)).BeginInit();
             this._SplitTabHeaders.Panel1.SuspendLayout();
@@ -622,7 +622,6 @@
             // 
             // 
             this.ribbonControl1.ExpandCollapseItem.Id = 0;
-            this.ribbonControl1.Freeze = false;
             this.ribbonControl1.GalleryAnimationLength = 300;
             this.ribbonControl1.GroupAnimationLength = 300;
             this.ribbonControl1.ItemAnimationLength = 300;
@@ -728,7 +727,7 @@
         private System.Windows.Forms.Button _RibbonAdd2Btn;
         private System.Windows.Forms.Button _RibbonAdd1Btn;
         private System.Windows.Forms.Button _RibbonClearBtn;
-        private RibbonControl ribbonControl1;
+        private Noris.Clients.Win.Components.AsolDX.DxRibbonControl ribbonControl1;
         private System.Windows.Forms.GroupBox DynamicPage;
         private System.Windows.Forms.CheckBox _RibbonFreezeCheck;
         private System.Windows.Forms.TextBox _RibbonBoundsText;
