@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using DevExpress.Utils.Menu;
 using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
@@ -253,6 +253,49 @@ namespace TestDevExpress.Forms
             _ButtonAdd36 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 36 groups", _RunAdd36Groups); x += 160;
             // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
 
+            string resource1 = "devav/actions/driving.svg";
+            string resource2 = "devav/actions/filter.svg";
+            string resource3 = "devav/actions/gettingstarted.svg";
+            string resource4 = "devav/actions/hide.svg";
+            string resource5 = "devav/actions/picture.svg";
+            string resource6 = "devav/actions/redo.svg";
+            string resource7 = "devav/actions/refresh.svg";
+            string resource8 = "devav/actions/remove.svg";
+            DxComponent.CreateDxDropDownButton(20, 240, 190, 35, this, "Add 4 groups",
+                click: DropDownButtonClick, itemClick: DropDownItemClick,
+                subItemsText: 
+                $"Clear Ribbon•Smaže vše (stránky i obsah)•{resource2}♦" +
+                $"Clear Content•Smaže grupy ze stránek (včetně buttonů), ale stránky ponechá•{resource8}♦" +
+                $"Add ON DEMAND page•••_♦" +
+                $"Add RANDOM page♦" +
+                $"Add VZTAHY♦" +
+                $"Remove Empty•Odstraní stránky, které nic neobsahují");
+
+
+
+            /*
+
+            var sbxe = new DevExpress.XtraEditors.DropDownButton() { Text = "XtraBars.PopupMenu", Bounds = new System.Drawing.Rectangle(20, 240, 190, 35) };
+            DevExpress.XtraBars.PopupMenu xeMenu = new DevExpress.XtraBars.PopupMenu(_Ribbon.BarManager);
+            xeMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(_Ribbon.BarManager, "Smazat obsah"));
+            xeMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(_Ribbon.BarManager, "Add OnDemand page"));
+            xeMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(_Ribbon.BarManager, "Remove Void"));
+            sbxe.DropDownControl = xeMenu;
+            sbxe.Click += Sb_Click;
+            this.Controls.Add(sbxe);
+
+            var sbdx = new DevExpress.XtraEditors.DropDownButton() { Text = "Menu.DXPopupMenu", Bounds = new System.Drawing.Rectangle(20, 280, 190, 35) };
+            DXPopupMenu dxMenu = new DXPopupMenu();
+            dxMenu.Items.Add(new DXMenuItem() { Caption = "ClearContent" });
+            dxMenu.Items.Add(new DXMenuItem() { Caption = "Store OnDemand page" });
+            dxMenu.Items.Add(new DXMenuCheckItem() { Caption = "RemoveVoidContainers" });
+            dxMenu.ItemClick += PopupMenu_ItemClick;
+            sbdx.DropDownControl = dxMenu;
+            sbdx.Click += Sb_Click;
+            this.Controls.Add(sbdx);
+            
+            */
+
             x += 60;
             _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge); x += 160;
             _ButtonUnMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Unmerge", _RunUnMerge, isChecked: true); x += 160;
@@ -261,6 +304,24 @@ namespace TestDevExpress.Forms
 
             this.IsMerged = false;
         }
+
+        private void DropDownButtonClick(object sender, EventArgs e)
+        {
+        }
+        private void DropDownItemClick(object sender, TEventArgs<IMenuItem> e)
+        {
+        }
+
+        private void Sb_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void PopupMenu_ItemClick(object sender, DXMenuItemEventArgs e)
+        {
+            
+        }
+
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);

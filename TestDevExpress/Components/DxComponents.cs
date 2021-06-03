@@ -227,6 +227,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DefaultButtonPanelHeight = 40;
             _DefaultButtonWidth = 150;
             _DefaultButtonHeight = 32;
+
+            _DefaultBarManager = new DevExpress.XtraBars.BarManager();
+            _DefaultToolTipController = new ToolTipController();
+
+            
         }
         /// <summary>
         /// Vrátí styl labelu podle požadovaného typu
@@ -322,7 +327,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Defaultní výška buttonu
         /// </summary>
         public static int DefaultButtonHeight { get { return ZoomToGuiInt(Instance._DefaultButtonHeight); } }
-
+        /// <summary>
+        /// Defaultní BarManager pro obecné použití
+        /// </summary>
+        public static DevExpress.XtraBars.BarManager DefaultBarManager { get { return Instance._DefaultBarManager; } }
+        /// <summary>
+        /// Defaultní ToolTipController pro obecné použití
+        /// </summary>
+        public static ToolTipController DefaultToolTipController { get { return Instance._DefaultToolTipController; } }
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;
         private DevExpress.XtraEditors.StyleController _SubTitleStyle;
         private DevExpress.XtraEditors.StyleController _LabelStyle;
@@ -341,6 +353,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonPanelHeight;
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
+        private DevExpress.XtraBars.BarManager _DefaultBarManager;
+        private ToolTipController _DefaultToolTipController;
         #endregion
         #region Rozhraní na Zoom
         /// <summary>
@@ -1091,16 +1105,257 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return miniButton;
         }
-        /// <summary>
-        /// Vytvoří a vrátí standardní ToolTipController
-        /// </summary>
-        /// <returns></returns>
-        public static ToolTipController CreateToolTipController()
+        public static DxDropDownButton CreateDxDropDownButton(int x, int y, int w, int h, Control parent, string text,
+            EventHandler click = null, EventHandler<TEventArgs<IMenuItem>> itemClick = null,
+            DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            Image image = null, string resourceName = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null)
         {
-            ToolTipController toolTipController = new ToolTipController();
-
-            return toolTipController;
+            return CreateDxDropDownButton(x, ref y, w, h, parent, text, 
+                click, itemClick,
+                dropDownControl, subItemsText, subItems,
+                paintStyles,
+                image, resourceName,
+                toolTipTitle, toolTipText,
+                visible, enabled, tabStop, false);
         }
+        public static DxDropDownButton CreateDxDropDownButton(int x, ref int y, int w, int h, Control parent, string text, 
+            EventHandler click = null, EventHandler<TEventArgs<IMenuItem>> itemClick = null,
+            DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
+            DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
+            Image image = null, string resourceName = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool shiftY = false)
+        {
+            var inst = Instance;
+
+            var dropDownButton = new DxDropDownButton() { Bounds = new Rectangle(x, y, w, h) };
+            dropDownButton.StyleController = inst._InputStyle;
+            dropDownButton.Text = text;
+            if (visible.HasValue) dropDownButton.Visible = visible.Value;
+            if (enabled.HasValue) dropDownButton.Enabled = enabled.Value;
+            if (tabStop.HasValue) dropDownButton.TabStop = tabStop.Value;
+            if (paintStyles.HasValue) dropDownButton.PaintStyle = paintStyles.Value;
+
+            int s = (w < h ? w : h) - 10;
+            DxComponent.ApplyImage(dropDownButton.ImageOptions, resourceName, image, new Size(s, s), true);
+            dropDownButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
+            dropDownButton.ImageOptions.ImageToTextIndent = 3;
+            dropDownButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
+
+            dropDownButton.SetToolTip(toolTipTitle ?? text, toolTipText);
+
+            dropDownButton.DropDownControl = CreateDxDropDownControl(dropDownControl, subItemsText, subItems, itemClick);
+
+            if (click != null) dropDownButton.Click += click;
+            if (parent != null) parent.Controls.Add(dropDownButton);
+            if (shiftY) y = y + dropDownButton.Height + inst._DetailYSpaceText;
+
+            return dropDownButton;
+        }
+        public static DevExpress.Utils.Menu.IDXDropDownControl CreateDxDropDownControl(
+            DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
+            EventHandler<TEventArgs<IMenuItem>> itemClick = null)
+        {
+            if (dropDownControl != null) return dropDownControl;
+            if (subItems == null && !String.IsNullOrEmpty(subItemsText))
+                subItems = CreateIMenuItems(subItemsText);
+            if (subItems == null) return null;
+
+            // var popupMenu = CreateXBPopupMenu(subItems);
+            var popupMenu = CreateDXPopupMenu(subItems);
+           
+            popupMenu.Tag = new Tuple<IEnumerable<IMenuItem>, EventHandler<TEventArgs<IMenuItem>>>(subItems, itemClick);
+           // popupMenu.ItemClick += DxPopupMenu_ItemClick;
+
+            return popupMenu;
+        }
+        /// <summary>
+        /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton
+        /// </summary>
+        /// <param name="subItemsText"></param>
+        /// <returns></returns>
+        public static List<IMenuItem> CreateIMenuItems(string subItemsText)
+        {
+            List<IMenuItem> menuItems = new List<IMenuItem>();
+
+            if (subItemsText != null)
+            {   // Ukázka: "Nabídka•Toto je nabídka funkcí•image.svg•CD♦Nabídka•Toto je nabídka funkcí•image.svg•CD♦Nabídka•Toto je nabídka funkcí•image.svg•CD♦";
+                char sepLines = MenuItemsSeparatorLines;            // Klávesa ALT a Num 4
+                char sepItems = MenuItemsSeparatorItems;            // Klávesa ALT a Num 7
+                char codChBox = MenuItemsCodeCheckBox;
+                char codChecked = MenuItemsCodeChecked;
+                char codGroup = MenuItemsCodeBeginGroup;
+                char codDisable = MenuItemsCodeDisable;
+                var lines = subItemsText.Split(sepLines);
+                int id = 0;
+                foreach (var line in lines)
+                {
+                    var items = line.Split(sepItems);          
+                    int count = items.Length;
+                    string itemId = "Item" + (id++).ToString();
+                    string text = (count > 0 ? items[0].Trim() : "");
+                    string toolTip = (count > 1 ? items[1].Trim() : "");
+                    string image = (count > 2 ? items[2].Trim() : "");
+                    string data = (count > 3 ? items[3].Trim().ToUpper() : "");
+                    if (!String.IsNullOrEmpty(text))
+                    {
+                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, ItemText = text, ToolTip = toolTip, ToolTipTitle = text, ItemImage = image };
+                        menuItem.ItemType = (data.Contains(codChBox) ? RibbonItemType.CheckBoxStandard : RibbonItemType.Button);
+                        if (menuItem.ItemType == RibbonItemType.CheckBoxStandard) menuItem.ItemIsChecked = data.Contains(codChecked);
+                        if (data.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
+                        if (data.Contains(codDisable)) menuItem.ItemEnabled = false;
+                        menuItems.Add(menuItem);
+                    }
+                }
+            }
+
+            return menuItems;
+        }
+        public static DevExpress.XtraBars.PopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems)
+        {
+            // Má řadu nectostí, například: nezhasne když kliknu mimo
+
+            var barManager = DxComponent.DefaultBarManager;
+            var xbMenu = new DevExpress.XtraBars.PopupMenu(barManager);
+            DevExpress.XtraBars.BarItem[] barItems = CreateXBPopupMenuItems(barManager, menuItems);
+            xbMenu.AddItems(barItems);
+            xbMenu.DrawMenuSideStrip = DefaultBoolean.True;
+            return xbMenu;
+        }
+        private static DevExpress.XtraBars.BarItem[] CreateXBPopupMenuItems(DevExpress.XtraBars.BarManager barManager, IEnumerable<IMenuItem> menuItems)
+        {
+            List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
+            if (menuItems != null)
+            {
+                foreach (var menuItem in menuItems)
+                {
+                    DevExpress.XtraBars.BarButtonItem button = new DevExpress.XtraBars.BarButtonItem(barManager, menuItem.ItemText)
+                    {
+                        Name = menuItem.ItemId,
+                        Hint = menuItem.ToolTip,
+                        SuperTip = CreateDxSuperTip(menuItem)
+                    };
+                    barItems.Add(button);
+                }
+            }
+            return barItems.ToArray();
+        }
+        public static DevExpress.Utils.Menu.DXPopupMenu CreateDXPopupMenu(IEnumerable<IMenuItem> menuItems)
+        {
+            var dxMenu = new DevExpress.Utils.Menu.DXPopupMenu();
+            // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.RibbonMiniToolbar;        // sada tlačítek v panelu
+            // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.Toolbar;                  // sada tlačítek v řádce
+            dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.Menu;                     // normální
+            dxMenu.Caption = "MENu";
+
+            if (menuItems != null)
+            {
+                foreach (var item in menuItems)
+                    dxMenu.Items.Add(CreateDXPopupMenuItem(item));
+            }
+            dxMenu.ItemClick += DxPopupMenu_ItemClick;
+            return dxMenu;
+        }
+        private static DevExpress.Utils.Menu.DXMenuItem CreateDXPopupMenuItem(IMenuItem menuItem)
+        {
+            var dxItem = new DevExpress.Utils.Menu.DXMenuItem()
+            {
+                BeginGroup = menuItem.ItemIsFirstInGroup,
+                Enabled = menuItem.ItemEnabled,
+                Caption = menuItem.ItemText,
+                SuperTip = CreateDxSuperTip(menuItem),
+                Tag = menuItem
+            };
+
+            DxComponent.ApplyImage(dxItem.ImageOptions, resourceName: menuItem.ItemImage);
+
+            return dxItem;
+        }
+
+        private static void DxPopupMenu_ItemClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
+        {
+            // sender by měl být DevExpress.Utils.Menu.DXPopupMenu;
+            // jeho Tag by měl obsahovat Tuple, kde Item2 = akce 'itemClick' volaná po kliknutí na prvek (delegát typu EventHandler<TEventArgs<IMenuItem>>)
+            var popupInfo = (sender as DevExpress.Utils.Menu.DXMenuItem)?.Tag as Tuple<IEnumerable<IMenuItem>, EventHandler<TEventArgs<IMenuItem>>>;
+            if (popupInfo == null || popupInfo.Item2 == null) return;
+
+            // e.Item by měl být prvek menu, v jehož Tagu je zdrojová položka IMenuItem,
+            // podle které byla položka Popup vytvořena:
+            if (!(e.Item.Tag is IMenuItem iMenuItem)) return;
+
+            // Předáme řízení handleru akce ItemClick:
+            popupInfo.Item2(sender, new TEventArgs<IMenuItem>(iMenuItem));
+        }
+
+        /// <summary>
+        /// Deklarace prvků menu : Oddělovač řádků v textu. '♦'
+        /// Lze jej zadat jako Alt + Num 4.
+        /// <para/>
+        /// Používá se v metodách 
+        /// <see cref="CreateIMenuItems(string)"/>, 
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// jako parametr 'subItemsText'
+        /// </summary>
+        public static char MenuItemsSeparatorLines { get { return '♦'; } }
+        /// <summary>
+        /// Oddělovač prvků v jednom řádku. '•'
+        /// Lze jej zadat jako Alt + Num 7.
+        /// <para/>
+        /// Používá se v metodách 
+        /// <see cref="CreateIMenuItems(string)"/>, 
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// jako parametr 'subItemsText'
+        /// </summary>
+        public static char MenuItemsSeparatorItems { get { return '•'; } }
+        /// <summary>
+        /// Značka pro typ prvku CheckBox = 'C'.
+        /// <para/>
+        /// Používá se v metodách 
+        /// <see cref="CreateIMenuItems(string)"/>, 
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// jako parametr 'subItemsText'
+        /// </summary>
+        public static char MenuItemsCodeCheckBox { get { return 'C'; } }
+        /// <summary>
+        /// Značka pro hodnotu Checked v prvku CheckBox = 'A'.
+        /// <para/>
+        /// Používá se v metodách 
+        /// <see cref="CreateIMenuItems(string)"/>, 
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// jako parametr 'subItemsText'
+        /// </summary>
+        public static char MenuItemsCodeChecked { get { return 'A'; } }
+        /// <summary>
+        /// Značka pro zahájení nové skupiny (nad tímto prvkem bude vodorovný oddělovač) = '-'.
+        /// <para/>
+        /// Používá se v metodách 
+        /// <see cref="CreateIMenuItems(string)"/>, 
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// jako parametr 'subItemsText'
+        /// </summary>
+        public static char MenuItemsCodeBeginGroup { get { return '_'; } }
+        /// <summary>
+        /// Značka pro Disable na položce menu
+        /// <para/>
+        /// Používá se v metodách 
+        /// <see cref="CreateIMenuItems(string)"/>, 
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// jako parametr 'subItemsText'
+        /// </summary>
+        public static char MenuItemsCodeDisable { get { return '/'; } }
+
+        
+
+
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text
         /// </summary>
@@ -1115,6 +1370,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (title != null) superTip.Items.AddTitle(title);
             superTip.Items.Add(text);
 
+            return superTip;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí SuperTooltip
+        /// </summary>
+        /// <param name="menuItem"></param>
+        /// <returns></returns>
+        public static SuperToolTip CreateDxSuperTip(IMenuItem menuItem)
+        {
+            if (menuItem == null || String.IsNullOrEmpty(menuItem.ToolTip)) return null;
+
+            string title = (menuItem.ToolTipTitle ?? menuItem.ItemText);
+
+            var superTip = new DevExpress.Utils.SuperToolTip();
+            if (title != null)
+            {
+                var dxTitle = superTip.Items.AddTitle(title);
+                if (menuItem.ToolTipIcon != null)
+                {
+                    dxTitle.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
+                    dxTitle.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(menuItem.ToolTipIcon, WinFormServices.Drawing.UserGraphicsSize.Large);
+                    dxTitle.ImageOptions.ImageToTextDistance = 12;
+                }
+                superTip.Items.AddSeparator();
+            }
+            superTip.Items.Add(menuItem.ToolTip);
             return superTip;
         }
         #endregion
@@ -1243,8 +1524,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DataFormItemType.DropDownButton: return _CreateDataFormDropDownButton(dataFormItem);
                 case DataFormItemType.Image: return _CreateDataFormImage(dataFormItem);
             }
-            throw new ArgumentException();
-
+            throw new ArgumentException($"Used unsupported IDataFormItem.ItemType: {dataFormItem.ItemType}.");
         }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu Label pro danou definici prvku DataForm
@@ -1380,7 +1660,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormDropDownButton(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormDropDownButton(IDataFormItem dataFormItem) 
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxDropDownButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, 
+                null, null,
+                null, null, null,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                null, dataFormItem.ButtonImageName,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
+            return checkBox;
+        }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu Image pro danou definici prvku DataForm
         /// </summary>
@@ -1836,37 +2126,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             System.Drawing.Image image = null;
             size = new Size(32, 32);
-            if (!String.IsNullOrEmpty(resourceName))
+            if (String.IsNullOrEmpty(resourceName)) return null;
+
+            try
             {
-                try
+                if (_IsImageNameSvg(resourceName))
                 {
-                    if (_IsImageNameSvg(resourceName))
-                    {
-                        if (svgPalette == null)
-                            svgPalette = GetSvgPalette(DevExpress.LookAndFeel.UserLookAndFeel.Default, svgState);
-                        if (optimalSvgSize.HasValue)
-                            size = optimalSvgSize.Value;
-                        else if (maxSize.HasValue)
-                            size = maxSize.Value;
-                        _ImageResourceRewindStream(resourceName);
-                        image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
-                    }
-                    else
-                    {
-                        image = _ImageResourceCache.GetImage(resourceName);
-                        size = image.Size;
-                        if (maxSize.HasValue)
-                        {
-                            if (maxSize.Value.Width > 0 && size.Width > maxSize.Value.Width) size.Width = maxSize.Value.Width;
-                            if (maxSize.Value.Height > 0 && size.Height > maxSize.Value.Height) size.Height = maxSize.Value.Height;
-                        }
-                    }
+                    if (svgPalette == null)
+                        svgPalette = GetSvgPalette(DevExpress.LookAndFeel.UserLookAndFeel.Default, svgState);
+                    if (optimalSvgSize.HasValue)
+                        size = optimalSvgSize.Value;
+                    else if (maxSize.HasValue)
+                        size = maxSize.Value;
+                    _ImageResourceRewindStream(resourceName);
+                    image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
                 }
-                catch (Exception exc)
+                else
                 {
-                    image = null;
+                    image = _ImageResourceCache.GetImage(resourceName);
+                    size = image?.Size ?? Size.Empty;
+                    if (maxSize.HasValue)
+                    {
+                        if (maxSize.Value.Width > 0 && size.Width > maxSize.Value.Width) size.Width = maxSize.Value.Width;
+                        if (maxSize.Value.Height > 0 && size.Height > maxSize.Value.Height) size.Height = maxSize.Value.Height;
+                    }
                 }
             }
+            catch (Exception exc)
+            {
+                image = null;
+            }
+
             return image;
         }
         /// <summary>
@@ -1883,9 +2173,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
         public static DevExpress.Utils.Svg.SvgImage GetSvgImage(string key) { return Instance._GetSvgImage(key); }
-        public static void ApplyImage(ImageCollectionImageOptions imageOptions, string resourceName = null, Image image = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, resourceName, image, imageSize, smallButton); }
-
-        private void _ApplyImage(ImageCollectionImageOptions imageOptions, string resourceName, Image image, Size? imageSize, bool smallButton)
+        public static void ApplyImage(ImageOptions imageOptions, string resourceName = null, Image image = null, Size? imageSize = null, bool smallButton = false) 
+        { Instance._ApplyImage(imageOptions, resourceName, image, imageSize, smallButton); }
+        private void _ApplyImage(ImageOptions imageOptions, string resourceName, Image image, Size? imageSize, bool smallButton)
         {
             if (image != null)
             {
@@ -1899,9 +2189,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (_TryGetResourceExtension(resourceName, out string extension))
                     {   // Interní DevExpress Resources:
                         if (extension == "svg")
-                            _ApplyImageSvg(imageOptions, resourceName, imageSize);
+                            _ApplyResourceImageSvg(imageOptions, resourceName, imageSize);
                         else
-                            _ApplyImageBmp(imageOptions, resourceName, imageSize);
+                            _ApplyResourceImageBmp(imageOptions, resourceName, imageSize);
                     }
                     else
                     {   // Externí zdroje:
@@ -1917,20 +2207,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
             }
         }
-        private void _ApplyImageSvg(ImageCollectionImageOptions imageOptions, string resourceName, Size? imageSize)
+        private void _ApplyResourceImageSvg(ImageOptions imageOptions, string resourceName, Size? imageSize)
         {
             _ImageResourceRewindStream(resourceName);
             imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
             if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
         }
-        private void _ApplyImageBmp(ImageCollectionImageOptions imageOptions, string resourceName, Size? imageSize)
+        private void _ApplyResourceImageBmp(ImageOptions imageOptions, string resourceName, Size? imageSize)
         {
             imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
         }
 
 
 
-        public static void xxxApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false) { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
+        public static void xxxApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
+        { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
         private void _ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
         {
             if (image != null)
@@ -1964,11 +2255,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí true, pokud dané jméno zdroje končí příponou ".svg"
         /// </summary>
-        /// <param name="imageUri"></param>
+        /// <param name="resourceName"></param>
         /// <returns></returns>
-        private static bool _IsImageNameSvg(string imageUri)
+        private static bool _IsImageNameSvg(string resourceName)
         {
-            return (!String.IsNullOrEmpty(imageUri) && imageUri.EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
+            return (!String.IsNullOrEmpty(resourceName) && resourceName.EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
         }
         /// <summary>
         /// Napravuje chybu DevExpress, kdy v <see cref="DevExpress.Images.ImageResourceCache"/> pro SVG zdroje po jejich použití je jejich zdrojový stream na konci, a další použití je tak znemožněno.
@@ -6412,6 +6703,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Resize a SvgImage
 
+        #endregion
+    }
+    #endregion
+    #region DxDropDownButton
+    /// <summary>
+    /// DxDropDownButton
+    /// </summary>
+    public class DxDropDownButton : DevExpress.XtraEditors.DropDownButton
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
     }
     #endregion

@@ -350,7 +350,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.True;                // Běžně nezapínat, ale na DirectX to chodí!   Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
 
             // Tooltip:
-            this.ToolTipController = DxComponent.CreateToolTipController();
+            this.ToolTipController = DxComponent.DefaultToolTipController;
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
 
             // Eventy pro podporu TreeView (vykreslení nodu, atd):

@@ -1122,7 +1122,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 superTip.Items.AddSeparator();
             }
-            var dxText = superTip.Items.Add(text);
+            superTip.Items.Add(text);
             return superTip;
         }
         /// <summary>
@@ -1130,7 +1130,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="itemPaintStyle"></param>
         /// <returns></returns>
-        private DevExpress.XtraBars.BarItemPaintStyle Convert(BarItemPaintStyle itemPaintStyle)
+        internal static DevExpress.XtraBars.BarItemPaintStyle Convert(BarItemPaintStyle itemPaintStyle)
         {
             int styles = (int)itemPaintStyle;
             return (DevExpress.XtraBars.BarItemPaintStyle)styles;
@@ -1140,7 +1140,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="ribbonStyle"></param>
         /// <returns></returns>
-        private static DevExpress.XtraBars.Ribbon.RibbonItemStyles Convert(RibbonItemStyles ribbonStyle)
+        internal static DevExpress.XtraBars.Ribbon.RibbonItemStyles Convert(RibbonItemStyles ribbonStyle)
         {
             int styles = (int)ribbonStyle;
             return (DevExpress.XtraBars.Ribbon.RibbonItemStyles)styles;
@@ -1148,7 +1148,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// BarManager
         /// </summary>
-        protected DevExpress.XtraBars.Ribbon.RibbonBarManager BarManager
+        public DevExpress.XtraBars.Ribbon.RibbonBarManager BarManager
         {
             get
             {
