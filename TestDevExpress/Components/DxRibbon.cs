@@ -363,7 +363,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void RemoveVoidContainers()
         {
-            ModifyCurrentDxContent(_ClearPageContents);
+            ModifyCurrentDxContent(_RemoveVoidContainers);
         }
         /// <summary>
         /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.

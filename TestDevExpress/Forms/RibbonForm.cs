@@ -247,11 +247,37 @@ namespace TestDevExpress.Forms
             this.Controls.Add(_Ribbon);
 
             int x = 20;
-            _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear All", _RunClear); x += 160;
+            _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
             // _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
-            _ButtonAdd4 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
-            _ButtonAdd36 = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 36 groups", _RunAdd36Groups); x += 160;
+            // _ButtonMenu = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
+            _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4 groups", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
+            _ButtonFull = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFull, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
             // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
+
+
+            x += 60;
+            _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge, toolTipText: "Obsah tohoto Ribbonu připojí k buttonu o úroveň výše"); x += 160;
+            _ButtonUnMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Unmerge", _RunUnMerge, isChecked: true, toolTipText: "Vrátí obsah tohoto Ribbonu z vyššího Ribbonu zpátky"); x += 160;
+
+            DoLayoutButtons();
+
+            this.IsMerged = false;
+        }
+
+        private void DropDownButtonClick(object sender, EventArgs e)
+        {
+            this.FillRibbon(1, 2, 2, 3);
+        }
+        private List<IMenuItem> _GetDropDownItems()
+        {
+            List<IMenuItem> subItems = new List<IMenuItem>();
+            subItems.Add(new DataMenuItem() { ItemId = "ClearRibbon", ItemText = "Clear ", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "ClearContent", ItemText = "Clear Content only", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "AdOnDemand", ItemText = "Add ON DEMAND page", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "RemoveEmpty", ItemText = "Remove Empty pages", ItemImage = "", ToolTip = "" });
+            return subItems;
+
+            /* TEXTOVÁ VARIANTA:
 
             string resource1 = "devav/actions/driving.svg";
             string resource2 = "devav/actions/filter.svg";
@@ -261,67 +287,36 @@ namespace TestDevExpress.Forms
             string resource6 = "devav/actions/redo.svg";
             string resource7 = "devav/actions/refresh.svg";
             string resource8 = "devav/actions/remove.svg";
-            DxComponent.CreateDxDropDownButton(20, 240, 190, 35, this, "Add 4 groups",
-                click: DropDownButtonClick, itemClick: DropDownItemClick,
-                subItemsText: 
+
+            string subItemsText =
                 $"Clear Ribbon•Smaže vše (stránky i obsah)•{resource2}♦" +
                 $"Clear Content•Smaže grupy ze stránek (včetně buttonů), ale stránky ponechá•{resource8}♦" +
                 $"Add ON DEMAND page•••_♦" +
                 $"Add RANDOM page♦" +
                 $"Add VZTAHY♦" +
-                $"Remove Empty•Odstraní stránky, které nic neobsahují");
+                $"Remove Empty•Odstraní stránky, které nic neobsahují••_"
 
-
-
-            /*
-
-            var sbxe = new DevExpress.XtraEditors.DropDownButton() { Text = "XtraBars.PopupMenu", Bounds = new System.Drawing.Rectangle(20, 240, 190, 35) };
-            DevExpress.XtraBars.PopupMenu xeMenu = new DevExpress.XtraBars.PopupMenu(_Ribbon.BarManager);
-            xeMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(_Ribbon.BarManager, "Smazat obsah"));
-            xeMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(_Ribbon.BarManager, "Add OnDemand page"));
-            xeMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(_Ribbon.BarManager, "Remove Void"));
-            sbxe.DropDownControl = xeMenu;
-            sbxe.Click += Sb_Click;
-            this.Controls.Add(sbxe);
-
-            var sbdx = new DevExpress.XtraEditors.DropDownButton() { Text = "Menu.DXPopupMenu", Bounds = new System.Drawing.Rectangle(20, 280, 190, 35) };
-            DXPopupMenu dxMenu = new DXPopupMenu();
-            dxMenu.Items.Add(new DXMenuItem() { Caption = "ClearContent" });
-            dxMenu.Items.Add(new DXMenuItem() { Caption = "Store OnDemand page" });
-            dxMenu.Items.Add(new DXMenuCheckItem() { Caption = "RemoveVoidContainers" });
-            dxMenu.ItemClick += PopupMenu_ItemClick;
-            sbdx.DropDownControl = dxMenu;
-            sbdx.Click += Sb_Click;
-            this.Controls.Add(sbdx);
-            
             */
 
-            x += 60;
-            _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge); x += 160;
-            _ButtonUnMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Unmerge", _RunUnMerge, isChecked: true); x += 160;
-
-            DoLayoutButtons();
-
-            this.IsMerged = false;
-        }
-
-        private void DropDownButtonClick(object sender, EventArgs e)
-        {
         }
         private void DropDownItemClick(object sender, TEventArgs<IMenuItem> e)
         {
+            switch (e.Item.ItemId)
+            {
+                case "ClearRibbon":
+                    this._Ribbon.Clear();
+                    break;
+                case "ClearContent":
+                    this._Ribbon.ClearPageContents();
+                    break;
+                case "AdOnDemand":
+                    this.FillRibbon(1, 2, 2, 3);
+                    break;
+                case "RemoveEmpty":
+                    this._Ribbon.RemoveVoidContainers();
+                    break;
+            }
         }
-
-        private void Sb_Click(object sender, EventArgs e)
-        {
-            
-        }
-
-        private void PopupMenu_ItemClick(object sender, DXMenuItemEventArgs e)
-        {
-            
-        }
-
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
@@ -348,8 +343,8 @@ namespace TestDevExpress.Forms
             int y = y0;
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             // _ButtonEmpty.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonAdd4.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonAdd36.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
+            _ButtonMenu.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
+            _ButtonFull.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             // _ButtonFinal.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
 
             if (isSmall)
@@ -373,8 +368,8 @@ namespace TestDevExpress.Forms
             System.Drawing.Size imageSize = new System.Drawing.Size(svgS, svgS);
             DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: imageSize);
             // DxComponent.ApplyImage(_ButtonEmpty.ImageOptions, resourceName: "images/xaf/templatesv2images/action_delete.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonAdd4.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonAdd36.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonMenu.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonFull.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
             // DxComponent.ApplyImage(_ButtonFinal.ImageOptions, resourceName: "svgimages/icon%20builder/actions_send.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: imageSize);
@@ -449,8 +444,9 @@ namespace TestDevExpress.Forms
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
         // private DxSimpleButton _ButtonEmpty;
-        private DxSimpleButton _ButtonAdd4;
-        private DxSimpleButton _ButtonAdd36;
+        // private DxSimpleButton _ButtonMenu;
+        private DxDropDownButton _ButtonMenu;
+        private DxSimpleButton _ButtonFull;
         // private DxSimpleButton _ButtonFinal;
         private DxCheckButton _ButtonMerge;
         private DxCheckButton _ButtonUnMerge;
@@ -468,7 +464,7 @@ namespace TestDevExpress.Forms
         {
             FillRibbon(1, 2, 2, 3);
         }
-        private void _RunAdd36Groups(object sender, EventArgs args)
+        private void _RunFull(object sender, EventArgs args)
         {
             FillRibbon(3, 6, 2, 5, true);
         }
