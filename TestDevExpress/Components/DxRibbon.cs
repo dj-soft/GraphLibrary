@@ -617,7 +617,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _AddBarItem(IMenuItem iMenuItem, DxRibbonGroup group, ref int count)
         {
             if (iMenuItem == null || group == null) return;
-            var barItem = GetBarItem(iMenuItem, group, ref count);
+            var barItem = GetBarItem(iMenuItem, group, ref count, true, false);
             if (barItem is null) return;
             
             // více není třeba.
@@ -830,15 +830,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="group"></param>
         /// <param name="count"></param>
         /// <param name="enableNew"></param>
+        /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetBarItem(IMenuItem item, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool enableNew = true)
+        protected DevExpress.XtraBars.BarItem GetBarItem(IMenuItem item, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool enableNew = true, bool reallyCreateSubItems = false)
         {
             if (item is null || group is null) return null;
             DevExpress.XtraBars.BarItem barItem = Items[item.ItemId];
             if (barItem is null)
             {
                 if (!enableNew) return null;
-                barItem = CreateBarItem(item, ref count);
+                barItem = CreateBarItem(item, reallyCreateSubItems, ref count);
                 if (barItem is null) return null;
                 var barLink = group.ItemLinks.Add(barItem);
                 if (item.ItemIsFirstInGroup) barLink.BeginGroup = true;
@@ -847,7 +848,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 FillBarItem(barItem, item);
             }
-            barItem.Tag = item;
+
+            if (barItem.Tag == null)
+                // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
+                barItem.Tag = item;
 
             if (item.ItemToolbarOrder.HasValue)
                 this.Toolbar.ItemLinks.Add(barItem);
@@ -858,16 +862,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří prvek BarItem pro daná data a vrátí jej.
         /// </summary>
         /// <param name="item"></param>
+        /// <param name="reallyCreateSubItems">Skutečně se mají vytvářet SubMenu?</param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem CreateBarItem(IMenuItem item, ref int count)
+        protected DevExpress.XtraBars.BarItem CreateBarItem(IMenuItem item, bool reallyCreateSubItems, ref int count)
         {
             DevExpress.XtraBars.BarItem barItem = null;
             switch (item.ItemType)
             {
                 case RibbonItemType.ButtonGroup:
                     count++;
-                    DevExpress.XtraBars.BarButtonGroup buttonGroup = Items.CreateButtonGroup(GetBarBaseButtons(item, item.SubItems, ref count));
+                    DevExpress.XtraBars.BarButtonGroup buttonGroup = Items.CreateButtonGroup(GetBarBaseButtons(item, item.SubItems, reallyCreateSubItems, ref count));
                     buttonGroup.ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
                     buttonGroup.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
                     buttonGroup.OptionsMultiColumn.ShowItemText = DevExpress.Utils.DefaultBoolean.True;
@@ -875,11 +880,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.SplitButton:
                     count++;
-                    DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(item.ItemText, GetPopupSubItems(item, item.SubItems, ref count));
+                    var dxPopup = CreateXPopupMenu(item, item.SubItems, reallyCreateSubItems, ref count);
+                    DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(item.ItemText, dxPopup);
                     barItem = splitButton;
                     break;
                 case RibbonItemType.CheckBoxStandard:
-                    bool isSlider = (item.ItemType == RibbonItemType.CheckBoxToggle);
                     count++;
                     DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
                     checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
@@ -898,26 +903,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.Menu:
                     count++;
                     DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(item.ItemText);
-                    var menuItems = GetBarSubItems(item, item.SubItems, ref count);
-                    foreach (var menuItem in menuItems)
-                    {
-                        var menuLink = menu.AddItem(menuItem);
-                        if ((menuItem.Tag is IMenuItem ribbonData) && ribbonData.ItemIsFirstInGroup)
-                            menuLink.BeginGroup = true;
-                    }
+                    PrepareXBarMenu(item, item.SubItems, menu, reallyCreateSubItems, ref count);
                     barItem = menu;
                     break;
                 case RibbonItemType.InRibbonGallery:
                     count++;
-                    var galleryItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
-                    var gallery = new DevExpress.XtraBars.Ribbon.Gallery.InRibbonGallery(galleryItem);
-                    gallery.ItemCheckMode = DevExpress.XtraBars.Ribbon.Gallery.ItemCheckMode.Multiple;
-                    var galleryGroup = new DevExpress.XtraBars.Ribbon.GalleryItemGroup();
-                    gallery.Groups.Add(galleryGroup);
-                    galleryGroup.Items.AddRange(GetGalleryItems(item, item.SubItems, ref count));
+                    var galleryItem = CreateGalleryItem(item);
                     barItem = galleryItem;
                     break;
-
                 case RibbonItemType.SkinSetDropDown:
                     count++;
                     barItem = new DevExpress.XtraBars.SkinDropDownButtonItem();
@@ -944,6 +937,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return barItem;
         }
+
+        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
+        {
+            List<DevExpress.XtraBars.BarBaseButtonItem> baseButtons = new List<DevExpress.XtraBars.BarBaseButtonItem>();
+            if (subItems != null && reallyCreate)
+            {
+                foreach (IMenuItem subItem in subItems)
+                {
+                    subItem.ParentItem = parentItem;
+                    subItem.ParentGroup = parentItem.ParentGroup;
+                    DevExpress.XtraBars.BarBaseButtonItem baseButton = CreateBaseButton(subItem);
+                    if (baseButton != null)
+                    {
+                        baseButton.Tag = subItem;
+                        baseButtons.Add(baseButton);
+                    }
+                }
+            }
+            return baseButtons.ToArray();
+        }
+        /// <summary>
+        /// Vytvoří a vrátí jednoduchý Button
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         protected DevExpress.XtraBars.BarBaseButtonItem CreateBaseButton(IMenuItem item)
         {
             DevExpress.XtraBars.BarBaseButtonItem baseButton = null;
@@ -967,19 +985,155 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return baseButton;
         }
-        protected DevExpress.XtraBars.BarItem[] GetBarSubItems(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
+
+        // PopupMenu pro SplitButton:
+        /// <summary>
+        /// Vytvoří a vrátí objekt <see cref="DevExpress.XtraBars.PopupMenu"/>, který se používá pro prvek typu <see cref="RibbonItemType.SplitButton"/> jako jeho DropDown menu
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="reallyCreate"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        protected DevExpress.XtraBars.PopupMenu CreateXPopupMenu(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
+        {
+            DevExpress.XtraBars.PopupMenu xPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
+            if (subItems != null)
+            {
+                if (reallyCreate)
+                {   // Vytvořit menu hned:
+                    _XPopupMenu_FillItems(xPopupMenu, parentItem, subItems, ref count);
+                }
+                else
+                {   // Vytvořit až bude třeba (BeforePopup):
+                    xPopupMenu.Tag = new LazySubItemsInfo(parentItem, subItems);
+                    xPopupMenu.BeforePopup += _XPopupMenu_BeforePopup;
+                }
+            }
+            return xPopupMenu;
+        }
+        /// <summary>
+        /// Událost před otevřením <see cref="DevExpress.XtraBars.PopupMenu"/> (je použito pro Split Buttonu)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _XPopupMenu_BeforePopup(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (!(sender is DevExpress.XtraBars.PopupMenu dxPopup)) return;
+            dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
+            if (!(dxPopup.Tag is LazySubItemsInfo lazySubItems)) return;
+            dxPopup.Tag = null;                            // dxPopup není prvek Ribbonu, ale PopupMenu navázané na SplitButtonu. Jeho Tag nechť je null, protože definující prvek IMenuItem je v Tagu toho SplitButtonu.
+
+            var startTime = DxComponent.LogTimeCurrent;
+            int count = 0;
+            _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
+            DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Do daného menu <see cref="DevExpress.XtraBars.PopupMenu"/> vygeneruje všechny jeho položky.
+        /// Volá se v procesu tvorby menu (při inicializaci nebo při BeforePopup v LazyInit modu)
+        /// </summary>
+        /// <param name="dxPopup"></param>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="count"></param>
+        private void _XPopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
+        {
+            foreach (IMenuItem subItem in subItems)
+            {
+                subItem.ParentItem = parentItem;
+                subItem.ParentGroup = parentItem.ParentGroup;
+                DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, true, ref count);
+                if (barItem != null)
+                {
+                    barItem.Tag = subItem;
+                    var barLink = dxPopup.AddItem(barItem);
+                    if (subItem.ItemIsFirstInGroup) barLink.BeginGroup = true;
+                }
+            }
+        }
+
+        // BarSubItem pro Menu
+        /// <summary>
+        /// Naplní položky do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/>, používá se pro prvek typu <see cref="RibbonItemType.Menu"/>
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="xBarMenu"></param>
+        /// <param name="reallyCreate"></param>
+        /// <param name="count"></param>
+        private void PrepareXBarMenu(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, DevExpress.XtraBars.BarSubItem xBarMenu, bool reallyCreate, ref int count)
+        {
+            if (parentItem.SubItems != null)
+            {
+                if (reallyCreate)
+                {
+                    _XBarMenu_FillItems(xBarMenu, parentItem, subItems, ref count);
+                }
+                else
+                {
+                    xBarMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
+                    xBarMenu.Tag = new LazySubItemsInfo(parentItem, subItems);
+                    xBarMenu.Popup += _XBarMenu_BeforePopup;
+                }
+            }
+        }
+        /// <summary>
+        /// Událost před otevřením <see cref="DevExpress.XtraBars.BarSubItem "/> (je použito pro Menu Button)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _XBarMenu_BeforePopup(object sender, EventArgs e)
+        {
+            if (!(sender is DevExpress.XtraBars.BarSubItem xBarMenu)) return;
+            xBarMenu.Popup -= _XBarMenu_BeforePopup;
+            if (!(xBarMenu.Tag is LazySubItemsInfo lazySubItems)) return;
+            xBarMenu.Tag = lazySubItems.ParentItem;        // Tady je xBarMenu = přímo prvek Ribbonu, a tam chci mít v Tagu referenci na IMenuItem, který prvek založil...
+
+            var startTime = DxComponent.LogTimeCurrent;
+            int count = 0;
+            xBarMenu.ItemLinks.Clear();                    // V téhle kolekci byl jeden prvek "...", který mi zajistil aktivaci menu = zdejší metoda Popup.
+            _XBarMenu_FillItems(xBarMenu, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
+            DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/> vygeneruje všechny jeho položky.
+        /// Volá se v procesu tvorby menu (při inicializaci nebo při BeforePopup v LazyInit modu)
+        /// </summary>
+        /// <param name="xBarMenu"></param>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="count"></param>
+        private void _XBarMenu_FillItems(DevExpress.XtraBars.BarSubItem xBarMenu, IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
+        {
+            var menuItems = GetBarSubItems(parentItem, subItems, true, ref count);
+            foreach (var menuItem in menuItems)
+            {
+                var menuLink = xBarMenu.AddItem(menuItem);
+                if ((menuItem.Tag is IMenuItem ribbonData) && ribbonData.ItemIsFirstInGroup)
+                    menuLink.BeginGroup = true;
+            }
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí pole prvků <see cref="DevExpress.XtraBars.BarItem"/> pro daný prvek Parent a dané pole definic SubItems.
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="reallyCreate"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        protected DevExpress.XtraBars.BarItem[] GetBarSubItems(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
         {
             List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
-            if (subItems != null)
+            if (subItems != null && reallyCreate)
             {
                 foreach (IMenuItem subItem in subItems)
                 {
                     subItem.ParentItem = parentItem;
                     subItem.ParentGroup = parentItem.ParentGroup;
-                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, ref count);
+                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, true, ref count);
                     if (barItem != null)
-                    {
-                     // tohle není opakovaně potřeba, to zařizuje Ribbon nativně!   barItem.ItemClick += this.RibbonControl_SubItemClick;
+                    {   // tohle není opakovaně potřeba, to zařizuje Ribbon nativně!  ...   barItem.ItemClick += this.RibbonControl_SubItemClick;
                         barItem.Tag = subItem;
                         barItems.Add(barItem);
                     }
@@ -987,68 +1141,85 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return barItems.ToArray();
         }
+
+        // Gallery
+        /// <summary>
+        /// Vytvoří a vrátí Galerii buttonů
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private DevExpress.XtraBars.RibbonGalleryBarItem CreateGalleryItem(IMenuItem item)
+        {
+            var galleryBarItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
+            galleryBarItem.Gallery.Images = ComponentConnector.GraphicsCache.GetImageList();
+            galleryBarItem.Gallery.HoverImages = ComponentConnector.GraphicsCache.GetImageList();
+            galleryBarItem.Gallery.AllowHoverImages = true;
+            galleryBarItem.SuperTip = GetSuperTip(item);
+
+            // Create a gallery item group and add it to the gallery.
+            var galleryGroup = new DevExpress.XtraBars.Ribbon.GalleryItemGroup();
+            galleryBarItem.Gallery.Groups.Add(galleryGroup);
+
+            // Create gallery items and add them to the group.
+            List<DevExpress.XtraBars.Ribbon.GalleryItem> items = new List<DevExpress.XtraBars.Ribbon.GalleryItem>();
+
+            foreach (var subItem in item.SubItems)
+                items.Add(CreateGallerySubItem(subItem));
+
+            galleryGroup.Items.AddRange(items.ToArray());
+
+            // Specify the number of items to display horizontally.
+            galleryBarItem.Gallery.ColumnCount = 4;
+
+            return galleryBarItem;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí jeden prvek galerie
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private DevExpress.XtraBars.Ribbon.GalleryItem CreateGallerySubItem(IMenuItem item)
+        {
+            var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem();
+            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage);
+            galleryItem.SuperTip = this.GetSuperTip(item);
+            return galleryItem;
+        }
+        /// <summary>
+        /// Třída pro uchování informací pro LazyLoad SubItems
+        /// </summary>
+        protected class LazySubItemsInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="parentItem"></param>
+            /// <param name="subItems"></param>
+            public LazySubItemsInfo(IMenuItem parentItem, IEnumerable<IMenuItem> subItems)
+            {
+                this.ParentItem = parentItem;
+                this.SubItems = subItems;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"LazySubItems Parent: {ParentItem}; SubItems: {(SubItems?.Count().ToString() ?? "NULL")}";
+            }
+            /// <summary>
+            /// Prvek definující Button = Parent celého menu
+            /// </summary>
+            public IMenuItem ParentItem { get; private set; }
+            /// <summary>
+            /// SubPrvky
+            /// </summary>
+            public IEnumerable<IMenuItem> SubItems { get; private set; }
+        }
         private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             RibbonControl_ItemClick(sender, e);
-        }
-        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
-        {
-            List<DevExpress.XtraBars.BarBaseButtonItem> baseButtons = new List<DevExpress.XtraBars.BarBaseButtonItem>();
-            if (subItems != null)
-            {
-                foreach (IMenuItem subItem in subItems)
-                {
-                    subItem.ParentItem = parentItem;
-                    subItem.ParentGroup = parentItem.ParentGroup;
-                    DevExpress.XtraBars.BarBaseButtonItem baseButton = CreateBaseButton(subItem);
-                    if (baseButton != null)
-                    {
-                        baseButton.Tag = subItem;
-                        baseButtons.Add(baseButton);
-                    }
-                }
-            }
-            return baseButtons.ToArray();
-        }
-        protected DevExpress.XtraBars.PopupMenu GetPopupSubItems(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
-        {
-            DevExpress.XtraBars.PopupMenu dxPopup = new DevExpress.XtraBars.PopupMenu(BarManager);
-            if (subItems != null)
-            {
-                foreach (IMenuItem subItem in subItems)
-                {
-                    subItem.ParentItem = parentItem;
-                    subItem.ParentGroup = parentItem.ParentGroup;
-                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, ref count);
-                    if (barItem != null)
-                    {
-                        barItem.Tag = subItem;
-                        var barLink = dxPopup.AddItem(barItem);
-                        if (subItem.ItemIsFirstInGroup) barLink.BeginGroup = true;
-                    }
-                }
-            }
-            return dxPopup;
-        }
-        protected DevExpress.XtraBars.Ribbon.GalleryItem[] GetGalleryItems(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
-        {
-            var  galleryItems = new List<DevExpress.XtraBars.Ribbon.GalleryItem>();
-            if (subItems != null)
-            {
-                foreach (var subItem in subItems)
-                {
-                    subItem.ParentItem = parentItem;
-                    subItem.ParentGroup = parentItem.ParentGroup;
-                    var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem(null, subItem.ItemText, subItem.ToolTip);
-                    if (galleryItem != null)
-                    {
-                        galleryItem.Tag = subItem;
-                        DxComponent.ApplyImage(galleryItem.ImageOptions, resourceName: subItem.ItemImage);
-                        galleryItems.Add(galleryItem);
-                    }
-                }
-            }
-            return galleryItems.ToArray();
         }
         protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IMenuItem item)
         {
@@ -1104,8 +1275,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (item.ToolTip != null)
                 barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
 
-            barItem.Tag = item;
+            if (barItem.Tag == null)
+                // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
+                barItem.Tag = item;
         }
+        /// <summary>
+        /// Vygeneruje a vrátí SuperTip pro daný prvek Ribbonu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        protected DevExpress.Utils.SuperToolTip GetSuperTip(IMenuItem item)
+        {
+            return GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí SuperTip pro dané texty
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        /// <param name="itemText"></param>
+        /// <param name="image"></param>
+        /// <returns></returns>
         protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string itemText, string image)
         {
             if (text is null) return null;

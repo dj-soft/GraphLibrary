@@ -157,8 +157,8 @@ namespace TestDevExpress.Forms
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             page.Groups.Add(group);
             group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ToolTip = "Otevře nabídku systémových ikon", ItemImage = imgZoom });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.LogClear", ItemText = "Clear log", ToolTip = "Smaže obsah logu vpravo", ItemImage = imgLogClear });
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ToolTip = "Otevře nabídku systémových ikon", ItemImage = imgZoom, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.LogClear", ItemText = "Clear log", ToolTip = "Smaže obsah logu vpravo", ItemImage = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
 
             page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda" };
             pages.Add(page);
@@ -250,8 +250,8 @@ namespace TestDevExpress.Forms
             _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
             // _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
             // _ButtonMenu = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
+            _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFull, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
             _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4 groups", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
-            _ButtonFull = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFull, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
             // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
 
 
@@ -343,8 +343,8 @@ namespace TestDevExpress.Forms
             int y = y0;
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             // _ButtonEmpty.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
+            _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             _ButtonMenu.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonFull.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             // _ButtonFinal.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
 
             if (isSmall)
@@ -369,7 +369,7 @@ namespace TestDevExpress.Forms
             DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: imageSize);
             // DxComponent.ApplyImage(_ButtonEmpty.ImageOptions, resourceName: "images/xaf/templatesv2images/action_delete.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonMenu.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonFull.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
+            DxComponent.ApplyImage(_ButtonFill.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
             // DxComponent.ApplyImage(_ButtonFinal.ImageOptions, resourceName: "svgimages/icon%20builder/actions_send.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: imageSize);
@@ -446,7 +446,7 @@ namespace TestDevExpress.Forms
         // private DxSimpleButton _ButtonEmpty;
         // private DxSimpleButton _ButtonMenu;
         private DxDropDownButton _ButtonMenu;
-        private DxSimpleButton _ButtonFull;
+        private DxSimpleButton _ButtonFill;
         // private DxSimpleButton _ButtonFinal;
         private DxCheckButton _ButtonMerge;
         private DxCheckButton _ButtonUnMerge;

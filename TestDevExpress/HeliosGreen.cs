@@ -1608,7 +1608,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="imageName"></param>
         /// <param name="size"></param>
         /// <param name="caption"></param>
-        public Image GetResourceContent(string imageName, UserGraphicsSize size, string caption = null)
+        public Image GetResourceContent(string imageName, UserGraphicsSize size = UserGraphicsSize.Medium, string caption = null)
         {
             if (String.IsNullOrEmpty(imageName)) return null;
             if (!_ImageList.Images.ContainsKey(imageName))
@@ -1627,7 +1627,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="size"></param>
         /// <param name="caption"></param>
         /// <returns></returns>
-        public int GetResourceIndex(string imageName, UserGraphicsSize size, string caption = null)
+        public int GetResourceIndex(string imageName, UserGraphicsSize size = UserGraphicsSize.Medium, string caption = null)
         {
             Image image = GetResourceContent(imageName, size, caption);
             if (image is null) return -1;
