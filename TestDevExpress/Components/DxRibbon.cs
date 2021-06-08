@@ -1154,35 +1154,51 @@ namespace Noris.Clients.Win.Components.AsolDX
             galleryBarItem.Gallery.Images = ComponentConnector.GraphicsCache.GetImageList();
             galleryBarItem.Gallery.HoverImages = ComponentConnector.GraphicsCache.GetImageList();
             galleryBarItem.Gallery.AllowHoverImages = true;
+            galleryBarItem.Gallery.ColumnCount = 4;
             galleryBarItem.SuperTip = GetSuperTip(item);
+            galleryBarItem.AllowGlyphSkinning = DefaultBoolean.True;
+            galleryBarItem.Caption = item.ItemText;
+            galleryBarItem.Enabled = item.ItemEnabled;
+            galleryBarItem.GalleryItemClick += GalleryBarItem_GalleryItemClick;
 
-            // Create a gallery item group and add it to the gallery.
+
+            // Galerie musí obsahovat grupy, ne prvky:
             var galleryGroup = new DevExpress.XtraBars.Ribbon.GalleryItemGroup();
             galleryBarItem.Gallery.Groups.Add(galleryGroup);
 
-            // Create gallery items and add them to the group.
+            // Teprve do grupy přidám prvky:
             List<DevExpress.XtraBars.Ribbon.GalleryItem> items = new List<DevExpress.XtraBars.Ribbon.GalleryItem>();
-
             foreach (var subItem in item.SubItems)
-                items.Add(CreateGallerySubItem(subItem));
+                items.Add(CreateGallerySubItem(item, subItem));
 
             galleryGroup.Items.AddRange(items.ToArray());
 
-            // Specify the number of items to display horizontally.
-            galleryBarItem.Gallery.ColumnCount = 4;
-
             return galleryBarItem;
+        }
+
+        private void GalleryBarItem_GalleryItemClick(object sender, DevExpress.XtraBars.Ribbon.GalleryItemClickEventArgs e)
+        {
+            if (!(e.Item?.Tag is IMenuItem menuItem)) return;
+            this.RaiseRibbonItemClick(menuItem);
         }
         /// <summary>
         /// Vytvoří a vrátí jeden prvek galerie
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="parentItem"></param>
+        /// <param name="menuItem"></param>
         /// <returns></returns>
-        private DevExpress.XtraBars.Ribbon.GalleryItem CreateGallerySubItem(IMenuItem item)
+        private DevExpress.XtraBars.Ribbon.GalleryItem CreateGallerySubItem(IMenuItem parentItem, IMenuItem menuItem)
         {
             var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem();
-            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(item.ItemImage);
-            galleryItem.SuperTip = this.GetSuperTip(item);
+            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(menuItem.ItemImage);
+            galleryItem.Caption = menuItem.ItemText;
+            galleryItem.Checked = menuItem.ItemIsChecked ?? false;
+            galleryItem.Description = menuItem.ToolTip;
+            galleryItem.Enabled = menuItem.ItemEnabled;
+            galleryItem.SuperTip = this.GetSuperTip(menuItem);
+            galleryItem.Tag = menuItem;
+            menuItem.ParentItem = parentItem;
+            menuItem.ParentGroup = parentItem.ParentGroup;
             return galleryItem;
         }
         /// <summary>

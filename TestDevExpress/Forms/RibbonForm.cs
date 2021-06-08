@@ -251,7 +251,7 @@ namespace TestDevExpress.Forms
             // _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
             // _ButtonMenu = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
             _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFull, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
-            _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4 groups", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
+            _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
             // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
 
 
@@ -273,8 +273,11 @@ namespace TestDevExpress.Forms
             List<IMenuItem> subItems = new List<IMenuItem>();
             subItems.Add(new DataMenuItem() { ItemId = "ClearRibbon", ItemText = "Clear ", ItemImage = "", ToolTip = "" });
             subItems.Add(new DataMenuItem() { ItemId = "ClearContent", ItemText = "Clear Content only", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "AdOnDemand", ItemText = "Add ON DEMAND page", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "RemoveEmpty", ItemText = "Remove Empty pages", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "AddOnDemand", ItemText = "Add ON DEMAND page", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
+            subItems.Add(new DataMenuItem() { ItemId = "AddRandom", ItemText = "Add RANDOM page", ItemImage = "", ToolTip = ""});
+            subItems.Add(new DataMenuItem() { ItemId = "AddWiki", ItemText = "Add WIKI page", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "Add7Pages", ItemText = "Add 7 pages", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "RemoveEmpty", ItemText = "Remove Empty pages", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
             return subItems;
 
             /* TEXTOVÁ VARIANTA:
@@ -309,7 +312,7 @@ namespace TestDevExpress.Forms
                 case "ClearContent":
                     this._Ribbon.ClearPageContents();
                     break;
-                case "AdOnDemand":
+                case "AddOnDemand":
                     this.FillRibbon(1, 2, 2, 3);
                     break;
                 case "RemoveEmpty":
