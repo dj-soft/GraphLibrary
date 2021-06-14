@@ -141,10 +141,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public List<DevExpress.XtraBars.Ribbon.RibbonPage> GetPages(PagePosition position)
         {
+            var tpc = this.TotalPageCategory;
+            var vpc = tpc.GetVisiblePages();
+
             List<DevExpress.XtraBars.Ribbon.RibbonPage> result = new List<DevExpress.XtraBars.Ribbon.RibbonPage>();
 
             bool withDefault = position.HasFlag(PagePosition.Default);
-            bool withCategories = position.HasFlag(PagePosition.Categories);
+            bool withCategories = position.HasFlag(PagePosition.PageCategories);
             bool withMergedDefault = position.HasFlag(PagePosition.MergedDefault);
             bool withMergedCategories = position.HasFlag(PagePosition.MergedCategories);
 
@@ -152,10 +155,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 result.AddRange(this.Pages);
 
             if (withCategories)
-                result.AddRange(this.Categories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.Pages));
+                result.AddRange(this.PageCategories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.Pages));
 
             if (withCategories && (withMergedDefault || withMergedCategories))
-                result.AddRange(this.Categories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.MergedPages));
+                result.AddRange(this.PageCategories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().SelectMany(c => c.MergedPages));
 
 
             if (withMergedDefault)
@@ -178,7 +181,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (page == null) return PagePosition.None;
             if (_IsPageOnPosition(page, PagePosition.Default)) return PagePosition.Default;
-            if (_IsPageOnPosition(page, PagePosition.Categories)) return PagePosition.Categories;
+            if (_IsPageOnPosition(page, PagePosition.PageCategories)) return PagePosition.PageCategories;
             if (_IsPageOnPosition(page, PagePosition.MergedDefault)) return PagePosition.MergedDefault;
             if (_IsPageOnPosition(page, PagePosition.MergedCategories)) return PagePosition.MergedCategories;
             return PagePosition.None;
@@ -200,7 +203,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Stránka patřící kategorii
             /// </summary>
-            Categories = 0x02,
+            PageCategories = 0x02,
             /// <summary>
             /// Mergovaná základní stránka
             /// </summary>
@@ -211,9 +214,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             MergedCategories = 0x20,
 
             /// <summary>
-            /// Vlastní stránky <see cref="Default"/> a <see cref="Categories"/>
+            /// Vlastní stránky <see cref="Default"/> a <see cref="PageCategories"/>
             /// </summary>
-            AllOwn = Default | Categories,
+            AllOwn = Default | PageCategories,
             /// <summary>
             /// Mergované stránky <see cref="MergedDefault"/> a <see cref="MergedCategories"/>
             /// </summary>
@@ -221,7 +224,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Všechny stránky
             /// </summary>
-            All = Default | Categories | MergedDefault | MergedCategories
+            All = Default | PageCategories | MergedDefault | MergedCategories
         }
         /// <summary>
         /// Úplně všechny stránky v Ribbonu.
@@ -246,7 +249,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return pages.Contains(page);
         }
         #endregion
-        #region Tvorba obsahu Ribbonu: Clear, AddPages, ReFillPages
+        #region Tvorba obsahu Ribbonu: Clear(), ClearPageContents(), RemoveVoidContainers(), AddPages(), ReFillPages()
         /// <summary>
         /// Smaže celý obsah Ribbonu. Ribbon se zmenší na řádek pro záhlaví a celé okno pod ním se přeuspořádá.
         /// Důvodem je smazání všech stránek.
@@ -307,8 +310,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     removeItemsCount++;
                 }
             }
-
-            // var x = this.PageHeaderItemLinks.ToArray();
         }
         /// <summary>
         /// Vrátí true, pokud daný objekt (pochází z kolekce RibbonControl.Items) je takového typu, že se má považovat za systémový = nesmazatelný z Items
@@ -323,6 +324,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case "DevExpress.XtraBars.RibbonSearchEditItem":
                 case "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem":
                 case "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem":
+                // Až najdu další typy prvků v Ribbonu, které mi Clear smaže a neměl by, tak je přidám sem...
                     return true;
             }
             return false;
@@ -338,7 +340,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ModifyCurrentDxContent(_ClearPageContents);
         }
         /// <summary>
-        /// Smaže obsah (itemy a grupy) ale ponechá Pages a Categories
+        /// Smaže obsah (itemy a grupy) ale ponechá Pages, Categories a PageCategories.
         /// </summary>
         private void _ClearPageContents()
         {
@@ -367,26 +369,45 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
+        /// Může být předán seznam stránek, pak smaže pouze prázdné stránky z daného seznamu.
         /// </summary>
         private void _RemoveVoidContainers()
         {
-            var categories = this.Categories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().ToArray();
-            foreach (var category in categories)
+            _RemoveVoidContainers(null);
+        }
+        /// <summary>
+        /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
+        /// Může být předán seznam stránek, pak smaže pouze prázdné stránky z daného seznamu.
+        /// </summary>
+        /// <param name="pages">Smazat pouze stránky z tohoto seznamu, pokud jsou prázdné. Pokud je null, pak smaže všechny prázdné stránky.</param>
+        private void _RemoveVoidContainers(List<DevExpress.XtraBars.Ribbon.RibbonPage> pages)
+        {
+            bool hasExplicitPages = (pages != null);
+            if (hasExplicitPages && pages.Count == 0) return;
+
+            var pageCategories = this.PageCategories.OfType<DevExpress.XtraBars.Ribbon.RibbonPageCategory>().ToArray();
+            foreach (var pageCategory in pageCategories)
             {
-                var cPages = category.Pages.Where(p => p.Groups.Count == 0).ToArray();
+                var cPages = pageCategory.Pages.Where(p => p.Groups.Count == 0).ToArray();
                 foreach (var cPage in cPages)
-                    category.Pages.Remove(cPage);
-                if (category.Pages.Count == 0)
                 {
-                    int index = this.Categories.IndexOf(category.Name);
+                    if (!hasExplicitPages || (hasExplicitPages && pages.Contains(cPage)))
+                        pageCategory.Pages.Remove(cPage);
+                }
+                if (pageCategory.Pages.Count == 0)
+                {
+                    int index = this.PageCategories.IndexOf(pageCategory);
                     if (index >= 0)
-                        this.Categories.RemoveAt(index);
+                        this.PageCategories.RemoveAt(index);
                 }
             }
 
             var nPages = this.Pages.Where(p => p.Groups.Count == 0).ToArray();
             foreach (var nPage in nPages)
-                this.Pages.Remove(nPage);
+            {
+                if (!hasExplicitPages || (hasExplicitPages && pages.Contains(nPage)))
+                    this.Pages.Remove(nPage);
+            }
         }
         /// <summary>
         /// Přidá dodané prvky do this ribbonu, zakládá stránky, kategorie, grupy...
@@ -394,11 +415,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Tato metoda si sama dokáže zajistit invokaci GUI threadu.
         /// Pokud v době volání je aktuální Ribbon mergovaný v parent ribbonech, pak si korektně zajistí re-merge (=promítnutí nového obsahu do parent ribbonu).
+        /// <para/>
+        /// Pokud bude zadán parametr <paramref name="clearCurrentContent"/>, pak dojde k hladké výměně obsahu Ribbonu. Bez blikání.
         /// </summary>
         /// <param name="iRibbonPages">Definice obsahu</param>
         /// <param name="clearCurrentContent">Smazat stávající obsah Ribbonu, smaže se bez bliknutí</param>
         public void AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool clearCurrentContent = false)
         {
+            if (iRibbonPages == null) return;
             this.RunInGui(() =>
             {
                 this.ModifyCurrentDxContent(() =>
@@ -423,13 +447,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPages"></param>
         public void ReFillPages(IEnumerable<IRibbonPage> iRibbonPages)
         {
+            if (iRibbonPages == null) return;
             this.RunInGui(() =>
             {
                 this.ModifyCurrentDxContent(() =>
                 {
                     var reFillPages = _PrepareReFill(iRibbonPages, true);
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, true, "OnDemand");
-                    _FinishReFill(reFillPages);
+                    _RemoveVoidContainers(reFillPages);
                     CheckLazyContentCurrentPage(true);
                 });
             });
@@ -455,18 +480,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 result.ForEachExec(p => DxRibbonPage.ClearContentPage(p));
 
             return result;
-        }
-        /// <summary>
-        /// Z this Ribbonu odstraní takové stránky z daného seznamu, které aktuálně neobsahují žádnou grupu = jsou prázdné
-        /// </summary>
-        /// <param name="ribbonPages"></param>
-        private void _FinishReFill(List<DevExpress.XtraBars.Ribbon.RibbonPage> ribbonPages)
-        {
-            foreach (var ribbonPage in ribbonPages)
-            {
-                if (ribbonPage.Groups.Count == 0)
-                    this.Pages.Remove(ribbonPage);
-            }
         }
         /// <summary>
         /// Metoda je volána při aktivaci stránky this Ribbonu v situaci, kdy tato stránka má aktivní nějaký Lazy režim pro načtení svého obsahu.
@@ -622,27 +635,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             
             // více není třeba.
         }
-        /// <summary>
-        /// Metoda vrátí true, pokud se má vytvářet plný obsah dané stránky Ribbonu.
-        /// Vrátí false, i když by se měly vytvořit nějaké prvky pro QuickAccessToolbar.
-        /// </summary>
-        /// <param name="pageData"></param>
-        /// <param name="isLazyContent"></param>
-        /// <returns></returns>
-        private bool _NeedCreateFullContentForPage(IRibbonPage pageData, bool isLazyContent)
-        {
-            if (this.SelectedPageId == pageData.PageId) return true;           // Pro aktivní stránku musíme vytvářet obsah, nemá smysl čekat...
-            if (!isLazyContent) return true;                                   // Pokud není režim LazyLoad, pak obsah vytváříme hned
-
-            return false;
-
-            // Není nutno generovat obsah hned, krom případu, kdy stránka obsahuje prvky, které mají být v Toolbaru (QuickAccessToolbar).
-            // Jde o stránku, která není aktuálně zobrazena (SelectedPageId), ale Toolbar je vidět vždy.
-            // Prvky v Toolbaru nejde generovat přímo do Toolbaru, musí být přítomny v nějaké stránce Ribbonu a pak vloženy do kolekce this.Toolbar.ItemLinks!
-            // Projdeme tedy obsah stránky Ribbonu a vytáhneme všechny Items, které mají příznak Toolbar:
-            //toolItems = DataRibbonPage.GetAllToolbarItems(pageData);
-            //return (toolItems != null && toolItems.Length > 0);
-        }
         #endregion
         #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent; OnDemand loading
         /// <summary>
@@ -683,7 +675,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (_ClearingNow)
             {   // Pokud nyní probíhá Clear, tak po Pages.Clear proběhne Select na první CategoryPage nebo MergedPage, která je dostupná.
-                // Ale pokud to bude pozice Default nebo Categories (=naše vlastní), tak ty se nyní odstraňují a nemá cenu pro ně řešit SelectedPage a LazyLoad,
+                // Ale pokud to bude pozice Default nebo PageCategories (=naše vlastní), tak ty se nyní odstraňují a nemá cenu pro ně řešit SelectedPage a LazyLoad,
                 //  na to už je zbytečně pozdě!
 
                 // Přípravu obsahu stránky tedy provedu pouze pro stránky typu Merged:

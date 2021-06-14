@@ -250,7 +250,7 @@ namespace TestDevExpress.Forms
             _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
             // _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
             // _ButtonMenu = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
-            _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFull, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
+            _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFill, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
             _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
             // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
 
@@ -264,62 +264,6 @@ namespace TestDevExpress.Forms
             this.IsMerged = false;
         }
 
-        private void DropDownButtonClick(object sender, EventArgs e)
-        {
-            this.FillRibbon(1, 2, 2, 3);
-        }
-        private List<IMenuItem> _GetDropDownItems()
-        {
-            List<IMenuItem> subItems = new List<IMenuItem>();
-            subItems.Add(new DataMenuItem() { ItemId = "ClearRibbon", ItemText = "Clear ", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "ClearContent", ItemText = "Clear Content only", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "AddOnDemand", ItemText = "Add ON DEMAND page", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
-            subItems.Add(new DataMenuItem() { ItemId = "AddRandom", ItemText = "Add RANDOM page", ItemImage = "", ToolTip = ""});
-            subItems.Add(new DataMenuItem() { ItemId = "AddWiki", ItemText = "Add WIKI page", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "Add7Pages", ItemText = "Add 7 pages", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "RemoveEmpty", ItemText = "Remove Empty pages", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
-            return subItems;
-
-            /* TEXTOVÁ VARIANTA:
-
-            string resource1 = "devav/actions/driving.svg";
-            string resource2 = "devav/actions/filter.svg";
-            string resource3 = "devav/actions/gettingstarted.svg";
-            string resource4 = "devav/actions/hide.svg";
-            string resource5 = "devav/actions/picture.svg";
-            string resource6 = "devav/actions/redo.svg";
-            string resource7 = "devav/actions/refresh.svg";
-            string resource8 = "devav/actions/remove.svg";
-
-            string subItemsText =
-                $"Clear Ribbon•Smaže vše (stránky i obsah)•{resource2}♦" +
-                $"Clear Content•Smaže grupy ze stránek (včetně buttonů), ale stránky ponechá•{resource8}♦" +
-                $"Add ON DEMAND page•••_♦" +
-                $"Add RANDOM page♦" +
-                $"Add VZTAHY♦" +
-                $"Remove Empty•Odstraní stránky, které nic neobsahují••_"
-
-            */
-
-        }
-        private void DropDownItemClick(object sender, TEventArgs<IMenuItem> e)
-        {
-            switch (e.Item.ItemId)
-            {
-                case "ClearRibbon":
-                    this._Ribbon.Clear();
-                    break;
-                case "ClearContent":
-                    this._Ribbon.ClearPageContents();
-                    break;
-                case "AddOnDemand":
-                    this.FillRibbon(1, 2, 2, 3);
-                    break;
-                case "RemoveEmpty":
-                    this._Ribbon.RemoveVoidContainers();
-                    break;
-            }
-        }
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
@@ -439,9 +383,13 @@ namespace TestDevExpress.Forms
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
         /// <param name="clearCurrentContent"></param>
-        public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, bool clearCurrentContent = false)
+        /// <param name="pageText"></param>
+        public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, bool clearCurrentContent = false, string pageText = null)
         {
-            var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, CategoryName, CategoryName, CategoryColor);
+            int? pageIndex = (pageText != null ? (int?)DxRibbonSample.FindPageIndex(pageText) : (int?)null);
+            var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, 
+                CategoryName, CategoryName, CategoryColor, 
+                pageIndex);
             _Ribbon.AddPages(items, clearCurrentContent);
         }
         private DxRibbonControl _Ribbon;
@@ -457,23 +405,74 @@ namespace TestDevExpress.Forms
         {
             this._Ribbon.Clear();
         }
-        private void _RunEmpty(object sender, EventArgs args)
+        private List<IMenuItem> _GetDropDownItems()
         {
-            //this._Ribbon.Empty();
+            List<IMenuItem> subItems = new List<IMenuItem>();
+            subItems.Add(new DataMenuItem() { ItemId = "ClearRibbon", ItemText = "Clear ", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "ClearContent", ItemText = "Clear Content only", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "AddOnDemand", ItemText = "Add ON DEMAND page", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
+            subItems.Add(new DataMenuItem() { ItemId = "AddRandom", ItemText = "Add RANDOM page", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "AddWiki", ItemText = "Add WIKI page", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "Add7Pages", ItemText = "Add 7 pages", ItemImage = "", ToolTip = "" });
+            subItems.Add(new DataMenuItem() { ItemId = "RemoveEmpty", ItemText = "Remove Empty pages", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
+            return subItems;
 
-            // this._Ribbon.UnMergeContent();
+            /* TEXTOVÁ VARIANTA:
+
+            string resource1 = "devav/actions/driving.svg";
+            string resource2 = "devav/actions/filter.svg";
+            string resource3 = "devav/actions/gettingstarted.svg";
+            string resource4 = "devav/actions/hide.svg";
+            string resource5 = "devav/actions/picture.svg";
+            string resource6 = "devav/actions/redo.svg";
+            string resource7 = "devav/actions/refresh.svg";
+            string resource8 = "devav/actions/remove.svg";
+
+            string subItemsText =
+                $"Clear Ribbon•Smaže vše (stránky i obsah)•{resource2}♦" +
+                $"Clear Content•Smaže grupy ze stránek (včetně buttonů), ale stránky ponechá•{resource8}♦" +
+                $"Add ON DEMAND page•••_♦" +
+                $"Add RANDOM page♦" +
+                $"Add VZTAHY♦" +
+                $"Remove Empty•Odstraní stránky, které nic neobsahují••_"
+
+            */
+
         }
-        private void _RunAdd4Groups(object sender, EventArgs args) 
+        private void DropDownButtonClick(object sender, EventArgs e)
         {
-            FillRibbon(1, 2, 2, 3);
+            this.FillRibbon(1, 2, 2, 3);
         }
-        private void _RunFull(object sender, EventArgs args)
+        private void DropDownItemClick(object sender, TEventArgs<IMenuItem> e)
+        {
+            switch (e.Item.ItemId)
+            {
+                case "ClearRibbon":
+                    this._Ribbon.Clear();
+                    break;
+                case "ClearContent":
+                    this._Ribbon.ClearPageContents();
+                    break;
+                case "AddOnDemand":
+                    this.FillRibbon(1, 1, 2, 3, false, "ON.DEMAND");
+                    break;
+                case "AddRandom":
+                    this.FillRibbon(1, 1, 2, 3, false, "RANDOM");
+                    break;
+                case "AddWiki":
+                    this.FillRibbon(1, 2, 2, 3, false, "WIKI");
+                    break;
+                case "Add7Pages":
+                    this.FillRibbon(5, 8, 4, 8);
+                    break;
+                case "RemoveEmpty":
+                    this._Ribbon.RemoveVoidContainers();
+                    break;
+            }
+        }
+        private void _RunFill(object sender, EventArgs args)
         {
             FillRibbon(3, 6, 2, 5, true);
-        }
-        private void _RunFinal(object sender, EventArgs args) 
-        {
-            // this._Ribbon.Final(); 
         }
         private void _RunMerge(object sender, EventArgs args)
         {
@@ -581,7 +580,9 @@ namespace TestDevExpress.Forms
         /// <param name="categoryColor"></param>
         /// <param name="pageIndex"></param>
         /// <returns></returns>
-        public static List<IRibbonPage> CreatePages(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
+        public static List<IRibbonPage> CreatePages(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, 
+            string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, 
+            int? pageIndex = null)
         {
             List<IRibbonPage> pages = new List<IRibbonPage>();
             _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, categoryId, categoryText, categoryColor);
@@ -625,6 +626,8 @@ namespace TestDevExpress.Forms
             for (int p = 0; p < pc; p++)
             {
                 DataRibbonPage page = _GetPage(pageIndex, categoryId, categoryText, categoryColor);
+                if (page == null) continue;
+
                 pages.Add(page);
 
                 // Pokud NENÍ explicitně daná stránka (pageIndex je null), a my jsme náhodně určili stránku v režimu OnDemandLoad:
@@ -710,6 +713,7 @@ namespace TestDevExpress.Forms
         private static DataRibbonPage _GetPage(int? pageIndex, string categoryId, string categoryText, System.Drawing.Color? categoryColor)
         {
             int pageTotal = PageNames.Length;
+            if (pageIndex.HasValue && (pageIndex.Value < 0 || pageIndex.Value >= pageTotal)) return null;
             int pi = pageIndex ?? Rand.Next(pageTotal);
             if (pi < 0 || pi >= pageTotal) throw new ArgumentException($"Požadovaný index stránky {pi} je mimo rozsah 0 až {pageTotal}");
 
