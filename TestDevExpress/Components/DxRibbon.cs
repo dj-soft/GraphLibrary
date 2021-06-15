@@ -587,13 +587,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonPage is null) return;
 
-            var category = GetCategory(iRibbonPage.Category);                   // Pokud je to třeba, vygeneruje Kategorii
-            var page = GetPage(iRibbonPage, category);                          // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
+            var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);     // Pokud je to třeba, vygeneruje Kategorii
+            var page = GetPage(iRibbonPage, pageCategory);                     // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
             if (page is null) return;
 
-            if (this.SelectedPageId == page.Name) isLazyContentFill = false;    // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
+            if (this.SelectedPageId == page.Name) isLazyContentFill = false;   // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
             bool createContent = page.PreparePageForContent(iRibbonPage, isLazyContentFill, isOnDemandFill);
-            if (!createContent) return;                                         // víc už dělat nemusíme. Máme stránku a v ní LazyInfo.
+            if (!createContent) return;                                        // víc už dělat nemusíme. Máme stránku a v ní LazyInfo.
 
             var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
             foreach (var iRibbonGroup in list)
@@ -736,84 +736,178 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> PageOnDemandLoad;
         #endregion
-        #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...)
+        #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...) : Get/Create/Clear/Add/Remove
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí kategorii pro daná data
         /// </summary>
         /// <param name="iRibbonCategory"></param>
-        /// <param name="enableNew"></param>
+        /// <param name="pageChangeMode"></param>
         /// <returns></returns>
-        protected DxRibbonPageCategory GetCategory(IRibbonCategory iRibbonCategory, bool enableNew = true)
+        protected DxRibbonPageCategory GetPageCategory(IRibbonCategory iRibbonCategory, ContentChangeMode pageChangeMode)
         {
             if (iRibbonCategory is null || String.IsNullOrEmpty(iRibbonCategory.CategoryId)) return null;
-            DxRibbonPageCategory category = PageCategories.GetCategoryByName(iRibbonCategory.CategoryId) as DxRibbonPageCategory;
-            if (category is null && enableNew)
+
+            var changeMode = pageChangeMode;
+            DxRibbonPageCategory pageCategory = PageCategories.GetCategoryByName(iRibbonCategory.CategoryId) as DxRibbonPageCategory;
+
+            if (HasCreate(changeMode))
             {
-                category = new DxRibbonPageCategory(iRibbonCategory.CategoryText, iRibbonCategory.CategoryColor, iRibbonCategory.CategoryVisible);
-                category.Name = iRibbonCategory.CategoryId;
-                category.Tag = iRibbonCategory;
-                PageCategories.Add(category);
+                if (pageCategory is null)
+                    pageCategory = CreatePageCategory(iRibbonCategory);
+                pageCategory.Tag = iRibbonCategory;
             }
-            if (category != null) category.Tag = iRibbonCategory;
-            return category;
+
+            return pageCategory;
         }
+        /// <summary>
+        /// Vytvoří new kategorii, naplní a vrátí ji
+        /// </summary>
+        /// <param name="iRibbonCategory"></param>
+        /// <returns></returns>
+        protected DxRibbonPageCategory CreatePageCategory(IRibbonCategory iRibbonCategory)
+        {
+            DxRibbonPageCategory pageCategory = new DxRibbonPageCategory(iRibbonCategory.CategoryText, iRibbonCategory.CategoryColor, iRibbonCategory.CategoryVisible);
+            pageCategory.Name = iRibbonCategory.CategoryId;
+            pageCategory.Tag = iRibbonCategory;
+            PageCategories.Add(pageCategory);
+            return pageCategory;
+        }
+
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí stránku pro daná data.
         /// Stránku přidá do this Ribbonu nebo do dané kategorie.
         /// </summary>
         /// <param name="iRibbonPage"></param>
-        /// <param name="category"></param>
+        /// <param name="pageCategory"></param>
         /// <param name="enableNew"></param>
         /// <returns></returns>
-        protected DxRibbonPage GetPage(IRibbonPage iRibbonPage, DxRibbonPageCategory category = null, bool enableNew = true)
+        protected DxRibbonPage GetPage(IRibbonPage iRibbonPage, DxRibbonPageCategory pageCategory = null)
         {
             if (iRibbonPage is null) return null;
-            bool isCategory = !(category is null);
-            DxRibbonPage page = (isCategory ? 
-                category.Pages.FirstOrDefault(r => (r.Name == iRibbonPage.PageId)) : 
-                Pages.FirstOrDefault(r => r.Name == iRibbonPage.PageId)) as DxRibbonPage;
+            bool isCategory = !(pageCategory is null);
+            var pageCollection = (isCategory ? pageCategory.Pages : this.Pages);
 
-            if (page is null && enableNew)
+            var changeMode = iRibbonPage.ChangeMode;
+            DxRibbonPage page = pageCollection.FirstOrDefault(r => (r.Name == iRibbonPage.PageId)) as DxRibbonPage;
+            if (HasCreate(changeMode))
             {
-                page = new DxRibbonPage(this, iRibbonPage.PageText)
-                {
-                    Name = iRibbonPage.PageId,
-                    Tag = iRibbonPage
-                };
-                if (isCategory)
-                    category.Pages.Add(page);
-                else
-                    Pages.Add(page);
+                if (page is null)
+                    page = CreatePage(iRibbonPage, pageCollection);
+                if (HasReFill(changeMode))
+                    ClearPage(page);
+                page.Tag = iRibbonPage;
+                page.PageData = iRibbonPage;
             }
-            page.PageData = iRibbonPage;
+            else if (HasRemove(changeMode))
+            {
+                RemovePage(page, pageCollection);
+            }
+
             return page;
         }
+        /// <summary>
+        /// Vygeneruje new Page a zařadí do patřičného parenta (kategorie / Ribbon.Pages)
+        /// </summary>
+        /// <param name="iRibbonPage"></param>
+        /// <param name="pageCollection"></param>
+        /// <returns></returns>
+        protected DxRibbonPage CreatePage(IRibbonPage iRibbonPage, DevExpress.XtraBars.Ribbon.RibbonPageCollection pageCollection)
+        {
+            DxRibbonPage page = new DxRibbonPage(this, iRibbonPage.PageText)
+            {
+                Name = iRibbonPage.PageId,
+                Tag = iRibbonPage
+            };
+            pageCollection.Add(page);
+            return page;
+        }
+        /// <summary>
+        /// Vyprázdní obsah dané stránky: odstraní grupy i itemy, i Lazy group.
+        /// </summary>
+        /// <param name="page"></param>
+        protected void ClearPage(DxRibbonPage page)
+        {
+            page?.ClearContent();
+        }
+        /// <summary>
+        /// Odebere danou stránku z kolekce stránek, pokud je zadáno a stránka tam existuje
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="pageCollection"></param>
+        protected void RemovePage(DxRibbonPage page, DevExpress.XtraBars.Ribbon.RibbonPageCollection pageCollection)
+        {
+            if (page != null && pageCollection != null && pageCollection.Contains(page))
+                pageCollection.Remove(page);
+        }
+
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí grupu pro daná data.
         /// Grupu přidá do dané stránky.
         /// </summary>
         /// <param name="iRibbonGroup"></param>
         /// <param name="page"></param>
-        /// <param name="enableNew"></param>
         /// <returns></returns>
-        protected DxRibbonGroup GetGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page, bool enableNew = true)
+        protected DxRibbonGroup GetGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page)
         {
             if (iRibbonGroup is null || page is null) return null;
+
+            var changeMode = iRibbonGroup.ChangeMode;
             DxRibbonGroup group = page.Groups.GetGroupByName(iRibbonGroup.GroupId) as DxRibbonGroup;
-            if (group is null && enableNew)
+            if (HasCreate(changeMode))
             {
-                group = new DxRibbonGroup(iRibbonGroup.GroupText)
-                {
-                    Name = iRibbonGroup.GroupId,
-                    CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False),
-                    State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto,
-                    Tag = iRibbonGroup
-                };
-                group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImage, ImagesSize, iRibbonGroup.GroupText);
-                page.Groups.Add(group);
+                if (group is null)
+                    group = CreateGroup(iRibbonGroup, page);
+                if (HasReFill(changeMode))
+                    ClearGroup(group);
+                group.Tag = iRibbonGroup;
             }
+            else if (HasRemove(changeMode))
+            {
+                RemoveGroup(group, page);
+            }
+
             return group;
         }
+        /// <summary>
+        /// Vytvoří a vrátí grupu
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        protected DxRibbonGroup CreateGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page)
+        {
+            var group = new DxRibbonGroup(iRibbonGroup.GroupText)
+            {
+                Name = iRibbonGroup.GroupId,
+                CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False),
+                State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto,
+                Tag = iRibbonGroup
+            };
+            group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImage, ImagesSize, iRibbonGroup.GroupText);
+            page.Groups.Add(group);
+            return group;
+        }
+        /// <summary>
+        /// Smaže obsah grupy
+        /// </summary>
+        /// <param name="group"></param>
+        /// <returns></returns>
+        protected void ClearGroup(DxRibbonGroup group)
+        {
+            group?.ClearContent();
+        }
+        /// <summary>
+        /// Odstraní grupu ze stránky
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        protected void RemoveGroup(DxRibbonGroup group, DxRibbonPage page)
+        {
+            if (group != null && page != null && page.Groups.Contains(group))
+                page.Groups.Remove(group);
+        }
+
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí BarItem pro daná data.
         /// BarItem přidá do dané grupy.
@@ -1323,6 +1417,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             superTip.Items.Add(text);
             return superTip;
         }
+        /// <summary>
+        /// Vrací true pokud se má objekt vytvořit
+        /// </summary>
+        /// <param name="changeMode"></param>
+        /// <returns></returns>
+        protected static bool HasCreate(ContentChangeMode changeMode) { return (changeMode != ContentChangeMode.Remove); }
+        /// <summary>
+        /// Vrací true pokud se má objekt vyprázdnit
+        /// </summary>
+        /// <param name="changeMode"></param>
+        /// <returns></returns>
+        protected static bool HasReFill(ContentChangeMode changeMode) { return (changeMode == ContentChangeMode.ReFill); }
+        /// <summary>
+        /// Vrací true pokud se má objekt smazat
+        /// </summary>
+        /// <param name="changeMode"></param>
+        /// <returns></returns>
+        protected static bool HasRemove(ContentChangeMode changeMode) { return (changeMode == ContentChangeMode.Remove); }
         /// <summary>
         /// Konvertuje typ <see cref="BarItemPaintStyle"/> na typ <see cref="DevExpress.XtraBars.BarItemPaintStyle"/>
         /// </summary>
@@ -2228,14 +2340,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
         /// </summary>
-        protected DxRibbonControl OwnerRibbon { get; private set; }
+        protected DxRibbonControl OwnerDxRibbon { get; private set; }
         /// <summary>
         /// Inicializace
         /// </summary>
         /// <param name="ribbon"></param>
         protected void Init(DxRibbonControl ribbon)
         {
-            this.OwnerRibbon = ribbon;
+            this.OwnerDxRibbon = ribbon;
             LazyLoadInfo = null;
         }
         /// <summary>
@@ -2291,7 +2403,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxRibbonLazyLoadInfo lazyLoadInfo = LazyLoadInfo;
             if (lazyLoadInfo == null)
             {
-                lazyLoadInfo = new DxRibbonLazyLoadInfo(OwnerRibbon, this, pageData);
+                lazyLoadInfo = new DxRibbonLazyLoadInfo(OwnerDxRibbon, this, pageData);
                 this.Groups.Add(lazyLoadInfo.Group);
                 LazyLoadInfo = lazyLoadInfo;
             }
@@ -2319,7 +2431,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void PrepareRealLazyItems(bool isReFill)
         {
             if (this.HasActiveLazyContent)
-                this.OwnerRibbon.PrepareRealLazyItems(this.LazyLoadInfo, isReFill);
+                this.OwnerDxRibbon.PrepareRealLazyItems(this.LazyLoadInfo, isReFill);
         }
         /// <summary>
         /// Definice dat pro LazyLoad content pro tuto Page. Obsahuje deklarace prvků i referenci na grupu, která LazyLoad zajistí.
@@ -2355,15 +2467,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal void ClearContent(bool clearUserItems, bool clearLazyGroup)
         {
             if (clearUserItems)
-            {
+            {   // Standardní grupy a itemy:
                 string groupId = DxRibbonLazyLoadInfo.LazyLoadGroupId;
                 var groupsToDelete = this.Groups.OfType<DevExpress.XtraBars.Ribbon.RibbonPageGroup>().Where(g => g.Name != groupId).ToList();
                 var itemsToDelete = groupsToDelete.SelectMany(g => g.ItemLinks).Select(l => l.Item).ToList();
-                groupsToDelete.ForEach(g => this.Groups.Remove(g));
-                itemsToDelete.ForEach(i => this.OwnerRibbon.Items.Remove(i));
+                var groups = this.Groups;
+                groupsToDelete.ForEach(g => groups.Remove(g));
+                var ownerRibbonItems = this.OwnerDxRibbon.Items;
+                itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
             }
             if (clearLazyGroup)
+            {   // Lazy group a její itemy:
                 this.RemoveLazyLoadInfo();
+            }
         }
     }
     /// <summary>
@@ -2380,6 +2496,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="text"></param>
         public DxRibbonGroup(string text) : base(text) { }
+        /// <summary>
+        /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
+        /// </summary>
+        protected DxRibbonControl OwnerDxRibbon { get { return this.Ribbon as DxRibbonControl; } }
+        /// <summary>
+        /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
+        /// </summary>
+        protected DxRibbonPage OwnerDxPage { get { return this.Page as DxRibbonPage; } }
+        /// <summary>
+        /// Smaže obsah this grupy
+        /// </summary>
+        public void ClearContent()
+        {
+            var itemsToDelete = this.ItemLinks.Select(l => l.Item).ToList();
+            var ownerRibbonItems = this.OwnerDxRibbon.Items;
+            itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
+        }
     }
     /// <summary>
     /// Třída, která pomáhá řešit opožděné načítání a tvorbu prvků v Ribbonu.
@@ -2807,6 +2940,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataRibbonPage()
         {
+            this.ChangeMode = ContentChangeMode.Add;
             this.Groups = new List<IRibbonGroup>();
         }
         /// <summary>
@@ -2873,6 +3007,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ID grupy, musí být jednoznačné v rámci Ribbonu
         /// </summary>
         public string PageId { get; set; }
+        /// <summary>
+        /// Režim pro vytvoření / refill / remove této stránky
+        /// </summary>
+        public ContentChangeMode ChangeMode { get; set; }
         /// <summary>
         /// Pořadí stránky, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
@@ -2952,6 +3090,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataRibbonGroup()
         {
+            this.ChangeMode = ContentChangeMode.Add;
             this.Items = new List<IMenuItem>();
         }
         /// <summary>
@@ -2992,6 +3131,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string GroupId { get; set; }
         /// <summary>
+        /// Režim pro vytvoření / refill / remove této grupy
+        /// </summary>
+        public ContentChangeMode ChangeMode { get; set; }
+        /// <summary>
         /// Pořadí grupy, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
         public int GroupOrder { get; set; }
@@ -3031,6 +3174,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataMenuItem()
         {
+            this.ChangeMode = ContentChangeMode.Add;
             this.ItemEnabled = true;
         }
         /// <summary>
@@ -3074,6 +3218,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
         /// </summary>
         public string ItemId { get; set; }
+        /// <summary>
+        /// Režim pro vytvoření / refill / remove tohoto prvku
+        /// </summary>
+        public ContentChangeMode ChangeMode { get; set; }
         /// <summary>
         /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
@@ -3176,6 +3324,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string PageId { get; }
         /// <summary>
+        /// Režim pro vytvoření / refill / remove této stránky
+        /// </summary>
+        ContentChangeMode ChangeMode { get; }
+        /// <summary>
         /// Pořadí stránky, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
         int PageOrder { get; set; }
@@ -3240,6 +3392,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string GroupId { get; }
         /// <summary>
+        /// Režim pro vytvoření / refill / remove této grupy
+        /// </summary>
+        ContentChangeMode ChangeMode { get; }
+        /// <summary>
         /// Pořadí grupy, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
         int GroupOrder { get; set; }
@@ -3281,6 +3437,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
         /// </summary>
         string ItemId { get; }
+        /// <summary>
+        /// Režim pro vytvoření / refill / remove tohoto prvku
+        /// </summary>
+        ContentChangeMode ChangeMode { get; }
         /// <summary>
         /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
@@ -3491,6 +3651,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         SkinPaletteDropDown,
         SkinPaletteGallery
 
+    }
+    /// <summary>
+    /// Druh změny obsahu aktuálního prvku
+    /// </summary>
+    public enum ContentChangeMode
+    {
+        /// <summary>
+        /// Nezadáno explicitně, použije se defaultní hodnota (typicky <see cref="Add"/>)
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přidat nový obsah ke stávajícímu obsahu, prvky se shodným ID aktualizovat, nic neodebírat
+        /// </summary>
+        Add,
+        /// <summary>
+        /// Znovu naplnit prvek: pokud prvek existuje, nejprve bude jeho obsah odstraněn, a poté bude vložen nově definovaný obsah.
+        /// Pokud prvek neexistuje, bude vytvořen nový a prázdný.
+        /// </summary>
+        ReFill,
+        /// <summary>
+        /// Odstranit prvek: pokud existuje, bude zahozen jeho obsah i prvek samotný. Pokud neexistuje, nebude vytvářen.
+        /// Pokud definice prvku má režim <see cref="Remove"/>, pak případný definovaný obsah prvku nebude použit.
+        /// </summary>
+        Remove
     }
     #endregion
 }

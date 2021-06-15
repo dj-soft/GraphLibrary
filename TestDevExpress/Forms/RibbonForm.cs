@@ -248,12 +248,8 @@ namespace TestDevExpress.Forms
 
             int x = 20;
             _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
-            // _ButtonEmpty = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Empty", _RunEmpty); x += 160;
-            // _ButtonMenu = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Add 4 groups", _RunAdd4Groups); x += 160;
             _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFill, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
             _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
-            // _ButtonFinal = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Final", _RunFinal); x += 160;
-
 
             x += 60;
             _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge, toolTipText: "Obsah tohoto Ribbonu připojí k buttonu o úroveň výše"); x += 160;
@@ -289,10 +285,8 @@ namespace TestDevExpress.Forms
             int x = x0;
             int y = y0;
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            // _ButtonEmpty.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
             _ButtonMenu.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            // _ButtonFinal.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
 
             if (isSmall)
             {
@@ -314,10 +308,8 @@ namespace TestDevExpress.Forms
             int svgS = (isSmall ? h1 - 8 : h1 - 12);
             System.Drawing.Size imageSize = new System.Drawing.Size(svgS, svgS);
             DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: imageSize);
-            // DxComponent.ApplyImage(_ButtonEmpty.ImageOptions, resourceName: "images/xaf/templatesv2images/action_delete.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonMenu.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonFill.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
-            // DxComponent.ApplyImage(_ButtonFinal.ImageOptions, resourceName: "svgimages/icon%20builder/actions_send.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: imageSize);
             DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: imageSize);
         }
@@ -346,15 +338,13 @@ namespace TestDevExpress.Forms
         private bool _IsMerged;
         private void _SetMerged(bool isMerged)
         {
-            // if (isMerged == _IsMerged) return;
+            // if (isMerged == _IsMerged) return;           takhle ne, chceme povolit i opakované spuštění MergeCurrentDxToParent() !
             if (ParentRibbon != null)
             {
                 if (isMerged)
                     this.Ribbon.MergeCurrentDxToParent(ParentRibbon);
-                    // ParentRibbon.MergeChildDxRibbon(this.Ribbon);
                 else
                     this.Ribbon.UnMergeCurrentDxFromParent();
-                    // ParentRibbon.UnMergeDxRibbon();
                 _IsMerged = isMerged;
             }
             else
@@ -394,11 +384,8 @@ namespace TestDevExpress.Forms
         }
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
-        // private DxSimpleButton _ButtonEmpty;
-        // private DxSimpleButton _ButtonMenu;
         private DxDropDownButton _ButtonMenu;
         private DxSimpleButton _ButtonFill;
-        // private DxSimpleButton _ButtonFinal;
         private DxCheckButton _ButtonMerge;
         private DxCheckButton _ButtonUnMerge;
         private void _RunClear(object sender, EventArgs args) 
