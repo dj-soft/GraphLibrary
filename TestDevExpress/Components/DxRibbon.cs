@@ -630,9 +630,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _AddBarItem(IMenuItem iMenuItem, DxRibbonGroup group, ref int count)
         {
             if (iMenuItem == null || group == null) return;
-            var barItem = GetBarItem(iMenuItem, group, ref count, true, false);
+            var barItem = GetItem(iMenuItem, group, ref count);
             if (barItem is null) return;
-            
             // více není třeba.
         }
         #endregion
@@ -918,26 +917,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="enableNew"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetBarItem(IMenuItem item, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool enableNew = true, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IMenuItem item, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool reallyCreateSubItems = false)
         {
             if (item is null || group is null) return null;
+
+            var changeMode = item.ChangeMode;
             DevExpress.XtraBars.BarItem barItem = Items[item.ItemId];
-            if (barItem is null)
+            if (HasCreate(changeMode))
             {
-                if (!enableNew) return null;
-                barItem = CreateBarItem(item, reallyCreateSubItems, ref count);
+                if (HasReFill(changeMode) && barItem != null)
+                { }
+                if (barItem is null)
+                    barItem = CreateItem(item, reallyCreateSubItems, ref count);
+                if (HasReFill(changeMode))
+                {
+                    //  ClearItem(barItem);
+                }
+               
                 if (barItem is null) return null;
                 var barLink = group.ItemLinks.Add(barItem);
-                if (item.ItemIsFirstInGroup) barLink.BeginGroup = true;
-            }
-            else
-            {
+                barLink.BeginGroup = item.ItemIsFirstInGroup;
                 FillBarItem(barItem, item);
-            }
 
-            if (barItem.Tag == null)
                 // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
-                barItem.Tag = item;
+                if (barItem.Tag == null) barItem.Tag = item;
+            }
+            else if (HasRemove(changeMode))
+            {
+
+            }
 
             if (item.ItemToolbarOrder.HasValue)
                 this.Toolbar.ItemLinks.Add(barItem);
@@ -951,7 +959,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreateSubItems">Skutečně se mají vytvářet SubMenu?</param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem CreateBarItem(IMenuItem item, bool reallyCreateSubItems, ref int count)
+        protected DevExpress.XtraBars.BarItem CreateItem(IMenuItem item, bool reallyCreateSubItems, ref int count)
         {
             DevExpress.XtraBars.BarItem barItem = null;
             switch (item.ItemType)
@@ -1022,6 +1030,69 @@ namespace Noris.Clients.Win.Components.AsolDX
                 FillBarItem(barItem, item);
             }
             return barItem;
+        }
+        /// <summary>
+        /// Do daného prvku vepíše data z definice
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="item"></param>
+        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IMenuItem item)
+        {
+            if (item.ItemText != null)
+                barItem.Caption = item.ItemText;
+
+            barItem.Enabled = item.ItemEnabled;
+
+            string imageName = item.ItemImage;
+            if (imageName != null && !(barItem is DxCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
+            {
+                if (DxComponent.TryGetResourceExtension(imageName, out var _))
+                {
+                    DxComponent.ApplyImage(barItem.ImageOptions, resourceName: imageName);
+                }
+                else
+                {
+                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, ImagesSize, item.ItemText);
+                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, LargeImagesSize, item.ItemText);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(item.HotKey))
+            {
+                if (barItem is DevExpress.XtraBars.BarSubItem)
+                    ComponentConnector.ShowWarningToDeveloper($"Setup keyboard shortcut {item.HotKey} to non button barItem {barItem.Name}. This is {barItem.GetType().Name}");
+                else
+                    barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(item.HotKey));
+            }
+
+            if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
+            {   // Do CheckBoxu vepisujeme víc vlastností:
+                checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
+                checkItem.CheckStyle =
+                    (item.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
+                    (item.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
+                     DevExpress.XtraBars.BarCheckStyles.Standard));
+                checkItem.Checked = item.ItemIsChecked ?? false;
+            }
+
+            if (barItem is DxCheckBoxToggle dxCheckBoxToggle)
+            {
+                dxCheckBoxToggle.Checked = item.ItemIsChecked;
+                if (item.ItemImage != null) dxCheckBoxToggle.ImageNameNull = item.ItemImage;
+                if (item.ItemImageUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = item.ItemImageUnChecked;
+                if (item.ItemImageChecked != null) dxCheckBoxToggle.ImageNameChecked = item.ItemImageChecked;
+            }
+
+            barItem.PaintStyle = Convert(item.ItemPaintStyle);
+            if (item.RibbonStyle != RibbonItemStyles.Default)
+                barItem.RibbonStyle = Convert(item.RibbonStyle);
+
+            if (item.ToolTip != null)
+                barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
+
+            if (barItem.Tag == null)
+                // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
+                barItem.Tag = item;
         }
 
         protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
@@ -1129,7 +1200,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 subItem.ParentItem = parentItem;
                 subItem.ParentGroup = parentItem.ParentGroup;
-                DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, true, ref count);
+                DevExpress.XtraBars.BarItem barItem = CreateItem(subItem, true, ref count);
                 if (barItem != null)
                 {
                     barItem.Tag = subItem;
@@ -1217,7 +1288,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     subItem.ParentItem = parentItem;
                     subItem.ParentGroup = parentItem.ParentGroup;
-                    DevExpress.XtraBars.BarItem barItem = CreateBarItem(subItem, true, ref count);
+                    DevExpress.XtraBars.BarItem barItem = CreateItem(subItem, true, ref count);
                     if (barItem != null)
                     {   // tohle není opakovaně potřeba, to zařizuje Ribbon nativně!  ...   barItem.ItemClick += this.RibbonControl_SubItemClick;
                         barItem.Tag = subItem;
@@ -1322,64 +1393,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             RibbonControl_ItemClick(sender, e);
-        }
-        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IMenuItem item)
-        {
-            if (item.ItemText != null)
-                barItem.Caption = item.ItemText;
-
-            barItem.Enabled = item.ItemEnabled;
-
-            string imageName = item.ItemImage;
-            if (imageName != null && !(barItem is DxCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
-            {
-                if (DxComponent.TryGetResourceExtension(imageName, out var _))
-                {
-                    DxComponent.ApplyImage(barItem.ImageOptions, resourceName: imageName);
-                }
-                else
-                {
-                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, ImagesSize, item.ItemText);
-                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, LargeImagesSize, item.ItemText);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(item.HotKey))
-            {
-                if (barItem is DevExpress.XtraBars.BarSubItem)
-                    ComponentConnector.ShowWarningToDeveloper($"Setup keyboard shortcut {item.HotKey} to non button barItem {barItem.Name}. This is {barItem.GetType().Name}");
-                else
-                    barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(item.HotKey));
-            }
-
-            if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
-            {   // Do CheckBoxu vepisujeme víc vlastností:
-                checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
-                checkItem.CheckStyle = 
-                    (item.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
-                    (item.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
-                     DevExpress.XtraBars.BarCheckStyles.Standard));
-                checkItem.Checked = item.ItemIsChecked ?? false;
-            }
-
-            if (barItem is DxCheckBoxToggle dxCheckBoxToggle)
-            {
-                dxCheckBoxToggle.Checked = item.ItemIsChecked;
-                if (item.ItemImage != null) dxCheckBoxToggle.ImageNameNull = item.ItemImage;
-                if (item.ItemImageUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = item.ItemImageUnChecked;
-                if (item.ItemImageChecked != null) dxCheckBoxToggle.ImageNameChecked = item.ItemImageChecked;
-            }
-
-            barItem.PaintStyle = Convert(item.ItemPaintStyle);
-            if (item.RibbonStyle != RibbonItemStyles.Default)
-                barItem.RibbonStyle = Convert(item.RibbonStyle);
-
-            if (item.ToolTip != null)
-                barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
-
-            if (barItem.Tag == null)
-                // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
-                barItem.Tag = item;
         }
         /// <summary>
         /// Vygeneruje a vrátí SuperTip pro daný prvek Ribbonu
