@@ -687,7 +687,7 @@ namespace Djs.Tools.WebDownloader.Download
                 this.BytesReceived = bytes;
                 this.TotalBytesToReceive = e.TotalBytesToReceive;
                 this.ProgressPercentage = e.ProgressPercentage;
-                this.ProcessWebResponse();
+                this.TryProcessWebResponse();
                 this.CurrentBlockStartTime = now;             // Počáteční hodnoty pro příští událost (čas a počet Byte)
                 this.CurrentBlockStartPosition = bytes;
                 if ((this.SecondBlockStartPosition == 0L || this.SecondBlockStartTime == DateTime.MinValue) && bytes > 0L)
@@ -747,15 +747,27 @@ namespace Djs.Tools.WebDownloader.Download
         /// <summary>
         /// Zpracuje informace z this.WebClient.ResponseHeaders, pokud ještě nejsou načteny.
         /// </summary>
+        private void TryProcessWebResponse()
+        {
+            try { ProcessWebResponse(); }
+            catch { }
+        }
+        /// <summary>
+        /// Zpracuje informace z this.WebClient.ResponseHeaders, pokud ještě nejsou načteny.
+        /// </summary>
         private void ProcessWebResponse()
         {
-            var responseHeaders = this.WebClient?.ResponseHeaders;
-            if (responseHeaders == null) return;
+            var webClient = this.WebClient;
+            if (webClient == null) return;
+
+            var responseHeaders = webClient.ResponseHeaders;
+            if (responseHeaders == null || responseHeaders.AllKeys == null) return;
             int count = responseHeaders.Count;
             if (count == 0) return;
-            string[] keys = this.WebClient?.ResponseHeaders.AllKeys.ToArray();
+
+            string[] keys = responseHeaders.AllKeys.ToArray();
             string[] values = new string[count];
-            this.WebClient?.ResponseHeaders.CopyTo(values, 0);
+            responseHeaders.CopyTo(values, 0);
             for (int i = 0; i < count; i++)
             {
                 string key = keys[i];
@@ -784,8 +796,8 @@ namespace Djs.Tools.WebDownloader.Download
                     }
                 }
             }
-            int x = this._ResponseDict.Count;
-            int y = x + x;
+            // int x = this._ResponseDict.Count;
+            // int y = x + x;
 
             /*
              * 

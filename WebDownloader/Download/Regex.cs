@@ -54,6 +54,79 @@ namespace Djs.Tools.WebDownloader.Download
             return true;
         }
         /// <summary>
+        /// Metoda vrátí pole <see cref="Regex"/>, které dovolují porovnávat konkrétní texty se standardní Wildcards notací.
+        /// Z dodané sady wildcard masek (odděleny středníkem) vrátí pole Regex výrazů pro jejich filtrování.
+        /// Pokud je na vstupu Empty, vrací prázdné pole.
+        /// Typický vstup: "*.tmp; *.js; *thumb*.*; *.htm*;" atd
+        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
+        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// </summary>
+        /// <param name="pattern">Pattern s užitím standardních Wildcards * a ?</param>
+        /// <returns></returns>
+        public static Regex[] CreateWildcardsRegexes(string patterns)
+        {
+            return CreateWildcardsRegexes(patterns, true);
+        }
+        /// <summary>
+        /// Metoda vrátí pole <see cref="Regex"/>, které dovolují porovnávat konkrétní texty se standardní Wildcards notací.
+        /// Z dodané sady wildcard masek (odděleny středníkem) vrátí pole Regex výrazů pro jejich filtrování.
+        /// Pokud je na vstupu Empty, vrací prázdné pole.
+        /// Typický vstup: "*.tmp; *.js; *thumb*.*; *.htm*;" atd
+        /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
+        /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
+        /// </summary>
+        /// <param name="pattern">Patterny s užitím standardních Wildcards * a ?</param>
+        /// <returns></returns>
+        public static Regex[] CreateWildcardsRegexes(string patterns, bool ignoreCase)
+        {
+            List<Regex> regexes = new List<Regex>();
+            if (!String.IsNullOrEmpty(patterns))
+            {
+                string[] masks = patterns.Trim().Split(';');
+                foreach (string mask in masks)
+                {
+                    if (!String.IsNullOrEmpty(mask))
+                    {
+                        Regex regex = CreateWildcardsRegex(mask.Trim(), true);
+                        if (regex != null)
+                            regexes.Add(regex);
+                    }
+                }
+            }
+
+            return regexes.ToArray();
+        }
+        /// <summary>
+        /// Vrátí dodanou kolekci textů filtrovanou podle dané kolekce regulárních výrazů.
+        /// Kolekce <paramref name="data"/> typicky obsahuje seznam souborů nebo názvů;
+        /// kolekce <paramref name="regexes"/> obsahuje výstup zdejší metody <see cref="CreateWildcardsRegexes(string)"/>;
+        /// výstup zdejší metody pak obsahuje jen vyhovující soubory.
+        /// <para/>
+        /// Pokud <paramref name="data"/> je null, výstupem je null.
+        /// Pokud <paramref name="regexes"/> je null nebo prázdná kolekce, pak výstupem je vstupní kolekce <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="regexes"></param>
+        /// <returns></returns>
+        public static IEnumerable<string> FilterByRegexes(IEnumerable<string> data, IEnumerable<Regex> regexes)
+        {
+            if (data == null) return null;
+            if (regexes == null || regexes.Count() == 0) return data;
+            return data.Where(t => IsTextMatchToAny(t, regexes));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný text vyhovuje některé masce
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="regexes"></param>
+        /// <returns></returns>
+        public static bool IsTextMatchToAny(string text, IEnumerable<Regex> regexes)
+        {
+            if (text == null) return false;
+            if (regexes == null) return false;
+            return regexes.Any(mask => mask.IsMatch(text));
+        }
+        /// <summary>
         /// Metoda vrátí <see cref="Regex"/>, který dovoluje porovnávat texty se standardní Wildcards notací.
         /// Tedy: text "Abcdefg" vyhovuje patternu "Ab??e*".
         /// Volitelně lze požádat, aby <see cref="Regex"/> měl zapnutou option <see cref="RegexOptions.IgnoreCase"/>: true = ignoruje velikost znaků, false = neignoruje
