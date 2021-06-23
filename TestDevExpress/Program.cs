@@ -24,11 +24,11 @@ namespace TestDevExpress
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
                 Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
 
-                // Application.Run(new TestDevExpress.Forms.MainForm());
+                Application.Run(new TestDevExpress.Forms.MainForm());
 
                 // Application.Run(new TestDevExpress.Forms.DataForm());
 
-                 Application.Run(new TestDevExpress.Forms.RibbonForm());
+                // Application.Run(new TestDevExpress.Forms.RibbonForm());
 
                 // Application.Run(new TestDevExpress.Forms.ImagePickerForm());
 

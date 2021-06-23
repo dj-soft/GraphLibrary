@@ -135,6 +135,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string LastSelectedPageId { get; private set; }
         /// <summary>
+        /// ID posledně vybrané stránky, která je naše nativní (bude k dispozici i po provedení Unmerge Child ribbonu).
+        /// Na tuto stránku seRibbon vrátí po Unmerge.
+        /// </summary>
+        public string LastSelectedOwnPageId { get; private set; }
+        /// <summary>
         /// Vrátí soupis stránek z this ribbonu z daných pozic
         /// </summary>
         /// <param name="position"></param>
@@ -187,6 +192,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             return PagePosition.None;
         }
         /// <summary>
+        /// Úplně všechny stránky v Ribbonu.
+        /// Obsahuje i pro stránky kategorií i stránky mergované a stránky z mergovaných kategorií.
+        /// </summary>
+        protected List<DevExpress.XtraBars.Ribbon.RibbonPage> AllPages { get { return GetPages(PagePosition.All); } }
+        /// <summary>
+        /// Úplně všechny VLASTNÍ stránky v Ribbonu.
+        /// Obsahuje tedy základní stránky plus pro stránky vlastních kategorií.
+        /// Neobsahuje stránky mergované ani stránky z mergovaných kategorií.
+        /// </summary>
+        protected List<DevExpress.XtraBars.Ribbon.RibbonPage> AllOwnPages { get { return GetPages(PagePosition.AllOwn); } }
+        /// <summary>
+        /// Vrátí true, pokud daná stránka je v this Ribbonu na dané pozici. Lze zadat více pozic najednou (<see cref="PagePosition"/> je Flags)
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private bool _IsPageOnPosition(DevExpress.XtraBars.Ribbon.RibbonPage page, PagePosition position)
+        {
+            var pages = GetPages(position);
+            return pages.Contains(page);
+        }
+        #region enum PagePosition
+        /// <summary>
         /// Pozice stránky
         /// </summary>
         [Flags]
@@ -226,28 +254,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             All = Default | PageCategories | MergedDefault | MergedCategories
         }
-        /// <summary>
-        /// Úplně všechny stránky v Ribbonu.
-        /// Obsahuje i pro stránky kategorií i stránky mergované a stránky z mergovaných kategorií.
-        /// </summary>
-        protected List<DevExpress.XtraBars.Ribbon.RibbonPage> AllPages { get { return GetPages(PagePosition.All); } }
-        /// <summary>
-        /// Úplně všechny VLASTNÍ stránky v Ribbonu.
-        /// Obsahuje tedy základní stránky plus pro stránky vlastních kategorií.
-        /// Neobsahuje stránky mergované ani stránky z mergovaných kategorií.
-        /// </summary>
-        protected List<DevExpress.XtraBars.Ribbon.RibbonPage> AllOwnPages { get { return GetPages(PagePosition.AllOwn); } }
-        /// <summary>
-        /// Vrátí true, pokud daná stránka je v this Ribbonu na dané pozici. Lze zadat více pozic najednou (<see cref="PagePosition"/> je Flags)
-        /// </summary>
-        /// <param name="page"></param>
-        /// <param name="position"></param>
-        /// <returns></returns>
-        private bool _IsPageOnPosition(DevExpress.XtraBars.Ribbon.RibbonPage page, PagePosition position)
-        {
-            var pages = GetPages(position);
-            return pages.Contains(page);
-        }
+        #endregion
         #endregion
         #region Tvorba obsahu Ribbonu: Clear(), ClearPageContents(), RemoveVoidContainers(), AddPages(), ReFillPages()
         /// <summary>
@@ -705,7 +712,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (_ClearingNow || this.SelectedPage == null) return;
             var pageId = this.SelectedPageId;
             if (!String.IsNullOrEmpty(pageId))
+            {
                 this.LastSelectedPageId = pageId;
+                if (IsOwnPageId(pageId))
+                    this.LastSelectedOwnPageId = pageId;
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud stránka s daným <paramref name="pageId"/> je naší vlastní stránkou (je v <see cref="AllOwnPages"/>).
+        /// Vrátí false pokud neexistuje nebo je mergovaná.
+        /// </summary>
+        /// <param name="pageId"></param>
+        /// <returns></returns>
+        protected bool IsOwnPageId(string pageId)
+        {
+            if (String.IsNullOrEmpty(pageId)) return false;
+            return (this.AllOwnPages.Any(p => p.Name == pageId));
         }
         /// <summary>
         /// Pokud je true (běžný aktivní stav), pak se po aktivaci stránky provádí kontroly LazyLoad obsahu.
@@ -2103,6 +2125,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var startTime = DxComponent.LogTimeCurrent;
 
+            var lastSelectedOwnPageId = this.LastSelectedOwnPageId;
+
             base.UnMergeRibbon();
 
             DxRibbonControl childDxRibbon = this.MergedChildDxRibbon;
@@ -2110,6 +2134,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 childDxRibbon.MergedIntoParentDxRibbon = null;
 
             this.MergedChildRibbon = null;
+
+            // Po UnMerge zkusíme selectovat tu naši vlastní stránku, která byla naposledy aktivní:
+            if (lastSelectedOwnPageId != null)
+                this.SelectedPageId = lastSelectedOwnPageId;
 
             DxComponent.LogAddLineTime($"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
