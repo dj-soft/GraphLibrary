@@ -1081,10 +1081,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (!string.IsNullOrEmpty(item.HotKey))
             {
-                if (barItem is DevExpress.XtraBars.BarSubItem)
-                    ComponentConnector.ShowWarningToDeveloper($"Setup keyboard shortcut {item.HotKey} to non button barItem {barItem.Name}. This is {barItem.GetType().Name}");
-                else
+                if (!(barItem is DevExpress.XtraBars.BarSubItem))
                     barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(item.HotKey));
+                // else
+                //    ComponentConnector.ShowWarningToDeveloper($"Setup keyboard shortcut {item.HotKey} to non button barItem {barItem.Name}. This is {barItem.GetType().Name}");
             }
 
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)

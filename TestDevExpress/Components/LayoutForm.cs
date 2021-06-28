@@ -422,6 +422,15 @@ namespace TestDevExpress.Components
         }
         private string _TitleText;
         /// <summary>
+        /// Text v titulku náhradní
+        /// </summary>
+        public string TitleSubstitute
+        {
+            get { return _TitleSubstitute; }
+            set { _TitleSubstitute = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
+        }
+        private string _TitleSubstitute;
+        /// <summary>
         /// Ikona u titulku
         /// </summary>
         public Image TitleIcon
@@ -638,6 +647,7 @@ namespace TestDevExpress.Components
         string ILayoutUserControl.Id { get { return this.Id.ToString(); } }
         bool ILayoutUserControl.TitleVisible { get { return true; } }
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
+        string ILayoutUserControl.TitleSubstitute { get { return this.TitleSubstitute; } }
         Image ILayoutUserControl.TitleIcon { get { return this.TitleIcon; } }
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
