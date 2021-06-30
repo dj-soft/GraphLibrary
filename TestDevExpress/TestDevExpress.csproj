@@ -156,19 +156,19 @@
     <Compile Include="Components\DialogForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Components\DxComponents.cs" />
-    <Compile Include="Components\DxDataForm.cs">
+    <Compile Include="AsolDX\DxComponents.cs" />
+    <Compile Include="AsolDX\DxDataForm.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Components\DxLayoutPanel.cs">
+    <Compile Include="AsolDX\DxLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Components\DxOverlay.cs" />
-    <Compile Include="Components\DxRibbon.cs">
+    <Compile Include="AsolDX\DxOverlay.cs" />
+    <Compile Include="AsolDX\DxRibbon.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Components\DxThreadManager.cs" />
-    <Compile Include="Components\DxTreeView.cs">
+    <Compile Include="AsolDX\DxThreadManager.cs" />
+    <Compile Include="AsolDX\DxTreeView.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\LayoutForm.cs">

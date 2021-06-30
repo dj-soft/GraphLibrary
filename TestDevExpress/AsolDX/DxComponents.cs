@@ -1160,59 +1160,110 @@ namespace Noris.Clients.Win.Components.AsolDX
             EventHandler<TEventArgs<IMenuItem>> itemClick = null)
         {
             if (dropDownControl != null) return dropDownControl;
-            if (subItems == null && !String.IsNullOrEmpty(subItemsText))
-                subItems = CreateIMenuItems(subItemsText);
+
+            // Tvorba položek menu z textu:
+            if (subItems == null && !String.IsNullOrEmpty(subItemsText)) subItems = CreateIMenuItems(subItemsText);
             if (subItems == null) return null;
 
             // var popupMenu = CreateXBPopupMenu(subItems);
-            var popupMenu = CreateDXPopupMenu(subItems);
-           
-            popupMenu.Tag = new Tuple<IEnumerable<IMenuItem>, EventHandler<TEventArgs<IMenuItem>>>(subItems, itemClick);
-           // popupMenu.ItemClick += DxPopupMenu_ItemClick;
+            var popupMenu = CreateDXPopupMenu(subItems, itemClick: itemClick);
 
             return popupMenu;
         }
         /// <summary>
-        /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton
+        /// Metoda vytvoří a vrátí PopupMenu pro dané položky [s daným titulkem, daného typu].
+        /// Je možno předat odkaz na metodu, která bude volána po kliknutí na položku menu. Tato metoda dostane argument, jehož Item je položka menu, na kterou se kliklo.
         /// </summary>
-        /// <param name="subItemsText"></param>
+        /// <param name="menuItems"></param>
+        /// <param name="caption"></param>
+        /// <param name="menuType"></param>
+        /// <param name="showCheckedAsBold"></param>
+        /// <param name="itemClick"></param>
         /// <returns></returns>
-        public static List<IMenuItem> CreateIMenuItems(string subItemsText)
+        public static DevExpress.Utils.Menu.DXPopupMenu CreateDXPopupMenu(IEnumerable<IMenuItem> menuItems,
+            string caption = null, DevExpress.Utils.Menu.MenuViewType? menuType = null, bool showCheckedAsBold = false,
+            EventHandler<TEventArgs<IMenuItem>> itemClick = null)
         {
-            List<IMenuItem> menuItems = new List<IMenuItem>();
+            var dxMenu = new DevExpress.Utils.Menu.DXPopupMenu();
+            // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.RibbonMiniToolbar;         // sada tlačítek v panelu
+            // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.Toolbar;                   // sada tlačítek v řádce
+            dxMenu.MenuViewType = menuType ?? DevExpress.Utils.Menu.MenuViewType.Menu;             // default = normální menu
+            dxMenu.Caption = caption ?? "MENU";
+            dxMenu.ShowCaption = true;
+            dxMenu.ShowItemToolTips = true;
 
-            if (subItemsText != null)
-            {   // Ukázka: "Nabídka•Toto je nabídka funkcí•image.svg•CD♦Nabídka•Toto je nabídka funkcí•image.svg•CD♦Nabídka•Toto je nabídka funkcí•image.svg•CD♦";
-                char sepLines = MenuItemsSeparatorLines;            // Klávesa ALT a Num 4
-                char sepItems = MenuItemsSeparatorItems;            // Klávesa ALT a Num 7
-                char codChBox = MenuItemsCodeCheckBox;
-                char codChecked = MenuItemsCodeChecked;
-                char codGroup = MenuItemsCodeBeginGroup;
-                char codDisable = MenuItemsCodeDisable;
-                var lines = subItemsText.Split(sepLines);
-                int id = 0;
-                foreach (var line in lines)
-                {
-                    var items = line.Split(sepItems);          
-                    int count = items.Length;
-                    string itemId = "Item" + (id++).ToString();
-                    string text = (count > 0 ? items[0].Trim() : "");
-                    string toolTip = (count > 1 ? items[1].Trim() : "");
-                    string image = (count > 2 ? items[2].Trim() : "");
-                    string data = (count > 3 ? items[3].Trim().ToUpper() : "");
-                    if (!String.IsNullOrEmpty(text))
-                    {
-                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, ItemText = text, ToolTip = toolTip, ToolTipTitle = text, ItemImage = image };
-                        menuItem.ItemType = (data.Contains(codChBox) ? RibbonItemType.CheckBoxStandard : RibbonItemType.Button);
-                        if (menuItem.ItemType == RibbonItemType.CheckBoxStandard) menuItem.ItemIsChecked = data.Contains(codChecked);
-                        if (data.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
-                        if (data.Contains(codDisable)) menuItem.ItemEnabled = false;
-                        menuItems.Add(menuItem);
-                    }
-                }
+            if (menuItems != null)
+                menuItems.ForEachExec(i => dxMenu.Items.Add(CreateDXPopupMenuItem(i, showCheckedAsBold)));
+
+            if (itemClick != null)
+            {
+                dxMenu.Tag = itemClick;
+                dxMenu.ItemClick += DxPopupMenu_ItemClick;
             }
+            return dxMenu;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí položku menu z definice menu, rekurzivně včetně subItems
+        /// </summary>
+        /// <param name="menuItem"></param>
+        /// <param name="showCheckedAsBold"></param>
+        /// <returns></returns>
+        public static DevExpress.Utils.Menu.DXMenuItem CreateDXPopupMenuItem(IMenuItem menuItem, bool showCheckedAsBold)
+        {
+            if (menuItem == null) return null;
 
-            return menuItems;
+            DevExpress.Utils.Menu.DXMenuItem dxItem;
+            string itemImage = menuItem.ItemImage;
+            if (menuItem.ItemIsChecked.HasValue)
+            {
+                bool isChecked = menuItem.ItemIsChecked.Value; ;
+                DevExpress.Utils.Menu.DXMenuCheckItem dxCheckItem = new DevExpress.Utils.Menu.DXMenuCheckItem();
+                dxCheckItem.Checked = isChecked;
+                if (isChecked)
+                {
+                    if (showCheckedAsBold)
+                        dxCheckItem.Appearance.FontStyleDelta = FontStyle.Bold;
+                    if (menuItem.ItemImageChecked != null)
+                        itemImage = menuItem.ItemImageChecked;
+                }
+                else
+                {
+                    if (menuItem.ItemImageUnChecked != null)
+                        itemImage = menuItem.ItemImageUnChecked;
+                }
+                dxItem = dxCheckItem;
+            }
+            else
+            {
+                dxItem = new DevExpress.Utils.Menu.DXMenuItem();
+            }
+            dxItem.BeginGroup = menuItem.ItemIsFirstInGroup;
+            dxItem.Enabled = menuItem.ItemEnabled;
+            dxItem.Caption = menuItem.ItemText;
+            dxItem.SuperTip = CreateDxSuperTip(menuItem);
+            dxItem.Tag = menuItem;
+
+            DxComponent.ApplyImage(dxItem.ImageOptions, resourceName: itemImage);
+
+            // SubMenu:
+            if (menuItem.SubItems != null)
+                menuItem.SubItems.ForEachExec(i => dxItem.Collection.Add(CreateDXPopupMenuItem(i, showCheckedAsBold)));
+
+            return dxItem;
+        }
+        private static void DxPopupMenu_ItemClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
+        {
+            // sender by měl být DevExpress.Utils.Menu.DXPopupMenu,
+            // jeho Tag by měl obsahovat eventhandler typu : EventHandler<TEventArgs<IMenuItem>>
+            EventHandler<TEventArgs<IMenuItem>> itemClick = (sender as DevExpress.Utils.Menu.DXMenuItem)?.Tag as EventHandler<TEventArgs<IMenuItem>>;
+            if (itemClick == null) return;
+
+            // e.Item by měl být prvek menu, v jehož Tagu je zdrojová položka IMenuItem,
+            // podle které byla položka Popup vytvořena:
+            if (!(e.Item.Tag is IMenuItem iMenuItem)) return;
+
+            // Předáme řízení handleru akce ItemClick:
+            itemClick(sender, new TEventArgs<IMenuItem>(iMenuItem));
         }
         public static DevExpress.XtraBars.PopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems)
         {
@@ -1243,61 +1294,56 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return barItems.ToArray();
         }
-        public static DevExpress.Utils.Menu.DXPopupMenu CreateDXPopupMenu(IEnumerable<IMenuItem> menuItems)
+        /// <summary>
+        /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton
+        /// </summary>
+        /// <param name="itemsText"></param>
+        /// <returns></returns>
+        public static List<IMenuItem> CreateIMenuItems(string itemsText)
         {
-            var dxMenu = new DevExpress.Utils.Menu.DXPopupMenu();
-            // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.RibbonMiniToolbar;        // sada tlačítek v panelu
-            // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.Toolbar;                  // sada tlačítek v řádce
-            dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.Menu;                     // normální
-            dxMenu.Caption = "MENu";
+            List<IMenuItem> menuItems = new List<IMenuItem>();
 
-            if (menuItems != null)
-            {
-                foreach (var item in menuItems)
-                    dxMenu.Items.Add(CreateDXPopupMenuItem(item));
+            if (itemsText != null)
+            {   // Ukázka: "Nabídka•Toto je nabídka funkcí•image.svg•CD♦Nabídka•Toto je nabídka funkcí•image.svg•CD♦Nabídka•Toto je nabídka funkcí•image.svg•CD♦";
+                char sepLines = MenuItemsSeparatorLines;            // Klávesa ALT a Num 4
+                char sepItems = MenuItemsSeparatorItems;            // Klávesa ALT a Num 7
+                char codChBox = MenuItemsCodeCheckBox;
+                char codChecked = MenuItemsCodeChecked;
+                char codGroup = MenuItemsCodeBeginGroup;
+                char codDisable = MenuItemsCodeDisable;
+                var lines = itemsText.Split(sepLines);
+                int id = 0;
+                foreach (var line in lines)
+                {
+                    var items = line.Split(sepItems);
+                    int count = items.Length;
+                    string itemId = "Item" + (id++).ToString();
+                    string text = (count > 0 ? items[0].Trim() : "");
+                    string toolTip = (count > 1 ? items[1].Trim() : "");
+                    string image = (count > 2 ? items[2].Trim() : "");
+                    string data = (count > 3 ? items[3].Trim().ToUpper() : "");
+                    if (!String.IsNullOrEmpty(text))
+                    {
+                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, ItemText = text, ToolTip = toolTip, ToolTipTitle = text, ItemImage = image };
+                        menuItem.ItemType = (data.Contains(codChBox) ? RibbonItemType.CheckBoxStandard : RibbonItemType.Button);
+                        if (menuItem.ItemType == RibbonItemType.CheckBoxStandard) menuItem.ItemIsChecked = data.Contains(codChecked);
+                        if (data.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
+                        if (data.Contains(codDisable)) menuItem.ItemEnabled = false;
+                        menuItems.Add(menuItem);
+                    }
+                }
             }
-            dxMenu.ItemClick += DxPopupMenu_ItemClick;
-            return dxMenu;
+
+            return menuItems;
         }
-        private static DevExpress.Utils.Menu.DXMenuItem CreateDXPopupMenuItem(IMenuItem menuItem)
-        {
-            var dxItem = new DevExpress.Utils.Menu.DXMenuItem()
-            {
-                BeginGroup = menuItem.ItemIsFirstInGroup,
-                Enabled = menuItem.ItemEnabled,
-                Caption = menuItem.ItemText,
-                SuperTip = CreateDxSuperTip(menuItem),
-                Tag = menuItem
-            };
-
-            DxComponent.ApplyImage(dxItem.ImageOptions, resourceName: menuItem.ItemImage);
-
-            return dxItem;
-        }
-
-        private static void DxPopupMenu_ItemClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
-        {
-            // sender by měl být DevExpress.Utils.Menu.DXPopupMenu;
-            // jeho Tag by měl obsahovat Tuple, kde Item2 = akce 'itemClick' volaná po kliknutí na prvek (delegát typu EventHandler<TEventArgs<IMenuItem>>)
-            var popupInfo = (sender as DevExpress.Utils.Menu.DXMenuItem)?.Tag as Tuple<IEnumerable<IMenuItem>, EventHandler<TEventArgs<IMenuItem>>>;
-            if (popupInfo == null || popupInfo.Item2 == null) return;
-
-            // e.Item by měl být prvek menu, v jehož Tagu je zdrojová položka IMenuItem,
-            // podle které byla položka Popup vytvořena:
-            if (!(e.Item.Tag is IMenuItem iMenuItem)) return;
-
-            // Předáme řízení handleru akce ItemClick:
-            popupInfo.Item2(sender, new TEventArgs<IMenuItem>(iMenuItem));
-        }
-
         /// <summary>
         /// Deklarace prvků menu : Oddělovač řádků v textu. '♦'
         /// Lze jej zadat jako Alt + Num 4.
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
-        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
-        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, EventHandler{TEventArgs{IMenuItem}})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, EventHandler{TEventArgs{IMenuItem}}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsSeparatorLines { get { return '♦'; } }
@@ -1307,8 +1353,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
-        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
-        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, EventHandler{TEventArgs{IMenuItem}})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, EventHandler{TEventArgs{IMenuItem}}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsSeparatorItems { get { return '•'; } }
@@ -1317,8 +1363,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
-        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
-        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, EventHandler{TEventArgs{IMenuItem}})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, EventHandler{TEventArgs{IMenuItem}}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsCodeCheckBox { get { return 'C'; } }
@@ -1327,8 +1373,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
-        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
-        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, EventHandler{TEventArgs{IMenuItem}})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, EventHandler{TEventArgs{IMenuItem}}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsCodeChecked { get { return 'A'; } }
@@ -1337,8 +1383,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
-        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
-        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, EventHandler{TEventArgs{IMenuItem}})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, EventHandler{TEventArgs{IMenuItem}}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsCodeBeginGroup { get { return '_'; } }
@@ -1347,14 +1393,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
-        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, TEventArgs{IMenuItem})"/>
-        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, TEventArgs{IMenuItem}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
+        /// <see cref="CreateDxDropDownControl(DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, EventHandler{TEventArgs{IMenuItem}})"/>
+        /// <see cref="CreateDxDropDownButton(int, int, int, int, Control, string, EventHandler, EventHandler{TEventArgs{IMenuItem}}, DevExpress.Utils.Menu.IDXDropDownControl, string, IEnumerable{IMenuItem}, DevExpress.XtraEditors.Controls.PaintStyles?, Image, string, string, string, bool?, bool?, bool?)"/>
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsCodeDisable { get { return '/'; } }
-
-        
-
 
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text
@@ -1379,7 +1422,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static SuperToolTip CreateDxSuperTip(IMenuItem menuItem)
         {
-            if (menuItem == null || String.IsNullOrEmpty(menuItem.ToolTip)) return null;
+            if (menuItem == null || (String.IsNullOrEmpty(menuItem.ToolTipTitle) && String.IsNullOrEmpty(menuItem.ToolTip))) return null;
 
             string title = (menuItem.ToolTipTitle ?? menuItem.ItemText);
 
@@ -2200,6 +2243,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
                 catch { }
+            }
+            else
+            {
+                imageOptions.SvgImage = null;
+                imageOptions.Image = null;
             }
 
             if (smallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
@@ -5722,6 +5770,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Padding = new Padding(0);
             DxComponent.RegisterListener(this);
         }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -5755,10 +5807,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Style & Zoom Changed
-        void IListenerZoomChange.ZoomChanged()
-        { }
-        void IListenerStyleChanged.StyleChanged()
-        { }
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
+        /// <summary>
+        /// Volá se po změně zoomu
+        /// </summary>
+        protected virtual void OnZoomChanged() { }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
+        /// <summary>
+        /// Volá se po změně skinu
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
         #endregion
         #region Rozšířené property
         /// <summary>

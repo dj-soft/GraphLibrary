@@ -2805,7 +2805,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-
     #region class DxLayoutTitlePanel : titulkový řádek
     /// <summary>
     /// Titulkový řádek. Obsahuje titulek a několik buttonů (Dock a Close).
@@ -2960,7 +2959,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje-li true, budou zobrazována dokovací tlačítka podle situace v hlavním panelu, typicky reaguje na počet panelů.
         /// </summary>
-        public override bool DockButtonsEnabled { get { return ((this.LayoutPanel?.ControlCount ?? 0) > 0); } set { } }
+        public override bool DockButtonsEnabled { get { return ((this.LayoutPanel?.ControlCount ?? 0) > 1); } set { } }
         #endregion
     }
     #endregion
@@ -3181,7 +3180,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-
     #region class DxTitlePanel : titulkový řádek samotný, s tlačítkem Close, bez vztahu na layout
     /// <summary>
     /// Titulkový řádek. Obsahuje titulek a button Close.

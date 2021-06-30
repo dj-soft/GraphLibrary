@@ -2036,7 +2036,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
 
+            _TreeList.FilterRowVisible = true;
+
+            _TreeList.FilterRowChanged += _TreeList_FilterRowChanged;
+            _TreeList.FilterRowKeyEnter += _TreeList_FilterRowKeyEnter;
             _TreeList.NodeSelected += _TreeList_AnyAction;
+            _TreeList.NodeIconClick += _TreeList_IconClick;
             _TreeList.NodeDoubleClick += _TreeList_DoubleClick;
             _TreeList.NodeExpanded += _TreeList_AnyAction;
             _TreeList.NodeCollapsed += _TreeList_AnyAction;
@@ -2060,9 +2065,20 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
             _AddLogLine(line);
         }
+        private void _TreeList_FilterRowKeyEnter(object sender, EventArgs e)
+        {
+            _AddLogLine($"RowFilter: 'Enter' pressed");
+        }
+        private void _TreeList_FilterRowChanged(object sender, EventArgs e)
+        {
+            var rowFilterType = this._TreeList.FilterRowType?.ItemId ?? "NULL";
+            var rowFilterText = this._TreeList.FilterRowText ?? "NULL";
+            _AddLogLine($"RowFilter: Change; Type: {rowFilterType}, Text: \"{rowFilterText}\"");
+        }
         private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args)
         {
-            _AddLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick || args.Action == TreeViewActionType.NodeCheckedChange)); }
+            _AddTreeNodeLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick || args.Action == TreeViewActionType.NodeCheckedChange));
+        }
         private void _TreeList_LazyLoadChilds(object sender, DxTreeViewNodeArgs args)
         {
             _TreeList_AnyAction(sender, args);
@@ -2070,17 +2086,20 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _LoadChildNodesFromServerBgr(DxTreeViewNodeArgs args)
         {
-            string parentNodeId = args.NodeItemInfo.NodeId;
+            string parentNodeId = args.Node.FullNodeId;
             _AddLogLine($"Načítám data pro node '{parentNodeId}'...");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
             // Upravíme hodnoty v otevřeném nodu:
-            string text = args.NodeItemInfo.Text;
+            string text = args.Node.Text;
             if (text.EndsWith(" ..."))
             {
-                args.NodeItemInfo.Text = text.Substring(0, text.Length - 4);
-                args.NodeItemInfo.Refresh();
+                if (args.Node is TreeListNode node)
+                {
+                    node.Text = text.Substring(0, text.Length - 4);
+                    node.Refresh();
+                }
             }
 
             // Vytvoříme ChildNodes a zobrazíme je:
@@ -2096,9 +2115,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _TreeNodeEditedBgr(DxTreeViewNodeArgs args)
         {
-            var nodeInfo = args.NodeItemInfo;
-            string nodeId = nodeInfo.NodeId;
-            string parentNodeId = nodeInfo.ParentNodeId;
+            var nodeInfo = args.Node;
+            string nodeId = nodeInfo.FullNodeId;
+            string parentNodeId = nodeInfo.ParentFullNodeId;
             string oldValue = nodeInfo.Text;
             string newValue = (args.EditedValue is string text ? text : "");
             _AddLogLine($"Změna textu pro node '{nodeId}': '{oldValue}' => '{newValue}'");
@@ -2114,13 +2133,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             else if (nodeInfo.NodeType == NodeItemType.BlankAtFirstPosition) // isBlankNode && newPosition == NewNodePositionType.First)
             {   // Insert new node, a NewPosition je First = je první (jako Green):
-                _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
+                _TreeList.RunInLock(new Action<TreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
                     node.Text = "";                                 // Z prvního node odeberu jeho text, aby zase vypadal jako nový node
                     node.Refresh();
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, NodeItemType.DefaultText);
+                    TreeListNode newNode = _CreateChildNode(node.ParentFullNodeId, NodeItemType.DefaultText);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode, 1);
                 }
@@ -2128,17 +2147,17 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             else if (isBlankNode && newPosition == NewNodePositionType.Last)
             {   // Insert new node, a NewPosition je Last = na konci:
-                _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
+                _TreeList.RunInLock(new Action<TreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
-                    _TreeList.RemoveNode(node.NodeId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
+                    _TreeList.RemoveNode(node.FullNodeId);              // Odeberu blank node, to kvůli pořadí: nový blank přidám nakonec
 
                     // Přidám nový node pro konkrétní text = jakoby záznam:
-                    NodeItemInfo newNode = _CreateChildNode(node.ParentNodeId, NodeItemType.DefaultText);
+                    TreeListNode newNode = _CreateChildNode(node.ParentFullNodeId, NodeItemType.DefaultText);
                     newNode.Text = newValue;
                     _TreeList.AddNode(newNode);
 
                     // Přidám Blank node, ten bude opět na konci Childs:
-                    NodeItemInfo blankNode = _CreateChildNode(node.ParentNodeId, NodeItemType.BlankAtLastPosition);
+                    TreeListNode blankNode = _CreateChildNode(node.ParentFullNodeId, NodeItemType.BlankAtLastPosition);
                     _TreeList.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
@@ -2148,9 +2167,16 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             else
             {   // Edited node:
-                args.NodeItemInfo.Text = newValue + " [OK]";
-                args.NodeItemInfo.Refresh();
+                if (args.Node is TreeListNode node)
+                {
+                    node.Text = newValue + " [OK]";
+                    node.Refresh();
+                }
             }
+        }
+        private void _TreeList_IconClick(object sender, DxTreeViewNodeArgs args)
+        {
+            _TreeList_AnyAction(sender, args);
         }
         private void _TreeList_DoubleClick(object sender, DxTreeViewNodeArgs args)
         {
@@ -2161,20 +2187,20 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
-            if (args.NodeItemInfo.NodeType == NodeItemType.OnDoubleClickLoadNext)
+            if (args.Node.NodeType == NodeItemType.OnDoubleClickLoadNext)
             {
-                _TreeList.RunInLock(new Action<NodeItemInfo>(node =>
+                _TreeList.RunInLock(new Action<TreeListNode>(node =>
                 {   // V jednom vizuálním zámku:
-                    _TreeList.RemoveNode(node.NodeId);              // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
+                    _TreeList.RemoveNode(node.FullNodeId);              // Odeberu OnDoubleClickLoadNext node, to kvůli pořadí: nový OnDoubleClickLoadNext přidám (možná) nakonec
 
-                    var newNodes = _CreateSampleChilds(node.ParentNodeId, ItemCountType.Standard, false, true);
+                    var newNodes = _CreateSampleChilds(node.ParentFullNodeId, ItemCountType.Standard, false, true);
                     _TreeList.AddNodes(newNodes);
 
                     // Aktivuji první přidaný node:
                     if (newNodes.Count > 0)
                         _TreeList.SelectNode(newNodes[0]);
                 }
-               ), args.NodeItemInfo);
+               ), args.Node);
             }
         }
         private void _TreeList_NodeDelete(object sender, DxTreeViewNodeArgs args)
@@ -2184,16 +2210,16 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _TreeNodeDeleteBgr(DxTreeViewNodeArgs args)
         {
-            string nodeId = args.NodeItemInfo.NodeId;
+            string nodeId = args.Node.FullNodeId;
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
             _TreeList.RemoveNode(nodeId);
         }
-        private void _AddLog(string actionName, DxTreeViewNodeArgs args, bool showValue = false)
+        private void _AddTreeNodeLog(string actionName, DxTreeViewNodeArgs args, bool showValue = false)
         {
             string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
-            _AddLogLine($"{actionName}: Node: {args.NodeItemInfo}{value}");
+            _AddLogLine($"{actionName}: Node: {args.Node}{value}");
         }
         private void _AddLogLine(string line)
         {
@@ -2205,9 +2231,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _MemoEdit.Text = log;
         }
         int _InternalNodeId;
-        private List<NodeItemInfo> _CreateSampleList(ItemCountType countType = ItemCountType.Standard)
+        private List<TreeListNode> _CreateSampleList(ItemCountType countType = ItemCountType.Standard)
         {
-            List<NodeItemInfo> list = new List<NodeItemInfo>();
+            List<TreeListNode> list = new List<TreeListNode>();
 
             int rootCount = GetItemCount(countType, false);
             for (int r = 0; r < rootCount; r++)
@@ -2219,7 +2245,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
                 string rootKey = "R." + (++_InternalNodeId).ToString();
                 string text = Random.GetSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
-                NodeItemInfo rootNode = new NodeItemInfo(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
+                TreeListNode rootNode = new TreeListNode(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyLoadChilds: isLazy, fontStyleDelta: fontStyleDelta);
                 _FillNode(rootNode);
                 list.Add(rootNode);
 
@@ -2228,9 +2254,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             return list;
         }
-        private List<NodeItemInfo> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard, bool canAddEditable = true, bool canAddShowNext = true)
+        private List<TreeListNode> _CreateSampleChilds(string parentKey, ItemCountType countType = ItemCountType.Standard, bool canAddEditable = true, bool canAddShowNext = true)
         {
-            List<NodeItemInfo> list = new List<NodeItemInfo>();
+            List<TreeListNode> list = new List<TreeListNode>();
 
             var newPosition = _NewNodePosition;
             int childCount = GetItemCount(countType, true);
@@ -2251,24 +2277,24 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             return list;
         }
-        private NodeItemInfo _CreateChildNode(string parentKey, NodeItemType nodeType)
+        private TreeListNode _CreateChildNode(string parentKey, NodeItemType nodeType)
         {
             string childKey = "C." + (++_InternalNodeId).ToString();
             string text = "";
-            NodeItemInfo childNode = null;
+            TreeListNode childNode = null;
             switch (nodeType)
             {
                 case NodeItemType.BlankAtFirstPosition:
                 case NodeItemType.BlankAtLastPosition:
                     text = "";
-                    childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
+                    childNode = new TreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: false);          // Node pro přidání nového prvku (Blank) nelze odstranit
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Zadejte referenci nového prvku";
                     childNode.ImageName0 = "list_add_3_16";
                     break;
                 case NodeItemType.OnDoubleClickLoadNext:
                     text = "Načíst další záznamy";
-                    childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
+                    childNode = new TreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: false, canDelete: false);        // Node pro zobrazení dalších nodů nelze editovat ani odstranit
                     childNode.FontStyleDelta = FontStyle.Italic;
                     childNode.AddVoidCheckSpace = true;
                     childNode.ToolTipText = "Umožní načíst další sadu záznamů...";
@@ -2276,7 +2302,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
                     break;
                 case NodeItemType.DefaultText:
                     text = Random.GetSentence(2, 5);
-                    childNode = new NodeItemInfo(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
+                    childNode = new TreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
                     childNode.CanCheck = true;
                     childNode.IsChecked = (Random.Rand.Next(20) > 16);
                     _FillNode(childNode);
@@ -2284,7 +2310,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             return childNode;
         }
-        private void _FillNode(NodeItemInfo node)
+        private void _FillNode(TreeListNode node)
         {
             if (Random.Rand.Next(20) >= 15)
                 node.ImageName0 = "object_locked_2_16";
