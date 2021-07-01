@@ -1188,8 +1188,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.RibbonMiniToolbar;         // sada tlačítek v panelu
             // dxMenu.MenuViewType = DevExpress.Utils.Menu.MenuViewType.Toolbar;                   // sada tlačítek v řádce
             dxMenu.MenuViewType = menuType ?? DevExpress.Utils.Menu.MenuViewType.Menu;             // default = normální menu
-            dxMenu.Caption = caption ?? "MENU";
-            dxMenu.ShowCaption = true;
+            dxMenu.Caption = caption;
+            dxMenu.ShowCaption = !String.IsNullOrEmpty(caption);
             dxMenu.ShowItemToolTips = true;
 
             if (menuItems != null)
@@ -1215,35 +1215,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.Utils.Menu.DXMenuItem dxItem;
             string itemImage = menuItem.ItemImage;
             if (menuItem.ItemIsChecked.HasValue)
-            {
+            {   // Prvek menu s možností CheckBox:
                 bool isChecked = menuItem.ItemIsChecked.Value; ;
                 DevExpress.Utils.Menu.DXMenuCheckItem dxCheckItem = new DevExpress.Utils.Menu.DXMenuCheckItem();
                 dxCheckItem.Checked = isChecked;
                 if (isChecked)
-                {
+                {   // Je zaškrtnutý:
                     if (showCheckedAsBold)
                         dxCheckItem.Appearance.FontStyleDelta = FontStyle.Bold;
                     if (menuItem.ItemImageChecked != null)
                         itemImage = menuItem.ItemImageChecked;
                 }
                 else
-                {
+                {   // Není zaškrtnutý:
                     if (menuItem.ItemImageUnChecked != null)
                         itemImage = menuItem.ItemImageUnChecked;
                 }
                 dxItem = dxCheckItem;
             }
             else
-            {
+            {   // Prvek bez CheckBoxu:
                 dxItem = new DevExpress.Utils.Menu.DXMenuItem();
             }
             dxItem.BeginGroup = menuItem.ItemIsFirstInGroup;
             dxItem.Enabled = menuItem.ItemEnabled;
             dxItem.Caption = menuItem.ItemText;
             dxItem.SuperTip = CreateDxSuperTip(menuItem);
+            ApplyImage(dxItem.ImageOptions, resourceName: itemImage);
             dxItem.Tag = menuItem;
-
-            DxComponent.ApplyImage(dxItem.ImageOptions, resourceName: itemImage);
 
             // SubMenu:
             if (menuItem.SubItems != null)

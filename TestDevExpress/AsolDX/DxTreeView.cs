@@ -36,9 +36,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void Initialize()
         {
             _FilterRow = new DxFilterRow() { Dock = DockStyle.Top, Visible = false, TabIndex = 0 };
+            _RegisterFilterRowEventHandlers();
             _TreeViewListNative = new DxTreeViewListNative() { Dock = DockStyle.Fill, TabIndex = 1 };
-
-            _RegisterEventHandlers();
+            _RegisterTreeViewEventHandlers();
             this.Controls.Add(_TreeViewListNative);
             this.Controls.Add(_FilterRow);
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
@@ -189,6 +189,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region FilterRow
         /// <summary>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_FilterRow"/>
+        /// </summary>
+        private void _RegisterFilterRowEventHandlers()
+        {
+            _FilterRow.CurrentFilterChanged += FilterRow_Changed;      // Změna obsahu filtru a Enter
+            _FilterRow.CurrentFilterCleared += FilterRow_Changed;      // Smazání textu tlačítkem akceptujeme jako změnu filtru, i když nebylo stisknuto Enter
+            // _FilterRow.CurrentTypeChanged += _FilterRowChanged;     // Na pouhou změnu typu filtru nereagujeme, to až po stisku Enter
+            _FilterRow.KeyEnterPress += FilterRow_KeyEnter;
+        }
+        /// <summary>
         /// Zobrazovat řádkový filtr? Default = NE
         /// </summary>
         public bool FilterRowVisible { get { return _FilterRowVisible; } set { _FilterRowVisible = value; this.RunInGui(FilterRowSetVisible); } } private bool _FilterRowVisible = false;
@@ -209,7 +219,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public List<IMenuItem> FilterRowTypes { get { return _FilterRow.FilterTypes; } set { _FilterRow.FilterTypes = value; } }
         /// <summary>
-        /// Provede se po jakékoli změně v řádkovém filtru
+        /// Provede se po jakékoli změně v řádkovém filtru:
+        /// 1. Po zadání textu (včetně možné změny typu filtru) a klávese Enter;
+        /// 2. Po smazání textu tlačítkem Clear;
+        /// <para/>
+        /// Nevolá se v těchto případech:
+        /// a. Změna typu filtru v menu (pak přejde focus do textu a uživatel má dát Enter)
+        /// b. Průběžná editace textu
+        /// c. Odchod z textového políčka pomocí Tab nebo myši, i po změně obsahu textu: tak se choval původní prvek
         /// </summary>
         public event EventHandler FilterRowChanged;
         /// <summary>
@@ -228,7 +245,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _FilterRowChanged(object sender, EventArgs e)
+        private void FilterRow_Changed(object sender, EventArgs e)
         {
             OnFilterRowChanged();
             FilterRowChanged?.Invoke(this, e);
@@ -243,7 +260,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _FilterRowKeyEnter(object sender, EventArgs e)
+        private void FilterRow_KeyEnter(object sender, EventArgs e)
         {
             _TreeViewListNative.Focus();
             OnFilterRowKeyEnter();
@@ -258,12 +275,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_TreeViewListNative"/>
         /// </summary>
-        private void _RegisterEventHandlers()
+        private void _RegisterTreeViewEventHandlers()
         {
-            _FilterRow.CurrentTextChanged += _FilterRowChanged;
-            _FilterRow.CurrentTypeChanged += _FilterRowChanged;
-            _FilterRow.KeyEnterPress += _FilterRowKeyEnter;
-
             _TreeViewListNative.NodeSelected += _TreeViewListNative_NodeSelected;
             _TreeViewListNative.NodeIconClick += _TreeViewListNative_NodeIconClick;
             _TreeViewListNative.NodeDoubleClick += _TreeViewListNative_NodeDoubleClick;
@@ -2359,16 +2372,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ClearButtonToolTipTitle = "Smazat";
             _ClearButtonToolTipText = "Zruší zadaný filtr";
 
-            _MenuButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, _MenuButtonClick, tabStop: false);
+            _MenuButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, MenuButton_Click, tabStop: false);
             _FilterText = DxComponent.CreateDxTextEdit(24, 0, 200, this, tabStop: true);
-            _FilterText.KeyDown += _FilterText_KeyDown;
-            _ClearButton = DxComponent.CreateDxMiniButton(224, 0, 24, 24, this, _ClearButtonClick, tabStop: false);
+            _FilterText.KeyDown += FilterText_KeyDown;
+            _ClearButton = DxComponent.CreateDxMiniButton(224, 0, 24, 24, this, ClearButton_Click, tabStop: false);
 
             _FilterText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
 
             _FilterTypes = CreateDefaultFilterItems();
-            _SearchSelectedFilter(false);
+            ActivateSelectedFilter(false);
             _CurrentText = "";
         }
         private string _MenuButtonImageDefault;
@@ -2515,29 +2528,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Položky v nabídce typů filtru. Lze setovat, lze modifikovat. Pokud bude null nebo prázdné, pak tlačítko typu filtru nic nenabídne.
         /// </summary>
-        public List<IMenuItem> FilterTypes { get { return _FilterTypes; } set { _FilterTypes = value; _SearchSelectedFilter(false); } } private List<IMenuItem> _FilterTypes;
+        public List<IMenuItem> FilterTypes { get { return _FilterTypes; } set { _FilterTypes = value; ActivateSelectedFilter(false); ReloadLastFilter(); } } private List<IMenuItem> _FilterTypes;
         /// <summary>
         /// Aktuální druh filtru.
         /// Setování se projeví v GUI, ale nevyvolá event o změně <see cref="CurrentTypeChanged"/>.
         /// </summary>
-        public IMenuItem CurrentType { get { return _CurrentType; } set { _CurrentType = value; this.RunInGui(DoApplyCurrentFilterType); } } private IMenuItem _CurrentType;
+        public IMenuItem CurrentType { get { return _CurrentType; } set { _CurrentType = value; this.RunInGui(DoApplyCurrentFilterType); ReloadLastFilter(); } } private IMenuItem _CurrentType;
         /// <summary>
         /// Událost volaná po změně typu filtru
         /// </summary>
         public event EventHandler CurrentTypeChanged;
         /// <summary>
         /// Aktuální text.
-        /// Setování se projeví v GUI, ale nevyvolá event o změně <see cref="CurrentTextChanged"/>.
+        /// Setování se projeví v GUI, ale nevyvolá event o změně <see cref="CurrentFilterChanged"/>.
         /// </summary>
-        public string CurrentText { get { return _CurrentText; } set { _CurrentText = (value ?? ""); this.RunInGui(DoApplyCurrentText); } } private string _CurrentText;
+        public string CurrentText { get { return _CurrentText; } set { _CurrentText = (value ?? ""); this.RunInGui(DoApplyCurrentText); ReloadLastFilter(); } } private string _CurrentText;
         /// <summary>
-        /// Událost volaná po změně textu, po potvrzení klávesou Enter
+        /// Událost volaná po změně textu (a/nebo typu filtru), po potvrzení textu klávesou Enter
         /// </summary>
-        public event EventHandler CurrentTextChanged;
+        public event EventHandler CurrentFilterChanged;
         /// <summary>
-        /// Událost volaná po stisku klávesy Enter, vždy, tedy po změně textu i bez změny textu.
-        /// Pokud dojde ke změně textu, pak je pořadí: <see cref="CurrentTextChanged"/>, <see cref="KeyEnterPress"/>.
-        /// Pokud uživatel stiskne tlačítko Clear (vpravo), provede se pouze <see cref="CurrentTextChanged"/>, ale focus se vrátí do TextBoxu a neprovádí se <see cref="KeyEnterPress"/>.
+        /// Událost volaná po vyprázdnění textu tlačítkem ClearFilter, jen tehdy když před tím byl text neprázdný
+        /// </summary>
+        public event EventHandler CurrentFilterCleared;
+        /// <summary>
+        /// Událost volaná po stisku klávesy Enter, vždy, tedy jak po změně textu i bez změny textu.
+        /// Pokud dojde ke změně textu, pak je pořadí: <see cref="CurrentFilterChanged"/>, <see cref="KeyEnterPress"/>.
+        /// Pokud uživatel stiskne tlačítko Clear (vpravo), provede se pouze <see cref="CurrentFilterChanged"/>, následně <see cref="CurrentFilterCleared"/>, ale focus se vrátí do TextBoxu a neprovádí se <see cref="KeyEnterPress"/>.
         /// Pokud uživatel vybere jiný druh filtru, proběhne jen událost <see cref="CurrentTypeChanged"/>.
         /// </summary>
         public event EventHandler KeyEnterPress;
@@ -2558,7 +2575,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// V poli <see cref="FilterTypes"/> najde první, která je Selected (anebo první obecně) a tu prohlásí za vybranou.
         /// </summary>
-        private void _SearchSelectedFilter(bool runEvent)
+        private void ActivateSelectedFilter(bool runEvent)
         {
             IMenuItem selectedFilter = null;
             var filterItems = this.FilterTypes;
@@ -2567,18 +2584,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 selectedFilter = filterItems.FirstOrDefault(f => (f.ItemIsChecked ?? false));
                 if (selectedFilter == null) selectedFilter = filterItems[0];
             }
-            _ActivateFilter(selectedFilter, runEvent);
+            ActivateFilterType(selectedFilter, runEvent);
         }
         /// <summary>
         /// Aktivuje menu položek typů filtru
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _MenuButtonClick(object sender, EventArgs args)
+        private void MenuButton_Click(object sender, EventArgs args)
         {
             var filterItems = this.FilterTypes;
             if (filterItems == null || filterItems.Count == 0) return;
-            var popup = DxComponent.CreateDXPopupMenu(filterItems, "FILTER", showCheckedAsBold: true, itemClick: _MenuItemClick);
+            var popup = DxComponent.CreateDXPopupMenu(filterItems, "", showCheckedAsBold: true, itemClick: MenuItem_Click);
             Point location = new Point(0, this.Height);
             popup.ShowPopup(this, location);
         }
@@ -2587,9 +2604,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _MenuItemClick(object sender, TEventArgs<IMenuItem> args)
+        private void MenuItem_Click(object sender, TEventArgs<IMenuItem> args)
         {
-            _ActivateFilter(args.Item, true);
+            ActivateFilterType(args.Item, true);
             _FilterText.Focus();
         }
         /// <summary>
@@ -2597,18 +2614,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="selectedFilter"></param>
         /// <param name="runEvent"></param>
-        private void _ActivateFilter(IMenuItem selectedFilter, bool runEvent)
+        private void ActivateFilterType(IMenuItem selectedFilter, bool runEvent)
         {
             bool isChangeType = !Object.ReferenceEquals(_CurrentType, selectedFilter);
             _CurrentType = selectedFilter;
             DoApplyCurrentFilterType();
             if (isChangeType && runEvent)
-                _CurrentTypeChanged();
+                RunCurrentTypeChanged();
         }
         /// <summary>
         /// Po změně typu filtru
         /// </summary>
-        private void _CurrentTypeChanged()
+        private void RunCurrentTypeChanged()
         {
             OnCurrentTypeChanged();
             CurrentTypeChanged?.Invoke(this, EventArgs.Empty);
@@ -2622,19 +2639,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _FilterText_KeyDown(object sender, KeyEventArgs e)
+        private void FilterText_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyData == Keys.Enter)
-            {
-                AcceptFilterText();
-                _KeyEnterPress();
+            {   // Pouze samotný Enter, nikoli CtrlEnter nebo ShiftEnter:
+                AcceptCurrentFilter();
+                RunKeyEnterPress();
                 e.Handled = true;
             }
         }
         /// <summary>
         /// Proběhne po stisku klávesy Enter v textboxu, vždy, i beze změny textu
         /// </summary>
-        private void _KeyEnterPress()
+        private void RunKeyEnterPress()
         {
             OnKeyEnterPress();
             KeyEnterPress?.Invoke(this, EventArgs.Empty);
@@ -2642,37 +2659,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Po stisku klávesy Enter v textboxu, vždy, i beze změny textu
         /// </summary>
-        protected virtual void OnKeyEnterPress()
-        { }
+        protected virtual void OnKeyEnterPress() { }
         /// <summary>
         /// Tlačítko Clear smaže obsah filtru
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _ClearButtonClick(object sender, EventArgs args)
+        private void ClearButton_Click(object sender, EventArgs args)
         {
+            bool isCleared = (!String.IsNullOrEmpty(_CurrentText));            // Událost CurrentTextCleared budeme volat jen tehdy, když stávající text filtru nebyl prázdný.
             _FilterText.Text = "";
-            AcceptFilterText();
+            AcceptCurrentFilter();
+            if (isCleared)
+                RunCurrentTextCleared();
             _FilterText.Focus();
         }
         /// <summary>
+        /// Proběhne po vyprázdnění textu tlačítkem ClearFilter, jen tehdy když před tím byl text neprázdný
+        /// </summary>
+        private void RunCurrentTextCleared()
+        {
+            OnCurrentTextCleared();
+            CurrentFilterCleared?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Po vyprázdnění textu tlačítkem ClearFilter, jen tehdy když před tím byl text neprázdný
+        /// </summary>
+        protected virtual void OnCurrentTextCleared() { }
+        /// <summary>
         /// Provede akce po zadání textové hodnoty filtru
         /// </summary>
-        private void AcceptFilterText()
+        private void AcceptCurrentFilter()
         {
-            string text = (_FilterText.Text ?? "");
-            bool isChangeText = !String.Equals(text, _CurrentText);
-            _CurrentText = text;
-            if (isChangeText)
-                _CurrentTextChanged();
+            bool isChangedFilter = CurrentFilterIsChanged;
+            _CurrentText = (_FilterText.Text ?? "");
+            ReloadLastFilter();
+            if (isChangedFilter)
+                RunCurrentTextChanged();
         }
         /// <summary>
         /// Proběhne po změně textu v textboxu, a to po Enter od uživatele, nebo po stisku buttonu Clear
         /// </summary>
-        private void _CurrentTextChanged()
+        private void RunCurrentTextChanged()
         {
             OnCurrentTextChanged();
-            CurrentTextChanged?.Invoke(this, EventArgs.Empty);
+            CurrentFilterChanged?.Invoke(this, EventArgs.Empty);
         }
         /// <summary>
         /// Po změně textu v textboxu, a to po Enter od uživatele, nebo po stisku buttonu Clear
@@ -2705,6 +2736,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (_FilterText == null) return;
             _FilterText.Text = _CurrentText;
         }
+        /// <summary>
+        /// Aktuální stav filtru: obsahuje typ filtru (<see cref="CurrentType"/>:ItemId) a aktuálně zadaný text (<see cref="_FilterText"/>.Text), oddělené CrLf.
+        /// Používá se po stisku klávesy Enter pro detekci změny hodnoty filtru (tam se zohlední i změna typu filtru bez změny zadaného textu).
+        /// </summary>
+        protected string CurrentFilter
+        {
+            get
+            {
+                string filterText = this._FilterText.Text;
+                if (String.IsNullOrEmpty(filterText)) return "";
+                string filterType = this._CurrentType?.ItemId ?? "";
+                if (filterType.Length > 0) filterType += Environment.NewLine;
+                return filterType + filterText;
+            }
+        }
+        /// <summary>
+        /// Posledně známý obsah filtru <see cref="CurrentFilter"/>, před klávesou Enter
+        /// </summary>
+        protected string LastFilter { get; private set; }
+        /// <summary>
+        /// Obsahuje true, pokud aktuální hodnota filtru <see cref="CurrentFilter"/> je jiná než předchozí hodnota <see cref="LastFilter"/>.
+        /// Akceptuje tedy aktuální text v textboxu a aktuálně vybraný typ filtru (=Current), porovná s dřívějším stavem (Last).
+        /// </summary>
+        protected bool CurrentFilterIsChanged { get { return !String.Equals(CurrentFilter, LastFilter); } }
+        /// <summary>
+        /// Aktualizuje hodnotu <see cref="LastFilter"/> z hodnoty <see cref="CurrentFilter"/>
+        /// </summary>
+        protected void ReloadLastFilter() { LastFilter = CurrentFilter; }
         #endregion
     }
     #endregion
