@@ -2368,6 +2368,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _OperatorButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, OperatorButton_Click, tabStop: false);
             _FilterText = DxComponent.CreateDxTextEdit(24, 0, 200, this, tabStop: true);
+            _FilterText.KeyDown += FilterText_KeyDown;
             _FilterText.KeyUp += FilterText_KeyUp;
 
             _ClearButton = DxComponent.CreateDxMiniButton(224, 0, 24, 24, this, ClearButton_Click, tabStop: false);
@@ -2378,6 +2379,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FilterOperators = CreateDefaultFilterItems(FilterBoxOperatorItems.DefaultNumber);
             ActivateFirstCheckedOperator(false);
             _CurrentText = "";
+            FilterValueChangedSources = DxFilterRowChangeEventSource.Default;
             LastFilterValue = null;
         }
         private string _OperatorButtonImageDefault;
@@ -2652,8 +2654,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
+        private void FilterText_KeyDown(object sender, KeyEventArgs e)
+        {   // Down musí řešit jen Enter:
+        }
+        
+        /// <summary>
+        /// Po stisku klávesy v TextBoxu reagujeme na Enter
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void FilterText_KeyUp(object sender, KeyEventArgs e)
-        {
+        {   // KeyUp neřeší Enter, ale řeší změny textu
             _CurrentText = (_FilterText.Text ?? "");       // Stínování hodnoty
 
             bool isChange = this.CurrentFilterIsChanged;
