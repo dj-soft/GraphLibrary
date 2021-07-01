@@ -2036,10 +2036,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
 
-            _TreeList.FilterRowVisible = true;
+            _TreeList.FilterBoxVisible = true;
 
-            _TreeList.FilterRowChanged += _TreeList_FilterRowChanged;
-            _TreeList.FilterRowKeyEnter += _TreeList_FilterRowKeyEnter;
+            _TreeList.FilterBoxChanged += _TreeList_FilterRowChanged;
+            _TreeList.FilterBoxKeyEnter += _TreeList_FilterRowKeyEnter;
             _TreeList.NodeSelected += _TreeList_AnyAction;
             _TreeList.NodeIconClick += _TreeList_IconClick;
             _TreeList.NodeDoubleClick += _TreeList_DoubleClick;
@@ -2071,9 +2071,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _TreeList_FilterRowChanged(object sender, EventArgs e)
         {
-            var rowFilterType = this._TreeList.FilterRowType?.ItemId ?? "NULL";
-            var rowFilterText = this._TreeList.FilterRowText ?? "NULL";
-            _AddLogLine($"RowFilter: Change; Type: {rowFilterType}, Text: \"{rowFilterText}\"");
+            var filter = this._TreeList.FilterBoxValue;
+            _AddLogLine($"RowFilter: Change; Type: {filter.FilterOperator.ItemId}, Text: \"{filter.FilterText}\"");
         }
         private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args)
         {

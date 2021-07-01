@@ -35,15 +35,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void Initialize()
         {
-            _FilterRow = new DxFilterRow() { Dock = DockStyle.Top, Visible = false, TabIndex = 0 };
+            _FilterBox = new DxFilterBox() { Dock = DockStyle.Top, Visible = false, TabIndex = 0 };
             _RegisterFilterRowEventHandlers();
             _TreeViewListNative = new DxTreeViewListNative() { Dock = DockStyle.Fill, TabIndex = 1 };
             _RegisterTreeViewEventHandlers();
             this.Controls.Add(_TreeViewListNative);
-            this.Controls.Add(_FilterRow);
+            this.Controls.Add(_FilterBox);
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         }
-        private DxFilterRow _FilterRow;
+        private DxFilterBox _FilterBox;
         private DxTreeViewListNative _TreeViewListNative;
         #endregion
         #region Vlastnosti DxTreeViewListNative
@@ -189,35 +189,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region FilterRow
         /// <summary>
-        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_FilterRow"/>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_FilterBox"/>
         /// </summary>
         private void _RegisterFilterRowEventHandlers()
         {
-            _FilterRow.CurrentFilterChanged += FilterRow_Changed;      // Změna obsahu filtru a Enter
-            _FilterRow.CurrentFilterCleared += FilterRow_Changed;      // Smazání textu tlačítkem akceptujeme jako změnu filtru, i když nebylo stisknuto Enter
-            // _FilterRow.CurrentTypeChanged += _FilterRowChanged;     // Na pouhou změnu typu filtru nereagujeme, to až po stisku Enter
-            _FilterRow.KeyEnterPress += FilterRow_KeyEnter;
+            _FilterBox.FilterValueChangedSources = DxFilterRowChangeEventSource.DefaultGreen;
+            _FilterBox.FilterValueChanged += FilterBox_Changed;      // Změna obsahu filtru a Enter
+            _FilterBox.KeyEnterPress += FilterBox_KeyEnter;
         }
         /// <summary>
         /// Zobrazovat řádkový filtr? Default = NE
         /// </summary>
-        public bool FilterRowVisible { get { return _FilterRowVisible; } set { _FilterRowVisible = value; this.RunInGui(FilterRowSetVisible); } } private bool _FilterRowVisible = false;
+        public bool FilterBoxVisible { get { return _FilterBoxVisible; } set { _FilterBoxVisible = value; this.RunInGui(FilterBoxSetVisible); } } private bool _FilterBoxVisible = false;
         /// <summary>
         /// Instance řádkového filtru
         /// </summary>
-        public DxFilterRow FilterRow { get { return _FilterRow; } }
+        public DxFilterBox FilterBox { get { return _FilterBox; } }
         /// <summary>
         /// Aktuální text v řádkovém filtru
         /// </summary>
-        public string FilterRowText { get { return _FilterRow.CurrentText; } set { _FilterRow.CurrentText = value; } }
-        /// <summary>
-        /// Aktuální vybraný typ filtru (operátor)
-        /// </summary>
-        public IMenuItem FilterRowType { get { return _FilterRow.CurrentType; } set { _FilterRow.CurrentType = value; } }
+        public DxFilterBoxValue FilterBoxValue { get { return _FilterBox.FilterValue; } set { _FilterBox.FilterValue = value; } }
         /// <summary>
         /// Pole operátorů nabízených pod tlačítkem vlevo.
         /// </summary>
-        public List<IMenuItem> FilterRowTypes { get { return _FilterRow.FilterTypes; } set { _FilterRow.FilterTypes = value; } }
+        public List<IMenuItem> FilterBoxOperators { get { return _FilterBox.FilterOperators; } set { _FilterBox.FilterOperators = value; } }
         /// <summary>
         /// Provede se po jakékoli změně v řádkovém filtru:
         /// 1. Po zadání textu (včetně možné změny typu filtru) a klávese Enter;
@@ -228,48 +223,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// b. Průběžná editace textu
         /// c. Odchod z textového políčka pomocí Tab nebo myši, i po změně obsahu textu: tak se choval původní prvek
         /// </summary>
-        public event EventHandler FilterRowChanged;
+        public event EventHandler<TEventArgs<DxFilterBoxValue>> FilterBoxChanged;
         /// <summary>
         /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
         /// </summary>
-        public event EventHandler FilterRowKeyEnter;
+        public event EventHandler FilterBoxKeyEnter;
         /// <summary>
         /// Aplikuje viditelnost pro FilterRow
         /// </summary>
-        private void FilterRowSetVisible()
+        private void FilterBoxSetVisible()
         {
-            _FilterRow.Visible = _FilterRowVisible;
+            _FilterBox.Visible = _FilterBoxVisible;
         }
         /// <summary>
         /// Po jakékoli změně v řádkovém filtru
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FilterRow_Changed(object sender, EventArgs e)
+        private void FilterBox_Changed(object sender, TEventArgs<DxFilterBoxValue> e)
         {
-            OnFilterRowChanged();
-            FilterRowChanged?.Invoke(this, e);
+            OnFilterBoxChanged(e);
+            FilterBoxChanged?.Invoke(this, e);
         }
         /// <summary>
         /// Proběhne po jakékoli změně v řádkovém filtru
         /// </summary>
-        protected virtual void OnFilterRowChanged() { }
+        protected virtual void OnFilterBoxChanged(TEventArgs<DxFilterBoxValue> e) { }
         /// <summary>
         /// Po stisku Enter v řádkovém filtru
         /// </summary>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FilterRow_KeyEnter(object sender, EventArgs e)
+        private void FilterBox_KeyEnter(object sender, EventArgs e)
         {
             _TreeViewListNative.Focus();
-            OnFilterRowKeyEnter();
-            FilterRowKeyEnter?.Invoke(this, e);
+            OnFilterBoxKeyEnter();
+            FilterBoxKeyEnter?.Invoke(this, e);
         }
         /// <summary>
         /// Proběhne po stisku Enter v řádkovém filtru
         /// </summary>
-        protected virtual void OnFilterRowKeyEnter() { }
+        protected virtual void OnFilterBoxKeyEnter() { }
         #endregion
         #region Eventy a další akce DxTreeViewListNative
         /// <summary>
@@ -2344,18 +2339,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         OnDoubleClickLoadNext
     }
     #endregion
-    #region class DxFilterRow
+    #region class DxFilterBox
     /// <summary>
     /// Panel obsahující malý filtr, používá se např. v <see cref="DxTreeViewList"/>
     /// </summary>
-    public class DxFilterRow : DxPanelControl
+    public class DxFilterBox : DxPanelControl
     {
         #region Konstrukce a inicializace
         /// <summary>
         /// Konstruktor.
         /// Panel obsahující malý filtr, používá se např. v <see cref="DxTreeViewList"/>
         /// </summary>
-        public DxFilterRow()
+        public DxFilterBox()
         {
             Initialize();
         }
@@ -2365,56 +2360,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void Initialize()
         {
             _Margins = 1;
-            _MenuButtonImageDefault = "svgimages/diagramicons/textalignment/textalignment4.svg";
-            _MenuButtonImageDefault = "svgimages/dashboards/horizontallines.svg";
-            _MenuButtonImage = null;
+            _OperatorButtonImageDefault = "svgimages/dashboards/horizontallines.svg";
+            _OperatorButtonImage = null;
             _ClearButtonImage = "svgimages/dashboards/clearfilter.svg";
             _ClearButtonToolTipTitle = "Smazat";
             _ClearButtonToolTipText = "Zruší zadaný filtr";
 
-            _MenuButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, MenuButton_Click, tabStop: false);
+            _OperatorButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, OperatorButton_Click, tabStop: false);
             _FilterText = DxComponent.CreateDxTextEdit(24, 0, 200, this, tabStop: true);
-            _FilterText.KeyDown += FilterText_KeyDown;
+            _FilterText.KeyUp += FilterText_KeyUp;
+
             _ClearButton = DxComponent.CreateDxMiniButton(224, 0, 24, 24, this, ClearButton_Click, tabStop: false);
 
             _FilterText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
 
-            _FilterTypes = CreateDefaultFilterItems();
-            ActivateSelectedFilter(false);
+            _FilterOperators = CreateDefaultFilterItems(FilterBoxOperatorItems.DefaultNumber);
+            ActivateFirstCheckedOperator(false);
             _CurrentText = "";
+            LastFilterValue = null;
         }
-        private string _MenuButtonImageDefault;
-        private string _MenuButtonImage;
+        private string _OperatorButtonImageDefault;
+        private string _OperatorButtonImage;
         private string _MenuButtonToolTipTitle;
         private string _MenuButtonToolTipText;
         private string _ClearButtonImage;
         private string _ClearButtonToolTipTitle;
         private string _ClearButtonToolTipText;
-        private DxSimpleButton _MenuButton;
+        private DxSimpleButton _OperatorButton;
         private DxTextEdit _FilterText;
         private DxSimpleButton _ClearButton;
-        /// <summary>
-        /// Vytvoří a vrátí defaultní položky menu
-        /// </summary>
-        /// <returns></returns>
-        protected virtual List<IMenuItem> CreateDefaultFilterItems()
-        {
-            string resourceC1 = "images/alignment/alignverticalcenter2_16x16.png";
-            string resourceL1 = "images/alignment/alignverticalleft2_16x16.png";
-            string resourceR1 = "images/alignment/alignverticalright2_16x16.png";
-            string resourceC2 = "office2013/alignment/alignverticalcenter2_16x16.png";
-            string resourceL2 = "office2013/alignment/alignverticalleft2_16x16.png";
-            string resourceR2 = "office2013/alignment/alignverticalright2_16x16.png";
-            List<IMenuItem> items = new List<IMenuItem>();
-            items.Add(new DataMenuItem() { ItemId = "Contains", ItemImage = resourceC1, ItemText = "Obsahuje", ItemIsChecked = false, ToolTipTitle = "Obsahuje:", ToolTip = "Vybere ty položky, které obsahují zadaný text"});
-            items.Add(new DataMenuItem() { ItemId = "NotContains", ItemImage = resourceC2, ItemText = "Neobsahuje", ItemIsChecked = false, ToolTipTitle = "Neobsahuje:", ToolTip = "Vybere ty položky, které neobsahují zadaný text" });
-            items.Add(new DataMenuItem() { ItemId = "Begins", ItemImage = resourceL1, ItemText = "Začíná", ItemIsChecked = true, ToolTipTitle = "Začíná:", ToolTip = "Vybere ty položky, jejichž text začíná zadaným textem" });
-            items.Add(new DataMenuItem() { ItemId = "NotBegins", ItemImage = resourceL2, ItemText = "Nezačíná", ItemIsChecked = false, ToolTipTitle = "Nezačíná:", ToolTip = "Vybere ty položky, jejichž text začíná jinak, než je zadáno" });
-            items.Add(new DataMenuItem() { ItemId = "Ends", ItemImage = resourceR1, ItemText = "Končí", ItemIsChecked = false, ToolTipTitle = "Končí:", ToolTip = "Vybere ty položky, jejichž text končí zadaným textem" });
-            items.Add(new DataMenuItem() { ItemId = "NotEnds", ItemImage = resourceR2, ItemText = "Nekončí", ItemIsChecked = false, ToolTipTitle = "Nekončí:", ToolTip = "Vybere ty položky, jejichž text končí jinak, než je zadáno" });
-            return items;
-        }
+
         #endregion
         #region Layout
         /// <summary>
@@ -2480,7 +2456,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int x = margins;
                 int textWidth = clientSize.Width - 2 * (margins + buttonSize + spaceX);
                 int textY = (innerHeight - textHeight) / 2;
-                _MenuButton.Bounds = new Rectangle(x, y, buttonSize, buttonSize); x += (buttonSize + spaceX);
+                _OperatorButton.Bounds = new Rectangle(x, y, buttonSize, buttonSize); x += (buttonSize + spaceX);
                 _FilterText.Bounds = new Rectangle(x, textY, textWidth, textHeight); x += (textWidth + spaceX);
                 _ClearButton.Bounds = new Rectangle(x, y, buttonSize, buttonSize); x += (buttonSize + spaceX);
 
@@ -2495,7 +2471,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Refreshuje button Menu (Image a ToolTip)
         /// </summary>
-        protected void MenuButtonRefresh() { ButtonRefresh(_MenuButton, (_MenuButtonImage ?? _MenuButtonImageDefault), _MenuButtonToolTipTitle, _MenuButtonToolTipText); }
+        protected void MenuButtonRefresh() { ButtonRefresh(_OperatorButton, (_OperatorButtonImage ?? _OperatorButtonImageDefault), _MenuButtonToolTipTitle, _MenuButtonToolTipText); }
         /// <summary>
         /// Refreshuje button Clear (Image a ToolTip)
         /// </summary>
@@ -2528,33 +2504,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Položky v nabídce typů filtru. Lze setovat, lze modifikovat. Pokud bude null nebo prázdné, pak tlačítko typu filtru nic nenabídne.
         /// </summary>
-        public List<IMenuItem> FilterTypes { get { return _FilterTypes; } set { _FilterTypes = value; ActivateSelectedFilter(false); ReloadLastFilter(); } } private List<IMenuItem> _FilterTypes;
+        public List<IMenuItem> FilterOperators { get { return _FilterOperators; } set { _FilterOperators = value; ActivateFirstCheckedOperator(false); ReloadLastFilter(); } } private List<IMenuItem> _FilterOperators;
         /// <summary>
-        /// Aktuální druh filtru.
-        /// Setování se projeví v GUI, ale nevyvolá event o změně <see cref="CurrentTypeChanged"/>.
+        /// Vytvoří a vrátí defaultní položky menu
         /// </summary>
-        public IMenuItem CurrentType { get { return _CurrentType; } set { _CurrentType = value; this.RunInGui(DoApplyCurrentFilterType); ReloadLastFilter(); } } private IMenuItem _CurrentType;
+        /// <returns></returns>
+        public static List<IMenuItem> CreateDefaultFilterItems(FilterBoxOperatorItems items)
+        {
+            string resourceC1 = "images/alignment/alignverticalcenter2_16x16.png";
+            string resourceL1 = "images/alignment/alignverticalleft2_16x16.png";
+            string resourceR1 = "images/alignment/alignverticalright2_16x16.png";
+            string resourceC2 = "office2013/alignment/alignverticalcenter2_16x16.png";
+            string resourceL2 = "office2013/alignment/alignverticalleft2_16x16.png";
+            string resourceR2 = "office2013/alignment/alignverticalright2_16x16.png";
+            List<IMenuItem> menuItems = new List<IMenuItem>();
+
+            if (items.HasFlag(FilterBoxOperatorItems.Contains))
+                menuItems.Add(new DataMenuItem() { ItemId = "Contains", ItemImage = resourceC1, ItemText = "Obsahuje", ItemIsChecked = false, ToolTipTitle = "Obsahuje:", ToolTip = "Vybere ty položky, které obsahují zadaný text", Tag = FilterBoxOperatorItems.Contains });
+            if (items.HasFlag(FilterBoxOperatorItems.DoesNotContain))
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotContain", ItemImage = resourceC2, ItemText = "Neobsahuje", ItemIsChecked = false, ToolTipTitle = "Neobsahuje:", ToolTip = "Vybere ty položky, které neobsahují zadaný text", Tag = FilterBoxOperatorItems.DoesNotContain });
+            if (items.HasFlag(FilterBoxOperatorItems.StartsWith))
+                menuItems.Add(new DataMenuItem() { ItemId = "StartsWith", ItemImage = resourceL1, ItemText = "Začíná", ItemIsChecked = true, ToolTipTitle = "Začíná:", ToolTip = "Vybere ty položky, jejichž text začíná zadaným textem", Tag = FilterBoxOperatorItems.StartsWith });
+            if (items.HasFlag(FilterBoxOperatorItems.DoesNotStartWith))
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotStartWith", ItemImage = resourceL2, ItemText = "Nezačíná", ItemIsChecked = false, ToolTipTitle = "Nezačíná:", ToolTip = "Vybere ty položky, jejichž text začíná jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotStartWith });
+            if (items.HasFlag(FilterBoxOperatorItems.EndsWith))
+                menuItems.Add(new DataMenuItem() { ItemId = "EndsWith", ItemImage = resourceR1, ItemText = "Končí", ItemIsChecked = false, ToolTipTitle = "Končí:", ToolTip = "Vybere ty položky, jejichž text končí zadaným textem", Tag = FilterBoxOperatorItems.EndsWith });
+            if (items.HasFlag(FilterBoxOperatorItems.DoesNotEndWith))
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotEndWith", ItemImage = resourceR2, ItemText = "Nekončí", ItemIsChecked = false, ToolTipTitle = "Nekončí:", ToolTip = "Vybere ty položky, jejichž text končí jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotEndWith });
+
+            return menuItems;
+        }
         /// <summary>
-        /// Událost volaná po změně typu filtru
+        /// Aktuální hodnota filtru. Lze setovat. Setování ale nevyvolá událost <see cref="FilterValueChanged"/>.
         /// </summary>
-        public event EventHandler CurrentTypeChanged;
+        public DxFilterBoxValue FilterValue 
+        {
+            get { return this.CurrentFilterValue; }
+            set
+            {
+                string text = value?.FilterText ?? "";
+                this._CurrentFilterOperator = value?.FilterOperator;
+                this._CurrentText = text;
+                this._CurrentValue = value?.FilterValue;
+                this.RunInGui(() => this._FilterText.Text = text);
+            }
+        }
         /// <summary>
-        /// Aktuální text.
-        /// Setování se projeví v GUI, ale nevyvolá event o změně <see cref="CurrentFilterChanged"/>.
+        /// Za jakých událostí se volá event <see cref="FilterValueChanged"/>
         /// </summary>
-        public string CurrentText { get { return _CurrentText; } set { _CurrentText = (value ?? ""); this.RunInGui(DoApplyCurrentText); ReloadLastFilter(); } } private string _CurrentText;
+        public DxFilterRowChangeEventSource FilterValueChangedSources { get; set; }
         /// <summary>
-        /// Událost volaná po změně textu (a/nebo typu filtru), po potvrzení textu klávesou Enter
+        /// Událost volaná po změně obsahu filtru, po potvrzení textu klávesou Enter (volitelně i po změně typu operátoru)
         /// </summary>
-        public event EventHandler CurrentFilterChanged;
-        /// <summary>
-        /// Událost volaná po vyprázdnění textu tlačítkem ClearFilter, jen tehdy když před tím byl text neprázdný
-        /// </summary>
-        public event EventHandler CurrentFilterCleared;
+        public event EventHandler<TEventArgs<DxFilterBoxValue>> FilterValueChanged;
         /// <summary>
         /// Událost volaná po stisku klávesy Enter, vždy, tedy jak po změně textu i bez změny textu.
-        /// Pokud dojde ke změně textu, pak je pořadí: <see cref="CurrentFilterChanged"/>, <see cref="KeyEnterPress"/>.
-        /// Pokud uživatel stiskne tlačítko Clear (vpravo), provede se pouze <see cref="CurrentFilterChanged"/>, následně <see cref="CurrentFilterCleared"/>, ale focus se vrátí do TextBoxu a neprovádí se <see cref="KeyEnterPress"/>.
+        /// Pokud dojde ke změně textu, pak je pořadí: <see cref="FilterValueChanged"/>, <see cref="KeyEnterPress"/>.
+        /// Pokud uživatel stiskne tlačítko Clear (vpravo), provede se pouze <see cref="FilterValueChanged"/>, následně <see cref="CurrentFilterCleared"/>, ale focus se vrátí do TextBoxu a neprovádí se <see cref="KeyEnterPress"/>.
         /// Pokud uživatel vybere jiný druh filtru, proběhne jen událost <see cref="CurrentTypeChanged"/>.
         /// </summary>
         public event EventHandler KeyEnterPress;
@@ -2573,29 +2579,61 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Privátní interaktivita
         /// <summary>
-        /// V poli <see cref="FilterTypes"/> najde první, která je Selected (anebo první obecně) a tu prohlásí za vybranou.
+        /// V poli <see cref="FilterOperators"/> najde první položku, která je ItemIsChecked (anebo první obecně) a tu prohlásí za vybranou.
         /// </summary>
-        private void ActivateSelectedFilter(bool runEvent)
+        private void ActivateFirstCheckedOperator(bool runEvent)
         {
-            IMenuItem selectedFilter = null;
-            var filterItems = this.FilterTypes;
+            IMenuItem activeOperator = null;
+            var filterItems = this.FilterOperators;
             if (filterItems != null && filterItems.Count > 0)
             {
-                selectedFilter = filterItems.FirstOrDefault(f => (f.ItemIsChecked ?? false));
-                if (selectedFilter == null) selectedFilter = filterItems[0];
+                activeOperator = filterItems.FirstOrDefault(f => (f.ItemIsChecked ?? false));
+                if (activeOperator == null) activeOperator = filterItems[0];
             }
-            ActivateFilterType(selectedFilter, runEvent);
+            ActivateOperator(activeOperator, runEvent);
+        }
+        /// <summary>
+        /// Aktivuje dodanou položku jako právě aktivní operátor.
+        /// </summary>
+        /// <param name="activeOperator"></param>
+        /// <param name="runEvent"></param>
+        private void ActivateOperator(IMenuItem activeOperator, bool runEvent)
+        {
+            bool isChangeOperator = !String.Equals(_CurrentFilterOperator?.ItemId, activeOperator?.ItemId);
+            _CurrentFilterOperator = activeOperator;
+            ApplyCurrentOperator();
+            if (isChangeOperator && runEvent && CallChangedEventOn(DxFilterRowChangeEventSource.OperatorChange))
+                RunFilterValueChanged();
+        }
+        /// <summary>
+        /// Aplikuje ikonu a tooltip z aktuální položky <see cref="_CurrentFilterOperator"/> do buttonu Menu
+        /// </summary>
+        protected virtual void ApplyCurrentOperator()
+        {
+            var currentType = _CurrentFilterOperator;
+
+            // Označíme si odpovídající položku (podle ItemId) v nabídce jako Checked:
+            string currentFilterId = currentType?.ItemId;
+            var filterTypes = _FilterOperators;
+            if (filterTypes != null)
+                filterTypes.ForEachExec(i => i.ItemIsChecked = String.Equals(i.ItemId, currentFilterId));
+
+            // Z aktuálního filtru přečteme jeho data a promítneme je do tlačítka:
+            _OperatorButtonImage = currentType?.ItemImage;
+            _MenuButtonToolTipTitle = currentType?.ToolTipTitle;
+            _MenuButtonToolTipText = currentType?.ToolTip;
+            MenuButtonRefresh();
         }
         /// <summary>
         /// Aktivuje menu položek typů filtru
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void MenuButton_Click(object sender, EventArgs args)
+        private void OperatorButton_Click(object sender, EventArgs args)
         {
-            var filterItems = this.FilterTypes;
+            var filterItems = this.FilterOperators;
             if (filterItems == null || filterItems.Count == 0) return;
-            var popup = DxComponent.CreateDXPopupMenu(filterItems, "", showCheckedAsBold: true, itemClick: MenuItem_Click);
+            var popup = DxComponent.CreateDXPopupMenu(filterItems, "", showCheckedAsBold: true, itemClick: OperatorItem_Click);
             Point location = new Point(0, this.Height);
             popup.ShowPopup(this, location);
         }
@@ -2604,46 +2642,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void MenuItem_Click(object sender, TEventArgs<IMenuItem> args)
+        private void OperatorItem_Click(object sender, TEventArgs<IMenuItem> args)
         {
-            ActivateFilterType(args.Item, true);
+            ActivateOperator(args.Item, true);
             _FilterText.Focus();
         }
-        /// <summary>
-        /// Aktivuje dodanou položku filtru
-        /// </summary>
-        /// <param name="selectedFilter"></param>
-        /// <param name="runEvent"></param>
-        private void ActivateFilterType(IMenuItem selectedFilter, bool runEvent)
-        {
-            bool isChangeType = !Object.ReferenceEquals(_CurrentType, selectedFilter);
-            _CurrentType = selectedFilter;
-            DoApplyCurrentFilterType();
-            if (isChangeType && runEvent)
-                RunCurrentTypeChanged();
-        }
-        /// <summary>
-        /// Po změně typu filtru
-        /// </summary>
-        private void RunCurrentTypeChanged()
-        {
-            OnCurrentTypeChanged();
-            CurrentTypeChanged?.Invoke(this, EventArgs.Empty);
-        }
-        /// <summary>
-        /// Proběhne po změně typu filtru
-        /// </summary>
-        protected virtual void OnCurrentTypeChanged() { }
         /// <summary>
         /// Po stisku klávesy v TextBoxu reagujeme na Enter
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FilterText_KeyDown(object sender, KeyEventArgs e)
+        private void FilterText_KeyUp(object sender, KeyEventArgs e)
         {
+            _CurrentText = (_FilterText.Text ?? "");       // Stínování hodnoty
+
+            bool isChange = this.CurrentFilterIsChanged;
+            if (isChange && this.CallChangedEventOn(DxFilterRowChangeEventSource.TextChange))
+            {
+                RunFilterValueChanged();
+                isChange = false;                          // Po vyvolání události už není žádná změna
+            }
+
             if (e.KeyData == Keys.Enter)
             {   // Pouze samotný Enter, nikoli CtrlEnter nebo ShiftEnter:
-                AcceptCurrentFilter();
+                if (isChange && this.CallChangedEventOn(DxFilterRowChangeEventSource.KeyEnter))
+                {
+                    RunFilterValueChanged();
+                    isChange = false;                      // Po vyvolání události už není žádná změna
+                }
                 RunKeyEnterPress();
                 e.Handled = true;
             }
@@ -2667,67 +2693,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void ClearButton_Click(object sender, EventArgs args)
         {
-            bool isCleared = (!String.IsNullOrEmpty(_CurrentText));            // Událost CurrentTextCleared budeme volat jen tehdy, když stávající text filtru nebyl prázdný.
             _FilterText.Text = "";
-            AcceptCurrentFilter();
-            if (isCleared)
-                RunCurrentTextCleared();
+            _CurrentText = "";                             // Stínování hodnoty
+
+            bool isChange = this.CurrentFilterIsChanged;
+            if (isChange && this.CallChangedEventOn(DxFilterRowChangeEventSource.ClearButton))
+            {
+                RunFilterValueChanged();
+                isChange = false;                          // Po vyvolání události už není žádná změna
+            }
+
             _FilterText.Focus();
         }
         /// <summary>
-        /// Proběhne po vyprázdnění textu tlačítkem ClearFilter, jen tehdy když před tím byl text neprázdný
+        /// Proběhne po změně hodnoty filtru
         /// </summary>
-        private void RunCurrentTextCleared()
+        private void RunFilterValueChanged()
         {
-            OnCurrentTextCleared();
-            CurrentFilterCleared?.Invoke(this, EventArgs.Empty);
+            var currentFilter = this.CurrentFilterValue;
+            TEventArgs<DxFilterBoxValue> args = new TEventArgs<DxFilterBoxValue>(currentFilter);
+            this.LastFilterValue = currentFilter;          // Od teď bude hodnota CurrentFilterIsChanged = false;
+            OnFilterValueChanged(args);
+            FilterValueChanged?.Invoke(this, args);
         }
         /// <summary>
-        /// Po vyprázdnění textu tlačítkem ClearFilter, jen tehdy když před tím byl text neprázdný
+        /// Po změně hodnoty filtru, dle nastavených zdrojů události
         /// </summary>
-        protected virtual void OnCurrentTextCleared() { }
-        /// <summary>
-        /// Provede akce po zadání textové hodnoty filtru
-        /// </summary>
-        private void AcceptCurrentFilter()
-        {
-            bool isChangedFilter = CurrentFilterIsChanged;
-            _CurrentText = (_FilterText.Text ?? "");
-            ReloadLastFilter();
-            if (isChangedFilter)
-                RunCurrentTextChanged();
-        }
-        /// <summary>
-        /// Proběhne po změně textu v textboxu, a to po Enter od uživatele, nebo po stisku buttonu Clear
-        /// </summary>
-        private void RunCurrentTextChanged()
-        {
-            OnCurrentTextChanged();
-            CurrentFilterChanged?.Invoke(this, EventArgs.Empty);
-        }
-        /// <summary>
-        /// Po změně textu v textboxu, a to po Enter od uživatele, nebo po stisku buttonu Clear
-        /// </summary>
-        protected virtual void OnCurrentTextChanged() { }
-        /// <summary>
-        /// Aplikuje ikonu a tooltip z aktuální položky <see cref="CurrentType"/> do buttonu Menu
-        /// </summary>
-        protected virtual void DoApplyCurrentFilterType()
-        {
-            var currentType = _CurrentType;
-
-            // Označíme si odpovídající položku (podle ItemId) v nabídce jako Checked:
-            string currentFilterId = currentType?.ItemId;
-            var filterTypes = _FilterTypes;
-            if (filterTypes != null)
-                filterTypes.ForEachExec(i => i.ItemIsChecked = String.Equals(i.ItemId, currentFilterId));
-
-            // Z aktuálního filtru přečteme jeho data a promítneme je do tlačítka:
-            _MenuButtonImage = currentType?.ItemImage;
-            _MenuButtonToolTipTitle = currentType?.ToolTipTitle;
-            _MenuButtonToolTipText = currentType?.ToolTip;
-            MenuButtonRefresh();
-        }
+        /// <param name="args"></param>
+        protected virtual void OnFilterValueChanged(TEventArgs<DxFilterBoxValue> args) { }
         /// <summary>
         /// Hodnotu z proměnné <see cref="_CurrentText"/> vepíše do vizuálního textboxu, nevolá žádné eventy
         /// </summary>
@@ -2737,34 +2730,147 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FilterText.Text = _CurrentText;
         }
         /// <summary>
-        /// Aktuální stav filtru: obsahuje typ filtru (<see cref="CurrentType"/>:ItemId) a aktuálně zadaný text (<see cref="_FilterText"/>.Text), oddělené CrLf.
-        /// Používá se po stisku klávesy Enter pro detekci změny hodnoty filtru (tam se zohlední i změna typu filtru bez změny zadaného textu).
+        /// Vrátí true, pokud v <see cref="FilterValueChangedSources"/> je nastavený některý bit z dodané hodnoty.
         /// </summary>
-        protected string CurrentFilter
+        /// <param name="source"></param>
+        /// <returns></returns>
+        protected bool CallChangedEventOn(DxFilterRowChangeEventSource source)
         {
-            get
-            {
-                string filterText = this._FilterText.Text;
-                if (String.IsNullOrEmpty(filterText)) return "";
-                string filterType = this._CurrentType?.ItemId ?? "";
-                if (filterType.Length > 0) filterType += Environment.NewLine;
-                return filterType + filterText;
-            }
+            return this.FilterValueChangedSources.HasFlag(source);
         }
         /// <summary>
-        /// Posledně známý obsah filtru <see cref="CurrentFilter"/>, před klávesou Enter
+        /// Aktuální stav filtru: obsahuje typ filtru (<see cref="CurrentFilterOperator"/>:ItemId) a aktuálně zadaný text (<see cref="_FilterText"/>.Text), oddělené CrLf.
+        /// Používá se po stisku klávesy Enter pro detekci změny hodnoty filtru (tam se zohlední i změna typu filtru bez změny zadaného textu).
+        /// <para/>
+        /// Nikdy není null, vždy obshauje new instanci, které v sobě obsahuje aktuálně platné hodnoty.
         /// </summary>
-        protected string LastFilter { get; private set; }
+        protected DxFilterBoxValue CurrentFilterValue { get { return new DxFilterBoxValue(_CurrentFilterOperator, _CurrentText, _CurrentValue); } }
         /// <summary>
-        /// Obsahuje true, pokud aktuální hodnota filtru <see cref="CurrentFilter"/> je jiná než předchozí hodnota <see cref="LastFilter"/>.
+        /// Posledně známý obsah filtru <see cref="CurrentFilterValue"/>, který byl předán do události <see cref="FilterValueChanged"/>.
+        /// Může být null (na počátku).
+        /// Ve vhodném čase se vyvolá tato událost a aktualizuje se tato hodnota.
+        /// Aktualizuje se rovněž po aktualizaci <see cref="FilterValue"/> z aplikace, aby se následný event hlásil jen při reálné změně.
+        /// </summary>
+        protected DxFilterBoxValue LastFilterValue { get; private set; }
+        /// <summary>
+        /// Obsahuje true, pokud aktuální hodnota filtru <see cref="CurrentFilterValue"/> je jiná než předchozí hodnota <see cref="LastFilterValue"/>.
         /// Akceptuje tedy aktuální text v textboxu a aktuálně vybraný typ filtru (=Current), porovná s dřívějším stavem (Last).
         /// </summary>
-        protected bool CurrentFilterIsChanged { get { return !String.Equals(CurrentFilter, LastFilter); } }
+        protected bool CurrentFilterIsChanged { get { return !CurrentFilterValue.IsEqual(LastFilterValue); } }
         /// <summary>
-        /// Aktualizuje hodnotu <see cref="LastFilter"/> z hodnoty <see cref="CurrentFilter"/>
+        /// Aktualizuje hodnotu <see cref="LastFilterValue"/> z hodnoty <see cref="CurrentFilterValue"/>
         /// </summary>
-        protected void ReloadLastFilter() { LastFilter = CurrentFilter; }
+        protected void ReloadLastFilter() { LastFilterValue = CurrentFilterValue; }
+        /// <summary>
+        /// Aktuální operátor filtru.
+        /// </summary>
+        private IMenuItem _CurrentFilterOperator;
+        /// <summary>
+        /// Aktuální text. V procesu editace je sem stínován.
+        /// </summary>
+        private string _CurrentText;
+        /// <summary>
+        /// Aktuální hodnota. V procesu editace je sem stínována.
+        /// </summary>
+        private object _CurrentValue;
         #endregion
+    }
+    /// <summary>
+    /// Spouštěcí události pro event <see cref="DxFilterBox.FilterValueChanged"/>
+    /// </summary>
+    [Flags]
+    public enum DxFilterRowChangeEventSource
+    {
+        /// <summary>Nikdy</summary>
+        None = 0x00,
+        /// <summary>Po jakékoli změně textu (i v procesu editace)</summary>
+        TextChange = 0x01,
+        /// <summary>Po změně textu v LostFocus (tedy odchod myší, tabulátorem aj.)</summary>
+        LostFocus = 0x02,
+        /// <summary>Pouze klávesou Enter</summary>
+        KeyEnter = 0x04,
+        /// <summary>Po změně operátoru</summary>
+        OperatorChange = 0x10,
+        /// <summary>Po vymazání textu tlačítkem Clear</summary>
+        ClearButton = 0x20,
+        /// <summary>Aplikační default = <see cref="LostFocus"/> + <see cref="KeyEnter"/> + <see cref="OperatorChange"/> + <see cref="ClearButton"/>;</summary>
+        Default = LostFocus | KeyEnter | OperatorChange | ClearButton,
+        /// <summary>Zelený default = <see cref="KeyEnter"/> + <see cref="ClearButton"/>;</summary>
+        DefaultGreen = KeyEnter | ClearButton
+    }
+    /// <summary>
+    /// Povolené operátory v controlu FilterBox. Použivá se pro určení povolených operátorů v controlu FilterBox.
+    /// </summary>
+    [Flags]
+    public enum FilterBoxOperatorItems : uint
+    {
+        Contains = 0,
+        DoesNotContain = 1,
+        DoesNotEndWith = 2,
+        DoesNotMatch = 4,
+        DoesNotStartWith = 8,
+        EndsWith = 16,
+        Equals = 32,
+        GreaterThan = 64,
+        GreaterThanOrEqualTo = 128,
+        LessThan = 256,
+        LessThanOrEqualTo = 512,
+        Like = 1024,
+        Match = 2048,
+        NotEquals = 4096,
+        NotLike = 8192,
+        StartsWith = 16384,
+
+        DefaultText = Contains | DoesNotContain | StartsWith | DoesNotStartWith | EndsWith | DoesNotEndWith,
+        DefaultNumber = Equals | NotEquals | GreaterThan | GreaterThanOrEqualTo | LessThan | LessThanOrEqualTo
+    }
+    /// <summary>
+    /// Aktuální hodnota filtru
+    /// </summary>
+    public class DxFilterBoxValue
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="filterOperator"></param>
+        /// <param name="filterText"></param>
+        /// <param name="filterValue"></param>
+        public DxFilterBoxValue(IMenuItem filterOperator, string filterText, object filterValue)
+        {
+            this.FilterOperator = filterOperator;
+            this.FilterText = filterText;
+            this.FilterValue = filterValue;
+        }
+        /// <summary>
+        /// Operátor. Může být null.
+        /// </summary>
+        public IMenuItem FilterOperator { get; private set; }
+        /// <summary>
+        /// Textová hodnota
+        /// </summary>
+        public string FilterText { get; private set; }
+        /// <summary>
+        /// Datová hodnota odpovídající vybranému textu. Při ručním zadání textu je null.
+        /// </summary>
+        public object FilterValue { get; private set; }
+        /// <summary>
+        /// Obsahuje true pokud filtr je prázdný = neobsahuje text
+        /// </summary>
+        public bool IsEmpty { get { return String.IsNullOrEmpty(this.FilterText); } }
+        /// <summary>
+        /// Vrátí true pokud this instance obsahuje shodná data jako daná instance.
+        /// U typu operátoru <see cref="FilterOperator"/> se porovnává hodnota <see cref="IMenuItem.ItemId"/>.
+        /// Neporovnává se <see cref="FilterValue"/>, porovnává se text v <see cref="FilterText"/>.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool IsEqual(DxFilterBoxValue other)
+        {
+            if (other is null) return false;
+            if (!String.Equals(this.FilterOperator?.ItemId, other.FilterOperator?.ItemId)) return false;
+            if (!String.Equals(this.FilterText, other.FilterText)) return false;
+            return true;
+        }
     }
     #endregion
 }
