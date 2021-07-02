@@ -252,7 +252,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Po stisku Enter v řádkovém filtru
         /// </summary>
-        /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void FilterBox_KeyEnter(object sender, EventArgs e)
@@ -2840,7 +2839,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Proběhne po změně hodnoty filtru.
-        /// Metoda vyvolá <see cref="OnFilterValueChanged(TEventArgs{DxFilterBoxValue})"/> a event <see cref="FilterValueChanged"/>.
+        /// Metoda vyvolá <see cref="OnFilterValueChanged(DxFilterBoxChangeArgs)"/> a event <see cref="FilterValueChanged"/>.
         /// <para/>
         /// Metoda nastaví <see cref="LastFilterValue"/> = <see cref="CurrentFilterValue"/> (tedy poslední známá hodntoa filtru = aktuální hodnota).
         /// Tím se změní hodnota <see cref="CurrentFilterIsChanged"/> na false = filtr od této chvíle neobsahuje změnu.
