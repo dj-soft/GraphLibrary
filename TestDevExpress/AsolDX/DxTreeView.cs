@@ -2385,8 +2385,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private string _OperatorButtonImageDefault;
         private string _OperatorButtonImage;
-        private string _MenuButtonToolTipTitle;
-        private string _MenuButtonToolTipText;
+        private string _OperatorButtonToolTipTitle;
+        private string _OperatorButtonToolTipText;
         private string _ClearButtonImage;
         private string _ClearButtonToolTipTitle;
         private string _ClearButtonToolTipText;
@@ -2478,7 +2478,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Refreshuje button Operator (Image a ToolTip)
         /// </summary>
-        protected void OperatorButtonRefresh() { ButtonRefresh(_OperatorButton, (_OperatorButtonImage ?? _OperatorButtonImageDefault), _MenuButtonToolTipTitle, _MenuButtonToolTipText); }
+        protected void OperatorButtonRefresh() { ButtonRefresh(_OperatorButton, (_OperatorButtonImage ?? _OperatorButtonImageDefault), _OperatorButtonToolTipTitle, _OperatorButtonToolTipText); }
         /// <summary>
         /// Refreshuje button Clear (Image a ToolTip)
         /// </summary>
@@ -2549,14 +2549,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             return menuItems;
         }
         /// <summary>
-        /// Metoda
+        /// Metoda v daném poli <paramref name="menuItems"/> zkusí najít takovou položku, jejíž <see cref="IMenuItem.HotKey"/> == začátek zadaného textu <paramref name="text"/>.
+        /// Pokud ji najde, pak zadaný text zkrátí o konkrétní prefix a nalezenou položku vloží do out parametru, vrací true.
+        /// Pokud nenajde, vrací false.
+        /// <para/>
+        /// Pokud tedy vstupní <paramref name="text"/> = "%kdekoliv" a v poli <paramref name="menuItems"/> existuje prvek, jehož <see cref="IMenuItem.HotKey"/> = "%",
+        /// pak tento prvek bude umístěn do out <paramref name="menuItem"/>,  výstupní obsah <paramref name="text"/> = "kdekoliv" a výstupem bude true.
         /// </summary>
         /// <param name="menuItems"></param>
         /// <param name="text"></param>
+        /// <param name="menuItem"></param>
         /// <returns></returns>
-        public static IMenuItem SearchMenuItemForHotKeyPrefix(IEnumerable<IMenuItem> menuItems, ref string text)
+        public static bool SearchMenuItemForHotKeyPrefix(IEnumerable<IMenuItem> menuItems, ref string text, out IMenuItem menuItem)
         {
-        
+            menuItem = null;
+            if (menuItems == null || String.IsNullOrEmpty(text)) return false;
+            string t = text;
+            menuItem = menuItems.FirstOrDefault(i => (!String.IsNullOrEmpty(i.HotKey) && t.Length >= i.HotKey.Length && t.StartsWith(i.HotKey)));
+            if (menuItem == null) return false;
+            text = text.Substring(menuItem.HotKey.Length);
+            return true;
         }
         /// <summary>
         /// Aktuální hodnota filtru. Lze setovat. Setování ale nevyvolá událost <see cref="FilterValueChanged"/>.
@@ -2570,7 +2582,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this._CurrentFilterOperator = value?.FilterOperator;
                 this._CurrentText = text;
                 this._CurrentValue = value?.FilterValue;
-                this.RunInGui(() => this._FilterText.Text = text);
+                this.RunInGui(() => FilterTextSetSilent(text));
             }
         }
         /// <summary>
@@ -2588,6 +2600,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud dojde ke změně textu, pak je pořadí: <see cref="FilterValueChanged"/>, <see cref="KeyEnterPress"/>.
         /// </summary>
         public event EventHandler KeyEnterPress;
+        /// <summary>
+        /// Defaultní jméno ikony na tlačítku Operator
+        /// </summary>
+        public string OperatorButtonImageDefault { get { return _OperatorButtonImageDefault; } set { _OperatorButtonImageDefault = value; this.RunInGui(OperatorButtonRefresh); } }
         /// <summary>
         /// Jméno ikony na tlačítku Clear
         /// </summary>
@@ -2652,7 +2668,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DoLayout();
         }
         /// <summary>
-        /// Aplikuje ikonu a tooltip z aktuální položky <see cref="_CurrentFilterOperator"/> do buttonu Menu
+        /// Aplikuje ikonu a tooltip z aktuální položky <see cref="_CurrentFilterOperator"/> do buttonu <see cref="_OperatorButton"/>.
         /// </summary>
         protected virtual void ApplyCurrentOperator()
         {
@@ -2666,8 +2682,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Z aktuálního filtru přečteme jeho data a promítneme je do tlačítka:
             _OperatorButtonImage = currentType?.ItemImage;
-            _MenuButtonToolTipTitle = currentType?.ToolTipTitle;
-            _MenuButtonToolTipText = currentType?.ToolTip;
+            _OperatorButtonToolTipTitle = currentType?.ToolTipTitle;
+            _OperatorButtonToolTipText = currentType?.ToolTip;
             OperatorButtonRefresh();
         }
         /// <summary>
@@ -2702,6 +2718,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {   // Down musí řešit jen Enter:
             if (e.KeyData == Keys.Enter)
             {   // Pouze samotný Enter, nikoli CtrlEnter nebo ShiftEnter:
+                SearchHotKeyMenuItem();
                 FilterText_OnKeyEnter();
                 e.Handled = true;
             }
@@ -2735,6 +2752,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 RunFilterValueChanged(DxFilterBoxChangeEventSource.LostFocus);
         }
         /// <summary>
+        /// Metoda zkusí najít operátor podle prefixu v zadaném textu.
+        /// Tato metoda nevolá událost <see cref="FilterValueChanged"/>.
+        /// </summary>
+        private void SearchHotKeyMenuItem()
+        {
+            string text = (_FilterText.Text ?? "");
+            if (!SearchMenuItemForHotKeyPrefix(this.FilterOperators, ref text, out var hotItem)) return;
+            _CurrentFilterOperator = hotItem;
+            ApplyCurrentOperator();
+            FilterTextSetSilent(text);
+        }
+        /// <summary>
         /// Po stisku Enter v textu filtru
         /// </summary>
         private void FilterText_OnKeyEnter()
@@ -2751,9 +2780,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _CurrentText = (_FilterText.Text ?? "");       // Stínování hodnoty: aby hodnota textboxu byla čitelná i z jiných threadů
 
-            if (this.CallChangedEventOn(DxFilterBoxChangeEventSource.TextChange) && this.CurrentFilterIsChanged)
+            if (!FilterTextSilentChange && this.CallChangedEventOn(DxFilterBoxChangeEventSource.TextChange) && this.CurrentFilterIsChanged)
                 RunFilterValueChanged(DxFilterBoxChangeEventSource.TextChange);
         }
+        /// <summary>
+        /// Metoda vloží daný text do textboxu, ale neprovede událost <see cref="RunFilterValueChanged(DxFilterBoxChangeEventSource)"/>.
+        /// </summary>
+        /// <param name="text"></param>
+        private void FilterTextSetSilent(string text)
+        {
+            bool isSilent = FilterTextSilentChange;
+            try
+            {
+                FilterTextSilentChange = true;
+                _FilterText.Text = text;
+                _CurrentText = text;
+            }
+            finally
+            {
+                FilterTextSilentChange = isSilent;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true pokud změna textu v <see cref="_FilterText"/> NEMÁ vyvolat událost <see cref="RunFilterValueChanged(DxFilterBoxChangeEventSource)"/>.
+        /// Běžně je false.
+        /// </summary>
+        private bool FilterTextSilentChange = false;
         /// <summary>
         /// Proběhne po stisku klávesy Enter v textboxu, vždy, i beze změny textu
         /// </summary>
@@ -2780,7 +2832,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool callEvent = (this.CallChangedEventOn(DxFilterBoxChangeEventSource.ClearButton) && this.CurrentFilterIsChanged);
             if (callEvent)                  // Jen pokud my budeme volat událost FilterValueChanged (tam se uživatel dozví o změně dané ClearButtonem). Pokud bychom my nevolali tento event (tj. když FilterValueChangedSources neobsahuje ClearButton), pak LastFilterValue necháme dosavadní, a změnu hodnoty textu zaregistruje event FilterText_ValueChanged.
                 this.ReloadLastFilter();    // Tady se do LastFilterValue dostane text z _CurrentText, tedy ""
-            _FilterText.Text = "";          // Tady sice proběhne event FilterText_ValueChanged, ale (pokud budeme volat event), tak CurrentFilterIsChanged už bude false
+            FilterTextSetSilent("");        // Tady sice proběhne event FilterText_ValueChanged, ale nebudeme volat CurrentFilterChanged.
             if (callEvent)
                 RunFilterValueChanged(DxFilterBoxChangeEventSource.ClearButton);
 
@@ -2806,14 +2858,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="args"></param>
         protected virtual void OnFilterValueChanged(DxFilterBoxChangeArgs args) { }
-        /// <summary>
-        /// Hodnotu z proměnné <see cref="_CurrentText"/> vepíše do vizuálního textboxu, nevolá žádné eventy
-        /// </summary>
-        protected virtual void DoApplyCurrentText()
-        {
-            if (_FilterText == null) return;
-            _FilterText.Text = _CurrentText;
-        }
         /// <summary>
         /// Vrátí true, pokud v <see cref="FilterValueChangedSources"/> je nastavený některý bit z dodané hodnoty.
         /// </summary>
