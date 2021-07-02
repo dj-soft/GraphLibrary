@@ -193,7 +193,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RegisterFilterRowEventHandlers()
         {
-            _FilterBox.FilterValueChangedSources = DxFilterRowChangeEventSource.DefaultGreen;
+            _FilterBox.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
             _FilterBox.FilterValueChanged += FilterBox_Changed;      // Změna obsahu filtru a Enter
             _FilterBox.KeyEnterPress += FilterBox_KeyEnter;
         }
@@ -215,16 +215,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public List<IMenuItem> FilterBoxOperators { get { return _FilterBox.FilterOperators; } set { _FilterBox.FilterOperators = value; } }
         /// <summary>
-        /// Provede se po jakékoli změně v řádkovém filtru:
-        /// 1. Po zadání textu (včetně možné změny typu filtru) a klávese Enter;
-        /// 2. Po smazání textu tlačítkem Clear;
-        /// <para/>
-        /// Nevolá se v těchto případech:
-        /// a. Změna typu filtru v menu (pak přejde focus do textu a uživatel má dát Enter)
-        /// b. Průběžná editace textu
-        /// c. Odchod z textového políčka pomocí Tab nebo myši, i po změně obsahu textu: tak se choval původní prvek
+        /// Za jakých událostí se volá event <see cref="FilterBoxChanged"/>
         /// </summary>
-        public event EventHandler<TEventArgs<DxFilterBoxValue>> FilterBoxChanged;
+        public DxFilterBoxChangeEventSource FilterBoxChangedSources { get { return _FilterBox.FilterValueChangedSources; } set { _FilterBox.FilterValueChangedSources = value; } }
+        /// <summary>
+        /// Událost volaná po hlídané změně obsahu filtru.
+        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
+        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="FilterBoxChangedSources"/>.
+        /// </summary>
+        public event EventHandler<DxFilterBoxChangeArgs> FilterBoxChanged;
         /// <summary>
         /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
         /// </summary>
@@ -240,16 +239,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po jakékoli změně v řádkovém filtru
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void FilterBox_Changed(object sender, TEventArgs<DxFilterBoxValue> e)
+        /// <param name="args"></param>
+        private void FilterBox_Changed(object sender, DxFilterBoxChangeArgs args)
         {
-            OnFilterBoxChanged(e);
-            FilterBoxChanged?.Invoke(this, e);
+            OnFilterBoxChanged(args);
+            FilterBoxChanged?.Invoke(this, args);
         }
         /// <summary>
         /// Proběhne po jakékoli změně v řádkovém filtru
         /// </summary>
-        protected virtual void OnFilterBoxChanged(TEventArgs<DxFilterBoxValue> e) { }
+        protected virtual void OnFilterBoxChanged(DxFilterBoxChangeArgs args) { }
         /// <summary>
         /// Po stisku Enter v řádkovém filtru
         /// </summary>
@@ -2377,13 +2376,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _FilterText.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+            this.Leave += DxFilterBox_Leave;
 
             AcceptOperators();
             _CurrentText = "";
-            FilterValueChangedSources = DxFilterRowChangeEventSource.Default;
+            FilterValueChangedSources = DxFilterBoxChangeEventSource.Default;
             LastFilterValue = null;
         }
-
         private string _OperatorButtonImageDefault;
         private string _OperatorButtonImage;
         private string _MenuButtonToolTipTitle;
@@ -2394,7 +2393,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxSimpleButton _OperatorButton;
         private DxTextEdit _FilterText;
         private DxSimpleButton _ClearButton;
-
         #endregion
         #region Layout
         /// <summary>
@@ -2568,16 +2566,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Za jakých událostí se volá event <see cref="FilterValueChanged"/>
         /// </summary>
-        public DxFilterRowChangeEventSource FilterValueChangedSources { get; set; }
+        public DxFilterBoxChangeEventSource FilterValueChangedSources { get; set; }
         /// <summary>
-        /// Událost volaná po změně obsahu filtru, po potvrzení textu klávesou Enter (volitelně i po změně typu operátoru)
+        /// Událost volaná po hlídané změně obsahu filtru.
+        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
+        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="FilterValueChangedSources"/>.
         /// </summary>
-        public event EventHandler<TEventArgs<DxFilterBoxValue>> FilterValueChanged;
+        public event EventHandler<DxFilterBoxChangeArgs> FilterValueChanged;
         /// <summary>
         /// Událost volaná po stisku klávesy Enter, vždy, tedy jak po změně textu i bez změny textu.
         /// Pokud dojde ke změně textu, pak je pořadí: <see cref="FilterValueChanged"/>, <see cref="KeyEnterPress"/>.
-        /// Pokud uživatel stiskne tlačítko Clear (vpravo), provede se pouze <see cref="FilterValueChanged"/>, následně <see cref="CurrentFilterCleared"/>, ale focus se vrátí do TextBoxu a neprovádí se <see cref="KeyEnterPress"/>.
-        /// Pokud uživatel vybere jiný druh filtru, proběhne jen událost <see cref="CurrentTypeChanged"/>.
         /// </summary>
         public event EventHandler KeyEnterPress;
         /// <summary>
@@ -2627,8 +2625,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _CurrentFilterOperator = activeOperator;
             ApplyCurrentOperator();
-            if (runEvent && CallChangedEventOn(DxFilterRowChangeEventSource.OperatorChange) && this.CurrentFilterIsChanged)
-                RunFilterValueChanged();
+            if (runEvent && CallChangedEventOn(DxFilterBoxChangeEventSource.OperatorChange) && this.CurrentFilterIsChanged)
+                RunFilterValueChanged(DxFilterBoxChangeEventSource.OperatorChange);
         }
         /// <summary>
         /// Nastaví viditelnost buttonu <see cref="_OperatorButton"/> podle existence nabídek operátorů.
@@ -2717,12 +2715,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             FilterText_ValueChanged();
         }
         /// <summary>
+        /// Když focus opouští FilterBox, můžeme hlásit změnu hodnoty
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxFilterBox_Leave(object sender, EventArgs e)
+        {
+            if (this.CallChangedEventOn(DxFilterBoxChangeEventSource.LostFocus) && this.CurrentFilterIsChanged)
+                RunFilterValueChanged(DxFilterBoxChangeEventSource.LostFocus);
+        }
+        /// <summary>
         /// Po stisku Enter v textu filtru
         /// </summary>
         private void FilterText_OnKeyEnter()
         {
-            if (this.CallChangedEventOn(DxFilterRowChangeEventSource.KeyEnter) && this.CurrentFilterIsChanged)
-                RunFilterValueChanged();
+            if (this.CallChangedEventOn(DxFilterBoxChangeEventSource.KeyEnter) && this.CurrentFilterIsChanged)
+                RunFilterValueChanged(DxFilterBoxChangeEventSource.KeyEnter);
 
             RunKeyEnterPress();
         }
@@ -2733,8 +2741,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _CurrentText = (_FilterText.Text ?? "");       // Stínování hodnoty: aby hodnota textboxu byla čitelná i z jiných threadů
 
-            if (this.CallChangedEventOn(DxFilterRowChangeEventSource.TextChange) && this.CurrentFilterIsChanged)
-                RunFilterValueChanged();
+            if (this.CallChangedEventOn(DxFilterBoxChangeEventSource.TextChange) && this.CurrentFilterIsChanged)
+                RunFilterValueChanged(DxFilterBoxChangeEventSource.TextChange);
         }
         /// <summary>
         /// Proběhne po stisku klávesy Enter v textboxu, vždy, i beze změny textu
@@ -2759,12 +2767,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             // ale v té době už bude CurrentFilterIsChanged = false, protože tam se vyhodnocuje _CurrentText a to už bude shodné s LastValue
             _CurrentText = "";              // Stínování hodnoty: aby hodnota textboxu byla čitelná i z jiných threadů
 
-            bool callEvent = (this.CallChangedEventOn(DxFilterRowChangeEventSource.ClearButton) && this.CurrentFilterIsChanged);
+            bool callEvent = (this.CallChangedEventOn(DxFilterBoxChangeEventSource.ClearButton) && this.CurrentFilterIsChanged);
             if (callEvent)                  // Jen pokud my budeme volat událost FilterValueChanged (tam se uživatel dozví o změně dané ClearButtonem). Pokud bychom my nevolali tento event (tj. když FilterValueChangedSources neobsahuje ClearButton), pak LastFilterValue necháme dosavadní, a změnu hodnoty textu zaregistruje event FilterText_ValueChanged.
                 this.ReloadLastFilter();    // Tady se do LastFilterValue dostane text z _CurrentText, tedy ""
             _FilterText.Text = "";          // Tady sice proběhne event FilterText_ValueChanged, ale (pokud budeme volat event), tak CurrentFilterIsChanged už bude false
             if (callEvent)
-                RunFilterValueChanged();
+                RunFilterValueChanged(DxFilterBoxChangeEventSource.ClearButton);
 
             _FilterText.Focus();
         }
@@ -2775,10 +2783,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda nastaví <see cref="LastFilterValue"/> = <see cref="CurrentFilterValue"/> (tedy poslední známá hodntoa filtru = aktuální hodnota).
         /// Tím se změní hodnota <see cref="CurrentFilterIsChanged"/> na false = filtr od této chvíle neobsahuje změnu.
         /// </summary>
-        private void RunFilterValueChanged()
+        private void RunFilterValueChanged(DxFilterBoxChangeEventSource eventSource)
         {
             var currentFilter = this.CurrentFilterValue;
-            TEventArgs<DxFilterBoxValue> args = new TEventArgs<DxFilterBoxValue>(currentFilter);
+            DxFilterBoxChangeArgs args = new DxFilterBoxChangeArgs(currentFilter, eventSource);
             this.LastFilterValue = currentFilter;          // Od teď bude hodnota CurrentFilterIsChanged = false;
             OnFilterValueChanged(args);
             FilterValueChanged?.Invoke(this, args);
@@ -2787,7 +2795,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po změně hodnoty filtru, dle nastavených zdrojů události
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnFilterValueChanged(TEventArgs<DxFilterBoxValue> args) { }
+        protected virtual void OnFilterValueChanged(DxFilterBoxChangeArgs args) { }
         /// <summary>
         /// Hodnotu z proměnné <see cref="_CurrentText"/> vepíše do vizuálního textboxu, nevolá žádné eventy
         /// </summary>
@@ -2801,7 +2809,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        protected bool CallChangedEventOn(DxFilterRowChangeEventSource source)
+        protected bool CallChangedEventOn(DxFilterBoxChangeEventSource source)
         {
             return this.FilterValueChangedSources.HasFlag(source);
         }
@@ -2852,7 +2860,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Spouštěcí události pro event <see cref="DxFilterBox.FilterValueChanged"/>
     /// </summary>
     [Flags]
-    public enum DxFilterRowChangeEventSource
+    public enum DxFilterBoxChangeEventSource
     {
         /// <summary>Nikdy</summary>
         None = 0x00,
@@ -2896,6 +2904,30 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         DefaultText = Contains | DoesNotContain | StartsWith | DoesNotStartWith | EndsWith | DoesNotEndWith,
         DefaultNumber = Equals | NotEquals | GreaterThan | GreaterThanOrEqualTo | LessThan | LessThanOrEqualTo
+    }
+    /// <summary>
+    /// Data pro událost o změně filtru
+    /// </summary>
+    public class DxFilterBoxChangeArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="filterValue"></param>
+        /// <param name="eventSource"></param>
+        public DxFilterBoxChangeArgs(DxFilterBoxValue filterValue, DxFilterBoxChangeEventSource eventSource)
+        {
+            FilterValue = filterValue;
+            EventSource = eventSource;
+        }
+        /// <summary>
+        /// Hodnota filtru
+        /// </summary>
+        public DxFilterBoxValue FilterValue { get; private set; }
+        /// <summary>
+        /// Druh události
+        /// </summary>
+        public DxFilterBoxChangeEventSource EventSource { get; private set; }
     }
     /// <summary>
     /// Aktuální hodnota filtru
