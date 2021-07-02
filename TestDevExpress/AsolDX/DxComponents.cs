@@ -2256,12 +2256,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _ApplyResourceImageSvg(ImageOptions imageOptions, string resourceName, Size? imageSize)
         {
+            imageOptions.Image = null;
             _ImageResourceRewindStream(resourceName);
             imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
             if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
         }
         private void _ApplyResourceImageBmp(ImageOptions imageOptions, string resourceName, Size? imageSize)
         {
+            imageOptions.SvgImage = null;
             imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
         }
 

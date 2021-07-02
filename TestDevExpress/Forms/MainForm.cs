@@ -2026,6 +2026,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.LazyLoadFocusNode = TreeViewLazyLoadFocusNodeType.ParentNode;
             _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
+            _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultFilterItems(FilterBoxOperatorItems.DefaultText);
 
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
@@ -2072,7 +2073,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private void _TreeList_FilterRowChanged(object sender, EventArgs e)
         {
             var filter = this._TreeList.FilterBoxValue;
-            _AddLogLine($"RowFilter: Change; Type: {filter.FilterOperator.ItemId}, Text: \"{filter.FilterText}\"");
+            _AddLogLine($"RowFilter: Change; Type: {filter.FilterOperator?.ItemId}, Text: \"{filter.FilterText}\"");
         }
         private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args)
         {
