@@ -2026,7 +2026,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.LazyLoadFocusNode = TreeViewLazyLoadFocusNodeType.ParentNode;
             _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
-            _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultFilterItems(FilterBoxOperatorItems.DefaultText);
+            _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _TreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
 
             _TreeList.Parent = this;

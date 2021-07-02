@@ -2523,7 +2523,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří a vrátí defaultní položky menu
         /// </summary>
         /// <returns></returns>
-        public static List<IMenuItem> CreateDefaultFilterItems(FilterBoxOperatorItems items)
+        public static List<IMenuItem> CreateDefaultOperatorItems(FilterBoxOperatorItems items)
         {
             string resourceContains = "images/alignment/alignverticalcenter2_16x16.png";
             string resourceDoesNotContain = "office2013/alignment/alignverticalcenter2_16x16.png";
@@ -2534,19 +2534,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             List<IMenuItem> menuItems = new List<IMenuItem>();
 
             if (items.HasFlag(FilterBoxOperatorItems.Contains))
-                menuItems.Add(new DataMenuItem() { ItemId = "Contains", ItemImage = resourceContains, ItemText = "Obsahuje", ItemIsChecked = false, ToolTipTitle = "Obsahuje:", ToolTip = "Vybere ty položky, které obsahují zadaný text", Tag = FilterBoxOperatorItems.Contains });
+                menuItems.Add(new DataMenuItem() { ItemId = "Contains", HotKey = "%", ItemImage = resourceContains, ItemText = "Obsahuje", ItemIsChecked = false, ToolTipTitle = "Obsahuje:", ToolTip = "Vybere ty položky, které obsahují zadaný text", Tag = FilterBoxOperatorItems.Contains });
             if (items.HasFlag(FilterBoxOperatorItems.DoesNotContain))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotContain", ItemImage = resourceDoesNotContain, ItemText = "Neobsahuje", ItemIsChecked = false, ToolTipTitle = "Neobsahuje:", ToolTip = "Vybere ty položky, které neobsahují zadaný text", Tag = FilterBoxOperatorItems.DoesNotContain });
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotContain", HotKey = "!%", ItemImage = resourceDoesNotContain, ItemText = "Neobsahuje", ItemIsChecked = false, ToolTipTitle = "Neobsahuje:", ToolTip = "Vybere ty položky, které neobsahují zadaný text", Tag = FilterBoxOperatorItems.DoesNotContain });
             if (items.HasFlag(FilterBoxOperatorItems.StartsWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "StartsWith", ItemImage = resourceStartsWith, ItemText = "Začíná", ItemIsChecked = false, ToolTipTitle = "Začíná:", ToolTip = "Vybere ty položky, jejichž text začíná zadaným textem", Tag = FilterBoxOperatorItems.StartsWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "StartsWith", HotKey = "=", ItemImage = resourceStartsWith, ItemText = "Začíná", ItemIsChecked = false, ToolTipTitle = "Začíná:", ToolTip = "Vybere ty položky, jejichž text začíná zadaným textem", Tag = FilterBoxOperatorItems.StartsWith });
             if (items.HasFlag(FilterBoxOperatorItems.DoesNotStartWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotStartWith", ItemImage = resourceDoesNotStartWith, ItemText = "Nezačíná", ItemIsChecked = false, ToolTipTitle = "Nezačíná:", ToolTip = "Vybere ty položky, jejichž text začíná jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotStartWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotStartWith", HotKey = "!", ItemImage = resourceDoesNotStartWith, ItemText = "Nezačíná", ItemIsChecked = false, ToolTipTitle = "Nezačíná:", ToolTip = "Vybere ty položky, jejichž text začíná jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotStartWith });
             if (items.HasFlag(FilterBoxOperatorItems.EndsWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "EndsWith", ItemImage = resourceEndsWith, ItemText = "Končí", ItemIsChecked = false, ToolTipTitle = "Končí:", ToolTip = "Vybere ty položky, jejichž text končí zadaným textem", Tag = FilterBoxOperatorItems.EndsWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "EndsWith", HotKey = "/", ItemImage = resourceEndsWith, ItemText = "Končí", ItemIsChecked = false, ToolTipTitle = "Končí:", ToolTip = "Vybere ty položky, jejichž text končí zadaným textem", Tag = FilterBoxOperatorItems.EndsWith });
             if (items.HasFlag(FilterBoxOperatorItems.DoesNotEndWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotEndWith", ItemImage = resourceDoesNotEndWith, ItemText = "Nekončí", ItemIsChecked = false, ToolTipTitle = "Nekončí:", ToolTip = "Vybere ty položky, jejichž text končí jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotEndWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotEndWith", HotKey = "!/", ItemImage = resourceDoesNotEndWith, ItemText = "Nekončí", ItemIsChecked = false, ToolTipTitle = "Nekončí:", ToolTip = "Vybere ty položky, jejichž text končí jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotEndWith });
 
             return menuItems;
+        }
+        /// <summary>
+        /// Metoda
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static IMenuItem SearchMenuItemForHotKeyPrefix(IEnumerable<IMenuItem> menuItems, ref string text)
+        {
+        
         }
         /// <summary>
         /// Aktuální hodnota filtru. Lze setovat. Setování ale nevyvolá událost <see cref="FilterValueChanged"/>.
