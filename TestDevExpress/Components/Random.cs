@@ -327,7 +327,7 @@ zařídil. Její radost kalila jen jediná obava - jestli jí švadleny budou mo
 Svatební cestu, na kterou jsme si vyjeli teprve před nedávnem, jsme museli předčasně ukončit, a tak jsme se
 rozhodli, že tentokrát s sebou nikoho nepozveme a necháme si celou plachetnici jenom pro sebe. A že jsme se
 takto rozhodli, za to dodnes děkuji nebesům. V pondělí jsme se nastrojili do samých nových věcí a vyrazili jsme.
-Co měla na sobě Ethelberta, to už si nepamatuji, vím jeom, že jí to ohromně slušelo. Já měl oblek tmavomodrý,
+Co měla na sobě Ethelberta, to už si nepamatuji, vím jenom, že jí to ohromně slušelo. Já měl oblek tmavomodrý,
 lemovaný úzkou bílou paspulkou, což bylo myslím velice efektní.
 Pan Goyles nás už čekal na palubě a oznámil nám, že je prostřeno k obědu. Kuchaře, to musím uznat, opatřil
 znamenitého. Schopnosti ostatních členů posádky jsem neměl příležitost posoudit. Ale podle toho, jak vypadali za

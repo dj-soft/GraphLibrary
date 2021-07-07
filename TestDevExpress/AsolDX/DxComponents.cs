@@ -5139,8 +5139,43 @@ namespace Noris.Clients.Win.Components.AsolDX
             return borders;
         }
         #endregion
-
-
+    }
+    #endregion
+    #region class DataExtensions : Extensions metody pro datové třídy
+    /// <summary>
+    /// Extensions metody pro datové třídy
+    /// </summary>
+    public static class DataExtensions
+    {
+        #region IEnumerable
+        /// <summary>
+        /// Z dodané kolekce vytvoří Dictionary. Umožní ignorovat duplicity klíčů.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="ignoreDuplicity"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(this IEnumerable<TValue> items, Func<TValue, TKey> keySelector, bool ignoreDuplicity = false)
+        {
+            if (items == null) return null;
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
+            foreach (TValue item in items)
+            {
+                if (item == null) continue;
+                TKey key = keySelector(item);
+                if (key == null) continue;
+                if (result.ContainsKey(key))
+                {
+                    if (ignoreDuplicity) continue;
+                    throw new System.ArgumentException($"An element with the same key [{key}] already exists in the System.Collections.Generic.Dictionary.");
+                }
+                result.Add(key, item);
+            }
+            return result;
+        }
+        #endregion
     }
     #endregion
     #region class EnumerableExtensions

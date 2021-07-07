@@ -2025,7 +2025,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.LazyLoadFocusNode = TreeViewLazyLoadFocusNodeType.ParentNode;
+            _TreeList.FilterBoxVisible = true;
             _TreeList.EditorShowMode = DevExpress.XtraTreeList.TreeListEditorShowMode.MouseUp;
+            _TreeList.IncrementalSearchMode = TreeViewIncrementalSearchMode.InAllNodes;
             _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _TreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
 
@@ -2038,10 +2040,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
 
-            _TreeList.FilterBoxVisible = true;
 
             _TreeList.FilterBoxChanged += _TreeList_FilterBoxChanged;
             _TreeList.FilterBoxKeyEnter += _TreeList_FilterBoxKeyEnter;
+            _TreeList.HotKeys = _CreateHotKeys();
+            _TreeList.NodeKeyUp += _TreeList_NodeKeyUp;
             _TreeList.NodeSelected += _TreeList_AnyAction;
             _TreeList.NodeIconClick += _TreeList_IconClick;
             _TreeList.NodeDoubleClick += _TreeList_DoubleClick;
@@ -2067,6 +2070,24 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
             _AddLogLine(line);
         }
+        private static Keys[] _CreateHotKeys()
+        {
+            Keys[] keys = new Keys[]
+            {
+                Keys.Delete,
+                Keys.Control | Keys.N,
+                Keys.Control | Keys.Delete,
+                Keys.Enter,
+                Keys.Control | Keys.Enter,
+                Keys.Control | Keys.Shift | Keys.Enter,
+                Keys.Control | Keys.Home,
+                Keys.Control | Keys.End,
+                Keys.F1,
+                Keys.F2,
+                Keys.Control | Keys.Space
+            };
+            return keys;
+        }
         private void _TreeList_FilterBoxKeyEnter(object sender, EventArgs e)
         {
             _AddLogLine($"RowFilter: 'Enter' pressed");
@@ -2075,6 +2096,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             var filter = this._TreeList.FilterBoxValue;
             _AddLogLine($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
+        }
+        private void _TreeList_NodeKeyUp(object sender, DxTreeViewNodeKeyArgs args)
+        {
+            _AddLogLine($"KeyUp: Node: {args.Node?.Text}; KeyCode: '{args.KeyArgs.KeyCode}'; KeyData: '{args.KeyArgs.KeyData}'; Modifiers: {args.KeyArgs.Modifiers}");
         }
         private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args)
         {
