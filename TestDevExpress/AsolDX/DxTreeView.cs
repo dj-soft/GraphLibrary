@@ -689,10 +689,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree)
             {
-                var hit = tree.CalcHitInfo(e.ControlMousePosition);
-                if (hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.Cell || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.SelectImage || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.StateImage)
+                var hit = _GetNodeHit(e.ControlMousePosition);
+                if (hit.IsInImagesOrCell)
                 {
-                    var nodeInfo = this._GetNodeInfo(hit.Node);
+                    var nodeInfo = hit.NodeInfo;
                     if (nodeInfo != null && (!String.IsNullOrEmpty(nodeInfo.ToolTipTitle) || !String.IsNullOrEmpty(nodeInfo.ToolTipText)))
                     {
                         string toolTipText = nodeInfo.ToolTipText;
@@ -1006,12 +1006,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnMouseClick(object sender, MouseEventArgs e)
         {
-            var hit = this.CalcHitInfo(e.Location);
-            if (hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.StateImage || hit.HitInfoType == DevExpress.XtraTreeList.HitInfoType.SelectImage)
+            var hit = _GetNodeHit(e.Location);
+            if (hit.IsInImages)
             {
                 ITreeListNode nodeInfo = this.FocusedNodeInfo;
                 if (nodeInfo != null)
-                    this.OnNodeIconClick(nodeInfo);
+                    this.OnNodeIconClick(nodeInfo, hit.PartType);
             }
         }
         /// <summary>
@@ -1021,9 +1021,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnDoubleClick(object sender, EventArgs e)
         {
+            var hit = _GetNodeHit();
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
-                this.OnNodeDoubleClick(nodeInfo);
+                this.OnNodeDoubleClick(nodeInfo, hit.PartType);
         }
         /// <summary>
         /// V okamžiku zahájení editace
@@ -1164,7 +1165,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Obsahuje true pokud je zrovna aktivní editor textu v nodu
+        /// Najde node a jeho část, na které se nachází daný relativní bod.
+        /// Pokud bod není daný (je null), pak použije aktuální pozici myši.
+        /// </summary>
+        /// <param name="relativePoint"></param>
+        /// <returns></returns>
+        private TreeViewVisualNodeInfo _GetNodeHit(Point? relativePoint = null)
+        {
+            if (!relativePoint.HasValue)
+                relativePoint = this.PointToClient(Control.MousePosition);
+            DevExpress.XtraTreeList.TreeListHitInfo treeHit = this.CalcHitInfo(relativePoint.Value);
+            ITreeListNode nodeInfo = this._GetNodeInfo(treeHit.Node);
+            return new TreeViewVisualNodeInfo(treeHit, nodeInfo);
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je zrovna aktivní editor textu v aktuálním nodu
         /// </summary>
         private bool IsActiveEditor { get { return (this.EditorHelper.ActiveEditor != null); } }
         #endregion
@@ -1929,7 +1944,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         protected virtual void OnNodeSelected(ITreeListNode nodeInfo)
         {
-            if (NodeSelected != null) NodeSelected(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeSelected, this.IsActiveEditor));
+            if (NodeSelected != null) NodeSelected(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeSelected, TreeViewPartType.None, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView má NodeIconClick na určitý Node
@@ -1939,9 +1954,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyvolá event <see cref="NodeIconClick"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeIconClick(ITreeListNode nodeInfo)
+        /// <param name="partType"></param>
+        protected virtual void OnNodeIconClick(ITreeListNode nodeInfo, TreeViewPartType partType)
         {
-            if (NodeIconClick != null) NodeIconClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeIconClick, this.IsActiveEditor));
+            if (NodeIconClick != null) NodeIconClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeIconClick, partType, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView má Doubleclick na určitý Node
@@ -1951,9 +1967,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyvolá event <see cref="NodeDoubleClick"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeDoubleClick(ITreeListNode nodeInfo)
+        /// <param name="partType"></param>
+        protected virtual void OnNodeDoubleClick(ITreeListNode nodeInfo, TreeViewPartType partType)
         {
-            if (NodeDoubleClick != null) NodeDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDoubleClick, this.IsActiveEditor));
+            if (NodeDoubleClick != null) NodeDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDoubleClick, partType, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="ITreeListNode.LazyLoadChilds"/>).
@@ -1965,7 +1982,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         protected virtual void OnNodeExpanded(ITreeListNode nodeInfo)
         {
-            if (NodeExpanded != null) NodeExpanded(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeExpanded, this.IsActiveEditor));
+            if (NodeExpanded != null) NodeExpanded(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeExpanded, TreeViewPartType.None, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView právě sbaluje určitý Node.
@@ -1977,7 +1994,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         protected virtual void OnNodeCollapsed(ITreeListNode nodeInfo)
         {
-            if (NodeCollapsed != null) NodeCollapsed(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCollapsed, this.IsActiveEditor));
+            if (NodeCollapsed != null) NodeCollapsed(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCollapsed, TreeViewPartType.None, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView právě začíná editovat text daného node = je aktivován editor.
@@ -1989,7 +2006,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         protected virtual void OnActivatedEditor(ITreeListNode nodeInfo)
         {
-            if (ActivatedEditor != null) ActivatedEditor(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.ActivatedEditor, this.IsActiveEditor));
+            if (ActivatedEditor != null) ActivatedEditor(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.ActivatedEditor, TreeViewPartType.None, this.IsActiveEditor));
         }
         /// <summary>
         /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
@@ -2002,7 +2019,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="editedValue"></param>
         protected virtual void OnEditorDoubleClick(ITreeListNode nodeInfo, object editedValue)
         {
-            if (EditorDoubleClick != null) EditorDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.EditorDoubleClick, this.IsActiveEditor, editedValue));
+            if (EditorDoubleClick != null) EditorDoubleClick(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.EditorDoubleClick, TreeViewPartType.Cell, this.IsActiveEditor, editedValue));
         }
         /// <summary>
         /// TreeView právě skončil editaci určitého Node.
@@ -2015,7 +2032,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="editedValue"></param>
         protected virtual void OnNodeEdited(ITreeListNode nodeInfo, object editedValue)
         {
-            if (NodeEdited != null) NodeEdited(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeEdited, this.IsActiveEditor, editedValue));
+            if (NodeEdited != null) NodeEdited(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeEdited, TreeViewPartType.Cell, this.IsActiveEditor, editedValue));
         }
         /// <summary>
         /// Uživatel změnil stav Checked na prvku.
@@ -2028,7 +2045,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isChecked"></param>
         protected virtual void OnNodeCheckedChange(ITreeListNode nodeInfo, bool isChecked)
         {
-            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, isChecked));
+            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, TreeViewPartType.NodeCheckBox, isChecked));
         }
         /// <summary>
         /// Uživatel dal Delete na uzlu, který se needituje.
@@ -2040,7 +2057,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         protected virtual void OnNodeDelete(ITreeListNode nodeInfo)
         {
-            if (NodeDelete != null) NodeDelete(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDelete, this.IsActiveEditor));
+            if (NodeDelete != null) NodeDelete(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeDelete, TreeViewPartType.None, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyLoadChilds"/> je true.
@@ -2052,7 +2069,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         protected virtual void OnLazyLoadChilds(ITreeListNode nodeInfo)
         {
-            if (LazyLoadChilds != null) LazyLoadChilds(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.LazyLoadChilds, this.IsActiveEditor));
+            if (LazyLoadChilds != null) LazyLoadChilds(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.LazyLoadChilds, TreeViewPartType.None, this.IsActiveEditor));
         }
         #endregion
     }
@@ -2076,7 +2093,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isActiveEditor"></param>
         /// <param name="keyArgs"></param>
         public DxTreeViewNodeKeyArgs(ITreeListNode node, TreeViewActionType action, bool isActiveEditor, KeyEventArgs keyArgs)
-            : base(node, action, isActiveEditor, null)
+            : base(node, action, TreeViewPartType.None, isActiveEditor, null)
         {
             this.KeyArgs = keyArgs;
         }
@@ -2101,12 +2118,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="node"></param>
         /// <param name="action"></param>
+        /// <param name="partType"></param>
         /// <param name="isActiveEditor"></param>
         /// <param name="editedValue"></param>
-        public DxTreeViewNodeArgs(ITreeListNode node, TreeViewActionType action, bool isActiveEditor, object editedValue = null)
+        public DxTreeViewNodeArgs(ITreeListNode node, TreeViewActionType action, TreeViewPartType partType, bool isActiveEditor, object editedValue = null)
         {
             this.Node = node;
             this.Action = action;
+            this.PartType = partType;
             this.IsActiveEditor = isActiveEditor;
             this.EditedValue = editedValue;
         }
@@ -2119,6 +2138,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public TreeViewActionType Action { get; private set; }
         /// <summary>
+        /// Pozice, kde bylo kliknuto. None, když kliknuto nebylo.
+        /// </summary>
+        public TreeViewPartType PartType { get; private set; }
+        /// <summary>
         /// Obsahuje true, pokud je právě aktivní editor
         /// </summary>
         public bool IsActiveEditor { get; private set; }
@@ -2126,6 +2149,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Editovaná hodnota, je vyplněna pouze pro akce <see cref="TreeViewActionType.NodeEdited"/> a <see cref="TreeViewActionType.EditorDoubleClick"/>
         /// </summary>
         public object EditedValue { get; private set; }
+    }
+    /// <summary>
+    /// Informace o nodu, na který bylo kliknuto a kam
+    /// </summary>
+    public class TreeViewVisualNodeInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="treeHit"></param>
+        /// <param name="nodeInfo"></param>
+        public TreeViewVisualNodeInfo(DevExpress.XtraTreeList.TreeListHitInfo treeHit, ITreeListNode nodeInfo)
+        {
+            this.TreeHit = treeHit;
+            this.NodeInfo = nodeInfo;
+            this.PartType = (TreeViewPartType)((int)treeHit.HitInfoType);    // Zdejší enum TreeViewPartType má shodné numerické hodnoty jako DevExpress typ DevExpress.XtraTreeList.HitInfoType
+        }
+        /// <summary>
+        /// Info DevExpress
+        /// </summary>
+        public DevExpress.XtraTreeList.TreeListHitInfo TreeHit { get; private set; }
+        /// <summary>
+        /// Node
+        /// </summary>
+        public ITreeListNode NodeInfo { get; private set; }
+        /// <summary>
+        /// Typ prvku
+        /// </summary>
+        public TreeViewPartType PartType { get; private set; }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="PartType"/> je (Cell nebo SelectImage nebo StateImage)
+        /// </summary>
+        public bool IsInImagesOrCell { get { var pt = PartType; return (pt == TreeViewPartType.Cell || pt == TreeViewPartType.StateImage || pt == TreeViewPartType.SelectImage); } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="PartType"/> je (SelectImage nebo StateImage)
+        /// </summary>
+        public bool IsInImages { get { var pt = PartType; return (pt == TreeViewPartType.StateImage || pt == TreeViewPartType.SelectImage); } }
+        /// <summary>
+        /// Nativní Node
+        /// </summary>
+        public DevExpress.XtraTreeList.Nodes.TreeListNode Node { get { return TreeHit.Node; } }
+        /// <summary>
+        /// Nativní Band
+        /// </summary>
+        public DevExpress.XtraTreeList.Columns.TreeListBand Band { get { return TreeHit.Band; } }
+        /// <summary>
+        /// Nativní Column
+        /// </summary>
+        public DevExpress.XtraTreeList.Columns.TreeListColumn Column { get { return TreeHit.Column; } }
+
     }
     /// <summary>
     /// Akce která proběhla v TreeList
@@ -2235,7 +2308,50 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// IncrementalSearch vyhledává i v nodexh, které nejsou Expanded.
         /// </summary>
         InAllNodes
-
+    }
+    /// <summary>
+    /// Část TreeView, na kterou bylo kliknuto
+    /// </summary>
+    public enum TreeViewPartType
+    {
+        None = 0,
+        Empty = 1,
+        ColumnButton = 2,
+        BehindColumn = 3,
+        Column = 4,
+        ColumnEdge = 5,
+        RowIndicator = 6,
+        RowIndicatorEdge = 7,
+        RowIndent = 8,
+        Row = 9,
+        RowPreview = 10,
+        RowFooter = 11,
+        Cell = 12,
+        Button = 13,
+        StateImage = 14,
+        SelectImage = 15,
+        SummaryFooter = 16,
+        CustomizationForm = 17,
+        VScrollBar = 18,
+        HScrollBar = 19,
+        FixedLeftDiv = 20,
+        FixedRightDiv = 21,
+        NodeCheckBox = 22,
+        AutoFilterRow = 23,
+        FilterPanel = 24,
+        FilterPanelCloseButton = 25,
+        FilterPanelActiveButton = 26,
+        FilterPanelText = 27,
+        FilterPanelMRUButton = 28,
+        FilterPanelCustomizeButton = 29,
+        ColumnFilterButton = 30,
+        ColumnPanel = 31,
+        Band = 32,
+        BandPanel = 33,
+        BandButton = 34,
+        BandEdge = 35,
+        Caption = 36,
+        Separator = 37
     }
     #endregion
     #endregion
