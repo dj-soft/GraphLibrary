@@ -13,6 +13,7 @@ using System.Windows.Forms;
 using System.Drawing;
 
 using DevExpress.Utils;
+using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -3206,8 +3207,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public object Tag { get; set; }
     }
     /// <summary>
-    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
+    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
+    [DebuggerDisplay("Item: {ItemText}; Type: {ItemType}; SubItemsCount: {SubItemsCount}")]
     public class DataMenuItem : IMenuItem
     {
         /// <summary>
@@ -3219,13 +3221,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ItemEnabled = true;
         }
         /// <summary>
-        /// Vizualizace
+        /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Item: {this.ItemText}; Type: {this.ItemType}" + (this.SubItems != null ? $"; SubItems: {this.SubItems.Count}" : "");
+            return (this.ItemText ?? "");
         }
+        /// <summary>
+        /// Počet SubItems jako string
+        /// </summary>
+        protected string SubItemsCount { get { return (this.SubItems == null ? "NULL" : this.SubItems.Count.ToString()); } }
         /// <summary>
         /// Z dodané kolekce prvků sestaví setříděný List a vrátí jej
         /// </summary>
@@ -3464,7 +3470,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
     /// </summary>
-    public interface IMenuItem
+    public interface IMenuItem : IToolTipItem
     {
         /// <summary>
         /// Parent prvku = <see cref="IRibbonGroup"/>
@@ -3538,6 +3544,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa
         /// </summary>
         string HotKey { get; }
+
+        /*
         /// <summary>
         /// Text ToolTipu
         /// </summary>
@@ -3550,6 +3558,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ikona ToolTipu
         /// </summary>
         string ToolTipIcon { get; }
+        */
+
         /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
@@ -3562,6 +3572,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Libovolná data aplikace
         /// </summary>
         object Tag { get; }
+    }
+    /// <summary>
+    /// Interface definující vlastnosti prvku, který může nabídnout ToolTip
+    /// </summary>
+    public interface IToolTipItem
+    {
+        /// <summary>
+        /// Text ToolTipu
+        /// </summary>
+        string ToolTip { get; }
+        /// <summary>
+        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
+        /// </summary>
+        string ToolTipTitle { get; }
+        /// <summary>
+        /// Ikona ToolTipu
+        /// </summary>
+        string ToolTipIcon { get; }
     }
     /// <summary>
     /// Typ stránky
@@ -3591,7 +3619,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Stránka / prvek typicky neobsahuje definici podřízených prvků při inicializaci, ale bude se donačítat ze serveru až při své aktivaci.
         /// Po jejich načtení bude seznam konstantní (jde o odložené načtení fixního seznamu).
         /// <para/>
-        /// V této položce <see cref="IRibbonItem"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
+        /// V této položce <see cref="IRibbonPage"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
         /// <see cref="IMenuItem.ItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
         /// <para/>
         /// Po aktivaci takové stránky se provede dotaz na Aplikační server pro RefreshMenu a získané prvky se do této stránky doplní, 
@@ -3603,7 +3631,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po jejich načtení bude seznam zobrazen, ale při další aktivaci stránky / prvku bude ze serveru načítán znovu.
         /// Jde o dynamický soupis prvků.
         /// <para/>
-        /// V této položce <see cref="IRibbonItem"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
+        /// V této položce <see cref="IRibbonPage"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
         /// <see cref="IMenuItem.ItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
         /// <para/>
         /// Po aktivaci takové stránky se provede dotaz na Aplikační server pro RefreshMenu a získané prvky se do této stránky doplní, 
@@ -3670,9 +3698,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     public enum RibbonItemType
     {
         /// <summary>
-        /// Použije se tehdy, když chceme deklarovat určitou stránku Ribbonu, která nemá dosud definovaný obsah (prvky).
-        /// Taková stránka má typicky deklarovaný režim obsahu <see cref="IRibbonItem.PageContentMode"/> = <see cref="RibbonContentMode.OnDemandLoadOnce"/>
-        /// nebo <see cref="RibbonContentMode.OnDemandLoadEveryTime"/>. Stránka se vytvoří, je prázdná, ale při její aktivaci uživatelem se vyvolá logika donačítání obsahu.
+        /// Neurčeno
         /// </summary>
         None,
         Button,

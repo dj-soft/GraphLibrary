@@ -1736,6 +1736,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected int NativeNodesCount { get { return _NodesId.Count; } }
         #endregion
         #endregion
+        #region Drag and Drop
+
+        #endregion
         #region Public vlastnosti, kolekce nodů, vyhledání nodu podle klíče, vyhledání child nodů
         /// <summary>
         /// Funkce, která pro název ikony vrátí její index v ImageListu

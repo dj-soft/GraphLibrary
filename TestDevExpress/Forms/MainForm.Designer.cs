@@ -73,7 +73,6 @@
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.SkinList = new System.Windows.Forms.ListBox();
             this.ribbonControl1 = new Noris.Clients.Win.Components.AsolDX.DxRibbonControl();
-            this._RunDataFormBtn = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._SplitTabHeaders)).BeginInit();
             this._SplitTabHeaders.Panel1.SuspendLayout();
             this._SplitTabHeaders.Panel2.SuspendLayout();
@@ -548,7 +547,6 @@
             // _EditorsPanel
             // 
             this._EditorsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this._EditorsPanel.Controls.Add(this._RunDataFormBtn);
             this._EditorsPanel.DevExpressSkinEnabled = true;
             this._EditorsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this._EditorsPanel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
@@ -645,16 +643,6 @@
             this.ribbonControl1.Size = new System.Drawing.Size(0, 50);
             this.ribbonControl1.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
             // 
-            // _RunDataFormBtn
-            // 
-            this._RunDataFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this._RunDataFormBtn.Location = new System.Drawing.Point(3, 221);
-            this._RunDataFormBtn.Name = "_RunDataFormBtn";
-            this._RunDataFormBtn.Size = new System.Drawing.Size(150, 60);
-            this._RunDataFormBtn.TabIndex = 8;
-            this._RunDataFormBtn.Text = "Run DataForm";
-            this._RunDataFormBtn.UseVisualStyleBackColor = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -741,7 +729,6 @@
         private AsolPanel _EditorsPanel;
         private System.Windows.Forms.TabPage tabPage8;
         private AsolPanel _TreeViewPanel;
-        private System.Windows.Forms.Button _RunDataFormBtn;
     }
 }
 

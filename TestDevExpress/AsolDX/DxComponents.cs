@@ -19,6 +19,7 @@ using System.Drawing.Drawing2D;
 using DevExpress.Pdf.Native;
 using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
+using DevExpress.Office.History;
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
 // using TAB = DevExpress.XtraTab;
@@ -2644,6 +2645,58 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (getState is null) return false;
             object visible = getState.Invoke(control, new object[] { (int)0x02  /*STATE_VISIBLE*/  });
             return (visible is bool ? (bool)visible : false);
+        }
+        /// <summary>
+        /// Prohledá hierarchii controlů počínaje od this (včetně) směrem k Parentům.
+        /// Každý prvek hierarchie otestuje daným filtrem, a pokud prvek vyhovuje, pak vrátí jeho selectovaný objekt.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="control"></param>
+        /// <param name="filter"></param>
+        /// <param name="selector"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public static bool TrySearchUpForControl<T>(this Control control, Func<Control, bool> filter, Func<Control, T> selector, out T result)
+        {
+            if (filter == null) throw new ArgumentNullException($"TrySearchUpForControl() error: filter is null.");
+            if (selector == null) throw new ArgumentNullException($"TrySearchUpForControl() error: selector is null.");
+
+            Control item = control;
+            while (item != null)
+            {
+                if (filter(item))
+                {
+                    result = selector(item);
+                    return true;
+                }
+                item = item.Parent;
+            }
+            result = default;
+            return false;
+        }
+        /// <summary>
+        /// Metoda vyhledá Child control v this controlu, který se nachází jako nejhlubší Child control na dané souřadnici.
+        /// Souřadnice je dána jako absolutní (v koordinátech Screen).
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="screenTargetPoint"></param>
+        /// <param name="skip"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public static bool TryGetChildAtPoint(this Control control, Point screenTargetPoint, GetChildAtPointSkip skip, out Control result)
+        {
+            result = null;
+            for (int i = 0; i < 100; i++)
+            {   // Timeout:
+                if (control == null) break;
+                Point controlPoint = control.PointToClient(screenTargetPoint);
+                if (!control.ClientRectangle.Contains(controlPoint)) break;              // Daný bod se nenachází v klientské oblasti daného controlu = bod je mimo: skončíme, v result je poslední platný control (nebo null)
+                result = control;
+                var child = control.GetChildAtPoint(controlPoint, skip);
+                if (child == null || Object.ReferenceEquals(child, control)) break;      // Daný bod je sice v klientské oblasti daného controlu, ale na dané souřadnici není žádný Child control: skončíme, v result je aktuální control
+                control = child;
+            }
+            return (result != null);
         }
         /// <summary>
         /// Vrátí nejbližšího Parenta požadovaného typu pro this control.
@@ -5553,6 +5606,338 @@ namespace Noris.Clients.Win.Components.AsolDX
         User
     }
     #endregion
+    #region class DxDragDrop : controller pro řízení pro Drag and Drop uvnitř jednoho controlu (TreeNode, ListBox) i mezi různými controly
+    /// <summary>
+    /// <see cref="DxDragDrop"/> : controller pro řízení pro Drag and Drop uvnitř jednoho controlu (TreeNode, ListBox) i mezi různými controly.
+    /// <para/>
+    /// Způsob použití:
+    /// 1. Uvnitř jednoho controlu (např. pro přemístění jednoho TreeNode na jinou pozici):
+    /// - Control (zde <see cref="DxTreeViewListNative"/>) naimplementuje <see cref="IDxDragDropSource"/> a v konstruktoru si vytvoří instanci controlleru <see cref="DxDragDrop"/>
+    /// </summary>
+    public class DxDragDrop : IDisposable
+    {
+        #region Konstruktor, proměnné, Dispose, primární eventhandlery ze zdroje
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source"></param>
+        public DxDragDrop(IDxDragDropSource source)
+        {
+            _Source = source;
+            DragButton = MouseButtons.Left;
+            DoDragReset();
+            if (source != null)
+            {
+                source.MouseEnter += Source_MouseEnter;
+                source.MouseLeave += Source_MouseLeave;
+                source.MouseMove += Source_MouseMove;
+                source.MouseDown += Source_MouseDown;
+                source.MouseUp += Source_MouseUp;
+            }
+            else
+            {
+                throw new ArgumentNullException($"DxDragDrop() error : parameter 'source' is null.");
+            }
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            var source = _Source;
+            if (source != null)
+            {
+                source.MouseEnter -= Source_MouseEnter;
+                source.MouseLeave -= Source_MouseLeave;
+                source.MouseMove -= Source_MouseMove;
+                source.MouseDown -= Source_MouseDown;
+                source.MouseUp -= Source_MouseUp;
+            }
+            DoDragReset();
+            _Source = null;
+        }
+        /// <summary>
+        /// Zdroj události DragDrop
+        /// </summary>
+        private IDxDragDropSource _Source;
+        /// <summary>
+        /// Aktuální souřadnice myši relativně v prostoru controlu <see cref="_Source"/>
+        /// </summary>
+        private Point? _SourceCurrentPoint
+        {
+            get
+            {
+                Point screenLocation = Control.MousePosition;
+                var source = _Source;
+                if (source == null) return null;
+                return source.PointToClient(screenLocation);
+            }
+        }
+        #endregion
+        #region Primární události navázané na události controlu Source
+        private void Source_MouseEnter(object sender, EventArgs e)
+        {
+            DoSourceMoveNone(_SourceCurrentPoint);
+        }
+        private void Source_MouseMove(object sender, MouseEventArgs e)
+        {
+            DoSourceSolveState(e.Button);
+            switch (_State)
+            {
+                case DragStateType.None:
+                case DragStateType.Over:
+                    DoSourceMoveNone(e.Location);
+                    break;
+                case DragStateType.DownWait:
+                    DoSourceDragStart(e.Location);
+                    break;
+                case DragStateType.DownDrag:
+                    DoSourceDragRun(e.Location);
+                    break;
+            }
+        }
+        private void Source_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == DragButton)
+                DoSourceMouseDown(e.Location);
+        }
+        private void Source_MouseUp(object sender, MouseEventArgs e)
+        {
+            switch (_State)
+            {
+                case DragStateType.None:
+                case DragStateType.Over:
+                    break;
+                case DragStateType.DownWait:
+                    DoSourceDragCancel(e.Location);
+                    break;
+                case DragStateType.DownDrag:
+                    DoSourceDragDrop(e.Location);
+                    break;
+            }
+        }
+        private void Source_MouseLeave(object sender, EventArgs e)
+        {
+            DoSourceMoveNone(null);
+        }
+        #endregion
+        #region Výkonné události
+        /// <summary>
+        /// Metoda řeší nepodchycené změny stavu, typicky při debugu (když debugujeme stav Drag a mezitím se uvolní tlačítko myši)
+        /// </summary>
+        /// <param name="buttons"></param>
+        private void DoSourceSolveState(MouseButtons buttons)
+        {
+            if (buttons == MouseButtons.None && (_State == DragStateType.DownWait || _State == DragStateType.DownDrag))
+                DoDragReset();
+        }
+        private void DoSourceMoveNone(Point? sourcePoint)
+        {
+            _SourceObject = _Source.GetSourceObjectOnMouse(sourcePoint);
+            bool isOver = sourcePoint.HasValue;
+            if (_State == DragStateType.None && isOver) _State = DragStateType.Over;
+            else if (_State == DragStateType.Over && !isOver) _State = DragStateType.None;
+        }
+        private void DoSourceMouseDown(Point sourcePoint)
+        {
+            _SourceStartPoint = sourcePoint;
+            _SourceStartBounds = sourcePoint.CreateRectangleFromCenter(this._SourceStartSize);
+            _State = DragStateType.DownWait;
+        }
+        private void DoSourceDragStart(Point sourcePoint)
+        {
+            if (!_SourceStartBounds.HasValue || (_SourceStartBounds.HasValue && !_SourceStartBounds.Value.Contains(sourcePoint)))
+            {
+                Point sourceOrigin = _SourceStartPoint ?? sourcePoint;
+                _SourceObject = _Source.GetSourceObjectOnMouse(sourceOrigin);
+                _SourceImage = _Source.GetSourceImageDragStart(sourceOrigin);
+                _SourceStartBounds = null;
+                _State = DragStateType.DownDrag;
+                DoSourceDragRun(sourcePoint);
+            }
+        }
+        private void DoSourceDragRun(Point sourcePoint)
+        {
+            Point screenTargetPoint = Control.MousePosition;
+            if (TrySearchForTarget(screenTargetPoint, out IDxDragDropTarget target))
+            {
+                DoTargetFound(target);
+                DxDragDropArgs args = new DxDragDropArgs(_Source, _SourceObject, _SourceImage, screenTargetPoint);
+                target.MouseDragOver(args);
+            }
+            else
+            {   // Myš se nachází v prostoru, kde není žádný cíl:
+                DoTargetFound(null);
+            }
+        }
+        private void DoSourceDragCancel(Point sourcePoint)
+        {
+            DoDragReset();
+        }
+        private void DoSourceDragDrop(Point sourcePoint)
+        {
+
+
+            DoDragReset();
+        }
+        /// <summary>
+        /// Metoda je volána po nalezení nového Target objektu.
+        /// Pokud aktuálně evidujeme nějaký jiný (dosavadní) target, pak bude volána jeho metoda <see cref="IDxDragDropTarget.MouseDragLeave()"/>, protože jej opouštíme.
+        /// Nově dodaný target bude uložen do <see cref="_CurrentTarget"/>.
+        /// </summary>
+        /// <param name="newTarget"></param>
+        private void DoTargetFound(IDxDragDropTarget newTarget)
+        {
+            if (_CurrentTarget != null && (newTarget == null || !Object.ReferenceEquals(_CurrentTarget, newTarget)))
+                _CurrentTarget.MouseDragLeave();
+            _CurrentTarget = newTarget;
+        }
+        private void DoDragReset()
+        {
+            DoTargetFound(null);
+            _State = DragStateType.None;
+            _SourceObject = null;
+            _SourceStartPoint = null;
+            _SourceStartBounds = null;
+        }
+
+        /// <summary>
+        /// Najde cílový control na dané souřadnici
+        /// </summary>
+        /// <param name="screenTargetPoint"></param>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        private bool TrySearchForTarget(Point screenTargetPoint, out IDxDragDropTarget target)
+        {
+            target = null;
+            Form form = _Source.FindForm();
+            if (form != null)
+            {
+                if (form.TryGetChildAtPoint(screenTargetPoint, GetChildAtPointSkip.Invisible, out Control child) && child.TrySearchUpForControl<IDxDragDropTarget>(c => c is IDxDragDropTarget, c => c as IDxDragDropTarget, out target))
+                    return true;
+            }
+            return false;
+        }
+        #endregion
+
+        /// <summary>
+        /// Stav procesu Drag and Drop
+        /// </summary>
+        private DragStateType _State;
+        /// <summary>
+        /// Objekt z controlu Source
+        /// </summary>
+        private object _SourceObject;
+        /// <summary>
+        /// Souřadnice myši, zaznamenané v okamžiku LeftMouseDown, v prostoru Source controlu.
+        /// </summary>
+        private Point? _SourceStartPoint;
+        /// <summary>
+        /// Prostor okolo myši, určený v okamžiku LeftMouseDown, o velikosti <see cref="_SourceStartSize"/>.
+        /// Pokud je myš stisknuta a pohybuje se v tomto prostoru, pak se nejedná o Drag and Drop, ale o chvění ruky s myší.
+        /// </summary>
+        private Rectangle? _SourceStartBounds;
+        private Image _SourceImage;
+        /// <summary>
+        /// Posledně známý Target objekt
+        /// </summary>
+        private IDxDragDropTarget _CurrentTarget;
+
+        /// <summary>
+        /// Velikost prostoru, v němž se smí pohybovat myš, aniž by došlo k zahájení MouseDrag
+        /// </summary>
+        private Size _SourceStartSize { get { return System.Windows.Forms.SystemInformation.DragSize; } }
+        private enum DragStateType { None, Over, DownWait, DownDrag }
+        /// <summary>
+        /// Button myši, který provádí Drag and Drop
+        /// </summary>
+        public MouseButtons DragButton { get; set; }
+
+    }
+    /// <summary>
+    /// Předpis pro prvek, který může být zdroje události Drag and Drop = v něm může být zahájeno přetažení prvku jinam (do <see cref="IDxDragDropTarget"/>).
+    /// </summary>
+    public interface IDxDragDropSource
+    {
+        /// <summary>
+        /// Je voláno při pohybu myši nad objektem (bez Drag) a při stisknutí myši před zahájením procesu DragDrop.
+        /// </summary>
+        /// <param name="sourcePoint">Souřadnice myši v aktuálním okamžiku, v koordinátech controlu (ne Screen)</param>
+        /// <returns></returns>
+        object GetSourceObjectOnMouse(Point? sourcePoint);
+        /// <summary>
+        /// Je voláno v okamžiku zahájení procesu Drag (tj. je stisknutá myš a bylo s ní dostatečně pohnuto).
+        /// Metoda je volána pouze jedenkrát po stisku myši a po "utržení" od výchozího bodu.
+        /// Dostává souřadnici myši v okamžiku MouseDown, nikoli souřadnici aktuální (po pohybu).
+        /// <para/>
+        /// 
+        /// </summary>
+        /// <param name="sourceOrigin">Souřadnice myši v okamžiku MouseDown, v koordinátech controlu (ne Screen)</param>
+        /// <returns></returns>
+        Image GetSourceImageDragStart(Point sourceOrigin);
+
+
+        /// <summary>
+        /// Nativní metoda Controlu.
+        /// Vrátí formulář, na němž je control umístěn.
+        /// </summary>
+        /// <returns></returns>
+        Form FindForm();
+        /// <summary>
+        /// Nativní metoda Controlu.
+        /// Převede souřadnici v prostoru Screen do prostoru Controlu (tedy Source controlu)
+        /// </summary>
+        /// <param name="screenPoint"></param>
+        /// <returns></returns>
+        Point PointToClient(Point screenPoint);
+        /// <summary>
+        /// Nativní událost Controlu.
+        /// </summary>
+        event EventHandler MouseEnter;
+        /// <summary>
+        /// Nativní událost Controlu.
+        /// </summary>
+        event EventHandler MouseLeave;
+        /// <summary>
+        /// Nativní událost Controlu.
+        /// </summary>
+        event MouseEventHandler MouseMove;
+        /// <summary>
+        /// Nativní událost Controlu.
+        /// </summary>
+        event MouseEventHandler MouseDown;
+        /// <summary>
+        /// Nativní událost Controlu.
+        /// </summary>
+        event MouseEventHandler MouseUp;
+    }
+    public interface IDxDragDropTarget
+    {
+        void MouseDragOver(DxDragDropArgs args);
+        /// <summary>
+        /// Je voláno tehdy, když Drag and Drop proces dříve volal metodu <see cref="MouseDragOver(DxDragDropArgs)"/>, ale pak uživatel v rámci pohybu myši opustil tento cíl a ten již není aktivním cílem procesu.
+        /// Objekt si v této metodě může resetovat svoje proměnné a překreslit se do klidového stavu.
+        /// </summary>
+        void MouseDragLeave();
+        void MouseDragDrop(DxDragDropArgs args);
+    }
+    public class DxDragDropArgs
+    {
+        public DxDragDropArgs(IDxDragDropSource source, object sourceObject, Image sourceImage, Point screenMouseLocation)
+        {
+            this.DragSourceControl = source;
+            this.DragSourceObject = sourceObject;
+            this.DragSourceImage = sourceImage;
+            this.ScreenMouseLocation = screenMouseLocation;
+        }
+
+        public IDxDragDropSource DragSourceControl { get; private set; }
+        public object DragSourceObject { get; private set; }
+        public Image DragSourceImage { get; private set; }
+        public Point ScreenMouseLocation { get; private set; }
+
+    }
+    #endregion
     #region Enumy
     /// <summary>
     /// Styl použitý pro Label
@@ -6411,7 +6796,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// ListBoxControl
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl
+    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl, IDxDragDropSource, IDxDragDropTarget
     {
         #region Public členy
         /// <summary>
@@ -6419,9 +6804,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxControl()
         {
-            ReorderByDragEnabled = false;
-            ReorderIconColor = Color.FromArgb(192, 116, 116, 96);
-            ReorderIconColorHot = Color.FromArgb(220, 160, 160, 122);
+            DragAndDropInit();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            DragAndDropDispose();
         }
         /// <summary>
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
@@ -6526,33 +6918,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnKeyDown(e);
             OnMouseItemIndex = -1;
         }
-        /// <summary>
-        /// Po vstupu myši: určíme myšoaktivní prvek listu
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnMouseEnter(EventArgs e)
-        {
-            base.OnMouseEnter(e);
-            this.DetectOnMouseItemAbsolute(Control.MousePosition);
-        }
-        /// <summary>
-        /// Po pohybu myši: určíme myšoaktivní prvek listu
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
-            this.DetectOnMouseItem(e.Location);
-        }
-        /// <summary>
-        /// Po odchodu myši: zrušíme myšoaktivní prvek listu
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnMouseLeave(EventArgs e)
-        {
-            base.OnMouseLeave(e);
-            this.DetectOnMouseItem(null);
-        }
         #endregion
         #region Přesouvání prvků pomocí myši
         /// <summary>
@@ -6570,43 +6935,84 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color ReorderIconColorHot { get; set; }
         /// <summary>
-        /// Určí a uloží si index myšoaktivního prvku na dané absolutní souřadnici
+        /// Inicializace controlleru Drag and Drop
         /// </summary>
-        /// <param name="mouseAbsolutePosition"></param>
-        protected void DetectOnMouseItemAbsolute(Point mouseAbsolutePosition)
+        private void DragAndDropInit()
         {
-            Point relativePoint = this.PointToClient(mouseAbsolutePosition);
-            DetectOnMouseItem(relativePoint);
+            _DxDragDrop = new DxDragDrop(this);
+
+            ReorderByDragEnabled = false;
+            ReorderIconColor = Color.FromArgb(192, 116, 116, 96);
+            ReorderIconColorHot = Color.FromArgb(220, 160, 160, 122);
         }
         /// <summary>
-        /// Určí a uloží si index myšoaktivního prvku na dané relativní souřadnici
+        /// Dispose controlleru Drag and Drop
         /// </summary>
-        /// <param name="mouseRelativePosition"></param>
-        protected void DetectOnMouseItem(Point? mouseRelativePosition)
+        private void DragAndDropDispose()
         {
+            if (_DxDragDrop != null)
+                _DxDragDrop.Dispose();
+            _DxDragDrop = null;
+        }
+        /// <summary>
+        /// Controller pro aktivitu Drag and Drop, vycházející z this objektu
+        /// </summary>
+        private DxDragDrop _DxDragDrop;
+        /// <summary>
+        /// Je voláno při pohybu myši nad objektem (bez Drag) a při stisknutí myši před zahájením procesu DragDrop.
+        /// </summary>
+        /// <param name="sourcePoint">Souřadnice myši v aktuálním okamžiku, v koordinátech controlu (ne Screen)</param>
+        /// <returns></returns>
+        object IDxDragDropSource.GetSourceObjectOnMouse(Point? sourcePoint)
+        {
+            DragDropSearchSource(sourcePoint);
+            return OnMouseItemIndex;
+        }
+        /// <summary>
+        /// Je voláno v okamžiku zahájení procesu Drag (tj. je stisknutá myš a bylo s ní dostatečně pohnuto).
+        /// Metoda je volána pouze jedenkrát po stisku myši a po "utržení" od výchozího bodu.
+        /// Dostává souřadnici myši v okamžiku MouseDown, nikoli souřadnici aktuální (po pohybu).
+        /// <para/>
+        /// 
+        /// </summary>
+        /// <param name="sourceOrigin">Souřadnice myši v okamžiku MouseDown, v koordinátech controlu (ne Screen)</param>
+        /// <returns></returns>
+        Image IDxDragDropSource.GetSourceImageDragStart(Point sourceOrigin)
+        {
+            return null;
+        }
+
+        void IDxDragDropTarget.MouseDragOver(DxDragDropArgs args) 
+        {
+            Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+        }
+        void IDxDragDropTarget.MouseDragLeave()
+        {
+        }
+        void IDxDragDropTarget.MouseDragDrop(DxDragDropArgs args)
+        {
+        }
+
+        private void DragDropSearchSource(Point? sourcePoint)
+        {
+            // Najdeme index prvku pod myší, a určíme Alpha ratio pro ikonu vpravo, podle pozice myši vodorovně v řádku:
             int index = -1;
             float ratio = 0f;
-            if (mouseRelativePosition.HasValue)
+            if (sourcePoint.HasValue)
             {
-                index = this.IndexFromPoint(mouseRelativePosition.Value);
-                float ratioX = (float)mouseRelativePosition.Value.X / (float)this.Width; // Relativní pozice myši na ose X v rámci celého controlu v rozmezí 0.0 až 1.0
+                index = this.IndexFromPoint(sourcePoint.Value);
+                float ratioX = (float)sourcePoint.Value.X / (float)this.Width;           // Relativní pozice myši na ose X v rámci celého controlu v rozmezí 0.0 až 1.0
                 ratio = 0.30f + (ratioX < 0.5f ? 0f : 1.40f * (ratioX - 0.5f));          // 0.30 je pevná dolní hodnota. Ta platí pro pozici myši 0.0 až 0.5. Pak se ratio zvyšuje od 0.30 do 1.0.
             }
             OnMouseItemIndex = index;
             OnMouseItemAlphaRatio = ratio;
-            this.DetectOnMouseCursor(mouseRelativePosition);
-        }
-        /// <summary>
-        /// Určí a uloží si druh kurzoru podle dané relativní souřadnice
-        /// </summary>
-        /// <param name="mouseRelativePosition"></param>
-        protected void DetectOnMouseCursor(Point? mouseRelativePosition)
-        {
+
+            // Vyřešíme druh kurzoru - pokud se myš nachází v prostoru ikony a pokud je povoleno pomocí myši přesouvat prvky, pak dáme kurzor typu Nahoru-Dolů:
             bool isCursorActive = false;
-            if (mouseRelativePosition.HasValue)
+            if (sourcePoint.HasValue)
             {
                 var iconBounds = OnMouseIconBounds;
-                isCursorActive = (iconBounds.HasValue && iconBounds.Value.Contains(mouseRelativePosition.Value));
+                isCursorActive = (iconBounds.HasValue && iconBounds.Value.Contains(sourcePoint.Value));
             }
 
             if (isCursorActive != _IsMouseOverReorderIcon)
@@ -6615,10 +7021,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (ReorderByDragEnabled)
                 {
                     this.Cursor = (isCursorActive ? Cursors.SizeNS : Cursors.Default);
-                    this.Invalidate();                         // Překreslení => jiná barva ikony
+                    this.Invalidate();                                                   // Překreslení => jiná barva ikony
                 }
             }
         }
+
         /// <summary>
         /// Zajistí vykreslení ikony pro ReorderByDrag a případně i přemisťovaného prvku
         /// </summary>
@@ -6690,7 +7097,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private float _OnMouseItemAlphaRatio = 0.15f;
         /// <summary>
-        /// Souřadnice prostoru pro myší ikonu vpravo v myšoaktivním řádku
+        /// Souřadnice prostoru pro myší ikonu vpravo v myšoaktivním řádku.
+        /// Souřadnice se vypočítají pro prvek na indexu <see cref="_OnMouseItemIndex"/>.
         /// </summary>
         protected Rectangle? OnMouseIconBounds
         {

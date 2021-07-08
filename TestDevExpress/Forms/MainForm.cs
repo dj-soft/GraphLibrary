@@ -1770,11 +1770,15 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _EditorsPanel.Controls.Add(_TokenAddButtonDaj);
             
 
-            _TokenEdit = new DevExpress.XtraEditors.TokenEdit() { Bounds = new Rectangle(20, 68, 350, 25) };
+            _TokenEdit = new DevExpress.XtraEditors.TokenEdit() { Bounds = new Rectangle(20, 68, 360, 25) };
             _EditorsPanel.Controls.Add(_TokenEdit);
 
-            _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 250, 20), Text = "" };
+            _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 350, 20), Text = "" };
             _EditorsPanel.Controls.Add(_TokenInfoLabel);
+
+            _DragDropList = new DxListBoxControl() { Bounds = new Rectangle(20, 132, 360, 300), ReorderByDragEnabled = true };
+            _DragDropList.Items.AddRange(_CreateListItems(100));
+            _EditorsPanel.Controls.Add(_DragDropList);
 
             _OpenLayoutFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 37, 190, 50), Text = "Otevři LayoutForm" };
             _OpenLayoutFormButton.Click += _OpenLayoutFormButton_Click;
@@ -1816,6 +1820,17 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             var size = _EditorsPanel.ClientSize;
 
             if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
+            if (_DragDropList != null) _DragDropList.Bounds = new Rectangle(20, 132, 360, size.Height - 148);
+        }
+        protected object[] _CreateListItems(int count)
+        {
+            List<IMenuItem> items = new List<IMenuItem>();
+            for (int i = 0; i < count; i++)
+            {
+                DataMenuItem item = new DataMenuItem() { ItemText = Random.GetSentence(3, 6, false) };
+                items.Add(item);
+            }
+            return items.ToArray();
         }
         private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
         {
@@ -1952,6 +1967,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.SimpleButton _TokenAddButtonDaj;
         private DevExpress.XtraEditors.TokenEdit _TokenEdit;
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
+        private DxListBoxControl _DragDropList;
         private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
         private DevExpress.XtraEditors.SimpleButton _OpenImagePickerFormButton;
         private DevExpress.XtraEditors.SimpleButton _TestDataFormModalButton;
