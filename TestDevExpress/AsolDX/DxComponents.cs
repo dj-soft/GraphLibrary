@@ -7226,6 +7226,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         void IDxDragDropTarget.DoDragTarget(DxDragDropArgs args)
         {
             Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+            int index = this.IndexFromPoint(targetPoint);
+            var bounds = this.GetItemBounds(index);
         }
 
         /// <summary>
@@ -7266,7 +7268,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
-
         /// <summary>
         /// Zajistí vykreslení ikony pro ReorderByDrag a případně i přemisťovaného prvku
         /// </summary>

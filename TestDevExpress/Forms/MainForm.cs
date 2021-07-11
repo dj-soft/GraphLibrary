@@ -1776,7 +1776,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 350, 20), Text = "" };
             _EditorsPanel.Controls.Add(_TokenInfoLabel);
 
-            _DragDropList = new DxListBoxControl() { Bounds = new Rectangle(20, 132, 360, 300), ReorderByDragEnabled = true };
+            _DragDropList = new DxListBoxControl() { Bounds = new Rectangle(20, 132, 360, 300), ReorderByDragEnabled = true, SelectionMode = SelectionMode.MultiExtended };
             _DragDropList.Items.AddRange(_CreateListItems(100));
             _EditorsPanel.Controls.Add(_DragDropList);
 
