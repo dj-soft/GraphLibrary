@@ -5624,7 +5624,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxDragDrop(IDxDragDropSource source)
         {
             _Source = source;
-            DragButton = MouseButtons.Left;
+            DragButtons = MouseButtons.Left | MouseButtons.Right;
             DoDragReset();
             if (source != null)
             {
@@ -5713,7 +5713,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void Source_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == DragButton)
+            if (e.Button != MouseButtons.None && DragButtons.HasFlag(e.Button))
                 DoSourceMouseDown(e.Location);
         }
         /// <summary>
@@ -5750,6 +5750,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Výkonné události
+
+        // https://docs.microsoft.com/en-us/dotnet/api/system.windows.forms.control.dodragdrop?view=net-5.0
+
         /// <summary>
         /// Metoda řeší nepodchycené změny stavu, typicky při debugu (když debugujeme stav Drag a mezitím se uvolní tlačítko myši)
         /// </summary>
@@ -5963,9 +5966,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Size _SourceStartSize { get { return System.Windows.Forms.SystemInformation.DragSize; } }
         private enum DragStateType { None, Over, DownWait, DownDrag }
         /// <summary>
-        /// Button myši, který provádí Drag and Drop
+        /// Buttony myši, které nastartují proces Drag and Drop.
+        /// Default = <see cref="MouseButtons.Left"/> | <see cref="MouseButtons.Right"/>, tedy kterýkoli z těchto buttonů může zahájit proces.
         /// </summary>
-        public MouseButtons DragButton { get; set; }
+        public MouseButtons DragButtons { get; set; }
     }
     /// <summary>
     /// Předpis pro prvek, který může být ZDROJEM události Drag and Drop = v něm může být zahájeno přetažení prvku jinam (do <see cref="IDxDragDropTarget"/>).
@@ -5976,7 +5980,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda volaná do objektu Source (zdroj Drag and Drop) při každé akci na straně zdroje.
         /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void DoDragSource(DxDragDropArgs args);
 
         // Následující metody a eventy deklaruje každý Control, nemusí se explicitně implementovat. Ale v interface je potřebujeme mít deklarované pro práci v DxDragDrop:
@@ -6020,10 +6024,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     public interface IDxDragDropTarget
     {
         /// <summary>
-        /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci.
+        /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci, pokud se myš nachází nad objektem který implementuje <see cref="IDxDragDropTarget"/>.
         /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void DoDragTarget(DxDragDropArgs args);
     }
     /// <summary>
@@ -7112,7 +7116,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return selectedItems.ToArray();
             }
         }
-
         /// <summary>
         /// Přídavek k výšce jednoho řádku ListBoxu v pixelech.
         /// Hodnota 0 a záporná: bude nastaveno <see cref="DevExpress.XtraEditors.BaseListBoxControl.ItemAutoHeight"/> = true.
@@ -7198,6 +7201,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             ReorderByDragEnabled = false;
             ReorderIconColor = Color.FromArgb(192, 116, 116, 96);
             ReorderIconColorHot = Color.FromArgb(220, 160, 160, 122);
+
+            SysDragInit();
         }
         /// <summary>
         /// Dispose controlleru Drag and Drop
@@ -7213,16 +7218,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxDragDrop _DxDragDrop;
         /// <summary>
-        /// Je voláno při jakékoli akci Drag na straně Source
+        /// Metoda volaná do objektu Source (zdroj Drag and Drop) při každé akci na straně zdroje.
+        /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
         /// </summary>
-        /// <param name="args">Souřadnice myši v aktuálním okamžiku, v koordinátech controlu (ne Screen)</param>
-        /// <returns></returns>
+        /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropSource.DoDragSource(DxDragDropArgs args)
         {
             DragDropSearchSource(args.SourceMouseLocation);
+            if (args.State == DxDragDropState.DragStart)
+                this.DoDragDrop(this, DragDropEffects.Copy);
         }
-       
-
+        /// <summary>
+        /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci, pokud se myš nachází nad objektem který implementuje <see cref="IDxDragDropTarget"/>.
+        /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
+        /// </summary>
+        /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropTarget.DoDragTarget(DxDragDropArgs args)
         {
             Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
@@ -7400,6 +7410,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             return iconBounds;
         }
         #endregion
+
+        protected void SysDragInit()
+        {
+            this.AllowDrop = true;
+        }
+        protected override void OnDragEnter(DragEventArgs drgevent)
+        {
+            base.OnDragEnter(drgevent);
+            drgevent.Effect = DragDropEffects.Copy;
+        }
+        protected override void OnDragOver(DragEventArgs drgevent)
+        {
+            base.OnDragOver(drgevent);
+        }
+        protected override void OnQueryContinueDrag(QueryContinueDragEventArgs qcdevent)
+        {
+            base.OnQueryContinueDrag(qcdevent);
+            qcdevent.Action = DragAction.Continue;
+            qcdevent.Action = DragAction.Cancel;
+            // this.RaiseDragEvent(null, new DragEventArgs())
+        }
+        protected override void OnDragDrop(DragEventArgs drgevent)
+        {
+            base.OnDragDrop(drgevent);
+        }
+        protected override void OnDragLeave(EventArgs e)
+        {
+            base.OnDragLeave(e);
+        }
+        protected override void OnGiveFeedback(GiveFeedbackEventArgs gfbevent)
+        {
+            base.OnGiveFeedback(gfbevent);
+        }
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
