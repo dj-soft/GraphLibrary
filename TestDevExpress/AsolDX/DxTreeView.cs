@@ -191,7 +191,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Selectuje daný Node
         /// </summary>
         /// <param name="nodeInfo"></param>
-        public void SelectNode(ITreeListNode nodeInfo) { _TreeViewListNative.SelectNode(nodeInfo); }
+        public void SetFocusToNode(ITreeListNode nodeInfo) { _TreeViewListNative.SetFocusToNode(nodeInfo); }
         /// <summary>
         /// Pole všech nodů, které jsou aktuálně Selected
         /// </summary>
@@ -1322,9 +1322,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Selectuje daný Node
         /// </summary>
         /// <param name="nodeInfo"></param>
-        public void SelectNode(ITreeListNode nodeInfo)
+        public void SetFocusToNode(ITreeListNode nodeInfo)
         {
-            if (this.InvokeRequired) { this.Invoke(new Action<ITreeListNode>(SelectNode), nodeInfo); return; }
+            if (this.InvokeRequired) { this.Invoke(new Action<ITreeListNode>(SetFocusToNode), nodeInfo); return; }
 
             using (LockGui(true))
             {
