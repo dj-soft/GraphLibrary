@@ -101,6 +101,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool TransparentBackground { get { return _TreeViewListNative.TransparentBackground; } set { _TreeViewListNative.TransparentBackground = value; } }
         /// <summary>
+        /// TreeList povoluje provést MultiSelect = označit více nodů.
+        /// Default = false.
+        /// </summary>
+        public bool MultiSelectEnabled { get { return this._TreeViewListNative.MultiSelectEnabled; } set { this._TreeViewListNative.MultiSelectEnabled = value; } }
+        /// <summary>
         /// ToolTipy mohou obsahovat SimpleHtml tagy?
         /// </summary>
         public bool ToolTipAllowHtmlText { get { return _TreeViewListNative.ToolTipAllowHtmlText; } set { _TreeViewListNative.ToolTipAllowHtmlText = value; } }
@@ -120,7 +125,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool CurrentRootNodeVisible { get { return _TreeViewListNative.CurrentRootNodeVisible; } }
         /// <summary>
-        /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyUp"/>.
+        /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyDown"/>.
         /// </summary>
         public IEnumerable<Keys> HotKeys { get { return _TreeViewListNative.HotKeys; } set { _TreeViewListNative.HotKeys = value; } }
         /// <summary>
@@ -188,6 +193,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         public void SelectNode(ITreeListNode nodeInfo) { _TreeViewListNative.SelectNode(nodeInfo); }
         /// <summary>
+        /// Pole všech nodů, které jsou aktuálně Selected
+        /// </summary>
+        public ITreeListNode[] SelectedNodes { get { return _TreeViewListNative.SelectedNodes; } }
+        /// <summary>
         /// Odebere jeden daný node, podle klíče. Na konci provede Refresh.
         /// Pro odebrání více nodů je lepší použít <see cref="RemoveNodes(IEnumerable{string})"/>.
         /// </summary>
@@ -219,7 +228,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="nodes"></param>
         public void RefreshNodes(IEnumerable<ITreeListNode> nodes) { _TreeViewListNative.RefreshNodes(nodes); }
-
         #endregion
         #region FilterRow
         /// <summary>
@@ -305,8 +313,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RegisterTreeViewEventHandlers()
         {
-            _TreeViewListNative.NodeKeyUp += _TreeViewListNative_NodeKeyUp;
-            _TreeViewListNative.NodeSelected += _TreeViewListNative_NodeSelected;
+            _TreeViewListNative.NodeKeyDown += _TreeViewListNative_NodeKeyDown;
+            _TreeViewListNative.NodeFocusedChanged += _TreeViewListNative_NodeFocusedChanged;
+            _TreeViewListNative.SelectedNodesChanged += _TreeViewListNative_SelectedNodesChanged;
             _TreeViewListNative.NodeIconClick += _TreeViewListNative_NodeIconClick;
             _TreeViewListNative.NodeDoubleClick += _TreeViewListNative_NodeDoubleClick;
             _TreeViewListNative.NodeExpanded += _TreeViewListNative_NodeExpanded;
@@ -318,9 +327,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TreeViewListNative.NodeDelete += _TreeViewListNative_NodeDelete;
             _TreeViewListNative.LazyLoadChilds += _TreeViewListNative_LazyLoadChilds;
         }
-
-        private void _TreeViewListNative_NodeKeyUp(object sender, DxTreeViewNodeKeyArgs args) { this.OnNodeKeyUp(args); this.NodeKeyUp?.Invoke(this, args); }
-        private void _TreeViewListNative_NodeSelected(object sender, DxTreeViewNodeArgs args) { this.OnNodeSelected(args); this.NodeSelected?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeKeyDown(object sender, DxTreeViewNodeKeyArgs args) { this.OnNodeKeyDown(args); this.NodeKeyDown?.Invoke(this, args); }
+        private void _TreeViewListNative_NodeFocusedChanged(object sender, DxTreeViewNodeArgs args) { this.OnNodeFocusedChanged(args); this.NodeFocusedChanged?.Invoke(this, args); }
+        private void _TreeViewListNative_SelectedNodesChanged(object sender, DxTreeViewNodeArgs args) { this.OnSelectedNodesChanged(args); this.SelectedNodesChanged?.Invoke(this, args); }
         private void _TreeViewListNative_NodeIconClick(object sender, DxTreeViewNodeArgs args) { this.OnNodeIconClick(args); this.NodeIconClick?.Invoke(this, args); }
         private void _TreeViewListNative_NodeDoubleClick(object sender, DxTreeViewNodeArgs args) { this.OnNodeDoubleClick(args); this.NodeDoubleClick?.Invoke(this, args); }
         private void _TreeViewListNative_NodeExpanded(object sender, DxTreeViewNodeArgs args) { this.OnNodeExpanded(args); this.NodeExpanded?.Invoke(this, args); }
@@ -336,21 +345,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// TreeView má KeyUp na určitém Node.
         /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
         /// </summary>
-        public event DxTreeViewNodeKeyHandler NodeKeyUp;
+        public event DxTreeViewNodeKeyHandler NodeKeyDown;
         /// <summary>
-        /// Vyvolá event <see cref="NodeKeyUp"/>
+        /// Vyvolá event <see cref="NodeKeyDown"/>
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnNodeKeyUp(DxTreeViewNodeKeyArgs args) { }
+        protected virtual void OnNodeKeyDown(DxTreeViewNodeKeyArgs args) { }
         /// <summary>
         /// TreeView aktivoval určitý Node
         /// </summary>
-        public event DxTreeViewNodeHandler NodeSelected;
+        public event DxTreeViewNodeHandler NodeFocusedChanged;
         /// <summary>
-        /// Vyvolá event <see cref="NodeSelected"/>
+        /// Vyvolá event <see cref="NodeFocusedChanged"/>
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeSelected(DxTreeViewNodeArgs args) { }
+        protected virtual void OnNodeFocusedChanged(DxTreeViewNodeArgs args) { }
+        /// <summary>
+        /// TreeView změnil seznam <see cref="SelectedNodes"/>
+        /// </summary>
+        public event DxTreeViewNodeHandler SelectedNodesChanged;
+        /// <summary>
+        /// Vyvolá event <see cref="SelectedNodesChanged"/>
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnSelectedNodesChanged(DxTreeViewNodeArgs args) { }
         /// <summary>
         /// TreeView má Mouseclick na ikonu pro určitý Node
         /// </summary>
@@ -495,8 +513,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.IncrementalSearchMode = TreeViewIncrementalSearchMode.InExpandedNodesOnly;
 
             this.OptionsSelection.EnableAppearanceFocusedRow = true;
-            this.OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True; // DevExpress.Utils.DefaultBoolean.True;
+            this.OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True;
             this.OptionsSelection.InvertSelection = true;
+            this.OptionsSelection.MultiSelect = false;
+            this.OptionsSelection.MultiSelectMode = DevExpress.XtraTreeList.TreeListMultiSelectMode.RowSelect;
 
             this.ViewStyle = DevExpress.XtraTreeList.TreeListViewStyle.TreeView;
 
@@ -520,6 +540,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Nativní eventy:
             this.FocusedNodeChanged += _OnFocusedNodeChanged;
+            this.SelectionChanged += _OnSelectionChanged;
             this.MouseClick += _OnMouseClick;
             this.DoubleClick += _OnDoubleClick;
             this.ShownEditor += _OnShownEditor;
@@ -527,6 +548,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BeforeCheckNode += _OnBeforeCheckNode;
             this.AfterCheckNode += _OnAfterCheckNode;
             this.BeforeExpand += _OnBeforeExpand;
+            this.AfterExpand += _OnAfterExpand;
             this.BeforeCollapse += _OnBeforeCollapse;
             this.AfterCollapse += _OnAfterCollapse;
 
@@ -633,6 +655,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pozadí TreeListu je transparentní (pak je vidět podkladový Panel)
         /// </summary>
         public bool TransparentBackground { get { return _TransparentBackground; } set { _TransparentBackground = value; _ApplyTransparentBackground(); } } private bool _TransparentBackground;
+        /// <summary>
+        /// TreeList povoluje provést MultiSelect = označit více nodů.
+        /// Default = false.
+        /// </summary>
+        public bool MultiSelectEnabled { get { return this.OptionsSelection.MultiSelect; } set { this.OptionsSelection.MultiSelect = value; } }
         /// <summary>
         /// Aplikovat průhledné pozadí
         /// </summary>
@@ -972,6 +999,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     break;
             }
+
+            if (_IsHotKeyInEditor(e.KeyData))
+                this.OnNodeKeyDown(this.FocusedNodeInfo, e);
+
             _CurrentKeyHandled = e.Handled;
         }
         /// <summary>
@@ -981,8 +1012,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnKeyUp(object sender, KeyEventArgs e)
         {
-            if (_IsHotKeyInEditor(e.KeyData))
-                this.OnNodeKeyUp(this.FocusedNodeInfo, e);
+            // Nebudeme reagovat v KeyUp, protože ostatní komponenty reagují v KeyDown.
+            // A pak by vznikaly neshody: jedna komponenta zareaguje v KeyDown, přejde focus jinam,
+            // a zdejší komponenta zareaguje v KeyUp = na stejnou klávesu mám dvě reakce!!!
         }
         private bool _CurrentKeyHandled;
         /// <summary>
@@ -997,7 +1029,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             _MainColumn.OptionsColumn.AllowEdit = (nodeInfo != null && nodeInfo.CanEdit);
 
             if (nodeInfo != null && !this.IsLocked)
-                this.OnNodeSelected(nodeInfo);
+            {
+                this.OnNodeFocusedChanged(nodeInfo);
+                if (!this.MultiSelectEnabled)
+                    this._OnSelectedNodesChanged();                  // Pokud NENÍ nastaveno MultiSelectEnabled, pak TreeList nevyvolá svůj event _OnSelectionChanged, ale nás to může zajímat
+            }
+        }
+        /// <summary>
+        /// Po změně selectovaných nodů v <see cref="SelectedNodes"/>, volá se pouze při <see cref="MultiSelectEnabled"/> = true
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnSelectionChanged(object sender, EventArgs e)
+        {
+            if (!this.IsLocked)
+                this._OnSelectedNodesChanged();
+        }
+        /// <summary>
+        /// Volá se po každé změně stavu Selected.
+        /// Zajistí nastavení odpovídajícího příznaku do <see cref="ITreeListNode.IsSelected"/>, a pokud dojde ke změně, pak volá <see cref="OnSelectedNodesChanged()"/>.
+        /// </summary>
+        private void _OnSelectedNodesChanged()
+        {
+            var synchronize = _SynchronizeINodes();
+            if (synchronize.Item1)
+                this.OnSelectedNodesChanged();
         }
         /// <summary>
         /// MouseClick vyvolá public event
@@ -1053,7 +1109,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnEditorKeyUp(object sender, KeyEventArgs e)
         {
             if (_IsHotKeyInEditor(e.KeyData))
-                OnNodeKeyUp(this.FocusedNodeInfo, e);
+                OnNodeKeyDown(this.FocusedNodeInfo, e);
         }
         /// <summary>
         /// Ukončení editoru volá public event
@@ -1136,33 +1192,54 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nodeInfo != null)
             {
                 nodeInfo.Expanded = true;
-                this.OnNodeExpanded(nodeInfo);                       // Zatím nevyužívám možnost zakázání Expand, kterou dává args.CanExpand...
-                if (nodeInfo.LazyLoadChilds)
-                    this.OnLazyLoadChilds(nodeInfo);
+                this.OnNodeExpanded(nodeInfo);
+                if (nodeInfo.Expanded)
+                {   // Instance ITreeListNode mohla potlačit stav Expanded = true (nastavila false) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
+                    if (nodeInfo.LazyLoadChilds)
+                        this.OnLazyLoadChilds(nodeInfo);
+                }
+                else
+                {
+                    args.CanExpand = false;
+                }
             }
         }
         /// <summary>
-        /// Před zabalením nodu:
-        /// - lze tomu zabránit, pokud pro daný node evidujeme DoubleClick
+        /// Po rozbalení nodu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnAfterExpand(object sender, DevExpress.XtraTreeList.NodeEventArgs e)
+        {
+        }
+        /// <summary>
+        /// Před zabalením nodu se volá public event <see cref="NodeCollapsed"/>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
         private void _OnBeforeCollapse(object sender, DevExpress.XtraTreeList.BeforeCollapseEventArgs args)
-        {
-        }
-        /// <summary>
-        /// Po zabalení nodu se volá public event <see cref="NodeCollapsed"/>,
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
         {
             ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
             if (nodeInfo != null)
             {
                 nodeInfo.Expanded = false;
                 this.OnNodeCollapsed(nodeInfo);
+                if (!nodeInfo.Expanded)
+                {   // Instance ITreeListNode mohla potlačit stav Expanded = false (nastavila true) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
+                }
+                else
+                {
+                    args.CanCollapse = false;
+                }
             }
+        }
+        /// <summary>
+        /// Po zabalení nodu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
+        {
         }
         /// <summary>
         /// Najde node a jeho část, na které se nachází daný relativní bod.
@@ -1258,6 +1335,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Pole všech nodů, které jsou aktuálně Selected
+        /// </summary>
+        public ITreeListNode[] SelectedNodes
+        {
+            get
+            {
+                List<ITreeListNode> selectedNodes = new List<ITreeListNode>();
+                _ScanNodes(n => 
+                {
+                    if (n.IsSelected)
+                    {
+                        var nodeInfo = _GetNodeInfo(n);
+                        if (nodeInfo != null)
+                            selectedNodes.Add(nodeInfo);
+                    }
+                });
+                return selectedNodes.ToArray();
+            }
+        }
+        /// <summary>
         /// Odebere jeden daný node, podle klíče. Na konci provede Refresh.
         /// Pro odebrání více nodů je lepší použít <see cref="RemoveNodes(IEnumerable{string})"/>.
         /// </summary>
@@ -1343,6 +1440,69 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this._RefreshNode(nodeInfo);
             }
         }
+        /// <summary>
+        /// Projde všechny nody tohoto Tree, rekurzivně, a pro každý node vyvolá danou akci.
+        /// Pokud je dodána funkce <paramref name="scanSubNodesFilter"/>, pak rekurzi pro SubNodes provede jen tehdy, když daný node vyhová dané funkci. Pokud funkce není dodána, provede se rekurze pro každý node, který má SubNodes.
+        /// </summary>
+        /// <param name="nodeAction">Akce pro každý node</param>
+        /// <param name="scanSubNodesFilter">Filtr na nody, jejichž SubNodes se mají rekurzivně procházet.</param>
+        private void _ScanNodes(Action<DevExpress.XtraTreeList.Nodes.TreeListNode> nodeAction, Func<DevExpress.XtraTreeList.Nodes.TreeListNode, bool> scanSubNodesFilter = null)
+        {
+            if (nodeAction == null) return;
+            _ScanNodes(this.Nodes, nodeAction, scanSubNodesFilter);
+        }
+        /// <summary>
+        /// Pro každý node z dodané kolekce provede danou akci, a rekurzivně vyvolá this metodu pro kolekci SubNodes každého nodu.
+        /// </summary>
+        /// <param name="nodes"></param>
+        /// <param name="nodeAction">Akce pro každý node</param>
+        /// <param name="scanSubNodesFilter">Filtr na nody, jejichž SubNodes se mají rekurzivně procházet.</param>
+        private void _ScanNodes(DevExpress.XtraTreeList.Nodes.TreeListNodes nodes, Action<DevExpress.XtraTreeList.Nodes.TreeListNode> nodeAction, Func<DevExpress.XtraTreeList.Nodes.TreeListNode, bool> scanSubNodesFilter = null)
+        {
+            if (nodes == null || nodes.Count == 0) return;
+            bool hasFilter = (scanSubNodesFilter != null);
+            DevExpress.XtraTreeList.Nodes.TreeListNode[] array = nodes.ToArray();
+            foreach (DevExpress.XtraTreeList.Nodes.TreeListNode node in array)
+            {
+                nodeAction(node);
+                if (!hasFilter || scanSubNodesFilter(node))
+                    _ScanNodes(node.Nodes, nodeAction, scanSubNodesFilter);
+            }
+        }
+        /// <summary>
+        /// Zajistí synchronizaci hodnot <see cref="ITreeListNode.IsSelected"/> a <see cref="ITreeListNode.IsChecked"/> ve všech evidovaných nodech podle aktuálního stavu v komponentě.
+        /// Vrací Tuple, jehož:
+        /// Item1 = byla nalezena změna v hodnotě <see cref="ITreeListNode.IsSelected"/>,
+        /// Item2 = byla nalezena změna v hodnotě <see cref="ITreeListNode.IsChecked"/>.
+        /// </summary>
+        /// <remarks>Nebyl by problém vracet pole nodů, kde došlo ke změně, ale zatím není důvod.</remarks>
+        /// <returns></returns>
+        private Tuple<bool, bool> _SynchronizeINodes()
+        {
+            bool isChangedSelect = false;
+            bool isChangedCheck = false;
+            foreach (var nodePair in this._NodesId.Values)
+            {
+                var node = nodePair.TreeNode;
+                if (node == null) continue;
+
+                bool nodeIsSelected = node.IsSelected;
+                if (nodePair.NodeInfo.IsSelected != nodeIsSelected)
+                {
+                    nodePair.NodeInfo.IsSelected = nodeIsSelected;
+                    isChangedSelect = true;
+                }
+
+                bool nodeIsChecked = node.Checked;
+                if (nodePair.NodeInfo.IsChecked != nodeIsChecked)
+                {
+                    nodePair.NodeInfo.IsChecked = nodeIsChecked;
+                    isChangedCheck = true;
+                }
+            }
+
+            return new Tuple<bool, bool>(isChangedSelect, isChangedCheck);
+        }
         #endregion
         #region Provádění akce v jednom zámku
         /// <summary>
@@ -1423,7 +1583,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string oldNodeId = _FocusedNodeId;
                     string newNodeId = focusedNodeInfo?.FullNodeId;
                     if (!String.Equals(oldNodeId, newNodeId))
-                        owner.OnNodeSelected(focusedNodeInfo);
+                        owner.OnNodeFocusedChanged(focusedNodeInfo);
                 }
             }
             private DxTreeViewListNative _Owner;
@@ -1901,7 +2061,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private IEnumerable<ITreeListNode> _NodesStandard { get { return this._NodesId.Values.Where(p => !p.IsLazyChild).Select(p => p.NodeInfo); } }
         /// <summary>
-        /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyUp"/>.
+        /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyDown"/>.
         /// </summary>
         public IEnumerable<Keys> HotKeys
         { 
@@ -1924,30 +2084,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Public eventy a jejich volání
         /// <summary>
-        /// TreeView má KeyUp na určitém Node.
+        /// TreeView má KeyDown na určitém Node.
         /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
         /// </summary>
-        public event DxTreeViewNodeKeyHandler NodeKeyUp;
+        public event DxTreeViewNodeKeyHandler NodeKeyDown;
         /// <summary>
-        /// Vyvolá event <see cref="NodeKeyUp"/>
+        /// Vyvolá event <see cref="NodeKeyDown"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="keyArgs"></param>
-        protected virtual void OnNodeKeyUp(ITreeListNode nodeInfo, KeyEventArgs keyArgs)
+        protected virtual void OnNodeKeyDown(ITreeListNode nodeInfo, KeyEventArgs keyArgs)
         {
-            if (NodeKeyUp != null) NodeKeyUp(this, new DxTreeViewNodeKeyArgs(nodeInfo, TreeViewActionType.KeyUp, this.IsActiveEditor, keyArgs));
+            if (NodeKeyDown != null) NodeKeyDown(this, new DxTreeViewNodeKeyArgs(nodeInfo, TreeViewActionType.KeyDown, this.IsActiveEditor, keyArgs));
         }
         /// <summary>
         /// TreeView aktivoval určitý Node
         /// </summary>
-        public event DxTreeViewNodeHandler NodeSelected;
+        public event DxTreeViewNodeHandler NodeFocusedChanged;
         /// <summary>
-        /// Vyvolá event <see cref="NodeSelected"/>
+        /// Vyvolá event <see cref="NodeFocusedChanged"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeSelected(ITreeListNode nodeInfo)
+        protected virtual void OnNodeFocusedChanged(ITreeListNode nodeInfo)
         {
-            if (NodeSelected != null) NodeSelected(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeSelected, TreeViewPartType.None, this.IsActiveEditor));
+            if (NodeFocusedChanged != null) NodeFocusedChanged(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeFocusedChanged, TreeViewPartType.None, this.IsActiveEditor));
+        }
+        /// <summary>
+        /// TreeView změnil seznam <see cref="SelectedNodes"/>
+        /// </summary>
+        public event DxTreeViewNodeHandler SelectedNodesChanged;
+        /// <summary>
+        /// Vyvolá event <see cref="SelectedNodesChanged"/>
+        /// </summary>
+        protected virtual void OnSelectedNodesChanged()
+        {
+            if (SelectedNodesChanged != null) SelectedNodesChanged(this, new DxTreeViewNodeArgs(null, TreeViewActionType.SelectedNodesChanged, TreeViewPartType.None, this.IsActiveEditor));
         }
         /// <summary>
         /// TreeView má NodeIconClick na určitý Node
@@ -2048,7 +2219,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isChecked"></param>
         protected virtual void OnNodeCheckedChange(ITreeListNode nodeInfo, bool isChecked)
         {
-            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, TreeViewPartType.NodeCheckBox, isChecked));
+            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeViewNodeArgs(nodeInfo, TreeViewActionType.NodeCheckedChange, TreeViewPartType.NodeCheckBox, this.IsActiveEditor, isChecked));
         }
         /// <summary>
         /// Uživatel dal Delete na uzlu, který se needituje.
@@ -2210,8 +2381,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         /// <summary>None</summary>
         None,
-        /// <summary>NodeSelected</summary>
-        NodeSelected,
+        /// <summary>FocusedNodeChanged</summary>
+        NodeFocusedChanged,
+        /// <summary>SelectedNodesChanged</summary>
+        SelectedNodesChanged,
         /// <summary>NodeIconClick</summary>
         NodeIconClick,
         /// <summary>NodeDoubleClick</summary>
@@ -2232,8 +2405,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         NodeCheckedChange,
         /// <summary>LazyLoadChilds</summary>
         LazyLoadChilds,
-        /// <summary>KeyUp</summary>
-        KeyUp
+        /// <summary>KeyDown</summary>
+        KeyDown
     }
     /// <summary>
     /// Který node se bude focusovat po LazyLoad child nodů?
@@ -2457,6 +2630,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool AddVoidCheckSpace { get; set; }
         /// <summary>
+        /// Node je vybraný (Selected).
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
+        /// </summary>
+        public virtual bool IsSelected { get; set; }
+        /// <summary>
         /// Node je zaškrtnutý.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
         /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
@@ -2609,6 +2788,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Je to proto, aby nody nacházející se v jedné řadě pod sebou byly "svisle zarovnané" i když některé zaškrtávátko mají, a jiné nemají.
         /// </summary>
         bool AddVoidCheckSpace { get; }
+        /// <summary>
+        /// Node je vybraný (Selected).
+        /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
+        /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeViewListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
+        /// </summary>
+        bool IsSelected { get; set; }
         /// <summary>
         /// Node je zaškrtnutý.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.

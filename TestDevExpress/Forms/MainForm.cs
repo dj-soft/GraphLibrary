@@ -2033,6 +2033,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             _SplitContainer = DxComponent.CreateDxSplitContainer(this._TreeViewPanel, null, DockStyle.Fill, Orientation.Vertical, DevExpress.XtraEditors.SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
 
+            _TreeMultiCheckBox = DxComponent.CreateDxCheckEdit(0,0,200,null, "MultiSelectEnabled", _TreeMultiCheckBoxChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, 
+                DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
+                "MultiSelectEnabled = výběr více nodů", "Zaškrtnuto: lze vybrat více nodů (Ctrl, Shift). Sledujme pak události.");
+            _TreeMultiCheckBox.Dock = DockStyle.Top;
+            _TreeMultiCheckBox.Checked = true;
+
             _TreeList = new DxTreeViewList() { Dock = DockStyle.Fill };
             _TreeList.CheckBoxMode = TreeViewCheckBoxMode.SpecifyByNode;
             _TreeList.ImageMode = TreeViewImageMode.Image01;
@@ -2046,9 +2052,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.IncrementalSearchMode = TreeViewIncrementalSearchMode.InAllNodes;
             _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _TreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
+            _TreeList.MultiSelectEnabled = true;
 
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
+            _SplitContainer.Panel1.Controls.Add(_TreeMultiCheckBox);      // 
 
             DateTime t0 = DateTime.Now;
             var nodes = _CreateSampleList(ItemCountType.Big);
@@ -2056,12 +2064,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TreeList.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
 
-
             _TreeList.FilterBoxChanged += _TreeList_FilterBoxChanged;
             _TreeList.FilterBoxKeyEnter += _TreeList_FilterBoxKeyEnter;
             _TreeList.HotKeys = _CreateHotKeys();
-            _TreeList.NodeKeyUp += _TreeList_NodeKeyUp;
-            _TreeList.NodeSelected += _TreeList_AnyAction;
+            _TreeList.NodeKeyDown += _TreeList_NodeKeyDown;
+            _TreeList.NodeFocusedChanged += _TreeList_AnyAction;
+            _TreeList.SelectedNodesChanged += _TreeList_SelectedNodesChanged;
             _TreeList.NodeIconClick += _TreeList_IconClick;
             _TreeList.NodeDoubleClick += _TreeList_DoubleClick;
             _TreeList.NodeExpanded += _TreeList_AnyAction;
@@ -2113,13 +2121,28 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             var filter = this._TreeList.FilterBoxValue;
             _AddLogLine($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
         }
-        private void _TreeList_NodeKeyUp(object sender, DxTreeViewNodeKeyArgs args)
+        private void _TreeMultiCheckBoxChanged(object sender, EventArgs e)
+        {
+            if (_TreeList == null) return;
+            bool multiSelectEnabled = _TreeMultiCheckBox.Checked;
+            _TreeList.MultiSelectEnabled = multiSelectEnabled;
+            _AddLogLine($"MultiSelectEnabled: {multiSelectEnabled}");
+        }
+        private void _TreeList_NodeKeyDown(object sender, DxTreeViewNodeKeyArgs args)
         {
             _AddLogLine($"KeyUp: Node: {args.Node?.Text}; KeyCode: '{args.KeyArgs.KeyCode}'; KeyData: '{args.KeyArgs.KeyData}'; Modifiers: {args.KeyArgs.Modifiers}");
         }
         private void _TreeList_AnyAction(object sender, DxTreeViewNodeArgs args)
         {
             _AddTreeNodeLog(args.Action.ToString(), args, (args.Action == TreeViewActionType.NodeEdited || args.Action == TreeViewActionType.EditorDoubleClick || args.Action == TreeViewActionType.NodeCheckedChange));
+        }
+        private void _TreeList_SelectedNodesChanged(object sender, DxTreeViewNodeArgs args)
+        {
+            int count = 0;
+            string selectedNodes = "";
+            _TreeList.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
+            if (selectedNodes.Length > 0) selectedNodes = selectedNodes.Substring(2);
+            _AddLogLine($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
         }
         private void _TreeList_LazyLoadChilds(object sender, DxTreeViewNodeArgs args)
         {
@@ -2375,6 +2398,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private enum ItemCountType { Empty, Standard, Big }
         DxSplitContainerControl _SplitContainer;
+        DxCheckEdit _TreeMultiCheckBox;
         DxTreeViewList _TreeList;
         DxMemoEdit _MemoEdit;
         string _Log;
