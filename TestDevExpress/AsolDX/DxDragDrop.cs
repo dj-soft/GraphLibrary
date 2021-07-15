@@ -29,7 +29,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <para/>
     /// Způsob použití:
     /// 1. Uvnitř jednoho controlu (např. pro přemístění jednoho TreeNode na jinou pozici):
-    /// - Control (zde <see cref="DxTreeViewListNative"/>) naimplementuje <see cref="IDxDragDropSource"/> a v konstruktoru si vytvoří instanci controlleru <see cref="DxDragDrop"/>
+    /// - Control (zde <see cref="DxTreeViewListNative"/>) naimplementuje <see cref="IDxDragDropControl"/> a v konstruktoru si vytvoří instanci controlleru <see cref="DxDragDrop"/>
     /// </summary>
     public class DxDragDrop : IDisposable
     {
@@ -37,19 +37,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="source"></param>
-        public DxDragDrop(IDxDragDropSource source)
+        /// <param name="owner"></param>
+        public DxDragDrop(IDxDragDropControl owner)
         {
-            _Source = source;
+            _Owner = owner;
+            DragFormInitProperties();
             DragButtons = MouseButtons.Left | MouseButtons.Right;
             DoDragReset();
-            if (source != null)
+            if (owner != null)
             {
-                source.MouseEnter += Source_MouseEnter;
-                source.MouseLeave += Source_MouseLeave;
-                source.MouseMove += Source_MouseMove;
-                source.MouseDown += Source_MouseDown;
-                source.MouseUp += Source_MouseUp;
+                owner.MouseEnter += Source_MouseEnter;
+                owner.MouseLeave += Source_MouseLeave;
+                owner.MouseMove += Source_MouseMove;
+                owner.MouseDown += Source_MouseDown;
+                owner.MouseUp += Source_MouseUp;
+
+                owner.QueryContinueDrag += Owner_QueryContinueDrag;
+                owner.GiveFeedback += Owner_GiveFeedback;
+                owner.DragEnter += Owner_DragEnter;
+                owner.DragOver += Owner_DragOver;
+                owner.DragLeave += Owner_DragLeave;
+                owner.DragDrop += Owner_DragDrop;
             }
             else
             {
@@ -61,31 +69,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void Dispose()
         {
-            var source = _Source;
-            if (source != null)
+            var owner = _Owner;
+            if (owner != null)
             {
-                source.MouseEnter -= Source_MouseEnter;
-                source.MouseLeave -= Source_MouseLeave;
-                source.MouseMove -= Source_MouseMove;
-                source.MouseDown -= Source_MouseDown;
-                source.MouseUp -= Source_MouseUp;
+                owner.MouseEnter -= Source_MouseEnter;
+                owner.MouseLeave -= Source_MouseLeave;
+                owner.MouseMove -= Source_MouseMove;
+                owner.MouseDown -= Source_MouseDown;
+                owner.MouseUp -= Source_MouseUp;
+
+                owner.QueryContinueDrag -= Owner_QueryContinueDrag;
+                owner.GiveFeedback -= Owner_GiveFeedback;
+                owner.DragEnter -= Owner_DragEnter;
+                owner.DragOver -= Owner_DragOver;
+                owner.DragLeave -= Owner_DragLeave;
+                owner.DragDrop -= Owner_DragDrop;
             }
             DoDragReset();
-            _Source = null;
+            _Owner = null;
         }
         /// <summary>
         /// Zdroj události DragDrop
         /// </summary>
-        private IDxDragDropSource _Source;
+        private IDxDragDropControl _Owner;
         /// <summary>
-        /// Aktuální souřadnice myši relativně v prostoru controlu <see cref="_Source"/>
+        /// Aktuální souřadnice myši relativně v prostoru controlu <see cref="_Owner"/>
         /// </summary>
         private Point? _SourceCurrentPoint
         {
             get
             {
                 Point screenLocation = Control.MousePosition;
-                var source = _Source;
+                var source = _Owner;
                 if (source == null) return null;
                 return source.PointToClient(screenLocation);
             }
@@ -119,7 +134,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DoSourceDragStart(e.Location);
                     break;
                 case DragStateType.DownDrag:
-                    DoTargetDragRun();
+                    // Sem se běžně nedostaneme, protože za stavu DownDrag nedostává žádný Control události MouseMove ani MouseUp, ale DragDrop a další...
                     break;
             }
         }
@@ -146,13 +161,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DragStateType.Over:
                     break;
                 case DragStateType.DownWait:
-                    DoSourceDragCancel(e.Location);
+                    DoDragCancel();
                     break;
                 case DragStateType.DownDrag:
-                    if (!this.DragArgs.IsDragDropEnabled)
-                        DoSourceDragCancel(e.Location);
-                    else
-                        DoSourceDragDrop(e.Location);
+                    // Sem se běžně nedostaneme, protože za stavu DownDrag nedostává žádný Control události MouseMove ani MouseUp, ale DragDrop a další...
                     break;
             }
         }
@@ -165,6 +177,67 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DoSourceMoveOver(DxDragDropState.None);
         }
+        /// <summary>
+        /// Source control zjišťuje příznaky pro Drag
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Owner_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
+        {
+            if (sender is IDxDragDropControl dxControl && dxControl.DxDragDrop != null)
+                DoDragSourceQueryContinueDrag(dxControl, e);
+        }
+        /// <summary>
+        /// Source control může upravit kurzor
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Owner_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            if (sender is IDxDragDropControl dxControl && dxControl.DxDragDrop != null)
+                DoDragSourceGiveFeedback(dxControl, e);
+        }
+        /// <summary>
+        /// Drag and Drop proces vstoupil na možný cíl pro Drag a Drop
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Owner_DragEnter(object sender, DragEventArgs e)
+        {
+            if (sender is IDxDragDropControl dxControl && dxControl.DxDragDrop != null)
+                DoDragTargetEnter(dxControl, e);
+        }
+        /// <summary>
+        /// Drag and Drop proces se pohybuje nad možným cílem pro Drag a Drop
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Owner_DragOver(object sender, DragEventArgs e)
+        {
+            if (sender is IDxDragDropControl dxControl && dxControl.DxDragDrop != null)
+                DoDragTargetDragOver(dxControl, e);
+        }
+        /// <summary>
+        /// Drag and Drop proces opustil možný cíl pro Drag a Drop
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Owner_DragLeave(object sender, EventArgs e)
+        {
+            if (sender is IDxDragDropControl dxControl && dxControl.DxDragDrop != null)
+                DoDragTargetLeave(dxControl, e);
+        }
+        /// <summary>
+        /// Drag and Drop proces provádí Drop na daném cíli
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Owner_DragDrop(object sender, DragEventArgs e)
+        {
+            if (sender is IDxDragDropControl dxControl && dxControl.DxDragDrop != null)
+                DoDragTargetDrop(dxControl, e);
+        }
+
         #endregion
         #region Výkonné události
 
@@ -186,7 +259,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sourcePoint"></param>
         private void DoSourceMoveOver(DxDragDropState ddState, Point? sourcePoint = null)
         {
-            IDragArgs.ModifierKeys = Control.ModifierKeys;
+            FillControlDragArgs();
             IDragArgs.SourceMouseLocation = sourcePoint;
             DoSourceCall(ddState);
 
@@ -201,10 +274,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sourcePoint"></param>
         private void DoSourceMouseDown(Point sourcePoint)
         {
+            FillControlDragArgs();
             _SourceStartPoint = sourcePoint;
             _SourceStartBounds = sourcePoint.CreateRectangleFromCenter(this._SourceStartSize);
             _State = DragStateType.DownWait;
-            IDragArgs.ModifierKeys = Control.ModifierKeys;
             IDragArgs.SourceMouseLocation = sourcePoint;
             DoSourceCall(DxDragDropState.MouseDown);
         }
@@ -218,35 +291,110 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (_SourceStartBounds.HasValue && _SourceStartBounds.Value.Contains(sourcePoint)) return;       // Pohyb je malý, jsme stále uvnitř prostoru StartBounds
 
             // Zde začíná Drag na objektu Source:
+            FillControlDragArgs();
             _SourceStartBounds = null;
             _State = DragStateType.DownDrag;
-            IDragArgs.ModifierKeys = Control.ModifierKeys;
             IDragArgs.SourceMouseLocation = _SourceStartPoint ?? sourcePoint;
             DoSourceCall(DxDragDropState.DragStart);
-            DoTargetDragRun();
+            if (DragArgs.SourceDragEnabled)
+                DoDragStart();
+            else
+                DoDragCancel();
         }
+        private void DoDragStart()
+        {   // Synchronní metoda, v následujícím řádku proběhne kompletní proces Drag and Drop až do puštění myši:
+            try
+            {
+                DragFormCreate();
+                DragDropEffects result = _Owner.DoDragDrop(this, DragArgs.AllowedEffects);
+                // V rámci metody _Owner.DoDragDrop() jsou volány níže uvedené metody, které řídí proces Drag and Drop...
+            }
+            finally
+            {
+                DragFormDispose();
+            }
+
+        }
+        /* POŘADÍ UDÁLOSTÍ v procesu Drag and Drop:
+
+            Poznámka: objekt Source je ten, na kterém Drag and Drop začal;
+                      objekt Target je ten, nad kterým je nyní aktuálně myš (může to být tentýž jako Source, ale může to být jiný objekt)
+        
+          1. Zahájení procesu:            Source zavolá DoDragDrop()     =>  Source: OnQueryContinueDrag()  =>  Source: OnDragEnter()  =>  Source: OnGiveFeedback()
+          2. Pohyb myši uvnitř controlu:  Source: OnQueryContinueDrag()  =>  Target: OnDragOver()   =>  Source: OnGiveFeedback()
+          3. Odchod myši z controlu:      Source: OnQueryContinueDrag()  =>  Target: OnDragLeave()  =>  Source: OnGiveFeedback()
+          4. Pohyb myši mimo control:     Source: OnQueryContinueDrag()
+          5. Příchod myši na control:     Source: OnQueryContinueDrag()  =>  Target: OnDragEnter()  =>  Source: OnGiveFeedback()  =>  Target: OnDragOver()  =>  Source: OnGiveFeedback()
+          6. Puštění myši (Drop):         Source: OnQueryContinueDrag()  =>  Target: OnDragDrop()   =>  Source: dokončení v metodě DoDragDrop()
+
+            Metoda OnQueryContinueDrag() - je volána vždy na Source = to je organizátor procesu
+                                         - je volána i při pohybu mimo jakýkoli target, ale nemá o tom aktuálně informaci, ta je až v OnGiveFeedback()
+                                         - dostává argument e.Action: Continue = v průběhu procesu, nebo Drop = ukončení procesu, nebo Cancel = Escape
+            Metoda OnGiveFeedback()      - je volána vždy na Source = to je organizátor procesu
+                                         - nevolá se při pohybu mimo Target, nedá se tedy použít pro pozicování okna (protože pak by okno zatuhlo na posledním známém místě)
+                                         - dostává argument e.Effect: None, když aktuálně není k dispozici cíl pro Drop
+        */
+        /// <summary>
+        /// Metoda probíhá výhradně v Source objektu a dovoluje mu řídit proces
+        /// </summary>
+        /// <param name="dxControl"></param>
+        /// <param name="e"></param>
+
+        private void DoDragSourceQueryContinueDrag(IDxDragDropControl dxControl, QueryContinueDragEventArgs e)
+        {
+            // e.Action
+            DragFormUpdate(IDragArgs.LastDragEffect != DragDropEffects.None);
+        }
+        /// <summary>
+        /// Metoda probíhá výhradně v Source objektu a dovoluje mu řídit typicky kurzor
+        /// </summary>
+        /// <param name="dxControl"></param>
+        /// <param name="e"></param>
+        private void DoDragSourceGiveFeedback(IDxDragDropControl dxControl, GiveFeedbackEventArgs e)
+        {
+            bool isChange = (IDragArgs.LastDragEffect != e.Effect);
+            IDragArgs.LastDragEffect = e.Effect;
+            if (isChange)
+                DragFormUpdate(IDragArgs.LastDragEffect != DragDropEffects.None);
+        }
+
+
+        private void DoDragTargetEnter(IDxDragDropControl dxControl, DragEventArgs e)
+        {
+        }
+
+        private void DoDragTargetDragOver(IDxDragDropControl dxControl, DragEventArgs e)
+        {
+        }
+
+        private void DoDragTargetLeave(IDxDragDropControl dxControl, EventArgs e)
+        {
+        }
+
+        private void DoDragTargetDrop(IDxDragDropControl dxControl, DragEventArgs e)
+        {
+        }
+
+
+
+
+
         /// <summary>
         /// Volá se v procesu pohybu stisknuté myši mimo prostor Start = provádí se Drag
         /// </summary>
         private void DoTargetDragRun()
         {
-            Point screenTargetPoint = Control.MousePosition;
-
-            IDragArgs.ModifierKeys = Control.ModifierKeys;
-            IDragArgs.ScreenMouseLocation = screenTargetPoint;
-            TrySearchForTarget(screenTargetPoint, out IDxDragDropTarget target);
-            DoTargetChange(target);
+            FillControlDragArgs();
+            // DoTargetChange(target);
             DoSourceCall(DxDragDropState.DragMove);
             DoTargetCall(DxDragDropState.DragMove);
         }
         /// <summary>
         /// Volá se tehdy, když končí Drag and Drop jinak než předáním zdroje do cíle = cancel
         /// </summary>
-        /// <param name="sourcePoint"></param>
-        private void DoSourceDragCancel(Point sourcePoint)
+        private void DoDragCancel()
         {
-            IDragArgs.ModifierKeys = Control.ModifierKeys;
-            IDragArgs.ScreenMouseLocation = Control.MousePosition;
+            FillControlDragArgs();
             DoSourceCall(DxDragDropState.DragCancel);
             DoTargetCall(DxDragDropState.DragCancel);
             DoDragEnd();
@@ -257,8 +405,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sourcePoint"></param>
         private void DoSourceDragDrop(Point sourcePoint)
         {
-            IDragArgs.ModifierKeys = Control.ModifierKeys;
-            IDragArgs.ScreenMouseLocation = Control.MousePosition;
+            FillControlDragArgs();
             DoSourceCall(DxDragDropState.DragDropAccept);
             DoTargetCall(DxDragDropState.DragDropAccept);
             DoDragEnd();
@@ -271,6 +418,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             DoSourceCall(DxDragDropState.DragEnd);
             DoTargetCall(DxDragDropState.DragEnd);
             DoDragReset();
+        }
+        /// <summary>
+        /// Do argumentu vloží aktuální pozici myši a klávesové modifikátory
+        /// </summary>
+        private void FillControlDragArgs()
+        {
+            IDragArgs.ModifierKeys = Control.ModifierKeys;
+            IDragArgs.ScreenMouseLocation = Control.MousePosition;
         }
         /// <summary>
         /// Zajistí změnu a uložení objektu Target.
@@ -298,7 +453,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoSourceCall(DxDragDropState ddState)
         {
             IDragArgs.State = ddState;
-            _Source.DoDragSource(DragArgs);
+            _Owner.DoDragSource(DragArgs);
         }
         /// <summary>
         /// Do argumentu vloží daný stav a zavolá Target objekt (pokud existuje a pokud je source povolen: <see cref="DxDragDropArgs.SourceDragEnabled"/> = true).
@@ -322,23 +477,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SourceStartBounds = null;
         }
         /// <summary>
-        /// Najde cílový control na dané souřadnici
-        /// </summary>
-        /// <param name="screenTargetPoint"></param>
-        /// <param name="target"></param>
-        /// <returns></returns>
-        private bool TrySearchForTarget(Point screenTargetPoint, out IDxDragDropTarget target)
-        {
-            target = null;
-            Form form = _Source.FindForm();
-            if (form != null)
-            {
-                if (form.TryGetChildAtPoint(screenTargetPoint, GetChildAtPointSkip.Invisible, out Control child) && child.TrySearchUpForControl<IDxDragDropTarget>(c => c is IDxDragDropTarget, c => c as IDxDragDropTarget, out target))
-                    return true;
-            }
-            return false;
-        }
-        /// <summary>
         /// Argument typovaný na interface
         /// </summary>
         private IDxDragDropArgs IDragArgs { get { return DragArgs; } }
@@ -350,10 +488,158 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 if (_DragArgs == null)
-                    _DragArgs = new DxDragDropArgs(_Source);
+                    _DragArgs = new DxDragDropArgs(_Owner);
                 return _DragArgs;
             }
         }
+        #endregion
+        #region Mini okno pro zobrazení informací o DragDrop
+        private void DragFormCreate(string text, bool? enableHtml = null, bool? enabled = null)
+        {
+            Form form = new Form()
+            {
+                FormBorderStyle = FormBorderStyle.None,
+                AllowTransparency = true,
+                Size = new Size(250, 50),
+                Text = "",
+                StartPosition = FormStartPosition.Manual,
+                Location = DragFormCurrentLocation,
+                ShowInTaskbar = false,
+                TopLevel = true
+            };
+            var label = new DxLabelControl() { Location = new Point(0, 0), Text = "<b>PŘESOUVÁME</b> položky:\r\n<i>1: první,\r\n2: druhá,\r\n3: třetí,\r\n4: pátá,</i>...", AllowHtmlString = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            label.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+            label.Padding = new Padding(3);
+            label.Appearance.GradientMode = LinearGradientMode.Vertical;
+            label.Appearance.Options.UseForeColor = true;
+            label.Appearance.Options.UseBackColor = true;
+            label.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
+            label.Appearance.TextOptions.HAlignment = HorzAlignment.Near;
+            label.Appearance.Options.UseTextOptions = true;
+            label.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.Vertical;
+
+            DragLabel = label;
+            DragForm = form;
+
+            form.Controls.Add(label);
+
+            DragFormUpdateContent(text, enableHtml);
+            DragFormUpdate(enabled ?? true);
+            DragFormSetEnabledColors(enabled ?? true);
+
+            form.Show();
+        }
+        /// <summary>
+        /// Aktualizuje okno Drag form = textový obsah
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="enableHtml"></param>
+        private void DragFormUpdateContent(string text, bool? enableHtml = null)
+        {
+            var form = DragForm;
+            var label = DragLabel;
+            if (form != null && label != null)
+            {
+                label.Text = text ?? "";
+                if (enableHtml.HasValue) label.AllowHtmlString = enableHtml.Value;
+
+                var optimalSize = label.CalcBestSize();
+                var minSize = DragFormMinSize;
+                var maxSize = DragFormMaxSize;
+                int w = optimalSize.Width + 10;
+                w = (w < minSize.Width ? minSize.Width : (w > maxSize.Width ? maxSize.Width : w));
+                int h = optimalSize.Height + 10;
+                h = (h < minSize.Width ? minSize.Height : (h > maxSize.Height ? maxSize.Height : h));
+
+                label.Size = new Size(w, h);
+
+                w += 2;
+                h += 2;
+                form.Size = new Size(w, h);
+            }
+        }
+        /// <summary>
+        /// Aktualizuje okno Drag form = pozice a barvy Enabled
+        /// </summary>
+        /// <param name="enabled"></param>
+        private void DragFormUpdate(bool enabled)
+        {
+            var form = DragForm;
+            if (form == null) return;
+            
+            var location = DragFormCurrentLocation;
+            if (form.Location != location)
+                form.Location = location;
+
+            if (enabled != DragLabelEnabled)
+                DragFormSetEnabledColors(enabled);
+        }
+        /// <summary>
+        /// Nastaví barvy okna Drag form pro daný stav Enabled
+        /// </summary>
+        /// <param name="enabled"></param>
+        private void DragFormSetEnabledColors(bool enabled)
+        {
+            var label = DragLabel;
+            if (label != null)
+            {
+                label.Appearance.ForeColor = (enabled ? Color.Black : Color.DimGray);
+                label.Appearance.BackColor = (enabled ? Color.FromArgb(250, 250, 240) : Color.LightGray);
+                label.Appearance.BackColor2 = (enabled ? Color.FromArgb(245, 245, 225) : Color.LightGray);
+            }
+            DragLabelEnabled = enabled;
+        }
+        /// <summary>
+        /// Zahodí okno Drag form
+        /// </summary>
+        private void DragFormDispose()
+        {
+            var form = DragForm;
+            if (form == null) return;
+            DragLabel = null;
+            form.Hide();
+            form.Close();
+            form.Dispose();
+            DragForm = null;
+        }
+        /// <summary>
+        /// Aktuální patřičná pozice pro Drag okno
+        /// </summary>
+        private Point DragFormCurrentLocation
+        {
+            get
+            {
+                var point = Control.MousePosition;
+                var offset = this.DragFormOffset;
+                point.X -= offset.X;
+                point.Y += offset.Y;
+                return point;
+            }
+        }
+        /// <summary>
+        /// Inicializace defaultních hodnot pro okno DragForm
+        /// </summary>
+        private void DragFormInitProperties()
+        {
+            DragFormOffset = new Point(-30, 28);
+            DragFormMinSize = new Size(150, 28);
+            DragFormMaxSize = new Size(500, 160);
+        }
+        private bool DragLabelEnabled;
+        private Form DragForm;
+        private DxLabelControl DragLabel;
+        /// <summary>
+        /// Posun počátku Drag okna (=ToolTip při Drag and Drop) oproti pozici myši
+        /// </summary>
+        public Point DragFormOffset { get; set; }
+        /// <summary>
+        /// Minimální povolená velikost Drag okna (aby tam nebyla blecha)
+        /// </summary>
+        public Size DragFormMinSize { get; set; }
+        /// <summary>
+        /// Maximální povolená velikost Drag okna (aby tam nebyl slon)
+        /// </summary>
+        public Size DragFormMaxSize { get; set; }
         #endregion
 
         /// <summary>
@@ -389,10 +675,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         public MouseButtons DragButtons { get; set; }
     }
     /// <summary>
-    /// Předpis pro prvek, který může být ZDROJEM události Drag and Drop = v něm může být zahájeno přetažení prvku jinam (do <see cref="IDxDragDropTarget"/>).
+    /// Předpis pro prvek, který může být ZDROJEM anebo CÍLEM události Drag and Drop = v něm může být zahájeno přetažení prvku jinam nebo ukončeno tažení prvku odjinud.
     /// </summary>
-    public interface IDxDragDropSource
+    public interface IDxDragDropControl
     {
+        /// <summary>
+        /// Controller pro DxDragDrop v daném controlu
+        /// </summary>
+        DxDragDrop DxDragDrop { get; }
         /// <summary>
         /// Metoda volaná do objektu Source (zdroj Drag and Drop) při každé akci na straně zdroje.
         /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
@@ -407,6 +697,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         void DoDragTarget(DxDragDropArgs args);
 
         // Následující metody a eventy deklaruje každý Control, nemusí se explicitně implementovat. Ale v interface je potřebujeme mít deklarované pro práci v DxDragDrop:
+
+        /// <summary>
+        /// Nativní metoda Controlu.
+        /// Vyvolá proces Drag, synchronní, počká na jeho dokončení.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="allowedEffects"></param>
+        /// <returns></returns>
+        DragDropEffects DoDragDrop(object data, DragDropEffects allowedEffects);
         /// <summary>
         /// Nativní metoda Controlu.
         /// Vrátí formulář, na němž je control umístěn.
@@ -473,7 +772,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         event DragEventHandler DragDrop;
     }
     /// <summary>
-    /// Předpis pro prvek, který může být CÍLEM události Drag and Drop = do něj může být přetažen prvek <see cref="IDxDragDropSource"/> nebo jeho součást.
+    /// Předpis pro prvek, který může být CÍLEM události Drag and Drop = do něj může být přetažen prvek <see cref="IDxDragDropControl"/> nebo jeho součást.
     /// </summary>
     public interface IDxDragDropTarget
     {
@@ -494,7 +793,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konstruktor pro daný Source objekt
         /// </summary>
         /// <param name="sourceControl"></param>
-        public DxDragDropArgs(IDxDragDropSource sourceControl)
+        public DxDragDropArgs(IDxDragDropControl sourceControl)
         {
             this.SourceControl = sourceControl;
             this.SourceDragEnabled = true;
@@ -519,6 +818,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.TargetControl = null;
             this.TargetTag = null;
             this.TargetDropEnabled = false;
+            this.LastDragEffect = DragDropEffects.None;
         }
         /// <summary>
         /// Stav procesu Drag and Drop = aktuální událost
@@ -539,13 +839,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zdrojový objekt (ListBox, TreeView, atd)
         /// </summary>
-        public IDxDragDropSource SourceControl { get; private set; }
+        public IDxDragDropControl SourceControl { get; private set; }
         /// <summary>
         /// Zdrojový control nastavuje true / false podle toho, zda aktuální výchozí prvek může být přemístěn.
         /// Typicky ListBox nastaví true, pokud myš uchopila (v DragStart) existující Item v ListBoxu, nebo v TreeView myš uchopila TreeNode.
         /// Pokud uživatel zkusí přetahovat prázdný prostor v TreeNode, pak sem zdroj nastaví false a přetahování nemá smysl.
         /// </summary>
         public bool SourceDragEnabled { get; set; }
+        /// <summary>
+        /// Možnosti pro proces Drag (povolené efekty)
+        /// </summary>
+        public DragDropEffects AllowedEffects { get; set; }
         /// <summary>
         /// Jakýkoli objekt ze zdrojového controlu. Typicky to může být prvek ListBoxu nebo uzel TreeView, nebo ColumnHeader nebo cokoli jiného.
         /// </summary>
@@ -575,6 +879,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// je povolen Drag ze zdroje <see cref="SourceDragEnabled"/> a je povolen Drop v cíli <see cref="TargetDropEnabled"/>).
         /// </summary>
         public bool IsDragDropEnabled { get { return (TargetControl != null && SourceDragEnabled && TargetDropEnabled); } }
+        /// <summary>
+        /// Posledně známý DragDrop efekt
+        /// </summary>
+        public DragDropEffects LastDragEffect { get; private set; }
         #endregion
         #region Interní přístup k datům
         DxDragDropState IDxDragDropArgs.State { get { return this.State; } set { this.State = value; } }
@@ -582,6 +890,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         Point? IDxDragDropArgs.SourceMouseLocation { get { return this.SourceMouseLocation; } set { this.SourceMouseLocation = value; } }
         Keys IDxDragDropArgs.ModifierKeys { get { return this.ModifierKeys; } set { this.ModifierKeys = value; } }
         IDxDragDropTarget IDxDragDropArgs.TargetControl { get { return this.TargetControl; } set { this.TargetControl = value; } }
+        DragDropEffects IDxDragDropArgs.LastDragEffect { get { return this.LastDragEffect; } set { this.LastDragEffect = value; } }
         void IDxDragDropArgs.Reset() { this.Reset(); }
         #endregion
     }
@@ -601,6 +910,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Keys ModifierKeys { get; set; }
         IDxDragDropTarget TargetControl { get; set; }
+        /// <summary>
+        /// Posledně známý DragDrop efekt
+        /// </summary>
+        DragDropEffects LastDragEffect { get; set; }
+
         void Reset();
     }
     /// <summary>

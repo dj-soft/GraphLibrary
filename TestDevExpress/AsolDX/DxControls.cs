@@ -772,7 +772,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// ListBoxControl
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl, IDxDragDropSource, IDxDragDropTarget
+    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl, IDxDragDropControl, IDxDragDropTarget
     {
         #region Public členy
         /// <summary>
@@ -932,21 +932,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxDragDrop _DxDragDrop;
         /// <summary>
+        /// Controller pro DxDragDrop v this controlu
+        /// </summary>
+        DxDragDrop IDxDragDropControl.DxDragDrop { get { return _DxDragDrop; } }
+        /// <summary>
         /// Metoda volaná do objektu Source (zdroj Drag and Drop) při každé akci na straně zdroje.
         /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
         /// </summary>
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
-        void IDxDragDropSource.DoDragSource(DxDragDropArgs args)
+        void IDxDragDropControl.DoDragSource(DxDragDropArgs args)
         {
 
-
+            return;
 
 
             DragDropSearchSource(args.SourceMouseLocation);
             if (args.State == DxDragDropState.DragStart)
                 SysDragStart();
         }
-        void IDxDragDropSource.DoDragTarget(DxDragDropArgs args)
+        void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
         { }
         /// <summary>
         /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci, pokud se myš nachází nad objektem který implementuje <see cref="IDxDragDropTarget"/>.
