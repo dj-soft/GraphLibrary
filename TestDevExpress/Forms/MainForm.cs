@@ -53,11 +53,22 @@ namespace TestDevExpress.Forms
             InitMsgBox();              // 7
             InitEditors();             // 8
             InitTreeView();            // 9
-
-            ActivatePage(8);
+            InitDragDrop();            // 10
 
             SplashUpdate("Otevírám okno...", title: "Hotovo");
+
+            this.Disposed += MainForm_Disposed;
+            System.Windows.Forms.Application.Idle += Application_Idle;
+            DxComponent.LogTextChanged += DxComponent_LogTextChanged;
+
+            ActivatePage(10, true);
         }
+        private void MainForm_Disposed(object sender, EventArgs e)
+        {
+            System.Windows.Forms.Application.Idle -= Application_Idle;
+            DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
+        }
+
         private static void ShowSplash(Form owner)
         {
             DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
@@ -109,15 +120,13 @@ namespace TestDevExpress.Forms
         {
             this._TabContainer.SelectedIndexChanged += _TabContainer_SelectedIndexChanged;
         }
-
+        /// <summary>
+        /// Index aktuální stránky
+        /// </summary>
+        protected int CurrentPageIndex { get { return _TabContainer.SelectedIndex; } set { _TabContainer.SelectedIndex = value; } }
         private void _TabContainer_SelectedIndexChanged(object sender, EventArgs e)
         {
-            switch (_TabContainer.SelectedIndex)
-            {
-                case 5:
-                    ActivateRibbonPage();
-                    break;
-            }
+            OnActivatePage(CurrentPageIndex);
         }
         private void SkinList_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -129,10 +138,57 @@ namespace TestDevExpress.Forms
             var subSkins = skin.GetSkins();
         }
         private List<DS.SkinContainer> Skins;
-        private void ActivatePage(int pageIndex)
+        private void ActivatePage(int pageIndex, bool forceEvent)
         {
-            this._TabContainer.SelectedIndex = pageIndex;
+            CurrentPageIndex = pageIndex;
+            if (forceEvent)
+                OnActivatePage(pageIndex);
         }
+        private void OnActivatePage(int pageIndex)
+        {
+            CurrentLogControl = null;              // Konkrétní stránka ať si to nastaví v následující metodě...
+            switch (pageIndex)
+            {
+                case 5:
+                    ActivateRibbonPage();
+                    break;
+                case 10:
+                    ActivateDragDropPage();
+                    break;
+            }
+            RefreshLog();
+        }
+        #region Log
+
+        private void DxComponent_LogTextChanged(object sender, EventArgs e)
+        {
+            _LogContainChanges = true;
+        }
+        private void Application_Idle(object sender, EventArgs e)
+        {
+            if (_LogContainChanges)
+                RefreshLog();
+        }
+        bool _LogContainChanges;
+
+        protected void RefreshLog()
+        {
+            var control = CurrentLogControl;
+            if (control != null)
+            {
+                string logText = DxComponent.LogText ?? "";
+                control.Text = logText;
+                control.SelectionStart = logText.Length;
+                control.SelectionLength = 0;
+                control.ScrollToCaret();
+            }
+            _LogContainChanges = false;
+        }
+        /// <summary>
+        /// Aktuálně aktivní control pro zobrazení dat logu, aktivuje konkrétní stránka
+        /// </summary>
+        protected DxMemoEdit CurrentLogControl;
+        #endregion
 
         #region BarManager
         private void InitBarManager()
@@ -1768,17 +1824,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _TokenAddButtonDaj = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(260, 37, 120, 28), Text = "Generuj DAJ" };
             _TokenAddButtonDaj.Click += _TokenAddButtonDaj_Click;
             _EditorsPanel.Controls.Add(_TokenAddButtonDaj);
-            
-
+           
             _TokenEdit = new DevExpress.XtraEditors.TokenEdit() { Bounds = new Rectangle(20, 68, 360, 25) };
             _EditorsPanel.Controls.Add(_TokenEdit);
 
             _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 350, 20), Text = "" };
             _EditorsPanel.Controls.Add(_TokenInfoLabel);
-
-            _DragDropList = new DxListBoxControl() { Bounds = new Rectangle(20, 132, 360, 300), ReorderByDragEnabled = true, SelectionMode = SelectionMode.MultiExtended };
-            _DragDropList.Items.AddRange(_CreateListItems(100));
-            _EditorsPanel.Controls.Add(_DragDropList);
 
             _OpenLayoutFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 37, 190, 50), Text = "Otevři LayoutForm" };
             _OpenLayoutFormButton.Click += _OpenLayoutFormButton_Click;
@@ -1820,17 +1871,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             var size = _EditorsPanel.ClientSize;
 
             if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
-            if (_DragDropList != null) _DragDropList.Bounds = new Rectangle(20, 132, 360, size.Height - 148);
-        }
-        protected object[] _CreateListItems(int count)
-        {
-            List<IMenuItem> items = new List<IMenuItem>();
-            for (int i = 0; i < count; i++)
-            {
-                DataMenuItem item = new DataMenuItem() { ItemText = Random.GetSentence(3, 6, false) };
-                items.Add(item);
-            }
-            return items.ToArray();
         }
         private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
         {
@@ -1967,7 +2007,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DevExpress.XtraEditors.SimpleButton _TokenAddButtonDaj;
         private DevExpress.XtraEditors.TokenEdit _TokenEdit;
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
-        private DxListBoxControl _DragDropList;
         private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
         private DevExpress.XtraEditors.SimpleButton _OpenImagePickerFormButton;
         private DevExpress.XtraEditors.SimpleButton _TestDataFormModalButton;
@@ -2226,7 +2265,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
                     _TreeList.AddNode(blankNode);
 
                     // Aktivuji editovaný node:
-                    _TreeList.SelectNode(newNode);
+                    _TreeList.SetFocusToNode(newNode);
                 }
                 ), nodeInfo);
             }
@@ -2263,7 +2302,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
                     // Aktivuji první přidaný node:
                     if (newNodes.Count > 0)
-                        _TreeList.SelectNode(newNodes[0]);
+                        _TreeList.SetFocusToNode(newNodes[0]);
                 }
                ), args.Node);
             }
@@ -2405,6 +2444,78 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         int _LogId;
         NewNodePositionType _NewNodePosition;
         private enum NewNodePositionType { None, First, Last }
+        #endregion
+        #region DragDrop
+        protected void InitDragDrop()
+        {
+            _DragDropAList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended };
+            _DragDropAList.Name = "AList";
+            _DragDropAList.Items.AddRange(_CreateListItems(100));
+            _DragDropPanel.Controls.Add(_DragDropAList);
+
+            _DragDropBList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended };
+            _DragDropBList.Name = "BList";
+            _DragDropBList.Items.AddRange(_CreateListItems(100));
+            _DragDropPanel.Controls.Add(_DragDropBList);
+
+            _DragDropATree = new DxTreeViewList() { AllowDropOnTree = true, FilterBoxVisible = true };
+            _DragDropATree.Name = "ATree";
+            _DragDropATree.AddNodes(_CreateSampleList());
+            _DragDropPanel.Controls.Add(_DragDropATree);
+
+            _DragDropLogText = DxComponent.CreateDxMemoEdit(_DragDropPanel, System.Windows.Forms.DockStyle.None, readOnly: true, tabStop: false);
+
+            _DragDropPanel.SizeChanged += _DragDropPanel_SizeChanged;
+            _DragDropPanel.Dock = DockStyle.Fill;
+            DragDropDoLayout();
+        }
+
+
+        protected void ActivateDragDropPage()
+        {
+            CurrentLogControl = _DragDropLogText;
+            DxComponent.LogClear();
+        }
+        /// <summary>
+        /// Po změně velikosti <see cref="_DragDropPanel"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _DragDropPanel_SizeChanged(object sender, EventArgs e)
+        {
+            DragDropDoLayout();
+        }
+        protected object[] _CreateListItems(int count)
+        {
+            List<IMenuItem> items = new List<IMenuItem>();
+            for (int i = 0; i < count; i++)
+            {
+                DataMenuItem item = new DataMenuItem() { ItemText = Random.GetSentence(3, 6, false) };
+                items.Add(item);
+            }
+            return items.ToArray();
+        }
+
+        protected void DragDropDoLayout()
+        {
+            var size = _DragDropPanel.ClientSize;
+            int xm = 6;
+            int ym = 6;
+            int xs = 12;
+            int cnt = 4;
+
+            int w = (size.Width - (2 * xm + (cnt - 1) * xs)) / 4;
+            int ws = w + xs;
+            int h = size.Height - 20;
+            if (_DragDropAList != null) _DragDropAList.Bounds = new Rectangle(xm, ym, w, h);
+            if (_DragDropBList != null) _DragDropBList.Bounds = new Rectangle(xm + 1 * ws, ym, w, h);
+            if (_DragDropATree != null) _DragDropATree.Bounds = new Rectangle(xm + 2 * ws, ym, w, h);
+            if (_DragDropLogText != null) _DragDropLogText.Bounds = new Rectangle(xm + 3 * ws, ym, w, h);
+        }
+        private DxListBoxControl _DragDropAList;
+        private DxListBoxControl _DragDropBList;
+        private DxTreeViewList _DragDropATree;
+        private DxMemoEdit _DragDropLogText;
         #endregion
         #region Random
         System.Random Rand;

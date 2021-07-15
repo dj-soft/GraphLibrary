@@ -119,6 +119,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool RootNodeVisible { get { return _TreeViewListNative.RootNodeVisible; } set { _TreeViewListNative.RootNodeVisible = value; } }
         /// <summary>
+        /// Povolit Drag Drop akci pro TreeList ?
+        /// </summary>
+        public bool AllowDropOnTree { get { return _TreeViewListNative.AllowDrop; } set { _TreeViewListNative.AllowDrop = value; } }
+        /// <summary>
         /// Aktuální hodnota pro zobrazení Root nodu.
         /// Nastavuje se před přidáním prvního nodu, podle hodnoty <see cref="RootNodeVisible"/>.
         /// Jakmile v evidenci je už nějaký node, pak se tato hodnota nemění.

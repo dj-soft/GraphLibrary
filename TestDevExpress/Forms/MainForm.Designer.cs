@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            DevExpress.XtraBars.BarShortcut barShortcut1 = new DevExpress.XtraBars.BarShortcut();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.StatusStrip = new System.Windows.Forms.StatusStrip();
             this.button3 = new System.Windows.Forms.Button();
             this._PanelHeaders1 = new System.Windows.Forms.Panel();
@@ -73,6 +75,8 @@
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.SkinList = new System.Windows.Forms.ListBox();
             this.ribbonControl1 = new Noris.Clients.Win.Components.AsolDX.DxRibbonControl();
+            this.tabPage9 = new System.Windows.Forms.TabPage();
+            this._DragDropPanel = new TestDevExpress.AsolPanel();
             ((System.ComponentModel.ISupportInitialize)(this._SplitTabHeaders)).BeginInit();
             this._SplitTabHeaders.Panel1.SuspendLayout();
             this._SplitTabHeaders.Panel2.SuspendLayout();
@@ -90,13 +94,13 @@
             this.tabPageChart.SuspendLayout();
             this.tabPage6.SuspendLayout();
             this.tabPage7.SuspendLayout();
-            this._EditorsPanel.SuspendLayout();
             this.tabPage8.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.MainSplit)).BeginInit();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ribbonControl1)).BeginInit();
+            this.tabPage9.SuspendLayout();
             this.SuspendLayout();
             // 
             // StatusStrip
@@ -231,6 +235,7 @@
             this._TabContainer.Controls.Add(this.tabPage6);
             this._TabContainer.Controls.Add(this.tabPage7);
             this._TabContainer.Controls.Add(this.tabPage8);
+            this._TabContainer.Controls.Add(this.tabPage9);
             this._TabContainer.Dock = System.Windows.Forms.DockStyle.Fill;
             this._TabContainer.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this._TabContainer.HotTrack = true;
@@ -610,10 +615,12 @@
             // 
             // ribbonControl1
             // 
+            this.ribbonControl1.AllowCustomization = true;
             this.ribbonControl1.ApplicationButtonText = " HELIOS ";
             this.ribbonControl1.ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
             this.ribbonControl1.ColorScheme = DevExpress.XtraBars.Ribbon.RibbonControlColorScheme.DarkBlue;
             this.ribbonControl1.CommandLayout = DevExpress.XtraBars.Ribbon.CommandLayout.Simplified;
+            this.ribbonControl1.DebugName = null;
             this.ribbonControl1.DrawGroupCaptions = DevExpress.Utils.DefaultBoolean.True;
             this.ribbonControl1.DrawGroupsBorderMode = DevExpress.Utils.DefaultBoolean.True;
             // 
@@ -622,6 +629,8 @@
             this.ribbonControl1.ExpandCollapseItem.Id = 0;
             this.ribbonControl1.GalleryAnimationLength = 300;
             this.ribbonControl1.GroupAnimationLength = 300;
+            this.ribbonControl1.ImageRightFull = null;
+            this.ribbonControl1.ImageRightMini = null;
             this.ribbonControl1.ItemAnimationLength = 300;
             this.ribbonControl1.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
             this.ribbonControl1.SearchEditItem,
@@ -633,15 +642,41 @@
             this.ribbonControl1.Name = "ribbonControl1";
             this.ribbonControl1.RibbonCaptionAlignment = DevExpress.XtraBars.Ribbon.RibbonCaptionAlignment.Center;
             this.ribbonControl1.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonControlStyle.Office2019;
+            this.ribbonControl1.SearchItemShortcut = barShortcut1;
+            this.ribbonControl1.SelectChildActivePageOnMerge = true;
             this.ribbonControl1.SelectedPageId = null;
             this.ribbonControl1.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             this.ribbonControl1.ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;
             this.ribbonControl1.ShowExpandCollapseButton = DevExpress.Utils.DefaultBoolean.True;
+            this.ribbonControl1.ShowItemCaptionsInQAT = true;
             this.ribbonControl1.ShowMoreCommandsButton = DevExpress.Utils.DefaultBoolean.True;
             this.ribbonControl1.ShowPageHeadersMode = DevExpress.XtraBars.Ribbon.ShowPageHeadersMode.Show;
             this.ribbonControl1.ShowSearchItem = true;
-            this.ribbonControl1.Size = new System.Drawing.Size(0, 50);
             this.ribbonControl1.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
+            this.ribbonControl1.UseLazyContentCreate = false;
+            // 
+            // tabPage9
+            // 
+            this.tabPage9.Controls.Add(this._DragDropPanel);
+            this.tabPage9.Location = new System.Drawing.Point(4, 33);
+            this.tabPage9.Name = "tabPage9";
+            this.tabPage9.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage9.Size = new System.Drawing.Size(1114, 444);
+            this.tabPage9.TabIndex = 10;
+            this.tabPage9.Text = "Drag and Drop";
+            this.tabPage9.UseVisualStyleBackColor = true;
+            // 
+            // _DragDropPanel
+            // 
+            this._DragDropPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
+            this._DragDropPanel.DevExpressSkinEnabled = true;
+            this._DragDropPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this._DragDropPanel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this._DragDropPanel.Location = new System.Drawing.Point(3, 3);
+            this._DragDropPanel.Name = "_DragDropPanel";
+            this._DragDropPanel.Size = new System.Drawing.Size(1108, 438);
+            this._DragDropPanel.TabIndex = 5;
+            this._DragDropPanel.Text = "_DragDropPanel";
             // 
             // MainForm
             // 
@@ -650,6 +685,7 @@
             this.ClientSize = new System.Drawing.Size(1346, 503);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.StatusStrip);
+            this.IconOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("MainForm.IconOptions.SvgImage")));
             this.Name = "MainForm";
             this.Text = "Testy DevExpress";
             this._SplitTabHeaders.Panel1.ResumeLayout(false);
@@ -671,13 +707,13 @@
             this.tabPageChart.ResumeLayout(false);
             this.tabPage6.ResumeLayout(false);
             this.tabPage7.ResumeLayout(false);
-            this._EditorsPanel.ResumeLayout(false);
             this.tabPage8.ResumeLayout(false);
             this.MainSplit.Panel1.ResumeLayout(false);
             this.MainSplit.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.MainSplit)).EndInit();
             this.MainSplit.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.ribbonControl1)).EndInit();
+            this.tabPage9.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -729,6 +765,8 @@
         private AsolPanel _EditorsPanel;
         private System.Windows.Forms.TabPage tabPage8;
         private AsolPanel _TreeViewPanel;
+        private System.Windows.Forms.TabPage tabPage9;
+        private AsolPanel _DragDropPanel;
     }
 }
 
