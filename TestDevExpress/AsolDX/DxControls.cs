@@ -225,6 +225,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
     }
     #endregion
@@ -598,6 +603,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetType().Name + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
     }
     #endregion
@@ -624,6 +634,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -656,6 +671,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -688,6 +708,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -720,6 +745,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -752,6 +782,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -772,7 +807,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// ListBoxControl
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl, IDxDragDropControl, IDxDragDropTarget
+    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl, IDxDragDropControl
     {
         #region Public členy
         /// <summary>
@@ -873,6 +908,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region Overrides
         /// <summary>
@@ -883,6 +923,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnPaint(e);
             this.PaintList?.Invoke(this, e);
+            this.MouseDragPaint(e);
             this.PaintOnMouseItem(e);
         }
         /// <summary>
@@ -942,26 +983,114 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragSource(DxDragDropArgs args)
         {
-
+            switch (args.Action)
+            {
+                case DxDragDropActionType.DragStart:
+                    DoDragSourceStart(args);
+                    break;
+                case DxDragDropActionType.DragDropAccept:
+                    DoDragSourceDrop(args);
+                    break;
+            }
             return;
-
-
-            DragDropSearchSource(args.SourceMouseLocation);
-            if (args.State == DxDragDropState.DragStart)
-                SysDragStart();
         }
-        void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
-        { }
         /// <summary>
-        /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci, pokud se myš nachází nad objektem který implementuje <see cref="IDxDragDropTarget"/>.
+        /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci, pokud se myš nachází nad objektem který implementuje <see cref="IDxDragDropControl"/>.
         /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
         /// </summary>
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
-        void IDxDragDropTarget.DoDragTarget(DxDragDropArgs args)
+        void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
+        {
+            switch (args.Action)
+            {
+                case DxDragDropActionType.DragMove:
+                    DoDragTargetMove(args);
+                    break;
+                case DxDragDropActionType.DragLeaveOfTarget:
+                    DoDragTargetLeave(args);
+                    break;
+                case DxDragDropActionType.DragDropAccept:
+                    DoDragTargetDrop(args);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Když začíná proces Drag, a this objekt je zdrojem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragSourceStart(DxDragDropArgs args)
+        {
+            var selectedItems = this.SelectedItemsInfo;
+            if (selectedItems.Length == 0)
+            {
+                args.SourceDragEnabled = false;
+            }
+            else
+            {
+                args.SourceText = selectedItems.ToOneString(convertor: i => i.Item2.ToString());
+                args.SourceObject = selectedItems;
+                args.SourceDragEnabled = true;
+            }
+        }
+        /// <summary>
+        /// Když úspěšně končí proces Drag, a this objekt je zdrojem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragSourceDrop(DxDragDropArgs args)
+        { }
+        /// <summary>
+        /// Když probíhá proces Drag, a this objekt je možným cílem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetMove(DxDragDropArgs args)
         {
             Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
-            int index = this.IndexFromPoint(targetPoint);
-            var bounds = this.GetItemBounds(index);
+            IndexRatio index = IndexRatio.Create(targetPoint, this.ClientRectangle, p => this.IndexFromPoint(p), i => GetItemBounds(i, false), this.ItemCount, Orientation.Vertical);
+            if (IndexRatio.IsEqual(index, MouseDragTargetIndex)) return;
+            MouseDragTargetIndex = index;
+            this.Invalidate();
+
+            args.CurrentEffect = args.GetSuggestedEffect();
+        }
+        /// <summary>
+        /// Když probíhá proces Drag, ale opouští this objekt, který dosud byl možným cílem (probíhala pro něj metoda <see cref="DoDragTargetMove(DxDragDropArgs)"/>)
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetLeave(DxDragDropArgs args)
+        {
+            MouseDragTargetIndex = null;
+            this.Invalidate();
+        }
+        /// <summary>
+        /// Když úspěšně končí proces Drag, a this objekt je možným cílem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetDrop(DxDragDropArgs args)
+        {
+            MouseDragTargetIndex = null;
+            this.Invalidate();
+        }
+        /// <summary>
+        /// Informace o prvku, nad kterým je myš, pro umístění obsahu v procesu Drag and Drop.
+        /// Pokud je null, pak pro this prvek neprobíhá Drag and Drop.
+        /// <para/>
+        /// Tuto hodnotu vykresluje metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// </summary>
+        private IndexRatio MouseDragTargetIndex;
+        /// <summary>
+        /// Obsahuje true, pokud v procesu Paint má být volána metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// </summary>
+        private bool MouseDragNeedRePaint { get { return (MouseDragTargetIndex != null); } }
+        /// <summary>
+        /// Volá se proto, aby this prvek mohl vykreslit Target pozici pro MouseDrag proces
+        /// </summary>
+        /// <param name="e"></param>
+        private void MouseDragPaint(PaintEventArgs e)
+        {
+            if (!MouseDragNeedRePaint) return;
+            var bounds = MouseDragTargetIndex.GetMarkBounds();
+            if (!bounds.HasValue) return;
+            e.Graphics.FillRectangle(Brushes.Black, bounds.Value);
         }
         /// <summary>
         /// Index prvku, nad kterým se pohybuje myš
@@ -1165,6 +1294,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
 
+        /*
+
         protected void SysDragInit()
         {
             this.AllowDrop = true;
@@ -1320,6 +1451,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected Form DragForm;
         protected DxLabelControl DragLabel;
 
+        */
 
         #region ToolTip
         /// <summary>
@@ -1352,6 +1484,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -1387,6 +1524,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -1419,6 +1561,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region ToolTip
         /// <summary>
@@ -2011,6 +2158,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
         #endregion
         #region Invoke to GUI: run, get, set
         /// <summary>

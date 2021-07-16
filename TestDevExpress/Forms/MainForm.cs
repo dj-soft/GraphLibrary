@@ -2451,11 +2451,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _DragDropAList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended };
             _DragDropAList.Name = "AList";
             _DragDropAList.Items.AddRange(_CreateListItems(100));
+            _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropAList);
 
             _DragDropBList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended };
             _DragDropBList.Name = "BList";
-            _DragDropBList.Items.AddRange(_CreateListItems(100));
+            _DragDropBList.Items.AddRange(_CreateListItems(18));
+            _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropBList);
 
             _DragDropATree = new DxTreeViewList() { AllowDropOnTree = true, FilterBoxVisible = true };
@@ -2470,6 +2472,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             DragDropDoLayout();
         }
 
+        private void _DragDrop_MouseDown(object sender, MouseEventArgs e)
+        {
+            DxComponent.LogClear();
+        }
 
         protected void ActivateDragDropPage()
         {

@@ -2631,6 +2631,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             );
         }
         /// <summary>
+        /// Vrací defaultní ToString() = Type.Name + Control.Name
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static string GetTypeName(this Control control)
+        {
+            string text = control?.GetType().Name ?? "NULL";
+            if (!String.IsNullOrEmpty(control?.Name))
+                text += ": '" + control.Name + "'";
+            return text;
+        }
+        /// <summary>
         /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
         /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato metoda <see cref="IsSetVisible(Control)"/> vrací hodnotu pouze z tohoto controlu.
@@ -5229,7 +5241,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
-        /// Pro každý prvek this kolekce proede danou akci
+        /// Pro každý prvek this kolekce provede danou akci
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
@@ -5239,6 +5251,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (items == null || action == null) return;
             foreach (T item in items)
                 action(item);
+        }
+        /// <summary>
+        /// Sloučí dané prvky do jednoho stringu.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="delimiter"></param>
+        /// <param name="convertor"></param>
+        public static string ToOneString<T>(this IEnumerable<T> items, string delimiter = "\r\n", Func<T, string> convertor = null)
+        {
+            StringBuilder sb = new StringBuilder();
+            if (items != null)
+            {
+                bool hasConverter = (convertor != null);
+                if (delimiter == null) delimiter = "\r\n";
+                foreach (T item in items)
+                {
+                    string text = (hasConverter ? convertor(item) : (item?.ToString() ?? ""));
+                    sb.Append(text);
+                    sb.Append(delimiter);
+                }
+            }
+            return sb.ToString();
         }
         #endregion
     }
