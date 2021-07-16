@@ -1088,9 +1088,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void MouseDragPaint(PaintEventArgs e)
         {
             if (!MouseDragNeedRePaint) return;
-            var bounds = MouseDragTargetIndex.GetMarkBounds();
+            var bounds = MouseDragTargetIndex.GetMarkLineBounds();
             if (!bounds.HasValue) return;
-            e.Graphics.FillRectangle(Brushes.Black, bounds.Value);
+            var color = this.ForeColor;
+            using (var brush = new SolidBrush(color))
+                e.Graphics.FillRectangle(brush, bounds.Value);
         }
         /// <summary>
         /// Index prvku, nad kterým se pohybuje myš

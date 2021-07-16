@@ -1261,24 +1261,66 @@ namespace Noris.Clients.Win.Components.AsolDX
             IndexRatio indexRatio = new IndexRatio();
             indexRatio.Orientation = orientation;
             indexRatio.Point = point;
-            indexRatio.Index = indexSearch(point);
-
-            // Pokud nenajdu index prvku podle souřadnice, a pokud máme dán počet prvků
-            if (indexRatio.Index < 0)
-                indexRatio.Index = (count.HasValue ? count.Value - 1 : 0);
-            
-            indexRatio.Bounds = boundsSearch(indexRatio.Index);
-
-
+            indexRatio.SearchItem(clientBounds, indexSearch, boundsSearch, count);
             indexRatio.CalculateRatio();
             indexRatio.ScrollSuggestion = GetScrollSuggestion(orientation, clientBounds, point);
-
             return indexRatio;
         }
         /// <summary>
         /// Privátní konstruktor
         /// </summary>
         private IndexRatio() { }
+        private void SearchItem(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count)
+        {
+            int index = indexSearch(Point);
+            if (index < 0)
+            {   // Na dané souřadnici není k nalezení žádný prvek.
+                // Pokud je 'aktivní' souřadnice (tj. Y pro Vertical, X pro Horizontal) blízko k počátku,
+                //  zkusíme tuto souřadnici navýšit (jsme nahoře nebo vlevo těsně před prvním viditelným prvkem):
+                if (IsVertical && Point.Y <= (clientBounds.Y + 5))
+                    index = SearchItemBeginVertical(clientBounds, indexSearch, boundsSearch, count, 5);
+                else if (IsHorizontal && Point.X <= (clientBounds.X + 5))
+                    index = SearchItemBeginHorizontal(clientBounds, indexSearch, boundsSearch, count, 5);
+            }
+
+            if (index < 0 && count.HasValue && count.Value > 0)
+            {   // Na dané souřadnici není k nalezení žádný prvek, a ani nejsme u začátku prvku.
+                // Možná zkusíme najít souřadnici posledního prvku:
+                int lastIndex = count.Value - 1;
+                var lastBounds = boundsSearch(lastIndex);
+                if (lastBounds.HasValue)
+                {
+                    if (IsVertical && Point.Y >= lastBounds.Value.Bottom)
+                        index = lastIndex;
+                    else if (IsHorizontal && Point.X >= lastBounds.Value.Right)
+                        index = lastIndex;
+                }
+            }
+            Index = index;
+            Bounds = boundsSearch(Index);
+        }
+        private int SearchItemBeginVertical(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count, int steps)
+        {
+            int index = -1;
+            for (int s = 1; s <= steps; s++)
+            {
+                Point point = new Point(Point.X, Point.Y + s);
+                index = indexSearch(Point);
+                if (index >= 0) break;
+            }
+            return index;
+        }
+        private int SearchItemBeginHorizontal(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count, int steps)
+        {
+            int index = -1;
+            for (int s = 1; s <= steps; s++)
+            {
+                Point point = new Point(Point.Y, Point.X + s);
+                index = indexSearch(Point);
+                if (index >= 0) break;
+            }
+            return index;
+        }
         /// <summary>
         /// Na základě uložených hodnot <see cref="Orientation"/>, <see cref="Bounds"/> a <see cref="Point"/>
         /// vypočte a uloží hodnoty určující <see cref="Ratio"/> (tedy: <see cref="RatioA"/> a <see cref="RatioT"/>).
@@ -1302,7 +1344,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Orientace je vertikální
+        /// Orientace je Horizontal
+        /// </summary>
+        private bool IsHorizontal { get { return this.Orientation == Orientation.Horizontal; } }
+        /// <summary>
+        /// Orientace je Vertical
         /// </summary>
         private bool IsVertical { get { return this.Orientation == Orientation.Vertical; } }
         /// <summary>
@@ -1379,21 +1425,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             return suggestion;
         }
         #endregion
-
-        public Rectangle? GetMarkBounds()
+        /// <summary>
+        /// Metoda vrátí souřadnice pro linku, která reprezentuje prostor pro případný DragDrop
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public Rectangle? GetMarkLineBounds(int size = 2)
         {
             if (!this.Bounds.HasValue) return null;
+            size = (size < 1 ? 1 : (size > 12 ? 12 : size));
+            int offset = size / 2;
             var bounds = this.Bounds.Value;
             float ratio = Ratio;
             if (IsVertical)
             {
                 int y = (ratio < 0.5f ? bounds.Y : bounds.Bottom);
-                return new Rectangle(bounds.X, y - 1, bounds.Width, 2);
+                return new Rectangle(bounds.X, y - offset, bounds.Width, size);
             }
             else
             {
                 int x = (ratio < 0.5f ? bounds.X : bounds.Right);
-                return new Rectangle(x - 1, bounds.Y, 2, bounds.Height);
+                return new Rectangle(x - offset, bounds.Y, size, bounds.Height);
             }
         }
         #region Instanční properties
