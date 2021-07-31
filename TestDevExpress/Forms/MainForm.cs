@@ -2496,7 +2496,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)
             {
-                DataMenuItem item = new DataMenuItem() { ItemText = Random.GetSentence(3, 6, false) };
+                DataMenuItem item = new DataMenuItem() { ItemText = $"[{i}]. " + Random.GetSentence(3, 6, false) };
                 items.Add(item);
             }
             return items.ToArray();

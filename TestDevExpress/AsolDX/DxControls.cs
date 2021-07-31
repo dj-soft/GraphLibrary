@@ -1012,6 +1012,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DxDragDropActionType.DragDropAccept:
                     DoDragTargetDrop(args);
                     break;
+                case DxDragDropActionType.DragEnd:
+                    DoDragTargetEnd(args);
+                    break;
+
             }
         }
         /// <summary>
@@ -1033,24 +1037,68 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Když úspěšně končí proces Drag, a this objekt je zdrojem
-        /// </summary>
-        /// <param name="args"></param>
-        private void DoDragSourceDrop(DxDragDropArgs args)
-        { }
-        /// <summary>
         /// Když probíhá proces Drag, a this objekt je možným cílem
         /// </summary>
         /// <param name="args"></param>
         private void DoDragTargetMove(DxDragDropArgs args)
         {
             Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
-            IndexRatio index = IndexRatio.Create(targetPoint, this.ClientRectangle, p => this.IndexFromPoint(p), i => GetItemBounds(i, false), this.ItemCount, Orientation.Vertical);
+            IndexRatio index = DoDragSearchIndexRatio(targetPoint);
             if (IndexRatio.IsEqual(index, MouseDragTargetIndex)) return;
             MouseDragTargetIndex = index;
             this.Invalidate();
-
             args.CurrentEffect = args.GetSuggestedEffect();
+        }
+        /// <summary>
+        /// Když úspěšně končí proces Drag, a this objekt je zdrojem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragSourceDrop(DxDragDropArgs args)
+        {
+            args.TargetIndex = null;
+            var selectedItems = args.SourceObject as Tuple<int, object, Rectangle?>[];
+            if (selectedItems != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
+            {
+                // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
+                //  pak si musíme najít TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
+                if (args.TargetIsSource)
+                {
+                    Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+                    args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
+                }
+                // Odebereme zdrojové prvky:
+                selectedItems
+                    .Select(t => t.Item2)
+                    .ForEachExec(i => this.Items.Remove(i));
+            }
+        }
+        /// <summary>
+        /// Když úspěšně končí proces Drag, a this objekt je možným cílem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetDrop(DxDragDropArgs args)
+        {
+            var selectedItems = args.SourceObject as Tuple<int, object, Rectangle?>[];
+            if (args.TargetIndex == null)
+            {
+                Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+                args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
+            }
+            IndexRatio targetIndex = args.TargetIndex;
+
+            if (targetIndex.Index >= 0 && targetIndex.Index < this.ItemCount)
+            {
+                var item = this.Items[targetIndex.Index];
+            }
+
+            if (selectedItems != null)
+            {
+                this.Items.AddRange(selectedItems.Select(t => t.Item2).ToArray());
+            }
+
+
+            MouseDragTargetIndex = null;
+            this.Invalidate();
         }
         /// <summary>
         /// Když probíhá proces Drag, ale opouští this objekt, který dosud byl možným cílem (probíhala pro něj metoda <see cref="DoDragTargetMove(DxDragDropArgs)"/>)
@@ -1061,14 +1109,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             MouseDragTargetIndex = null;
             this.Invalidate();
         }
-        /// <summary>
-        /// Když úspěšně končí proces Drag, a this objekt je možným cílem
-        /// </summary>
-        /// <param name="args"></param>
-        private void DoDragTargetDrop(DxDragDropArgs args)
+        private void DoDragTargetEnd(DxDragDropArgs args)
         {
             MouseDragTargetIndex = null;
             this.Invalidate();
+        }
+        /// <summary>
+        /// Metoda vrátí data o prvku pod myší nebo poblíž myši, který je aktivním cílem procesu Drag, pro myš na daném bodě
+        /// </summary>
+        /// <param name="targetPoint"></param>
+        /// <returns></returns>
+        private IndexRatio DoDragSearchIndexRatio(Point targetPoint)
+        {
+            return IndexRatio.Create(targetPoint, this.ClientRectangle, p => this.IndexFromPoint(p), i => GetItemBounds(i, false), this.ItemCount, Orientation.Vertical);
         }
         /// <summary>
         /// Informace o prvku, nad kterým je myš, pro umístění obsahu v procesu Drag and Drop.

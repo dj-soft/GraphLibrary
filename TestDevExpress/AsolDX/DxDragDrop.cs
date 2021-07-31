@@ -966,6 +966,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         event DragEventHandler DragDrop;
     }
+    #endregion
+    #region class DxDragDropArgs : Data předávaná v procesu Drag and Drop mezi prvkem Source a Target
     /// <summary>
     /// Data předávaná v procesu Drag and Drop mezi prvkem Source a Target
     /// </summary>
@@ -1084,6 +1086,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool TargetDropEnabled { get; set; }
         /// <summary>
+        /// Index prvku v Target objektu, kam může být proveden Drop
+        /// </summary>
+        public IndexRatio TargetIndex { get; set; }
+        /// <summary>
         /// Libovolná data cílového objektu. Hodnota <see cref="TargetTag"/> je zahozena po opuštění cílového objektu <see cref="TargetControl"/>.
         /// </summary>
         public object TargetTag { get; set; }
@@ -1099,23 +1105,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Další podpora
         /// <summary>
+        /// Obsahuje true v situaci, kdy <see cref="TargetControl"/> existuje. Může to být this, nebo jiný control, viz <see cref="TargetIsSource"/>.
+        /// </summary>
+        public bool TargetExists { get { return (this.TargetControl != null); } }
+        /// <summary>
+        /// Obsahuje true v situaci, kdy <see cref="TargetControl"/> existuje a je identický s <see cref="SourceControl"/>.
+        /// Pak automaticky jde o přesun dat, nemělo by se jednat o kopii.
+        /// </summary>
+        public bool TargetIsSource { get { return (this.TargetExists && Object.ReferenceEquals(this.SourceControl, this.TargetControl)); } }
+        /// <summary>
         /// Vrací doporučený efekt pro Drag and Drop na základě vztahu Zdroj a Cíl, a podle Modifier kláves, a podle parametrů.
         /// </summary>
+        /// <param name="reorderEnabled">Povolení pro přemístění v rámci výchozího controlu (když Target == Source): pokud je true, vrací se Move, jinak false. Default = true.</param>
+        /// <param name="copyOutIsDefault">Výchozí (bez Control key) pro Drag do cizího Targetu má být: true = Copy / false = Move</param>
+        /// <param name="moveOutOnControlKey">Při Drag do cizího Targetu s klávesou Control má být výsledek: true = Move, false = defaultní (i podle <paramref name="copyOutIsDefault"/>).</param>
         /// <returns></returns>
-        public DragDropEffects GetSuggestedEffect()
+        public DragDropEffects GetSuggestedEffect(bool reorderEnabled = true, bool copyOutIsDefault = true, bool moveOutOnControlKey = true)
         {
-            bool isSameControl = (this.TargetControl != null && Object.ReferenceEquals(this.SourceControl, this.TargetControl));
-            if (isSameControl)
+            if (this.TargetIsSource)
             {
-                return DragDropEffects.Move;
+                if (reorderEnabled) return DragDropEffects.Move;
             }
-            else
+            else if (this.TargetExists)
             {
                 var modifier = this.ModifierKeys;
-                if (modifier == Keys.Control) return DragDropEffects.Move;
-                if (modifier == Keys.Shift) return DragDropEffects.Link;
-                return DragDropEffects.Copy;
+                if (moveOutOnControlKey && modifier == Keys.Control) return DragDropEffects.Move;
+                if (modifier == Keys.Alt) return DragDropEffects.Link;
+                return (copyOutIsDefault ? DragDropEffects.Copy : DragDropEffects.Move);
             }
+            return DragDropEffects.None;
         }
         #endregion
         #region Interní přístup k datům
@@ -1249,12 +1267,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vypočítá a vrátí new instanci <see cref="IndexRatio"/> pro dané souřadnice, funkce a další parametry
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="clientBounds"></param>
-        /// <param name="indexSearch"></param>
-        /// <param name="boundsSearch"></param>
-        /// <param name="count"></param>
-        /// <param name="orientation"></param>
+        /// <param name="point">Souřadnice myši v prostoru klienta</param>
+        /// <param name="clientBounds">Souřadnice klienta</param>
+        /// <param name="indexSearch">Metoda, která pro daný bod vyhledá index prvku (v dané orientaci).</param>
+        /// <param name="boundsSearch">Metoda, která pro daný index vrátí souřadnice prvku</param>
+        /// <param name="count">Počet prvků celkem</param>
+        /// <param name="orientation">Orientaců prvků, běžně <see cref="Orientation.Vertical"/> pro List</param>
         /// <returns></returns>
         public static IndexRatio Create(Point point, Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count = null, Orientation orientation = Orientation.Vertical)
         {
@@ -1270,6 +1288,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Privátní konstruktor
         /// </summary>
         private IndexRatio() { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            float index = (float)Index + Ratio;
+            return index.ToString();
+        }
+        /// <summary>
+        /// Metoda vyhledá index aktivního prvku (prvek pod myší) s pomocí dodaných hledacích metod.
+        /// </summary>
+        /// <param name="clientBounds"></param>
+        /// <param name="indexSearch"></param>
+        /// <param name="boundsSearch"></param>
+        /// <param name="count"></param>
         private void SearchItem(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count)
         {
             int index = indexSearch(Point);
@@ -1277,15 +1311,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Na dané souřadnici není k nalezení žádný prvek.
                 // Pokud je 'aktivní' souřadnice (tj. Y pro Vertical, X pro Horizontal) blízko k počátku,
                 //  zkusíme tuto souřadnici navýšit (jsme nahoře nebo vlevo těsně před prvním viditelným prvkem):
-                if (IsVertical && Point.Y <= (clientBounds.Y + 5))
-                    index = SearchItemBeginVertical(clientBounds, indexSearch, boundsSearch, count, 5);
-                else if (IsHorizontal && Point.X <= (clientBounds.X + 5))
-                    index = SearchItemBeginHorizontal(clientBounds, indexSearch, boundsSearch, count, 5);
+                index = SearchItemBegin(clientBounds, indexSearch, boundsSearch, count, 5);
             }
 
             if (index < 0 && count.HasValue && count.Value > 0)
             {   // Na dané souřadnici není k nalezení žádný prvek, a ani nejsme u začátku prvku.
-                // Možná zkusíme najít souřadnici posledního prvku:
+                // Možná zkusíme najít souřadnici posledního prvku, a pokud myš (Point) je skutečně za posledním prvkem, pak akceptujeme tento poslední prvek jako aktivní:
                 int lastIndex = count.Value - 1;
                 var lastBounds = boundsSearch(lastIndex);
                 if (lastBounds.HasValue)
@@ -1299,23 +1330,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             Index = index;
             Bounds = boundsSearch(Index);
         }
-        private int SearchItemBeginVertical(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count, int steps)
+        /// <summary>
+        /// Zkusí najít index prvku (pomocí metody <paramref name="indexSearch"/>) poblíž počátku controlu.
+        /// Řeší tak situaci, kdy myš je na horním/levém okraji controlu, kde se ještě nenachází první viditelný prvek (např. v oblasti Border nebo Margin),
+        /// ale po posunutí souřadnice aktivního bodu (<see cref="Point"/>) najdeme viditelný prvek.
+        /// </summary>
+        /// <param name="clientBounds"></param>
+        /// <param name="indexSearch"></param>
+        /// <param name="boundsSearch"></param>
+        /// <param name="count"></param>
+        /// <param name="margin"></param>
+        /// <returns></returns>
+        private int SearchItemBegin(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count, int margin)
         {
+            // Pokud (v aktuální orientaci) je pozice myši vzdálena více než (margin) od počátku controlu, pak zdejší metoda nemá nic hledat:
+            if ((IsVertical && Point.Y > (clientBounds.Y + margin)) || (IsHorizontal && Point.X <= (clientBounds.X + margin))) return -1;
+
             int index = -1;
-            for (int s = 1; s <= steps; s++)
+            for (int s = 1; s <= margin; s++)
             {
-                Point point = new Point(Point.X, Point.Y + s);
-                index = indexSearch(Point);
-                if (index >= 0) break;
-            }
-            return index;
-        }
-        private int SearchItemBeginHorizontal(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count, int steps)
-        {
-            int index = -1;
-            for (int s = 1; s <= steps; s++)
-            {
-                Point point = new Point(Point.Y, Point.X + s);
+                Point point = (IsVertical ? new Point(Point.X, Point.Y + s) : new Point(Point.Y, Point.X + s));
                 index = indexSearch(Point);
                 if (index >= 0) break;
             }
@@ -1342,6 +1376,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 RatioA = Point.X - Bounds.Value.X;
                 RatioT = Bounds.Value.Width;
             }
+            if (RatioA > RatioT) RatioA = RatioT;
+            if (RatioA < 0) RatioA = 0;
         }
         /// <summary>
         /// Orientace je Horizontal
