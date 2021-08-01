@@ -815,8 +815,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxControl()
         {
-            PrepareDxDragDrop();
-            ReorderInit();
+            KeyActionsInit();
+            DxDragDropInit();
+            // ReorderInit();
         }
         /// <summary>
         /// Dispose
@@ -868,6 +869,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                     selectedItems.Add(new Tuple<int, object, Rectangle?>(index, this.Items[index], bounds));
                 }
                 return selectedItems.ToArray();
+            }
+        }
+        /// <summary>
+        /// Obsahuje pole prvků, které jsou aktuálně Selected. 
+        /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem.
+        /// </summary>
+        public new IEnumerable<object> SelectedItems
+        {
+            get { return base.SelectedItems.ToArray(); }
+            set
+            {
+                var selectedItems = (value?.ToList() ?? new List<object>());
+                int count = this.ItemCount;
+                for (int i = 0; i < count; i++)
+                {
+                    object item = this.Items[i];
+                    bool isSelected = selectedItems.Any(s => Object.ReferenceEquals(s, item));
+                    this.SetSelected(i, isSelected);
+                }
             }
         }
         /// <summary>
@@ -936,19 +956,87 @@ namespace Noris.Clients.Win.Components.AsolDX
             OnMouseItemIndex = -1;
         }
         #endregion
+        #region Remove, Delete, CtrlC, CtrlX
+        /// <summary>
+        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// </summary>
+        public KeyActionType EnabledAction { get; set; }
+        private void KeyActionsInit()
+        {
+            this.PreviewKeyDown += DxListBoxControl_PreviewKeyDown;
+            this.KeyDown += DxListBoxControl_KeyDown;
+            this.EnabledAction = KeyActionType.None;
+        }
+        private void DxListBoxControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            
+        }
+
+        private void DxListBoxControl_KeyDown(object sender, KeyEventArgs e)
+        {
+            var enabledAction = EnabledAction;
+            switch (e.KeyData)
+            {
+                case Keys.Delete:
+                    if (enabledAction.HasFlag(KeyActionType.Delete))
+                        this.OnKeyDelete(e);
+                    break;
+                case Keys.Control | Keys.A:
+                    if (enabledAction.HasFlag(KeyActionType.CtrlA))
+                        this.OnKeyCtrlA(e);
+                    break;
+                case Keys.Control | Keys.C:
+                    if (enabledAction.HasFlag(KeyActionType.CtrlC))
+                        this.OnKeyCtrlC(e);
+                    break;
+                case Keys.Control | Keys.X:
+                    if (enabledAction.HasFlag(KeyActionType.CtrlX))
+                        this.OnKeyCtrlX(e);
+                    break;
+                case Keys.Control | Keys.V:
+                    if (enabledAction.HasFlag(KeyActionType.CtrlV))
+                        this.OnKeyCtrlV(e);
+                    break;
+            }
+        }
+
+        private void OnKeyDelete(KeyEventArgs e)
+        {
+            RemoveItems(this.SelectedItems);
+        }
+        private void OnKeyCtrlA(KeyEventArgs e)
+        {
+            this.SelectedItems = this.Items.OfType<object>();
+        }
+        private void OnKeyCtrlC(KeyEventArgs e)
+        { }
+        private void OnKeyCtrlX(KeyEventArgs e)
+        { }
+        private void OnKeyCtrlV(KeyEventArgs e)
+        { }
+        /// <summary>
+        /// Z this Listu odebere všechny dané prvky
+        /// </summary>
+        /// <param name="removeItems"></param>
+        public void RemoveItems(IEnumerable<object> removeItems)
+        {
+            if (removeItems != null)
+                removeItems.ForEachExec(i => this.Items.Remove(i));
+        }
+        #endregion
         #region Přesouvání prvků pomocí myši
         /// <summary>
         /// Umožní this controlu být zdrojem procesu Drag and Drop = odsud je možno vzít prvky a přesunout je jinam.
         /// </summary>
-        public bool AllowDrag { get { return this._AllowDrag; } set { this._AllowDrag = value; PrepareDxDragDrop(); } } private bool _AllowDrag = true;
+        public bool AllowDrag { get { return this._AllowDrag; } set { this._AllowDrag = value; DxDragDropInit(); } } private bool _AllowDrag = true;
         /// <summary>
         /// Umožní this controlu být cílem procesu Drag and Drop.
         /// </summary>
-        public override bool AllowDrop { get { return base.AllowDrop; } set { base.AllowDrop = value; PrepareDxDragDrop(); } }
+        public override bool AllowDrop { get { return base.AllowDrop; } set { base.AllowDrop = value; DxDragDropInit(); } }
         /// <summary>
         /// Inicializace controlleru Drag and Drop
         /// </summary>
-        private void PrepareDxDragDrop()
+        private void DxDragDropInit()
         {
             if ((this.AllowDrag || this.AllowDrop) && _DxDragDrop == null)
                 _DxDragDrop = new DxDragDrop(this);
@@ -1056,20 +1144,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragSourceDrop(DxDragDropArgs args)
         {
             args.TargetIndex = null;
-            var selectedItems = args.SourceObject as Tuple<int, object, Rectangle?>[];
-            if (selectedItems != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
+            args.InsertIndex = null;
+            var selectedItemsInfo = args.SourceObject as Tuple<int, object, Rectangle?>[];
+            if (selectedItemsInfo != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
             {
                 // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
-                //  pak si musíme najít TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
+                //  pak si musíme najít správný TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
                 if (args.TargetIsSource)
                 {
                     Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
                     args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
+                    args.InsertIndex = args.TargetIndex.GetInsertIndex(selectedItemsInfo.Select(t => t.Item1));
                 }
                 // Odebereme zdrojové prvky:
-                selectedItems
-                    .Select(t => t.Item2)
-                    .ForEachExec(i => this.Items.Remove(i));
+                this.RemoveItems(selectedItemsInfo.Select(t => t.Item2));
+
             }
         }
         /// <summary>
@@ -1078,25 +1167,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void DoDragTargetDrop(DxDragDropArgs args)
         {
-            var selectedItems = args.SourceObject as Tuple<int, object, Rectangle?>[];
             if (args.TargetIndex == null)
             {
                 Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
                 args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
+                args.InsertIndex = null;
             }
-            IndexRatio targetIndex = args.TargetIndex;
+            if (!args.InsertIndex.HasValue)
+                args.InsertIndex = args.TargetIndex.GetInsertIndex();
 
-            if (targetIndex.Index >= 0 && targetIndex.Index < this.ItemCount)
+            var selectedItemsInfo = args.SourceObject as Tuple<int, object, Rectangle?>[];
+            if (selectedItemsInfo != null)
             {
-                var item = this.Items[targetIndex.Index];
+                object[] selectedItems = selectedItemsInfo.Select(t => t.Item2).ToArray();
+                if (args.InsertIndex.HasValue && args.InsertIndex.Value >= 0 && args.InsertIndex.Value < this.ItemCount)
+                {
+                    int insertIndex = args.InsertIndex.Value;
+                    foreach (var selectedItem in selectedItems)
+                        this.Items.Insert(insertIndex++, selectedItem);
+                }
+                else
+                {
+                    this.Items.AddRange(selectedItems);
+                }
+                this.SelectedItems = selectedItems;
             }
-
-            if (selectedItems != null)
-            {
-                this.Items.AddRange(selectedItems.Select(t => t.Item2).ToArray());
-            }
-
-
+            
             MouseDragTargetIndex = null;
             this.Invalidate();
         }
@@ -1348,166 +1444,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _OnMouseIconBoundsIndex = -1;
 
         #endregion
-
-        /*
-
-        protected void SysDragInit()
-        {
-            this.AllowDrop = true;
-
-
-        }
-
-        protected void SysDragStart()
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}SysDragStart(){TAB}START{TAB}DoDragDrop(){MousePoint}");
-            CreateDragForm();
-            var result = this.DoDragDrop(this, DragDropEffects.All | DragDropEffects.Link);
-            RemoveDragForm();
-            DxComponent.LogAddLine($"{TypeName}{TAB}DoDragDrop(){TAB}END{TAB}result: {result}{MousePoint}");
-
-            bool isCopy = (result == DragDropEffects.Copy);
-        }
-        protected override void OnDragEnter(DragEventArgs drgevent)
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}OnDragEnter(){TAB}Effect: {drgevent.Effect}{MousePoint}");
-            base.OnDragEnter(drgevent);
-            drgevent.Effect = DragDropEffects.Copy;
-        }
-        protected override void OnDragOver(DragEventArgs drgevent)
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}OnDragOver(){TAB}Effect: {drgevent.Effect}{MousePoint}");
-            base.OnDragOver(drgevent);
-            drgevent.Effect = DragDropEffects.Copy;
-        }
-        protected override void OnQueryContinueDrag(QueryContinueDragEventArgs qcdevent)
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}OnQueryContinueDrag(){TAB}Action: {qcdevent.Action}{MousePoint}");
-            base.OnQueryContinueDrag(qcdevent);
-            MoveDragForm(LastDragEffect);
-
-            // qcdevent.Action = DragAction.Continue;
-
-            // qcdevent.Action = DragAction.Drop;
-            // this.RaiseDragEvent(null, new DragEventArgs())
-        }
-        protected override void OnDragDrop(DragEventArgs drgevent)
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}OnDragDrop(){TAB}Effect: {drgevent.Effect}{MousePoint}");
-            base.OnDragDrop(drgevent);
-
-        }
-        protected override void OnDragLeave(EventArgs e)
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}OnDragLeave(){TAB}{MousePoint}");
-            base.OnDragLeave(e);
-        }
-        protected override void OnGiveFeedback(GiveFeedbackEventArgs gfbevent)
-        {
-            DxComponent.LogAddLine($"{TypeName}{TAB}OnGiveFeedback(){TAB}Effect: {gfbevent.Effect}{MousePoint}");
-            base.OnGiveFeedback(gfbevent);
-            LastDragEffect = gfbevent.Effect;
-        }
-        protected DragDropEffects LastDragEffect;
-        protected string TAB { get { return "\t"; } }
-        protected string TypeName { get { return $"{this.GetType().Name} '{this.Name}'"; } }
-        protected string MousePoint { get { var ap = Control.MousePosition; var lp = this.PointToClient(ap); return $"{TAB}Mouse Abs: {ap.X},{ap.Y};{TAB}Loc: {lp.X},{lp.Y}"; } }
-
-        protected void CreateDragForm()
-        {
-            Form form = new Form()
-            {
-                FormBorderStyle = FormBorderStyle.None,
-                AllowTransparency = true,
-                TransparencyKey = Color.Magenta,
-                BackColor = Color.Magenta,
-                Size = new Size(250, 50),
-                Text = "",
-                StartPosition = FormStartPosition.Manual,
-                Location = DragFormLocation,
-                ShowInTaskbar = false,
-                TopLevel = true
-            };
-            var label = new DxLabelControl() { Bounds = new Rectangle(0, 0, 250, 35), Text = "<b>PŘESOUVÁME</b> položky:\r\n<i>1: první,\r\n2: druhá,\r\n3: třetí,\r\n4: pátá,</i>...", AllowHtmlString = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            label.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-            label.Padding = new Padding(3);
-            label.Height = 50;
-            label.Appearance.GradientMode = LinearGradientMode.Vertical;
-            label.Appearance.Options.UseForeColor = true;
-            label.Appearance.Options.UseBackColor = true;
-
-            label.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
-            label.Appearance.TextOptions.HAlignment = HorzAlignment.Near;
-            label.Appearance.Options.UseTextOptions = true;
-            label.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.Vertical;
-
-            var optimalSize = label.CalcBestSize();
-            if (optimalSize.Width > 500) optimalSize.Width = 500;
-            if (optimalSize.Height > 150) optimalSize.Height = 150;
-            optimalSize.Width += 10;
-            optimalSize.Height += 10;
-            label.Size = optimalSize;
-            optimalSize.Width += 1;
-            optimalSize.Height += 1;
-            form.Size = optimalSize;
-
-
-            form.Controls.Add(label);
-
-            DragLabel = label;
-            DragForm = form;
-
-            MoveDragSetEnabled(true);
-
-            form.Show();
-        }
-        protected void MoveDragForm(DragDropEffects lastDragEffect)
-        {
-            var form = DragForm;
-            if (form == null) return;
-            form.Location = DragFormLocation;
-
-            bool enabled = (lastDragEffect != DragDropEffects.None);
-            if (enabled != DragLabelEnabled)
-                MoveDragSetEnabled(enabled);
-        }
-        protected void MoveDragSetEnabled(bool enabled)
-        {
-            var label = DragLabel;
-            if (label != null)
-            {
-                label.Appearance.ForeColor = (enabled ? Color.Black : Color.DimGray);
-                label.Appearance.BackColor = (enabled ? Color.FromArgb(250, 250, 240) : Color.LightGray);
-                label.Appearance.BackColor2 = (enabled ? Color.FromArgb(245, 245, 225) : Color.LightGray);
-            }
-            DragLabelEnabled = enabled;
-        }
-        protected void RemoveDragForm()
-        {
-            var form = DragForm;
-            if (form == null) return;
-            DragLabel = null;
-            form.Hide();
-            form.Close();
-            form.Dispose();
-            DragForm = null;
-        }
-        protected Point DragFormLocation
-        {
-            get
-            {
-                var point = Control.MousePosition;
-                point.X -= 25;
-                point.Y += 25;
-                return point;
-            }
-        }
-        protected bool DragLabelEnabled;
-        protected Form DragForm;
-        protected DxLabelControl DragLabel;
-
-        */
-
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -1521,6 +1457,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
+    }
+    /// <summary>
+    /// Klávesové akce
+    /// </summary>
+    [Flags]
+    public enum KeyActionType
+    {
+        /// <summary>
+        /// Žádná akce
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Klávesa Delete = smazat výběr
+        /// </summary>
+        Delete = 0x0001,
+        /// <summary>
+        /// Klávesa CtrlA = vybrat vše
+        /// </summary>
+        CtrlA = 0x0010,
+        /// <summary>
+        /// Klávesa CtrlC = zkopírovat
+        /// </summary>
+        CtrlC = 0x0020,
+        /// <summary>
+        /// Klávesa CtrlX = vyjmout
+        /// </summary>
+        CtrlX = 0x0040,
+        /// <summary>
+        /// Klávesa CtrlV = vložit
+        /// </summary>
+        CtrlV = 0x0080,
+
+        /// <summary>
+        /// Všechny akce
+        /// </summary>
+        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV
     }
     #endregion
     #region DxSimpleButton

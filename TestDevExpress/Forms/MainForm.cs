@@ -2448,13 +2448,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         #region DragDrop
         protected void InitDragDrop()
         {
-            _DragDropAList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended };
+            var allActions = KeyActionType.All;
+            _DragDropAList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended, EnabledAction = allActions };
             _DragDropAList.Name = "AList";
             _DragDropAList.Items.AddRange(_CreateListItems(100));
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropAList);
 
-            _DragDropBList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended };
+            _DragDropBList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended, EnabledAction = allActions };
             _DragDropBList.Name = "BList";
             _DragDropBList.Items.AddRange(_CreateListItems(18));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;

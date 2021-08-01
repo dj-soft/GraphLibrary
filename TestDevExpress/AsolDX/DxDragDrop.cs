@@ -1003,8 +1003,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ModifierKeys = Keys.None;
             this.SourceTag = null;
             this.TargetControl = null;
+            this.TargetIndex = null;
             this.TargetTag = null;
             this.TargetDropEnabled = false;
+            this.InsertIndex = null;
             this.LastDragEffect = DragDropEffects.None;
         }
         /// <summary>
@@ -1089,6 +1091,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Index prvku v Target objektu, kam může být proveden Drop
         /// </summary>
         public IndexRatio TargetIndex { get; set; }
+        /// <summary>
+        /// Prostý index pro insert prvního prvku
+        /// </summary>
+        public int? InsertIndex { get; set; }
         /// <summary>
         /// Libovolná data cílového objektu. Hodnota <see cref="TargetTag"/> je zahozena po opuštění cílového objektu <see cref="TargetControl"/>.
         /// </summary>
@@ -1307,11 +1313,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void SearchItem(Rectangle clientBounds, Func<Point, int> indexSearch, Func<int, Rectangle?> boundsSearch, int? count)
         {
             int index = indexSearch(Point);
+            IndexRatioPositionType position = (index >= 0 ? IndexRatioPositionType.OnItem : IndexRatioPositionType.None);
+
             if (index < 0)
             {   // Na dané souřadnici není k nalezení žádný prvek.
                 // Pokud je 'aktivní' souřadnice (tj. Y pro Vertical, X pro Horizontal) blízko k počátku,
                 //  zkusíme tuto souřadnici navýšit (jsme nahoře nebo vlevo těsně před prvním viditelným prvkem):
                 index = SearchItemBegin(clientBounds, indexSearch, boundsSearch, count, 5);
+                if (index >= 0)
+                    position = IndexRatioPositionType.BeforeItem;
             }
 
             if (index < 0 && count.HasValue && count.Value > 0)
@@ -1325,9 +1335,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                         index = lastIndex;
                     else if (IsHorizontal && Point.X >= lastBounds.Value.Right)
                         index = lastIndex;
+
+                    if (index >= 0)
+                        position = IndexRatioPositionType.AfterItem;
                 }
             }
             Index = index;
+            Position = position;
             Bounds = boundsSearch(Index);
         }
         /// <summary>
@@ -1461,6 +1475,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             return suggestion;
         }
         #endregion
+        #region Podpora pro DragDrop a pro vykreslení
+        /// <summary>
+        /// Určí INSERT INDEX = na který index se mají insertovat prvky Drag and Drop tak, aby odpovídaly záměru uživatele.
+        /// Insert index je budoucí (=výsledná) pozice (=index) prvního prvku, který bude insertován.
+        /// <para/>
+        /// Volitelně lze předat kolekci indexů prvků <paramref name="removeIndexes"/>, které se budou odebírat. Využije se při REORDER prvků.
+        /// Mějme List obsahující prvky 0 až 9, z nichž prvky 2 a 3 přesouváme na jinou pozici pomocí Drag and Drop.
+        /// Uživatel vybral jako cíl přesunu dolní polovinu prvku na indexu 6, chce tedy prvky 2 a 3 přemístit tak, aby prvek 2 byl za prvkem 6.
+        /// Tato metoda se volá v době, kdy List obsahuje všechny prvky, protože v té době platí pozice a indexy zde uložené.
+        /// Následovat bude odebrání prvků 2 a 3 (Items.Remove), a poté bude následovat Insert prvků na zde určený Insert index.
+        /// Znamená to tedy, že Insert index musí ukazovat na bývalý prvek 7 (za prvkem 6), ale snížený o dva prvky, které jsou z pole odebrány (2 a 3).
+        /// </summary>
+        /// <param name="removeIndexes"></param>
+        /// <returns></returns>
+        public int? GetInsertIndex(IEnumerable<int> removeIndexes = null)
+        {
+            int insertIndex = this.Index;                  // Výchozí index = prvek, kam ukazuje myš. Pokud myš ukazuje na horní polovinu prvku, bude se insertovat na tento index.
+            bool isAfter = (this.Ratio >= 0.5f);           // Pokud myš ukazuje na dolní polovinu prvku,
+            if (isAfter) insertIndex++;                    //  bude se insertovat až za tento prvek = +1.
+            if (removeIndexes != null)                     // Pokud jsou dány index prvků, které se budou odebírat:
+            {
+                int countBefore = (removeIndexes.Count(index => index < insertIndex));   // Tolik prvků, ležících před výchozí Insert pozicí, budeme odebírat
+                insertIndex -= countBefore;
+            }
+            return insertIndex;
+        }
         /// <summary>
         /// Metoda vrátí souřadnice pro linku, která reprezentuje prostor pro případný DragDrop
         /// </summary>
@@ -1484,6 +1524,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return new Rectangle(x - offset, bounds.Y, size, bounds.Height);
             }
         }
+        #endregion
         #region Instanční properties
         /// <summary>
         /// Orientace tohoto indexu, defaultní je <see cref="Orientation.Vertical"/>
@@ -1497,6 +1538,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Index prvku, nad kterým se pohybuje myš
         /// </summary>
         public int Index { get; private set; }
+        /// <summary>
+        /// Pozice myši vzhledem k poli prvků
+        /// </summary>
+        public IndexRatioPositionType Position { get; private set; }
         /// <summary>
         /// Souřadnice prvku, nad kterým se pohybuje myš (smí být null)
         /// </summary>
@@ -1522,6 +1567,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int ScrollSuggestion { get; private set; }
         #endregion
+    }
+    /// <summary>
+    /// Umístění indexu vzhledem k prvkům
+    /// </summary>
+    public enum IndexRatioPositionType
+    {
+        /// <summary>Neurčeno</summary>
+        None,
+        /// <summary>Před prvky</summary>
+        BeforeItem,
+        /// <summary>V prostoru prvků</summary>
+        OnItem,
+        /// <summary>Za prvky</summary>
+        AfterItem
     }
     #endregion
 }
