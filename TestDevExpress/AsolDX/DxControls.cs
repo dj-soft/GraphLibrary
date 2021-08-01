@@ -828,6 +828,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.Dispose(disposing);
             DragAndDropDispose();
+            ToolTipDispose();
         }
         /// <summary>
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
@@ -966,6 +967,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.ToolTipController = DxComponent.CreateNewToolTipController();
             this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
+        }
+        private void ToolTipDispose()
+        {
+            this.ToolTipController?.Dispose();
         }
         /// <summary>
         /// Připraví ToolTip pro aktuální Node
