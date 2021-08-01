@@ -2497,7 +2497,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)
             {
-                DataMenuItem item = new DataMenuItem() { ItemText = $"[{i}]. " + Random.GetSentence(3, 6, false) };
+                string text = Random.GetSentence(3, 6, false);
+                string toolTip = Random.GetSentences(2, 8, 1, 5);
+                DataMenuItem item = new DataMenuItem() { ItemText = $"[{i}]. {text}", ToolTipTitle = text, ToolTip = toolTip };
                 items.Add(item);
             }
             return items.ToArray();

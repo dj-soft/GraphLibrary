@@ -231,8 +231,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _DefaultBarManager = new DevExpress.XtraBars.BarManager();
             _DefaultToolTipController = new ToolTipController();
-
-            
         }
         /// <summary>
         /// Vrátí styl labelu podle požadovaného typu
@@ -336,6 +334,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Defaultní ToolTipController pro obecné použití
         /// </summary>
         public static ToolTipController DefaultToolTipController { get { return Instance._DefaultToolTipController; } }
+        /// <summary>
+        /// Vytvoří a vrátí new instanci ToolTipController
+        /// </summary>
+        /// <returns></returns>
+        public static ToolTipController CreateNewToolTipController() { return new ToolTipController(); }
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;
         private DevExpress.XtraEditors.StyleController _SubTitleStyle;
         private DevExpress.XtraEditors.StyleController _LabelStyle;

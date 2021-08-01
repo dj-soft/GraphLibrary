@@ -41,7 +41,7 @@ namespace TestDevExpress
             string eol = Environment.NewLine;
             for (int s = 0; s < sentenceCount; s++)
             {
-                string sentence = GetSentence(minWordCount, maxWordCount);
+                string sentence = GetSentence(minWordCount, maxWordCount, true);
                 if (sentences.Length > 0)
                 {
                     if (Rand.Next(3) == 0) sentences += eol;

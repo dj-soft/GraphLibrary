@@ -817,6 +817,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             KeyActionsInit();
             DxDragDropInit();
+            ToolTipInit();
             // ReorderInit();
         }
         /// <summary>
@@ -956,6 +957,42 @@ namespace Noris.Clients.Win.Components.AsolDX
             OnMouseItemIndex = -1;
         }
         #endregion
+        #region ToolTip
+        /// <summary>
+        /// ToolTipy mohou obsahovat SimpleHtml tagy?
+        /// </summary>
+        public bool ToolTipAllowHtmlText { get; set; }
+        private void ToolTipInit()
+        {
+            this.ToolTipController = DxComponent.CreateNewToolTipController();
+            this.ToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
+        }
+        /// <summary>
+        /// Připraví ToolTip pro aktuální Node
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
+        {
+            if (e.SelectedControl is DxListBoxControl listBox)
+            {
+                int index = listBox.IndexFromPoint(e.ControlMousePosition);
+                if (index != -1)
+                {
+                    var item = listBox.Items[index];
+                    if (item is IMenuItem menuItem)
+                    {
+                        string toolTipText = menuItem.ToolTip;
+                        string toolTipTitle = menuItem.ToolTipTitle ?? menuItem.ItemText;
+                        var ttci = new DevExpress.Utils.ToolTipControlInfo(menuItem, toolTipText, toolTipTitle);
+                        ttci.ToolTipType = ToolTipType.SuperTip;
+                        ttci.AllowHtmlText = (ToolTipAllowHtmlText ? DefaultBoolean.True : DefaultBoolean.False);
+                        e.Info = ttci;
+                    }
+                }
+            }
+        }
+        #endregion
         #region Remove, Delete, CtrlC, CtrlX
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
@@ -997,6 +1034,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (enabledAction.HasFlag(KeyActionType.CtrlV))
                         this.OnKeyCtrlV(e);
                     break;
+                case Keys.Alt | Keys.Down:
+                    if (enabledAction.HasFlag(KeyActionType.AltUpDown))
+                        this.OnKeyAltUpDown(e, 1);
+                    break;
+                case Keys.Alt | Keys.Up:
+                    if (enabledAction.HasFlag(KeyActionType.AltUpDown))
+                        this.OnKeyAltUpDown(e, -1);
+                    break;
             }
         }
 
@@ -1014,6 +1059,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         { }
         private void OnKeyCtrlV(KeyEventArgs e)
         { }
+        private void OnKeyAltUpDown(KeyEventArgs e, int offset)
+        {
+            var selectedItems = this.SelectedItems;
+
+
+
+        }
         /// <summary>
         /// Z this Listu odebere všechny dané prvky
         /// </summary>
@@ -1490,9 +1542,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         CtrlV = 0x0080,
 
         /// <summary>
+        /// Klávesa AltUp a AltDown (kurzor) = přemístit o jednu pozici dolů / nahoru
+        /// </summary>
+        AltUpDown = 0x0100,
+
+        /// <summary>
         /// Všechny akce
         /// </summary>
-        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV
+        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV | AltUpDown
     }
     #endregion
     #region DxSimpleButton
