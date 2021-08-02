@@ -2448,7 +2448,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
-            _DragDropAList.Items.AddRange(_CreateListItems(100));
+            _DragDropAList.Items.AddRange(_CreateListItems(100, false, true));
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropAList);
 
@@ -2456,7 +2456,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
             _DragDropBList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledActions = targetKeyActions };
             _DragDropBList.Name = "BList";
-            _DragDropBList.Items.AddRange(_CreateListItems(18));
+            _DragDropBList.Items.AddRange(_CreateListItems(18, true, false));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropBList);
 
@@ -2491,14 +2491,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             DragDropDoLayout();
         }
-        protected object[] _CreateListItems(int count)
+        protected object[] _CreateListItems(int count, bool fileTypes = true, bool chartTypes = true)
         {
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)
             {
                 string text = Random.GetSentence(3, 6, false);
                 string toolTip = Random.GetSentences(2, 8, 1, 5);
-                string image = this.GetRandomSysSvgName(false, true);
+                string image = this.GetRandomSysSvgName(fileTypes, chartTypes);
                 DataMenuItem item = new DataMenuItem() { ItemText = $"[{i}]. {text}", ToolTipTitle = text, ToolTip = toolTip, ItemImage = image };
                 items.Add(item);
             }
@@ -2562,7 +2562,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             return $"Ball{imageNumb }_16";
         }
 
-        protected string GetRandomSysSvgName(bool fileTypes, bool chartTypes)
+        protected string GetRandomSysSvgName(bool fileTypes = true, bool chartTypes = true)
         {
             List<string> names = new List<string>();
             if (fileTypes)
