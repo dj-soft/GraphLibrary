@@ -89,7 +89,6 @@ namespace TestDevExpress.Forms
         }
         private void InitData()
         {
-            Rand = new System.Random();
         }
         private void InitDevExpress()
         {
@@ -2416,12 +2415,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         }
         private void _FillNode(TreeListNode node)
         {
-            if (Random.Rand.Next(20) >= 15)
+            if (GetRandomTrue(25))
                 node.ImageName0 = "object_locked_2_16";
-
-            string imageNumb = Random.Rand.Next(1, 24).ToString("00");
-            node.ImageName1 = $"Ball{imageNumb }_16";
-
+            node.ImageName1 = this.GetRandomBallImageName();
             node.ToolTipTitle = null; // RandomText.GetRandomSentence(2, 5);
             node.ToolTipText = Random.GetSentence(10, 50);
         }
@@ -2448,14 +2444,17 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         #region DragDrop
         protected void InitDragDrop()
         {
-            var allActions = KeyActionType.All;
-            _DragDropAList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended, EnabledAction = allActions };
+            KeyActionType sourceKeyActions = KeyActionType.CtrlA | KeyActionType.CtrlC;
+            DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
+            _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
             _DragDropAList.Items.AddRange(_CreateListItems(100));
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropAList);
 
-            _DragDropBList = new DxListBoxControl() { AllowDrag = true, AllowDrop = true, SelectionMode = SelectionMode.MultiExtended, EnabledAction = allActions };
+            KeyActionType targetKeyActions = KeyActionType.All;
+            DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
+            _DragDropBList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledActions = targetKeyActions };
             _DragDropBList.Name = "BList";
             _DragDropBList.Items.AddRange(_CreateListItems(18));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
@@ -2499,7 +2498,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             {
                 string text = Random.GetSentence(3, 6, false);
                 string toolTip = Random.GetSentences(2, 8, 1, 5);
-                DataMenuItem item = new DataMenuItem() { ItemText = $"[{i}]. {text}", ToolTipTitle = text, ToolTip = toolTip };
+                string image = this.GetRandomBallImageName();
+                DataMenuItem item = new DataMenuItem() { ItemText = $"[{i}]. {text}", ToolTipTitle = text, ToolTip = toolTip, ItemImage = image };
                 items.Add(item);
             }
             return items.ToArray();
@@ -2527,10 +2527,18 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private DxMemoEdit _DragDropLogText;
         #endregion
         #region Random
-        System.Random Rand;
+        /// <summary>
+        /// Vrací true v daném procentu volání (např. percent = 10: vrátí true 10 x za 100 volání)
+        /// </summary>
+        /// <param name="percent"></param>
+        /// <returns></returns>
+        protected bool GetRandomTrue(int percent)
+        {
+            return (GetRandomInt(0, 100) < percent);
+        }
         protected int GetRandomInt(int min, int max)
         {
-            return Rand.Next(min, max);
+            return Random.Rand.Next(min, max);
         }
         protected Size GetRandomSize()
         {
@@ -2547,6 +2555,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         protected Rectangle GetRandomRectangle()
         {
             return new Rectangle(GetRandomPoint(), GetRandomSize());
+        }
+        protected string GetRandomBallImageName()
+        {
+            string imageNumb = GetRandomInt(1, 24).ToString("00");
+            return $"Ball{imageNumb }_16";
         }
         #endregion
     }

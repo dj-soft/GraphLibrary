@@ -807,7 +807,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// ListBoxControl
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ListBoxControl, IDxDragDropControl
+    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl   // původně :ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
     {
         #region Public členy
         /// <summary>
@@ -816,7 +816,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxListBoxControl()
         {
             KeyActionsInit();
-            DxDragDropInit();
+            _DxDragDropInit(DxDragDropActionType.None);
             ToolTipInit();
             // ReorderInit();
         }
@@ -837,11 +837,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pole, obsahující informace o právě viditelných prvcích ListBoxu a jejich aktuální souřadnice
         /// </summary>
-        public Tuple<int, object, Rectangle>[] VisibleItems
+        public Tuple<int, IMenuItem, Rectangle>[] VisibleItems
         {
             get
             {
-                List<Tuple<int, object, Rectangle>> visibleItems = new List<Tuple<int, object, Rectangle>>();
+                var listItems = this.ListItems;
+                var visibleItems = new List<Tuple<int, IMenuItem, Rectangle>>();
                 int topIndex = this.TopIndex;
                 int index = (topIndex > 0 ? topIndex - 1 : topIndex);
                 int count = this.ItemCount;
@@ -849,7 +850,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     Rectangle? bounds = GetItemBounds(index);
                     if (bounds.HasValue)
-                        visibleItems.Add(new Tuple<int, object, Rectangle>(index, this.Items[index], bounds.Value));
+                        visibleItems.Add(new Tuple<int, IMenuItem, Rectangle>(index, listItems[index], bounds.Value));
                     else if (index > topIndex)
                         break;
                     index++;
@@ -860,33 +861,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pole, obsahující informace o právě selectovaných prvcích ListBoxu a jejich aktuální souřadnice
         /// </summary>
-        public Tuple<int, object, Rectangle?>[] SelectedItemsInfo
+        public Tuple<int, IMenuItem, Rectangle?>[] SelectedItemsInfo
         {
             get
             {
-                List<Tuple<int, object, Rectangle?>> selectedItems = new List<Tuple<int, object, Rectangle?>>();
+                var listItems = this.ListItems;
+                var selectedItemsInfo = new List<Tuple<int, IMenuItem, Rectangle?>>();
                 foreach (var index in this.SelectedIndices)
                 {
                     Rectangle? bounds = GetItemBounds(index);
-                    selectedItems.Add(new Tuple<int, object, Rectangle?>(index, this.Items[index], bounds));
+                    selectedItemsInfo.Add(new Tuple<int, IMenuItem, Rectangle?>(index, listItems[index], bounds));
                 }
-                return selectedItems.ToArray();
+                return selectedItemsInfo.ToArray();
+            }
+        }
+        /// <summary>
+        /// Obsahuje pole indexů prvků, které jsou aktuálně Selected. 
+        /// Lze setovat. Setování nastaví stav Selected na určených prvcích this.Items. Ostatní budou not selected.
+        /// </summary>
+        public IEnumerable<int> SelectedIndexes
+        {
+            get
+            {
+                return this.SelectedIndices.ToArray();
+            }
+            set
+            {
+                int count = this.ItemCount;
+                Dictionary<int, int> indexes = value.CreateDictionary(i => i, true);
+                for (int i = 0; i < count; i++)
+                {
+                    bool isSelected = indexes.ContainsKey(i);
+                    this.SetSelected(i, isSelected);
+                }
             }
         }
         /// <summary>
         /// Obsahuje pole prvků, které jsou aktuálně Selected. 
-        /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem.
+        /// Lze setovat. Setování nastaví stav Selected na těch prvcích this.Items, které jsou Object.ReferenceEquals() shodné s některým dodaným prvkem. Ostatní budou not selected.
         /// </summary>
-        public new IEnumerable<object> SelectedItems
+        public new IEnumerable<IMenuItem> SelectedItems
         {
-            get { return base.SelectedItems.ToArray(); }
+            get
+            {
+                var listItems = this.ListItems;
+                var selectedItems = new List<IMenuItem>();
+                foreach (var index in this.SelectedIndices)
+                    selectedItems.Add(listItems[index]);
+                return selectedItems.ToArray();
+            }
             set
             {
-                var selectedItems = (value?.ToList() ?? new List<object>());
+                var selectedItems = (value?.ToList() ?? new List<IMenuItem>());
+                var listItems = this.ListItems;
                 int count = this.ItemCount;
                 for (int i = 0; i < count; i++)
                 {
-                    object item = this.Items[i];
+                    object item = listItems[i];
                     bool isSelected = selectedItems.Any(s => Object.ReferenceEquals(s, item));
                     this.SetSelected(i, isSelected);
                 }
@@ -935,6 +966,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
+        /// <summary>
+        /// Prvky Listu typované na <see cref="IMenuItem"/>.
+        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+        /// Toto pole má stejný počet prvků jako pole this.Items
+        /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
+        /// </summary>
+        public IMenuItem[] ListItems
+        {
+            get
+            {
+                return this.Items.Select(i => i.Value as IMenuItem).ToArray();
+            }
+        }
         #endregion
         #region Overrides
         /// <summary>
@@ -956,6 +1000,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnKeyDown(e);
             OnMouseItemIndex = -1;
+        }
+        #endregion
+        #region Images
+        public override Image GetItemImage(int index)
+        {
+            var menuItem = this.ListItems[index];
+            if (menuItem != null && menuItem.ItemImage != null)
+                return DxComponent.GetImageFromResource(menuItem.ItemImage);
+
+            return base.GetItemImage(index);
+        }
+        public override Size GetItemImageSize(int index)
+        {
+            return new Size(16, 16);
         }
         #endregion
         #region ToolTip
@@ -984,8 +1042,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int index = listBox.IndexFromPoint(e.ControlMousePosition);
                 if (index != -1)
                 {
-                    var item = listBox.Items[index];
-                    if (item is IMenuItem menuItem)
+                    var menuItem = listBox.ListItems[index];
+                    if (menuItem != null)
                     {
                         string toolTipText = menuItem.ToolTip;
                         string toolTipTitle = menuItem.ToolTipTitle ?? menuItem.ItemText;
@@ -1002,12 +1060,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
-        public KeyActionType EnabledAction { get; set; }
+        public KeyActionType EnabledActions { get; set; }
         private void KeyActionsInit()
         {
             this.PreviewKeyDown += DxListBoxControl_PreviewKeyDown;
             this.KeyDown += DxListBoxControl_KeyDown;
-            this.EnabledAction = KeyActionType.None;
+            this.EnabledActions = KeyActionType.None;
         }
         private void DxListBoxControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
@@ -1016,35 +1074,35 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void DxListBoxControl_KeyDown(object sender, KeyEventArgs e)
         {
-            var enabledAction = EnabledAction;
+            var enabledActions = EnabledActions;
             switch (e.KeyData)
             {
                 case Keys.Delete:
-                    if (enabledAction.HasFlag(KeyActionType.Delete))
+                    if (enabledActions.HasFlag(KeyActionType.Delete))
                         this.OnKeyDelete(e);
                     break;
                 case Keys.Control | Keys.A:
-                    if (enabledAction.HasFlag(KeyActionType.CtrlA))
+                    if (enabledActions.HasFlag(KeyActionType.CtrlA))
                         this.OnKeyCtrlA(e);
                     break;
                 case Keys.Control | Keys.C:
-                    if (enabledAction.HasFlag(KeyActionType.CtrlC))
+                    if (enabledActions.HasFlag(KeyActionType.CtrlC))
                         this.OnKeyCtrlC(e);
                     break;
                 case Keys.Control | Keys.X:
-                    if (enabledAction.HasFlag(KeyActionType.CtrlX))
+                    if (enabledActions.HasFlag(KeyActionType.CtrlX))
                         this.OnKeyCtrlX(e);
                     break;
                 case Keys.Control | Keys.V:
-                    if (enabledAction.HasFlag(KeyActionType.CtrlV))
+                    if (enabledActions.HasFlag(KeyActionType.CtrlV))
                         this.OnKeyCtrlV(e);
                     break;
                 case Keys.Alt | Keys.Down:
-                    if (enabledAction.HasFlag(KeyActionType.AltUpDown))
+                    if (enabledActions.HasFlag(KeyActionType.AltUpDown))
                         this.OnKeyAltUpDown(e, 1);
                     break;
                 case Keys.Alt | Keys.Up:
-                    if (enabledAction.HasFlag(KeyActionType.AltUpDown))
+                    if (enabledActions.HasFlag(KeyActionType.AltUpDown))
                         this.OnKeyAltUpDown(e, -1);
                     break;
             }
@@ -1052,11 +1110,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void OnKeyDelete(KeyEventArgs e)
         {
-            RemoveItems(this.SelectedItems);
+            RemoveIndexes(this.SelectedIndexes);
         }
         private void OnKeyCtrlA(KeyEventArgs e)
         {
-            this.SelectedItems = this.Items.OfType<object>();
+            this.SelectedItems = this.ListItems;
         }
         private void OnKeyCtrlC(KeyEventArgs e)
         { }
@@ -1072,37 +1130,73 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
         /// <summary>
+        /// Z this Listu odebere prvky na daných indexech.
+        /// </summary>
+        /// <param name="removeIndexes"></param>
+        public void RemoveIndexes(IEnumerable<int> removeIndexes)
+        {
+            if (removeIndexes == null) return;
+            int count = this.ItemCount;
+            var removeList = removeIndexes
+                .CreateDictionary(i => i, true)                      // Odstraním duplicitní hodnoty indexů;
+                .Keys.Where(i => (i >= 0 && i < count))              //  z klíčů (indexy) vyberu jen hodnoty, které reálně existují v ListBoxu;
+                .ToList();                                           //  a vytvořím List pro další práci:
+            removeList.Sort((a, b) => b.CompareTo(a));               // Setřídím indexy sestupně, pro korektní postup odebírání
+            removeList.ForEachExec(i => this.Items.RemoveAt(i));     // A v sestupném pořadí indexů odeberu odpovídající prvky
+        }
+        /// <summary>
         /// Z this Listu odebere všechny dané prvky
         /// </summary>
         /// <param name="removeItems"></param>
-        public void RemoveItems(IEnumerable<object> removeItems)
+        public void RemoveItems(IEnumerable<IMenuItem> removeItems)
         {
-            if (removeItems != null)
-                removeItems.ForEachExec(i => this.Items.Remove(i));
+            if (removeItems == null) return;
+            var removeArray = removeItems.ToArray();
+            var listItems = this.ListItems;
+            for (int i = this.ItemCount - 1; i >= 0; i--)
+            {
+                var listItem = listItems[i];
+                if (listItem != null && removeArray.Any(t => Object.ReferenceEquals(t, listItem)))
+                    this.Items.RemoveAt(i);
+            }
         }
         #endregion
         #region Přesouvání prvků pomocí myši
         /// <summary>
-        /// Umožní this controlu být zdrojem procesu Drag and Drop = odsud je možno vzít prvky a přesunout je jinam.
+        /// Souhrn povolených akcí Drag and Drop
         /// </summary>
-        public bool AllowDrag { get { return this._AllowDrag; } set { this._AllowDrag = value; DxDragDropInit(); } } private bool _AllowDrag = true;
+        public DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { _DxDragDropInit(value); } }
+        private DxDragDropActionType _DragDropActions;
         /// <summary>
-        /// Umožní this controlu být cílem procesu Drag and Drop.
+        /// Vrátí true, pokud je povolena daná akce
         /// </summary>
-        public override bool AllowDrop { get { return base.AllowDrop; } set { base.AllowDrop = value; DxDragDropInit(); } }
+        /// <param name="action"></param>
+        private bool _IsDragDropActionEnabled(DxDragDropActionType action) { return _DragDropActions.HasFlag(action); }
+        /// <summary>
+        /// Nepoužívejme v aplikačním kódu. 
+        /// Místo toho používejme property <see cref="DragDropActions"/>.
+        /// </summary>
+        public override bool AllowDrop { get { return this._AllowDrop; } set { } }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek může být cílem Drag and Drop
+        /// </summary>
+        private bool _AllowDrop
+        {
+            get
+            {
+                var actions = this._DragDropActions;
+                return (actions.HasFlag(DxDragDropActionType.ReorderItems) || actions.HasFlag(DxDragDropActionType.ImportItemsInto));
+            }
+        }
         /// <summary>
         /// Inicializace controlleru Drag and Drop
         /// </summary>
-        private void DxDragDropInit()
+        /// <param name="actions"></param>
+        private void _DxDragDropInit(DxDragDropActionType actions)
         {
-            if ((this.AllowDrag || this.AllowDrop) && _DxDragDrop == null)
+            if (actions != DxDragDropActionType.None && _DxDragDrop == null)
                 _DxDragDrop = new DxDragDrop(this);
-
-
-
-
-
-            // SysDragInit();
+            _DragDropActions = actions;
         }
         /// <summary>
         /// Dispose controlleru Drag and Drop
@@ -1128,12 +1222,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragSource(DxDragDropArgs args)
         {
-            switch (args.Action)
+            switch (args.Event)
             {
-                case DxDragDropActionType.DragStart:
+                case DxDragDropEventType.DragStart:
                     DoDragSourceStart(args);
                     break;
-                case DxDragDropActionType.DragDropAccept:
+                case DxDragDropEventType.DragDropAccept:
                     DoDragSourceDrop(args);
                     break;
             }
@@ -1146,21 +1240,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
         void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
         {
-            switch (args.Action)
+            switch (args.Event)
             {
-                case DxDragDropActionType.DragMove:
+                case DxDragDropEventType.DragMove:
                     DoDragTargetMove(args);
                     break;
-                case DxDragDropActionType.DragLeaveOfTarget:
+                case DxDragDropEventType.DragLeaveOfTarget:
                     DoDragTargetLeave(args);
                     break;
-                case DxDragDropActionType.DragDropAccept:
+                case DxDragDropEventType.DragDropAccept:
                     DoDragTargetDrop(args);
                     break;
-                case DxDragDropActionType.DragEnd:
+                case DxDragDropEventType.DragEnd:
                     DoDragTargetEnd(args);
                     break;
-
             }
         }
         /// <summary>
@@ -1182,17 +1275,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Když probíhá proces Drag, a this objekt je možným cílem
+        /// Když probíhá proces Drag, a this objekt je možným cílem.
+        /// Objekt this může být současně i zdrojem akce (pokud probíhá Drag and Drop nad týmž objektem), pak jde o Reorder.
         /// </summary>
         /// <param name="args"></param>
         private void DoDragTargetMove(DxDragDropArgs args)
         {
             Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
             IndexRatio index = DoDragSearchIndexRatio(targetPoint);
-            if (IndexRatio.IsEqual(index, MouseDragTargetIndex)) return;
-            MouseDragTargetIndex = index;
-            this.Invalidate();
-            args.CurrentEffect = args.GetSuggestedEffect();
+            if (!IndexRatio.IsEqual(index, MouseDragTargetIndex))
+            {
+                MouseDragTargetIndex = index;
+                this.Invalidate();
+            }
+            args.CurrentEffect = args.SuggestedDragDropEffect;
         }
         /// <summary>
         /// Když úspěšně končí proces Drag, a this objekt je zdrojem
@@ -1202,7 +1298,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             args.TargetIndex = null;
             args.InsertIndex = null;
-            var selectedItemsInfo = args.SourceObject as Tuple<int, object, Rectangle?>[];
+            var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
             if (selectedItemsInfo != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
             {
                 // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
@@ -1214,8 +1310,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     args.InsertIndex = args.TargetIndex.GetInsertIndex(selectedItemsInfo.Select(t => t.Item1));
                 }
                 // Odebereme zdrojové prvky:
-                this.RemoveItems(selectedItemsInfo.Select(t => t.Item2));
-
+                this.RemoveIndexes(selectedItemsInfo.Select(t => t.Item1));
             }
         }
         /// <summary>
@@ -1233,21 +1328,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!args.InsertIndex.HasValue)
                 args.InsertIndex = args.TargetIndex.GetInsertIndex();
 
-            var selectedItemsInfo = args.SourceObject as Tuple<int, object, Rectangle?>[];
+            List<int> selectedIndexes = new List<int>();
+            var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
             if (selectedItemsInfo != null)
             {
-                object[] selectedItems = selectedItemsInfo.Select(t => t.Item2).ToArray();
+                IMenuItem[] selectedItems = selectedItemsInfo.Select(t => t.Item2).ToArray();
                 if (args.InsertIndex.HasValue && args.InsertIndex.Value >= 0 && args.InsertIndex.Value < this.ItemCount)
                 {
                     int insertIndex = args.InsertIndex.Value;
                     foreach (var selectedItem in selectedItems)
-                        this.Items.Insert(insertIndex++, selectedItem);
+                    {
+                        DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(selectedItem);
+                        selectedIndexes.Add(insertIndex);
+                        this.Items.Insert(insertIndex++, imgItem);
+                    }
                 }
                 else
                 {
+                    int addIndex = this.ItemCount;
+                    foreach (var selectedItem in selectedItems)
+                        selectedIndexes.Add(addIndex++);
                     this.Items.AddRange(selectedItems);
                 }
-                this.SelectedItems = selectedItems;
+                this.SelectedIndexes = selectedIndexes;
             }
             
             MouseDragTargetIndex = null;
@@ -1836,7 +1939,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var visibleItems = _ListBox.VisibleItems;
             foreach (var visibleItem in visibleItems)
             {
-                string resourceName = visibleItem.Item2 as string;
+                string resourceName = visibleItem.Item2?.ItemText;
                 Rectangle itemBounds = visibleItem.Item3;
                 var image = DxComponent.GetImageFromResource(resourceName, out Size size, maxSize: new Size(32, 32), optimalSvgSize: new Size(32, 32), svgPalette: svgPalette);
                 if (image != null)
@@ -1858,11 +1961,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _FillListByFilter()
         {
             string[] resources = _GetResourcesByFilter();
+            IMenuItem[] items = resources.Select(s => new DataMenuItem() { ItemText = s }).ToArray();
             _FilteredItemsCount = resources.Length;
 
             _ListBox.SuspendLayout();
             _ListBox.Items.Clear();
-            _ListBox.Items.AddRange(resources);
+            _ListBox.Items.AddRange(items);
             _ListBox.ResumeLayout(false);
             _ListBox.PerformLayout();
 
@@ -1911,8 +2015,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (var selectedItem in selectedItems)
                 {
                     _ClipboardCopyIndex++;
-                    string resourceName = selectedItem.Item2 as string;
-                    sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
+                    string resourceName = selectedItem.Item2?.ItemText;
+                    if (!String.IsNullOrEmpty(resourceName))
+                        sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
                 }
                 if (sb.Length > 0)
                 {

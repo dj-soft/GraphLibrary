@@ -107,7 +107,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void Source_MouseEnter(object sender, EventArgs e)
         {
-            DoSourceMoveOver(DxDragDropActionType.MoveOver, _SourceCurrentPoint);
+            DoSourceMoveOver(DxDragDropEventType.MoveOver, _SourceCurrentPoint);
         }
         /// <summary>
         /// Myš se pohnula
@@ -121,7 +121,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case DragStateType.None:
                 case DragStateType.Over:
-                    DoSourceMoveOver(DxDragDropActionType.MoveOver, e.Location);
+                    DoSourceMoveOver(DxDragDropEventType.MoveOver, e.Location);
                     break;
                 case DragStateType.DownWait:
                     DoSourceDragStart(e.Location);
@@ -168,7 +168,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void Source_MouseLeave(object sender, EventArgs e)
         {
-            DoSourceMoveOver(DxDragDropActionType.None);
+            DoSourceMoveOver(DxDragDropEventType.None);
         }
         /// <summary>
         /// Source control zjišťuje příznaky pro Drag
@@ -249,13 +249,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="ddState"></param>
         /// <param name="sourcePoint"></param>
-        private void DoSourceMoveOver(DxDragDropActionType ddState, Point? sourcePoint = null)
+        private void DoSourceMoveOver(DxDragDropEventType ddState, Point? sourcePoint = null)
         {
             FillControlDragArgs();
             IDragArgs.SourceMouseLocation = sourcePoint;
             DoSourceCall(ddState);
 
-            bool isOver = (ddState == DxDragDropActionType.MoveOver);
+            bool isOver = (ddState == DxDragDropEventType.MoveOver);
             if (_State == DragStateType.None && isOver) _State = DragStateType.Over;
             else if (_State == DragStateType.Over && !isOver) _State = DragStateType.None;
         }
@@ -271,7 +271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SourceStartBounds = sourcePoint.CreateRectangleFromCenter(this._SourceStartSize);
             _State = DragStateType.DownWait;
             IDragArgs.SourceMouseLocation = sourcePoint;
-            DoSourceCall(DxDragDropActionType.MouseDown);
+            DoSourceCall(DxDragDropEventType.MouseDown);
         }
         /// <summary>
         /// Volá se po provedení pohybu myši za stavu DownWait, kdy očekáváme pohyb mimo prostor StartBounds.
@@ -287,7 +287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SourceStartBounds = null;
             _State = DragStateType.DownDrag;
             IDragArgs.SourceMouseLocation = _SourceStartPoint ?? sourcePoint;
-            DoSourceCall(DxDragDropActionType.DragStart);
+            DoSourceCall(DxDragDropEventType.DragStart);
             if (DragArgs.SourceDragEnabled)
                 DoDragStart();
             else
@@ -339,7 +339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragSourceQueryContinueDrag(IDxDragDropControl dxControl, QueryContinueDragEventArgs e)
         {
             FillControlDragArgs(e);
-            DoSourceCall(DxDragDropActionType.DragQuerySource);
+            DoSourceCall(DxDragDropEventType.DragQuerySource);
             DragFormUpdate(IDragArgs.LastDragEffect != DragDropEffects.None);
             e.Action = DragArgs.DragAction;
         }
@@ -353,7 +353,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragSourceGiveFeedback(IDxDragDropControl dxControl, GiveFeedbackEventArgs e)
         {
             FillControlDragArgs(e);
-            DoSourceCall(DxDragDropActionType.DragGiveFeedbackSource);
+            DoSourceCall(DxDragDropEventType.DragGiveFeedbackSource);
 
             bool isChange = (IDragArgs.LastDragEffect != e.Effect);
             IDragArgs.LastDragEffect = e.Effect;
@@ -388,8 +388,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             FillControlDragArgs(e);
             DoTargetChange(dxTargetControl);                                   // Instance DxDragDrop, patřící k Source, si zde do sebe uloží Control Target
-            DoSourceCall(DxDragDropActionType.DragEnterToTarget);
-            DoTargetCall(DxDragDropActionType.DragEnterToTarget);
+            DoSourceCall(DxDragDropEventType.DragEnterToTarget);
+            DoTargetCall(DxDragDropEventType.DragEnterToTarget);
             e.Effect = DragArgs.CurrentEffect;
         }
         /// <summary>
@@ -413,8 +413,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragSourceDragOverTarget(IDxDragDropControl dxTargetControl, DragEventArgs e)
         {
             FillControlDragArgs(e);
-            DoTargetCall(DxDragDropActionType.DragMove);
-            DoSourceCall(DxDragDropActionType.DragMove);
+            DoTargetCall(DxDragDropEventType.DragMove);
+            DoSourceCall(DxDragDropEventType.DragMove);
             e.Effect = DragArgs.CurrentEffect;
         }
         /// <summary>
@@ -446,8 +446,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragSourceLeaveTarget(IDxDragDropControl dxTargetControl, EventArgs e)
         {
             FillControlDragArgs();
-            DoTargetCall(DxDragDropActionType.DragLeaveOfTarget);
-            DoSourceCall(DxDragDropActionType.DragLeaveOfTarget);
+            DoTargetCall(DxDragDropEventType.DragLeaveOfTarget);
+            DoSourceCall(DxDragDropEventType.DragLeaveOfTarget);
             DoTargetChange(null);                                              // Instance DxDragDrop, patřící k Source, se odpojí od Controlu Target
         }
         /// <summary>
@@ -471,8 +471,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragSourceTargetDrop(IDxDragDropControl dxTargetControl, DragEventArgs e)
         {
             FillControlDragArgs(e);
-            DoSourceCall(DxDragDropActionType.DragDropAccept);
-            DoTargetCall(DxDragDropActionType.DragDropAccept);
+            DoSourceCall(DxDragDropEventType.DragDropAccept);
+            DoTargetCall(DxDragDropEventType.DragDropAccept);
             e.Effect = DragArgs.CurrentEffect;
         }
         /// <summary>
@@ -481,17 +481,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DoDragCancel()
         {
             FillControlDragArgs();
-            DoSourceCall(DxDragDropActionType.DragCancel);
-            DoTargetCall(DxDragDropActionType.DragCancel);
+            DoSourceCall(DxDragDropEventType.DragCancel);
+            DoTargetCall(DxDragDropEventType.DragCancel);
             DoDragEnd();
         }
         /// <summary>
-        /// Ukončí proces Drag and Drop = pošle událost <see cref="DxDragDropActionType.DragEnd"/> a uvolní proměnné.
+        /// Ukončí proces Drag and Drop = pošle událost <see cref="DxDragDropEventType.DragEnd"/> a uvolní proměnné.
         /// </summary>
         private void DoDragEnd()
         {
-            DoSourceCall(DxDragDropActionType.DragEnd);
-            DoTargetCall(DxDragDropActionType.DragEnd);
+            DoSourceCall(DxDragDropEventType.DragEnd);
+            DoTargetCall(DxDragDropEventType.DragEnd);
             DoDragReset();
         }
         /// <summary>
@@ -534,7 +534,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Zajistí změnu a uložení objektu Target.
-        /// Pokud dosavadní target byl znám, ale nový target je jiný, pak do stávajícího targetu pošle událost <see cref="DxDragDropActionType.DragCancel"/>.
+        /// Pokud dosavadní target byl znám, ale nový target je jiný, pak do stávajícího targetu pošle událost <see cref="DxDragDropEventType.DragCancel"/>.
         /// Do nového targetu neposílá nic.
         /// </summary>
         /// <param name="target"></param>
@@ -544,7 +544,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (currentTarget != null && (target == null || !Object.ReferenceEquals(currentTarget, target)))
             {   // Máme uložen nějaký target z minulého kroku, ale nový target je jiný anebo žádný:
                 //  pak původnímu targetu sdělíme, že jej už nepovažujeme za cíl Drag and Drop akce (pošleme stav DxDragDropState.DragCancel):
-                IDragArgs.State = DxDragDropActionType.DragCancel;
+                IDragArgs.State = DxDragDropEventType.DragCancel;
                 IDragArgs.TargetControl = currentTarget;
                 currentTarget.DoDragTarget(_DragArgs);
                 IDragArgs.TargetControl = null;
@@ -556,7 +556,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do argumentu vloží daný stav a zavolá Source objekt
         /// </summary>
         /// <param name="ddState"></param>
-        private void DoSourceCall(DxDragDropActionType ddState)
+        private void DoSourceCall(DxDragDropEventType ddState)
         {
             IDragArgs.State = ddState;
             Owner.DoDragSource(DragArgs);
@@ -565,7 +565,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do argumentu vloží daný stav a zavolá Target objekt (pokud existuje a pokud je source povolen: <see cref="DxDragDropArgs.SourceDragEnabled"/> = true).
         /// </summary>
         /// <param name="ddState"></param>
-        private void DoTargetCall(DxDragDropActionType ddState)
+        private void DoTargetCall(DxDragDropEventType ddState)
         {
             IDragArgs.State = ddState;
             if (CurrentTarget != null && DragArgs.SourceDragEnabled)
@@ -685,118 +685,45 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
         #region Mini okno pro zobrazení informací o DragDrop
-        private void DragFormCreate(string text, bool? enableHtml = null, bool? enabled = null)
-        {
-            Form form = new Form()
-            {
-                FormBorderStyle = FormBorderStyle.None,
-                AllowTransparency = true,
-                TransparencyKey = Color.Magenta,
-                BackColor = Color.Magenta,
-                Size = new Size(250, 50),
-                Text = "",
-                StartPosition = FormStartPosition.Manual,
-                Location = DragFormCurrentLocation,
-                ShowInTaskbar = false,
-                TopLevel = true
-            };
-            var label = new DxLabelControl() { Location = new Point(0, 0), Text = "<b>PŘESOUVÁME</b> položky:\r\n<i>1: první,\r\n2: druhá,\r\n3: třetí,\r\n4: pátá,</i>...", AllowHtmlString = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            label.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-            label.Padding = new Padding(3);
-            label.Appearance.GradientMode = LinearGradientMode.Vertical;
-            label.Appearance.Options.UseForeColor = true;
-            label.Appearance.Options.UseBackColor = true;
-            label.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
-            label.Appearance.TextOptions.HAlignment = HorzAlignment.Near;
-            label.Appearance.Options.UseTextOptions = true;
-            label.AutoEllipsis = true;
-            label.AutoSizeMode = LabelAutoSizeMode.None;
-//             label.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.Vertical;
-
-            DragLabel = label;
-            DragForm = form;
-
-            form.Controls.Add(label);
-
-            DragFormUpdateContent(text, enableHtml);
-            DragFormUpdate(enabled ?? true);
-            DragFormSetEnabledColors(enabled ?? true);
-
-            form.Show();
-        }
         /// <summary>
-        /// Aktualizuje okno Drag form = textový obsah
+        /// Vytvoří okno DragForm, naplní jej dodanými daty, a rozsvítí jej. Okno je nemodální.
         /// </summary>
         /// <param name="text"></param>
         /// <param name="enableHtml"></param>
-        private void DragFormUpdateContent(string text, bool? enableHtml = null)
+        /// <param name="enabled"></param>
+        private void DragFormCreate(string text, bool? enableHtml = null, bool? enabled = null)
         {
-            var form = DragForm;
-            var label = DragLabel;
-            if (form != null && label != null)
-            {
-                label.Text = text ?? "";
-                if (enableHtml.HasValue) label.AllowHtmlString = enableHtml.Value;
-
-                var optimalSize = label.CalcBestSize();
-                var minSize = DragFormMinSize;
-                var maxSize = DragFormMaxSize;
-                int w = optimalSize.Width + 10;
-                w = (w < minSize.Width ? minSize.Width : (w > maxSize.Width ? maxSize.Width : w));
-                int h = optimalSize.Height + 10;
-                h = (h < minSize.Height ? minSize.Height : (h > maxSize.Height ? maxSize.Height : h));
-
-                label.Size = new Size(w, h);
-                form.Size = new Size(w, h);
-
-                var formSize = form.Size;                  // Formulář si mohl upravit danou šířku / výšku, takže upravíme velikost labelu podle formuláře:
-                if (formSize.Width > w || formSize.Height > h)
-                    label.Size = formSize;
-            }
+            _DragForm = new DxDragForm(this);
+            _DragForm.InfoText = text;
+            _DragForm.InfoTextEnableHtml = enableHtml ?? true;
+            _DragForm.IsEnabled = enabled ?? true;
         }
         /// <summary>
-        /// Aktualizuje okno Drag form = pozice a barvy Enabled
+        /// Aktualizuje okno Drag form = pozice a barvy podle požadovaného stavu Enabled.
         /// </summary>
         /// <param name="enabled"></param>
         private void DragFormUpdate(bool enabled)
         {
-            var form = DragForm;
-            if (form == null) return;
-            
-            var location = DragFormCurrentLocation;
-            if (form.Location != location)
-                form.Location = location;
+            var dragForm = _DragForm;
+            if (dragForm == null) return;
+            dragForm.IsEnabled = enabled;
+            dragForm.Position = this.DragFormCurrentLocation;
 
-            if (enabled != DragLabelEnabled)
-                DragFormSetEnabledColors(enabled);
-        }
-        /// <summary>
-        /// Nastaví barvy okna Drag form pro daný stav Enabled
-        /// </summary>
-        /// <param name="enabled"></param>
-        private void DragFormSetEnabledColors(bool enabled)
-        {
-            var label = DragLabel;
-            if (label != null)
-            {
-                label.Appearance.ForeColor = (enabled ? DragFormTextColor : DragFormTextColorDisabled);
-                label.Appearance.BackColor = (enabled ? DragFormBackColor1 : DragFormBackColor1Disabled);
-                label.Appearance.BackColor2 = (enabled ? DragFormBackColor2 : DragFormBackColor2Disabled);
-            }
-            DragLabelEnabled = enabled;
+            if (!dragForm.Visible)
+                dragForm.Show();
         }
         /// <summary>
         /// Zahodí okno Drag form
         /// </summary>
         private void DragFormDispose()
         {
-            var form = DragForm;
+            var form = _DragForm;
+
             if (form == null) return;
-            DragLabel = null;
             form.Hide();
             form.Close();
             form.Dispose();
-            DragForm = null;
+            _DragForm = null;
         }
         /// <summary>
         /// Aktuální patřičná pozice pro Drag okno
@@ -821,15 +748,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             DragFormMinSize = new Size(150, 45);
             DragFormMaxSize = new Size(500, 160);
             DragFormTextColor = Color.Black;
-            DragFormTextColorDisabled = Color.DimGray;
+            DragFormTextColorDisabled = Color.Black;
             DragFormBackColor1 = Color.FromArgb(250, 250, 230);
-            DragFormBackColor1Disabled = Color.LightGray;
+            DragFormBackColor1Disabled = Color.FromArgb(240, 240, 240);
             DragFormBackColor2 = Color.FromArgb(240, 240, 190);
-            DragFormBackColor2Disabled = Color.LightGray;
+            DragFormBackColor2Disabled = Color.FromArgb(230, 230, 230);
         }
-        private bool DragLabelEnabled;
-        private Form DragForm;
-        private DxLabelControl DragLabel;
+        /// <summary>
+        /// Instance okna Drag Form, je platná jen v době, kdy je vidět (kdy probíhá Drag).
+        /// </summary>
+        private DxDragForm _DragForm;
         /// <summary>
         /// Posun počátku Drag okna (=ToolTip při Drag and Drop) oproti pozici myši
         /// </summary>
@@ -866,6 +794,150 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Barva pozadí dole Disabled
         /// </summary>
         public Color DragFormBackColor2Disabled { get; set; }
+        /// <summary>
+        /// Formulář zobrazující informace v procesu Drag and Drop
+        /// </summary>
+        private class DxDragForm : Form
+        {
+            public DxDragForm(DxDragDrop owner)
+            {
+                this._Owner = owner;
+                Initialize();
+            }
+            private void Initialize()
+            {
+                FormBorderStyle = FormBorderStyle.None;
+                AllowTransparency = true;
+                TransparencyKey = Color.Magenta;
+                BackColor = Color.Magenta;
+                Size = new Size(250, 50);
+                Text = "";
+                StartPosition = FormStartPosition.Manual;
+                ShowInTaskbar = false;
+                TopLevel = true;
+
+                var label = new DxLabelControl() { Location = new Point(0, 0), Text = "", AllowHtmlString = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+                label.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+                label.Padding = new Padding(3);
+                label.Appearance.GradientMode = LinearGradientMode.Vertical;
+                label.Appearance.Options.UseForeColor = true;
+                label.Appearance.Options.UseBackColor = true;
+                label.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
+                label.Appearance.TextOptions.HAlignment = HorzAlignment.Near;
+                label.Appearance.Options.UseTextOptions = true;
+                label.AutoEllipsis = true;
+                label.AutoSizeMode = LabelAutoSizeMode.None;
+                //             label.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.Vertical;
+
+                _InfoLabel = label;
+                this.Controls.Add(label);
+            }
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            /// <param name="disposing"></param>
+            protected override void Dispose(bool disposing)
+            {
+                base.Dispose(disposing);
+                this._Owner = null;
+                this._InfoLabel = null;
+            }
+            /// <summary>
+            /// Aktualizuje okno Drag form = textový obsah
+            /// </summary>
+            /// <param name="titleText"></param>
+            /// <param name="infoText"></param>
+            /// <param name="allowHtmlString"></param>
+            private void DragFormUpdateContent(string titleText, string infoText, bool allowHtmlString)
+            {
+                var owner = this._Owner;
+                if (owner == null) return;
+
+                var infoLabel = _InfoLabel;
+                infoLabel.Text = infoText ?? "";
+
+                if (infoLabel.AllowHtmlString != allowHtmlString) infoLabel.AllowHtmlString = allowHtmlString;
+
+                var optimalSize = infoLabel.CalcBestSize();
+                var minSize = owner.DragFormMinSize;
+                var maxSize = owner.DragFormMaxSize;
+                int w = optimalSize.Width + 10;
+                w = (w < minSize.Width ? minSize.Width : (w > maxSize.Width ? maxSize.Width : w));
+                int h = optimalSize.Height + 10;
+                h = (h < minSize.Height ? minSize.Height : (h > maxSize.Height ? maxSize.Height : h));
+
+                infoLabel.Size = new Size(w, h);
+                this.Size = new Size(w, h);
+
+                var formSize = this.Size;                  // Formulář si mohl upravit danou šířku / výšku, takže upravíme velikost labelu podle formuláře:
+                if (formSize.Width > w || formSize.Height > h)
+                    infoLabel.Size = formSize;
+
+                _TitleText = titleText;
+                _InfoText = infoText;
+                _InfoTextEnableHtml = allowHtmlString;
+            }
+            /// <summary>
+            /// Aktualizuje pozici okna Drag form
+            /// </summary>
+            /// <param name="position"></param>
+            public void DragFormSetPosition(Point position)
+            {
+                if (this.Location != position)
+                    this.Location = position;
+                this._Position = position;
+            }
+            /// <summary>
+            /// Nastaví barvy okna Drag form pro daný stav Enabled
+            /// </summary>
+            /// <param name="enabled"></param>
+            private void DragFormSetEnabledColors(bool enabled)
+            {
+                var owner = this._Owner;
+                if (owner == null) return;
+
+                var label = _InfoLabel;
+                label.Appearance.ForeColor = (enabled ? owner.DragFormTextColor : owner.DragFormTextColorDisabled);
+                label.Appearance.BackColor = (enabled ? owner.DragFormBackColor1 : owner.DragFormBackColor1Disabled);
+                label.Appearance.BackColor2 = (enabled ? owner.DragFormBackColor2 : owner.DragFormBackColor2Disabled);
+
+                _IsEnabled = enabled;
+            }
+            /// <summary>
+            /// Vlastník, obsahuje definici vzhledu okna
+            /// </summary>
+            private DxDragDrop _Owner;
+            /// <summary>
+            /// Label zobrazující informaci
+            /// </summary>
+            private DxLabelControl _InfoLabel;
+            /// <summary>
+            /// Pozice okna
+            /// </summary>
+            public Point Position { get { return _Position; } set { if (_Position != value) DragFormSetPosition(value); } }
+            private Point _Position;
+            /// <summary>
+            /// Text titulku okna. 
+            /// Aktuálně se nepoužívá.
+            /// </summary>
+            public string TitleText { get { return _TitleText; } set { if (!String.Equals(value, _TitleText)) DragFormUpdateContent(value, _InfoText, _InfoTextEnableHtml); } }
+            private string _TitleText;
+            /// <summary>
+            /// Text informace okna.
+            /// </summary>
+            public string InfoText { get { return _InfoText; } set { if (!String.Equals(value, _InfoText)) DragFormUpdateContent(_TitleText, value, _InfoTextEnableHtml); } }
+            private string _InfoText;
+            /// <summary>
+            /// Příznak, že <see cref="InfoText"/> může obsahovat HTML značky
+            /// </summary>
+            public bool InfoTextEnableHtml { get { return _InfoTextEnableHtml; } set { if (value != _InfoTextEnableHtml) DragFormUpdateContent(_TitleText, _InfoText, value); } }
+            private bool _InfoTextEnableHtml;
+            /// <summary>
+            /// Vzhled okna podle možnosti Enabled procesu Drag and Drop (false = šedivé okno)
+            /// </summary>
+            public bool IsEnabled { get { return _IsEnabled; } set { if (value != _IsEnabled) DragFormSetEnabledColors(value); } }
+            private bool _IsEnabled;
+        }
         #endregion
     }
     #region interface IDxDragDropControl = Předpis pro prvek, který může být ZDROJEM anebo CÍLEM události Drag and Drop
@@ -878,6 +950,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Controller pro DxDragDrop v daném controlu
         /// </summary>
         DxDragDrop DxDragDrop { get; }
+        /// <summary>
+        /// Povolené akce v daném controlu
+        /// </summary>
+        DxDragDropActionType DragDropActions { get; }
         /// <summary>
         /// Metoda volaná do objektu Source (zdroj Drag and Drop) při každé akci na straně zdroje.
         /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
@@ -991,7 +1067,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void Reset()
         {
-            this.Action = DxDragDropActionType.None;
+            this.Event = DxDragDropEventType.None;
             this.SourceDragEnabled = true;
             this.SourceMouseLocation = null;
             this.SourceObject = null;
@@ -1012,7 +1088,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Stav procesu Drag and Drop = aktuální událost
         /// </summary>
-        public DxDragDropActionType Action { get; private set; }
+        public DxDragDropEventType Event { get; private set; }
         /// <summary>
         /// Aktuální souřadnice v absolutních hodnotách (vzhledem ke Screen)
         /// </summary>
@@ -1046,7 +1122,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Možnosti pro proces Drag (povolené efekty).
         /// Výchozí hodnota je <see cref="DragDropEffects.All"/> | <see cref="DragDropEffects.Link"/> = úplně všechny.
-        /// Hodnota se převezme po události <see cref="DxDragDropActionType.DragStart"/> do procesu Drag, a následně je zde udržována.
+        /// Hodnota se převezme po události <see cref="DxDragDropEventType.DragStart"/> do procesu Drag, a následně je zde udržována.
         /// </summary>
         public DragDropEffects AllowedEffects { get; set; }
         /// <summary>
@@ -1120,30 +1196,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool TargetIsSource { get { return (this.TargetExists && Object.ReferenceEquals(this.SourceControl, this.TargetControl)); } }
         /// <summary>
-        /// Vrací doporučený efekt pro Drag and Drop na základě vztahu Zdroj a Cíl, a podle Modifier kláves, a podle parametrů.
+        /// Obsahuje doporučený efekt pro Drag and Drop na základě vztahu Zdroj a Cíl, a podle Modifier kláves.
         /// </summary>
-        /// <param name="reorderEnabled">Povolení pro přemístění v rámci výchozího controlu (když Target == Source): pokud je true, vrací se Move, jinak false. Default = true.</param>
-        /// <param name="copyOutIsDefault">Výchozí (bez Control key) pro Drag do cizího Targetu má být: true = Copy / false = Move</param>
-        /// <param name="moveOutOnControlKey">Při Drag do cizího Targetu s klávesou Control má být výsledek: true = Move, false = defaultní (i podle <paramref name="copyOutIsDefault"/>).</param>
-        /// <returns></returns>
-        public DragDropEffects GetSuggestedEffect(bool reorderEnabled = true, bool copyOutIsDefault = true, bool moveOutOnControlKey = true)
+        public DragDropEffects SuggestedDragDropEffect
         {
-            if (this.TargetIsSource)
+            get
             {
-                if (reorderEnabled) return DragDropEffects.Move;
+                DxDragDropActionType sourceActions = this.SourceControl?.DragDropActions ?? DxDragDropActionType.None;
+                if (this.TargetIsSource)
+                {
+                    bool enableReorder = sourceActions.HasFlag(DxDragDropActionType.ReorderItems);
+                    if (enableReorder) return DragDropEffects.Move;
+                }
+                else if (this.TargetExists)
+                {
+                    DxDragDropActionType targetActions = this.TargetControl?.DragDropActions ?? DxDragDropActionType.None;
+                    bool targetEnableCopy = targetActions.HasFlag(DxDragDropActionType.ImportItemsInto);
+                    if (targetEnableCopy)
+                    {
+                        bool sourceEnableCopy = sourceActions.HasFlag(DxDragDropActionType.CopyItemsFrom);
+                        bool sourceEnableMove = sourceActions.HasFlag(DxDragDropActionType.MoveItemsFrom);
+                        if (!sourceEnableCopy && !sourceEnableMove) return DragDropEffects.None;
+                        if (sourceEnableCopy && !sourceEnableMove) return DragDropEffects.Copy;
+                        if (!sourceEnableCopy && sourceEnableMove) return DragDropEffects.Move;
+                        var modifier = this.ModifierKeys;
+                        return (modifier == Keys.Control ? DragDropEffects.Move : DragDropEffects.Copy);
+                    }
+                }
+                return DragDropEffects.None;
             }
-            else if (this.TargetExists)
-            {
-                var modifier = this.ModifierKeys;
-                if (moveOutOnControlKey && modifier == Keys.Control) return DragDropEffects.Move;
-                if (modifier == Keys.Alt) return DragDropEffects.Link;
-                return (copyOutIsDefault ? DragDropEffects.Copy : DragDropEffects.Move);
-            }
-            return DragDropEffects.None;
         }
         #endregion
         #region Interní přístup k datům
-        DxDragDropActionType IDxDragDropArgs.State { get { return this.Action; } set { this.Action = value; } }
+        DxDragDropEventType IDxDragDropArgs.State { get { return this.Event; } set { this.Event = value; } }
         Point IDxDragDropArgs.ScreenMouseLocation { get { return this.ScreenMouseLocation; } set { this.ScreenMouseLocation = value; } }
         Point? IDxDragDropArgs.SourceMouseLocation { get { return this.SourceMouseLocation; } set { this.SourceMouseLocation = value; } }
         Keys IDxDragDropArgs.ModifierKeys { get { return this.ModifierKeys; } set { this.ModifierKeys = value; } }
@@ -1161,7 +1246,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Stav procesu Drag and Drop = aktuální událost
         /// </summary>
-        DxDragDropActionType State { get; set; }
+        DxDragDropEventType State { get; set; }
         /// <summary>
         /// Absolutní souřadnice myši
         /// </summary>
@@ -1192,9 +1277,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         void Reset();
     }
     /// <summary>
-    /// Stav procesu Drag and Drop, předávaný do Source i Target objektu.
+    /// Typy dostupných aktivit v procesu Drag and Drop
     /// </summary>
+    [Flags]
     public enum DxDragDropActionType
+    {
+        /// <summary>
+        /// Žádná aktivita
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přeuspořádat prvky v rámci jednoho controlu (např. přemístit prvky Listu nahoru/dolů)
+        /// </summary>
+        ReorderItems = 0x0001,
+        /// <summary>
+        /// Kopírovat prvky z this controlu (tento control slouží jako zdroj prvků)
+        /// </summary>
+        CopyItemsFrom = 0x0010,
+        /// <summary>
+        /// Přesouvat prvky z this controlu (tento control slouží jako zdroj prvků s možností odebrání prvků).
+        /// Pokud je pro jeden control definováno současně <see cref="CopyItemsFrom"/> i <see cref="MoveItemsFrom"/>, pak konkrétní akci volí uživatel klávesou: Ctrl = Move, bez kláves = Copy
+        /// </summary>
+        MoveItemsFrom = 0x0020,
+        /// <summary>
+        /// Lze akceptovat prvky přesouvané odjinud do this controlu
+        /// </summary>
+        ImportItemsInto = 0x0080
+    }
+    /// <summary>
+    /// Typ aktuální události v rámci procesu Drag and Drop, předávaný do Source i Target objektu.
+    /// </summary>
+    public enum DxDragDropEventType
     {
         /// <summary>
         /// Tato událost se předává do Source objektu v okamžiku, kdy myš opouští Source objekt a pohybuje se jinam, a neprobíhá Drag proces.
