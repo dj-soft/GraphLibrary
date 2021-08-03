@@ -886,7 +886,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Color gray = Color.FromArgb(128, 128, 128);
                 _DragFormBackColor1Disabled = GetCurrentColor(owner.DragFormBackColor1Disabled, _DragFormBackColor1.Morph(gray, 0.5f));
                 _DragFormBackColor2Disabled = GetCurrentColor(owner.DragFormBackColor2Disabled, _DragFormBackColor2.Morph(gray, 0.8f));
-
                 _DragFormTextColorDisabled = GetCurrentColor(owner.DragFormTextColorDisabled, _DragFormTextColor.Morph(gray, 0.3f));
             }
             /// <summary>
@@ -913,21 +912,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!pixelColor.IsEmpty) return pixelColor;
                 }
                 return defaultColor;
-            }
-            /// <summary>
-            /// Z pole elementů vrátí 
-            /// </summary>
-            /// <param name="skinElements"></param>
-            /// <param name="names"></param>
-            /// <returns></returns>
-            private DevExpress.Skins.SkinElement GetSkinElement(DevExpress.Skins.SkinElement[] skinElements, params string[] names)
-            {
-                foreach (string name in names)
-                {
-                    var skinElement = skinElements.FirstOrDefault(e => e.ElementName == name);
-                    if (skinElement != null) return skinElement;
-                }
-                return null;
             }
             /// <summary>
             /// Dispose
