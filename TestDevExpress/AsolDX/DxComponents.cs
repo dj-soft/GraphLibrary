@@ -941,7 +941,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             return checkEdit;
         }
         public static DxListBoxControl CreateDxListBox(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
+            KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? tabStop = null)
         {
@@ -949,22 +950,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             int w = width ?? 0;
             int h = height ?? 0;
             return CreateDxListBox(0, ref y, w, h, parent, selectedIndexChanged,
-                multiColumn, selectionMode, itemHeight, itemHeightPadding, reorderByDragEnabled,
+                multiColumn, selectionMode, itemHeight, itemHeightPadding,
+                enabledKeyActions, dragDropActions,
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, 
+            KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null)
         {
             return CreateDxListBox(x, ref y, w, h, parent, selectedIndexChanged,
-                multiColumn, selectionMode, itemHeight, itemHeightPadding, reorderByDragEnabled,
+                multiColumn, selectionMode, itemHeight, itemHeightPadding,
+                enabledKeyActions, dragDropActions,
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, bool? reorderByDragEnabled = null,
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, 
+            KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null, bool shiftY = false)
         {
@@ -978,7 +983,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (itemHeight.HasValue) listBox.ItemHeight = itemHeight.Value;
             if (itemHeightPadding.HasValue) listBox.ItemHeightPadding = itemHeightPadding.Value;
 
-            if (reorderByDragEnabled.HasValue) listBox.ReorderByDragEnabled = reorderByDragEnabled.Value;
+            if (enabledKeyActions.HasValue) listBox.EnabledKeyActions = enabledKeyActions.Value;
+            if (dragDropActions.HasValue) listBox.DragDropActions = dragDropActions.Value;
+
             if (visible.HasValue) listBox.Visible = visible.Value;
             if (tabStop.HasValue) listBox.TabStop = tabStop.Value;
 

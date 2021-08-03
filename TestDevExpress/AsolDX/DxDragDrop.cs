@@ -547,6 +547,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 IDragArgs.State = DxDragDropEventType.DragCancel;
                 IDragArgs.TargetControl = currentTarget;
                 currentTarget.DoDragTarget(_DragArgs);
+                IDragArgs.TargetReset();
                 IDragArgs.TargetControl = null;
             }
             IDragArgs.TargetControl = target;
@@ -1078,6 +1079,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             this.ModifierKeys = Keys.None;
             this.SourceTag = null;
+            this.TargetReset();
+        }
+        /// <summary>
+        /// Vyvolá Reset pouze části Target argumentu = po přechodu na jiný Target
+        /// </summary>
+        private void TargetReset()
+        {
             this.TargetControl = null;
             this.TargetIndex = null;
             this.TargetTag = null;
@@ -1236,6 +1244,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         IDxDragDropControl IDxDragDropArgs.TargetControl { get { return this.TargetControl; } set { this.TargetControl = value; } }
         DragDropEffects IDxDragDropArgs.LastDragEffect { get { return this.LastDragEffect; } set { this.LastDragEffect = value; } }
         void IDxDragDropArgs.Reset() { this.Reset(); }
+        void IDxDragDropArgs.TargetReset() { this.TargetReset(); }
         #endregion
     }
     /// <summary>
@@ -1272,9 +1281,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         DragDropEffects LastDragEffect { get; set; }
         /// <summary>
-        /// Vyvolá Reset argumentu = nulování dat do počátečního stavu
+        /// Vyvolá Reset celého argumentu = nulování dat do počátečního stavu
         /// </summary>
         void Reset();
+        /// <summary>
+        /// Vyvolá Reset pouze části Target argumentu = po přechodu na jiný Target
+        /// </summary>
+        void TargetReset();
     }
     /// <summary>
     /// Typy dostupných aktivit v procesu Drag and Drop

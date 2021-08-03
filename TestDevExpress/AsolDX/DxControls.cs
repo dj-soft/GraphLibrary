@@ -990,7 +990,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnPaint(e);
             this.PaintList?.Invoke(this, e);
             this.MouseDragPaint(e);
-            this.PaintOnMouseItem(e);
         }
         /// <summary>
         /// Po stisku klávesy
@@ -1060,21 +1059,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
-        public KeyActionType EnabledActions { get; set; }
+        public KeyActionType EnabledKeyActions { get; set; }
+        /// <summary>
+        /// Inicializace eventhandlerů a hodnot pro KeyActions
+        /// </summary>
         private void KeyActionsInit()
         {
             this.PreviewKeyDown += DxListBoxControl_PreviewKeyDown;
             this.KeyDown += DxListBoxControl_KeyDown;
-            this.EnabledActions = KeyActionType.None;
+            this.EnabledKeyActions = KeyActionType.None;
         }
         private void DxListBoxControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             
         }
-
+        /// <summary>
+        /// Obsluha kláves
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DxListBoxControl_KeyDown(object sender, KeyEventArgs e)
         {
-            var enabledActions = EnabledActions;
+            var enabledActions = EnabledKeyActions;
             switch (e.KeyData)
             {
                 case Keys.Delete:
@@ -1107,21 +1113,45 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
         }
-
+        /// <summary>
+        /// Provedení klávesové akce: Delete
+        /// </summary>
+        /// <param name="e"></param>
         private void OnKeyDelete(KeyEventArgs e)
         {
             RemoveIndexes(this.SelectedIndexes);
         }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlA
+        /// </summary>
+        /// <param name="e"></param>
         private void OnKeyCtrlA(KeyEventArgs e)
         {
             this.SelectedItems = this.ListItems;
         }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlC
+        /// </summary>
+        /// <param name="e"></param>
         private void OnKeyCtrlC(KeyEventArgs e)
         { }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlX
+        /// </summary>
+        /// <param name="e"></param>
         private void OnKeyCtrlX(KeyEventArgs e)
         { }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlV
+        /// </summary>
+        /// <param name="e"></param>
         private void OnKeyCtrlV(KeyEventArgs e)
         { }
+        /// <summary>
+        /// Provedení klávesové akce: AltUp / AltDown
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="offset">Směr posunu</param>
         private void OnKeyAltUpDown(KeyEventArgs e, int offset)
         {
             var selectedItems = this.SelectedItems;
@@ -1462,148 +1492,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return iconBounds;
         }
         #endregion
-        #region ReorderItems, obsolete
-        protected void ReorderInit()
-        {
-            ReorderByDragEnabled = false;
-            ReorderIconColor = Color.FromArgb(192, 116, 116, 96);
-            ReorderIconColorHot = Color.FromArgb(220, 160, 160, 122);
-        }
-        /// <summary>
-        /// Povolení pro reorder prvků pomocí myši (pak se zobrazí ikona pro drag)
-        /// </summary>
-        public bool ReorderByDragEnabled { get; set; }
-        /// <summary>
-        /// Barva ikonky pro reorder <see cref="ReorderByDragEnabled"/>, v běžném stavu.
-        /// Průhlednost je podporována.
-        /// </summary>
-        public Color ReorderIconColor { get; set; }
-        /// <summary>
-        /// Barva ikonky pro reorder <see cref="ReorderByDragEnabled"/>, v běžném stavu.
-        /// Průhlednost je podporována.
-        /// </summary>
-        public Color ReorderIconColorHot { get; set; }
-        /// <summary>
-        /// Zajistí vykreslení ikony pro ReorderByDrag a případně i přemisťovaného prvku
-        /// </summary>
-        /// <param name="e"></param>
-        private void PaintOnMouseItem(PaintEventArgs e)
-        {
-            PaintReorderIcon(e);
-        }
-        /// <summary>
-        /// Metoda vyhledá zdrojový prvek pro případný přesun Drag and Drop pro danou souřadnici myši (v lokálním souřadném systému).
-        /// Dále určí a uloží hodnoty: <see cref="OnMouseItemIndex"/>, <see cref="OnMouseItemAlphaRatio"/>, <see cref="_IsMouseOverReorderIcon"/>,
-        /// a v případě potřeby nastaví aktuální kurzor.
-        /// </summary>
-        /// <param name="sourcePoint"></param>
-        private void DragDropSearchSource(Point? sourcePoint)
-        {
-            // Najdeme index prvku pod myší, a určíme Alpha ratio pro ikonu vpravo, podle pozice myši vodorovně v řádku:
-            int index = -1;
-            float ratio = 0f;
-            if (sourcePoint.HasValue)
-            {
-                index = this.IndexFromPoint(sourcePoint.Value);
-                float ratioX = (float)sourcePoint.Value.X / (float)this.Width;           // Relativní pozice myši na ose X v rámci celého controlu v rozmezí 0.0 až 1.0
-                ratio = 0.30f + (ratioX < 0.5f ? 0f : 1.40f * (ratioX - 0.5f));          // 0.30 je pevná dolní hodnota. Ta platí pro pozici myši 0.0 až 0.5. Pak se ratio zvyšuje od 0.30 do 1.0.
-            }
-            OnMouseItemIndex = index;
-            OnMouseItemAlphaRatio = ratio;
-
-            // Vyřešíme druh kurzoru - pokud se myš nachází v prostoru ikony a pokud je povoleno pomocí myši přesouvat prvky, pak dáme kurzor typu Nahoru-Dolů:
-            bool isCursorActive = false;
-            if (sourcePoint.HasValue)
-            {
-                var iconBounds = OnMouseIconBounds;
-                isCursorActive = (iconBounds.HasValue && iconBounds.Value.Contains(sourcePoint.Value));
-            }
-
-            if (isCursorActive != _IsMouseOverReorderIcon)
-            {
-                _IsMouseOverReorderIcon = isCursorActive;
-                if (ReorderByDragEnabled)
-                {
-                    this.Cursor = (isCursorActive ? Cursors.SizeNS : Cursors.Default);
-                    this.Invalidate();                                                   // Překreslení => jiná barva ikony
-                }
-            }
-        }
-        /// <summary>
-        /// Vykreslí ikonu pro přesouvání prvku
-        /// </summary>
-        /// <param name="e"></param>
-        protected void PaintReorderIcon(PaintEventArgs e)
-        {
-            if (!ReorderByDragEnabled) return;
-
-            Rectangle? iconBounds = OnMouseIconBounds;
-            if (!iconBounds.HasValue) return;
-
-            int wb = iconBounds.Value.Width;
-            int x0 = iconBounds.Value.X;
-            int yc = iconBounds.Value.Y + iconBounds.Value.Height / 2;
-            Color iconColor = (_IsMouseOverReorderIcon ? ReorderIconColorHot : ReorderIconColor);
-            float alphaRatio = OnMouseItemAlphaRatio;
-            int alpha = (int)((float)iconColor.A * alphaRatio);
-            iconColor = Color.FromArgb(alpha, iconColor);
-            using (SolidBrush brush = new SolidBrush(iconColor))
-            {
-                e.Graphics.FillRectangle(brush, x0, yc - 6, wb, 2);
-                e.Graphics.FillRectangle(brush, x0, yc - 1, wb, 2);
-                e.Graphics.FillRectangle(brush, x0, yc + 4, wb, 2);
-            }
-        }
-        /// <summary>
-        /// Příznak, že myš je nad ikonou pro přesouvání prvku, a kurzor je tedy upraven na šipku nahoru/dolů.
-        /// Pak tedy MouseDown a MouseMove bude provádět Reorder prvku.
-        /// </summary>
-        private bool _IsMouseOverReorderIcon = false;
-        /// <summary>
-        /// Blízkost myši k ikoně na ose X v poměru: 0.15 = úplně daleko, 1.00 = přímo na ikoně.
-        /// Ovlivní průhlednost barvy (kanál Alpha).
-        /// </summary>
-        public float OnMouseItemAlphaRatio
-        {
-            get { return _OnMouseItemAlphaRatio; }
-            protected set
-            {
-                float ratio = (value < 0.15f ? 0.15f : (value > 1.0f ? 1.0f : value));
-                float diff = ratio - _OnMouseItemAlphaRatio;
-                if (diff <= -0.04f || diff >= 0.04f)
-                {
-                    _OnMouseItemAlphaRatio = ratio;
-                    this.Invalidate();
-                }
-            }
-        }
-        private float _OnMouseItemAlphaRatio = 0.15f;
-        /// <summary>
-        /// Souřadnice prostoru pro myší ikonu vpravo v myšoaktivním řádku.
-        /// Souřadnice se vypočítají pro prvek na indexu <see cref="_OnMouseItemIndex"/>.
-        /// </summary>
-        protected Rectangle? OnMouseIconBounds
-        {
-            get
-            {
-                if (_OnMouseIconBoundsIndex != _OnMouseItemIndex)
-                {
-                    _OnMouseIconBounds = GetOnMouseIconBounds(_OnMouseItemIndex);
-                    _OnMouseIconBoundsIndex = _OnMouseItemIndex;
-                }
-                return _OnMouseIconBounds;
-            }
-        }
-        /// <summary>
-        /// Souřadnice prostoru ikony vpravo pro myš
-        /// </summary>
-        private Rectangle? _OnMouseIconBounds = null;
-        /// <summary>
-        /// Index prvku, pro který je vypočtena souřadnice a uložena v <see cref="_OnMouseIconBounds"/>
-        /// </summary>
-        private int _OnMouseIconBoundsIndex = -1;
-
-        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -1617,47 +1505,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="title"></param>
         public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
-    }
-    /// <summary>
-    /// Klávesové akce
-    /// </summary>
-    [Flags]
-    public enum KeyActionType
-    {
-        /// <summary>
-        /// Žádná akce
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Klávesa Delete = smazat výběr
-        /// </summary>
-        Delete = 0x0001,
-        /// <summary>
-        /// Klávesa CtrlA = vybrat vše
-        /// </summary>
-        CtrlA = 0x0010,
-        /// <summary>
-        /// Klávesa CtrlC = zkopírovat
-        /// </summary>
-        CtrlC = 0x0020,
-        /// <summary>
-        /// Klávesa CtrlX = vyjmout
-        /// </summary>
-        CtrlX = 0x0040,
-        /// <summary>
-        /// Klávesa CtrlV = vložit
-        /// </summary>
-        CtrlV = 0x0080,
-
-        /// <summary>
-        /// Klávesa AltUp a AltDown (kurzor) = přemístit o jednu pozici dolů / nahoru
-        /// </summary>
-        AltUpDown = 0x0100,
-
-        /// <summary>
-        /// Všechny akce
-        /// </summary>
-        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV | AltUpDown
     }
     #endregion
     #region DxSimpleButton
@@ -2552,6 +2399,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         RightBottom,
         /// <summary>Vlevo dole</summary>
         BottomLeft
+    }
+    /// <summary>
+    /// Klávesové akce
+    /// </summary>
+    [Flags]
+    public enum KeyActionType
+    {
+        /// <summary>
+        /// Žádná akce
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Klávesa Delete = smazat výběr
+        /// </summary>
+        Delete = 0x0001,
+        /// <summary>
+        /// Klávesa CtrlA = vybrat vše
+        /// </summary>
+        CtrlA = 0x0010,
+        /// <summary>
+        /// Klávesa CtrlC = zkopírovat
+        /// </summary>
+        CtrlC = 0x0020,
+        /// <summary>
+        /// Klávesa CtrlX = vyjmout
+        /// </summary>
+        CtrlX = 0x0040,
+        /// <summary>
+        /// Klávesa CtrlV = vložit
+        /// </summary>
+        CtrlV = 0x0080,
+
+        /// <summary>
+        /// Klávesa AltUp a AltDown (kurzor) = přemístit o jednu pozici dolů / nahoru
+        /// </summary>
+        AltUpDown = 0x0100,
+
+        /// <summary>
+        /// Všechny akce
+        /// </summary>
+        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV | AltUpDown
     }
     #endregion
 }
