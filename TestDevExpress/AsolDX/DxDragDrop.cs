@@ -748,12 +748,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             DragFormOffset = new Point(-20, 35);
             DragFormMinSize = new Size(150, 45);
             DragFormMaxSize = new Size(500, 160);
-            DragFormTextColor = Color.Black;
-            DragFormTextColorDisabled = Color.Black;
-            DragFormBackColor1 = Color.FromArgb(250, 250, 230);
-            DragFormBackColor1Disabled = Color.FromArgb(240, 240, 240);
-            DragFormBackColor2 = Color.FromArgb(240, 240, 190);
-            DragFormBackColor2Disabled = Color.FromArgb(230, 230, 230);
+            DragFormTextColor = null;
+            DragFormTextColorDisabled = null;
+            DragFormBackColor1 = null;
+            DragFormBackColor1Disabled = null;
+            DragFormBackColor2 = null;
+            DragFormBackColor2Disabled = null;
         }
         /// <summary>
         /// Instance okna Drag Form, je platná jen v době, kdy je vidět (kdy probíhá Drag).
@@ -774,37 +774,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Barva textu Enabled
         /// </summary>
-        public Color DragFormTextColor { get; set; }
+        public Color? DragFormTextColor { get; set; }
         /// <summary>
         /// Barva textu Disabled
         /// </summary>
-        public Color DragFormTextColorDisabled { get; set; }
+        public Color? DragFormTextColorDisabled { get; set; }
         /// <summary>
         /// Barva pozadí nahoře Enabled
         /// </summary>
-        public Color DragFormBackColor1 { get; set; }
+        public Color? DragFormBackColor1 { get; set; }
         /// <summary>
         /// Barva pozadí nahoře Disabled
         /// </summary>
-        public Color DragFormBackColor1Disabled { get; set; }
+        public Color? DragFormBackColor1Disabled { get; set; }
         /// <summary>
         /// Barva pozadí dole Enabled
         /// </summary>
-        public Color DragFormBackColor2 { get; set; }
+        public Color? DragFormBackColor2 { get; set; }
         /// <summary>
         /// Barva pozadí dole Disabled
         /// </summary>
-        public Color DragFormBackColor2Disabled { get; set; }
+        public Color? DragFormBackColor2Disabled { get; set; }
         /// <summary>
         /// Formulář zobrazující informace v procesu Drag and Drop
         /// </summary>
         private class DxDragForm : Form
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
             public DxDragForm(DxDragDrop owner)
             {
                 this._Owner = owner;
                 Initialize();
             }
+            /// <summary>
+            /// Inicializace
+            /// </summary>
             private void Initialize()
             {
                 FormBorderStyle = FormBorderStyle.None;
@@ -832,6 +839,95 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 _InfoLabel = label;
                 this.Controls.Add(label);
+
+                this.InitializeColors();
+            }
+            /// <summary>
+            /// Načte barvy z Ownera nebo ze Skinu (nebo dá default)
+            /// </summary>
+            private void InitializeColors()
+            {
+                var owner = _Owner;
+
+                var skin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel);
+                var skinElements = skin.GetElements().Cast<DevExpress.Skins.SkinElement>().ToArray();
+                
+                var elementWindow = skinElements.SearchFirst(e => e.ElementName, "ToolTipWindow", "Form");
+                _DragFormBackColor1 = GetCurrentColor(owner.DragFormBackColor1, Color.FromArgb(250, 250, 230), elementWindow?.Color.SolidImageCenterColor, elementWindow?.Color.BackColor, elementWindow?.Image?.Image, 6);
+                _DragFormBackColor2 = GetCurrentColor(owner.DragFormBackColor2, _DragFormBackColor1.Morph(Color.Black, 0.1f), elementWindow?.Color.SolidImageCenterColor2, elementWindow?.Color.BackColor2, elementWindow?.Image?.Image, -6);
+
+                var elementInfo = skinElements.SearchFirst(e => e.ElementName, "ToolTipItem", "ToolTipTitleItem", "Label");
+                Color? skinInfoColor = (skin.Colors.Contains("Info") ? (Color?)skin.Colors["Info"] : (Color?)null);
+                _DragFormTextColor = GetCurrentColor(owner.DragFormTextColor, Color.Black, skinInfoColor, elementInfo?.Color.ForeColor);
+
+                // Pokud jsou určeny barvy BackColor a ForeColor takové, že jejich rozdíl jasu je malý, pak jako barvu Fore určím barvu čistě kontrastní k Back:
+                Color backColorHalf = _DragFormBackColor1.Morph(_DragFormBackColor2, 0.5f);
+                float backBright = backColorHalf.GetBrightness();
+                float foreBright = _DragFormTextColor.GetBrightness();
+                float foreBackDist = foreBright - backBright;
+                if (foreBackDist > -0.3f && foreBackDist < 0.3f)
+                {
+                    skinInfoColor = (skin.Colors.Contains("InfoText") ? (Color?)skin.Colors["InfoText"] : (Color?)null);
+                    if (skinInfoColor.HasValue)
+                    {
+                        foreBright = skinInfoColor.Value.GetBrightness();
+                        foreBackDist = foreBright - backBright;
+                        if (foreBackDist > -0.3f && foreBackDist < 0.3f)
+                            _DragFormTextColor = backColorHalf.Contrast();
+                        else
+                            _DragFormTextColor = skinInfoColor.Value;
+                    }
+                    else
+                    {
+                        _DragFormTextColor = backColorHalf.Contrast();
+                    }
+                }
+
+                Color gray = Color.FromArgb(128, 128, 128);
+                _DragFormBackColor1Disabled = GetCurrentColor(owner.DragFormBackColor1Disabled, _DragFormBackColor1.Morph(gray, 0.5f));
+                _DragFormBackColor2Disabled = GetCurrentColor(owner.DragFormBackColor2Disabled, _DragFormBackColor2.Morph(gray, 0.8f));
+
+                _DragFormTextColorDisabled = GetCurrentColor(owner.DragFormTextColorDisabled, _DragFormTextColor.Morph(gray, 0.3f));
+            }
+            /// <summary>
+            /// Určí a vrátí vhodnou barvu z barev dodaných / z pixelu dané bitmapy
+            /// </summary>
+            /// <param name="ownerColor"></param>
+            /// <param name="defaultColor"></param>
+            /// <param name="skinColor1"></param>
+            /// <param name="skinColor2"></param>
+            /// <param name="image"></param>
+            /// <param name="pixelY"></param>
+            /// <returns></returns>
+            private Color GetCurrentColor(Color? ownerColor, Color defaultColor, Color? skinColor1 = null, Color? skinColor2 = null, Image image = null, int pixelY = 0)
+            {
+                if (ownerColor.HasValue) return ownerColor.Value;
+                if (skinColor1.HasValue && !skinColor1.Value.IsEmpty) return skinColor1.Value;
+                if (skinColor2.HasValue && !skinColor2.Value.IsEmpty) return skinColor2.Value;
+                if (image != null && image is Bitmap bitmap)
+                {
+                    Size imageSize = image.Size;
+                    int x = imageSize.Width / 2;
+                    int y = (pixelY > 0 ? pixelY : (pixelY < 0 ? imageSize.Height + pixelY : (imageSize.Height / 2)));
+                    Color pixelColor = bitmap.GetPixel(x, y);
+                    if (!pixelColor.IsEmpty) return pixelColor;
+                }
+                return defaultColor;
+            }
+            /// <summary>
+            /// Z pole elementů vrátí 
+            /// </summary>
+            /// <param name="skinElements"></param>
+            /// <param name="names"></param>
+            /// <returns></returns>
+            private DevExpress.Skins.SkinElement GetSkinElement(DevExpress.Skins.SkinElement[] skinElements, params string[] names)
+            {
+                foreach (string name in names)
+                {
+                    var skinElement = skinElements.FirstOrDefault(e => e.ElementName == name);
+                    if (skinElement != null) return skinElement;
+                }
+                return null;
             }
             /// <summary>
             /// Dispose
@@ -843,6 +939,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this._Owner = null;
                 this._InfoLabel = null;
             }
+            /// <summary>
+            /// Vlastník, obsahuje definici vzhledu okna
+            /// </summary>
+            private DxDragDrop _Owner;
+            /// <summary>
+            /// Label zobrazující informaci
+            /// </summary>
+            private DxLabelControl _InfoLabel;
             /// <summary>
             /// Aktualizuje okno Drag form = textový obsah
             /// </summary>
@@ -898,20 +1002,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (owner == null) return;
 
                 var label = _InfoLabel;
-                label.Appearance.ForeColor = (enabled ? owner.DragFormTextColor : owner.DragFormTextColorDisabled);
-                label.Appearance.BackColor = (enabled ? owner.DragFormBackColor1 : owner.DragFormBackColor1Disabled);
-                label.Appearance.BackColor2 = (enabled ? owner.DragFormBackColor2 : owner.DragFormBackColor2Disabled);
+                label.Appearance.ForeColor = (enabled ? _DragFormTextColor : _DragFormTextColorDisabled);
+                label.Appearance.BackColor = (enabled ? _DragFormBackColor1 : _DragFormBackColor1Disabled);
+                label.Appearance.BackColor2 = (enabled ? _DragFormBackColor2 : _DragFormBackColor2Disabled);
 
                 _IsEnabled = enabled;
             }
             /// <summary>
-            /// Vlastník, obsahuje definici vzhledu okna
+            /// Barva textu Enabled
             /// </summary>
-            private DxDragDrop _Owner;
+            private Color _DragFormTextColor;
             /// <summary>
-            /// Label zobrazující informaci
+            /// Barva textu Disabled
             /// </summary>
-            private DxLabelControl _InfoLabel;
+            private Color _DragFormTextColorDisabled;
+            /// <summary>
+            /// Barva pozadí nahoře Enabled
+            /// </summary>
+            public Color _DragFormBackColor1;
+            /// <summary>
+            /// Barva pozadí nahoře Disabled
+            /// </summary>
+            private Color _DragFormBackColor1Disabled;
+            /// <summary>
+            /// Barva pozadí dole Enabled
+            /// </summary>
+            private Color _DragFormBackColor2;
+            /// <summary>
+            /// Barva pozadí dole Disabled
+            /// </summary>
+            private Color _DragFormBackColor2Disabled;
             /// <summary>
             /// Pozice okna
             /// </summary>

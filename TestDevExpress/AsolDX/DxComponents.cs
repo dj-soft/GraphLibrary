@@ -5285,6 +5285,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return sb.ToString();
         }
+        /// <summary>
+        /// V dané kolekci najde a vrátí prvek, jehož klíč je dán v poli klíčů <paramref name="keys"/>.
+        /// Hledá v pořadí zadaných klíčů, nikoli v pořadí prvků v kolekci.
+        /// <para/>
+        /// Pokud tedy zadané klíče jsou: X, A; a kolekce obsahuje prvky s klíči A až Z, včetně X, pak vrátí prvek s klíčem X (protože klíč X je zadán dříve než A).
+        /// Pokud by ale pro zadané klíče X, A kolekce obsahovala prvky s klíči A až D (mimo X), pak bude vrácen prvek s klíčem A (protože prvek s klíčem X v kolekci nebude nalezen).
+        /// <para/>
+        /// Slouží tedy k nalezení prioritních záznamů, s možností hledání náhradních záznamů pokud prioritní nebudou nalezeny.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        public static TItem SearchFirst<TItem, TKey>(this IEnumerable<TItem> items, Func<TItem, TKey> keySelector, params TKey[] keys) where TKey : IEquatable<TKey>
+        {
+            if (items != null && keys.Length > 0)
+            {
+                var dictionary = items.CreateDictionary(keySelector, true);
+                foreach (var key in keys)
+                {
+                    if (dictionary.TryGetValue(key, out var value)) 
+                        return value;
+                }
+            }
+            return default;
+        }
         #endregion
     }
     #endregion

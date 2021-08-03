@@ -134,7 +134,6 @@ namespace TestDevExpress.Forms
             DS.SkinContainer skin = item.Item as DS.SkinContainer;
             if (skin == null) return;
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skin.SkinName;
-            var subSkins = skin.GetSkins();
         }
         private List<DS.SkinContainer> Skins;
         private void ActivatePage(int pageIndex, bool forceEvent)
