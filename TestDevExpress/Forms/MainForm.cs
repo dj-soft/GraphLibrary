@@ -2446,7 +2446,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         {
             KeyActionType sourceKeyActions = KeyActionType.CtrlA | KeyActionType.CtrlC;
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
-            _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledActions = sourceKeyActions };
+            _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
             _DragDropAList.Items.AddRange(_CreateListItems(100, false, true));
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
@@ -2454,7 +2454,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             KeyActionType targetKeyActions = KeyActionType.All;
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
-            _DragDropBList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledActions = targetKeyActions };
+            _DragDropBList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
             _DragDropBList.Name = "BList";
             _DragDropBList.Items.AddRange(_CreateListItems(18, true, false));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
