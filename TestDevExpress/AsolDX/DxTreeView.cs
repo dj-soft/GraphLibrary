@@ -1359,7 +1359,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             using (LockGui(true))
             {
                 NodePair firstPair = null;
-                this._AddNode(nodeInfo, ref firstPair, atIndex);
+                SelectionNewNodeMode selectionMode = _GetCurrentSelectionMode();
+                this._AddNode(nodeInfo, ref firstPair, ref selectionMode, atIndex);
             }
         }
         /// <summary>
@@ -1725,8 +1726,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Add:
             if (addNodes != null)
             {
+                SelectionNewNodeMode selectionMode = _GetCurrentSelectionMode();
                 foreach (var node in addNodes)
-                    this._AddNode(node, ref firstPair, null);
+                    this._AddNode(node, ref firstPair, ref selectionMode, null);
 
                 // Expand nody: teď už by měly mít svoje Childs přítomné v TreeList:
                 foreach (var node in addNodes.Where(n => n.Expanded))
@@ -1747,8 +1749,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="nodeInfo">Data pro tvorbu nodu</param>
         /// <param name="firstPair">Ref první vytvořený pár</param>
+        /// <param name="selectionMode"></param>
         /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
-        private void _AddNode(ITreeListNode nodeInfo, ref NodePair firstPair, int? atIndex)
+        private void _AddNode(ITreeListNode nodeInfo, ref NodePair firstPair, ref SelectionNewNodeMode selectionMode, int? atIndex)
         {
             if (nodeInfo == null) return;
 
@@ -1757,8 +1760,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                 firstPair = nodePair;
 
             if (nodeInfo.LazyExpandable)
-                _AddNodeLazyLoad(nodeInfo);                                    // Pokud node má nastaveno LazyLoadChilds, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
+                _AddNodeLazyLoad(nodeInfo);                                    // Pokud node má nastaveno LazyExpandable, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
+
+            if (nodeInfo.Selected && (selectionMode == SelectionNewNodeMode.OnlyFirst || selectionMode == SelectionNewNodeMode.All) && nodePair.HasTreeNode)
+            {
+                this.SelectNode(nodePair.TreeNode);
+                if (selectionMode == SelectionNewNodeMode.OnlyFirst)
+                    selectionMode = SelectionNewNodeMode.None;
+            }
         }
+        /// <summary>
+        /// Vrátí režim pro selectování nově přidávaných nodů (pouze nody, které mají <see cref="ITreeListNode.Selected"/> == true).
+        /// Pokud je režim selectování this TreeListu: <see cref="MultiSelectEnabled"/> == true, pak vrátí <see cref="SelectionNewNodeMode.All"/> = všechny nové nody, které mají být Selectované, budou skutečně Selected.
+        /// Pokud <see cref="MultiSelectEnabled"/> == false (=vybraný smí být jen jeden Node), pak se podívá kolik nodů je aktuálně Selected (podle <see cref="SelectedNodes"/>.Length).
+        /// Pokud dosud není žádný node selectován (=máme prázdný List), pak vrátí <see cref="SelectionNewNodeMode.OnlyFirst"/> = selectuje se jen první z požadovaných nodů.
+        /// Jinak vrací <see cref="SelectionNewNodeMode.None"/>.
+        /// </summary>
+        /// <returns></returns>
+        private SelectionNewNodeMode _GetCurrentSelectionMode()
+        {
+            return (this.MultiSelectEnabled ? SelectionNewNodeMode.All : (this.SelectedNodes.Length == 0 ? SelectionNewNodeMode.OnlyFirst : SelectionNewNodeMode.None));
+        }
+        /// <summary>
+        /// Režim selectování nově přidávaných nodů
+        /// </summary>
+        private enum SelectionNewNodeMode { None, OnlyFirst, All }
         /// <summary>
         /// Pod daného parenta přidá Child node typu LazyLoad
         /// </summary>

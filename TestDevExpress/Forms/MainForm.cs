@@ -135,6 +135,14 @@ namespace TestDevExpress.Forms
             DS.SkinContainer skin = item.Item as DS.SkinContainer;
             if (skin == null) return;
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skin.SkinName;
+
+
+
+
+            DevExpress.Skins.Skin currentSkin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel);
+            string elementName = DevExpress.Skins.CommonSkins.SkinToolTipItem;
+            DevExpress.Skins.SkinElement element = currentSkin[elementName];
+            Color skinBorderColor = element.Color.BackColor;
         }
         private List<DS.SkinContainer> Skins;
         private void ActivatePage(int pageIndex, bool forceEvent)
@@ -2472,11 +2480,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             _DragDropATree = new DxTreeList() { AllowDropOnTree = true, FilterBoxVisible = true };
             _DragDropATree.Name = "ATree";
-            _DragDropATree.AddNodes(_CreateSampleList());
-
             _DragDropATree.MultiSelectEnabled = true;
             _DragDropATree.SelectNodeBeforeShowContextMenu = false;
 
+            var nodes = _CreateSampleList();
+            nodes.ForEachExec(n => { if (Random.IsTrue(5)) n.Selected = true; });
+            _DragDropATree.AddNodes(nodes);
+            
             _DragDropATree.ShowContextMenu += _DragDropATree_ShowContextMenu;
             _DragDropATree.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropATree);
