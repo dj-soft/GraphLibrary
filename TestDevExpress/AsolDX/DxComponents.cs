@@ -355,6 +355,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (style.Contains("U")) fontStyle |= FontStyle.Underline;
             return fontStyle;
         }
+        /// <summary>
+        /// Převede boolean hodnoty na odpovídající <see cref="FontStyle"/>.
+        /// </summary>
+        /// <returns></returns>
+        public static FontStyle? ConvertFontStyle(bool bold, bool italic, bool underline)
+        {
+            FontStyle fontStyle = FontStyle.Regular;
+            if (bold) fontStyle |= FontStyle.Bold;
+            if (italic) fontStyle |= FontStyle.Italic;
+            if (underline) fontStyle |= FontStyle.Underline;
+            return fontStyle;
+        }
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;
         private DevExpress.XtraEditors.StyleController _SubTitleStyle;
         private DevExpress.XtraEditors.StyleController _LabelStyle;
