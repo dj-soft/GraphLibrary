@@ -145,70 +145,70 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "basic", GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Basic.Refresh", ItemText = "Refresh", ToolTip = "Znovu načíst údaje do statusbaru o spotřebě systémových zdrojů", ItemImage = imageRefresh });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Basic.Clear", ItemText = "Smazat", ToolTip = "Zahodit DataForm a uvolnit jeho zdroje", ItemImage = imageClear });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Basic.Refresh", Text = "Refresh", ToolTipText = "Znovu načíst údaje do statusbaru o spotřebě systémových zdrojů", Image = imageRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Basic.Clear", Text = "Smazat", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", Image = imageClear });
 
             group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown});
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", RibbonItemType = RibbonItemType.SkinSetDropDown});
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
 
             group = new DataRibbonGroup() { GroupId = "sample", GroupText = "VZORKY" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Sample.Sample1", ItemText = "Ukázka 1", ItemImage = imageTest, Tag = "Sample1", ItemEnabled = true });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Sample.Sample2", ItemText = "Ukázka 2", ItemImage = imageTest, Tag = "Sample2", ItemEnabled = true });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Sample.Sample3", ItemText = "Ukázka 3", ItemImage = imageTest, Tag = "Sample3", ItemEnabled = true });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Sample.Sample4", ItemText = "Ukázka 4", ItemImage = imageTest, Tag = "Sample4", ItemEnabled = true });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Sample.Sample5", ItemText = "Ukázka 5", ItemImage = imageTest, Tag = "Sample5", ItemEnabled = false });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Sample.Sample6", ItemText = "Ukázka 6", ItemImage = imageTest, Tag = "Sample6", ItemEnabled = false });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample5", Text = "Ukázka 5", Image = imageTest, Tag = "Sample5", Enabled = false });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample6", Text = "Ukázka 6", Image = imageTest, Tag = "Sample6", Enabled = false });
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "PARAMETRY" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Params.MemoryOptimized", ItemText = "MemoryOptimized", ToolTip = "Zaškrtnuto: používat optimalizaci paměti / Ne: bez optimalizací (může dojít k systémové chybě)", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Params.UseWinForm", ItemText = "Použít WinForms", ToolTip = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = false, RibbonStyle = RibbonItemStyles.SmallWithText });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Params.ShowLog", ItemText = "Zobrazit LOG", ToolTip = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = true, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Params.MemoryOptimized", Text = "MemoryOptimized", ToolTipText = "Zaškrtnuto: používat optimalizaci paměti / Ne: bez optimalizací (může dojít k systémové chybě)", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = true, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Params.UseWinForm", Text = "Použít WinForms", ToolTipText = "Nezaškrtnuté = DevExpress;\r\nZaškrtnuté = WinForm", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = false, RibbonStyle = RibbonItemStyles.SmallWithText });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Params.ShowLog", Text = "Zobrazit LOG", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = true, RibbonStyle = RibbonItemStyles.SmallWithText });
 
             group = new DataRibbonGroup() { GroupId = "g100", GroupText = "LABEL" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T0.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T0.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T0.Add100", ItemText = "Přidat 100", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 100, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.LT10.Add300", ItemText = "Přidat 300", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.LT10.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g010", GroupText = "TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T1.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 10, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T1.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 30, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T1.Add100", ItemText = "Přidat 100", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 100, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T1.Add300", ItemText = "Přidat 300", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g001", GroupText = "CHECKBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T0C1.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 10, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T0C1.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 30, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T0C1.Add100", ItemText = "Přidat 100", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 100, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L0T0C1.Add300", ItemText = "Přidat 300", ItemImage = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g110", GroupText = "LABEL + TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 10, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 30, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1.Add100", ItemText = "Přidat 100", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 100, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1.Add300", ItemText = "Přidat 300", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g120", GroupText = "LABEL + 2x TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T2.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 10, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T2.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 30, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T2.Add100", ItemText = "Přidat 100", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 100, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T2.Add300", ItemText = "Přidat 300", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g111", GroupText = "LABEL + TEXTBOX + CHECKBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1C1.Add10", ItemText = "Přidat 10", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 10, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1C1.Add30", ItemText = "Přidat 30", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 30, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1C1.Add100", ItemText = "Přidat 100", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 100, 1) });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.L1T1C1.Add300", ItemText = "Přidat 300", ItemImage = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 300, 1) });
 
             string resource1 = "images/xaf/action_reload_32x32.png";
             string resource3 = "images/zoom/zoom_32x32.png";
@@ -219,8 +219,8 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "rbt", GroupText = "RIBBON TEST" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "rb.test.b1", ItemText = "Refill ribbonu", ItemImage = resource1 });
-            group.Items.Add(new DataMenuItem() { ItemId = "rb.test.b2", ItemText = "Image Picker", ItemImage = resource3 });
+            group.Items.Add(new DataRibbonItem() { ItemId = "rb.test.b1", Text = "Refill ribbonu", Image = resource1 });
+            group.Items.Add(new DataRibbonItem() { ItemId = "rb.test.b2", Text = "Image Picker", Image = resource3 });
 
             this._DxRibbonControl.Clear();
             this._DxRibbonControl.AddPages(pages);
@@ -244,7 +244,7 @@ namespace TestDevExpress.Forms
             _DxRibbonFill();
             this._DxRibbonControl.SelectedPageId = pageId;
         }
-        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
+        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
             switch (e.Item.ItemId)
             {
@@ -256,17 +256,17 @@ namespace TestDevExpress.Forms
                     _RemoveDataForms();
                     break;
                 case "Dx.Params.MemoryOptimized":
-                    _DxDataFormMemoryOptimized = (e.Item.ItemIsChecked ?? false);
+                    _DxDataFormMemoryOptimized = (e.Item.Checked ?? false);
                     break;
                 case "Dx.Params.Add50":
-                    _DxDataFormAdd50 = (e.Item.ItemIsChecked ?? false);
+                    _DxDataFormAdd50 = (e.Item.Checked ?? false);
                     break;
                 case "Dx.Params.UseWinForm":
                     _RemoveDataForms();         // Změna zvolené komponenty musí vždy shodit aktuální komponentu, kvůli vizuální shodě Ribbon :: DataForm
-                    _DxDataUseWinForm = (e.Item.ItemIsChecked ?? false);
+                    _DxDataUseWinForm = (e.Item.Checked ?? false);
                     break;
                 case "Dx.Params.ShowLog":
-                    _DxShowLog = (e.Item.ItemIsChecked ?? false);
+                    _DxShowLog = (e.Item.Checked ?? false);
                     _DxMainSplit.CollapsePanel = DevExpress.XtraEditors.SplitCollapsePanel.Panel2;
                     _DxMainSplit.Collapsed = !_DxShowLog;
                     _RefreshLog();

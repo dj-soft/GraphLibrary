@@ -46,13 +46,13 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteGallery });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", RibbonItemType = RibbonItemType.SkinSetDropDown });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", RibbonItemType = RibbonItemType.SkinPaletteGallery });
 
             group = new DataRibbonGroup() { GroupId = "forms", GroupText = "FORMULÁŘE" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "forms.newTab", ItemText = "Nový TAB", ToolTip = "Otevře nové okno jako TAB document", ItemImage = "", Tag = FormCommands.NewTab });
-            group.Items.Add(new DataMenuItem() { ItemId = "forms.newFloat", ItemText = "Nový FLOAT", ToolTip = "Otevře nové okno jako plovoucí okno", ItemImage = "", Tag = FormCommands.NewFree });
+            group.Items.Add(new DataRibbonItem() { ItemId = "forms.newTab", Text = "Nový TAB", ToolTipText = "Otevře nové okno jako TAB document", Image = "", Tag = FormCommands.NewTab });
+            group.Items.Add(new DataRibbonItem() { ItemId = "forms.newFloat", Text = "Nový FLOAT", ToolTipText = "Otevře nové okno jako plovoucí okno", Image = "", Tag = FormCommands.NewFree });
         }
         protected override void OnRibbonItemClick(IMenuItem ribbonData)
         {

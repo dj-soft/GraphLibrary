@@ -151,31 +151,31 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteDropDown });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", RibbonItemType = RibbonItemType.SkinSetDropDown });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.UseLazyInit", ItemText = "Use Lazy Init", ToolTip = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, ItemIsChecked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.ImgPick", ItemText = "Image Picker", ToolTip = "Otevře nabídku systémových ikon", ItemImage = imgZoom, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataMenuItem() { ItemId = "Dx.Test.LogClear", ItemText = "Clear log", ToolTip = "Smaže obsah logu vpravo", ItemImage = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.ImgPick", Text = "Image Picker", ToolTipText = "Otevře nabídku systémových ikon", Image = imgZoom, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", Image = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
 
             page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda" };
             pages.Add(page);
             group = new DataRibbonGroup() { GroupId = "help", GroupText = "NÁPOVĚDA" };
             page.Groups.Add(group);
-            group.Items.Add(new DataMenuItem() { ItemId = "Help.Help.Show", ItemText = "Nápovědda", ToolTip = "Zobrazí okno s nápovědou", ItemImage = imgInfo });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Help.Help.Show", Text = "Nápovědda", ToolTipText = "Zobrazí okno s nápovědou", Image = imgInfo });
 
             this._DxRibbonControl.Clear();
             this._DxRibbonControl.UseLazyContentCreate = this.UseLazyLoad;
             this._DxRibbonControl.AddPages(pages);
         }
-        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
+        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
             switch (e.Item.ItemId)
             {
                 case "Dx.Test.UseLazyInit":
-                    UseLazyLoad = e.Item.ItemIsChecked ?? false;
+                    UseLazyLoad = e.Item.Checked ?? false;
                     _TestPanel1.UseLazyLoad = UseLazyLoad;
                     _TestPanel2a.UseLazyLoad = UseLazyLoad;
                     break;
@@ -395,13 +395,13 @@ namespace TestDevExpress.Forms
         private List<IMenuItem> _GetDropDownItems()
         {
             List<IMenuItem> subItems = new List<IMenuItem>();
-            subItems.Add(new DataMenuItem() { ItemId = "ClearRibbon", ItemText = "Clear ", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "ClearContent", ItemText = "Clear Content only", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "AddOnDemand", ItemText = "Add ON DEMAND page", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
-            subItems.Add(new DataMenuItem() { ItemId = "AddRandom", ItemText = "Add RANDOM page", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "AddWiki", ItemText = "Add WIKI page", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "Add7Pages", ItemText = "Add 7 pages", ItemImage = "", ToolTip = "" });
-            subItems.Add(new DataMenuItem() { ItemId = "RemoveEmpty", ItemText = "Remove Empty pages", ItemImage = "", ToolTip = "", ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ItemId = "ClearRibbon", Text = "Clear ", Image = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "ClearContent", Text = "Clear Content only", Image = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "AddOnDemand", Text = "Add ON DEMAND page", Image = "", ToolTipText = "", ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ItemId = "AddRandom", Text = "Add RANDOM page", Image = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "AddWiki", Text = "Add WIKI page", Image = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "Add7Pages", Text = "Add 7 pages", Image = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "RemoveEmpty", Text = "Remove Empty pages", Image = "", ToolTipText = "", ItemIsFirstInGroup = true });
             return subItems;
 
             /* TEXTOVÁ VARIANTA:
@@ -519,19 +519,19 @@ namespace TestDevExpress.Forms
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
+        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
-            IMenuItem iMenuItem = e.Item;
+            IRibbonItem iRibbonItem = e.Item;
 
-            if (iMenuItem.ItemType == RibbonItemType.Menu) return;
+            if (iRibbonItem.RibbonItemType == RibbonItemType.Menu) return;
 
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Item Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{iMenuItem.ItemType}</b>, s textem <b>{iMenuItem.ItemText}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
-            if (iMenuItem.ParentGroup != null) dialogArgs.MessageText += $",\r\nskupina <b>{iMenuItem.ParentGroup.GroupText}</b>";
-            if (iMenuItem.ParentGroup?.ParentPage != null) dialogArgs.MessageText += $", stránka <b>{iMenuItem.ParentGroup.ParentPage.PageText}</b>";
-            if (iMenuItem.ParentGroup?.ParentPage?.Category != null) dialogArgs.MessageText += $", kategorie <b>{iMenuItem.ParentGroup.ParentPage.Category.CategoryText}</b>";
+            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{iRibbonItem.ItemType}</b>, s textem <b>{iRibbonItem.Text}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
+            if (iRibbonItem.ParentGroup != null) dialogArgs.MessageText += $",\r\nskupina <b>{iRibbonItem.ParentGroup.GroupText}</b>";
+            if (iRibbonItem.ParentGroup?.ParentPage != null) dialogArgs.MessageText += $", stránka <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>";
+            if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) dialogArgs.MessageText += $", kategorie <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>";
             dialogArgs.MessageText += ".";
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
@@ -659,7 +659,7 @@ namespace TestDevExpress.Forms
             int ic = Rand.Next(itemCountMin, itemCountMax + 1);
             for (int i = 0; i < ic; i++)
             {
-                DataMenuItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup);
+                DataRibbonItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup);
                 group.Items.Add(item);
                 if (remainingRadioCount > 0 && i == (ic - 1))   // Dokud zrovna generuji RadioGrupu (mám remainingRadioCount kladné) a blížím se ke konci počtu našich prvků,
                     ic++;                                       //   pak přidám ještě další prvek, abych RadioGrupu dotáhl do konce.
@@ -748,7 +748,7 @@ namespace TestDevExpress.Forms
         /// <param name="remainingRadioCount"></param>
         /// <param name="forceFirstInGroup"></param>
         /// <returns></returns>
-        private static DataMenuItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup)
+        private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup)
         {
             _RibbonItemCount++;
             string itemId = "Item" + (++_RibbonItemId);
@@ -759,20 +759,20 @@ namespace TestDevExpress.Forms
             bool isFirst = (remainingRadioCount == 0 ? (forceFirstInGroup || (Rand.Next(10) < 3)) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
             int? toolbarOrder = ((Rand.Next(100) < 3) ? (int?)Rand.Next(1, 101) : null);
 
-            DataMenuItem item = new DataMenuItem()
+            DataRibbonItem item = new DataRibbonItem()
             {
                 ItemId = itemId,
-                ItemText = itemText,
-                ItemImage = itemImageName,
+                Text = itemText,
+                Image = itemImageName,
                 RibbonStyle = RibbonItemStyles.All,
-                ToolTip = toolTip,
+                ToolTipText = toolTip,
                 ToolTipTitle = toolTipTitle,
                 ToolTipIcon = "help_hint_48_"
             };
 
             if (remainingRadioCount > 0)
             {   // Pokračujeme v přípravě skupiny RadioButtonů:
-                item.ItemType = RibbonItemType.RadioItem;
+                item.RibbonItemType = RibbonItemType.RadioItem;
                 item.RibbonStyle = RibbonItemStyles.SmallWithText;
                 isFirst = false;
                 toolbarOrder = null;                                      // RadioButtony nedávám do Toolbaru
@@ -785,7 +785,7 @@ namespace TestDevExpress.Forms
                 if (itemType == RibbonItemType.RadioItem && containsRadioGroup) 
                     itemType = RibbonItemType.CheckBoxStandard;           // V jedné grupě Ribbonu bude nanejvýše jedna RadioButton grupa
 
-                item.ItemType = itemType;
+                item.RibbonItemType = itemType;
 
                 if (itemType == RibbonItemType.RadioItem)                 // Zde začíná RadioButton grupa
                 {
@@ -796,10 +796,10 @@ namespace TestDevExpress.Forms
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
                 }
 
-                if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
+                if (item.RibbonItemType == RibbonItemType.CheckBoxStandard || item.RibbonItemType == RibbonItemType.RadioItem)
                 {
-                    if (Rand.Next(100) < 15) item.ItemImage = null;
-                    if (Rand.Next(100) < 50) item.ItemIsChecked = true;
+                    if (Rand.Next(100) < 15) item.Image = null;
+                    if (Rand.Next(100) < 50) item.Checked = true;
                 }
 
                 if (Rand.Next(10) < 3)
@@ -808,7 +808,7 @@ namespace TestDevExpress.Forms
                 }
 
                 if (NeedSubItem(itemType))
-                    item.SubItems = _CreateSubItems(itemType, 4, 15);
+                    item.SubRibbonItems = _CreateSubItems(itemType, 4, 15);
             }
 
             item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
@@ -825,9 +825,9 @@ namespace TestDevExpress.Forms
         /// <param name="subItemsCountMax"></param>
         /// <param name="level"></param>
         /// <returns></returns>
-        protected static List<IMenuItem> _CreateSubItems(RibbonItemType itemType, int subItemsCountMin, int subItemsCountMax, int level = 0)
+        protected static List<IRibbonItem> _CreateSubItems(RibbonItemType itemType, int subItemsCountMin, int subItemsCountMax, int level = 0)
         {
-            List<IMenuItem> subItems = new List<IMenuItem>();
+            List<IRibbonItem> subItems = new List<IRibbonItem>();
 
             int sc = Rand.Next(subItemsCountMin, subItemsCountMax + 1);
             for (int i = 0; i < sc; i++)
@@ -840,33 +840,33 @@ namespace TestDevExpress.Forms
                 string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
                 bool isFirst = (Rand.Next(10) < 3);
 
-                DataMenuItem item = new DataMenuItem()
+                DataRibbonItem item = new DataRibbonItem()
                 {
                     ItemId = itemId,
-                    ItemText = itemText,
+                    Text = itemText,
                     ItemIsFirstInGroup = isFirst,
                     RibbonStyle = RibbonItemStyles.Default,
-                    ToolTip = toolTip,
+                    ToolTipText = toolTip,
                     ToolTipTitle = toolTipTitle,
                     ToolTipIcon = "help_hint_48_",
-                    ItemImage = itemImage
+                    Image = itemImage
                 };
           
-                item.ItemType = (itemType == RibbonItemType.InRibbonGallery ? RibbonItemType.Button : GetRandomSubItemType());
+                item.RibbonItemType = (itemType == RibbonItemType.InRibbonGallery ? RibbonItemType.Button : GetRandomSubItemType());
 
                 int nextLevel = level + 1;
-                if (NeedSubItem(item.ItemType, nextLevel))
+                if (NeedSubItem(item.RibbonItemType, nextLevel))
                 {
                     if (level <= 4)
-                        item.SubItems = _CreateSubItems(itemType, 3, 7, nextLevel);
+                        item.SubRibbonItems = _CreateSubItems(itemType, 3, 7, nextLevel);
                     else
-                        item.ItemType = RibbonItemType.Button;
+                        item.RibbonItemType = RibbonItemType.Button;
                 }
 
-                if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
+                if (item.RibbonItemType == RibbonItemType.CheckBoxStandard || item.RibbonItemType == RibbonItemType.RadioItem)
                 {
-                    if (Rand.Next(100) < 65) item.ItemImage = null;
-                    if (Rand.Next(100) < 50) item.ItemIsChecked = true;
+                    if (Rand.Next(100) < 65) item.Image = null;
+                    if (Rand.Next(100) < 50) item.Checked = true;
                 }
 
                 item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";

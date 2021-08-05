@@ -19,7 +19,7 @@ using System.Drawing.Drawing2D;
 using DevExpress.Pdf.Native;
 using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
-using DevExpress.Office.History;
+
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
 // using TAB = DevExpress.XtraTab;
@@ -339,6 +339,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public static ToolTipController CreateNewToolTipController() { return new ToolTipController(); }
+        /// <summary>
+        /// Převede string obsahující písmena B,I,U na odpovídající <see cref="FontStyle"/>.
+        /// Pokud je na vstupu null nebo prázdný string, vrací null.
+        /// </summary>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static FontStyle? ConvertFontStyle(string style)
+        {
+            if (String.IsNullOrEmpty(style)) return null;
+            FontStyle fontStyle = FontStyle.Regular;
+            style = style.ToUpper();
+            if (style.Contains("B")) fontStyle |= FontStyle.Bold;
+            if (style.Contains("I")) fontStyle |= FontStyle.Italic;
+            if (style.Contains("U")) fontStyle |= FontStyle.Underline;
+            return fontStyle;
+        }
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;
         private DevExpress.XtraEditors.StyleController _SubTitleStyle;
         private DevExpress.XtraEditors.StyleController _LabelStyle;
@@ -1224,23 +1240,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (menuItem == null) return null;
 
             DevExpress.Utils.Menu.DXMenuItem dxItem;
-            string itemImage = menuItem.ItemImage;
-            if (menuItem.ItemIsChecked.HasValue)
+            string itemImage = menuItem.Image;
+            if (menuItem.ItemType == MenuItemType.CheckBox)
             {   // Prvek menu s možností CheckBox:
-                bool isChecked = menuItem.ItemIsChecked.Value; ;
-                DevExpress.Utils.Menu.DXMenuCheckItem dxCheckItem = new DevExpress.Utils.Menu.DXMenuCheckItem();
+                bool isChecked = menuItem.Checked ?? false;
+                var dxCheckItem = new DevExpress.Utils.Menu.DXMenuCheckItem();
                 dxCheckItem.Checked = isChecked;
                 if (isChecked)
                 {   // Je zaškrtnutý:
                     if (showCheckedAsBold)
                         dxCheckItem.Appearance.FontStyleDelta = FontStyle.Bold;
-                    if (menuItem.ItemImageChecked != null)
-                        itemImage = menuItem.ItemImageChecked;
+                    if (menuItem.ImageChecked != null)
+                        itemImage = menuItem.ImageChecked;
                 }
                 else
                 {   // Není zaškrtnutý:
-                    if (menuItem.ItemImageUnChecked != null)
-                        itemImage = menuItem.ItemImageUnChecked;
+                    if (menuItem.ImageUnChecked != null)
+                        itemImage = menuItem.ImageUnChecked;
                 }
                 dxItem = dxCheckItem;
             }
@@ -1249,8 +1265,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxItem = new DevExpress.Utils.Menu.DXMenuItem();
             }
             dxItem.BeginGroup = menuItem.ItemIsFirstInGroup;
-            dxItem.Enabled = menuItem.ItemEnabled;
-            dxItem.Caption = menuItem.ItemText;
+            dxItem.Enabled = menuItem.Enabled;
+            dxItem.Caption = menuItem.Text;
             dxItem.SuperTip = CreateDxSuperTip(menuItem);
             ApplyImage(dxItem.ImageOptions, resourceName: itemImage);
             dxItem.Tag = menuItem;
@@ -1293,10 +1309,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 foreach (var menuItem in menuItems)
                 {
-                    DevExpress.XtraBars.BarButtonItem button = new DevExpress.XtraBars.BarButtonItem(barManager, menuItem.ItemText)
+                    DevExpress.XtraBars.BarButtonItem button = new DevExpress.XtraBars.BarButtonItem(barManager, menuItem.Text)
                     {
                         Name = menuItem.ItemId,
-                        Hint = menuItem.ToolTip,
+                        Hint = menuItem.ToolTipText,
                         SuperTip = CreateDxSuperTip(menuItem)
                     };
                     barItems.Add(button);
@@ -1334,11 +1350,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string data = (count > 3 ? items[3].Trim().ToUpper() : "");
                     if (!String.IsNullOrEmpty(text))
                     {
-                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, ItemText = text, ToolTip = toolTip, ToolTipTitle = text, ItemImage = image };
-                        menuItem.ItemType = (data.Contains(codChBox) ? RibbonItemType.CheckBoxStandard : RibbonItemType.Button);
-                        if (menuItem.ItemType == RibbonItemType.CheckBoxStandard) menuItem.ItemIsChecked = data.Contains(codChecked);
+                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, Text = text, ToolTipText = toolTip, ToolTipTitle = text, Image = image };
+                        menuItem.ItemType = (data.Contains(codChBox) ? MenuItemType.CheckBox : MenuItemType.MenuItem);
+                        if (menuItem.ItemType == MenuItemType.CheckBox) menuItem.Checked = data.Contains(codChecked);
                         if (data.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
-                        if (data.Contains(codDisable)) menuItem.ItemEnabled = false;
+                        if (data.Contains(codDisable)) menuItem.Enabled = false;
                         menuItems.Add(menuItem);
                     }
                 }
@@ -1432,9 +1448,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static SuperToolTip CreateDxSuperTip(IMenuItem menuItem)
         {
-            if (menuItem == null || (String.IsNullOrEmpty(menuItem.ToolTipTitle) && String.IsNullOrEmpty(menuItem.ToolTip))) return null;
+            if (menuItem == null || (String.IsNullOrEmpty(menuItem.ToolTipTitle) && String.IsNullOrEmpty(menuItem.ToolTipText))) return null;
 
-            string title = (menuItem.ToolTipTitle ?? menuItem.ItemText);
+            string title = (menuItem.ToolTipTitle ?? menuItem.Text);
 
             var superTip = new DevExpress.Utils.SuperToolTip();
             if (title != null)
@@ -1448,7 +1464,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 superTip.Items.AddSeparator();
             }
-            superTip.Items.Add(menuItem.ToolTip);
+            superTip.Items.Add(menuItem.ToolTipText);
             return superTip;
         }
         #endregion

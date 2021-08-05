@@ -146,6 +146,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AsolDX\DxDragDrop.cs" />
+    <Compile Include="AsolDX\DxFilterBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\ChartControl.cs">
       <SubType>Component</SubType>
     </Compile>

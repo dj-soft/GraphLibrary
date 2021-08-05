@@ -20,6 +20,7 @@ using DevExpress.Pdf.Native;
 using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
 using DevExpress.Office.History;
+using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -831,10 +832,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             ToolTipDispose();
         }
         /// <summary>
-        /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
-        /// </summary>
-        public event PaintEventHandler PaintList;
-        /// <summary>
         /// Pole, obsahující informace o právě viditelných prvcích ListBoxu a jejich aktuální souřadnice
         /// </summary>
         public Tuple<int, IMenuItem, Rectangle>[] VisibleItems
@@ -1005,8 +1002,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override Image GetItemImage(int index)
         {
             var menuItem = this.ListItems[index];
-            if (menuItem != null && menuItem.ItemImage != null)
-                return DxComponent.GetImageFromResource(menuItem.ItemImage);
+            if (menuItem != null && menuItem.Image != null)
+                return DxComponent.GetImageFromResource(menuItem.Image);
 
             return base.GetItemImage(index);
         }
@@ -1044,8 +1041,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var menuItem = listBox.ListItems[index];
                     if (menuItem != null)
                     {
-                        string toolTipText = menuItem.ToolTip;
-                        string toolTipTitle = menuItem.ToolTipTitle ?? menuItem.ItemText;
+                        string toolTipText = menuItem.ToolTipText;
+                        string toolTipTitle = menuItem.ToolTipTitle ?? menuItem.Text;
                         var ttci = new DevExpress.Utils.ToolTipControlInfo(menuItem, toolTipText, toolTipTitle);
                         ttci.ToolTipType = ToolTipType.SuperTip;
                         ttci.AllowHtmlText = (ToolTipAllowHtmlText ? DefaultBoolean.True : DefaultBoolean.False);
@@ -1054,12 +1051,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
         #endregion
         #region Remove, Delete, CtrlC, CtrlX
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
         public KeyActionType EnabledKeyActions { get; set; }
+        /// <summary>
+        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="KeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
+        /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
+        /// </summary>
+        /// <param name="actions"></param>
+        public void DoKeyActions(params KeyActionType[] actions)
+        {
+            foreach (KeyActionType action in actions)
+                _DoKeyAction(action, true);
+        }
         /// <summary>
         /// Inicializace eventhandlerů a hodnot pro KeyActions
         /// </summary>
@@ -1084,75 +1102,101 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (e.KeyData)
             {
                 case Keys.Delete:
-                    if (enabledActions.HasFlag(KeyActionType.Delete))
-                        this.OnKeyDelete(e);
+                    _DoKeyAction(KeyActionType.Delete);
                     break;
                 case Keys.Control | Keys.A:
-                    if (enabledActions.HasFlag(KeyActionType.CtrlA))
-                        this.OnKeyCtrlA(e);
+                    _DoKeyAction(KeyActionType.CtrlA);
                     break;
                 case Keys.Control | Keys.C:
-                    if (enabledActions.HasFlag(KeyActionType.CtrlC))
-                        this.OnKeyCtrlC(e);
+                    _DoKeyAction(KeyActionType.CtrlC);
                     break;
                 case Keys.Control | Keys.X:
-                    if (enabledActions.HasFlag(KeyActionType.CtrlX))
-                        this.OnKeyCtrlX(e);
+                    _DoKeyAction(KeyActionType.CtrlX);
                     break;
                 case Keys.Control | Keys.V:
-                    if (enabledActions.HasFlag(KeyActionType.CtrlV))
-                        this.OnKeyCtrlV(e);
-                    break;
-                case Keys.Alt | Keys.Down:
-                    if (enabledActions.HasFlag(KeyActionType.AltUpDown))
-                        this.OnKeyAltUpDown(e, 1);
+                    _DoKeyAction(KeyActionType.CtrlV);
                     break;
                 case Keys.Alt | Keys.Up:
-                    if (enabledActions.HasFlag(KeyActionType.AltUpDown))
-                        this.OnKeyAltUpDown(e, -1);
+                    _DoKeyAction(KeyActionType.AltUp);
+                    break;
+                case Keys.Alt | Keys.Down:
+                    _DoKeyAction(KeyActionType.AltDown);
                     break;
             }
         }
         /// <summary>
+        /// Provede akce zadané jako bity v dané akci (<paramref name="action"/>), s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="force"></param>
+        private void _DoKeyAction(KeyActionType action, bool force = false)
+        {
+            _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete);
+            _DoKeyAction(action, KeyActionType.CtrlA, force, _DoKeyActionCtrlA);
+            _DoKeyAction(action, KeyActionType.CtrlC, force, _DoKeyActionCtrlC);
+            _DoKeyAction(action, KeyActionType.CtrlX, force, _DoKeyActionCtrlX);
+            _DoKeyAction(action, KeyActionType.CtrlV, force, _DoKeyActionCtrlV);
+            _DoKeyAction(action, KeyActionType.AltUp, force, _DoKeyActionAltUp);
+            _DoKeyAction(action, KeyActionType.AltDown, force, _DoKeyActionAltDown);
+        }
+        /// <summary>
+        /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="runMethod"/>, 
+        /// s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="flag"></param>
+        /// <param name="force"></param>
+        /// <param name="runMethod"></param>
+        private void _DoKeyAction(KeyActionType action, KeyActionType flag, bool force, Action runMethod)
+        {
+            if (!action.HasFlag(flag)) return;
+            if (!force && !EnabledKeyActions.HasFlag(flag)) return;
+            runMethod();
+        }
+
+        /// <summary>
         /// Provedení klávesové akce: Delete
         /// </summary>
-        /// <param name="e"></param>
-        private void OnKeyDelete(KeyEventArgs e)
+        private void _DoKeyActionDelete()
         {
             RemoveIndexes(this.SelectedIndexes);
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlA
         /// </summary>
-        /// <param name="e"></param>
-        private void OnKeyCtrlA(KeyEventArgs e)
+        private void _DoKeyActionCtrlA()
         {
             this.SelectedItems = this.ListItems;
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlC
         /// </summary>
-        /// <param name="e"></param>
-        private void OnKeyCtrlC(KeyEventArgs e)
+        private void _DoKeyActionCtrlC()
         { }
         /// <summary>
         /// Provedení klávesové akce: CtrlX
         /// </summary>
-        /// <param name="e"></param>
-        private void OnKeyCtrlX(KeyEventArgs e)
+        private void _DoKeyActionCtrlX()
         { }
         /// <summary>
         /// Provedení klávesové akce: CtrlV
         /// </summary>
-        /// <param name="e"></param>
-        private void OnKeyCtrlV(KeyEventArgs e)
+        private void _DoKeyActionCtrlV()
         { }
         /// <summary>
-        /// Provedení klávesové akce: AltUp / AltDown
+        /// Provedení klávesové akce: AltUp
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="offset">Směr posunu</param>
-        private void OnKeyAltUpDown(KeyEventArgs e, int offset)
+        private void _DoKeyActionAltUp()
+        {
+            var selectedItems = this.SelectedItems;
+
+
+
+        }
+        /// <summary>
+        /// Provedení klávesové akce: AltDown
+        /// </summary>
+        private void _DoKeyActionAltDown()
         {
             var selectedItems = this.SelectedItems;
 
@@ -1492,18 +1536,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             return iconBounds;
         }
         #endregion
-        #region ToolTip
+        #region Public eventy
+
         /// <summary>
-        /// Nastaví daný text a titulek pro tooltip
+        /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
-        /// <param name="text"></param>
-        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
-        /// <summary>
-        /// Nastaví daný text a titulek pro tooltip
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        public event PaintEventHandler PaintList;
+
         #endregion
     }
     #endregion
@@ -1786,7 +1825,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var visibleItems = _ListBox.VisibleItems;
             foreach (var visibleItem in visibleItems)
             {
-                string resourceName = visibleItem.Item2?.ItemText;
+                string resourceName = visibleItem.Item2?.Text;
                 Rectangle itemBounds = visibleItem.Item3;
                 var image = DxComponent.GetImageFromResource(resourceName, out Size size, maxSize: new Size(32, 32), optimalSvgSize: new Size(32, 32), svgPalette: svgPalette);
                 if (image != null)
@@ -1808,7 +1847,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _FillListByFilter()
         {
             string[] resources = _GetResourcesByFilter();
-            IMenuItem[] items = resources.Select(s => new DataMenuItem() { ItemText = s }).ToArray();
+            IMenuItem[] items = resources.Select(s => new DataMenuItem() { Text = s }).ToArray();
             _FilteredItemsCount = resources.Length;
 
             _ListBox.SuspendLayout();
@@ -1862,7 +1901,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (var selectedItem in selectedItems)
                 {
                     _ClipboardCopyIndex++;
-                    string resourceName = selectedItem.Item2?.ItemText;
+                    string resourceName = selectedItem.Item2?.Text;
                     if (!String.IsNullOrEmpty(resourceName))
                         sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
                 }
@@ -2293,7 +2332,266 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
+    #region DataMenuItem a interface IMenuItem + IToolTipItem
+    /// <summary>
+    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
+    /// </summary>
+    [DebuggerDisplay("{DebugText}")]
+    public class DataMenuItem : IMenuItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataMenuItem()
+        {
+            this.Enabled = true;
+        }
+        /// <summary>
+        /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return (this.Text ?? "");
+        }
+        /// <summary>
+        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// </summary>
+        protected virtual string DebugText
+        {
+            get
+            {
+                string debugText = $"Id: {ItemId}; Text: {Text}; Type: {ItemType}";
+                if (this.SubItems != null)
+                    debugText += $"; SubItems: {this.SubItems.Count}";
+                return debugText;
+            }
+        }
+        /// <summary>
+        /// Z dodané kolekce prvků sestaví setříděný List a vrátí jej
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static List<IMenuItem> SortItems(IEnumerable<IMenuItem> items)
+        {
+            List<IMenuItem> list = new List<IMenuItem>();
+            if (items != null)
+                list.AddRange(items.Where(p => p != null));
+            if (list.Count > 1)
+            {
+                int itemOrder = 0;
+                foreach (var item in list)
+                {
+                    if (item.ItemOrder == 0) item.ItemOrder = ++itemOrder; else if (item.ItemOrder > itemOrder) itemOrder = item.ItemOrder;
+                }
+                list.Sort((a, b) => a.ItemOrder.CompareTo(b.ItemOrder));
+            }
+            return list;
+        }
+        /// <summary>
+        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
+        /// </summary>
+        public virtual string ItemId { get; set; }
+        /// <summary>
+        /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
+        /// </summary>
+        public virtual IMenuItem ParentItem { get; set; }
+        /// <summary>
+        /// Hlavní text v prvku
+        /// </summary>
+        public virtual string Text { get; set; }
+        /// <summary>
+        /// Typ položky
+        /// </summary>
+        public virtual MenuItemType ItemType { get; set; }
+        /// <summary>
+        /// Režim pro vytvoření / refill / remove tohoto prvku
+        /// </summary>
+        public virtual ContentChangeMode ChangeMode { get; set; }
+        /// <summary>
+        /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
+        /// </summary>
+        public virtual int ItemOrder { get; set; }
+        /// <summary>
+        /// Obsahuje tre tehdy, když před prvkem má být oddělovač
+        /// </summary>
+        public virtual bool ItemIsFirstInGroup { get; set; }
+        /// <summary>
+        /// Prvek je Enabled?
+        /// </summary>
+        public virtual bool Enabled { get; set; }
+        /// <summary>
+        /// Jméno běžné ikony.
+        /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
+        /// </summary>
+        public virtual string Image { get; set; }
+        /// <summary>
+        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        public virtual string ImageUnChecked { get; set; }
+        /// <summary>
+        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        public virtual string ImageChecked { get; set; }
+        /// <summary>
+        /// Určuje, zda CheckBox je zaškrtnutý.
+        /// Po změně zaškrtnutí v Menu / Ribbonu (uživatelem) je do této property setována aktuální hodnota z Menu / Ribbonu,
+        /// a poté je vyvolána odpovídající událost ItemClick.
+        /// Zadaná hodnota může být null (pak ikona je <see cref="Image"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
+        /// </summary>
+        public virtual bool? Checked { get; set; }
+        /// <summary>
+        /// Styl zobrazení
+        /// </summary>
+        public virtual BarItemPaintStyle ItemPaintStyle { get; set; }
+        /// <summary>
+        /// Klávesa
+        /// </summary>
+        public virtual string HotKey { get; set; }
+        /// <summary>
+        /// Text ToolTipu
+        /// </summary>
+        public virtual string ToolTipText { get; set; }
+        /// <summary>
+        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se <see cref="Text"/>.
+        /// </summary>
+        public virtual string ToolTipTitle { get; set; }
+        /// <summary>
+        /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
+        /// </summary>
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+        /// <summary>
+        /// Ikona ToolTipu
+        /// </summary>
+        public virtual string ToolTipIcon { get; set; }
+        /// <summary>
+        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public virtual List<IMenuItem> SubItems { get; set; }
+        /// <summary>
+        /// V deklaraci interface je IEnumerable...
+        /// </summary>
+        IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
+        /// <summary>
+        /// Libovolná data aplikace
+        /// </summary>
+        public object Tag { get; set; }
+    }
+    /// <summary>
+    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
+    /// </summary>
+    public interface IMenuItem : IToolTipItem
+    {
+        /// <summary>
+        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
+        /// </summary>
+        string ItemId { get; }
+        /// <summary>
+        /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
+        /// </summary>
+        IMenuItem ParentItem { get; set; }
+        /// <summary>
+        /// Hlavní text v prvku
+        /// </summary>
+        string Text { get; }
+        /// <summary>
+        /// Typ položky
+        /// </summary>
+        MenuItemType ItemType { get; }
+        /// <summary>
+        /// Režim pro vytvoření / refill / remove tohoto prvku
+        /// </summary>
+        ContentChangeMode ChangeMode { get; }
+        /// <summary>
+        /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
+        /// </summary>
+        int ItemOrder { get; set; }
+        /// <summary>
+        /// Obsahuje tre tehdy, když před prvkem má být oddělovač
+        /// </summary>
+        bool ItemIsFirstInGroup { get; }
+        /// <summary>
+        /// Prvek je Enabled?
+        /// </summary>
+        bool Enabled { get; }
+        /// <summary>
+        /// Určuje, zda CheckBox je zaškrtnutý.
+        /// Po změně zaškrtnutí v Ribbonu (uživatelem) je do této property setována aktuální hodnota z Ribbonu 
+        /// a poté je vyvolána událost <see cref="DxRibbonControl.RibbonItemClick"/>.
+        /// Hodnota může být null, pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat).
+        /// <para/>
+        /// Pokud konkrétní prvek nepodporuje null, akceptuje null jako false.
+        /// </summary>
+        bool? Checked { get; set; }
+        /// <summary>
+        /// Jméno ikony.
+        /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
+        /// </summary>
+        string Image { get; }
+        /// <summary>
+        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        string ImageUnChecked { get; }
+        /// <summary>
+        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        string ImageChecked { get; }
+        /// <summary>
+        /// Styl zobrazení
+        /// </summary>
+        BarItemPaintStyle ItemPaintStyle { get; }
+        /// <summary>
+        /// Klávesa
+        /// </summary>
+        string HotKey { get; }
+        /// <summary>
+        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
+        /// </summary>
+        IEnumerable<IMenuItem> SubItems { get; }
+        /// <summary>
+        /// Libovolná data aplikace
+        /// </summary>
+        object Tag { get; }
+    }
+    /// <summary>
+    /// Interface definující vlastnosti prvku, který může nabídnout ToolTip
+    /// </summary>
+    public interface IToolTipItem
+    {
+        /// <summary>
+        /// Text ToolTipu
+        /// </summary>
+        string ToolTipText { get; }
+        /// <summary>
+        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
+        /// </summary>
+        string ToolTipTitle { get; }
+        /// <summary>
+        /// Ikona ToolTipu
+        /// </summary>
+        string ToolTipIcon { get; }
+    }
+    #endregion
     #region Enumy: LabelStyleType, RectangleSide, RectangleCorner
+    /// <summary>
+    /// Druh položky menu
+    /// </summary>
+    public enum MenuItemType
+    {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Položka menu
+        /// </summary>
+        MenuItem,
+        /// <summary>
+        /// CheckBox
+        /// </summary>
+        CheckBox
+    }
     /// <summary>
     /// Styl použitý pro Label
     /// </summary>
@@ -2401,6 +2699,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         BottomLeft
     }
     /// <summary>
+    /// Jaké hodnoty zachovat při změně obsahu dat
+    /// </summary>
+    [Flags]
+    public enum PreservePropertiesMode
+    {
+        /// <summary>
+        /// Nic nezachovat, vše bude resetováno do výchozího stavu
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Zachovat první viditelný prvek (řádek, sloupec)
+        /// </summary>
+        FirstVisibleItem = 0x0001,
+        /// <summary>
+        /// Zachovat první viditelný pixel
+        /// </summary>
+        FirstVisiblePixel = 0x0002,
+        /// <summary>
+        /// Zachovat stav vybraných prvků
+        /// </summary>
+        SelectedItems = 0x0010
+    }
+    /// <summary>
     /// Klávesové akce
     /// </summary>
     [Flags]
@@ -2432,14 +2753,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         CtrlV = 0x0080,
 
         /// <summary>
-        /// Klávesa AltUp a AltDown (kurzor) = přemístit o jednu pozici dolů / nahoru
+        /// Klávesa AltUp (kurzor) = přemístit o jednu pozici nahoru
         /// </summary>
-        AltUpDown = 0x0100,
+        AltUp = 0x0100,
+        /// <summary>
+        /// Klávesa AltDown (kurzor) = přemístit o jednu pozici dolů
+        /// </summary>
+        AltDown = 0x0200,
 
         /// <summary>
         /// Všechny akce
         /// </summary>
-        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV | AltUpDown
+        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV | AltUp
     }
     #endregion
 }

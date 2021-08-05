@@ -447,7 +447,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nejprve zahodí obsah stránek, které jsou uvedeny v dodaných datech.
         /// Pak do Ribbonu vygeneruje nový obsah do specifikovaných stránek.
         /// Pokud pro některou stránku nebudou dodána žádná platná data, stránku zruší
-        /// (k tomu se použije typ prvku <see cref="IMenuItem.ItemType"/> == <see cref="RibbonItemType.None"/>, kde daný záznam pouze definuje Page ke zrušení).
+        /// (k tomu se použije typ prvku <see cref="IRibbonItem.RibbonItemType"/> == <see cref="RibbonItemType.None"/>, kde daný záznam pouze definuje Page ke zrušení).
         /// <para/>
         /// Tato metoda si sama dokáže zajistit invokaci GUI threadu.
         /// Pokud v době volání je aktuální Ribbon mergovaný v parent ribbonech, pak si korektně zajistí re-merge (=promítnutí nového obsahu do parent ribbonu).
@@ -622,23 +622,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             var group = GetGroup(iRibbonGroup, page);
             if (group is null) return;
           
-            var list = DataMenuItem.SortItems(iRibbonGroup.Items);
-            foreach (var iMenuItem in list)
+            var iRibbonItems = DataRibbonItem.SortRibbonItems(iRibbonGroup.Items);
+            foreach (var iRibbonItem in iRibbonItems)
             {
-                iMenuItem.ParentGroup = iRibbonGroup;
-                _AddBarItem(iMenuItem, group, ref count);
+                iRibbonItem.ParentGroup = iRibbonGroup;
+                _AddBarItem(iRibbonItem, group, ref count);
             }
         }
         /// <summary>
         /// Metoda přidá daný prvek do dané grupy
         /// </summary>
-        /// <param name="iMenuItem"></param>
+        /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
         /// <param name="count"></param>
-        private void _AddBarItem(IMenuItem iMenuItem, DxRibbonGroup group, ref int count)
+        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup group, ref int count)
         {
-            if (iMenuItem == null || group == null) return;
-            var barItem = GetItem(iMenuItem, group, ref count);
+            if (iRibbonItem == null || group == null) return;
+            var barItem = GetItem(iRibbonItem, group, ref count);
             if (barItem is null) return;
             // více není třeba.
         }
@@ -801,7 +801,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonPage"></param>
         /// <param name="pageCategory"></param>
-        /// <param name="enableNew"></param>
         /// <returns></returns>
         protected DxRibbonPage GetPage(IRibbonPage iRibbonPage, DxRibbonPageCategory pageCategory = null)
         {
@@ -934,24 +933,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Rozpozná, najde, vytvoří a vrátí BarItem pro daná data.
         /// BarItem přidá do dané grupy.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
         /// <param name="count"></param>
-        /// <param name="enableNew"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IMenuItem item, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool reallyCreateSubItems = false)
         {
-            if (item is null || group is null) return null;
+            if (iRibbonItem is null || group is null) return null;
 
-            var changeMode = item.ChangeMode;
-            DevExpress.XtraBars.BarItem barItem = Items[item.ItemId];
+            var changeMode = iRibbonItem.ChangeMode;
+            DevExpress.XtraBars.BarItem barItem = Items[iRibbonItem.ItemId];
             if (HasCreate(changeMode))
             {
                 if (HasReFill(changeMode) && barItem != null)
                 { }
                 if (barItem is null)
-                    barItem = CreateItem(item, reallyCreateSubItems, ref count);
+                    barItem = CreateItem(iRibbonItem, reallyCreateSubItems, ref count);
                 if (HasReFill(changeMode))
                 {
                     //  ClearItem(barItem);
@@ -959,18 +957,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                
                 if (barItem is null) return null;
                 var barLink = group.ItemLinks.Add(barItem);
-                barLink.BeginGroup = item.ItemIsFirstInGroup;
-                FillBarItem(barItem, item);
+                barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
+                FillBarItem(barItem, iRibbonItem);
 
                 // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
-                if (barItem.Tag == null) barItem.Tag = item;
+                if (barItem.Tag == null) barItem.Tag = iRibbonItem;
             }
             else if (HasRemove(changeMode))
             {
 
             }
 
-            if (item.ItemToolbarOrder.HasValue)
+            if (iRibbonItem.ItemToolbarOrder.HasValue)
                 this.Toolbar.ItemLinks.Add(barItem);
 
             return barItem;
@@ -978,18 +976,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří prvek BarItem pro daná data a vrátí jej.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="iRibbonItem"></param>
         /// <param name="reallyCreateSubItems">Skutečně se mají vytvářet SubMenu?</param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem CreateItem(IMenuItem item, bool reallyCreateSubItems, ref int count)
+        protected DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, bool reallyCreateSubItems, ref int count)
         {
             DevExpress.XtraBars.BarItem barItem = null;
-            switch (item.ItemType)
+            switch (iRibbonItem.RibbonItemType)
             {
                 case RibbonItemType.ButtonGroup:
                     count++;
-                    DevExpress.XtraBars.BarButtonGroup buttonGroup = Items.CreateButtonGroup(GetBarBaseButtons(item, item.SubItems, reallyCreateSubItems, ref count));
+                    DevExpress.XtraBars.BarButtonGroup buttonGroup = Items.CreateButtonGroup(GetBarBaseButtons(iRibbonItem, iRibbonItem.SubRibbonItems, reallyCreateSubItems, ref count));
                     buttonGroup.ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
                     buttonGroup.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
                     buttonGroup.OptionsMultiColumn.ShowItemText = DevExpress.Utils.DefaultBoolean.True;
@@ -997,35 +995,35 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.SplitButton:
                     count++;
-                    var dxPopup = CreateXPopupMenu(item, item.SubItems, reallyCreateSubItems, ref count);
-                    DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(item.ItemText, dxPopup);
+                    var dxPopup = CreateXPopupMenu(iRibbonItem, iRibbonItem.SubRibbonItems, reallyCreateSubItems, ref count);
+                    DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(iRibbonItem.Text, dxPopup);
                     barItem = splitButton;
                     break;
                 case RibbonItemType.CheckBoxStandard:
                     count++;
-                    DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
+                    DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
                     checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                     barItem = checkItem;
                     break;
                 case RibbonItemType.RadioItem:
                     count++;
-                    DevExpress.XtraBars.BarCheckItem radioItem = Items.CreateCheckItem(item.ItemText, item.ItemIsChecked ?? false);
+                    DevExpress.XtraBars.BarCheckItem radioItem = Items.CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
                     barItem = radioItem;
                     break;
                 case RibbonItemType.CheckBoxToggle:
                     count++;
-                    DxCheckBoxToggle toggleSwitch = new DxCheckBoxToggle(this.BarManager, item.ItemText);
+                    DxCheckBoxToggle toggleSwitch = new DxCheckBoxToggle(this.BarManager, iRibbonItem.Text);
                     barItem = toggleSwitch;
                     break;
                 case RibbonItemType.Menu:
                     count++;
-                    DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(item.ItemText);
-                    PrepareXBarMenu(item, item.SubItems, menu, reallyCreateSubItems, ref count);
+                    DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(iRibbonItem.Text);
+                    PrepareXBarMenu(iRibbonItem, iRibbonItem.SubRibbonItems, menu, reallyCreateSubItems, ref count);
                     barItem = menu;
                     break;
                 case RibbonItemType.InRibbonGallery:
                     count++;
-                    var galleryItem = CreateGalleryItem(item);
+                    var galleryItem = CreateGalleryItem(iRibbonItem);
                     barItem = galleryItem;
                     break;
                 case RibbonItemType.SkinSetDropDown:
@@ -1043,14 +1041,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.Button:
                 default:
                     count++;
-                    DevExpress.XtraBars.BarButtonItem button = Items.CreateButton(item.ItemText);
+                    DevExpress.XtraBars.BarButtonItem button = Items.CreateButton(iRibbonItem.Text);
                     barItem = button;
                     break;
             }
             if (barItem != null)
             {
-                barItem.Name = item.ItemId;
-                FillBarItem(barItem, item);
+                barItem.Name = iRibbonItem.ItemId;
+                FillBarItem(barItem, iRibbonItem);
             }
             return barItem;
         }
@@ -1058,15 +1056,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do daného prvku vepíše data z definice
         /// </summary>
         /// <param name="barItem"></param>
-        /// <param name="item"></param>
-        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IMenuItem item)
+        /// <param name="iRibbonItem"></param>
+        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem)
         {
-            if (item.ItemText != null)
-                barItem.Caption = item.ItemText;
+            if (iRibbonItem.Text != null)
+                barItem.Caption = iRibbonItem.Text;
 
-            barItem.Enabled = item.ItemEnabled;
+            barItem.Enabled = iRibbonItem.Enabled;
 
-            string imageName = item.ItemImage;
+            string imageName = iRibbonItem.Image;
             if (imageName != null && !(barItem is DxCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
             {
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
@@ -1075,15 +1073,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {
-                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, ImagesSize, item.ItemText);
-                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, LargeImagesSize, item.ItemText);
+                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, ImagesSize, iRibbonItem.Text);
+                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, LargeImagesSize, iRibbonItem.Text);
                 }
             }
 
-            if (!string.IsNullOrEmpty(item.HotKey))
+            if (!string.IsNullOrEmpty(iRibbonItem.HotKey))
             {
                 if (!(barItem is DevExpress.XtraBars.BarSubItem))
-                    barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(item.HotKey));
+                    barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(iRibbonItem.HotKey));
                 // else
                 //    ComponentConnector.ShowWarningToDeveloper($"Setup keyboard shortcut {item.HotKey} to non button barItem {barItem.Name}. This is {barItem.GetType().Name}");
             }
@@ -1092,38 +1090,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Do CheckBoxu vepisujeme víc vlastností:
                 checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                 checkItem.CheckStyle =
-                    (item.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
-                    (item.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
+                    (iRibbonItem.RibbonItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
+                    (iRibbonItem.RibbonItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
                      DevExpress.XtraBars.BarCheckStyles.Standard));
-                checkItem.Checked = item.ItemIsChecked ?? false;
+                checkItem.Checked = iRibbonItem.Checked ?? false;
             }
 
             if (barItem is DxCheckBoxToggle dxCheckBoxToggle)
             {
-                dxCheckBoxToggle.Checked = item.ItemIsChecked;
-                if (item.ItemImage != null) dxCheckBoxToggle.ImageNameNull = item.ItemImage;
-                if (item.ItemImageUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = item.ItemImageUnChecked;
-                if (item.ItemImageChecked != null) dxCheckBoxToggle.ImageNameChecked = item.ItemImageChecked;
+                dxCheckBoxToggle.Checked = iRibbonItem.Checked;
+                if (iRibbonItem.Image != null) dxCheckBoxToggle.ImageNameNull = iRibbonItem.Image;
+                if (iRibbonItem.ImageUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = iRibbonItem.ImageUnChecked;
+                if (iRibbonItem.ImageChecked != null) dxCheckBoxToggle.ImageNameChecked = iRibbonItem.ImageChecked;
             }
 
-            barItem.PaintStyle = Convert(item.ItemPaintStyle);
-            if (item.RibbonStyle != RibbonItemStyles.Default)
-                barItem.RibbonStyle = Convert(item.RibbonStyle);
+            barItem.PaintStyle = Convert(iRibbonItem.ItemPaintStyle);
+            if (iRibbonItem.RibbonStyle != RibbonItemStyles.Default)
+                barItem.RibbonStyle = Convert(iRibbonItem.RibbonStyle);
 
-            if (item.ToolTip != null)
-                barItem.SuperTip = GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
+            if (iRibbonItem.ToolTipText != null)
+                barItem.SuperTip = GetSuperTip(iRibbonItem.ToolTipText, iRibbonItem.ToolTipTitle, iRibbonItem.Text, iRibbonItem.ToolTipIcon);
 
             if (barItem.Tag == null)
                 // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
-                barItem.Tag = item;
+                barItem.Tag = iRibbonItem;
         }
 
-        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
+        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             List<DevExpress.XtraBars.BarBaseButtonItem> baseButtons = new List<DevExpress.XtraBars.BarBaseButtonItem>();
             if (subItems != null && reallyCreate)
             {
-                foreach (IMenuItem subItem in subItems)
+                foreach (IRibbonItem subItem in subItems)
                 {
                     subItem.ParentItem = parentItem;
                     subItem.ParentGroup = parentItem.ParentGroup;
@@ -1140,17 +1138,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí jednoduchý Button
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarBaseButtonItem CreateBaseButton(IMenuItem item)
+        protected DevExpress.XtraBars.BarBaseButtonItem CreateBaseButton(IRibbonItem iRibbonItem)
         {
             DevExpress.XtraBars.BarBaseButtonItem baseButton = null;
-            switch (item.ItemType)
+            switch (iRibbonItem.RibbonItemType)
             {
                 case RibbonItemType.Button:
                 case RibbonItemType.ButtonGroup:
                     // DevExpress.XtraBars.BarBaseButtonItem buttonItem = new DevExpress.XtraBars.BarButtonItem(this.Manager, item.ItemText);
-                    DevExpress.XtraBars.BarLargeButtonItem buttonItem = new DevExpress.XtraBars.BarLargeButtonItem(this.Manager, item.ItemText);
+                    DevExpress.XtraBars.BarLargeButtonItem buttonItem = new DevExpress.XtraBars.BarLargeButtonItem(this.Manager, iRibbonItem.Text);
                     baseButton = buttonItem;
                     break;
                 case RibbonItemType.CheckBoxStandard:
@@ -1160,8 +1158,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (baseButton != null)
             {
-                baseButton.Name = item.ItemId;
-                FillBarItem(baseButton, item);
+                baseButton.Name = iRibbonItem.ItemId;
+                FillBarItem(baseButton, iRibbonItem);
             }
             return baseButton;
         }
@@ -1175,7 +1173,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreate"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.PopupMenu CreateXPopupMenu(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
+        protected DevExpress.XtraBars.PopupMenu CreateXPopupMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             DevExpress.XtraBars.PopupMenu xPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
             if (subItems != null)
@@ -1202,7 +1200,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!(sender is DevExpress.XtraBars.PopupMenu dxPopup)) return;
             dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
             if (!(dxPopup.Tag is LazySubItemsInfo lazySubItems)) return;
-            dxPopup.Tag = null;                            // dxPopup není prvek Ribbonu, ale PopupMenu navázané na SplitButtonu. Jeho Tag nechť je null, protože definující prvek IMenuItem je v Tagu toho SplitButtonu.
+            dxPopup.Tag = null;                            // dxPopup není prvek Ribbonu, ale PopupMenu navázané na SplitButtonu. Jeho Tag nechť je null, protože definující prvek IRibbonItem je v Tagu toho SplitButtonu.
 
             var startTime = DxComponent.LogTimeCurrent;
             int count = 0;
@@ -1217,9 +1215,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parentItem"></param>
         /// <param name="subItems"></param>
         /// <param name="count"></param>
-        private void _XPopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
+        private void _XPopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, ref int count)
         {
-            foreach (IMenuItem subItem in subItems)
+            foreach (IRibbonItem subItem in subItems)
             {
                 subItem.ParentItem = parentItem;
                 subItem.ParentGroup = parentItem.ParentGroup;
@@ -1242,7 +1240,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="xBarMenu"></param>
         /// <param name="reallyCreate"></param>
         /// <param name="count"></param>
-        private void PrepareXBarMenu(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, DevExpress.XtraBars.BarSubItem xBarMenu, bool reallyCreate, ref int count)
+        private void PrepareXBarMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, DevExpress.XtraBars.BarSubItem xBarMenu, bool reallyCreate, ref int count)
         {
             if (parentItem.SubItems != null)
             {
@@ -1268,7 +1266,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!(sender is DevExpress.XtraBars.BarSubItem xBarMenu)) return;
             xBarMenu.Popup -= _XBarMenu_BeforePopup;
             if (!(xBarMenu.Tag is LazySubItemsInfo lazySubItems)) return;
-            xBarMenu.Tag = lazySubItems.ParentItem;        // Tady je xBarMenu = přímo prvek Ribbonu, a tam chci mít v Tagu referenci na IMenuItem, který prvek založil...
+            xBarMenu.Tag = lazySubItems.ParentItem;        // Tady je xBarMenu = přímo prvek Ribbonu, a tam chci mít v Tagu referenci na IRibbonItem, který prvek založil...
 
             var startTime = DxComponent.LogTimeCurrent;
             int count = 0;
@@ -1284,13 +1282,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parentItem"></param>
         /// <param name="subItems"></param>
         /// <param name="count"></param>
-        private void _XBarMenu_FillItems(DevExpress.XtraBars.BarSubItem xBarMenu, IMenuItem parentItem, IEnumerable<IMenuItem> subItems, ref int count)
+        private void _XBarMenu_FillItems(DevExpress.XtraBars.BarSubItem xBarMenu, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, ref int count)
         {
             var menuItems = GetBarSubItems(parentItem, subItems, true, ref count);
             foreach (var menuItem in menuItems)
             {
                 var menuLink = xBarMenu.AddItem(menuItem);
-                if ((menuItem.Tag is IMenuItem ribbonData) && ribbonData.ItemIsFirstInGroup)
+                if ((menuItem.Tag is IRibbonItem ribbonData) && ribbonData.ItemIsFirstInGroup)
                     menuLink.BeginGroup = true;
             }
         }
@@ -1302,12 +1300,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreate"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem[] GetBarSubItems(IMenuItem parentItem, IEnumerable<IMenuItem> subItems, bool reallyCreate, ref int count)
+        protected DevExpress.XtraBars.BarItem[] GetBarSubItems(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
             if (subItems != null && reallyCreate)
             {
-                foreach (IMenuItem subItem in subItems)
+                foreach (IRibbonItem subItem in subItems)
                 {
                     subItem.ParentItem = parentItem;
                     subItem.ParentGroup = parentItem.ParentGroup;
@@ -1326,19 +1324,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí Galerii buttonů
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private DevExpress.XtraBars.RibbonGalleryBarItem CreateGalleryItem(IMenuItem item)
+        private DevExpress.XtraBars.RibbonGalleryBarItem CreateGalleryItem(IRibbonItem iRibbonItem)
         {
             var galleryBarItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
             galleryBarItem.Gallery.Images = ComponentConnector.GraphicsCache.GetImageList();
             galleryBarItem.Gallery.HoverImages = ComponentConnector.GraphicsCache.GetImageList();
             galleryBarItem.Gallery.AllowHoverImages = true;
             galleryBarItem.Gallery.ColumnCount = 4;
-            galleryBarItem.SuperTip = GetSuperTip(item);
+            galleryBarItem.SuperTip = GetSuperTip(iRibbonItem);
             galleryBarItem.AllowGlyphSkinning = DefaultBoolean.True;
-            galleryBarItem.Caption = item.ItemText;
-            galleryBarItem.Enabled = item.ItemEnabled;
+            galleryBarItem.Caption = iRibbonItem.Text;
+            galleryBarItem.Enabled = iRibbonItem.Enabled;
             galleryBarItem.GalleryItemClick += GalleryBarItem_GalleryItemClick;
 
 
@@ -1348,8 +1346,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Teprve do grupy přidám prvky:
             List<DevExpress.XtraBars.Ribbon.GalleryItem> items = new List<DevExpress.XtraBars.Ribbon.GalleryItem>();
-            foreach (var subItem in item.SubItems)
-                items.Add(CreateGallerySubItem(item, subItem));
+            foreach (var subRibbonItem in iRibbonItem.SubRibbonItems)
+                items.Add(CreateGallerySubItem(iRibbonItem, subRibbonItem));
 
             galleryGroup.Items.AddRange(items.ToArray());
 
@@ -1358,27 +1356,27 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void GalleryBarItem_GalleryItemClick(object sender, DevExpress.XtraBars.Ribbon.GalleryItemClickEventArgs e)
         {
-            if (!(e.Item?.Tag is IMenuItem menuItem)) return;
-            this.RaiseRibbonItemClick(menuItem);
+            if (!(e.Item?.Tag is IRibbonItem iRibbonItem)) return;
+            this.RaiseRibbonItemClick(iRibbonItem);
         }
         /// <summary>
         /// Vytvoří a vrátí jeden prvek galerie
         /// </summary>
         /// <param name="parentItem"></param>
-        /// <param name="menuItem"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private DevExpress.XtraBars.Ribbon.GalleryItem CreateGallerySubItem(IMenuItem parentItem, IMenuItem menuItem)
+        private DevExpress.XtraBars.Ribbon.GalleryItem CreateGallerySubItem(IRibbonItem parentItem, IRibbonItem iRibbonItem)
         {
             var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem();
-            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(menuItem.ItemImage);
-            galleryItem.Caption = menuItem.ItemText;
-            galleryItem.Checked = menuItem.ItemIsChecked ?? false;
-            galleryItem.Description = menuItem.ToolTip;
-            galleryItem.Enabled = menuItem.ItemEnabled;
-            galleryItem.SuperTip = this.GetSuperTip(menuItem);
-            galleryItem.Tag = menuItem;
-            menuItem.ParentItem = parentItem;
-            menuItem.ParentGroup = parentItem.ParentGroup;
+            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonItem.Image);
+            galleryItem.Caption = iRibbonItem.Text;
+            galleryItem.Checked = iRibbonItem.Checked ?? false;
+            galleryItem.Description = iRibbonItem.ToolTipText;
+            galleryItem.Enabled = iRibbonItem.Enabled;
+            galleryItem.SuperTip = this.GetSuperTip(iRibbonItem);
+            galleryItem.Tag = iRibbonItem;
+            iRibbonItem.ParentItem = parentItem;
+            iRibbonItem.ParentGroup = parentItem.ParentGroup;
             return galleryItem;
         }
         /// <summary>
@@ -1391,7 +1389,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             /// <param name="parentItem"></param>
             /// <param name="subItems"></param>
-            public LazySubItemsInfo(IMenuItem parentItem, IEnumerable<IMenuItem> subItems)
+            public LazySubItemsInfo(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems)
             {
                 this.ParentItem = parentItem;
                 this.SubItems = subItems;
@@ -1407,11 +1405,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Prvek definující Button = Parent celého menu
             /// </summary>
-            public IMenuItem ParentItem { get; private set; }
+            public IRibbonItem ParentItem { get; private set; }
             /// <summary>
             /// SubPrvky
             /// </summary>
-            public IEnumerable<IMenuItem> SubItems { get; private set; }
+            public IEnumerable<IRibbonItem> SubItems { get; private set; }
         }
         private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
@@ -1420,11 +1418,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vygeneruje a vrátí SuperTip pro daný prvek Ribbonu
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        protected DevExpress.Utils.SuperToolTip GetSuperTip(IMenuItem item)
+        protected DevExpress.Utils.SuperToolTip GetSuperTip(IRibbonItem iRibbonItem)
         {
-            return GetSuperTip(item.ToolTip, item.ToolTipTitle, item.ItemText, item.ToolTipIcon);
+            return GetSuperTip(iRibbonItem.ToolTipText, iRibbonItem.ToolTipTitle, iRibbonItem.Text, iRibbonItem.ToolTipIcon);
         }
         /// <summary>
         /// Vygeneruje a vrátí SuperTip pro dané texty
@@ -1634,27 +1632,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             // poznámka: tady nemusím řešit přechod z Ribbonu "ke se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
-            if (_TryGetIRibbonItem(e.Item, out IMenuItem menuItem))
+            if (_TryGetIRibbonItem(e.Item, out IRibbonItem iRibbonItem))
             {
                 if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
-                    menuItem.ItemIsChecked = checkItem.Checked;
+                    iRibbonItem.Checked = checkItem.Checked;
 
-                _RibbonItemClick(menuItem);
+                _RibbonItemClick(iRibbonItem);
             }
         }
         /// <summary>
         /// Provede akci odpovídající kliknutí na prvek Ribbonu, na vstupu jsou data prvku
         /// </summary>
-        /// <param name="iMenuItem"></param>
-        internal void RaiseRibbonItemClick(IMenuItem iMenuItem) { _RibbonItemClick(iMenuItem); }
+        /// <param name="iRibbonItem"></param>
+        internal void RaiseRibbonItemClick(IRibbonItem iRibbonItem) { _RibbonItemClick(iRibbonItem); }
         /// <summary>
         /// Vyvolá reakce na kliknutí na prvek Ribbonu:
         /// event <see cref="RibbonItemClick"/>.
         /// </summary>
-        /// <param name="iMenuItem"></param>
-        private void _RibbonItemClick(IMenuItem iMenuItem)
+        /// <param name="iRibbonItem"></param>
+        private void _RibbonItemClick(IRibbonItem iRibbonItem)
         {
-            var args = new TEventArgs<IMenuItem>(iMenuItem);
+            var args = new TEventArgs<IRibbonItem>(iRibbonItem);
             OnRibbonItemClick(args);
             RibbonItemClick?.Invoke(this, args);
         }
@@ -1662,11 +1660,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne po kliknutí na prvek Ribbonu
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnRibbonItemClick(TEventArgs<IMenuItem> args) { }
+        protected virtual void OnRibbonItemClick(TEventArgs<IRibbonItem> args) { }
         /// <summary>
         /// Událost volaná po kliknutí na prvek Ribbonu
         /// </summary>
-        public event EventHandler<TEventArgs<IMenuItem>> RibbonItemClick;
+        public event EventHandler<TEventArgs<IRibbonItem>> RibbonItemClick;
 
         /// <summary>
         /// V rámci dané kategorie se pokusí najít odpovídající definici kategorie <see cref="IRibbonCategory"/> v některém tagu.
@@ -1719,21 +1717,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
-        /// V rámci daného prvku se pokusí najít odpovídající definici prvku <see cref="IMenuItem"/> v jeho Tagu.
+        /// V rámci daného prvku se pokusí najít odpovídající definici prvku <see cref="IRibbonItem"/> v jeho Tagu.
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="menuItem"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(DevExpress.XtraBars.BarItem item, out IMenuItem menuItem)
+        private bool _TryGetIRibbonItem(DevExpress.XtraBars.BarItem item, out IRibbonItem iRibbonItem)
         {
-            menuItem = null;
+            iRibbonItem = null;
             if (item == null) return false;
-            if (item.Tag is IMenuItem iRibbonItem) { menuItem = iRibbonItem; return true; }
+            if (item.Tag is IRibbonItem found) { iRibbonItem = found; return true; }
 
 
             return false;
         }
-
         /// <summary>
         /// V rámci daných stránek se pokusí najít odpovídající definici stránky <see cref="IRibbonPage"/> v některém tagu.
         /// </summary>
@@ -1770,39 +1767,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             return true;
         }
         /// <summary>
-        /// V rámci daných stránek se pokusí najít odpovídající definici prvního prvku <see cref="IMenuItem"/> v tagu Item.
+        /// V rámci daných stránek se pokusí najít odpovídající definici prvního prvku <see cref="IRibbonItem"/> v tagu Item.
         /// </summary>
         /// <param name="pages"></param>
-        /// <param name="iMenuItem"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IMenuItem iMenuItem)
+        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPage> pages, out IRibbonItem iRibbonItem)
         {
-            iMenuItem = null;
+            iRibbonItem = null;
             if (pages == null) return false;
             var found = pages.SelectMany(p => p.Groups)
                              .SelectMany(g => g.ItemLinks)
                              .Select(i => i.Item.Tag)
-                             .OfType<IMenuItem>()
+                             .OfType<IRibbonItem>()
                              .FirstOrDefault();
             if (found == null) return false;
-            iMenuItem = found;
+            iRibbonItem = found;
             return true;
         }
         /// <summary>
-        /// V rámci dodané kolekce linků na BarItem najde první, který ve svém Tagu nese <see cref="IMenuItem"/> (=definice prvku).
+        /// V rámci dodané kolekce linků na BarItem najde první, který ve svém Tagu nese <see cref="IRibbonItem"/> (=definice prvku).
         /// </summary>
         /// <param name="barItemLinks"></param>
-        /// <param name="iMenuItem"></param>
+        /// <param name="iRibbonItem"></param>
         /// <returns></returns>
-        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.BarItemLink> barItemLinks, out IMenuItem iMenuItem)
+        private bool _TryGetIRibbonItem(IEnumerable<DevExpress.XtraBars.BarItemLink> barItemLinks, out IRibbonItem iRibbonItem)
         {
-            iMenuItem = null;
+            iRibbonItem = null;
             if (barItemLinks == null) return false;
             foreach (DevExpress.XtraBars.BarItemLink link in barItemLinks)
             {
-                if (link.Item.Tag is IMenuItem found)
+                if (link.Item.Tag is IRibbonItem found)
                 {
-                    iMenuItem = found;
+                    iRibbonItem = found;
                     return true;
                 }
             }
@@ -2873,10 +2870,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void OnCheckedChanged()
         {
             ApplyImage();
-            if (this.Ribbon is DxRibbonControl dxRibbonControl && this.Tag is IMenuItem menuItem)
+            if (this.Ribbon is DxRibbonControl dxRibbonControl && this.Tag is IRibbonItem iRibbonItem)
             {
-                menuItem.ItemIsChecked = this.Checked;
-                dxRibbonControl.RaiseRibbonItemClick(menuItem);
+                iRibbonItem.Checked = this.Checked;
+                dxRibbonControl.RaiseRibbonItemClick(iRibbonItem);
             }
             CheckedChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -3015,15 +3012,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             return list;
         }
         /// <summary>
-        /// Metoda vrátí všechny prvky z dané stránky, které nesou příznak <see cref="IMenuItem.ItemToolbarOrder"/> s ne null hodnotou.
-        /// prochází pole prvků v grupách i pole SubItems z prvků (ale jen první úroveň).
+        /// Metoda vrátí všechny prvky z dané stránky, které nesou příznak <see cref="IRibbonItem.ItemToolbarOrder"/> s ne null hodnotou.
+        /// Prochází pole prvků v grupách i pole SubItems z prvků (ale jen první úroveň).
         /// </summary>
         /// <param name="pageData"></param>
-        internal static IMenuItem[] GetAllToolbarItems(IRibbonPage pageData)
+        internal static IRibbonItem[] GetAllToolbarItems(IRibbonPage pageData)
         {
             if (pageData?.Groups == null) return null;
 
-            List<IMenuItem> toolItems = new List<IMenuItem>();
+            List<IRibbonItem> toolItems = new List<IRibbonItem>();
 
             // Prvky v grupách - všechny, lineárně:
             var items = pageData.Groups
@@ -3035,8 +3032,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Plus SubItems:
             toolItems.AddRange(items
-                .Where(i => i.SubItems != null)
-                .SelectMany(i => i.SubItems)
+                .Where(i => i.SubRibbonItems != null)
+                .SelectMany(i => i.SubRibbonItems)
                 .Where(i => i.ItemToolbarOrder.HasValue));
 
             return toolItems.ToArray();
@@ -3133,7 +3130,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataRibbonGroup()
         {
             this.ChangeMode = ContentChangeMode.Add;
-            this.Items = new List<IMenuItem>();
+            this.Items = new List<IRibbonItem>();
         }
         /// <summary>
         /// Vizualizace
@@ -3196,11 +3193,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// Výchozí hodnota je prázdný List.
         /// </summary>
-        public List<IMenuItem> Items { get; set; }
+        public List<IRibbonItem> Items { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
-        IEnumerable<IMenuItem> IRibbonGroup.Items { get { return this.Items; } }
+        IEnumerable<IRibbonItem> IRibbonGroup.Items { get { return this.Items; } }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
@@ -3209,16 +3206,14 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
-    [DebuggerDisplay("Item: {ItemText}; Type: {ItemType}; SubItemsCount: {SubItemsCount}")]
-    public class DataMenuItem : IMenuItem
+    public class DataRibbonItem : DataMenuItem, IRibbonItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataMenuItem()
+        public DataRibbonItem() : base()
         {
             this.ChangeMode = ContentChangeMode.Add;
-            this.ItemEnabled = true;
         }
         /// <summary>
         /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
@@ -3226,20 +3221,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            return (this.ItemText ?? "");
+            return (this.Text ?? "");
+        }
+        /// <summary>
+        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// </summary>
+        protected override string DebugText
+        {
+            get
+            {
+                string debugText = $"Id: {ItemId}; Text: {Text}; Type: {RibbonItemType}";
+                if (this.SubRibbonItems != null)
+                    debugText += $"; SubItems: {this.SubRibbonItems.Count}";
+                return debugText;
+            }
         }
         /// <summary>
         /// Počet SubItems jako string
         /// </summary>
-        protected string SubItemsCount { get { return (this.SubItems == null ? "NULL" : this.SubItems.Count.ToString()); } }
+        private string _SubItemsCount { get { return (this.SubItems == null ? "NULL" : this.SubItems.Count.ToString()); } }
         /// <summary>
         /// Z dodané kolekce prvků sestaví setříděný List a vrátí jej
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static List<IMenuItem> SortItems(IEnumerable<IMenuItem> items)
+        public static List<IRibbonItem> SortRibbonItems(IEnumerable<IRibbonItem> items)
         {
-            List<IMenuItem> list = new List<IMenuItem>();
+            List<IRibbonItem> list = new List<IRibbonItem>();
             if (items != null)
                 list.AddRange(items.Where(p => p != null));
             if (list.Count > 1)
@@ -3258,85 +3266,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public IRibbonGroup ParentGroup { get; set; }
         /// <summary>
-        /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
+        /// Parent prvku = jiný prvek <see cref="IRibbonItem"/>
         /// </summary>
-        public IMenuItem ParentItem { get; set; }
-        /// <summary>
-        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
-        /// </summary>
-        public string ItemId { get; set; }
-        /// <summary>
-        /// Režim pro vytvoření / refill / remove tohoto prvku
-        /// </summary>
-        public ContentChangeMode ChangeMode { get; set; }
-        /// <summary>
-        /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
-        /// </summary>
-        public int ItemOrder { get; set; }
-        /// <summary>
-        /// Obsahuje tre tehdy, když před prvkem má být oddělovač
-        /// </summary>
-        public bool ItemIsFirstInGroup { get; set; }
+        public IRibbonItem ParentRibbonItem { get; set; }
         /// <summary>
         /// Typ prvku
         /// </summary>
-        public RibbonItemType ItemType { get; set; }
+        public RibbonItemType RibbonItemType { get; set; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
         public RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
-        /// Prvek je Enabled?
-        /// </summary>
-        public bool ItemEnabled { get; set; }
-        /// <summary>
         /// Pořadí prvku v ToolBaru = QuickAccesToolbar
         /// </summary>
         public int? ItemToolbarOrder { get; set; }
-        /// <summary>
-        /// Jméno ikony.
-        /// Pro prvek typu <see cref="RibbonItemType.CheckBoxToggle"/> tato ikona reprezentuje stav, kdy <see cref="ItemIsChecked"/> = NULL.
-        /// </summary>
-        public string ItemImage { get; set; }
-        /// <summary>
-        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
-        /// </summary>
-        public string ItemImageUnChecked { get; set; }
-        /// <summary>
-        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
-        /// </summary>
-        public string ItemImageChecked { get; set; }
-        /// <summary>
-        /// Určuje, zda CheckBox je zaškrtnutý.
-        /// Po změně zaškrtnutí v Ribbonu (uživatelem) je do této property setována aktuální hodnota z Ribbonu 
-        /// a poté je vyvolána událost <see cref="DxRibbonControl.RibbonItemClick"/>.
-        /// Hodnota může být null, pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
-        /// </summary>
-        public bool? ItemIsChecked { get; set; }
-        /// <summary>
-        /// Styl zobrazení
-        /// </summary>
-        public BarItemPaintStyle ItemPaintStyle { get; set; }
-        /// <summary>
-        /// Hlavní text v prvku
-        /// </summary>
-        public string ItemText { get; set; }
-        /// <summary>
-        /// Klávesa
-        /// </summary>
-        public string HotKey { get; set; }
-        /// <summary>
-        /// Text ToolTipu
-        /// </summary>
-        public string ToolTip { get; set; }
-        /// <summary>
-        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se <see cref="ItemText"/>.
-        /// </summary>
-        public string ToolTipTitle { get; set; }
-        /// <summary>
-        /// Ikona ToolTipu
-        /// </summary>
-        public string ToolTipIcon { get; set; }
         /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
@@ -3345,18 +3289,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
         /// Výchozí hodnota je null.
         /// </summary>
-        public List<IMenuItem> SubItems { get; set; }
+        public List<IRibbonItem> SubRibbonItems { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
-        IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
-        /// <summary>
-        /// Libovolná data aplikace
-        /// </summary>
-        public object Tag { get; set; }
+        IEnumerable<IRibbonItem> IRibbonItem.SubRibbonItems { get { return this.SubRibbonItems; } }
     }
     #endregion
-    #region Interface IRibbonPage, IRibbonCategory, IRibbonGroup, IMenuItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
+    #region Interface IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
     /// <summary>
     /// Definice stránky v Ribbonu
     /// </summary>
@@ -3461,7 +3401,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// </summary>
-        IEnumerable<IMenuItem> Items { get; }
+        IEnumerable<IRibbonItem> Items { get; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
@@ -3470,96 +3410,28 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
     /// </summary>
-    public interface IMenuItem : IToolTipItem
+    public interface IRibbonItem : IMenuItem
     {
         /// <summary>
         /// Parent prvku = <see cref="IRibbonGroup"/>
         /// </summary>
         IRibbonGroup ParentGroup { get; set; }
         /// <summary>
-        /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
+        /// Parent prvku = jiný prvek <see cref="IRibbonItem"/>
         /// </summary>
-        IMenuItem ParentItem { get; set; }
-        /// <summary>
-        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
-        /// </summary>
-        string ItemId { get; }
-        /// <summary>
-        /// Režim pro vytvoření / refill / remove tohoto prvku
-        /// </summary>
-        ContentChangeMode ChangeMode { get; }
-        /// <summary>
-        /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
-        /// </summary>
-        int ItemOrder { get; set; }
-        /// <summary>
-        /// Obsahuje tre tehdy, když před prvkem má být oddělovač
-        /// </summary>
-        bool ItemIsFirstInGroup { get; }
+        IRibbonItem ParentRibbonItem { get; set; }
         /// <summary>
         /// Typ prvku
         /// </summary>
-        RibbonItemType ItemType { get; }
+        RibbonItemType RibbonItemType { get; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
         /// <summary>
-        /// Prvek je Enabled?
-        /// </summary>
-        bool ItemEnabled { get; }
-        /// <summary>
         /// Pořadí prvku v ToolBaru = QuickAccesToolbar
         /// </summary>
         int? ItemToolbarOrder { get; }
-        /// <summary>
-        /// Jméno ikony.
-        /// Pro prvek typu <see cref="RibbonItemType.CheckBoxToggle"/> tato ikona reprezentuje stav, kdy <see cref="ItemIsChecked"/> = NULL.
-        /// </summary>
-        string ItemImage { get; }
-        /// <summary>
-        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
-        /// </summary>
-        string ItemImageUnChecked { get; }
-        /// <summary>
-        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
-        /// </summary>
-        string ItemImageChecked { get; }
-        /// <summary>
-        /// Určuje, zda CheckBox je zaškrtnutý.
-        /// Po změně zaškrtnutí v Ribbonu (uživatelem) je do této property setována aktuální hodnota z Ribbonu 
-        /// a poté je vyvolána událost <see cref="DxRibbonControl.RibbonItemClick"/>.
-        /// Hodnota může být null, pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
-        /// </summary>
-        bool? ItemIsChecked { get; set; }
-        /// <summary>
-        /// Styl zobrazení
-        /// </summary>
-        BarItemPaintStyle ItemPaintStyle { get; }
-        /// <summary>
-        /// Hlavní text v prvku
-        /// </summary>
-        string ItemText { get; }
-        /// <summary>
-        /// Klávesa
-        /// </summary>
-        string HotKey { get; }
-
-        /*
-        /// <summary>
-        /// Text ToolTipu
-        /// </summary>
-        string ToolTip { get; }
-        /// <summary>
-        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se <see cref="ItemText"/>.
-        /// </summary>
-        string ToolTipTitle { get; }
-        /// <summary>
-        /// Ikona ToolTipu
-        /// </summary>
-        string ToolTipIcon { get; }
-        */
-
         /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
@@ -3567,29 +3439,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
         /// </summary>
-        IEnumerable<IMenuItem> SubItems { get; }
-        /// <summary>
-        /// Libovolná data aplikace
-        /// </summary>
-        object Tag { get; }
-    }
-    /// <summary>
-    /// Interface definující vlastnosti prvku, který může nabídnout ToolTip
-    /// </summary>
-    public interface IToolTipItem
-    {
-        /// <summary>
-        /// Text ToolTipu
-        /// </summary>
-        string ToolTip { get; }
-        /// <summary>
-        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
-        /// </summary>
-        string ToolTipTitle { get; }
-        /// <summary>
-        /// Ikona ToolTipu
-        /// </summary>
-        string ToolTipIcon { get; }
+        IEnumerable<IRibbonItem> SubRibbonItems { get; }
     }
     /// <summary>
     /// Typ stránky
@@ -3620,7 +3470,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po jejich načtení bude seznam konstantní (jde o odložené načtení fixního seznamu).
         /// <para/>
         /// V této položce <see cref="IRibbonPage"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
-        /// <see cref="IMenuItem.ItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
+        /// <see cref="IRibbonItem.RibbonItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
         /// <para/>
         /// Po aktivaci takové stránky se provede dotaz na Aplikační server pro RefreshMenu a získané prvky se do této stránky doplní, 
         /// a následně se režim stránky přepne na <see cref="Static"/>.
@@ -3632,7 +3482,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jde o dynamický soupis prvků.
         /// <para/>
         /// V této položce <see cref="IRibbonPage"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
-        /// <see cref="IMenuItem.ItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
+        /// <see cref="IRibbonItem.RibbonItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
         /// <para/>
         /// Po aktivaci takové stránky se provede dotaz na Aplikační server pro RefreshMenu a získané prvky se do této stránky doplní, 
         /// ale režim stránky nadále zůstává <see cref="OnDemandLoadEveryTime"/> = tím se zajistí stále opakované načítání obsahu při každé aktivaci.
@@ -3707,7 +3557,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         CheckBoxStandard,
         /// <summary>
         /// Button se stavem Checked, který může být NULL (výchozí hodnota). 
-        /// Pokud má být výchozí stav false, je třeba jej do <see cref="IMenuItem.ItemIsChecked"/> vložit!
+        /// Pokud má být výchozí stav false, je třeba jej do <see cref="IMenuItem.Checked"/> vložit!
         /// Lze specifikovat ikony pro všechny tři stavy (NULL - false - true)
         /// </summary>
         CheckBoxToggle,

@@ -28,7 +28,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <para/>
     /// Způsob použití:
     /// 1. Uvnitř jednoho controlu (např. pro přemístění jednoho TreeNode na jinou pozici):
-    /// - Control (zde <see cref="DxTreeViewListNative"/>) naimplementuje <see cref="IDxDragDropControl"/> a v konstruktoru si vytvoří instanci controlleru <see cref="DxDragDrop"/>
+    /// - Control (zde <see cref="DxTreeListNative"/>) naimplementuje <see cref="IDxDragDropControl"/> a v konstruktoru si vytvoří instanci controlleru <see cref="DxDragDrop"/>
     /// </summary>
     public class DxDragDrop : IDisposable
     {

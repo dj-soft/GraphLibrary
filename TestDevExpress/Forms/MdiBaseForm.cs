@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using DevExpress.XtraBars.Ribbon;
+using DXR = DevExpress.XtraBars.Ribbon;
 using TestDevExpress.Components;
 using Noris.Clients.Win.Components.AsolDX;
 
@@ -40,12 +40,12 @@ namespace TestDevExpress.Forms
             _AsolRibbon.RibbonItemClick += _Ribbon_RibbonItemClick;
             this.Controls.Add(_AsolRibbon);
 
-            this.RibbonVisibility = RibbonVisibility.Visible;
+            this.RibbonVisibility = DXR.RibbonVisibility.Visible;
         }
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IMenuItem> e)
+        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
             if (e.Item is null) return;
-            if (e.Item.ItemType == RibbonItemType.Menu) return;           // Pouze došlo k aktivaci Menu, nikoli k výběru konkrétní položky...
+            if (e.Item.RibbonItemType == RibbonItemType.Menu) return;           // Pouze došlo k aktivaci Menu, nikoli k výběru konkrétní položky...
             this.OnRibbonItemClick(e.Item);
         }
         protected virtual void OnRibbonItemClick(IMenuItem ribbonData) { }
