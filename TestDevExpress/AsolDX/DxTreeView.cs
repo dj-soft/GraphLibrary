@@ -1126,9 +1126,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             e.Allow = false;
             var hitInfo = this._GetNodeHit(e.HitInfo);
-            if (hitInfo.Node != null && !hitInfo.Node.IsSelected)
+            var treeNode = hitInfo.Node;
+            if (treeNode != null && !treeNode.IsSelected && this.SelectNodeBeforeShowContextMenu)
             {
-                this.SelectCell(hitInfo.Node, this._MainColumn);
+                this.SelectNode(treeNode);
                 this.FocusedNode = hitInfo.Node;
             }
 
@@ -1522,7 +1523,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Projde všechny nody tohoto Tree, rekurzivně, a pro každý node vyvolá danou akci.
-        /// Pokud je dodána funkce <paramref name="scanSubNodesFilter"/>, pak rekurzi pro SubNodes provede jen tehdy, když daný node vyhová dané funkci. Pokud funkce není dodána, provede se rekurze pro každý node, který má SubNodes.
+        /// Pokud je dodána funkce <paramref name="scanSubNodesFilter"/>, pak rekurzi pro SubNodes provede jen tehdy, když daný node vyhoví dané funkci. 
+        /// Pokud funkce není dodána, provede se rekurze pro každý node, který má SubNodes.
         /// </summary>
         /// <param name="nodeAction">Akce pro každý node</param>
         /// <param name="scanSubNodesFilter">Filtr na nody, jejichž SubNodes se mají rekurzivně procházet.</param>
@@ -2116,6 +2118,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
         /// </summary>
         public bool RootNodeVisible { get; set; }
+        /// <summary>
+        /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
+        /// <para/>
+        /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
+        /// Hodnota true je defaultní.
+        /// <para/>
+        /// Pokud bude false, pak neselectovaný node bude ponechán neselectovaný.
+        /// Událost <see cref="ShowContextMenu"/> dostává argument, v němž je definován ten node na který bylo kliknuto, i když není Selected.
+        /// </summary>
+        public bool SelectNodeBeforeShowContextMenu { get; set; }
         /// <summary>
         /// Po LazyLoad aktivovat první načtený node?
         /// </summary>
