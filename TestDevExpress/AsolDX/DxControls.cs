@@ -2347,6 +2347,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Enabled = true;
         }
         /// <summary>
+        /// Metoda vytvoří new instanci třídy <see cref="DataMenuItem"/>, které bude obsahovat data z dodané <see cref="IMenuItem"/>.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="modifier"></param>
+        /// <returns></returns>
+        public static DataMenuItem CreateClone(IMenuItem source, Action<DataMenuItem> modifier = null)
+        {
+            if (source == null) return null;
+            DataMenuItem clone = new DataMenuItem()
+            {
+                ItemId = source.ItemId,
+                ParentItem = source.ParentItem,
+                Text = source.Text,
+                ItemType = source.ItemType,
+                ChangeMode = source.ChangeMode,
+                ItemOrder = source.ItemOrder,
+                ItemIsFirstInGroup = source.ItemIsFirstInGroup,
+                Enabled = source.Enabled,
+                Image = source.Image,
+                ImageUnChecked = source.ImageUnChecked,
+                ImageChecked = source.ImageChecked,
+                Checked = source.Checked,
+                ItemPaintStyle = source.ItemPaintStyle,
+                HotKey = source.HotKey,
+                ToolTipText = source.ToolTipText,
+                ToolTipTitle = source.ToolTipTitle,
+                ToolTipIcon = source.ToolTipIcon,
+                SubItems = (source.SubItems != null ? new List<IMenuItem>(source.SubItems) : null),
+                Tag = source.Tag
+            };
+            if (modifier != null) modifier(clone);
+            return clone;
+        }
+        /// <summary>
         /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
         /// </summary>
         /// <returns></returns>
@@ -2457,10 +2491,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ToolTipTitle { get; set; }
         /// <summary>
-        /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
-        /// </summary>
-        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
-        /// <summary>
         /// Ikona ToolTipu
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
@@ -2470,13 +2500,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual List<IMenuItem> SubItems { get; set; }
         /// <summary>
+        /// Libovolná data aplikace
+        /// </summary>
+        public object Tag { get; set; }
+
+        /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
         IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
         /// <summary>
-        /// Libovolná data aplikace
+        /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
         /// </summary>
-        public object Tag { get; set; }
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)

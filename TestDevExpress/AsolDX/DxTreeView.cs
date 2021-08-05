@@ -107,6 +107,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool MultiSelectEnabled { get { return this._TreeListNative.MultiSelectEnabled; } set { this._TreeListNative.MultiSelectEnabled = value; } }
         /// <summary>
+        /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
+        /// <para/>
+        /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
+        /// Hodnota true je defaultní.
+        /// <para/>
+        /// Pokud bude false, pak neselectovaný node bude ponechán neselectovaný.
+        /// Událost <see cref="ShowContextMenu"/> dostává argument, v němž je definován ten node na který bylo kliknuto, i když není Selected.
+        /// </summary>
+        public bool SelectNodeBeforeShowContextMenu { get { return this._TreeListNative.SelectNodeBeforeShowContextMenu; } set { this._TreeListNative.SelectNodeBeforeShowContextMenu = value; } }
+        /// <summary>
         /// ToolTipy mohou obsahovat SimpleHtml tagy?
         /// </summary>
         public bool ToolTipAllowHtmlText { get { return _TreeListNative.ToolTipAllowHtmlText; } set { _TreeListNative.ToolTipAllowHtmlText = value; } }
@@ -541,6 +551,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsMenu.EnableNodeMenu = false;
 
             this.IncrementalSearchMode = TreeListIncrementalSearchMode.InExpandedNodesOnly;
+            this.SelectNodeBeforeShowContextMenu = true;
 
             this.OptionsSelection.EnableAppearanceFocusedRow = true;
             this.OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True;
@@ -1130,7 +1141,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (treeNode != null && !treeNode.IsSelected && this.SelectNodeBeforeShowContextMenu)
             {
                 this.SelectNode(treeNode);
-                this.FocusedNode = hitInfo.Node;
+                this.FocusedNode = treeNode;
             }
 
             this.OnShowContextMenu(hitInfo);
@@ -2110,15 +2121,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private TreeListIncrementalSearchMode _IncrementalSearchMode;
         /// <summary>
-        /// DoubleClick provede Expand/Collapse?
-        /// </summary>
-        public bool AllowExpandOnDblClick { get { return this.OptionsBehavior.AllowExpandOnDblClick; } set { this.OptionsBehavior.AllowExpandOnDblClick = value; } }
-        /// <summary>
-        /// Zobrazovat Root node?
-        /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
-        /// </summary>
-        public bool RootNodeVisible { get; set; }
-        /// <summary>
         /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
         /// <para/>
         /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
@@ -2128,6 +2130,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Událost <see cref="ShowContextMenu"/> dostává argument, v němž je definován ten node na který bylo kliknuto, i když není Selected.
         /// </summary>
         public bool SelectNodeBeforeShowContextMenu { get; set; }
+        /// <summary>
+        /// DoubleClick provede Expand/Collapse?
+        /// </summary>
+        public bool AllowExpandOnDblClick { get { return this.OptionsBehavior.AllowExpandOnDblClick; } set { this.OptionsBehavior.AllowExpandOnDblClick = value; } }
+        /// <summary>
+        /// Zobrazovat Root node?
+        /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
+        /// </summary>
+        public bool RootNodeVisible { get; set; }
         /// <summary>
         /// Po LazyLoad aktivovat první načtený node?
         /// </summary>

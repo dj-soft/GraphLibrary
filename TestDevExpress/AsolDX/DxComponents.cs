@@ -1241,7 +1241,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             DevExpress.Utils.Menu.DXMenuItem dxItem;
             string itemImage = menuItem.Image;
-            if (menuItem.ItemType == MenuItemType.CheckBox)
+            var itemType = menuItem.ItemType;
+            if (itemType == MenuItemType.CheckBox)
             {   // Prvek menu s možností CheckBox:
                 bool isChecked = menuItem.Checked ?? false;
                 var dxCheckItem = new DevExpress.Utils.Menu.DXMenuCheckItem();

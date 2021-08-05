@@ -2473,7 +2473,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             _DragDropATree = new DxTreeList() { AllowDropOnTree = true, FilterBoxVisible = true };
             _DragDropATree.Name = "ATree";
             _DragDropATree.AddNodes(_CreateSampleList());
+
             _DragDropATree.MultiSelectEnabled = true;
+            _DragDropATree.SelectNodeBeforeShowContextMenu = false;
+
             _DragDropATree.ShowContextMenu += _DragDropATree_ShowContextMenu;
             _DragDropATree.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropATree);
@@ -2488,7 +2491,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
         private void _DragDropATree_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args)
         {
             DxTreeList dxTreeList = sender as DxTreeList;
-            var nodes = dxTreeList.SelectedNodes;
+            var nodes = new List<IMenuItem>(dxTreeList.SelectedNodes);
+            var clickNode = args.Node;
+            if (clickNode != null && !nodes.Any(n => Object.ReferenceEquals(n, clickNode)))
+                nodes.Add(DataMenuItem.CreateClone(clickNode, c => { c.ItemIsFirstInGroup = true; c.Checked = true; }));
+
             var menu = DxComponent.CreateDXPopupMenu(nodes, "SelectedNodes:");
             Point localPoint = dxTreeList.PointToClient(args.MousePosition);
             menu.ShowPopup(dxTreeList, localPoint);
