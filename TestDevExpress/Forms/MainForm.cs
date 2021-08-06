@@ -62,7 +62,8 @@ namespace TestDevExpress.Forms
             System.Windows.Forms.Application.Idle += Application_Idle;
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
 
-            ActivatePage(10, true);
+            ActivatePage(7, true);
+            // ActivatePage(10, true);
         }
         private void MainForm_Disposed(object sender, EventArgs e)
         {
@@ -1428,7 +1429,10 @@ namespace TestDevExpress.Forms
 
             _CreateOneButton("Dialog [ OK ]", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKClick); y += (h + ys);
             _CreateOneButton("Dialog [ OK ] / Center", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKCenterClick); y += (h + ys);
-            _CreateOneButton("Dialog [ OK ] / AutoCenter", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKAutoCenterClick); y += (h + ys);
+
+            // _CreateOneButton("Dialog [ OK ] / AutoCenter", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKAutoCenterClick); y += (h + ys);
+            _CreateOneButton("Show Exception", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogException); y += (h + ys);
+            
             _CreateOneButton("Dialog Yes/No", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogYesNoClick); y += (h + ys);
             _CreateOneButton("Dialog Yes/No / Right", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogYesNoRightClick); y += (h + ys);
             _CreateOneButton("Dialog Abort/Retry/Ignore", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogAbortRetryIgnoreClick); y += (h + ys);
@@ -1493,6 +1497,29 @@ namespace TestDevExpress.Forms
             dialogArgs.StatusBarVisible = true;
 
             DialogForm(dialogArgs);
+        }
+        private void _MsgShowDialogException(object sender, EventArgs args)
+        {
+            try { _DoExceptionGui(); }
+            catch (Exception exc)
+            {
+                NWC.DialogArgs dialogArgs = NWC.DialogArgs.CreateForException(exc, LocalizerCZ);
+                DialogForm(dialogArgs);
+            }
+        }
+        private void _DoExceptionGui()
+        {
+            try { _DoExceptionMain(); }
+            catch (Exception exc) { throw new InvalidOperationException("Chyba v GUI vrstvě [A]", exc); }
+        }
+        private void _DoExceptionMain()
+        {
+            try { _DoExceptionInner(); }
+            catch (Exception exc) { throw new InvalidOperationException("Chyba v řídící vrstvě [B]", exc); }
+        }
+        private void _DoExceptionInner()
+        {
+            throw new ArgumentException("Chyba ve výkonné vrstvě [C]");
         }
         private void _MsgShowDialogYesNoClick(object sender, EventArgs args)
         {
@@ -1571,10 +1598,10 @@ namespace TestDevExpress.Forms
         private void _MsgShowDialogOKHtmlButtonClick(object sender, EventArgs args)
         {
             string html = @"<size=14><b><color=255,96,96><backcolor=0,0,0>Doklad není uložen</backcolor></color></b><size=11>
-Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
-<b>Uložit</b> - změny budou uloženy a okno bude zavřeno<br>
-<b>Neukládat</b> - změny se neuloží, okno bude zavřeno<br>
-<b>Storno</b> - změny se neuloží, a okno zůstane otevřené<br>
+Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
+<b>Uložit</b> - změny budou uloženy a okno bude zavřeno
+<b>Neukládat</b> - změny se neuloží, okno bude zavřeno
+<b>Storno</b> - změny se neuloží, a okno zůstane otevřené
 <size=14><b>Co si přejete provést?</b><size=11>
  ";
 
@@ -1678,14 +1705,43 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             }
             return null;
         }
+        private string LocalizerCZ(string code)
+        {
+            string key = code.ToLower();
+            switch (key)
+            {
+                case "formtitleerror": return "Chyba";
+                case "formtitleprefix": return "Došlo k chybě";
+
+                case "ctrlctext": return "Ctrl+C";
+                case "ctrlctooltip": return "Zkopíruje do schránky Windows celý text tohoto okna (titulek, informaci i texty tlačítek).\r\nPak je možno otevřít nový mail a klávesou Ctrl + V doň opsat obsah tohoto okna.";
+                case "ctrlcinfo": return "Zkopírováno do schránky";
+
+                case "altmsgbuttontext": return "Zobraz detaily";
+                case "altmsgbuttontooltip": return "Zobrazí detailní informace";
+
+                case "dialogresult_ok": return "&OK";
+                case "dialogresult_cancel": return "&Zrušit";
+                case "dialogresult_abort": return "&Storno";
+                case "dialogresult_retry": return "&Opakovat";
+                case "dialogresult_ignore": return "&Ignorovat";
+                case "dialogresult_yes": return "Ano";
+                case "dialogresult_no": return "&Ne";
+            }
+            return null;
+        }
         private string LocalizerEN(string code)
         {
             string key = code.ToLower();
             switch (key)
             {
+                case "formtitleerror": return "Error";
+                case "formtitleprefix": return "An error occured";
+
                 case "ctrlctext": return "Ctrl+C";
                 case "ctrlctooltip": return "Copies the entire text of this window (title, information and button texts) to the Windows clipboard.\r\nThen you can open a new mail and press Ctrl+V to copy the contents of this window.";
                 case "ctrlcinfo": return "Copied to clipboard";
+
                 case "dialogresult_ok": return "OK";
                 case "dialogresult_cancel": return "Cancel";
                 case "dialogresult_abort": return "Abort";
@@ -1701,9 +1757,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
             string key = code.ToLower();
             switch (key)
             {
+                case "formtitleerror": return "Chyba";
+                case "formtitleprefix": return "Došlo k dákej chybe";
+
                 case "ctrlctext": return "Ctrl+C";
                 case "ctrlctooltip": return "Skopíruje do schránky Windows celý text tohto okna (titulok, informáciu i texty tlačidiel).\r\nPak je možné otvoriť nový mail a klávesom Ctrl + V doň opísať obsah tohto okna.";
                 case "ctrlcinfo": return "Skopírované do schránky";
+
                 case "dialogresult_ok": return "&Inu dobre";
                 case "dialogresult_cancel": return "&Nekonaj";
                 case "dialogresult_abort": return "&Zahoď";
@@ -2090,7 +2150,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.<br>
 
             _TreeList = new DxTreeList() { Dock = DockStyle.Fill };
             _TreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
-            _TreeList.ImageMode = TreeListImageMode.Image01;
+            _TreeList.ImageMode = TreeListImageMode.ImageStatic;
             _TreeList.ImageList = _Images16;
             _TreeList.ImageIndexSearcher = GetImageIndex;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";

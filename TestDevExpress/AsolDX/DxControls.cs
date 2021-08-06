@@ -650,9 +650,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion
@@ -687,9 +688,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion
@@ -724,9 +726,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion
@@ -761,9 +764,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion
@@ -798,9 +802,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion
@@ -1059,9 +1064,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
         #region Remove, Delete, CtrlC, CtrlX
         /// <summary>
@@ -1577,9 +1583,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
         #region Resize a SvgImage
 
@@ -1617,9 +1624,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion
@@ -1654,12 +1662,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        public void SetToolTip(string title, string text) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text); }
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
         #region Resize a SvgImage
 
+        #endregion
+    }
+    #endregion
+    #region DxStatus
+    /// <summary>
+    /// StatusBar : Statický prvek = Label
+    /// </summary>
+    public class DxBarStaticItem : DevExpress.XtraBars.BarStaticItem
+    { }
+    /// <summary>
+    /// StatusBar : Button
+    /// </summary>
+    public class DxBarButtonItem : DevExpress.XtraBars.BarButtonItem
+    {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        /// <param name="defaultTitle"></param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
+        #endregion
+    }
+    /// <summary>
+    /// StatusBar : CheckItem
+    /// </summary>
+    public class DxBarCheckItem : DevExpress.XtraBars.BarCheckItem
+    {
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        /// <param name="defaultTitle"></param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
     }
     #endregion

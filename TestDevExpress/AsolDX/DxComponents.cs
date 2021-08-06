@@ -960,7 +960,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (borderStyles.HasValue) checkEdit.BorderStyle = borderStyles.Value;
 
-            checkEdit.SetToolTip(toolTipTitle ?? text, toolTipText);
+            checkEdit.SetToolTip(toolTipTitle, toolTipText, text);
 
             if (checkedChanged != null) checkEdit.CheckedChanged += checkedChanged;
             if (parent != null) parent.Controls.Add(checkEdit);
@@ -1063,7 +1063,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             checkButton.ImageOptions.ImageToTextIndent = 3;
             checkButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
 
-            checkButton.SetToolTip(toolTipTitle ?? text, toolTipText);
+            checkButton.SetToolTip(toolTipTitle, toolTipText, text);
 
             if (click != null) checkButton.Click += click;
             if (parent != null) parent.Controls.Add(checkButton);
@@ -1105,7 +1105,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             simpleButton.ImageOptions.ImageToTextIndent = 3;
             simpleButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
 
-            simpleButton.SetToolTip(toolTipTitle ?? text, toolTipText);
+            simpleButton.SetToolTip(toolTipTitle, toolTipText, text);
 
             if (click != null) simpleButton.Click += click;
             if (parent != null) parent.Controls.Add(simpleButton);
@@ -1143,6 +1143,63 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (parent != null) parent.Controls.Add(miniButton);
 
             return miniButton;
+        }
+        public static DxBarStaticItem CreateDxStatusLabel(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null, DevExpress.XtraBars.BarStaticItemSize? autoSize = null,
+            bool? visible = null, int? fontSizeDelta = null)
+        {
+            DxBarStaticItem statusLabel = new DxBarStaticItem();
+            if (text != null) statusLabel.Caption = text;
+            if (autoSize.HasValue) statusLabel.AutoSize = autoSize.Value;
+            if (visible.HasValue) statusLabel.Visibility = (visible.Value ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never);
+            if (fontSizeDelta.HasValue) statusLabel.ItemAppearance.Normal.FontSizeDelta = fontSizeDelta.Value;
+
+            if (statusBar != null) statusBar.ItemLinks.Add(statusLabel);
+
+            return statusLabel;
+        }
+        public static DxBarButtonItem CreateDxStatusButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null, 
+            int? width = null, int? height = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, int? fontSizeDelta = null,
+            DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        {
+            DxBarButtonItem button = new DxBarButtonItem();
+            if (text != null) button.Caption = text;
+            button.SetToolTip(toolTipTitle, toolTipText, text);
+            if (visible.HasValue) button.Visibility = (visible.Value ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never);
+            if (fontSizeDelta.HasValue)
+            {
+                button.ItemAppearance.Normal.FontSizeDelta = fontSizeDelta.Value;
+                button.ItemAppearance.Hovered.FontSizeDelta = fontSizeDelta.Value;
+                button.ItemAppearance.Pressed.FontSizeDelta = fontSizeDelta.Value;
+            }
+            if (clickHandler != null) button.ItemClick += clickHandler;
+
+            if (statusBar != null) statusBar.ItemLinks.Add(button);
+
+            return button;
+        }
+        public static DxBarCheckItem CreateDxStatusCheckButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null,
+            int? width = null, int? height = null,
+            string toolTipTitle = null, string toolTipText = null,
+            bool? visible = null, int? fontSizeDelta = null,
+            DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        {
+            DxBarCheckItem checkButton = new DxBarCheckItem();
+            if (text != null) checkButton.Caption = text;
+            checkButton.SetToolTip(toolTipTitle, toolTipText, text);
+            if (visible.HasValue) checkButton.Visibility = (visible.Value ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never);
+            if (fontSizeDelta.HasValue)
+            {
+                checkButton.ItemAppearance.Normal.FontSizeDelta = fontSizeDelta.Value;
+                checkButton.ItemAppearance.Hovered.FontSizeDelta = fontSizeDelta.Value;
+                checkButton.ItemAppearance.Pressed.FontSizeDelta = fontSizeDelta.Value;
+            }
+            if (clickHandler != null) checkButton.ItemClick += clickHandler;
+
+            if (statusBar != null) statusBar.ItemLinks.Add(checkButton);
+
+            return checkButton;
         }
         public static DxDropDownButton CreateDxDropDownButton(int x, int y, int w, int h, Control parent, string text,
             EventHandler click = null, EventHandler<TEventArgs<IMenuItem>> itemClick = null,
@@ -1184,7 +1241,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             dropDownButton.ImageOptions.ImageToTextIndent = 3;
             dropDownButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
 
-            dropDownButton.SetToolTip(toolTipTitle ?? text, toolTipText);
+            dropDownButton.SetToolTip(toolTipTitle, toolTipText, text);
 
             dropDownButton.DropDownControl = CreateDxDropDownControl(dropDownControl, subItemsText, subItems, itemClick);
 
@@ -1437,19 +1494,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsCodeDisable { get { return '/'; } }
-
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text
         /// </summary>
         /// <param name="title"></param>
         /// <param name="text"></param>
+        /// <param name="defaultTitle"></param>
         /// <returns></returns>
-        public static SuperToolTip CreateDxSuperTip(string title, string text)
+        public static SuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null)
         {
-            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text)) return null;
+            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text) && String.IsNullOrEmpty(defaultTitle)) return null;
 
             var superTip = new DevExpress.Utils.SuperToolTip();
-            if (title != null) superTip.Items.AddTitle(title);
+            string currentTitle = title ?? defaultTitle;
+            if (currentTitle != null) superTip.Items.AddTitle(currentTitle);
             superTip.Items.Add(text);
 
             return superTip;
@@ -2589,6 +2647,92 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
+    }
+    #endregion
+    #region class ConvertFormat : konverze textu / RTF / HTML
+    /// <summary>
+    /// Třída pro konverze mezi formáty TXT - HTML - RTF
+    /// </summary>
+    public static class ConvertFormat
+    {
+        /// <summary>
+        /// Vrátí PlainText z daného HTML textu
+        /// </summary>
+        /// <param name="textHtml"></param>
+        /// <param name="acceptEolAsBr"></param>
+        /// <returns></returns>
+        public static string HtmlToText(string textHtml, bool acceptEolAsBr = false)
+        {
+            if (String.IsNullOrEmpty(textHtml)) return "";
+            if (acceptEolAsBr || (textHtml.Contains("\r\n") && !textHtml.Contains("<br>")))
+                textHtml = textHtml.Replace("\r\n", "<br>");
+
+            string result = null;
+            using (var textServer = new DevExpress.XtraRichEdit.RichEditDocumentServer())
+            {
+                textServer.HtmlText = textHtml;
+                result = textServer.Text;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Vrátí RTF text z daného HTML textu
+        /// </summary>
+        /// <param name="textHtml"></param>
+        /// <param name="acceptEolAsBr"></param>
+        /// <returns></returns>
+        public static string HtmlToRtf(string textHtml, bool acceptEolAsBr = false)
+        {
+            if (String.IsNullOrEmpty(textHtml)) return "";
+            if (acceptEolAsBr || (textHtml.Contains("\r\n") && !textHtml.Contains("<br>")))
+                textHtml = textHtml.Replace("\r\n", "<br>");
+
+            string result = null;
+            using (var textServer = new DevExpress.XtraRichEdit.RichEditDocumentServer())
+            {
+                textServer.HtmlText = textHtml;
+                result = textServer.RtfText;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Vrátí PlainText z daného RTF textu
+        /// </summary>
+        /// <param name="textRtf"></param>
+        /// <returns></returns>
+        public static string RtfToText(string textRtf)
+        {
+            if (String.IsNullOrEmpty(textRtf)) return "";
+
+            string result = null;
+            using (var textServer = new DevExpress.XtraRichEdit.RichEditDocumentServer())
+            {
+                textServer.RtfText = textRtf;
+                result = textServer.Text;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Vrátí HTML text z daného RTF textu
+        /// </summary>
+        /// <param name="textRtf"></param>
+        /// <returns></returns>
+        public static string RtfToHtml(string textRtf)
+        {
+            if (String.IsNullOrEmpty(textRtf)) return "";
+
+            string result = null;
+            using (var textServer = new DevExpress.XtraRichEdit.RichEditDocumentServer())
+            {
+                textServer.RtfText = textRtf;
+                result = textServer.HtmlText;
+            }
+
+            return result;
+        }
     }
     #endregion
     #region interface IListener...

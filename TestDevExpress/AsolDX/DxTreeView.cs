@@ -14,6 +14,7 @@ using System.Drawing;
 
 using DevExpress.Utils;
 using DevExpress.XtraTreeList.Nodes;
+using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -71,10 +72,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public TreeListCheckBoxMode CheckBoxMode { get { return _TreeListNative.CheckBoxMode; } set { _TreeListNative.CheckBoxMode = value; } }
         /// <summary>
         /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.Image0"/>.
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="IMenuItem.Image"/> 
+        /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
         /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
         /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="ITreeListNode.ImageDynamicDefault"/> atd.
+        /// a musí plnit jména ikon do <see cref="IMenuItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
         /// <summary>
@@ -599,7 +601,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LazyLoadNodeText = "...";
             this.LazyLoadNodeImageName = null;
             this.CheckBoxMode = TreeListCheckBoxMode.None;
-            this.ImageMode = TreeListImageMode.Image0;
+            this.ImageMode = TreeListImageMode.ImageStatic;
         }
         DevExpress.XtraTreeList.Columns.TreeListColumn _MainColumn;
         /// <summary>
@@ -1241,7 +1243,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nodeInfo != null && (checkMode == TreeListCheckBoxMode.AllNodes || (checkMode == TreeListCheckBoxMode.SpecifyByNode && nodeInfo.CanCheck)))
             {
                 bool isChecked = args.Node.Checked;
-                nodeInfo.Checked = isChecked;
+                nodeInfo.NodeChecked = isChecked;
                 this.OnNodeCheckedChange(nodeInfo, isChecked);
             }
         }
@@ -1359,8 +1361,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             using (LockGui(true))
             {
                 NodePair firstPair = null;
-                SelectionNewNodeMode selectionMode = _GetCurrentSelectionMode();
-                this._AddNode(nodeInfo, ref firstPair, ref selectionMode, atIndex);
+                this._AddNode(nodeInfo, ref firstPair, atIndex);
             }
         }
         /// <summary>
@@ -1434,16 +1435,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 List<ITreeListNode> selectedNodes = new List<ITreeListNode>();
-                _ScanNodes(n => 
+                foreach (var treeNode in this.Selection)
                 {
-                    if (n.IsSelected)
-                    {
-                        var nodeInfo = _GetNodeInfo(n);
-                        if (nodeInfo != null)
-                            selectedNodes.Add(nodeInfo);
-                    }
-                });
+                    if (_TryGetNodeInfo(treeNode, out var nodeInfo))
+                        selectedNodes.Add(nodeInfo);
+                }
                 return selectedNodes.ToArray();
+            }
+            set
+            {
+                try
+                {
+                    this.Selection.BeginSelect();
+                    this.Selection.UnselectAll();
+                    List<TreeListNode> treeNodes = new List<TreeListNode>();
+                    var selectedNodes = value;
+                    bool multiSelectEnabled = this.MultiSelectEnabled;
+                    if (selectedNodes != null)
+                    {
+                        foreach (var nodeInfo in selectedNodes)
+                        {
+                            if (_TryGetTreeNode(nodeInfo?.ItemId, out var treeNode))
+                                treeNodes.Add(treeNode);
+                            if (!multiSelectEnabled && treeNodes.Count >= 1)
+                                break;
+                        }
+                    }
+                    this.Selection.SelectNodes(treeNodes);
+                }
+                finally
+                {
+                    this.Selection.EndSelect();
+                }
             }
         }
         /// <summary>
@@ -1588,9 +1611,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
 
                 bool nodeIsChecked = node.Checked;
-                if (nodePair.NodeInfo.Checked != nodeIsChecked)
+                if (nodePair.NodeInfo.NodeChecked != nodeIsChecked)
                 {
-                    nodePair.NodeInfo.Checked = nodeIsChecked;
+                    nodePair.NodeInfo.NodeChecked = nodeIsChecked;
                     isChangedCheck = true;
                 }
             }
@@ -1726,9 +1749,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Add:
             if (addNodes != null)
             {
-                SelectionNewNodeMode selectionMode = _GetCurrentSelectionMode();
+                // Tyto nody by měly být selectovány:
+                //   1. ty z nově dodaných, které mají nastaveno ITreeListNode.Selected = true
+                //   2. ty stávající (SelectedNodes)
+                List<ITreeListNode> selectedNodes = new List<ITreeListNode>();
+                selectedNodes.AddRange(addNodes.Where(n => n.Selected));
+                selectedNodes.AddRange(this.SelectedNodes);
+
+                // Fyzicky přidat nody:
                 foreach (var node in addNodes)
-                    this._AddNode(node, ref firstPair, ref selectionMode, null);
+                    this._AddNode(node, ref firstPair, null);
 
                 // Expand nody: teď už by měly mít svoje Childs přítomné v TreeList:
                 foreach (var node in addNodes.Where(n => n.Expanded))
@@ -1736,6 +1766,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (this._NodesId.TryGetValue(node.Id, out var expandNodePair) && expandNodePair.HasTreeNode)
                         expandNodePair.TreeNode.Expanded = true;
                 }
+
+                // Selectovat požadované nody:
+                this.SelectedNodes = selectedNodes.ToArray();
             }
 
             if (preserveProperties.HasFlag(PreservePropertiesMode.SelectedItems)) this.FocusedNodeFullId = focusedNodeFullId;
@@ -1751,7 +1784,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="firstPair">Ref první vytvořený pár</param>
         /// <param name="selectionMode"></param>
         /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
-        private void _AddNode(ITreeListNode nodeInfo, ref NodePair firstPair, ref SelectionNewNodeMode selectionMode, int? atIndex)
+        private void _AddNode(ITreeListNode nodeInfo, ref NodePair firstPair, int? atIndex)
         {
             if (nodeInfo == null) return;
 
@@ -1761,30 +1794,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (nodeInfo.LazyExpandable)
                 _AddNodeLazyLoad(nodeInfo);                                    // Pokud node má nastaveno LazyExpandable, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
-
-            if (nodeInfo.Selected && (selectionMode == SelectionNewNodeMode.OnlyFirst || selectionMode == SelectionNewNodeMode.All) && nodePair.HasTreeNode)
-            {
-                this.SelectNode(nodePair.TreeNode);
-                if (selectionMode == SelectionNewNodeMode.OnlyFirst)
-                    selectionMode = SelectionNewNodeMode.None;
-            }
         }
-        /// <summary>
-        /// Vrátí režim pro selectování nově přidávaných nodů (pouze nody, které mají <see cref="ITreeListNode.Selected"/> == true).
-        /// Pokud je režim selectování this TreeListu: <see cref="MultiSelectEnabled"/> == true, pak vrátí <see cref="SelectionNewNodeMode.All"/> = všechny nové nody, které mají být Selectované, budou skutečně Selected.
-        /// Pokud <see cref="MultiSelectEnabled"/> == false (=vybraný smí být jen jeden Node), pak se podívá kolik nodů je aktuálně Selected (podle <see cref="SelectedNodes"/>.Length).
-        /// Pokud dosud není žádný node selectován (=máme prázdný List), pak vrátí <see cref="SelectionNewNodeMode.OnlyFirst"/> = selectuje se jen první z požadovaných nodů.
-        /// Jinak vrací <see cref="SelectionNewNodeMode.None"/>.
-        /// </summary>
-        /// <returns></returns>
-        private SelectionNewNodeMode _GetCurrentSelectionMode()
-        {
-            return (this.MultiSelectEnabled ? SelectionNewNodeMode.All : (this.SelectedNodes.Length == 0 ? SelectionNewNodeMode.OnlyFirst : SelectionNewNodeMode.None));
-        }
-        /// <summary>
-        /// Režim selectování nově přidávaných nodů
-        /// </summary>
-        private enum SelectionNewNodeMode { None, OnlyFirst, All }
         /// <summary>
         /// Pod daného parenta přidá Child node typu LazyLoad
         /// </summary>
@@ -1898,7 +1908,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _FillTreeNode(DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, ITreeListNode nodeInfo, bool canExpand)
         {
             treeNode.SetValue(0, nodeInfo.Text);
-            treeNode.Checked = nodeInfo.CanCheck && nodeInfo.Checked.HasValue && nodeInfo.Checked.Value;
+            treeNode.Checked = nodeInfo.CanCheck && nodeInfo.NodeChecked;
             int imageIndex = _GetImageIndex(nodeInfo.ImageDynamicDefault, -1);
             treeNode.ImageIndex = imageIndex;                                                      // ImageIndex je vlevo, a může se změnit podle stavu Seleted
             treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageDynamicSelected, imageIndex); // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
@@ -2012,24 +2022,54 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (treeNode != null) treeNode.Remove();
         }
         /// <summary>
-        /// Vrátí data nodu pro daný node, podle NodeId
+        /// Vrátí data nodu pro daný node, podle <paramref name="fullNodeId"/>
         /// </summary>
         /// <param name="fullNodeId"></param>
         /// <returns></returns>
         private NodePair _GetNodePair(string fullNodeId)
         {
-            if (fullNodeId != null && this._NodesKey.TryGetValue(fullNodeId, out var nodePair)) return nodePair;
-            return null;
+            _TryGetNodePair(fullNodeId, out NodePair nodePair);
+            return nodePair;
         }
         /// <summary>
-        /// Vrátí data nodu pro daný node, podle NodeId
+        /// Vyhledá data nodu pro daný node, podle <paramref name="fullNodeId"/>
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="fullNodeId"></param>
+        /// <param name="nodePair"></param>
         /// <returns></returns>
-        private ITreeListNode _GetNodeInfo(int id)
+        private bool _TryGetNodePair(string fullNodeId, out NodePair nodePair)
         {
-            if (id >= 0 && this._NodesId.TryGetValue(id, out var nodePair)) return nodePair.NodeInfo;
-            return null;
+            nodePair = null;
+            if (fullNodeId != null)
+                return this._NodesKey.TryGetValue(fullNodeId, out nodePair);
+            return false;
+        }
+        /// <summary>
+        /// Vrátí vizuální node podle <paramref name="fullNodeId"/>
+        /// </summary>
+        /// <param name="fullNodeId"></param>
+        /// <returns></returns>
+        private DevExpress.XtraTreeList.Nodes.TreeListNode _GetTreeNode(string fullNodeId)
+        {
+            _TryGetTreeNode(fullNodeId, out DevExpress.XtraTreeList.Nodes.TreeListNode treeNode);
+            return treeNode;
+        }
+        /// <summary>
+        /// Vyhledá vizuální node podle <paramref name="fullNodeId"/>
+        /// </summary>
+        /// <param name="fullNodeId"></param>
+        /// <param name="treeNode"></param>
+        /// <returns></returns>
+        private bool _TryGetTreeNode(string fullNodeId, out DevExpress.XtraTreeList.Nodes.TreeListNode treeNode)
+        {
+            treeNode = null;
+            bool result = false;
+            if (fullNodeId != null && this._NodesKey.TryGetValue(fullNodeId, out var nodePair) && nodePair != null && nodePair.HasTreeNode)
+            {
+                treeNode = nodePair.TreeNode;
+                result = true;
+            }
+            return result;
         }
         /// <summary>
         /// Vrátí data nodu pro daný node, pro jeho <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Tag"/> as int
@@ -2038,9 +2078,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private ITreeListNode _GetNodeInfo(DevExpress.XtraTreeList.Nodes.TreeListNode treeNode)
         {
-            int nodeId = ((treeNode != null && treeNode.Tag is int) ? (int)treeNode.Tag : -1);
-            if (nodeId >= 0 && this._NodesId.TryGetValue(nodeId, out var nodePair)) return nodePair.NodeInfo;
-            return null;
+            _TryGetNodeInfo(treeNode, out var nodeInfo);
+            return nodeInfo;
+        }
+        /// <summary>
+        /// Vrátí data nodu pro daný node, podle NodeId
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private ITreeListNode _GetNodeInfo(int id)
+        {
+            _TryGetNodeInfo(id, out var nodeInfo);
+            return nodeInfo;
+        }
+        /// <summary>
+        /// Vyhledá data nodu pro daný node, pro jeho <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Tag"/> as int.
+        /// </summary>
+        /// <param name="treeNode"></param>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        private bool _TryGetNodeInfo(DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, out ITreeListNode nodeInfo)
+        {
+            int id = ((treeNode != null && treeNode.Tag is int) ? (int)treeNode.Tag : -1);
+            return _TryGetNodeInfo(id, out nodeInfo);
+        }
+        /// <summary>
+        /// Vyhledá data nodu pro daný node, pro jeho <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Tag"/> as int.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="nodeInfo"></param>
+        /// <returns></returns>
+        private bool _TryGetNodeInfo(int id, out ITreeListNode nodeInfo)
+        {
+            nodeInfo = null;
+            bool result = false;
+            if (id >= 0 && this._NodesId.TryGetValue(id, out var nodePair))
+            {
+                nodeInfo = nodePair.NodeInfo;
+                result = true;
+            }
+            return result;
         }
         /// <summary>
         /// Vrací data nodu podle jeho klíče
@@ -2185,10 +2262,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private TreeListCheckBoxMode _CheckBoxMode;
         /// <summary>
         /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.Image0"/>.
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="IMenuItem.Image"/> 
+        /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
         /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
         /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="ITreeListNode.ImageDynamicDefault"/> atd.
+        /// a musí plnit jména ikon do <see cref="IMenuItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode
         {
@@ -2228,15 +2306,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.SelectImageList = null;
                     this.StateImageList = null;
                     break;
-                case TreeListImageMode.Image0:
+                case TreeListImageMode.ImageDynamic:
                     this.SelectImageList = imageList;
                     this.StateImageList = null;
                     break;
-                case TreeListImageMode.Image1:
+                case TreeListImageMode.ImageStatic:
                     this.SelectImageList = null;
                     this.StateImageList = imageList;
                     break;
-                case TreeListImageMode.Image01:
+                case TreeListImageMode.ImageBoth:
                     this.SelectImageList = imageList;
                     this.StateImageList = imageList;
                     break;
@@ -2737,17 +2815,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None,
         /// <summary>
-        /// Pouze ikona 0, přebírá se z <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>
+        /// Pouze ikona vlevo, dynamicky reaguje na stav Selected, přebírá se z <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>
         /// </summary>
-        Image0,
+        ImageDynamic,
         /// <summary>
-        /// Pouze ikona 1, přebírá se z <see cref="ITreeListNode.Image"/>
+        /// Pouze ikona vpravo, statická, přebírá se z <see cref="IMenuItem.Image"/>
         /// </summary>
-        Image1,
+        ImageStatic,
         /// <summary>
-        /// Obě ikony 0 a 1
+        /// Obě ikony = <see cref="ImageDynamic"/> (dynamická, vlevo) i <see cref="ImageStatic"/> (statická vpravo)
         /// </summary>
-        Image01
+        ImageBoth
     }
     /// <summary>
     /// Režim zobrazení CheckBoxů u nodu
@@ -2954,6 +3032,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Data o jednom Node
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DataTreeListNode : DataMenuItem, ITreeListNode
     {
         /// <summary>
@@ -3011,7 +3090,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Id: {ItemId}; Text: {Text}; ParentId: {ParentNodeFullId}";
+            return Text ?? "";
         }
         /// <summary>
         /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
@@ -3020,7 +3099,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string debugText = $"Id: {ItemId}; Text: {Text}; Parent: {ParentNodeFullId}";
+                ITreeListNode node = this as ITreeListNode;
+                string debugText = $"Id: {node.ItemId}; Text: {node.Text}; Parent: {node.ParentNodeFullId}";
                 return debugText;
             }
         }
@@ -3059,6 +3139,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
         /// </summary>
         public virtual bool Selected { get; set; }
+        /// <summary>
+        /// Node je zaškrtnutý. Na rozdíl od <see cref="IMenuItem.Checked"/> (což je bool?) je zdejší property pouze bool.
+        /// </summary>
+        public virtual bool NodeChecked { get { return this.Checked ?? false; } set { this.Checked = value; } }
         /// <summary>
         /// Ikona základní, ta může reagovat na stav Selected (pak bude zobrazena ikona <see cref="ImageDynamicSelected"/>), zobrazuje se vlevo.
         /// Pokud je změněna po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
@@ -3197,6 +3281,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je změněno více uzlů, je vhodnější provést hromadný refresh: <see cref="DxTreeListNative.RefreshNodes(IEnumerable{ITreeListNode})"/>.
         /// </summary>
         bool Selected { get; set; }
+        /// <summary>
+        /// Node je zaškrtnutý. Na rozdíl od <see cref="IMenuItem.Checked"/> (což je bool?) je zdejší property pouze bool.
+        /// </summary>
+        bool NodeChecked { get; set; }
         /// <summary>
         /// Node je otevřený.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
