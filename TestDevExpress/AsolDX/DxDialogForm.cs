@@ -90,6 +90,8 @@ namespace Noris.Clients.Win.Components
             this.MinimizeBox = false;
             this.MaximizeBox = false;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.BoundsStdText = null;
+            this.BoundsAltText = null;
             _Buttons = new List<DevExpress.XtraEditors.SimpleButton>();
             ZoomRatio = 1f;
         }
@@ -732,7 +734,7 @@ namespace Noris.Clients.Win.Components
             _MessageMemo = memoEdit;
             this._MessagePanel.Controls.Add(memoEdit);
 
-            FillMessageText(text, allowHtml, false);
+            FillMessageText(text, allowHtml, false, null);
         }
         /// <summary>
         /// Vytvoří objekty pro vstup textu
@@ -1015,16 +1017,18 @@ namespace Noris.Clients.Win.Components
         {
             if (CurrentVisibleText == 2 && ExistsStdText)
             {
+                BoundsAltText = this.Bounds;
                 CurrentVisibleText = 1;
-                this.FillMessageText(this.DialogArgs.MessageText, this.DialogArgs.MessageTextContainsHtml, true);
+                this.FillMessageText(this.DialogArgs.MessageText, this.DialogArgs.MessageTextContainsHtml, true, BoundsStdText);
             }
             else if (CurrentVisibleText != 2 && ExistsAltText)
             {
+                BoundsStdText = this.Bounds;
                 CurrentVisibleText = 2;
-                this.FillMessageText(this.DialogArgs.AltMessageText, this.DialogArgs.AltMessageTextContainsHtml, true);
+                this.FillMessageText(this.DialogArgs.AltMessageText, this.DialogArgs.AltMessageTextContainsHtml, true, BoundsAltText);
             }
         }
-        private void FillMessageText(string text, bool allowHtml, bool recalcLayout)
+        private void FillMessageText(string text, bool allowHtml, bool recalcLayout, Rectangle? boundsUser)
         {
             CurrentMessageText = text;
             CurrentMessageTextContainsHtml = allowHtml;
@@ -1040,7 +1044,9 @@ namespace Noris.Clients.Win.Components
                 Tuple<Rectangle, Size> data = CalculateOptimalCoordinates();
                 var oldBounds = this.Bounds;
                 var newBounds = data.Item1;
-                if ((newBounds.Width > oldBounds.Width) || (newBounds.Height > oldBounds.Height))
+                if (boundsUser.HasValue)
+                    this.Bounds = boundsUser.Value;
+                else if ((newBounds.Width > oldBounds.Width) || (newBounds.Height > oldBounds.Height))
                     this.Bounds = newBounds;
                 this.MinimumSize = data.Item2;
             }
@@ -1057,6 +1063,8 @@ namespace Noris.Clients.Win.Components
         private string CurrentMessageText;
         private bool CurrentMessageTextContainsHtml;
         private int CurrentVisibleText;
+        private Rectangle? BoundsStdText;
+        private Rectangle? BoundsAltText;
 
         #endregion
         #region Souřadnice a tvorba Layoutu
