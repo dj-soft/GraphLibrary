@@ -24,7 +24,13 @@ namespace Noris.Clients.Win.Components
     {
         #region Public aktivace, konstruktor, interní události
         /// <summary>
-        /// Zobrazí dialog podle parametrů
+        /// Zobrazí modální dialog podle parametrů.
+        /// <para/>
+        /// Upozornění: toto okno při zobrazení modálního dialogu blokuje uživatelský vstup do všech ostatních oken aplikace,
+        /// ale NEBLOKUJE provádění invokace do GUI threadu (typicky zpracování požadavků z vláken OnBackground v GUI threadu).
+        /// <para/>
+        /// Není tedy potřeba řešit modalitu pomocí <see cref="Application.DoEvents()"/> (se všemi riziky a s řešením blokování uživatelských vstupů).
+        /// To nabízí metoda <see cref="DxComponent.DoEventsWithBlockingInput()"/>.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -202,7 +208,7 @@ namespace Noris.Clients.Win.Components
         /// Zkusí poslat daný string do debug containeru, pokud je specifikován v metodě <see cref="DialogArgs.DebugAction"/>.
         /// </summary>
         /// <param name="text"></param>
-        protected void WriteDebug(string text)
+        private void WriteDebug(string text)
         {
             var debugAction = _DialogArgs?.DebugAction;
             if (debugAction != null) debugAction(text);
@@ -218,7 +224,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Při zobrazení = zajistíme focus
         /// </summary>
-        protected void DialogForm_Shown()
+        private void DialogForm_Shown()
         {   // Zajistíme TopMost pozici při zobrazení:
             if (!_IsShown)
                 this.FirstShown();
@@ -226,7 +232,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// První zobrazení řeší TopMost a Focus
         /// </summary>
-        protected void FirstShown()
+        private void FirstShown()
         {
             _IsShown = true;
             this.TopMost = true;
@@ -268,7 +274,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="keyData"></param>
         /// <returns></returns>
-        protected bool ProcessKeyForButtons(Keys keyData)
+        private bool ProcessKeyForButtons(Keys keyData)
         {
             Control button = null;
             Keys modifiers = keyData & Keys.Modifiers;
@@ -291,7 +297,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="filter"></param>
         /// <returns></returns>
-        protected Control FindButton(Func<DialogArgs.ButtonInfo, bool> filter)
+        private Control FindButton(Func<DialogArgs.ButtonInfo, bool> filter)
         {
             if (_Buttons == null || _Buttons.Count == 0) return null;
             return _Buttons.FirstOrDefault(b => b.Tag is DialogArgs.ButtonInfo buttonInfo && filter(buttonInfo));
@@ -302,7 +308,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="buttonInfo"></param>
         /// <param name="keyData"></param>
         /// <returns></returns>
-        protected bool IsButtonActivatedByKey(DialogArgs.ButtonInfo buttonInfo, Keys keyData)
+        private bool IsButtonActivatedByKey(DialogArgs.ButtonInfo buttonInfo, Keys keyData)
         {
             if (!buttonInfo.ActiveKey.HasValue) return false;
             return (buttonInfo.ActiveKey.Value == keyData);
@@ -312,7 +318,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="keyData"></param>
         /// <returns></returns>
-        protected bool ProcessKeyForClipboard(Keys keyData)
+        private bool ProcessKeyForClipboard(Keys keyData)
         {
             Keys modifiers = keyData & Keys.Modifiers;
             Keys keyCode = keyData ^ modifiers;
@@ -326,7 +332,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Zkopíruje text z okna do schránky
         /// </summary>
-        protected void ClipboardCopy(bool asImage = false)
+        private void ClipboardCopy(bool asImage = false)
         {
             var args = _DialogArgs;
             string copyOk = args.StatusBarCtrlCInfo;
@@ -518,7 +524,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="control"></param>
         /// <param name="buttonInfo"></param>
         /// <returns></returns>
-        protected bool TryGetButtonInfo(object control, out DialogArgs.ButtonInfo buttonInfo)
+        private bool TryGetButtonInfo(object control, out DialogArgs.ButtonInfo buttonInfo)
         {
             buttonInfo = null;
             DevExpress.XtraEditors.BaseButton button = control as DevExpress.XtraEditors.BaseButton;
@@ -529,16 +535,16 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// true pokud je focus ve vstupním prvku
         /// </summary>
-        protected bool ActiveInputControl;
+        private bool ActiveInputControl;
         /// <summary>
         /// Info o buttonu, který má nyní focus
         /// </summary>
-        protected DialogArgs.ButtonInfo ActiveButtonInfo;
+        private DialogArgs.ButtonInfo ActiveButtonInfo;
         /// <summary>
         /// Status bar bude zobrazen?
         /// Zde už je vyhodnocena reálná situace podle požadavků a podle reálného obsahu dat.
         /// </summary>
-        protected bool StatusBarVisible;
+        private bool StatusBarVisible;
         /// <summary>
         /// Výsledná hodnota dialogu
         /// </summary>
@@ -549,7 +555,7 @@ namespace Noris.Clients.Win.Components
         /// Podle dodaných argumentů vytvoří obsah okna
         /// </summary>
         /// <param name="args"></param>
-        protected void CreateByArgs(DialogArgs args)
+        private void CreateByArgs(DialogArgs args)
         {
             StoreArgs(args);
             CreateControls();
@@ -559,7 +565,7 @@ namespace Noris.Clients.Win.Components
         /// Uloží argument a základní data z něj
         /// </summary>
         /// <param name="args"></param>
-        protected void StoreArgs(DialogArgs args)
+        private void StoreArgs(DialogArgs args)
         {
             _DialogArgs = args;
             this.Text = args.Title;
@@ -572,7 +578,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Podle dodaných argumentů vytvoří obsah okna
         /// </summary>
-        protected void CreateControls()
+        private void CreateControls()
         {
             DialogArgs args = _DialogArgs;
 
@@ -592,7 +598,7 @@ namespace Noris.Clients.Win.Components
         /// Určí vizuální prostor pro dialogové okno (<see cref="_InitialMaximumBounds"/> a <see cref="_InitialCenterPoint"/>.
         /// </summary>
         /// <param name="args"></param>
-        protected void InitParentArea(DialogArgs args)
+        private void InitParentArea(DialogArgs args)
         {
             Rectangle? centerInBounds = null;
             if (args != null)
@@ -644,15 +650,15 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="args"></param>
         /// <param name="graphics"></param>
-        protected void CreateFrames(DialogArgs args, Graphics graphics)
+        private void CreateFrames(DialogArgs args, Graphics graphics)
         {
-            var panel = new DevExpress.XtraEditors.PanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, TabStop = false, Dock = DockStyle.Fill };
+            var panel = new DevExpress.XtraEditors.PanelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, TabStop = false, Dock = DockStyle.Fill, Name = "_StandardPanel" };
             panel.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
             _StandardPanel = panel;
             this.Controls.Add(_StandardPanel);
 
             var ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();                 // Musí existovat
-            var status = new DevExpress.XtraBars.Ribbon.RibbonStatusBar() { Dock = DockStyle.Bottom, Ribbon = ribbon };
+            var status = new DevExpress.XtraBars.Ribbon.RibbonStatusBar() { Dock = DockStyle.Bottom, Ribbon = ribbon, Name = "_StatusBar" };
             status.Visible = this.StatusBarVisible;
             _StatusBar = status;
             this.Controls.Add(status);
@@ -664,7 +670,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="args"></param>
         /// <param name="graphics"></param>
-        protected void CreateIcon(DialogArgs args, Graphics graphics)
+        private void CreateIcon(DialogArgs args, Graphics graphics)
         {
             this.Icon = GetSystemIcon(DialogSystemIcon.Information);
             this.IconVisible = false;
@@ -700,13 +706,13 @@ namespace Noris.Clients.Win.Components
         /// <returns></returns>
         private void CreateMessageControls(DialogArgs args, Graphics graphics)
         {
-            var panel = new DevExpress.XtraEditors.XtraScrollableControl() { TabStop = false };
+            var panel = new DevExpress.XtraEditors.XtraScrollableControl() { TabStop = false, Name = "_MessagePanel" };
             this._MessagePanel = panel;
             this._StandardPanel.Controls.Add(panel);
 
             if (!this.ExistsAnyText) return;
 
-            string text = this.GetPrimaryMessageText(out bool allowHtml);
+            string text = GetPrimaryMessageText(out bool allowHtml);
             if (String.IsNullOrEmpty(text)) return;
 
             _StyleText = new DevExpress.XtraEditors.StyleController();
@@ -715,26 +721,23 @@ namespace Noris.Clients.Win.Components
             _StyleText.Appearance.Options.UseBackColor = false;
             _StyleText.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
 
-            DevExpress.XtraEditors.LabelControl label = new DevExpress.XtraEditors.LabelControl();
+            DevExpress.XtraEditors.LabelControl label = new DevExpress.XtraEditors.LabelControl() { BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, Dock = DockStyle.Top, Name = "_MessageLabel" };
             // label.StyleController = _StyleText;
-            label.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             label.Appearance.FontSizeDelta = GetZoomDelta();
             label.Appearance.TextOptions.WordWrap = DevExpress.Utils.WordWrap.Wrap;
             label.Appearance.TextOptions.HAlignment = ConvertHAlignment(args.MessageHorizontalAlignment);
             label.Appearance.Options.UseTextOptions = true;
             label.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.Vertical;
-            label.Dock = DockStyle.Top;
             _MessageLabel = label;
             this._MessagePanel.Controls.Add(label);
 
-            DevExpress.XtraEditors.MemoEdit memoEdit = new DevExpress.XtraEditors.MemoEdit() { ReadOnly = true, TabStop = false };
+            DevExpress.XtraEditors.MemoEdit memoEdit = new DevExpress.XtraEditors.MemoEdit() { ReadOnly = true, TabStop = false, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, Visible = false, Name = "_MessageMemo" };
             memoEdit.StyleController = _StyleText;
-            memoEdit.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            memoEdit.Visible = false;
             _MessageMemo = memoEdit;
             this._MessagePanel.Controls.Add(memoEdit);
 
             FillMessageText(text, allowHtml, false, null);
+            RefreshAltMsgButtonText();
         }
         /// <summary>
         /// Vytvoří objekty pro vstup textu
@@ -747,7 +750,7 @@ namespace Noris.Clients.Win.Components
 
             var type = args.InputTextType;
             bool isInputTextVisible = (type == ShowInputTextType.TextBox || type == ShowInputTextType.MemoEdit);
-            var panel = new DevExpress.XtraEditors.XtraScrollableControl() { TabStop = false };
+            var panel = new DevExpress.XtraEditors.XtraScrollableControl() { TabStop = false, Name = "_InputPanel" };
             panel.Visible = isInputTextVisible;
             this._InputPanel = panel;
 
@@ -759,9 +762,7 @@ namespace Noris.Clients.Win.Components
             bool isOneLine = (args.InputTextType != ShowInputTextType.MemoEdit);
             if (isOneLine)
             {
-                var textbox = new DevExpress.XtraEditors.TextEdit();
-                textbox.StyleController = _StyleText;
-                textbox.Text = args.InputTextValue;
+                var textbox = new DevExpress.XtraEditors.TextEdit() { StyleController = _StyleText, Text = args.InputTextValue, Name = "_InputControl " };
                 textbox.MouseEnter += InputControl_MouseEnter;
                 textbox.MouseLeave += InputControl_MouseLeave;
                 textbox.Enter += InputControl_Enter;
@@ -771,9 +772,7 @@ namespace Noris.Clients.Win.Components
             }
             else
             {
-                var editbox = new DevExpress.XtraEditors.MemoEdit();
-                editbox.StyleController = _StyleText;
-                editbox.Text = args.InputTextValue;
+                var editbox = new DevExpress.XtraEditors.MemoEdit() { StyleController = _StyleText, Text = args.InputTextValue, Name = "_InputControl" };
                 editbox.MouseEnter += InputControl_MouseEnter;
                 editbox.MouseLeave += InputControl_MouseLeave;
                 editbox.Enter += InputControl_Enter;
@@ -796,7 +795,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="args"></param>
         /// <param name="graphics"></param>
-        protected void CreateButtons(DialogArgs args, Graphics graphics)
+        private void CreateButtons(DialogArgs args, Graphics graphics)
         {   // Patřičný Panel existuje i když blok není využit. Pak má Panel nastaveno Visible = false, a NEOBSAHUJE vnitřní controly:
             this.ButtonsVisible = false;
 
@@ -860,7 +859,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="args"></param>
         /// <param name="graphics"></param>
-        protected void CreateStatus(DialogArgs args, Graphics graphics)
+        private void CreateStatus(DialogArgs args, Graphics graphics)
         {
             var status = _StatusBar;
 
@@ -874,15 +873,17 @@ namespace Noris.Clients.Win.Components
 
             if (args.StatusBarCtrlCVisible || !String.IsNullOrEmpty(args.StatusBarCtrlCText))
                 StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, DialogForm.MsgCode_CtrlCText, args.StatusBarCtrlCTooltip, DialogForm.MsgCode_CtrlCTooltip, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
+
+            RefreshAltMsgButtonText();
         }
-        protected DevExpress.XtraBars.BarCheckItem AddStatusCheckButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
+        private DxBarCheckItem AddStatusCheckButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
             if (String.IsNullOrEmpty(text)) text = args.GetLocalizedText(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = args.GetLocalizedText(toolTipCode);
 
             return DxComponent.CreateDxStatusCheckButton(_StatusBar, text, width, height, null, toolTipText, true, fontSizeDelta, clickHandler);
         }
-        protected DevExpress.XtraBars.BarButtonItem AddStatusButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
+        private DxBarButtonItem AddStatusButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
             if (String.IsNullOrEmpty(text)) text = args.GetLocalizedText(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = args.GetLocalizedText(toolTipCode);
@@ -894,7 +895,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="standardIcon"></param>
         /// <returns></returns>
-        protected static Icon GetStandardIcon(System.Windows.Forms.MessageBoxIcon standardIcon)
+        private static Icon GetStandardIcon(System.Windows.Forms.MessageBoxIcon standardIcon)
         {
             switch (standardIcon)
             {
@@ -915,7 +916,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="systemIcon"></param>
         /// <returns></returns>
-        protected static Icon GetSystemIcon(DialogSystemIcon systemIcon)
+        private static Icon GetSystemIcon(DialogSystemIcon systemIcon)
         {
             switch (systemIcon)
             {
@@ -939,15 +940,15 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Obsahuje true pokud má být viditelná ikona. Určeno je to při tvorbě. Hodnota se využívá namísto Icon.Visible, která je nastavena na true až po Show.
         /// </summary>
-        protected bool IconVisible { get; set; }
+        private bool IconVisible { get; set; }
         /// <summary>
         /// Obsahuje true pokud má být viditelný Input box. Určeno je to při tvorbě. Hodnota se využívá namísto InputPanel.Visible, která je nastavena na true až po Show.
         /// </summary>
-        protected bool InputVisible { get; set; }
+        private bool InputVisible { get; set; }
         /// <summary>
         /// Obsahuje true pokud mají být viditelné Buttony. Určeno je to při tvorbě. Hodnota se využívá namísto ButtonsPanel.Visible, která je nastavena na true až po Show.
         /// </summary>
-        protected bool ButtonsVisible { get; set; }
+        private bool ButtonsVisible { get; set; }
 
         DevExpress.XtraEditors.StyleController _StyleText;
         DevExpress.XtraEditors.StyleController _StyleButton;
@@ -960,10 +961,10 @@ namespace Noris.Clients.Win.Components
         System.Windows.Forms.Control _ButtonPanel;
         // System.Windows.Forms.Control _ExpanderPanel;
         DevExpress.XtraBars.Ribbon.RibbonStatusBar _StatusBar;
-        DevExpress.XtraBars.BarCheckItem StatusAltTextCheckButton;
-        private DevExpress.XtraBars.BarStaticItem StatusLabel1;
-        private DevExpress.XtraBars.BarStaticItem StatusLabel2;
-        DevExpress.XtraBars.BarButtonItem StatusCopyButton;
+        DxBarCheckItem StatusAltTextCheckButton;
+        DxBarStaticItem StatusLabel1;
+        DxBarStaticItem StatusLabel2;
+        DxBarButtonItem StatusCopyButton;
         List<DevExpress.XtraEditors.SimpleButton> _Buttons;
         /// <summary>
         /// Tento control reprezentuje vstupní políčko (_InputText nebo _InputMemo)
@@ -982,11 +983,11 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Je zadán standardní text?
         /// </summary>
-        private bool ExistsStdText { get { return !String.IsNullOrEmpty(this.DialogArgs?.MessageText); } }
+        private bool ExistsStdText { get { return this.DialogArgs?.StdMessageTextExists ?? false; } }
         /// <summary>
         /// Je zadán alternativní text?
         /// </summary>
-        private bool ExistsAltText { get { return !String.IsNullOrEmpty(this.DialogArgs?.AltMessageText); } }
+        private bool ExistsAltText { get { return this.DialogArgs?.AltMessageTextExists ?? false; } }
         /// <summary>
         /// Vrátí primární text
         /// </summary>
@@ -995,39 +996,54 @@ namespace Noris.Clients.Win.Components
         private string GetPrimaryMessageText(out bool allowHtml)
         {
             allowHtml = false;
+            var args = this.DialogArgs;
+            if (args == null) return "";
+
             CurrentVisibleText = 0;
             if (ExistsStdText)
             {
                 CurrentVisibleText = 1;
-                allowHtml = this.DialogArgs.MessageTextContainsHtml;
-                return this.DialogArgs.MessageText;
+                allowHtml = args.MessageTextContainsHtml;
+                return args.MessageText;
             }
             if (ExistsAltText)
             {
                 CurrentVisibleText = 2;
-                allowHtml = this.DialogArgs.AltMessageTextContainsHtml;
-                return this.DialogArgs.AltMessageText;
+                allowHtml = args.AltMessageTextContainsHtml;
+                return args.AltMessageText;
             }
-            return null;
+            return "";
         }
         /// <summary>
         /// Vymění zobrazený Message text mezi standardním a alternativním
         /// </summary>
         private void AlternateCurrentText()
         {
+            var args = this.DialogArgs;
+            if (args == null) return;
+
             if (CurrentVisibleText == 2 && ExistsStdText)
             {
                 BoundsAltText = this.Bounds;
                 CurrentVisibleText = 1;
-                this.FillMessageText(this.DialogArgs.MessageText, this.DialogArgs.MessageTextContainsHtml, true, BoundsStdText);
+                FillMessageText(args.MessageText, args.MessageTextContainsHtml, true, BoundsStdText);
+                RefreshAltMsgButtonText();
             }
             else if (CurrentVisibleText != 2 && ExistsAltText)
             {
                 BoundsStdText = this.Bounds;
                 CurrentVisibleText = 2;
-                this.FillMessageText(this.DialogArgs.AltMessageText, this.DialogArgs.AltMessageTextContainsHtml, true, BoundsAltText);
+                FillMessageText(args.AltMessageText, args.AltMessageTextContainsHtml, true, BoundsAltText);
+                RefreshAltMsgButtonText();
             }
         }
+        /// <summary>
+        /// Daný text vyplní do _MessageLabel.Text a _MessageLabel.AllowHtmlString, volitelně přepočítá Bounds formuláře
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="allowHtml"></param>
+        /// <param name="recalcLayout"></param>
+        /// <param name="boundsUser"></param>
         private void FillMessageText(string text, bool allowHtml, bool recalcLayout, Rectangle? boundsUser)
         {
             CurrentMessageText = text;
@@ -1052,6 +1068,20 @@ namespace Noris.Clients.Win.Components
             }
         }
         /// <summary>
+        /// Aktualizuje obsah buttonu <see cref="StatusAltTextCheckButton"/> podle aktuálního stavu v <see cref="CurrentVisibleText"/> a podle textů v <see cref="DialogArgs"/>.
+        /// </summary>
+        private void RefreshAltMsgButtonText()
+        {
+            if (StatusAltTextCheckButton == null) return;
+            var args = this.DialogArgs;
+            if (args == null) return;
+
+            string buttonText = (CurrentVisibleText == 1 ? (args.StatusBarAltMsgButtonText ?? args.StatusBarStdMsgButtonText) : (args.StatusBarStdMsgButtonText ?? args.StatusBarAltMsgButtonText));
+            string buttonToolTip = (CurrentVisibleText == 1 ? (args.StatusBarAltMsgButtonTooltip ?? args.StatusBarStdMsgButtonTooltip) : (args.StatusBarStdMsgButtonTooltip ?? args.StatusBarAltMsgButtonTooltip));
+            StatusAltTextCheckButton.Caption = buttonText;
+            StatusAltTextCheckButton.SetToolTip(buttonText, buttonToolTip);
+        }
+        /// <summary>
         /// Uživatel kliknul na status bar button "AltText"
         /// </summary>
         /// <param name="sender"></param>
@@ -1071,7 +1101,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Určí a nastaví souřadnice, kde bude okno zobrazeno.
         /// </summary>
-        protected void PrepareInitialBounds()
+        private void PrepareInitialBounds()
         {
             // Metoda PrepareInitialBounds() běží jen jedenkrát, ještě před Show() okna, ale po vytvoření všech controlů.
             // Nejprve zde provedeme RefreshLayout(), tam se určí vnitřní souřadnice jednotlivých controlů podle vnějších rozměrů okna (to se provádí i po každém Resize),
@@ -1089,12 +1119,16 @@ namespace Noris.Clients.Win.Components
         /// Vypočítá optimální souřadnice formuláře
         /// </summary>
         /// <returns></returns>
-        protected Tuple<Rectangle, Size> CalculateOptimalCoordinates()
+        private Tuple<Rectangle, Size> CalculateOptimalCoordinates()
         {
             DialogArgs args = this._DialogArgs;
 
             Size formCurrentSize = this.Size;
+            Size messageClientSize = _StandardPanel.ClientSize;                // Prostor pro prvky
+            Size clientAddSize = formCurrentSize - messageClientSize;
             Size formMaxSize = this._InitialMaximumBounds.Size;
+            var buttonDockSide = args.ButtonPanelDock;
+            bool buttonsDockLeftRight = (buttonDockSide == DockStyle.Left || buttonDockSide == DockStyle.Right);
 
             // 1. Určíme, jakou velikost formuláře bychom potřebovali:
             //  a) Pro Text:
@@ -1114,12 +1148,15 @@ namespace Noris.Clients.Win.Components
                 textTestSize.Width = textTestWidth;
                 textRealSize = GetRealTextSize(textMaxSize, textTestSize);               // Upravili jsme šířku, vypočítáme výšku
             }
-            Size textFormSize = textRealSize + textAddSize;                    // Velikost celého formuláře tak, aby text umístěný uvnitř měl svoji optimální velikost
 
-            //  b) Input
-            if (this.InputVisible)
+            //  b) Input: určíme nejmenší šířku okna tak, aby byl dobře vidět Input prvek:
+            int? inputWidth = null;                                            // Vhodná šířka formuláře z pohledu InputTextu
+            if (this.InputVisible && args.InputTextSize.HasValue)
             {
-                // Víceméně jej řeší TextBounds, protože ten vždy udělá prostor pro Input i na svůj úkor, pak má menší velikost než by rád, a my ji zvětšili v kroku a) v této metodě :-)
+                int iw = (2 * MarginsX) + (2 * SpacingX) + args.InputTextSize.Value.Width + clientAddSize.Width;
+                if (buttonsDockLeftRight && _ButtonsTotalHeight.HasValue)
+                    iw += SpacingX + _ButtonsTotalHeight.Value;
+                inputWidth = iw;
             }
 
             //  c) Určíme velikost z hlediska Buttonů:
@@ -1128,26 +1165,29 @@ namespace Noris.Clients.Win.Components
             if (this.ButtonsVisible)
             {
                 Size buttonCurrentSize = this.ButtonsBounds.Size;              // Současný prostor, ve kterém jsou Buttony umístěny
-                var buttonDockSide = args.ButtonPanelDock;
-                if ((buttonDockSide == DockStyle.Left || buttonDockSide == DockStyle.Right) && _ButtonsTotalHeight.HasValue)
+                if (buttonsDockLeftRight && _ButtonsTotalHeight.HasValue)
                 {   // Tlačítka jsou vlevo nebo vpravo, a máme v evidenci jejich sumární výšku:
-                    int minHeight = 4 * MarginsY + _ButtonsTotalHeight.Value;      // Minimální vhodná výška panelu tlačítek, aby byly pěkně vidět     |    koeficient 4: součet volného místa nad + pod buttony, aby bylo vidět zarovnání Begin/Center/End
-                                                                                   // Výška formuláře z hlediska buttonů = potřebná výška pro buttony (minHeight) + stávající "režijní pixely" mezi formulářem a buttony:
-                    buttonHeight = minHeight + (formCurrentSize.Height - buttonCurrentSize.Height);
+                    int minHeight = 4 * MarginsY + _ButtonsTotalHeight.Value;  // Minimální vhodná výška panelu tlačítek, aby byly pěkně vidět     |    koeficient 4: součet volného místa nad + pod buttony, aby bylo vidět zarovnání Begin/Center/End
+                    // Výška formuláře z hlediska buttonů = potřebná výška pro buttony (minHeight) + stávající "režijní pixely" mezi formulářem a buttony:
+                    buttonHeight = minHeight + clientAddSize.Height;
                 }
                 else if (_ButtonsTotalWidth.HasValue)
                 {   // Tlačítka jsou dole, a máme v evidenci jejich sumární šířku:
-                    int minWidth = 3 * MarginsX + _ButtonsTotalWidth.Value;        // Minimální vhodná šířka panelu tlačítek, aby byly pěkně vidět     |    koeficient 3: součet volného místa vlevo + vpravo okolo buttonů, aby bylo vidět zarovnání Begin/Center/End
-                                                                                   // Šířka formuláře z hlediska buttonů = potřebná šířka pro buttony (minWidth) + stávající "režijní pixely" mezi formulářem a buttony:
-                    buttonWidth = minWidth + (formCurrentSize.Width - buttonCurrentSize.Width);
+                    int minWidth = 3 * MarginsX + _ButtonsTotalWidth.Value;    // Minimální vhodná šířka panelu tlačítek, aby byly pěkně vidět     |    koeficient 3: součet volného místa vlevo + vpravo okolo buttonů, aby bylo vidět zarovnání Begin/Center/End
+                    // Šířka formuláře z hlediska buttonů = potřebná šířka pro buttony (minWidth) + stávající "režijní pixely" mezi formulářem a buttony:
+                    buttonWidth = minWidth + clientAddSize.Width;
                 }
             }
 
             // 2. Určíme výslednou velikost formuláře a jeho pozici:
+            Size textFormSize = textRealSize + textAddSize;                    // Velikost celého formuláře tak, aby text umístěný uvnitř měl svoji optimální velikost
             //  a) optimální pro text:
             int formWidth = textFormSize.Width;
             int formHeight = textFormSize.Height;
 
+            //  b) zvětšit pro InputText:
+            if (inputWidth.HasValue && formWidth < inputWidth.Value) formWidth = inputWidth.Value;
+            
             //  c) zvětšit pro Buttony:
             if (buttonWidth.HasValue && formWidth < buttonWidth.Value) formWidth = buttonWidth.Value;
             if (buttonHeight.HasValue && formHeight < buttonHeight.Value) formHeight = buttonHeight.Value;
@@ -1213,7 +1253,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="proposedSize"></param>
         /// <param name="addSize"></param>
         /// <returns></returns>
-        protected Size GetTextPreferredSize(Size proposedSize, int? addSize = null)
+        private Size GetTextPreferredSize(Size proposedSize, int? addSize = null)
         {
             if (_MessageLabel == null) return proposedSize;
 
@@ -1246,7 +1286,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="value2"></param>
         /// <param name="minResult"></param>
         /// <returns></returns>
-        protected int GetMin(int value1, int value2, int minResult)
+        private int GetMin(int value1, int value2, int minResult)
         {
             int value = (value1 < value2 ? value1 : value2);
             return (value > minResult ? value : minResult);
@@ -1254,7 +1294,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Uspořádá prvky okna tak, aby využily jeho plochu podle pravidel.
         /// </summary>
-        protected void RefreshLayout()
+        private void RefreshLayout()
         {
             if (_StandardPanel == null) return;
 
@@ -1279,7 +1319,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Určí souřadnice prvků v aktuálním prostoru formuláře podle obsahu a pravidel.
         /// </summary>
-        protected void CreateLayout()
+        private void CreateLayout()
         {
             Rectangle iconBounds = Rectangle.Empty;
             Rectangle messageBounds = Rectangle.Empty;
@@ -1401,7 +1441,7 @@ namespace Noris.Clients.Win.Components
         /// Obsahuje požadovanou velikost vstupního controlu (Text/Memo) v pixelech po provedení zoomu.
         /// Neobsahuje Spacing, neprovádí srovnání s okolními prvky. Vychází z argumentu, ze zoomu a z výšky TextBoxu.
         /// </summary>
-        protected Size InputControlSize
+        private Size InputControlSize
         {
             get
             {
@@ -1449,7 +1489,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="bounds"></param>
         /// <param name="control"></param>
         /// <param name="applyInnerAction"></param>
-        protected void ApplyLayoutToControl(Rectangle bounds, System.Windows.Forms.Control control, Action applyInnerAction = null)
+        private void ApplyLayoutToControl(Rectangle bounds, System.Windows.Forms.Control control, Action applyInnerAction = null)
         {
             if (control is null) return;
             if (bounds.Width > 0 && bounds.Height > 0)
@@ -1466,7 +1506,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Uspořádá správně vnitřní prvky pro Message
         /// </summary>
-        protected void ApplyLayoutMessage()
+        private void ApplyLayoutMessage()
         {
             Size clientSize = _MessagePanel.ClientSize;
 
@@ -1534,7 +1574,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Uspořádá správně vnitřní prvky pro Input
         /// </summary>
-        protected void ApplyLayoutInput()
+        private void ApplyLayoutInput()
         {
             Size clientSize = _InputPanel.ClientSize;
             Size controlSize = InputControlSize;
@@ -1561,7 +1601,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Uspořádá správně vnitřní prvky Buttons
         /// </summary>
-        protected void ApplyLayoutButtons()
+        private void ApplyLayoutButtons()
         {
             _ButtonsTotalWidth = null;
             _ButtonsTotalHeight = null;
@@ -1576,7 +1616,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Rozmístí buttony ve směru vertikálním
         /// </summary>
-        protected void ApplyLayoutButtonsVertical()
+        private void ApplyLayoutButtonsVertical()
         {
             DialogArgs args = _DialogArgs;
             if (args is null) return;
@@ -1609,7 +1649,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Rozmístí buttony ve směru horizontálním
         /// </summary>
-        protected void ApplyLayoutButtonsHorizontal()
+        private void ApplyLayoutButtonsHorizontal()
         {
             DialogArgs args = _DialogArgs;
             if (args is null) return;
@@ -1644,7 +1684,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="parent"></param>
         /// <param name="align"></param>
         /// <returns></returns>
-        protected int AlignSizeTo(int content, int parent, AlignContentToSide align)
+        private int AlignSizeTo(int content, int parent, AlignContentToSide align)
         {
             switch (align)
             {
@@ -1697,65 +1737,65 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Minimální šířka buttonu
         /// </summary>
-        protected int ButtonMinWidth { get { return GetZoom(BMW); } }
+        private int ButtonMinWidth { get { return GetZoom(BMW); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Maximální šířka buttonu
         /// </summary>
-        protected int ButtonMaxWidth { get { return GetZoom(BXW); } }
+        private int ButtonMaxWidth { get { return GetZoom(BXW); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Výška buttonu
         /// </summary>
-        protected int ButtonHeight { get { return GetZoom(_DialogArgs.ButtonHeight); } }
+        private int ButtonHeight { get { return GetZoom(_DialogArgs.ButtonHeight); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Minimální šířka textu
         /// </summary>
-        protected int MinTextWidth { get { return GetZoom(MTW); } }
+        private int MinTextWidth { get { return GetZoom(MTW); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Minimální výška textu, pokud je samostatný a větší
         /// </summary>
-        protected int MinTextHeight { get { return GetZoom(MTH); } }
+        private int MinTextHeight { get { return GetZoom(MTH); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Minimální výška textu, pokud je samostatný a menší
         /// </summary>
-        protected int MinTextSmallHeight { get { return GetZoom(MTSH); } }
+        private int MinTextSmallHeight { get { return GetZoom(MTSH); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Minimální výška textu, pokud je zobrazen i InputPanel
         /// </summary>
-        protected int MinTextInputHeight { get { return GetZoom(MTIH); } }
+        private int MinTextInputHeight { get { return GetZoom(MTIH); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Povinný přídavek k výšce textu
         /// </summary>
-        protected int AddTextHeight { get { return GetZoom(ATH); } }
+        private int AddTextHeight { get { return GetZoom(ATH); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Margins X = okraje vnější
         /// </summary>
-        protected int MarginsX { get { return GetZoom(MX); } }
+        private int MarginsX { get { return GetZoom(MX); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Margins Y = okraje vnější
         /// </summary>
-        protected int MarginsY { get { return GetZoom(MY); } }
+        private int MarginsY { get { return GetZoom(MY); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Spacing X = mezery vnitřní
         /// </summary>
-        protected int SpacingX { get { return GetZoom(SX); } }
+        private int SpacingX { get { return GetZoom(SX); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Spacing Y = mezery vnitřní
         /// </summary>
-        protected int SpacingY { get { return GetZoom(SY); } }
+        private int SpacingY { get { return GetZoom(SY); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Spacing X okolo textu
         /// </summary>
-        protected int SpacingTextX { get { return GetZoom(STX); } }
+        private int SpacingTextX { get { return GetZoom(STX); } }
         /// <summary>
         /// Aktuální velikost (dle Zoomu): Spacing Y okolo textu
         /// </summary>
-        protected int SpacingTextY { get { return GetZoom(STY); } }
+        private int SpacingTextY { get { return GetZoom(STY); } }
         /// <summary>
         /// Vrátí DevExpress styl pro Horizontální zarovnání
         /// </summary>
         /// <param name="alignment"></param>
         /// <returns></returns>
-        protected HorzAlignment ConvertHAlignment(AlignContentToSide alignment)
+        private HorzAlignment ConvertHAlignment(AlignContentToSide alignment)
         {
             switch (alignment)
             {
@@ -1770,7 +1810,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="alignment"></param>
         /// <returns></returns>
-        protected VertAlignment ConvertVAlignment(AlignContentToSide alignment)
+        private VertAlignment ConvertVAlignment(AlignContentToSide alignment)
         {
             switch (alignment)
             {
@@ -1784,7 +1824,7 @@ namespace Noris.Clients.Win.Components
         /// Vrací FontSizeDelta tak, aby výsledný font byl změněn o daný základ plus aktuální Zoom.
         /// </summary>
         /// <returns></returns>
-        protected int GetZoomDelta()
+        private int GetZoomDelta()
         {
             float rootSize = 9f;
             float targetSize = rootSize * ZoomRatio;
@@ -1795,7 +1835,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>
-        protected int GetZoom(int size)
+        private int GetZoom(int size)
         {
             float zoomed = (float)size * ZoomRatio;
             return (int)Math.Ceiling(zoomed);
@@ -1804,7 +1844,7 @@ namespace Noris.Clients.Win.Components
         /// Aktuální ratio Zoom: 1.0 = beze změny, 1.5 = +50%.
         /// Obsahuje hodnotu <see cref="DialogArgs.ZoomRatio"/> = <see cref="DialogArgs.ZoomRatio"/> * <see cref="DialogArgs.DialogZoomRatio"/>.
         /// </summary>
-        protected float ZoomRatio;
+        private float ZoomRatio;
         #endregion
         #region Výchozí hodnoty
         /// <summary>
@@ -1836,6 +1876,14 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public const string MsgCode_AltMsgButtonTooltip = "AltMsgButtonToolTip";
         /// <summary>
+        /// Kód hlášky pro získání defaultního textu tlačítka "Méně informací"
+        /// </summary>
+        public const string MsgCode_StdMsgButtonText = "StdMsgButtonText";
+        /// <summary>
+        /// Kód hlášky pro získání defaultního tooltipu tlačítka "Méně informací"
+        /// </summary>
+        public const string MsgCode_StdMsgButtonTooltip = "StdMsgButtonToolTip";
+        /// <summary>
         /// Prefix kódu hlášky pro získání textu tlačítka pro DialogResult, za prefixem následují texty: Ok, Yes, No, Abort, Retry, Ignore, Cancel.
         /// </summary>
         public const string MsgCode_DialogResultPrefix = "DialogResult_";
@@ -1863,55 +1911,55 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Minimální šířka buttonu
         /// </summary>
-        protected const int BMW = 100;
+        private const int BMW = 100;
         /// <summary>
         /// Maximální šířka buttonu
         /// </summary>
-        protected const int BXW = 240;
+        private const int BXW = 240;
         /// <summary>
         /// Minimální šířka textu
         /// </summary>
-        protected const int MTW = 200;
+        private const int MTW = 200;
         /// <summary>
         /// Minimální výška textu, pokud je větší
         /// </summary>
-        protected const int MTH = 45;
+        private const int MTH = 45;
         /// <summary>
         /// Minimální výška textu, pokud je menší
         /// </summary>
-        protected const int MTSH = 30;
+        private const int MTSH = 30;
         /// <summary>
         /// Minimální výška textu, pokud je zobrazen i InputPanel
         /// </summary>
-        protected const int MTIH = 30;
+        private const int MTIH = 30;
         /// <summary>
         /// Povinný přídavek k výšce textu
         /// </summary>
-        protected const int ATH = 16;
+        private const int ATH = 16;
         /// <summary>
         /// Margins X = okraje vnější
         /// </summary>
-        protected const int MX = 12;
+        private const int MX = 12;
         /// <summary>
         /// Margins Y = okraje vnější
         /// </summary>
-        protected const int MY = 9;
+        private const int MY = 9;
         /// <summary>
         /// Spacing X = mezery vnitřní
         /// </summary>
-        protected const int SX = 6;
+        private const int SX = 6;
         /// <summary>
         /// Spacing Y = mezery vnitřní
         /// </summary>
-        protected const int SY = 6;
+        private const int SY = 6;
         /// <summary>
         /// Spacing X okolo textu
         /// </summary>
-        protected const int STX = 12;
+        private const int STX = 12;
         /// <summary>
         /// Spacing Y okolo textu
         /// </summary>
-        protected const int STY = 12;
+        private const int STY = 12;
         #endregion
         #region Implementace IEscapeHandler
         /// <summary>
@@ -1967,15 +2015,19 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Inicializace
         /// </summary>
-        protected void Init()
+        private void Init()
         {
             UserZoomRatio = 1f;
             DialogZoomRatio = DialogForm.DefaultDialogZoomRatio;
             StatusBarVisible = false;
+            StatusBarCtrlCVisible = false;
+            StatusBarCtrlCText = GetLocalizedText(DialogForm.MsgCode_CtrlCText);
             StatusBarCtrlCTooltip = GetLocalizedText(DialogForm.MsgCode_CtrlCTooltip);
             StatusBarCtrlCInfo = GetLocalizedText(DialogForm.MsgCode_CtrlCInfo);
             StatusBarAltMsgButtonText = GetLocalizedText(DialogForm.MsgCode_AltMsgButtonText);
             StatusBarAltMsgButtonTooltip = GetLocalizedText(DialogForm.MsgCode_AltMsgButtonTooltip);
+            StatusBarStdMsgButtonText = GetLocalizedText(DialogForm.MsgCode_StdMsgButtonText);
+            StatusBarStdMsgButtonTooltip = GetLocalizedText(DialogForm.MsgCode_StdMsgButtonTooltip);
             ButtonPanelDock = DialogForm.DefaultButtonDockSide;
             ButtonHeight = DialogForm.DefaultButtonHeight;
             ButtonsAlignment = DialogForm.DefaultButtonAlignment;
@@ -2041,9 +2093,20 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public bool AltMessageTextContainsHtml { get; set; }
         /// <summary>
-        /// StatusBar může obsahovat button "Ctrl+C = Copy". Jeho akce je fixní: Clipboard.Copy.
-        /// Jeho text lze definovat zde. Prázdný text = default = žádný button, pokud není nastaveno <see cref="StatusBarCtrlCVisible"/> == true (což je default).
-        /// Tedy: tlačítko je viditelné když je (<see cref="StatusBarCtrlCVisible"/> == true), anebo když je zadán zdejší text <see cref="StatusBarCtrlCText"/>.
+        /// Obsahuje true pokud je zadán text <see cref="MessageText"/>
+        /// </summary>
+        public bool StdMessageTextExists { get { return !String.IsNullOrEmpty(MessageText); } }
+        /// <summary>
+        /// Obsahuje true pokud je zadán text <see cref="AltMessageText"/>
+        /// </summary>
+        public bool AltMessageTextExists { get { return !String.IsNullOrEmpty(AltMessageText); } }
+        /// <summary>
+        /// Obsahuje true, pokud má být zobrazen button pro zobrazení alternativního textu (tj. pokud existují zadané oba texty: <see cref="MessageText"/> i <see cref="AltMessageText"/>).
+        /// </summary>
+        public bool StatusBarAltMsgButtonVisible { get { return (StdMessageTextExists && AltMessageTextExists); } }
+        /// <summary>
+        /// Message okno může obsahovat alternativní text (<see cref="AltMessageText"/>). Pro jeho zobrazení je připraveno tlačítko ve statusbaru vlevo (dole).
+        /// Jeho defaultní text je dán hláškou <see cref="DialogForm.MsgCode_AltMsgButtonText"/> (typicky "Zobraz detaily"). V této property je možno text změnit.
         /// Zdejší text je přímo zobrazen, bez lokalizace.
         /// </summary>
         public string StatusBarAltMsgButtonText { get; set; }
@@ -2051,6 +2114,18 @@ namespace Noris.Clients.Win.Components
         /// Tooltip k <see cref="StatusBarAltMsgButtonText"/>
         /// </summary>
         public string StatusBarAltMsgButtonTooltip { get; set; }
+        /// <summary>
+        /// Message okno může obsahovat alternativní text (<see cref="AltMessageText"/>). Pro jeho zobrazení je připraveno tlačítko ve statusbaru vlevo (dole).
+        /// Tlačítko má ve výchozím stavu text dle <see cref="StatusBarAltMsgButtonText"/> (typicky "Zobraz detaily").
+        /// Po zobrazení alternativního textu zprávy (typicky detaily) se text tlačítka změní na zdejší text, typicky "Skryj detaily".
+        /// Jeho defaultní text je dán hláškou <see cref="DialogForm.MsgCode_StdMsgButtonText"/>, v této property je možno text změnit.
+        /// Zdejší text je přímo zobrazen, bez lokalizace.
+        /// </summary>
+        public string StatusBarStdMsgButtonText { get; set; }
+        /// <summary>
+        /// Tooltip k <see cref="StatusBarStdMsgButtonText"/>
+        /// </summary>
+        public string StatusBarStdMsgButtonTooltip { get; set; }
         /// <summary>
         /// Vodorovné zarovnání textu hlášky (vlevo, střed, vpravo).
         /// </summary>
@@ -2104,17 +2179,14 @@ namespace Noris.Clients.Win.Components
         public float DialogZoomRatio { get { return _DialogZoomRatio; } set { _DialogZoomRatio = (value < 0.3f ? 0.3f : (value > 5.0f ? 5.0f : value)); } }
         private float _DialogZoomRatio;
         /// <summary>
-        /// Viditelnost status baru, default = false.
-        /// Upozornění: pokud některý button bude definovat text v property <see cref="ButtonInfo.StatusBarText"/>, pak bude status zobrazen i když zde bude false.
+        /// Reálná viditelnost status baru. Obsahuje true v případě, kdy je zadáno true do <see cref="StatusBarVisible"/> nebo do <see cref="StatusBarCtrlCVisible"/>,
+        /// anebo když je zadán alternativní text a je viditelná odpovídající button, viz <see cref="StatusBarAltMsgButtonVisible"/>.
+        /// </summary>
+        public bool StatusBarVisibleCurrent { get { return (StatusBarVisible || StatusBarAltMsgButtonVisible || StatusBarCtrlCVisible); } }
+        /// <summary>
+        /// Požadovaná viditelnost status baru, default = false.
         /// </summary>
         public bool StatusBarVisible { get; set; }
-        /// <summary>
-        /// StatusBar může obsahovat button "Ctrl+C = Copy". Jeho akce je fixní: Clipboard.Copy.
-        /// Jeho text lze definovat zde. Prázdný text = default = žádný button, pokud není nastaveno <see cref="StatusBarCtrlCVisible"/> == true (což je default).
-        /// Tedy: tlačítko je viditelné když je (<see cref="StatusBarCtrlCVisible"/> == true), anebo když je zadán zdejší text <see cref="StatusBarCtrlCText"/>.
-        /// Zdejší text je přímo zobrazen, bez lokalizace.
-        /// </summary>
-        public string StatusBarCtrlCText { get; set; }
         /// <summary>
         /// Viditelnost buttonu "Ctrl+C = Copy" ve Statusbaru.
         /// Pokud zde bude true, ale v textu <see cref="StatusBarCtrlCText"/> bude prázdný string, pak se text tlačítka získá lokalizací textu "CtrlCText".
@@ -2122,7 +2194,15 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public bool StatusBarCtrlCVisible { get; set; }
         /// <summary>
-        /// Tooltip k <see cref="StatusBarCtrlCText"/>
+        /// StatusBar může obsahovat button "Ctrl+C = Copy". Jeho akce je fixní: Clipboard.Copy.
+        /// Ve výchozím stavu obsahuje lokalizovanou hlášku dle <see cref="DialogForm.MsgCode_CtrlCText"/>.
+        /// Viditelnost tlačítka řídí výhradně <see cref="StatusBarCtrlCVisible"/>.
+        /// Zdejší text je přímo zobrazen, bez lokalizace.
+        /// </summary>
+        public string StatusBarCtrlCText { get; set; }
+        /// <summary>
+        /// Tooltip k <see cref="StatusBarCtrlCText"/>. 
+        /// Ve výchozím stavu obsahuje lokalizovanou hlášku dle <see cref="DialogForm.MsgCode_CtrlCTooltip"/>.
         /// </summary>
         public string StatusBarCtrlCTooltip { get; set; }
         /// <summary>
@@ -2357,7 +2437,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="text"></param>
         /// <param name="result"></param>
         /// <returns></returns>
-        protected Keys? GetActiveKeyFrom(string text, DialogResult result)
+        private Keys? GetActiveKeyFrom(string text, DialogResult result)
         {
             if (String.IsNullOrEmpty(text)) return null;
             int index = text.IndexOf('&');
@@ -2447,7 +2527,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         /// <param name="dialogResult"></param>
         /// <returns></returns>
-        protected string GetButtonTextFor(DialogResult dialogResult)
+        private string GetButtonTextFor(DialogResult dialogResult)
         {
             string value = dialogResult.ToString();
             string code = DialogForm.MsgCode_DialogResultPrefix + value;

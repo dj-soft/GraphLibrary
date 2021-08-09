@@ -682,7 +682,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1346, 503);
+            this.ClientSize = new System.Drawing.Size(1400, 650);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.StatusStrip);
             this.IconOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("MainForm.IconOptions.SvgImage")));

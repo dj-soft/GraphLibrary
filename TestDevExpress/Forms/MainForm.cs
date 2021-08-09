@@ -20,6 +20,8 @@ using NWC = Noris.Clients.Win.Components;
 using TestDevExpress.Components;
 using Noris.Clients.Win.Components.AsolDX;
 using DevExpress.XtraRichEdit.Import.OpenXml;
+using DevExpress.XtraRichEdit.Layout;
+using Noris.Clients.Win.Components;
 
 namespace TestDevExpress.Forms
 {
@@ -154,18 +156,29 @@ namespace TestDevExpress.Forms
         }
         private void OnActivatePage(int pageIndex)
         {
+            switch (_LastActivatedPage)
+            {
+                case 7:
+                    DeActivateMsgBoxPage();
+                    break;
+            }
             CurrentLogControl = null;              // Konkrétní stránka ať si to nastaví v následující metodě...
             switch (pageIndex)
             {
                 case 5:
                     ActivateRibbonPage();
                     break;
+                case 7:
+                    ActivateMsgBoxPage();
+                    break;
                 case 10:
                     ActivateDragDropPage();
                     break;
             }
+            _LastActivatedPage = pageIndex;
             RefreshLog();
         }
+        private int _LastActivatedPage = -1;
         #region Log
 
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
@@ -1050,7 +1063,7 @@ namespace TestDevExpress.Forms
 
             navPane.AddPage("Titulek 1", "page1");
 
-            navPane.AddPage(new TextBox() { Text = "Obsah textboxu", Name = "TextBox" });
+            navPane.AddPage(new System.Windows.Forms.TextBox() { Text = "Obsah textboxu", Name = "TextBox" });
 
             ListView listView = new ListView();
             listView.Items.Add("Položka 1");
@@ -1419,13 +1432,19 @@ namespace TestDevExpress.Forms
         {
             _MsgBoxPanel.AutoScroll = true;
             int x0 = 15;
-            int y0 = 12;
+            int y0 = 38;
             int xs = 20;
             int ys = 6;
             int w = 320;
             int h = 35;
             int x = x0;
             int y = y0;
+
+            DxComponent.CreateDxLabel(x0, 9, 250, _MsgBoxPanel, "Working Thread invoke to GUI thread:");
+            _MsgBoxInvokedLabel = DxComponent.CreateDxLabel(x0 + 260, 6, 100, _MsgBoxPanel, "...");
+
+            _MsgBoxInvokedLabel.Appearance.FontSizeDelta = 2;
+            _MsgBoxInvokedLabel.Appearance.FontStyleDelta = FontStyle.Regular;
 
             _CreateOneButton("Dialog [ OK ]", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKClick); y += (h + ys);
             _CreateOneButton("Dialog [ OK ] / Center", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogOKCenterClick); y += (h + ys);
@@ -1454,10 +1473,39 @@ namespace TestDevExpress.Forms
             _CreateOneButton("Dialog InputMemoLine", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogInputTextMemoClick); y += (h + ys);
             _CreateOneButton("Dialog NonModal", new Rectangle(x, y, w, h), _MsgBoxPanel, _MsgShowDialogNonModalClick); y += (h + ys);
 
-            _MsgBoxResultLabel = new Label() { Bounds = new Rectangle(x, y, w + 60, h), AutoSize = false, Text = "Výsledek: " };
-            _MsgBoxPanel.Controls.Add(_MsgBoxResultLabel);
+            _MsgBoxResultLabel = DxComponent.CreateDxLabel(x, y, w + 60, _MsgBoxPanel, "Výsledek: ");
+            _MsgBoxResultLabel.Appearance.FontSizeDelta = 2;
+            _MsgBoxResultLabel.Appearance.FontStyleDelta = FontStyle.Regular;
         }
-        private Label _MsgBoxResultLabel;
+        private DxLabelControl _MsgBoxInvokedLabel;
+        private DxLabelControl _MsgBoxResultLabel;
+        private DateTime _MsgBoxActivateTime;
+        private Guid? _MsgBoxTimerGuid;
+        private void ActivateMsgBoxPage()
+        {
+            _MsgBoxInvokedLabel.Text = "";
+            _MsgBoxActivateTime = DateTime.Now;
+            _MsgBoxTimerGuid = WatchTimer.CallMeEvery(_MsgBoxRefreshGui, 50, false, _MsgBoxTimerGuid);
+        }
+        private void DeActivateMsgBoxPage()
+        {
+            _MsgBoxInvokedLabel.Text = "";
+            if (_MsgBoxTimerGuid.HasValue)
+                WatchTimer.Remove(_MsgBoxTimerGuid.Value);
+        }
+        private void _MsgBoxRefreshGui()
+        {
+            if (this.InvokeRequired)
+                //  Fungují obě varianty:
+                this.BeginInvoke(new Action(_MsgBoxRefreshGui));
+                // this.Invoke(new Action(_MsgBoxRefreshGui));
+            else
+            {
+                TimeSpan time = DateTime.Now - _MsgBoxActivateTime;
+                string text = time.ToString(@"hh\.mm\.ss\.fff");
+                _MsgBoxInvokedLabel.Text = text;
+            }
+        }
         private void _MsgShowDialogOKClick(object sender, EventArgs args)
         {
             NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerSK);
@@ -1719,6 +1767,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
                 case "altmsgbuttontext": return "Zobraz detaily";
                 case "altmsgbuttontooltip": return "Zobrazí detailní informace";
+                case "stdmsgbuttontext": return "Skryj detaily";
+                case "stdmsgbuttontooltip": return "Zobrazí výchozí informace";
 
                 case "dialogresult_ok": return "&OK";
                 case "dialogresult_cancel": return "&Zrušit";
@@ -1776,6 +1826,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void DialogForm(NWC.DialogArgs dialogArgs)
         {
+            _MsgBoxResultLabel.Text = "...";
             dialogArgs.Owner = OwnerWindow;
             var result = NWC.DialogForm.ShowDialog(dialogArgs);
             

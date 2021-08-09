@@ -2513,7 +2513,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
         #endregion
-        #region Win32Api informace
+        #region Win32Api informace a další metody
         [DllImport("User32")]
         private extern static int GetGuiResources(IntPtr hProcess, int uiFlags);
         /// <summary>
@@ -2645,6 +2645,34 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (a is null || b is null) return null;
                 return new WinProcessInfo(a.PrivateMemory - b.PrivateMemory, a.WorkingSet - b.WorkingSet, a.GDIHandleCount - b.GDIHandleCount, a.UserHandleCount - b.UserHandleCount);
             }
+        }
+        #endregion
+        #region Win32Api Block input a DoEventsBlockingInput
+        [DllImport("user32.dll", EntryPoint = "BlockInput")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool BlockInput([MarshalAs(UnmanagedType.Bool)] bool fBlockIt);
+        /// <summary>
+        /// Zakáže provádění uživatelských akcí (klávesnice, myš do WinForm controlů)
+        /// </summary>
+        public static void WinApiHoldUser()
+        {
+            BlockInput(true);
+        }
+        /// <summary>
+        /// Povolí provádění uživatelských akcí (klávesnice, myš do WinForm controlů)
+        /// </summary>
+        public static void WinApiReleaseUser()
+        {
+            BlockInput(false);
+        }
+        /// <summary>
+        /// Provede <see cref="Application.DoEvents()"/>, ale s vyloučením (blokováním) uživatelských vstupů.
+        /// </summary>
+        public static void DoEventsWithBlockingInput()
+        {
+            WinApiHoldUser();
+            Application.DoEvents();
+            WinApiReleaseUser();
         }
         #endregion
     }
