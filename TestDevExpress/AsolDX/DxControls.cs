@@ -822,7 +822,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxListBoxControl()
         {
             KeyActionsInit();
-            _DxDragDropInit(DxDragDropActionType.None);
+            DxDragDropInit(DxDragDropActionType.None);
             ToolTipInit();
             // ReorderInit();
         }
@@ -833,7 +833,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            DragAndDropDispose();
+            DxDragDropDispose();
             ToolTipDispose();
         }
         /// <summary>
@@ -1117,7 +1117,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _DoKeyAction(KeyActionType.CtrlC);
                     break;
                 case Keys.Control | Keys.X:
-                    _DoKeyAction(KeyActionType.CtrlX);
+                    // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
+                    if (EnabledKeyActions.HasFlag(KeyActionType.CtrlX))
+                        _DoKeyAction(KeyActionType.CtrlX);
+                    else if (EnabledKeyActions.HasFlag(KeyActionType.CtrlC))
+                        _DoKeyAction(KeyActionType.CtrlC);
                     break;
                 case Keys.Control | Keys.V:
                     _DoKeyAction(KeyActionType.CtrlV);
@@ -1159,7 +1163,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!force && !EnabledKeyActions.HasFlag(flag)) return;
             runMethod();
         }
-
         /// <summary>
         /// Provedení klávesové akce: Delete
         /// </summary>
@@ -1178,17 +1181,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Provedení klávesové akce: CtrlC
         /// </summary>
         private void _DoKeyActionCtrlC()
-        { }
+        {
+            var selectedItems = this.SelectedItems;
+            string textTxt = selectedItems.ToOneString();
+            DxComponent.ClipboardInsert(selectedItems, textTxt);
+        }
         /// <summary>
         /// Provedení klávesové akce: CtrlX
         /// </summary>
         private void _DoKeyActionCtrlX()
-        { }
+        {
+            _DoKeyActionCtrlC();
+            _DoKeyActionDelete();
+        }
         /// <summary>
         /// Provedení klávesové akce: CtrlV
         /// </summary>
         private void _DoKeyActionCtrlV()
-        { }
+        {
+            if (!DxComponent.ClipboardTryGetApplicationData(out var data)) return;
+            if (!(data is IEnumerable<IMenuItem> items)) return;
+
+            var itemList = items.ToList();
+            if (itemList.Count == 0) return;
+
+            foreach (var item in itemList)
+                this.Items.Add(item);
+
+            this.SelectedItem = itemList[0];
+            this.SelectedItems = itemList;
+        }
         /// <summary>
         /// Provedení klávesové akce: AltUp
         /// </summary>
@@ -1245,7 +1267,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souhrn povolených akcí Drag and Drop
         /// </summary>
-        public DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { _DxDragDropInit(value); } }
+        public DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { DxDragDropInit(value); } }
         private DxDragDropActionType _DragDropActions;
         /// <summary>
         /// Vrátí true, pokud je povolena daná akce
@@ -1272,7 +1294,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Inicializace controlleru Drag and Drop
         /// </summary>
         /// <param name="actions"></param>
-        private void _DxDragDropInit(DxDragDropActionType actions)
+        private void DxDragDropInit(DxDragDropActionType actions)
         {
             if (actions != DxDragDropActionType.None && _DxDragDrop == null)
                 _DxDragDrop = new DxDragDrop(this);
@@ -1281,7 +1303,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Dispose controlleru Drag and Drop
         /// </summary>
-        private void DragAndDropDispose()
+        private void DxDragDropDispose()
         {
             if (_DxDragDrop != null)
                 _DxDragDrop.Dispose();
@@ -1408,17 +1430,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!args.InsertIndex.HasValue)
                 args.InsertIndex = args.TargetIndex.GetInsertIndex();
 
-            List<int> selectedIndexes = new List<int>();
-            var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
-            if (selectedItemsInfo != null)
+            if (DxDragTargetTryGetItems(args, out var items))
             {
-                IMenuItem[] selectedItems = selectedItemsInfo.Select(t => t.Item2).ToArray();
+                List<int> selectedIndexes = new List<int>();
                 if (args.InsertIndex.HasValue && args.InsertIndex.Value >= 0 && args.InsertIndex.Value < this.ItemCount)
                 {
                     int insertIndex = args.InsertIndex.Value;
-                    foreach (var selectedItem in selectedItems)
+                    foreach (var item in items)
                     {
-                        DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(selectedItem);
+                        DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(item);
                         selectedIndexes.Add(insertIndex);
                         this.Items.Insert(insertIndex++, imgItem);
                     }
@@ -1426,15 +1446,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                 else
                 {
                     int addIndex = this.ItemCount;
-                    foreach (var selectedItem in selectedItems)
+                    foreach (var item in items)
                         selectedIndexes.Add(addIndex++);
-                    this.Items.AddRange(selectedItems);
+                    this.Items.AddRange(items);
                 }
                 this.SelectedIndexes = selectedIndexes;
             }
             
             MouseDragTargetIndex = null;
             this.Invalidate();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        private bool DxDragTargetTryGetItems(DxDragDropArgs args, out IMenuItem[] items)
+        {
+            items = null;
+            if (args.SourceObject is IEnumerable<IMenuItem> menuItems) { items = menuItems.ToArray(); return true; }
+            if (args.SourceObject is IEnumerable<Tuple<int, IMenuItem, Rectangle?>> listItemsInfo) { items = listItemsInfo.Select(i => i.Item2).ToArray(); return true; }
+            return false;
         }
         /// <summary>
         /// Když probíhá proces Drag, ale opouští this objekt, který dosud byl možným cílem (probíhala pro něj metoda <see cref="DoDragTargetMove(DxDragDropArgs)"/>)

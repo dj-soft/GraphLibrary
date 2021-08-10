@@ -132,9 +132,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool RootNodeVisible { get { return _TreeListNative.RootNodeVisible; } set { _TreeListNative.RootNodeVisible = value; } }
         /// <summary>
-        /// Povolit Drag Drop akci pro TreeList ?
+        /// Souhrn povolených akcí Drag and Drop v rámci TreeListu
         /// </summary>
-        public bool AllowDropOnTree { get { return _TreeListNative.AllowDrop; } set { _TreeListNative.AllowDrop = value; } }
+        public DxDragDropActionType DragDropActions { get { return _TreeListNative.DragDropActions; } set { _TreeListNative.DragDropActions = value; } }
         /// <summary>
         /// Aktuální hodnota pro zobrazení Root nodu.
         /// Nastavuje se před přidáním prvního nodu, podle hodnoty <see cref="RootNodeVisible"/>.
@@ -506,7 +506,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <see cref="DxTreeListNative"/> : potomek <see cref="DevExpress.XtraTreeList.TreeList"/> s podporou pro použití v Greenu.
     /// Nemá se používat přímo, má se používat <see cref="DxTreeList"/>.
     /// </summary>
-    public class DxTreeListNative : DevExpress.XtraTreeList.TreeList
+    public class DxTreeListNative : DevExpress.XtraTreeList.TreeList, IDxDragDropControl
     {
         #region Konstruktor a inicializace, privátní proměnné
         /// <summary>
@@ -518,7 +518,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._NodesId = new Dictionary<int, NodePair>();
             this._NodesKey = new Dictionary<string, NodePair>();
             this.RootNodeVisible = true;
-            this.InitTreeList();
+            InitTreeList();
+            DxDragDropInit(DxDragDropActionType.None);
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            CurrentViewDispose();
+            base.Dispose(disposing);
+            DxDragDropDispose();
         }
         /// <summary>
         /// Incializace komponenty Simple
@@ -801,14 +812,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Při Dispose uvolním svůj lokální <see cref="CurrentViewInfo"/>
         /// </summary>
         /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
+        protected void CurrentViewDispose()
         {
             if (CurrentViewInfo != null)
             {
                 CurrentViewInfo.Dispose();
                 CurrentViewInfo = null;
             }
-            base.Dispose(disposing);
         }
         /// <summary>
         /// Instance pro řízení vzhledu TreeList
@@ -1425,6 +1435,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     this.SetFocusedNode(nodePair.TreeNode);
                 }
+            }
+        }
+        /// <summary>
+        /// Pole informací o vybraných nodech
+        /// </summary>
+        private NodePair[] SelectedNodePairs
+        {
+            get
+            {
+                List<NodePair> selectedNodePairs = new List<NodePair>();
+                foreach (var treeNode in this.Selection)
+                {
+                    if (_TryGetNodePair(treeNode, out var nodeInfo))
+                        selectedNodePairs.Add(nodeInfo);
+                }
+                return selectedNodePairs.ToArray();
             }
         }
         /// <summary>
@@ -2045,6 +2071,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
+        /// Vyhledá párová data nodu (Info + TreeNode) pro daný node, pro jeho <see cref="DevExpress.XtraTreeList.Nodes.TreeListNode.Tag"/> as int.
+        /// </summary>
+        /// <param name="treeNode"></param>
+        /// <param name="nodePair"></param>
+        /// <returns></returns>
+        private bool _TryGetNodePair(DevExpress.XtraTreeList.Nodes.TreeListNode treeNode, out NodePair nodePair)
+        {
+            int id = ((treeNode != null && treeNode.Tag is int) ? (int)treeNode.Tag : -1);
+            return _TryGetNodePair(id, out nodePair);
+        }
+        /// <summary>
+        /// Vyhledá párová data nodu (Info + TreeNode) pro daný node, pro jeho ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="nodePair"></param>
+        /// <returns></returns>
+        private bool _TryGetNodePair(int id, out NodePair nodePair)
+        {
+            nodePair = null;
+            bool result = false;
+            result = (id >= 0 && this._NodesId.TryGetValue(id, out nodePair));
+            return result;
+        }
+        /// <summary>
         /// Vrátí vizuální node podle <paramref name="fullNodeId"/>
         /// </summary>
         /// <param name="fullNodeId"></param>
@@ -2184,6 +2234,228 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #endregion
         #region Drag and Drop
+        /// <summary>
+        /// Souhrn povolených akcí Drag and Drop
+        /// </summary>
+        public DxDragDropActionType DragDropActions { get { return _DragDropActions; } set { DxDragDropInit(value); } }
+        private DxDragDropActionType _DragDropActions;
+        /// <summary>
+        /// Vrátí true, pokud je povolena daná akce
+        /// </summary>
+        /// <param name="action"></param>
+        private bool _IsDragDropActionEnabled(DxDragDropActionType action) { return _DragDropActions.HasFlag(action); }
+        /// <summary>
+        /// Nepoužívejme v aplikačním kódu. 
+        /// Místo toho používejme property <see cref="DragDropActions"/>.
+        /// </summary>
+        public override bool AllowDrop { get { return this._AllowDrop; } set { } }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek může být cílem Drag and Drop
+        /// </summary>
+        private bool _AllowDrop
+        {
+            get
+            {
+                var actions = this._DragDropActions;
+                return (actions.HasFlag(DxDragDropActionType.ReorderItems) || actions.HasFlag(DxDragDropActionType.ImportItemsInto));
+            }
+        }
+        /// <summary>
+        /// Inicializace controlleru Drag and Drop
+        /// </summary>
+        /// <param name="actions"></param>
+        private void DxDragDropInit(DxDragDropActionType actions)
+        {
+            if (actions != DxDragDropActionType.None && _DxDragDrop == null)
+                _DxDragDrop = new DxDragDrop(this);
+            _DragDropActions = actions;
+        }
+        /// <summary>
+        /// Dispose controlleru Drag and Drop
+        /// </summary>
+        private void DxDragDropDispose()
+        {
+            if (_DxDragDrop != null)
+                _DxDragDrop.Dispose();
+            _DxDragDrop = null;
+        }
+        /// <summary>
+        /// Controller pro aktivitu Drag and Drop, vycházející z this objektu
+        /// </summary>
+        private DxDragDrop _DxDragDrop;
+        /// <summary>
+        /// Controller pro DxDragDrop v this controlu
+        /// </summary>
+        DxDragDrop IDxDragDropControl.DxDragDrop { get { return _DxDragDrop; } }
+        /// <summary>
+        /// Metoda volaná do objektu Source (zdroj Drag and Drop) při každé akci na straně zdroje.
+        /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
+        /// </summary>
+        /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
+        void IDxDragDropControl.DoDragSource(DxDragDropArgs args)
+        {
+            switch (args.Event)
+            {
+                case DxDragDropEventType.DragStart:
+                    DoDragSourceStart(args);
+                    break;
+                case DxDragDropEventType.DragDropAccept:
+                    DoDragSourceDrop(args);
+                    break;
+            }
+            return;
+        }
+        /// <summary>
+        /// Metoda volaná do objektu Target (cíl Drag and Drop) při každé akci, pokud se myš nachází nad objektem který implementuje <see cref="IDxDragDropControl"/>.
+        /// Předávaný argument <paramref name="args"/> je permanentní, dokud se myš pohybuje nad Source controlem nebo dokud probíhá Drag akce.
+        /// </summary>
+        /// <param name="args">Veškerá data o procesu Drag and Drop, permanentní po dobu výskytu myši nad Source objektem</param>
+        void IDxDragDropControl.DoDragTarget(DxDragDropArgs args)
+        {
+            switch (args.Event)
+            {
+                case DxDragDropEventType.DragMove:
+                    DoDragTargetMove(args);
+                    break;
+                case DxDragDropEventType.DragLeaveOfTarget:
+                    DoDragTargetLeave(args);
+                    break;
+                case DxDragDropEventType.DragDropAccept:
+                    DoDragTargetDrop(args);
+                    break;
+                case DxDragDropEventType.DragEnd:
+                    DoDragTargetEnd(args);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Když začíná proces Drag, a this objekt je zdrojem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragSourceStart(DxDragDropArgs args)
+        {
+            var selectedItems = this.SelectedNodes;
+            if (selectedItems.Length == 0)
+            {
+                args.SourceDragEnabled = false;
+            }
+            else
+            {
+                args.SourceText = selectedItems.ToOneString(convertor: i => i.Text);
+                args.SourceObject = selectedItems;
+                args.SourceDragEnabled = true;
+            }
+        }
+        /// <summary>
+        /// Když probíhá proces Drag, a this objekt je možným cílem.
+        /// Objekt this může být současně i zdrojem akce (pokud probíhá Drag and Drop nad týmž objektem), pak jde o Reorder.
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetMove(DxDragDropArgs args)
+        {
+            Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+            IndexRatio index = null; // TODO DoDragSearchIndexRatio(targetPoint);
+            if (!IndexRatio.IsEqual(index, MouseDragTargetIndex))
+            {
+                MouseDragTargetIndex = index;
+                this.Invalidate();
+            }
+            args.CurrentEffect = args.SuggestedDragDropEffect;
+        }
+        /// <summary>
+        /// Když úspěšně končí proces Drag, a this objekt je zdrojem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragSourceDrop(DxDragDropArgs args)
+        {
+            args.TargetIndex = null;
+            args.InsertIndex = null;
+            var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
+            if (selectedItemsInfo != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
+            {
+                // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
+                //  pak si musíme najít správný TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
+                if (args.TargetIsSource)
+                {
+                    Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+                    // TODO args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
+                    args.InsertIndex = args.TargetIndex.GetInsertIndex(selectedItemsInfo.Select(t => t.Item1));
+                }
+                // Odebereme zdrojové prvky:
+                // TODO this.RemoveIndexes(selectedItemsInfo.Select(t => t.Item1));
+            }
+        }
+        /// <summary>
+        /// Když úspěšně končí proces Drag, a this objekt je možným cílem
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetDrop(DxDragDropArgs args)
+        {
+            // TODO 
+
+            //if (args.TargetIndex == null)
+            //{
+            //    Point targetPoint = this.PointToClient(args.ScreenMouseLocation);
+            //    args.TargetIndex = DoDragSearchIndexRatio(targetPoint);
+            //    args.InsertIndex = null;
+            //}
+            //if (!args.InsertIndex.HasValue)
+            //    args.InsertIndex = args.TargetIndex.GetInsertIndex();
+
+            //List<int> selectedIndexes = new List<int>();
+            //var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
+            //if (selectedItemsInfo != null)
+            //{
+            //    IMenuItem[] selectedItems = selectedItemsInfo.Select(t => t.Item2).ToArray();
+            //    if (args.InsertIndex.HasValue && args.InsertIndex.Value >= 0 && args.InsertIndex.Value < this.ItemCount)
+            //    {
+            //        int insertIndex = args.InsertIndex.Value;
+            //        foreach (var selectedItem in selectedItems)
+            //        {
+            //            DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(selectedItem);
+            //            selectedIndexes.Add(insertIndex);
+            //            this.Items.Insert(insertIndex++, imgItem);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        int addIndex = this.ItemCount;
+            //        foreach (var selectedItem in selectedItems)
+            //            selectedIndexes.Add(addIndex++);
+            //        this.Items.AddRange(selectedItems);
+            //    }
+            //    this.SelectedIndexes = selectedIndexes;
+            //}
+
+            //MouseDragTargetIndex = null;
+            //this.Invalidate();
+        }
+        /// <summary>
+        /// Když probíhá proces Drag, ale opouští this objekt, který dosud byl možným cílem (probíhala pro něj metoda <see cref="DoDragTargetMove(DxDragDropArgs)"/>)
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetLeave(DxDragDropArgs args)
+        {
+            MouseDragTargetIndex = null;
+            this.Invalidate();
+        }
+        /// <summary>
+        /// Ukončení procesu Drag and Drop
+        /// </summary>
+        /// <param name="args"></param>
+        private void DoDragTargetEnd(DxDragDropArgs args)
+        {
+            MouseDragTargetIndex = null;
+            this.Invalidate();
+        }
+        /// <summary>
+        /// Informace o prvku, nad kterým je myš, pro umístění obsahu v procesu Drag and Drop.
+        /// Pokud je null, pak pro this prvek neprobíhá Drag and Drop.
+        /// <para/>
+        /// Tuto hodnotu vykresluje metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// </summary>
+        private IndexRatio MouseDragTargetIndex;
+
 
         #endregion
         #region Public vlastnosti, kolekce nodů, vyhledání nodu podle klíče, vyhledání child nodů

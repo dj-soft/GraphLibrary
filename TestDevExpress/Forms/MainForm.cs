@@ -25,6 +25,9 @@ using Noris.Clients.Win.Components;
 
 namespace TestDevExpress.Forms
 {
+    /// <summary>
+    /// Hlavní okno testovací aplikace
+    /// </summary>
     public partial class MainForm : DxStdForm
     {
         /// <summary>
@@ -64,8 +67,8 @@ namespace TestDevExpress.Forms
             System.Windows.Forms.Application.Idle += Application_Idle;
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
 
-            ActivatePage(7, true);
-            // ActivatePage(10, true);
+            // ActivatePage(7, true);
+            ActivatePage(10, true);
         }
         private void MainForm_Disposed(object sender, EventArgs e)
         {
@@ -86,6 +89,10 @@ namespace TestDevExpress.Forms
         {
             DxComponent.SplashHide();
         }
+        /// <summary>
+        /// OnShown
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnShown(EventArgs e)
         {
             HideSplash();
@@ -93,6 +100,7 @@ namespace TestDevExpress.Forms
         }
         private void InitData()
         {
+            DxComponent.ClipboardApplicationId = "TestDevExpress";
         }
         private void InitDevExpress()
         {
@@ -191,7 +199,10 @@ namespace TestDevExpress.Forms
                 RefreshLog();
         }
         bool _LogContainChanges;
-
+        /// <summary>
+        /// provede RefreshLog = načte text z <see cref="DxComponent.LogText"/> a vloží jej do textu v controlu <see cref="CurrentLogControl"/> (pokud tam není null).
+        /// Zajistí scrollování na konec textu.
+        /// </summary>
         protected void RefreshLog()
         {
             var control = CurrentLogControl;
@@ -1274,20 +1285,20 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Iniciace ribbonu
         /// </summary>
-        protected void InitMdiPage()
+        private void InitMdiPage()
         {
             InitRibbon();
             InitMdiTab();
         }
         #region Ribbon : tvorba, eventy
-        protected void InitRibbon()
+        private void InitRibbon()
         {
             _Ribbon = new DxRibbonControl();
             _Ribbon.RibbonItemClick += _Ribbon_RibbonItemClick;
             _PanelRibbon.Controls.Add(_Ribbon);
             _RibbonBoundsText.Font = SystemFonts.StatusFont;
         }
-        protected void ActivateRibbonPage()
+        private void ActivateRibbonPage()
         {
             if (!IsRibbonFilled)
             {
@@ -1298,7 +1309,7 @@ namespace TestDevExpress.Forms
                 _RibbonAddItems(pages, false);
             }
         }
-        protected bool IsRibbonFilled = false;
+        private bool IsRibbonFilled = false;
         private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
             if (e.Item is null) return;
@@ -1381,7 +1392,7 @@ namespace TestDevExpress.Forms
         private DxRibbonControl _Ribbon;
         #endregion
         #region MDI Tabbed
-        protected void InitMdiTab()
+        private void InitMdiTab()
         {
             _MdiManager = new DXT.XtraTabbedMdiManager();
         }
@@ -1419,7 +1430,7 @@ namespace TestDevExpress.Forms
         private PanelResize _ChildResize;
         #endregion
         #region Chart
-        protected void InitChart()
+        private void InitChart()
         {
             NWC.ChartPanel chart = new NWC.ChartPanel() { Dock = DockStyle.Fill };
             chart.DataSource = NWC.ChartPanel.CreateSampleData();
@@ -1428,7 +1439,7 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region MsgBox
-        protected void InitMsgBox()
+        private void InitMsgBox()
         {
             _MsgBoxPanel.AutoScroll = true;
             int x0 = 15;
@@ -1915,7 +1926,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         /// <param name="parent"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        protected Button _CreateOneButton(string text, Rectangle bounds, Control parent, EventHandler clickHandler)
+        private Button _CreateOneButton(string text, Rectangle bounds, Control parent, EventHandler clickHandler)
         {
             Button button = new Button() { Bounds = bounds, Text = text };
             if (parent != null) parent.Controls.Add(button);
@@ -1924,7 +1935,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         #endregion
         #region Editors
-        protected void InitEditors()
+        private void InitEditors()
         {
             _TokenLabel = new DevExpress.XtraEditors.LabelControl() { Bounds = new Rectangle(25, 12, 250, 20), Text = "Zvolte počet prvků k přidání a stiskněte 'Generuj'" };
             _EditorsPanel.Controls.Add(_TokenLabel);
@@ -1987,11 +1998,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             EditorPanelDoLayout();
         }
-        protected void EditorPanelDoLayout()
+        private void EditorPanelDoLayout()
         {
             var size = _EditorsPanel.ClientSize;
 
-            if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
+            // if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
         }
         private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
         {
@@ -2133,10 +2144,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DevExpress.XtraEditors.SimpleButton _TestDataFormModalButton;
         private DevExpress.XtraEditors.SimpleButton _TestDataFormNormalButton;
         private DevExpress.XtraEditors.SimpleButton _TestDxRibbonFormModalButton;
-        private DxImagePickerListBox _DxImagePicker;
+        // private DxImagePickerListBox _DxImagePicker;
         #endregion
         #region TreeView
-        protected void InitTreeView()
+        private void InitTreeView()
         {
             CreateTreeViewComponents();
         }
@@ -2589,7 +2600,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _DragDropPanel.Controls.Add(_DragDropBList);
 
-            _DragDropATree = new DxTreeList() { AllowDropOnTree = true, FilterBoxVisible = true };
+            _DragDropATree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };
             _DragDropATree.Name = "ATree";
             _DragDropATree.MultiSelectEnabled = true;
             _DragDropATree.SelectNodeBeforeShowContextMenu = false;
@@ -2671,7 +2682,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
             return items.ToArray();
         }
-        protected void DragDropDoLayout()
+        private void DragDropDoLayout()
         {
             var size = _DragDropPanel.ClientSize;
             int xm = 6;
@@ -2698,37 +2709,36 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         /// </summary>
         /// <param name="percent"></param>
         /// <returns></returns>
-        protected bool GetRandomTrue(int percent)
+        private bool GetRandomTrue(int percent)
         {
             return (GetRandomInt(0, 100) < percent);
         }
-        protected int GetRandomInt(int min, int max)
+        private int GetRandomInt(int min, int max)
         {
             return Random.Rand.Next(min, max);
         }
-        protected Size GetRandomSize()
+        private Size GetRandomSize()
         {
             int w = 25 * GetRandomInt(14, 35);
             int h = 25 * GetRandomInt(6, 21);
             return new Size(w, h);
         }
-        protected Point GetRandomPoint()
+        private Point GetRandomPoint()
         {
             int x = 25 * GetRandomInt(2, 16);
             int y = 25 * GetRandomInt(2, 14);
             return new Point(x, y);
         }
-        protected Rectangle GetRandomRectangle()
+        private Rectangle GetRandomRectangle()
         {
             return new Rectangle(GetRandomPoint(), GetRandomSize());
         }
-        protected string GetRandomBallImageName()
+        private string GetRandomBallImageName()
         {
             string imageNumb = GetRandomInt(1, 24).ToString("00");
             return $"Ball{imageNumb }_16";
         }
-
-        protected string GetRandomSysSvgName(bool fileTypes = true, bool chartTypes = true)
+        private string GetRandomSysSvgName(bool fileTypes = true, bool chartTypes = true)
         {
             List<string> names = new List<string>();
             if (fileTypes)

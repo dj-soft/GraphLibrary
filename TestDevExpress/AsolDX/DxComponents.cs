@@ -19,6 +19,8 @@ using System.Drawing.Drawing2D;
 using DevExpress.Pdf.Native;
 using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
+using DevExpress.XtraRichEdit.Layout;
+using Noris.Clients.Win.Components.AsolDX.InternalPersistor;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -2512,6 +2514,135 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
+        #endregion
+        #region DxClipboard : obálka nad systémovým clipboardem
+        /// <summary>
+        /// ID aplikace = odlišuje typicky dvě různé aplikace otevřené v jeden okamžik
+        /// </summary>
+        public static string ClipboardApplicationId { get { return Instance._ClipboardApplicationId; } set { Instance._ClipboardApplicationId = value; } }
+        public static void ClipboardInsert(object applicationData, object windowsData = null, string windowsFormat = null) { Instance._ClipboardInsert(applicationData, windowsData, windowsFormat); }
+        public static bool ClipboardTryGetApplicationData(out object applicationData) { return Instance._ClipboardTryGetApplicationData(out applicationData, out string applicationId); }
+        public static bool ClipboardTryGetApplicationData(out object applicationData, out string applicationId) { return Instance._ClipboardTryGetApplicationData(out applicationData, out applicationId); }
+
+        private string _ClipboardApplicationId = null;
+
+        private void _ClipboardInsert(object applicationData, object windowsData, string windowsFormat)
+        {
+            ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = applicationData };
+            string containerXml = Persist.Serialize(container, PersistArgs.Default);
+            DataObject dataObject = new DataObject();
+            dataObject.SetData(ClipboardAppDataId, containerXml);
+            if (windowsData != null)
+            {
+                if (windowsFormat == null) windowsFormat = DataFormats.Text;
+                dataObject.SetData(windowsFormat, windowsData);
+            }
+            try { System.Windows.Forms.Clipboard.SetDataObject(dataObject, true); }
+            catch { }
+        }
+        private bool _ClipboardTryGetApplicationData(out object applicationData, out string applicationId)
+        {
+            applicationData = null;
+            applicationId = null;
+            IDataObject dataObject = null;
+            try { dataObject = System.Windows.Forms.Clipboard.GetDataObject(); }
+            catch { }
+            if (dataObject == null) return false;
+            if (!dataObject.GetDataPresent(ClipboardAppDataId)) return false;
+            string containerXml = dataObject.GetData(ClipboardAppDataId) as string;
+            if (containerXml == null) return false;
+            ClipboardContainer container = Persist.Deserialize(containerXml) as ClipboardContainer;
+            if (container == null) return false;
+            applicationId = container.ApplicationId;
+            applicationData = container.Data;
+            return true;
+        }
+        private const string ClipboardAppDataId = "DxAppData";
+
+        /// <summary>
+        /// Obsah clipboardu = ID plus Data
+        /// </summary>
+        [Serializable]
+        private class ClipboardContainer
+        {
+            /// <summary>
+            /// ID zdroje dat
+            /// </summary>
+            public string ApplicationId { get; set; }
+            /// <summary>
+            /// Vlastní data
+            /// </summary>
+            public object Data { get; set; }
+        }
+
+
+        /*
+        private void _ClipboardInsert(object applicationData, object windowsData, string windowsFormat)
+        {
+            ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = Persist.Serialize(applicationData, PersistArgs.Default) };
+            DataObject dataObject = new DataObject();
+            string applicationXml = Persist.Serialize(applicationData, PersistArgs.Default);
+            dataObject.SetData(ClipboardAppDataId, applicationXml);
+            if (windowsData != null)
+            {
+                if (windowsFormat == null) windowsFormat = DataFormats.Text;
+                dataObject.SetData(windowsFormat, windowsData);
+            }
+            try { System.Windows.Forms.Clipboard.SetDataObject(dataObject, true); }
+            catch { }
+        }
+        private bool _ClipboardTryGetApplicationData(out object applicationData)
+        {
+            applicationData = null;
+            IDataObject dataObject = null;
+            try { dataObject = System.Windows.Forms.Clipboard.GetDataObject(); }
+            catch { }
+            if (dataObject == null) return false;
+            bool containsText = dataObject.GetDataPresent(DataFormats.Text);
+            bool containsNephrite = dataObject.GetDataPresent("Nephrite");
+            if (!dataObject.GetDataPresent("Nephrite")) return false;
+            string nephriteXml = dataObject.GetData("Nephrite") as string;
+            applicationData = Persist.Deserialize(nephriteXml);
+            return true;
+        }
+        */
+        /*
+        private void _ClipboardCopy(object nephriteData, object windowsData, string windowsFormat)
+        {
+            NephriteDataObject container = new NephriteDataObject();
+            container.SetData("Nephrite", nephriteData);
+            container.NephriteData = nephriteData;
+            if (windowsData != null)
+            {
+                if (windowsFormat == null) windowsFormat = DataFormats.Text;
+                container.SetData(windowsFormat, windowsData);
+            }
+            try { System.Windows.Forms.Clipboard.SetDataObject(container, true); }
+            catch { }
+        }
+        private bool _ClipboardTryGetNephriteData(out object nephriteData)
+        {
+            nephriteData = null;
+            IDataObject dataObject = null;
+            try { dataObject = System.Windows.Forms.Clipboard.GetDataObject(); }
+            catch { }
+            if (dataObject == null) return false;
+            if (!(dataObject is NephriteDataObject ndo)) return false;
+            if (!ndo.HasNephriteData) return false;
+            nephriteData = ndo.NephriteData;
+            return true;
+        }
+
+        private class NephriteDataObject : DataObject
+        {
+            public object NephriteData 
+            { 
+                get;
+                set;
+            }
+            public bool HasNephriteData { get; set; }
+        }
+        */
         #endregion
         #region Win32Api informace a další metody
         [DllImport("User32")]
@@ -5467,10 +5598,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Sloučí dané prvky do jednoho stringu.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        /// <param name="delimiter"></param>
-        /// <param name="convertor"></param>
-        public static string ToOneString<T>(this IEnumerable<T> items, string delimiter = "\r\n", Func<T, string> convertor = null)
+        /// <param name="items">Kolekce prvků</param>
+        /// <param name="delimiter">Oddělovač, default = EOL</param>
+        /// <param name="convertor">Funkce, která z prvku typu <typeparamref name="T"/> vrátí string, default = ToString()</param>
+        /// <param name="skipNull">Požadavek na ignorování prvků s hodnotou NULL: false (default) = bude uveden prázdný řádek; true = nebude uveden ani prázdný řádek (a do konvertoru <paramref name="convertor"/> nebude posílán NULL prvek)</param>
+        public static string ToOneString<T>(this IEnumerable<T> items, string delimiter = "\r\n", Func<T, string> convertor = null, bool skipNull = false)
         {
             StringBuilder sb = new StringBuilder();
             if (items != null)
@@ -5479,6 +5611,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (delimiter == null) delimiter = "\r\n";
                 foreach (T item in items)
                 {
+                    if (item == null && skipNull) continue;
                     string text = (hasConverter ? convertor(item) : (item?.ToString() ?? ""));
                     sb.Append(text);
                     sb.Append(delimiter);
