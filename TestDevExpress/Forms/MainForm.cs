@@ -28,7 +28,7 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Hlavní okno testovací aplikace
     /// </summary>
-    public partial class MainForm : DxStdForm
+    public partial class MainForm : DxRibbonForm
     {
         /// <summary>
         /// Konstruktor
@@ -41,25 +41,25 @@ namespace TestDevExpress.Forms
             InitData();
 
             SplashUpdate("Načítám DevExpress...");
-            InitDevExpress();
-            InitSkinList();
 
             SplashUpdate("Připravuji okno...");
 
-            InitPageEvents();
             InitBarManager();
+
+            InitTabPages();
 
             InitPopupPage();           // 0
             InitTabHeaders();          // 1
             InitSplitters();           // 2
             InitAnimation();           // 3
             InitResize();              // 4
-            InitMdiPage();             // 5
             InitChart();               // 6
             InitMsgBox();              // 7
             InitEditors();             // 8
             InitTreeView();            // 9
             InitDragDrop();            // 10
+
+            InitRibbonFunctions();
 
             SplashUpdate("Otevírám okno...", title: "Hotovo");
 
@@ -102,91 +102,8 @@ namespace TestDevExpress.Forms
         {
             DxComponent.ClipboardApplicationId = "TestDevExpress";
         }
-        private void InitDevExpress()
-        {
-
-        }
-        private void InitSkinList()
-        {
-            this.Skins = new List<DS.SkinContainer>();
-
-            this.SkinList.Items.Clear();
-            List<DS.SkinContainer> skins = new List<DS.SkinContainer>();
-            foreach (DS.SkinContainer skin in DS.SkinManager.Default.Skins)
-                skins.Add(skin);
-            skins.Sort((a, b) => String.Compare(a.SkinName, b.SkinName));
-            string initialSkinName = "Lilian"; // "Dark Side";
-            TextItem selectedItem = null;
-            foreach (DS.SkinContainer skin in skins)
-            {
-                TextItem item = new TextItem() { Text = skin.SkinName, Item = skin };
-                this.SkinList.Items.Add(item);
-                if (selectedItem == null || item.Text == initialSkinName) selectedItem = item;
-                this.Skins.Add(skin);
-            }
-            this.SkinList.SelectedIndexChanged += SkinList_SelectedIndexChanged;
-            this.SkinList.SelectedItem = selectedItem;
-        }
-        private void InitPageEvents()
-        {
-            this._TabContainer.SelectedIndexChanged += _TabContainer_SelectedIndexChanged;
-        }
-        /// <summary>
-        /// Index aktuální stránky
-        /// </summary>
-        protected int CurrentPageIndex { get { return _TabContainer.SelectedIndex; } set { _TabContainer.SelectedIndex = value; } }
-        private void _TabContainer_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            OnActivatePage(CurrentPageIndex);
-        }
-        private void SkinList_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            TextItem item = this.SkinList.SelectedItem as TextItem;
-            if (item == null) return;
-            DS.SkinContainer skin = item.Item as DS.SkinContainer;
-            if (skin == null) return;
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skin.SkinName;
-
-
-
-
-            DevExpress.Skins.Skin currentSkin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel);
-            string elementName = DevExpress.Skins.CommonSkins.SkinToolTipItem;
-            DevExpress.Skins.SkinElement element = currentSkin[elementName];
-            Color skinBorderColor = element.Color.BackColor;
-        }
-        private List<DS.SkinContainer> Skins;
-        private void ActivatePage(int pageIndex, bool forceEvent)
-        {
-            CurrentPageIndex = pageIndex;
-            if (forceEvent)
-                OnActivatePage(pageIndex);
-        }
-        private void OnActivatePage(int pageIndex)
-        {
-            switch (_LastActivatedPage)
-            {
-                case 7:
-                    DeActivateMsgBoxPage();
-                    break;
-            }
-            CurrentLogControl = null;              // Konkrétní stránka ať si to nastaví v následující metodě...
-            switch (pageIndex)
-            {
-                case 5:
-                    ActivateRibbonPage();
-                    break;
-                case 7:
-                    ActivateMsgBoxPage();
-                    break;
-                case 10:
-                    ActivateDragDropPage();
-                    break;
-            }
-            _LastActivatedPage = pageIndex;
-            RefreshLog();
-        }
-        private int _LastActivatedPage = -1;
+      
+      
         #region Log
 
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
@@ -195,12 +112,21 @@ namespace TestDevExpress.Forms
         }
         private void Application_Idle(object sender, EventArgs e)
         {
+            if (this._StatusStartLabel.Tag == null)
+                RefreshStartTime();
             if (_LogContainChanges)
                 RefreshLog();
         }
         bool _LogContainChanges;
+        private void RefreshStartTime()
+        {
+            TimeSpan? startTime = DxComponent.ApplicationStartUpTime;
+            if (!startTime.HasValue) return;
+            this._StatusStartLabel.Caption = "Start time: " + startTime.Value.ToString();
+            this._StatusStartLabel.Tag = startTime.Value;
+        }
         /// <summary>
-        /// provede RefreshLog = načte text z <see cref="DxComponent.LogText"/> a vloží jej do textu v controlu <see cref="CurrentLogControl"/> (pokud tam není null).
+        /// Provede RefreshLog = načte text z <see cref="DxComponent.LogText"/> a vloží jej do textu v controlu <see cref="CurrentLogControl"/> (pokud tam není null).
         /// Zajistí scrollování na konec textu.
         /// </summary>
         protected void RefreshLog()
@@ -221,11 +147,11 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected DxMemoEdit CurrentLogControl;
         #endregion
-        #region BarManager
+        #region BarManager a Ribbon
         private void InitBarManager()
         {
             this._BarManager = new XB.BarManager();
-            this._BarManager.Form = this.button1;
+            this._BarManager.Form = this;
 
             this._BarManager.ToolTipController = new DevExpress.Utils.ToolTipController();
             this._BarManager.ToolTipController.AddClientControl(this);
@@ -257,8 +183,38 @@ namespace TestDevExpress.Forms
             this._BarManager.ItemClick += _BarManager_ItemClick;
             //this._BarManager.CloseButtonClick += _BarManager_CloseButtonClick;
             //this._BarManager
+
         }
         XB.BarManager _BarManager;
+        protected override void DxRibbonPrepare()
+        {
+            DxRibbonPageBasic = this.DxRibbon.CreatePage("ZÁKLADNÍ");
+            DxRibbonPageBasic.Groups.Add(DxRibbonControl.CreateSkinGroup());
+            DxRibbonGroupFunctions = this.DxRibbon.CreateGroup("FUNKCE", DxRibbonPageBasic);
+        }
+        protected DevExpress.XtraBars.BarItem CreateRibbonFunction(string text, string image, string toolTipText, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        {
+            DataRibbonItem iRibbonItem = new DataRibbonItem()
+            {
+                Text = text,
+                Image = image,
+                ToolTipText = toolTipText,
+                RibbonItemType = RibbonItemType.Button,
+                RibbonStyle = RibbonItemStyles.Large
+            };
+            return CreateRibbonFunction(iRibbonItem, clickHandler);
+        }
+        protected DevExpress.XtraBars.BarItem CreateRibbonFunction(IRibbonItem iRibbonItem, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        {
+            return this.DxRibbon.CreateItem(iRibbonItem, DxRibbonGroupFunctions, clickHandler);
+        }
+        private DxRibbonPage DxRibbonPageBasic;
+        private DxRibbonGroup DxRibbonGroupFunctions;
+        protected override void DxStatusPrepare()
+        {
+            this._StatusStartLabel = DxComponent.CreateDxStatusLabel(this.DxStatusBar, "Start time: ...", XB.BarStaticItemSize.Content);
+        }
+        DxBarStaticItem _StatusStartLabel;
 
         private void _BarManager_CloseButtonClick(object sender, EventArgs e)
         {
@@ -270,12 +226,118 @@ namespace TestDevExpress.Forms
             if (e.Item.Name == "CheckItem")
                 CheckItemChecked = (e.Item as XB.BarCheckItem).Checked;
         }
-
         #endregion
-        #region XtraBars Popup
+        #region Hlavní záložkovník + přepínání testovacích stránek
+        private void InitTabPages()
+        {
+            _MainTabs = new DxTabPane() { Dock = DockStyle.Fill };
+            _MainTabs.SelectedPageChanging += _MainTabs_SelectedPageChanging;
+            _MainTabs.SelectedPageChanged += _MainTabs_SelectedPageChanged;
+            DxMainPanel.Controls.Add(_MainTabs);
+
+            _PreparedPages = new Dictionary<int, PageInfo>();
+        }
+        private void AddNewPage(string pageText,
+            Action<DxPanelControl> prepareMethod, Action activateMethod = null, Action deactivateMethod = null, 
+            string pageToolTip = null, string pageImageName = null)
+        {
+            int index = _MainTabs.Pages.Count;
+            var page = _MainTabs.AddNewPage(pageText, pageText, pageToolTip, pageImageName);
+            PageInfo pageInfo = new PageInfo() { Index = index, Page = page, PrepareMethod = prepareMethod, ActivateMethod = activateMethod, DeactivateMethod = deactivateMethod };
+
+            _PreparedPages.Add(index, pageInfo);
+        }
+        private void _MainTabs_SelectedPageChanging(object sender, DXN.SelectedPageChangingEventArgs e)
+        {
+            int pageIndex = _MainTabs.Pages.IndexOf(e.Page);
+            _MainTabsCheckPrepared(pageIndex);
+        }
+        private void _MainTabs_SelectedPageChanged(object sender, DXN.SelectedPageChangedEventArgs e)
+        {
+            OnActivatePage(CurrentPageIndex);
+        }
+        /// <summary>
+        /// Index aktuální stránky
+        /// </summary>
+        protected int CurrentPageIndex { get { return _MainTabs.SelectedPageIndex; } set { _MainTabs.SelectedPageIndex = value; } }
+        private void ActivatePage(int pageIndex, bool forceEvent)
+        {
+            CurrentPageIndex = pageIndex;
+            if (forceEvent)
+                OnActivatePage(pageIndex);
+        }
+        /// <summary>
+        /// Provede se po aktivaci stránky daného indexu. Volá události DeActivate***Page a Activate***Page konkrétní stránky.
+        /// </summary>
+        /// <param name="pageIndex"></param>
+        private void OnActivatePage(int pageIndex)
+        {
+            OnDeactivatePage(_LastActivatedPage);
+
+            _MainTabsCheckPrepared(pageIndex);
+            if (pageIndex >= 0 && this._PreparedPages.TryGetValue(pageIndex, out PageInfo pageInfo))
+                pageInfo.ActivateMethod?.Invoke();
+
+            _LastActivatedPage = pageIndex;
+            RefreshLog();
+        }
+        /// <summary>
+        /// Provede se při deaktivaci stránky daného indexu. Volá události DeActivate***Page
+        /// </summary>
+        /// <param name="pageIndex"></param>
+        private void OnDeactivatePage(int pageIndex)
+        {
+            if (pageIndex >= 0 && this._PreparedPages.TryGetValue(pageIndex, out PageInfo pageInfo))
+                pageInfo.DeactivateMethod?.Invoke();
+
+            CurrentLogControl = null;              // Konkrétní stránka ať si to nastaví v následující metodě...
+            _LastActivatedPage = -1;
+        }
+        /// <summary>
+        /// Zajistí provedení přípravy obsahu dané stránky
+        /// </summary>
+        /// <param name="pageIndex"></param>
+        private void _MainTabsCheckPrepared(int pageIndex)
+        {
+            if (pageIndex >= 0 && this._PreparedPages.TryGetValue(pageIndex, out PageInfo pageInfo))
+            {
+                if (pageInfo.Panel == null)
+                {
+                    pageInfo.Panel = DxComponent.CreateDxPanel(pageInfo.Page, DockStyle.Fill, DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+                    pageInfo.PrepareMethod?.Invoke(pageInfo.Panel);
+                }
+            }
+        }
+
+        private Dictionary<int, PageInfo> _PreparedPages;
+        private int _LastActivatedPage = -1;
+        private DxTabPane _MainTabs;
+        private class PageInfo
+        {
+            public int Index;
+            public DXN.TabNavigationPage Page;
+            public DxPanelControl Panel;
+            public Action<DxPanelControl> PrepareMethod;
+            public Action ActivateMethod;
+            public Action DeactivateMethod;
+        }
+        #endregion
+        #region Kontextové menu
         private void InitPopupPage()
-        { }
-        private void button1_Click(object sender, EventArgs e)
+        {
+            AddNewPage("Kontextové menu", PreparePopupPage);
+        }
+        private DxPanelControl _PanelPopupPage;
+        private void PreparePopupPage(DxPanelControl panel)
+        {
+            _PanelPopupPage = panel;
+            DxComponent.CreateDxSimpleButton(3, 3, 200, 45, panel, "XB.PopupMenu", PopupPageXBPopupClick);
+            DxComponent.CreateDxSimpleButton(3, 54, 200, 45, panel, "XB.RadialMenu", PopupPageXBRadialClick);
+            DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel, "DM.Menu", PopupPageDMMenuClick);
+            DxComponent.CreateDxSimpleButton(3, 156, 200, 45, panel, "Win.ToolStripMenu", PopupPageWinMenuClick);
+        }
+        #region XB.PopupMenu
+        private void PopupPageXBPopupClick(object sender, EventArgs e)
         {
             XB.PopupMenu pm = new XB.PopupMenu();
             // pm.MenuCaption = "Kontextové menu";    Používám BarHeaderItem !
@@ -420,7 +482,7 @@ namespace TestDevExpress.Forms
         private bool CheckItemChecked = true;
         #endregion
         #region RadialMenu
-        private void button2_Click(object sender, EventArgs e)
+        private void PopupPageXBRadialClick(object sender, EventArgs e)
         {
             var barManager = _BarManager;
             var rm = new XR.RadialMenu(barManager);
@@ -482,7 +544,7 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region DXMenu
-        private void button4_Click(object sender, EventArgs e)
+        private void PopupPageDMMenuClick(object sender, EventArgs e)
         {
             _ShowContextMenu(MousePosition);
         }
@@ -510,7 +572,7 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region WinForm menu
-        private void button3_Click(object sender, EventArgs e)
+        private void PopupPageWinMenuClick(object sender, EventArgs e)
         {
             System.Windows.Forms.ToolStripDropDownMenu ddm = new ToolStripDropDownMenu();
             ddm.RenderMode = ToolStripRenderMode.Professional;
@@ -571,21 +633,41 @@ namespace TestDevExpress.Forms
             var ic = e.ClickedItem;
         }
         #endregion
+        #endregion
         #region TabHeaders
         private void InitTabHeaders()
         {
+            AddNewPage("TabHeaderStrip", PrepareTabHeaders);
+        }
+        DxPanelControl _PanelTabHeader;
+        private void PrepareTabHeaders(DxPanelControl panel)
+        {
+            _PanelTabHeader = panel;
+            _SplitTabHeader = DxComponent.CreateDxSplitContainer(_PanelTabHeader, dock: DockStyle.Fill, splitLineOrientation: Orientation.Horizontal, fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.None, showSplitGlyph: true);
+
+            _TabTopAddBtn1 = DxComponent.CreateDxSimpleButton(3, 170, 143, 44, _SplitTabHeader.Panel1, "Přidej 2 záložky", _TabTopAddBtn1_Click);
+            _TabTopAddBtn2 = DxComponent.CreateDxSimpleButton(152, 170, 143, 44, _SplitTabHeader.Panel1, "Smaž vše", _TabTopAddBtn2_Click);
+            _TabTopAddBtn3 = DxComponent.CreateDxSimpleButton(301, 170, 143, 44, _SplitTabHeader.Panel1, "Smaž a přidej", _TabTopAddBtn3_Click);
+
+            this._NativeAddCheck = DxComponent.CreateDxCheckEdit(654, 182, 97, _SplitTabHeader.Panel1, "Native Add");
+            this._NativeAddCheck.Checked = true;
+            this._TabTopAddSilentCheck = DxComponent.CreateDxCheckEdit(469, 182, 97, _SplitTabHeader.Panel1, "Akce v Silent modu");
+            this._TabTopAddSilentCheck.Checked = true;
+
             this.InitTabHeaders1();
             this.InitTabHeaders2();
         }
+        DxSplitContainerControl _SplitTabHeader;
+        DxSimpleButton _TabTopAddBtn1;
+        DxSimpleButton _TabTopAddBtn2;
+        DxSimpleButton _TabTopAddBtn3;
+        DxCheckEdit _NativeAddCheck;
+        DxCheckEdit _TabTopAddSilentCheck;
         private void InitTabHeaders1()
         {
             _TabHeaderStrip1 = TabHeaderStrip.Create(TabHeaderStrip.HeaderType.DevExpressTop);
             _TabHeaderControl1 = _TabHeaderStrip1.Control;
             _TabHeaderControl1.Dock = DockStyle.Fill;
-
-            //DXN.TabPane tabPane = _TabHeaderStrip1.Control as DXN.TabPane;
-            //tabPane.AppearanceButton.Normal.FontStyleDelta = FontStyle.Regular;
-            //tabPane.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Italic | FontStyle.Bold;
 
             using (_TabHeaderStrip1.SilentScope())
             {
@@ -596,15 +678,11 @@ namespace TestDevExpress.Forms
                 _TabStrip1AddItem();
             }
 
-            this._PanelHeaders1.Controls.Add(_TabHeaderControl1);
-            this._PanelHeaders1.BackColor = Color.FromArgb(160, 160, 190);
-            this._PanelHeaders1.Dock = DockStyle.Top;
-            this._PanelHeaders1.Height = _TabHeaderStrip1.OptimalSize;
+            _SplitTabHeader.Panel1.Controls.Add(_TabHeaderControl1);
 
             _TabHeaderStrip1.SelectedTabChanging += _TabHeaderStrip1_SelectedTabChanging;
             _TabHeaderStrip1.SelectedTabChanged += _TabHeaderStrip1_SelectedTabChanged;
             _TabHeaderStrip1.HeaderSizeChanged += _TabHeaderStrip1_HeaderSizeChanged;
-
         }
         /// <summary>
         /// Přidá novou záložku
@@ -883,12 +961,12 @@ namespace TestDevExpress.Forms
 
         private void _TabHeaderStrip1_SelectedTabChanged(object sender, ValueChangedArgs<string> e)
         {
-            this._PanelHeaders1.Height = _TabHeaderStrip1.OptimalSize;
+            // this._PanelHeaders1.Height = _TabHeaderStrip1.OptimalSize;
             this.Text = e.ValueNew;
         }
         private void _TabHeaderStrip1_HeaderSizeChanged(object sender, ValueChangedArgs<Size> e)
         {
-            this._PanelHeaders1.Height = _TabHeaderStrip1.OptimalSize;
+            // this._PanelHeaders1.Height = _TabHeaderStrip1.OptimalSize;
         }
 
         private TabHeaderStrip _TabHeaderStrip1;
@@ -908,10 +986,8 @@ namespace TestDevExpress.Forms
                 _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key4", "Záhlaví čtvrté 4", "Titulek stránky 4", "Nápověda 4", null, Properties.Resources.arrow_right_3_24_));
             }
 
-            this._PanelHeaders2.Controls.Add(_TabHeaderControl2);
-            this._PanelHeaders2.BackColor = Color.FromArgb(160, 190, 180);
-            this._PanelHeaders2.Dock = DockStyle.Fill;
-            this._PanelHeaders2.Height = _TabHeaderStrip2.OptimalSize;
+            _SplitTabHeader.Panel2.Controls.Add(_TabHeaderControl2);
+
             _TabHeaderStrip2.SelectedTabChanged += _TabHeaderStrip2_SelectedTabChanged;
             _TabHeaderStrip2.HeaderSizeChanged += _TabHeaderStrip2_HeaderSizeChanged;
         }
@@ -922,7 +998,7 @@ namespace TestDevExpress.Forms
         }
         private void _TabHeaderStrip2_HeaderSizeChanged(object sender, ValueChangedArgs<Size> e)
         {
-            this._PanelHeaders2.Width = _TabHeaderStrip1.OptimalSize;
+            // this._PanelHeaders2.Width = _TabHeaderStrip2.OptimalSize;
         }
         private TabHeaderStrip _TabHeaderStrip2;
         private Control _TabHeaderControl2;
@@ -995,8 +1071,8 @@ namespace TestDevExpress.Forms
             */
             #endregion
 
-            this._PanelHeaders2.Controls.Add(tabPane);
-            this._PanelHeaders2.BackColor = Color.FromArgb(180, 196, 180);
+            _SplitTabHeader.Panel2.Controls.Add(tabPane);
+            // this._PanelHeaders2.BackColor = Color.FromArgb(180, 196, 180);
 
             tabPane.SelectedPageChanged += TabPane_SelectedPageChanged;
         }
@@ -1108,13 +1184,18 @@ namespace TestDevExpress.Forms
             p2.Caption = "Titulkový text = Seznam položek";
             p2.PageText = "Položky";
 
-            this._PanelHeaders1.Controls.Add(navPane);
+            _SplitTabHeader.Panel2.Controls.Add(navPane);
         }
-
         #endregion
         #region Splittery
         private void InitSplitters()
         {
+            AddNewPage("Splittery", PrepareSplitters);
+        }
+        private DxPanelControl _PanelSplitters;
+        private void PrepareSplitters(DxPanelControl panel)
+        {
+            _PanelSplitters = panel;
             InitAsolSplitters();
         }
         private void InitAsolSplitters()
@@ -1122,8 +1203,8 @@ namespace TestDevExpress.Forms
             _AsolPanel = new AsolPanel();
             _AsolPanel.Dock = DockStyle.None;
             _AsolPanel.AutoScroll = true;
-            _PanelSplitter.Controls.Add(_AsolPanel);
-            _PanelSplitter.SizeChanged += _PanelSplitter_SizeChanged;
+            _PanelSplitters.Controls.Add(_AsolPanel);
+            _PanelSplitters.SizeChanged += _PanelSplitter_SizeChanged;
 
             int x = 50;
             int y = 50;
@@ -1189,7 +1270,7 @@ namespace TestDevExpress.Forms
             SetWorkingBounds(_AsolPanel);
 
             _SplitLabel = new Label() { AutoSize = false, Dock = DockStyle.Left, Width = _SplitterLabelWidth - 5, Text = "Splittery", Font = SystemFonts.StatusFont };
-            _PanelSplitter.Controls.Add(_SplitLabel);
+            _PanelSplitters.Controls.Add(_SplitLabel);
 
             _AsolPanel.Resize += X_Resize;
             _SetAsolPanelBounds();
@@ -1202,7 +1283,7 @@ namespace TestDevExpress.Forms
         private void _SetAsolPanelBounds()
         {
             int dx = _SplitterLabelWidth;
-            Size totalSize = _PanelSplitter.ClientSize;
+            Size totalSize = _PanelSplitters.ClientSize;
             _AsolPanel.Bounds = new Rectangle(dx, 0, totalSize.Width - dx, totalSize.Height);
         }
         private const int _SplitterLabelWidth = 140;
@@ -1268,6 +1349,13 @@ namespace TestDevExpress.Forms
         #region Animace
         private void InitAnimation()
         {
+            AddNewPage("Animace", PrepareAnimation);
+            
+        }
+        private DxPanelControl _PanelAnimation;
+        private void PrepareAnimation(DxPanelControl panel)
+        {
+            _PanelAnimation = panel;
             string imgFile = @"D:\Asol\Práce\Tools\TestDevExpress\TestDevExpress\Images\Animated kitty.gif";
             if (System.IO.File.Exists(imgFile))
             {
@@ -1281,127 +1369,16 @@ namespace TestDevExpress.Forms
             }
         }
         #endregion
-        #region Ribbon a MDI Tabbed
-        /// <summary>
-        /// Iniciace ribbonu
-        /// </summary>
-        private void InitMdiPage()
-        {
-            InitRibbon();
-            InitMdiTab();
-        }
-        #region Ribbon : tvorba, eventy
-        private void InitRibbon()
-        {
-            _Ribbon = new DxRibbonControl();
-            _Ribbon.RibbonItemClick += _Ribbon_RibbonItemClick;
-            _PanelRibbon.Controls.Add(_Ribbon);
-            _RibbonBoundsText.Font = SystemFonts.StatusFont;
-        }
-        private void ActivateRibbonPage()
-        {
-            if (!IsRibbonFilled)
-            {
-                IsRibbonFilled = true;
-
-                var pages = DxRibbonSample.CreatePages(2, 4, 1, 3);
-                _AddRibbonText(DxComponent.LogLastLine);
-                _RibbonAddItems(pages, false);
-            }
-        }
-        private bool IsRibbonFilled = false;
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
-        {
-            if (e.Item is null) return;
-            string line = $"RibbonItem.Click: {e.Item}";
-            _AddRibbonText(line);
-        }
-        private void _RibbonClearBtn_Click(object sender, EventArgs e)
-        {
-            bool useFreeze = _RibbonFreezeCheck.Checked;
-
-            // _Ribbon.Freeze = useFreeze;
-
-            string selectedPageId = _Ribbon.SelectedPageId;
-            var items = DxRibbonSample.CreatePages(2, 6, 2, 5);
-            _AddRibbonText(DxComponent.LogLastLine);
-
-            _RibbonAddItems(items, true);
-            _Ribbon.SelectedPageId = selectedPageId;
-
-            // _Ribbon.Freeze = false;
-        }
-        private void _RibbonAdd1Btn_Click(object sender, EventArgs e)
-        {
-            var items = DxRibbonSample.CreatePages(1, 1, 1, 3);
-            _AddRibbonText(DxComponent.LogLastLine);
-            _RibbonAddItems(items, false);
-        }
-        private void _RibbonAdd2Btn_Click(object sender, EventArgs e)
-        {
-            var items = DxRibbonSample.CreatePages(1, 3, 2, 6);
-            _AddRibbonText(DxComponent.LogLastLine);
-            _RibbonAddItems(items, false);
-        }
-        private void _RunMdiFormBtn_Click(object sender, EventArgs e)
-        {
-            using (var mdiParent = new MdiParentForm())
-            {
-                mdiParent.WindowState = FormWindowState.Maximized;
-                mdiParent.ShowDialog();
-            }
-        }
-        private void _RunDataFormBtn_Click(object sender, EventArgs e)
-        {
-            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
-            using (var dataForm = new DataForm())
-            {
-                dataForm.WinProcessInfoBeforeForm = winProcessInfo;
-                dataForm.WindowState = FormWindowState.Maximized;
-                dataForm.ShowDialog();
-            }
-        }
-        private void _RibbonResetTextBtn_Click(object sender, EventArgs e)
-        {
-            _DynamicPageSizeText = "";
-            _RibbonBoundsText.Text = _DynamicPageSizeText;
-        }
-        private void _RibbonAddItems(List<IRibbonPage> pages, bool clear = false)
-        {
-            DateTime begin = DateTime.Now;
-            if (clear)
-                _Ribbon.Clear();
-            _Ribbon.AddPages(pages);
-            TimeSpan time = DateTime.Now - begin;
-            _AddRibbonText((clear ? "Smazán Ribbon a vloženy " : "Přidány ") + $"prvky do Ribbonu v čase {time.TotalMilliseconds} milisec");
-        }
-        private void DynamicPage_SizeChanged(object sender, EventArgs e)
-        {
-            Rectangle bounds = this.DynamicPage.Bounds;
-            int i = ++_DynamicPageSizeCount;
-            string line = $"DynamicPage.Resize: {i}. X: {bounds.X}, Y: {bounds.Y}, W: {bounds.Width}, H: {bounds.Height}";
-            _AddRibbonText(line);
-        }
-        private int _DynamicPageSizeCount = 0;
-        private string _DynamicPageSizeText = "";
-        private void _AddRibbonText(string line)
-        {
-            _DynamicPageSizeText += line + Environment.NewLine;
-            _RibbonBoundsText.Text = _DynamicPageSizeText;
-        }
-        private DxRibbonControl _Ribbon;
-        #endregion
-        #region MDI Tabbed
-        private void InitMdiTab()
-        {
-            _MdiManager = new DXT.XtraTabbedMdiManager();
-        }
-        private DXT.XtraTabbedMdiManager _MdiManager;
-        #endregion
-        #endregion
         #region Resize
         private void InitResize()
         {
+            AddNewPage("Resize", PrepareResize);
+        }
+        private DxPanelControl _PanelResize;
+        private void PrepareResize(DxPanelControl panel)
+        {
+            _PanelResize = panel;
+
             _ChildResize = new PanelResize()
             {
                 Bounds = new Rectangle(40, 40, 200, 100),
@@ -1413,6 +1390,7 @@ namespace TestDevExpress.Forms
             _PanelChildResizeSetPosition();
             _PanelResize.SizeChanged += _PanelResize_SizeChanged;
         }
+     
         private void _PanelResize_SizeChanged(object sender, EventArgs e)
         {
             _PanelChildResizeSetPosition();
@@ -1432,6 +1410,13 @@ namespace TestDevExpress.Forms
         #region Chart
         private void InitChart()
         {
+            AddNewPage("Grafy", PrepareChart);
+        }
+        private DxPanelControl _PanelChart;
+        private void PrepareChart(DxPanelControl panel)
+        {
+            _PanelChart = panel;
+
             NWC.ChartPanel chart = new NWC.ChartPanel() { Dock = DockStyle.Fill };
             chart.DataSource = NWC.ChartPanel.CreateSampleData();
             chart.ChartSettings = NWC.ChartPanel.CreateSampleSettings();
@@ -1441,6 +1426,12 @@ namespace TestDevExpress.Forms
         #region MsgBox
         private void InitMsgBox()
         {
+            AddNewPage("Dialog Box", PrepareMsgBox, ActivateMsgBoxPage, DeActivateMsgBoxPage);
+        }
+        private DxPanelControl _MsgBoxPanel;
+        private void PrepareMsgBox(DxPanelControl panel)
+        {
+            _MsgBoxPanel = panel;
             _MsgBoxPanel.AutoScroll = true;
             int x0 = 15;
             int y0 = 38;
@@ -1937,8 +1928,20 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #region Editors
         private void InitEditors()
         {
+            AddNewPage("Editory", PrepareEditors);
+        }
+        private DxPanelControl _PanelEditors;
+        private void PrepareEditors(DxPanelControl panel)
+        {
+            _PanelEditors = panel;
+
+            PrepareEditorToken();
+        }
+        #region Editor - Token
+        private void PrepareEditorToken()
+        { 
             _TokenLabel = new DevExpress.XtraEditors.LabelControl() { Bounds = new Rectangle(25, 12, 250, 20), Text = "Zvolte počet prvků k přidání a stiskněte 'Generuj'" };
-            _EditorsPanel.Controls.Add(_TokenLabel);
+            _PanelEditors.Controls.Add(_TokenLabel);
 
             _TokenCountSpin = new DevExpress.XtraEditors.SpinEdit() { Bounds = new Rectangle(20, 40, 90, 20), Value = 5000m };
             _TokenCountSpin.Properties.MinValue = 500m;
@@ -1947,50 +1950,27 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TokenCountSpin.Properties.SpinStyle = DevExpress.XtraEditors.Controls.SpinStyles.Horizontal;
             _TokenCountSpin.Properties.Increment = 500m;
 
-            _EditorsPanel.Controls.Add(_TokenCountSpin);
+            _PanelEditors.Controls.Add(_TokenCountSpin);
 
             _TokenAddButtonGreen = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(130, 37, 120, 28), Text = "Generuj GREEN" };
             _TokenAddButtonGreen.Click += _TokenAddButtonGreen_Click;
-            _EditorsPanel.Controls.Add(_TokenAddButtonGreen);
+            _PanelEditors.Controls.Add(_TokenAddButtonGreen);
 
             _TokenAddButtonDaj = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(260, 37, 120, 28), Text = "Generuj DAJ" };
             _TokenAddButtonDaj.Click += _TokenAddButtonDaj_Click;
-            _EditorsPanel.Controls.Add(_TokenAddButtonDaj);
+            _PanelEditors.Controls.Add(_TokenAddButtonDaj);
            
             _TokenEdit = new DevExpress.XtraEditors.TokenEdit() { Bounds = new Rectangle(20, 68, 360, 25) };
-            _EditorsPanel.Controls.Add(_TokenEdit);
+            _PanelEditors.Controls.Add(_TokenEdit);
 
             _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 350, 20), Text = "" };
-            _EditorsPanel.Controls.Add(_TokenInfoLabel);
+            _PanelEditors.Controls.Add(_TokenInfoLabel);
 
-            _OpenLayoutFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 37, 190, 50), Text = "Otevři LayoutForm" };
-            _OpenLayoutFormButton.Click += _OpenLayoutFormButton_Click;
-            _EditorsPanel.Controls.Add(_OpenLayoutFormButton);
-
-            _OpenImagePickerFormButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(620, 37, 190, 50), Text = "Resource List" };
-            _OpenImagePickerFormButton.Click += _OpenImagePickerFormButton_Click;
-            _EditorsPanel.Controls.Add(_OpenImagePickerFormButton);
-
-            _TestDataFormModalButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 96, 190, 50), Text = "DataForm MODAL" };
-            _TestDataFormModalButton.Click += _TestDataFormModalButton_Click;
-            _EditorsPanel.Controls.Add(_TestDataFormModalButton);
-
-            _TestDataFormNormalButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(620, 96, 190, 50), Text = "DataForm NORMAL" };
-            _TestDataFormNormalButton.Click += _TestDataFormNormalButton_Click;
-            _EditorsPanel.Controls.Add(_TestDataFormNormalButton);
-
-            _TestDxRibbonFormModalButton = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(420, 154, 190, 50), Text = "Test Ribbon" };
-            _TestDxRibbonFormModalButton.Click += _TestDxRibbonFormModalButton_Click;
-            _EditorsPanel.Controls.Add(_TestDxRibbonFormModalButton);
-
-            // _DxImagePicker = new DxImagePickerListBox() { Bounds = new Rectangle(20, 100, 640, 480) };
-            // _EditorsPanel.Controls.Add(_DxImagePicker);
-
-            _EditorsPanel.SizeChanged += _EditorsPanel_SizeChanged;
+            _PanelEditors.SizeChanged += _EditorsPanel_SizeChanged;
             EditorPanelDoLayout();
         }
         /// <summary>
-        /// Po změně velikosti <see cref="_EditorsPanel"/>
+        /// Po změně velikosti <see cref="_PanelEditors"/>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -2000,53 +1980,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void EditorPanelDoLayout()
         {
-            var size = _EditorsPanel.ClientSize;
+            var size = _PanelEditors.ClientSize;
 
             // if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
         }
-        private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
-        {
-            LayoutForm form = new LayoutForm(true);
-            form.Text = "Test řízení LayoutPanel";
-            // form.AddControl(new LayoutTestPanel() { CloseButtonVisible = false });        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
-            form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
-            form.Show();
-        }
-        private void _OpenImagePickerFormButton_Click(object sender, EventArgs e)
-        {
-            using (ImagePickerForm form = new ImagePickerForm())
-            {
-                form.ShowDialog(this);
-            }
-        }
-        private void _TestDataFormModalButton_Click(object sender, EventArgs e)
-        {
-            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
-            using (var dataForm = new DataForm())
-            {
-                dataForm.WinProcessInfoBeforeForm = winProcessInfo;
-                dataForm.WindowState = FormWindowState.Maximized;
-                dataForm.ShowDialog();
-            }
-        }
-        private void _TestDataFormNormalButton_Click(object sender, EventArgs e)
-        {
-            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
-            var dataForm = new DataForm();
-            dataForm.WinProcessInfoBeforeForm = winProcessInfo;
-            dataForm.WindowState = FormWindowState.Normal;
-            dataForm.Size = new Size(1400, 900);
-            dataForm.StartPosition = FormStartPosition.WindowsDefaultLocation;
-            dataForm.Show();
-        }
-        private void _TestDxRibbonFormModalButton_Click(object sender, EventArgs e)
-        {
-            using (var ribbonForm = new RibbonForm())
-            {
-                ribbonForm.WindowState = FormWindowState.Maximized;
-                ribbonForm.ShowDialog();
-            }
-        }
+
         private void _TokenAddButtonGreen_Click(object sender, EventArgs e)
         {
             _TokenInfoLabel.Text = "probíhá příprava dat...";
@@ -2139,16 +2077,17 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DevExpress.XtraEditors.SimpleButton _TokenAddButtonDaj;
         private DevExpress.XtraEditors.TokenEdit _TokenEdit;
         private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
-        private DevExpress.XtraEditors.SimpleButton _OpenLayoutFormButton;
-        private DevExpress.XtraEditors.SimpleButton _OpenImagePickerFormButton;
-        private DevExpress.XtraEditors.SimpleButton _TestDataFormModalButton;
-        private DevExpress.XtraEditors.SimpleButton _TestDataFormNormalButton;
-        private DevExpress.XtraEditors.SimpleButton _TestDxRibbonFormModalButton;
-        // private DxImagePickerListBox _DxImagePicker;
+        #endregion
         #endregion
         #region TreeView
         private void InitTreeView()
         {
+            AddNewPage("TreeList", PrepareTreeView);
+        }
+        private DxPanelControl _PanelTreeView;
+        private void PrepareTreeView(DxPanelControl panel)
+        {
+            _PanelTreeView = panel;
             CreateTreeViewComponents();
         }
         private void CreateTreeViewComponents()
@@ -2192,8 +2131,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _Images16.Images.Add("msn_blocked_16", Properties.Resources.msn_blocked_16);
             _Images16.Images.Add("hourglass_16", Properties.Resources.hourglass_16);
             _Images16.Images.Add("move_task_down_16", Properties.Resources.move_task_down_16);
-
-
         }
         private int GetImageIndex(string imageName)
         {
@@ -2202,7 +2139,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         ImageList _Images16;
         private void CreateTreeView()
         {
-            _SplitContainer = DxComponent.CreateDxSplitContainer(this._TreeViewPanel, null, DockStyle.Fill, Orientation.Vertical, DevExpress.XtraEditors.SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
+            _SplitContainer = DxComponent.CreateDxSplitContainer(this._PanelTreeView, null, DockStyle.Fill, Orientation.Vertical, DevExpress.XtraEditors.SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
 
             _TreeMultiCheckBox = DxComponent.CreateDxCheckEdit(0,0,200,null, "MultiSelectEnabled", _TreeMultiCheckBoxChanged, DevExpress.XtraEditors.Controls.CheckBoxStyle.SvgToggle1, 
                 DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, null,
@@ -2584,13 +2521,20 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #region DragDrop
         private void InitDragDrop()
         {
+            AddNewPage("Drag and Drop", PrepareDragDrop, ActivateDragDropPage);
+        }
+        private DxPanelControl _PanelDragDrop;
+        private void PrepareDragDrop(DxPanelControl panel)
+        {
+            _PanelDragDrop = panel;
+
             KeyActionType sourceKeyActions = KeyActionType.CtrlA | KeyActionType.CtrlC;
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
             _DragDropAList.Items.AddRange(_CreateListItems(100, false, true));
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
-            _DragDropPanel.Controls.Add(_DragDropAList);
+            _PanelDragDrop.Controls.Add(_DragDropAList);
 
             KeyActionType targetKeyActions = KeyActionType.All;
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
@@ -2598,7 +2542,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.Name = "BList";
             _DragDropBList.Items.AddRange(_CreateListItems(18, true, false));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
-            _DragDropPanel.Controls.Add(_DragDropBList);
+            _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropATree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };
             _DragDropATree.Name = "ATree";
@@ -2611,12 +2555,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             
             _DragDropATree.ShowContextMenu += _DragDropATree_ShowContextMenu;
             _DragDropATree.MouseDown += _DragDrop_MouseDown;
-            _DragDropPanel.Controls.Add(_DragDropATree);
+            _PanelDragDrop.Controls.Add(_DragDropATree);
 
-            _DragDropLogText = DxComponent.CreateDxMemoEdit(_DragDropPanel, System.Windows.Forms.DockStyle.None, readOnly: true, tabStop: false);
+            _DragDropLogText = DxComponent.CreateDxMemoEdit(_PanelDragDrop, System.Windows.Forms.DockStyle.None, readOnly: true, tabStop: false);
 
-            _DragDropPanel.SizeChanged += _DragDropPanel_SizeChanged;
-            _DragDropPanel.Dock = DockStyle.Fill;
+            _PanelDragDrop.SizeChanged += _DragDropPanel_SizeChanged;
+            _PanelDragDrop.Dock = DockStyle.Fill;
             DragDropDoLayout();
         }
 
@@ -2684,7 +2628,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void DragDropDoLayout()
         {
-            var size = _DragDropPanel.ClientSize;
+            var size = _PanelDragDrop.ClientSize;
             int xm = 6;
             int ym = 6;
             int xs = 12;
@@ -2702,6 +2646,61 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DxListBoxControl _DragDropBList;
         private DxTreeList _DragDropATree;
         private DxMemoEdit _DragDropLogText;
+        #endregion
+        #region Ribbon Functions
+        private void InitRibbonFunctions()
+        {
+            CreateRibbonFunction("Resources", "", "", _OpenImagePickerFormButton_Click);
+            CreateRibbonFunction("LayoutForm", "", "", _OpenLayoutFormButton_Click);
+            CreateRibbonFunction("DataForm", "", "", _TestDataFormModalButton_Click);
+            CreateRibbonFunction("Ribons", "", "", _TestDxRibbonFormModalButton_Click);
+
+
+        }
+
+        private void _OpenImagePickerFormButton_Click(object sender, EventArgs e)
+        {
+            using (ImagePickerForm form = new ImagePickerForm())
+            {
+                form.ShowDialog(this);
+            }
+        }
+        private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
+        {
+            LayoutForm form = new LayoutForm(true);
+            form.Text = "Test řízení LayoutPanel";
+            // form.AddControl(new LayoutTestPanel() { CloseButtonVisible = false });        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
+            form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
+            form.Show();
+        }
+        private void _TestDataFormModalButton_Click(object sender, EventArgs e)
+        {
+            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
+            using (var dataForm = new DataForm())
+            {
+                dataForm.WinProcessInfoBeforeForm = winProcessInfo;
+                dataForm.WindowState = FormWindowState.Maximized;
+                dataForm.ShowDialog();
+            }
+        }
+        private void _TestDataFormNormalButton_Click(object sender, EventArgs e)
+        {
+            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
+            var dataForm = new DataForm();
+            dataForm.WinProcessInfoBeforeForm = winProcessInfo;
+            dataForm.WindowState = FormWindowState.Normal;
+            dataForm.Size = new Size(1400, 900);
+            dataForm.StartPosition = FormStartPosition.WindowsDefaultLocation;
+            dataForm.Show();
+        }
+        private void _TestDxRibbonFormModalButton_Click(object sender, EventArgs e)
+        {
+            using (var ribbonForm = new RibbonForm())
+            {
+                ribbonForm.WindowState = FormWindowState.Maximized;
+                ribbonForm.ShowDialog();
+            }
+        }
         #endregion
         #region Random
         /// <summary>

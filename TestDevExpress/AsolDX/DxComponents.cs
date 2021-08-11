@@ -68,6 +68,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitListeners();
             this._ImageNameInit();
         }
+        private static bool __IsInitialized = false;
         private static DxComponent _Instance;
         private static object _InstanceLock = new object();
         #endregion
@@ -75,9 +76,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace subsystému: pojmenuje CurrentThread, registruje a povoluje DevEpxress skiny, nastavuje animace a výchozí skin
         /// </summary>
-        public static void Init() { Instance._Init(); }
+        public static void Init() { if (!__IsInitialized) Instance._Init(); }
         private void _Init()
         {
+            if (__IsInitialized) return;                   // mezivláknový konflikt při startu nehrozí, aplikace je spouštěna z jednoho vlákna. Tohle je ochrana proti opakované inicializaci.
+
+            __IsInitialized = true;
+            _ApplicationStartTime = System.Diagnostics.Process.GetCurrentProcess().StartTime;
+
             System.Threading.Thread.CurrentThread.Name = "GUI thread";
             DevExpress.UserSkins.BonusSkins.Register();
             DevExpress.Skins.SkinManager.EnableFormSkins();
@@ -85,10 +91,53 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
             DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "iMaginary";
+
+            System.Windows.Forms.Application.ApplicationExit += Application_ApplicationExit;
+            System.Windows.Forms.Application.Idle += Application_Idle;
         }
+
+        private void Application_ApplicationExit(object sender, EventArgs e)
+        {
+            _Done();
+        }
+
         public static void Done() { Instance._Done(); }
         private void _Done()
-        { }
+        {
+            System.Windows.Forms.Application.Idle -= Application_Idle;
+            System.Windows.Forms.Application.ApplicationExit -= Application_ApplicationExit;
+        }
+        private void Application_Idle(object sender, EventArgs e)
+        {
+            if (!_ApplicationReadyTime.HasValue)
+            {
+                _ApplicationReadyTime = DateTime.Now;
+            }
+        }
+        /// <summary>
+        /// Doba trvání startu aplikace od spuštění procesu do prvního okamžiku, kdy je aplikace ready
+        /// </summary>
+        public static TimeSpan? ApplicationStartUpTime { get { return Instance._ApplicationStartUpTime; } }
+        private TimeSpan? _ApplicationStartUpTime
+        {
+            get 
+            {
+                var startTime = _ApplicationStartTime;
+                var readyTime = _ApplicationReadyTime;
+                if (startTime.HasValue && readyTime.HasValue) return (readyTime.Value - startTime.Value);
+                return null;
+            }
+        }
+        /// <summary>
+        /// Čas, kdy byla aplikace spuštěna
+        /// </summary>
+        public DateTime? ApplicationStartTime { get { return _ApplicationStartTime; } }
+        private DateTime? _ApplicationStartTime;
+        /// <summary>
+        /// Čas, od kdy je aplikace ready (=čas první události <see cref="Application.Idle"/>)
+        /// </summary>
+        public DateTime? ApplicationReadyTime { get { return _ApplicationReadyTime; } }
+        private DateTime? _ApplicationReadyTime;
         #endregion
         #region Splash Screen
         public static void SplashShow(string title, string subTitle = null, string leftFooter = null, string rightFooter = null,

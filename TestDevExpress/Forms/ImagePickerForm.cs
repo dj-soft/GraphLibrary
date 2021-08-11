@@ -117,7 +117,6 @@ namespace TestDevExpress.Forms
         {
             string skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSkinName;
             string paletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
-            // 
         }
         /// <summary>
         /// Inicializace vlastností formuláře
@@ -130,51 +129,31 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitFrames()
         {
-            _MainPanel = DxComponent.CreateDxPanel(this, WF.DockStyle.Fill, DXE.Controls.BorderStyles.NoBorder);
         }
         /// <summary>
         /// Inicializace objektu Ribbon a Statusbar
         /// </summary>
         private void InitRibbons()
         {
-            _DxRibbonControl = new DxRibbonControl();
-            _DxRibbonControl.Items.Clear();
-
-            this.Ribbon = _DxRibbonControl;
-            this.StatusBar = new DXB.Ribbon.RibbonStatusBar();
-            this.StatusBar.Ribbon = this.Ribbon;
-
-            RibbonFillItems();
-            StatusFillItems();
-
-            this.Controls.Add(this.Ribbon);
-            this.Controls.Add(this.StatusBar);
         }
-        DxPanelControl _MainPanel;
-        DxRibbonControl _DxRibbonControl;
         #endregion
         #region Ribbon a StatusBar
         /// <summary>
         /// Naplní prvky do Ribbonu, zaháčkuje eventhandlery
         /// </summary>
-        private void RibbonFillItems()
+        protected override void DxRibbonPrepare()
         {
             this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
 
-            DXB.Ribbon.RibbonPage page1 = new DXB.Ribbon.RibbonPage("SKIN");
-            this.Ribbon.Pages.Add(page1);
+            DXB.Ribbon.RibbonPage pageSkin = new DXB.Ribbon.RibbonPage("SKIN");
+            this.Ribbon.Pages.Add(pageSkin);
 
-            DXB.Ribbon.RibbonPageGroup group10 = new DXB.Ribbon.RibbonPageGroup("VOLBA SKINU A PALETY");
-            page1.Groups.Add(group10);
-
-            group10.ItemLinks.Add(new DXB.SkinDropDownButtonItem());
-            group10.ItemLinks.Add(new DXB.SkinPaletteDropDownButtonItem());
-            group10.ItemLinks.Add(new DXB.SkinPaletteRibbonGalleryBarItem());
+            pageSkin.Groups.Add(DxRibbonControl.CreateSkinGroup());
         }
         /// <summary>
         /// Naplní prvky do StatusBaru
         /// </summary>
-        private void StatusFillItems()
+        protected override void DxStatusPrepare()
         {
             _StatusInfoTextItem = new DXB.BarStaticItem() { Caption = "Stavový řádek", AutoSize = DXB.BarStaticItemSize.Spring };
             this.StatusBar.ItemLinks.Add(_StatusInfoTextItem);
@@ -190,7 +169,7 @@ namespace TestDevExpress.Forms
         {
             _ImagePickerList = new DxImagePickerListBox() { Dock = WF.DockStyle.Fill };
             _ImagePickerList.StatusTextChanged += _ImagePickerList_StatusTextChanged;
-            _MainPanel.Controls.Add(_ImagePickerList);
+            DxMainPanel.Controls.Add(_ImagePickerList);
             RefreshStatusText();
         }
 

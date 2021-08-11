@@ -794,7 +794,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             PageCategories.Add(pageCategory);
             return pageCategory;
         }
-
+        /// <summary>
+        /// Vytvoří a vrátí novou stránku, vloží ji do kolekce this.Pages
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public DxRibbonPage CreatePage(string text)
+        {
+            DxRibbonPage page = new DxRibbonPage(this, text);
+            this.Pages.Add(page);
+            return page;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí novou stránku, vloží ji do kolekce this.Pages.
+        /// Tato metoda nevkládá grupy z dodané stránky.
+        /// </summary>
+        /// <param name="iRibbonPage"></param>
+        /// <returns></returns>
+        public DxRibbonPage CreatePage(IRibbonPage iRibbonPage)
+        {
+            return CreatePage(iRibbonPage, this.Pages);
+        }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí stránku pro daná data.
         /// Stránku přidá do this Ribbonu nebo do dané kategorie.
@@ -861,6 +881,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 pageCollection.Remove(page);
         }
 
+        /// <summary>
+        /// Vytvoří a vrátí grupu daného jména, grupu vloží do dané stránky.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        public DxRibbonGroup CreateGroup(string text, DxRibbonPage page)
+        {
+            var group = new DxRibbonGroup(text)
+            {
+                State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto
+            };
+            if (page != null) page.Groups.Add(group);
+            return group;
+        }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí grupu pro daná data.
         /// Grupu přidá do dané stránky.
@@ -929,6 +964,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 page.Groups.Remove(group);
         }
 
+        /// <summary>
+        /// Vytvoří a vrátí prvek dle definice.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="group"></param>
+        /// <param name="clickHandler"></param>
+        /// <returns></returns>
+        public DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        {
+            int count = 0;
+            var barItem = CreateItem(iRibbonItem, true, ref count);
+
+            if (barItem is null) return null;
+            if (group != null)
+            {
+                var barLink = group.ItemLinks.Add(barItem);
+                barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
+            }
+            FillBarItem(barItem, iRibbonItem);
+
+            if (clickHandler != null) barItem.ItemClick += clickHandler;
+
+            return barItem;
+        }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí BarItem pro daná data.
         /// BarItem přidá do dané grupy.
@@ -2274,6 +2333,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se po vykreslení obrázku vpravo v ribbonu
         /// </summary>
         public event EventHandler<PaintEventArgs> PaintImageRightAfter;
+        #endregion
+        #region Static helpers
+        /// <summary>
+        /// Vytvoří a vrátí Grupu do Ribbonu s obsahem tlačítek pro skiny
+        /// </summary>
+        /// <param name="groupText"></param>
+        /// <param name="addSkinButton"></param>
+        /// <param name="addPaletteButton"></param>
+        /// <param name="addPaletteGallery"></param>
+        /// <returns></returns>
+        public static DxRibbonGroup CreateSkinGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = true)
+        {
+            string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
+            DxRibbonGroup group = new DxRibbonGroup(text);
+
+            if (addSkinButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinDropDownButtonItem());
+            if (addPaletteButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteDropDownButtonItem());
+            if (addPaletteGallery) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem());
+
+            return group;
+        }
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
         /*

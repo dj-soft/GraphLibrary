@@ -50,7 +50,7 @@ namespace TestDevExpress.Forms
 
             this.AllowMdiBar = true;
 
-            _DxMainSplit = DxComponent.CreateDxSplitContainer(this, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
+            _DxMainSplit = DxComponent.CreateDxSplitContainer(DxMainPanel, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
                 fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 400, showSplitGlyph: true);
 
             _DxLeftSplit = DxComponent.CreateDxSplitContainer(_DxMainSplit.Panel1, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Horizontal,
@@ -61,20 +61,10 @@ namespace TestDevExpress.Forms
 
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
-            this._DxRibbonControl = new DxRibbonControl() { DebugName = "MainRibbon" };
-            this._DxRibbonControl.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
-            this._DxRibbonControl.ApplicationButtonText = " SYSTEM ";
-
-            this.Ribbon = _DxRibbonControl;
-            this.Controls.Add(this._DxRibbonControl);
-
-            _DxRibbonFill();
-            this._DxRibbonControl.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
-
             _TestPanel1 = new RibbonTestPanel();
             _TestPanel1.UseLazyLoad = this.UseLazyLoad;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
-            _TestPanel1.ParentRibbon = _DxRibbonControl;
+            _TestPanel1.ParentRibbon = DxRibbon;
             _TestPanel1.CategoryName = "SKUPINA 1";
             _TestPanel1.CategoryColor = System.Drawing.Color.LightBlue;
             _TestPanel1.FillRibbon();
@@ -97,24 +87,12 @@ namespace TestDevExpress.Forms
             _TestPanel2b.CategoryColor = System.Drawing.Color.LightGreen;
             _TestPanel2b.FillRibbon();
             _DxBottomSplit.Panel2.Controls.Add(_TestPanel2b);
-
-            this._DxRibbonStatusBar = new DxRibbonStatusBar();
-            this._DxRibbonStatusBar.Ribbon = this._DxRibbonControl;
-            this.StatusBar = _DxRibbonStatusBar;
-            this.Controls.Add(this._DxRibbonStatusBar);
-
-            this._StatusItemTitle = CreateStatusBarItem();
-          
-            // V tomto pořadí budou StatusItemy viditelné (tady je zatím jen jeden):
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemTitle);
             
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
 
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
             _LogContainChanges = true;
         }
-        private DxRibbonControl _DxRibbonControl;
-        private DxRibbonStatusBar _DxRibbonStatusBar;
         private DxSplitContainerControl _DxMainSplit;
         private DxSplitContainerControl _DxLeftSplit;
         private DxSplitContainerControl _DxBottomSplit;
@@ -135,9 +113,13 @@ namespace TestDevExpress.Forms
         
         private DevExpress.XtraBars.BarStaticItem _StatusItemTitle;
         #endregion
-        #region Ribbon - obsah a rozcestník
-        private void _DxRibbonFill()
+        #region Ribbon a StatusBar - obsah a rozcestník
+        protected override void DxRibbonPrepare()
         {
+            this.DxRibbon.DebugName = "MainRibbon";
+            this.DxRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
+            this.DxRibbon.ApplicationButtonText = " SYSTEM ";
+
             string imgZoom = "images/zoom/zoom_32x32.png";
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
@@ -166,9 +148,11 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Help.Help.Show", Text = "Nápovědda", ToolTipText = "Zobrazí okno s nápovědou", Image = imgInfo });
 
-            this._DxRibbonControl.Clear();
-            this._DxRibbonControl.UseLazyContentCreate = this.UseLazyLoad;
-            this._DxRibbonControl.AddPages(pages);
+            this.DxRibbon.Clear();
+            this.DxRibbon.UseLazyContentCreate = this.UseLazyLoad;
+            this.DxRibbon.AddPages(pages);
+
+            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
@@ -192,6 +176,13 @@ namespace TestDevExpress.Forms
         /// Bude se používat LazyLoad
         /// </summary>
         public bool UseLazyLoad { get; set; }
+        protected override void DxStatusPrepare()
+        {
+            this._StatusItemTitle = CreateStatusBarItem();
+
+            // V tomto pořadí budou StatusItemy viditelné (tady je zatím jen jeden):
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemTitle);
+        }
         #endregion
         #region Logování
         private void DxComponent_LogTextChanged(object sender, EventArgs e)

@@ -11,7 +11,9 @@ namespace TestDevExpress.Forms
     public class DataForm : DxRibbonForm
     {
         #region Konstruktor a proměnné
-
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DataForm()
         {
             DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", 
@@ -47,7 +49,7 @@ namespace TestDevExpress.Forms
 
             this.Text = "Test DataForm FW 4.8";
 
-            _DxMainSplit = DxComponent.CreateDxSplitContainer(this, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
+            _DxMainSplit = DxComponent.CreateDxSplitContainer(this.DxMainPanel, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
                 fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 300, showSplitGlyph: true);
 
             _DxMainPanel = DxComponent.CreateDxPanel(_DxMainSplit.Panel1, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
@@ -56,19 +58,20 @@ namespace TestDevExpress.Forms
 
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
-            this._DxRibbonControl = new DxRibbonControl();
-            this.Ribbon = _DxRibbonControl;
-            this.Controls.Add(this._DxRibbonControl);
+            WinProcessInfoAfterInit = DxComponent.WinProcessInfo.GetCurent();
 
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+
+            DxComponent.LogTextChanged += DxComponent_LogTextChanged;
+            _LogContainChanges = true;
+        }
+        protected override void DxRibbonPrepare()
+        {
             _DxRibbonFill();
-            this._DxRibbonControl.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
-
-
-            this._DxRibbonStatusBar = new DxRibbonStatusBar();
-            this._DxRibbonStatusBar.Ribbon = this._DxRibbonControl;
-            this.StatusBar = _DxRibbonStatusBar;
-            this.Controls.Add(this._DxRibbonStatusBar);
-
+            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+        }
+        protected override void DxStatusPrepare()
+        {
             this._StatusItemTitle = CreateStatusBarItem();
             this._StatusItemBefore = CreateStatusBarItem();
             this._StatusItemDeltaConstructor = CreateStatusBarItem();
@@ -80,29 +83,21 @@ namespace TestDevExpress.Forms
 
             // V tomto pořadí budou viditelné:
             //   netřeba : this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemTitle);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaCurrent);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemTime);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemCurrent);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemBefore);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaForm);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaConstructor);
-            this._DxRibbonStatusBar.ItemLinks.Add(this._StatusItemDeltaShow);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemDeltaCurrent);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemTime);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemCurrent);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemBefore);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemDeltaForm);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemDeltaConstructor);
+            this.DxStatusBar.ItemLinks.Add(this._StatusItemDeltaShow);
 
-            WinProcessInfoAfterInit = DxComponent.WinProcessInfo.GetCurent();
-
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
-
-            DxComponent.LogTextChanged += DxComponent_LogTextChanged;
-            _LogContainChanges = true;
+            this.DxStatusBar.Visible = true;
         }
-
         private void _DxMainPanel_SizeChanged(object sender, EventArgs e)
         {
             _DoLayoutAnyDataForm();
         }
 
-        private DxRibbonControl _DxRibbonControl;
-        private DxRibbonStatusBar _DxRibbonStatusBar;
         private DxSplitContainerControl _DxMainSplit;
         private DxPanelControl _DxMainPanel;
         private DxMemoEdit _DxLogMemoEdit;
@@ -222,15 +217,15 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "rb.test.b1", Text = "Refill ribbonu", Image = resource1 });
             group.Items.Add(new DataRibbonItem() { ItemId = "rb.test.b2", Text = "Image Picker", Image = resource3 });
 
-            this._DxRibbonControl.Clear();
-            this._DxRibbonControl.AddPages(pages);
+            this.DxRibbon.Clear();
+            this.DxRibbon.AddPages(pages);
         }
 
         private void _RibbonTestRefill()
         {
-            var pageId = this._DxRibbonControl.SelectedPageId;
+            var pageId = this.DxRibbon.SelectedPageId;
 
-            this._DxRibbonControl.Clear();
+            this.DxRibbon.Clear();
             ThreadManager.AddAction(_RibbonTestRefill2, pageId);
         }
 
@@ -242,7 +237,8 @@ namespace TestDevExpress.Forms
         private void _RibbonTestRefill3(string pageId)
         {
             _DxRibbonFill();
-            this._DxRibbonControl.SelectedPageId = pageId;
+            this.DxRibbon.SelectedPageId = pageId;
+            this.DxRibbon.Visible = true;
         }
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
