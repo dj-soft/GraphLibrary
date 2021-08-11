@@ -1071,7 +1071,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.CheckBoxToggle:
                     count++;
-                    DxCheckBoxToggle toggleSwitch = new DxCheckBoxToggle(this.BarManager, iRibbonItem.Text);
+                    DxBarCheckBoxToggle toggleSwitch = new DxBarCheckBoxToggle(this.BarManager, iRibbonItem.Text);
                     barItem = toggleSwitch;
                     break;
                 case RibbonItemType.Menu:
@@ -1124,7 +1124,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.Enabled = iRibbonItem.Enabled;
 
             string imageName = iRibbonItem.Image;
-            if (imageName != null && !(barItem is DxCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
+            if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
             {
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
                 {
@@ -1155,7 +1155,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 checkItem.Checked = iRibbonItem.Checked ?? false;
             }
 
-            if (barItem is DxCheckBoxToggle dxCheckBoxToggle)
+            if (barItem is DxBarCheckBoxToggle dxCheckBoxToggle)
             {
                 dxCheckBoxToggle.Checked = iRibbonItem.Checked;
                 if (iRibbonItem.Image != null) dxCheckBoxToggle.ImageNameNull = iRibbonItem.Image;
@@ -2892,29 +2892,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DevExpress.XtraBars.BarButtonItem BarItem { get; private set; }
     }
     #endregion
-    #region class DxCheckBoxToggle : Button reprezentující hodnotu "Checked" { NULL - false - true } s využitím tří ikonek 
+    #region DxBarCheckBoxToggle : Button reprezentující hodnotu "Checked" { NULL - false - true } s využitím tří ikonek 
     /// <summary>
     /// Button reprezentující hodnotu <see cref="Checked"/> { NULL - false - true } s využitím tří ikonek 
     /// </summary>
-    public class DxCheckBoxToggle : DevExpress.XtraBars.BarButtonItem
+    public class DxBarCheckBoxToggle : DevExpress.XtraBars.BarButtonItem
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxCheckBoxToggle() : base() { Initialize(); }
+        public DxBarCheckBoxToggle() : base() { Initialize(); }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="manager"></param>
         /// <param name="caption"></param>
-        public DxCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption) : base(manager, caption) { Initialize(); }
+        public DxBarCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption) : base(manager, caption) { Initialize(); }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="manager"></param>
         /// <param name="caption"></param>
         /// <param name="imageIndex"></param>
-        public DxCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex) : base(manager, caption, imageIndex) { Initialize(); }
+        public DxBarCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex) : base(manager, caption, imageIndex) { Initialize(); }
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2922,7 +2922,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="caption"></param>
         /// <param name="imageIndex"></param>
         /// <param name="shortcut"></param>
-        public DxCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex, DevExpress.XtraBars.BarShortcut shortcut) : base(manager, caption, imageIndex, shortcut) { Initialize(); }
+        public DxBarCheckBoxToggle(DevExpress.XtraBars.BarManager manager, string caption, int imageIndex, DevExpress.XtraBars.BarShortcut shortcut) : base(manager, caption, imageIndex, shortcut) { Initialize(); }
         /// <summary>
         /// Inicializace buttonu
         /// </summary>
