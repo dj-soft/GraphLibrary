@@ -46,7 +46,7 @@ namespace TestDevExpress.Forms
         {
             this.Size = new System.Drawing.Size(800, 600);
 
-            this.Text = "Test Ribbons FW 4.8";
+            this.Text = $"Test Ribbons :: {DxComponent.FrameworkName}";
 
             this.AllowMdiBar = true;
 
@@ -131,10 +131,7 @@ namespace TestDevExpress.Forms
             page = new DataRibbonPage() { PageId = "DX", PageText = "DevExpress" };
             pages.Add(page);
 
-            group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
-            page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", RibbonItemType = RibbonItemType.SkinSetDropDown });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
+            page.Groups.Add(DxRibbonControl.CreateSkinIGroup());
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             page.Groups.Add(group);
@@ -259,10 +256,11 @@ namespace TestDevExpress.Forms
         private void DoLayoutButtons()
         {
             int width = this.ClientSize.Width;
+            int ribbonHeight = this.Ribbon.Height;
             int count1 = 3;
             int count2 = 2;
             bool isSmall = (width < 825);
-            int y0 = 160;
+            int y0 = ribbonHeight + 24;
             int w = (isSmall ? 112 : 150);
             int h1 = (isSmall ? 38 : 54);
             int h2 = (isSmall ? 44 : 54);

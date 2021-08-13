@@ -2336,14 +2336,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Static helpers
         /// <summary>
-        /// Vytvoří a vrátí Grupu do Ribbonu s obsahem tlačítek pro skiny
+        /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu)
         /// </summary>
         /// <param name="groupText"></param>
         /// <param name="addSkinButton"></param>
         /// <param name="addPaletteButton"></param>
         /// <param name="addPaletteGallery"></param>
         /// <returns></returns>
-        public static DxRibbonGroup CreateSkinGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = true)
+        public static IRibbonGroup CreateSkinIGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false, bool addUhdSupport = false)
+        {
+            string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
+            DataRibbonGroup iGroup = new DataRibbonGroup() { GroupText = text };
+
+            if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", RibbonItemType = RibbonItemType.SkinSetDropDown });
+            if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
+            if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", RibbonItemType = RibbonItemType.SkinPaletteGallery });
+            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", RibbonItemType = RibbonItemType.CheckBoxToggle, MenuAction =   });
+
+            return iGroup;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí fyzickou Grupu do Ribbonu s obsahem tlačítek pro skiny
+        /// </summary>
+        /// <param name="groupText"></param>
+        /// <param name="addSkinButton"></param>
+        /// <param name="addPaletteButton"></param>
+        /// <param name="addPaletteGallery"></param>
+        /// <returns></returns>
+        public static DxRibbonGroup CreateSkinGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false)
         {
             string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
             DxRibbonGroup group = new DxRibbonGroup(text);

@@ -101,9 +101,22 @@ namespace TestDevExpress.Forms
         private void InitData()
         {
             DxComponent.ClipboardApplicationId = "TestDevExpress";
+            this.Text = $"TestDevExpress :: {DxComponent.FrameworkName}";
+
+            bool UHD = true;
+            if (UHD)
+            {
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = false;
+                DevExpress.XtraEditors.WindowsFormsSettings.ForceDirectXPaint();
+                DevExpress.XtraEditors.WindowsFormsSettings.SetPerMonitorDpiAware();
+            }
+            else
+            {
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowAutoScale = DevExpress.Utils.DefaultBoolean.True;
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = true;
+                DevExpress.XtraEditors.WindowsFormsSettings.ForceGDIPlusPaint();
+            }
         }
-      
-      
         #region Log
 
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
@@ -232,7 +245,8 @@ namespace TestDevExpress.Forms
         {
             CreateRibbonFunction("DevExpress Image", "svgimages/icon%20builder/actions_image.svg", "Otevře okno s nabídkou systémových ikon", _OpenImagePickerFormButton_Click);
             CreateRibbonFunction("Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click);
-            CreateRibbonFunction("Data Form", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataFormModalButton_Click);
+            CreateRibbonFunction("DataForm1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click);
+            CreateRibbonFunction("DataForm2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click);
             CreateRibbonFunction("Ribon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click);
         }
         private void _OpenImagePickerFormButton_Click(object sender, EventArgs e)
@@ -250,7 +264,7 @@ namespace TestDevExpress.Forms
             form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
             form.Show();
         }
-        private void _TestDataFormModalButton_Click(object sender, EventArgs e)
+        private void _TestDataForm1ModalButton_Click(object sender, EventArgs e)
         {
             DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
             using (var dataForm = new DataForm())
@@ -260,7 +274,7 @@ namespace TestDevExpress.Forms
                 dataForm.ShowDialog();
             }
         }
-        private void _TestDataFormNormalButton_Click(object sender, EventArgs e)
+        private void _TestDataForm1NormalButton_Click(object sender, EventArgs e)
         {
             DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
             var dataForm = new DataForm();
@@ -269,6 +283,15 @@ namespace TestDevExpress.Forms
             dataForm.Size = new Size(1400, 900);
             dataForm.StartPosition = FormStartPosition.WindowsDefaultLocation;
             dataForm.Show();
+        }
+        private void _TestDataForm2ModalButton_Click(object sender, EventArgs e)
+        {
+            DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
+            using (var dataForm = new DataForm2())
+            {
+                dataForm.WindowState = FormWindowState.Maximized;
+                dataForm.ShowDialog();
+            }
         }
         private void _TestDxRibbonFormModalButton_Click(object sender, EventArgs e)
         {

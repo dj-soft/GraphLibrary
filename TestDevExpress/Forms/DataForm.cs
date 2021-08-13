@@ -47,7 +47,7 @@ namespace TestDevExpress.Forms
         {
             this.Size = new System.Drawing.Size(800, 600);
 
-            this.Text = "Test DataForm FW 4.8";
+            this.Text = $"Test DataForm :: {DxComponent.FrameworkName}";
 
             _DxMainSplit = DxComponent.CreateDxSplitContainer(this.DxMainPanel, dock: System.Windows.Forms.DockStyle.Fill, splitLineOrientation: System.Windows.Forms.Orientation.Vertical,
                 fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, splitPosition: 300, showSplitGlyph: true);
@@ -143,10 +143,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Basic.Refresh", Text = "Refresh", ToolTipText = "Znovu načíst údaje do statusbaru o spotřebě systémových zdrojů", Image = imageRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Basic.Clear", Text = "Smazat", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", Image = imageClear });
 
-            group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
-            page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", RibbonItemType = RibbonItemType.SkinSetDropDown});
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
+            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN"));
 
             group = new DataRibbonGroup() { GroupId = "sample", GroupText = "VZORKY" };
             page.Groups.Add(group);

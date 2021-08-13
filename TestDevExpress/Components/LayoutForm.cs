@@ -11,7 +11,7 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Components
 {
-    public class LayoutForm : DevExpress.XtraEditors.XtraForm
+    public class LayoutForm : DxStdForm
     {
         public LayoutForm() : this(false)
         { }

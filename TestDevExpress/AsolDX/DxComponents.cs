@@ -2826,6 +2826,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return new WinProcessInfo(a.PrivateMemory - b.PrivateMemory, a.WorkingSet - b.WorkingSet, a.GDIHandleCount - b.GDIHandleCount, a.UserHandleCount - b.UserHandleCount);
             }
         }
+        /// <summary>
+        /// Obsahuje jméno frameworku, na kterém aktuálně běžíme.
+        /// </summary>
+        public static string FrameworkName { get { return Instance._FrameworkName; } }
+        private string _FrameworkName
+        {
+            get
+            {
+                if (__FrameworkName == null)
+                    __FrameworkName = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+                return __FrameworkName;
+            }
+        }
+        private string __FrameworkName;
         #endregion
         #region Win32Api Block input a DoEventsBlockingInput
         [DllImport("user32.dll", EntryPoint = "BlockInput")]

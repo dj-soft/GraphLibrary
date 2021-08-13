@@ -189,6 +189,9 @@
     <Compile Include="Forms\DataForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\DataForm2.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\GraphForm.cs">
       <SubType>Form</SubType>
     </Compile>

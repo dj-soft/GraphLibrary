@@ -2480,7 +2480,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
     [DebuggerDisplay("{DebugText}")]
-    public class DataMenuItem : IMenuItem
+    public class DataMenuItem : DataTextItem, IMenuItem
     {
         /// <summary>
         /// Konstruktor
@@ -2498,43 +2498,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DataMenuItem CreateClone(IMenuItem source, Action<DataMenuItem> modifier = null)
         {
             if (source == null) return null;
-            DataMenuItem clone = new DataMenuItem()
-            {
-                ItemId = source.ItemId,
-                ParentItem = source.ParentItem,
-                Text = source.Text,
-                ItemType = source.ItemType,
-                ChangeMode = source.ChangeMode,
-                ItemOrder = source.ItemOrder,
-                ItemIsFirstInGroup = source.ItemIsFirstInGroup,
-                Enabled = source.Enabled,
-                Image = source.Image,
-                ImageUnChecked = source.ImageUnChecked,
-                ImageChecked = source.ImageChecked,
-                Checked = source.Checked,
-                ItemPaintStyle = source.ItemPaintStyle,
-                HotKey = source.HotKey,
-                ToolTipText = source.ToolTipText,
-                ToolTipTitle = source.ToolTipTitle,
-                ToolTipIcon = source.ToolTipIcon,
-                SubItems = (source.SubItems != null ? new List<IMenuItem>(source.SubItems) : null),
-                Tag = source.Tag
-            };
+            DataMenuItem clone = new DataMenuItem();
+            clone.FillFrom(source);
             if (modifier != null) modifier(clone);
             return clone;
         }
         /// <summary>
-        /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
+        /// Do this instance přenese patřičné hodnoty ze source instance
         /// </summary>
-        /// <returns></returns>
-        public override string ToString()
+        /// <param name="source"></param>
+        protected void FillFrom(IMenuItem source)
         {
-            return (this.Text ?? "");
+            base.FillFrom((ITextItem)source);
+
+            ParentItem = source.ParentItem;
+            ItemType = source.ItemType;
+            ChangeMode = source.ChangeMode;
+            HotKey = source.HotKey;
+            SubItems = (source.SubItems != null ? new List<IMenuItem>(source.SubItems) : null);
+            MenuAction = source.MenuAction;
         }
         /// <summary>
         /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
         /// </summary>
-        protected virtual string DebugText
+        protected override string DebugText
         {
             get
             {
@@ -2566,17 +2553,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             return list;
         }
         /// <summary>
-        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
-        /// </summary>
-        public virtual string ItemId { get; set; }
-        /// <summary>
         /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
         /// </summary>
         public virtual IMenuItem ParentItem { get; set; }
-        /// <summary>
-        /// Hlavní text v prvku
-        /// </summary>
-        public virtual string Text { get; set; }
         /// <summary>
         /// Typ položky
         /// </summary>
@@ -2585,6 +2564,134 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Režim pro vytvoření / refill / remove tohoto prvku
         /// </summary>
         public virtual ContentChangeMode ChangeMode { get; set; }
+        /// <summary>
+        /// Klávesa
+        /// </summary>
+        public virtual string HotKey { get; set; }
+        /// <summary>
+        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public virtual List<IMenuItem> SubItems { get; set; }
+        /// <summary>
+        /// Explicitně daná akce po aktivaci této položky menu
+        /// </summary>
+        public Action<IMenuItem> MenuAction { get; set; }
+
+        /// <summary>
+        /// V deklaraci interface je IEnumerable...
+        /// </summary>
+        IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
+        /// <summary>
+        /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
+        /// </summary>
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+    }
+    /// <summary>
+    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
+    /// </summary>
+    public interface IMenuItem : ITextItem
+    {
+        /// <summary>
+        /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
+        /// </summary>
+        IMenuItem ParentItem { get; set; }
+        /// <summary>
+        /// Typ položky
+        /// </summary>
+        MenuItemType ItemType { get; }
+        /// <summary>
+        /// Režim pro vytvoření / refill / remove tohoto prvku
+        /// </summary>
+        ContentChangeMode ChangeMode { get; }
+        /// <summary>
+        /// Klávesa
+        /// </summary>
+        string HotKey { get; }
+        /// <summary>
+        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
+        /// </summary>
+        IEnumerable<IMenuItem> SubItems { get; }
+        /// <summary>
+        /// Explicitně daná akce po aktivaci této položky menu
+        /// </summary>
+        Action<IMenuItem> MenuAction { get; }
+    }
+    /// <summary>
+    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
+    /// </summary>
+    [DebuggerDisplay("{DebugText}")]
+    public class DataTextItem : ITextItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataTextItem()
+        {
+            this.Enabled = true;
+        }
+        /// <summary>
+        /// Metoda vytvoří new instanci třídy <see cref="DataMenuItem"/>, které bude obsahovat data z dodané <see cref="IMenuItem"/>.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="modifier"></param>
+        /// <returns></returns>
+        public static DataTextItem CreateClone(ITextItem source, Action<DataTextItem> modifier = null)
+        {
+            if (source == null) return null;
+            DataTextItem clone = new DataTextItem();
+            clone.FillFrom(source);
+            if (modifier != null) modifier(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do this instance přenese patřičné hodnoty ze source instance
+        /// </summary>
+        /// <param name="source"></param>
+        protected void FillFrom(ITextItem source)
+        {
+            ItemId = source.ItemId;
+            Text = source.Text;
+            ItemOrder = source.ItemOrder;
+            ItemIsFirstInGroup = source.ItemIsFirstInGroup;
+            Enabled = source.Enabled;
+            Checked = source.Checked;
+            Image = source.Image;
+            ImageUnChecked = source.ImageUnChecked;
+            ImageChecked = source.ImageChecked;
+            ItemPaintStyle = source.ItemPaintStyle;
+            ToolTipText = source.ToolTipText;
+            ToolTipTitle = source.ToolTipTitle;
+            ToolTipIcon = source.ToolTipIcon;
+            Tag = source.Tag;
+        }
+        /// <summary>
+        /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return (this.Text ?? "");
+        }
+        /// <summary>
+        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// </summary>
+        protected virtual string DebugText
+        {
+            get
+            {
+                string debugText = $"Id: {ItemId}; Text: {Text}";
+                return debugText;
+            }
+        }
+        /// <summary>
+        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
+        /// </summary>
+        public virtual string ItemId { get; set; }
+        /// <summary>
+        /// Hlavní text v prvku
+        /// </summary>
+        public virtual string Text { get; set; }
         /// <summary>
         /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
@@ -2597,6 +2704,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prvek je Enabled?
         /// </summary>
         public virtual bool Enabled { get; set; }
+        /// <summary>
+        /// Určuje, zda CheckBox je zaškrtnutý.
+        /// Po změně zaškrtnutí v Menu / Ribbonu (uživatelem) je do této property setována aktuální hodnota z Menu / Ribbonu,
+        /// a poté je vyvolána odpovídající událost ItemClick.
+        /// Zadaná hodnota může být null (pak ikona je <see cref="Image"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
+        /// </summary>
+        public virtual bool? Checked { get; set; }
         /// <summary>
         /// Jméno běžné ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
@@ -2611,20 +2725,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ImageChecked { get; set; }
         /// <summary>
-        /// Určuje, zda CheckBox je zaškrtnutý.
-        /// Po změně zaškrtnutí v Menu / Ribbonu (uživatelem) je do této property setována aktuální hodnota z Menu / Ribbonu,
-        /// a poté je vyvolána odpovídající událost ItemClick.
-        /// Zadaná hodnota může být null (pak ikona je <see cref="Image"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
-        /// </summary>
-        public virtual bool? Checked { get; set; }
-        /// <summary>
         /// Styl zobrazení
         /// </summary>
         public virtual BarItemPaintStyle ItemPaintStyle { get; set; }
-        /// <summary>
-        /// Klávesa
-        /// </summary>
-        public virtual string HotKey { get; set; }
         /// <summary>
         /// Text ToolTipu
         /// </summary>
@@ -2638,50 +2741,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
         /// <summary>
-        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
-        /// Výchozí hodnota je null.
-        /// </summary>
-        public virtual List<IMenuItem> SubItems { get; set; }
-        /// <summary>
         /// Libovolná data aplikace
         /// </summary>
         public object Tag { get; set; }
 
         /// <summary>
-        /// V deklaraci interface je IEnumerable...
-        /// </summary>
-        IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
-        /// <summary>
         /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
         /// </summary>
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
-
     }
     /// <summary>
-    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
+    /// Definice jednoduchého prvku, který nese ID, text, ikony, tooltip a Tag
     /// </summary>
-    public interface IMenuItem : IToolTipItem
+    public interface ITextItem : IToolTipItem
     {
         /// <summary>
         /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
         /// </summary>
         string ItemId { get; }
         /// <summary>
-        /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
-        /// </summary>
-        IMenuItem ParentItem { get; set; }
-        /// <summary>
         /// Hlavní text v prvku
         /// </summary>
         string Text { get; }
-        /// <summary>
-        /// Typ položky
-        /// </summary>
-        MenuItemType ItemType { get; }
-        /// <summary>
-        /// Režim pro vytvoření / refill / remove tohoto prvku
-        /// </summary>
-        ContentChangeMode ChangeMode { get; }
         /// <summary>
         /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
@@ -2720,14 +2801,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení
         /// </summary>
         BarItemPaintStyle ItemPaintStyle { get; }
-        /// <summary>
-        /// Klávesa
-        /// </summary>
-        string HotKey { get; }
-        /// <summary>
-        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
-        /// </summary>
-        IEnumerable<IMenuItem> SubItems { get; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
