@@ -25,12 +25,47 @@ using System.Diagnostics;
 namespace Noris.Clients.Win.Components.AsolDX
 {
     #region DxStdForm
-    public class DxStdForm : DevExpress.XtraEditors.XtraForm
+    /// <summary>
+    /// Základní formulář bez Ribbonu a StatusBaru
+    /// </summary>
+    public class DxStdForm : DevExpress.XtraEditors.XtraForm, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
     {
+        #region Konstruktor a základní vlastnosti
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxStdForm()
         {
             this.IconOptions.SvgImage = DxComponent.GetSvgImage(DxComponent.ImageNameFormIcon);
+            DxComponent.RegisterListener(this);
         }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            DxComponent.UnregisterListener(this);
+        }
+        #endregion
+        #region Style & Zoom Changed
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
+        /// <summary>
+        /// Volá se po změně zoomu
+        /// </summary>
+        protected virtual void OnZoomChanged() { }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
+        /// <summary>
+        /// Volá se po změně skinu
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
+        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
+        /// <summary>
+        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
+        /// </summary>
+        protected virtual void OnApplicationIdle() { }
+        #endregion
     }
     #endregion
     #region DxRibbonForm
@@ -39,8 +74,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>, 
     /// a hlavní Panel nacházející se mzi Ribbonem a StatusBarem <see cref="DxMainPanel"/>.
     /// </summary>
-    public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
+    public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
     {
+        #region Konstruktor a základní vlastnosti
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -48,8 +84,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.IconOptions.SvgImage = DxComponent.GetSvgImage(DxComponent.ImageNameFormIcon);
             this.InitDxRibbonForm();
+            DxComponent.RegisterListener(this);
         }
-
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            DxComponent.UnregisterListener(this);
+        }
+        #endregion
+        #region Style & Zoom Changed
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
+        /// <summary>
+        /// Volá se po změně zoomu
+        /// </summary>
+        protected virtual void OnZoomChanged() { }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); }
+        /// <summary>
+        /// Volá se po změně skinu
+        /// </summary>
+        protected virtual void OnStyleChanged() { }
+        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
+        /// <summary>
+        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
+        /// </summary>
+        protected virtual void OnApplicationIdle() { }
+        #endregion
         #region Ribbon, MainPanel a StatusBar
         /// <summary>
         /// Ribbon
@@ -210,7 +273,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// PanelControl
     /// </summary>
-    public class DxPanelControl : DevExpress.XtraEditors.PanelControl, IListenerZoomChange, IListenerStyleChanged
+    public class DxPanelControl : DevExpress.XtraEditors.PanelControl, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
@@ -270,6 +333,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se po změně skinu
         /// </summary>
         protected virtual void OnStyleChanged() { }
+        void IListenerApplicationIdle.ApplicationIdle() { OnApplicationIdle(); }
+        /// <summary>
+        /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
+        /// </summary>
+        protected virtual void OnApplicationIdle() { }
         #endregion
         #region Rozšířené property
         /// <summary>

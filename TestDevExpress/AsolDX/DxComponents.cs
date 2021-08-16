@@ -100,7 +100,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Done();
         }
-
+        /// <summary>
+        /// Volá se při ukončení celé aplikace
+        /// </summary>
         public static void Done() { Instance._Done(); }
         private void _Done()
         {
@@ -110,9 +112,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void Application_Idle(object sender, EventArgs e)
         {
             if (!_ApplicationReadyTime.HasValue)
-            {
                 _ApplicationReadyTime = DateTime.Now;
-            }
+
+            CallListeners<IListenerApplicationIdle>();
         }
         /// <summary>
         /// Doba trvání startu aplikace od spuštění procesu do prvního okamžiku, kdy je aplikace ready
@@ -139,7 +141,58 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DateTime? ApplicationReadyTime { get { return _ApplicationReadyTime; } }
         private DateTime? _ApplicationReadyTime;
         #endregion
+        #region Application
+        public static void ApplicationStart(Type mainFormType, Image splashImage) { Instance._ApplicationStart(mainFormType, splashImage); }
+        public static void ApplicationRestart() { Instance._ApplicationRestart(); }
+        private void _ApplicationStart(Type mainFormType, Image splashImage)
+        {
+            while (true)
+            {
+                _ApplicationDoRestart = false;
+
+                _SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
+                null, splashImage, null,
+                DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
+
+                Form mainForm = System.Activator.CreateInstance(mainFormType) as Form;
+
+                ApplicationContext context = new ApplicationContext();
+                context.MainForm = mainForm;
+
+                _SplashUpdate(subTitle: "Už to bude...");
+
+                Application.Run(context);
+                if (!_ApplicationDoRestart) break;
+            }
+        }
+        private void _ApplicationRestart()
+        {
+            List<Form> forms = new List<Form>();
+            foreach (Form form in Application.OpenForms)
+                forms.Add(form);
+            forms.Reverse();
+            _ApplicationDoRestart = true;
+            foreach (Form form in forms)
+                form.Close();
+        }
+        private bool _ApplicationDoRestart;
+        #endregion
         #region Splash Screen
+        /// <summary>
+        /// Zobrazí SplashScreen
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="subTitle"></param>
+        /// <param name="leftFooter"></param>
+        /// <param name="rightFooter"></param>
+        /// <param name="owner"></param>
+        /// <param name="image"></param>
+        /// <param name="svgImage"></param>
+        /// <param name="indicator"></param>
+        /// <param name="opacityColor"></param>
+        /// <param name="opacity"></param>
+        /// <param name="useFadeIn"></param>
+        /// <param name="useFadeOut"></param>
         public static void SplashShow(string title, string subTitle = null, string leftFooter = null, string rightFooter = null,
             Form owner = null, Image image = null, DevExpress.Utils.Svg.SvgImage svgImage = null,
             DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator = null, Color? opacityColor = null, int? opacity = null,
@@ -148,18 +201,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             owner, image, svgImage,
             indicator, opacityColor, opacity,
             useFadeIn, useFadeOut); }
+        /// <summary>
+        /// Aktualizuje zobrazený SplashScreen
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="subTitle"></param>
+        /// <param name="leftFooter"></param>
+        /// <param name="rightFooter"></param>
+        /// <param name="opacityColor"></param>
+        /// <param name="opacity"></param>
         public static void SplashUpdate(string title = null, string subTitle = null, string leftFooter = null, string rightFooter = null,
             Color? opacityColor = null, int? opacity = null)
         {
             Instance._SplashUpdate(title, subTitle, leftFooter, rightFooter, opacityColor, opacity);
         }
+        /// <summary>
+        /// Zavře zobrazený SplashScreen
+        /// </summary>
         public static void SplashHide() { Instance._SplashHide(); }
-
+        /// <summary>
+        /// Zobrazí SplashScreen
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="subTitle"></param>
+        /// <param name="leftFooter"></param>
+        /// <param name="rightFooter"></param>
+        /// <param name="owner"></param>
+        /// <param name="image"></param>
+        /// <param name="svgImage"></param>
+        /// <param name="indicator"></param>
+        /// <param name="opacityColor"></param>
+        /// <param name="opacity"></param>
+        /// <param name="useFadeIn"></param>
+        /// <param name="useFadeOut"></param>
         private void _SplashShow(string title, string subTitle, string leftFooter, string rightFooter,
             Form owner, Image image, DevExpress.Utils.Svg.SvgImage svgImage,
             DevExpress.XtraSplashScreen.FluentLoadingIndicatorType? indicator, Color? opacityColor, int? opacity,
             bool useFadeIn, bool useFadeOut)
         {
+            if (_SplashOptions != null) return;                      // Nějaký SplashScreen už svítí => nebudeme jej otevírat znovu!
+
             DevExpress.XtraSplashScreen.FluentSplashScreenOptions options = new DevExpress.XtraSplashScreen.FluentSplashScreenOptions();
             options.Title = title;
             options.Subtitle = subTitle ?? "Asseco Solutions";
@@ -189,6 +270,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _SplashOptions = options;
         }
+        /// <summary>
+        /// Aktualizuje zobrazený SplashScreen
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="subTitle"></param>
+        /// <param name="leftFooter"></param>
+        /// <param name="rightFooter"></param>
+        /// <param name="opacityColor"></param>
+        /// <param name="opacity"></param>
         private void _SplashUpdate(string title = null, string subTitle = null, string leftFooter = null, string rightFooter = null,
             Color? opacityColor = null, int? opacity = null)
         {
@@ -208,6 +298,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _SplashOptions = options;
         }
+        /// <summary>
+        /// Zavře zobrazený SplashScreen
+        /// </summary>
         private void _SplashHide()
         {
             if (_SplashOptions != null)
@@ -216,6 +309,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _SplashOptions = null;
             }
         }
+        /// <summary>
+        /// Vlastnosti zobrazeného SplashScreen, nebo null když není
+        /// </summary>
         private DevExpress.XtraSplashScreen.FluentSplashScreenOptions _SplashOptions;
         #endregion
         #region Styly
@@ -446,8 +542,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitZoom()
         {
             _Zoom = 1m;
-            _SubscribersToZoomChange = new List<_SubscriberToZoomChange>();
-            _SubscribersToZoomLastClean = DateTime.Now;
             ComponentConnector.Host.InteractiveZoomChanged += Host_InteractiveZoomChanged;
             _ReloadZoom();
         }
@@ -460,7 +554,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _ReloadZoom();
             _CallListeners<IListenerZoomChange>();
-            _CallSubscriberToZoomChange();
         }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
@@ -520,7 +613,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ten vyhledá odpovídající listenery (které jsou naživu) a vyvolá jejich odpovídající metodu.
         /// <para/>
         /// Typy událostí jsou určeny tím, který konkrétní interface (potomek <see cref="IListener"/>) daný posluchač implementuje.
-        /// Na příkladu Změny Zoomu: tam, kde dojde ke změně Zoomu (Desktop) bude vyvolaná metoda <see cref="DxComponent.CallListeners{T}"/>,
+        /// Na příkladu Změny Zoomu: tam, kde dojde ke změně Zoomu (Desktop) bude vyvolaná metoda <see cref="DxComponent.CallListeners{T}()"/>,
         /// tato metoda vyhledá ve svém seznamu Listenerů ty, které implementují <see cref="IListenerZoomChange"/>, a vyvolá jejich výkonnou metodu.
         /// </summary>
         /// <param name="listener"></param>
@@ -529,7 +622,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zavolá Listenery daného typu a předá jim daný argumen
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="args"></param>
         public static void CallListeners<T>() where T : IListener { Instance._CallListeners<T>(); }
         /// <summary>
         /// Zavolá Listenery daného typu a předá jim daný argumen
@@ -553,14 +645,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             __Listeners = new List<_ListenerInstance>();
             __ListenersLastClean = DateTime.Now;
             DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged += DevExpress_StyleChanged;
-
         }
-
+        /// <summary>
+        /// Handler události, kdy DevExpress změní styl (skin)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DevExpress_StyleChanged(object sender, EventArgs e)
         {
             _CallListeners<IListenerStyleChanged>();
         }
-
+        /// <summary>
+        /// Zaregistruje dodanou instanci, která chce být posluchačem systémových událostí
+        /// </summary>
+        /// <param name="listener"></param>
         private void _RegisterListener(IListener listener)
         {
             if (listener == null) return;
@@ -569,6 +667,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             lock (__Listeners)
                 __Listeners.Add(new _ListenerInstance(listener));
         }
+        /// <summary>
+        /// Odešle systémovou událost všem zvědavým a živým posluchačům
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
         private void _CallListeners<T>() where T : IListener
         {
             var listeners = _GetListeners<T>();
@@ -577,13 +679,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var listener in listeners)
                 method.Invoke(listener, null);
         }
+        /// <summary>
+        /// Odešle systémovou událost všem zvědavým a živým posluchačům
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="args"></param>
         private void _CallListeners<T>(object args) where T : IListener
         {
             var listeners = _GetListeners<T>();
             if (listeners.Length == 0) return;
             var method = _GetListenerMethod(typeof(T), 1);
+            object[] parameters = new object[] { args };
             foreach (var listener in listeners)
-                method.Invoke(listener, null);
+                method.Invoke(listener, parameters);
         }
         /// <summary>
         /// Metoda najde jedinou metodu daného typu, a ověří že má přesně daný počet parametrů.
@@ -602,6 +710,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 throw new InvalidOperationException($"Interface '{type.Name}' is not valid IListener interface for call with {parameterCount} parameters, has {parameters.Length} parameters.");
             return method;
         }
+        /// <summary>
+        /// Odebere daného posluchače ze seznamu
+        /// </summary>
+        /// <param name="listener"></param>
         private void _UnregisterListener(IListener listener)
         {
             lock (__Listeners)
@@ -633,7 +745,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __Listeners.RemoveAll(s => !s.IsAlive);
             __ListenersLastClean = DateTime.Now;
         }
+        /// <summary>
+        /// Pole všech zaregistrovaných posluchačů systémových událostí
+        /// </summary>
         private List<_ListenerInstance> __Listeners;
+        /// <summary>
+        /// Datum a čas, kdy se naposledy odklízeli zesnulí posluchači
+        /// </summary>
         private DateTime __ListenersLastClean;
         /// <summary>
         /// Evidence jednoho listenera (posluchače zpráv), obsahuje WeakReferenci na něj
@@ -660,104 +778,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 IListener mySubscriber = __Listener.Target;
                 return (mySubscriber != null && Object.ReferenceEquals(mySubscriber, testListener));
-            }
-        }
-        #endregion
-        #region SubscriberToZoomChange
-        /// <summary>
-        /// Zaeviduje si dalšího žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> po změně Zoomu
-        /// </summary>
-        /// <param name="subscriber"></param>
-        public static void SubscribeToZoomChange(ISubscriberToZoomChange subscriber)
-        {
-            Instance._AddSubscriberToZoomChange(subscriber);
-        }
-        /// <summary>
-        /// Odebere daného žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> ze seznamu.
-        /// </summary>
-        /// <param name="subscriber"></param>
-        public static void UnSubscribeToZoomChange(ISubscriberToZoomChange subscriber)
-        {
-            Instance._RemoveSubscriberToZoomChange(subscriber);
-        }
-        /// <summary>
-        /// Zaeviduje si dalšího žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> po změně Zoomu
-        /// </summary>
-        /// <param name="subscriber"></param>
-        private void _AddSubscriberToZoomChange(ISubscriberToZoomChange subscriber)
-        {
-            if (subscriber == null) return;
-
-            _ClearDeadSubscriberToZoomChange();
-            lock (_SubscribersToZoomChange)
-                _SubscribersToZoomChange.Add(new _SubscriberToZoomChange(subscriber));
-        }
-        /// <summary>
-        /// Odebere daného žadatele o volání metody <see cref="ISubscriberToZoomChange.ZoomChanged()"/> ze seznamu.
-        /// </summary>
-        /// <param name="subscriber"></param>
-        private void _RemoveSubscriberToZoomChange(ISubscriberToZoomChange subscriber)
-        {
-            lock (_SubscribersToZoomChange)
-                _SubscribersToZoomChange.RemoveAll(s => !s.IsAlive || s.ContainsSubscriber(subscriber));
-            _SubscribersToZoomLastClean = DateTime.Now;
-        }
-        /// <summary>
-        /// Odebere mrtvé Subscribery z pole <see cref="_SubscribersToZoomChange"/>
-        /// </summary>
-        /// <param name="force"></param>
-        private void _ClearDeadSubscriberToZoomChange(bool force = false)
-        {
-            if (!force && ((TimeSpan)(DateTime.Now - _SubscribersToZoomLastClean)).TotalSeconds < 30d) return;  // Když to není nutné, nebudeme to řešit
-            lock (_SubscribersToZoomChange)
-                _SubscribersToZoomChange.RemoveAll(s => !s.IsAlive);
-            _SubscribersToZoomLastClean = DateTime.Now;
-        }
-        /// <summary>
-        /// Zavolá všechny živé subscribery o změně Zoomu
-        /// </summary>
-        private void _CallSubscriberToZoomChange()
-        {
-            _ClearDeadSubscriberToZoomChange();
-            
-            List<_SubscriberToZoomChange> activeSubscribers = null;
-            lock (_SubscribersToZoomChange)
-                activeSubscribers = _SubscribersToZoomChange.ToList();
-
-            activeSubscribers.ForEach(s => s.CallSubscribe());
-        }
-        private List<_SubscriberToZoomChange> _SubscribersToZoomChange;
-        private DateTime _SubscribersToZoomLastClean;
-        /// <summary>
-        /// Evidence jednoho subscribera
-        /// </summary>
-        private class _SubscriberToZoomChange
-        {
-            public _SubscriberToZoomChange(ISubscriberToZoomChange subscriber)
-            {
-                __Subscriber = new WeakTarget<ISubscriberToZoomChange>(subscriber);
-            }
-            private WeakTarget<ISubscriberToZoomChange> __Subscriber;
-            /// <summary>
-            /// true pokud je objekt použitelný
-            /// </summary>
-            public bool IsAlive { get { return __Subscriber.IsAlive; } }
-            /// <summary>
-            /// Vrátí true, pokud this instance drží odkaz na daného subscribera.
-            /// </summary>
-            public bool ContainsSubscriber(ISubscriberToZoomChange testSubscriber)
-            {
-                ISubscriberToZoomChange mySubscriber = __Subscriber.Target;
-                return (mySubscriber != null && Object.ReferenceEquals(mySubscriber, testSubscriber));
-            }
-            /// <summary>
-            /// Zavolá metodu <see cref="ISubscriberToZoomChange.ZoomChanged()"/> pro zdejší cíl
-            /// </summary>
-            public void CallSubscribe()
-            {
-                ISubscriberToZoomChange subscriber = __Subscriber.Target;
-                if (subscriber != null)
-                    subscriber.ZoomChanged();
             }
         }
         #endregion
@@ -1870,6 +1890,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Control _CreateDataFormImage(IDataFormItem dataFormItem) { return null; }
         #endregion
         #endregion
+        #region TryRun
+        public static void TryRun(Action action, bool hideException = false) { Instance._TryRun(action, hideException); }
+        private void _TryRun(Action action, bool hideException)
+        {
+            try
+            { action(); }
+            catch (Exception exc)
+            {
+                if (!hideException)
+                {
+                    DialogForm.ShowDialog(DialogArgs.CreateForException(exc));
+                }
+            }
+        }
+        #endregion
         #region LogText_ logování
         /// <summary>
         /// Obsahuje true, pokud log je aktivní.
@@ -2840,7 +2875,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private string __FrameworkName;
-        public static void SetUhdPaint(IMenuItem menuItem) { Instance._SetUhdPaint(menuItem.Checked ?? false); }
+        /// <summary>
+        /// Aplikace má podporu pro UHD monitory (PerMonitorDPI)
+        /// </summary>
         public static bool UhdPaintEnabled { get { return Instance._UhdPaintEnabled; } set { Instance._SetUhdPaint(value); } }
 
         private void _SetUhdPaint(bool uhdEnable)
@@ -2850,12 +2887,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = false;
                 DevExpress.XtraEditors.WindowsFormsSettings.ForceDirectXPaint();
                 DevExpress.XtraEditors.WindowsFormsSettings.SetPerMonitorDpiAware();
+                _UhdPaintEnabled = true;
             }
             else
             {
                 DevExpress.XtraEditors.WindowsFormsSettings.AllowAutoScale = DevExpress.Utils.DefaultBoolean.True;
                 DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = true;
                 DevExpress.XtraEditors.WindowsFormsSettings.ForceGDIPlusPaint();
+                _UhdPaintEnabled = false;
             }
         }
         private bool _UhdPaintEnabled;
@@ -3002,19 +3041,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         void StyleChanged();
     }
-
     /// <summary>
-    /// Objekt, který chce být informován o změně Zoomu.
-    /// Při své iniciaizaci má objekt zavolat <see cref="DxComponent.SubscribeToZoomChange(ISubscriberToZoomChange)"/>.
-    /// Pak po změně Zoomu dostane řízení do své metody <see cref="ISubscriberToZoomChange.ZoomChanged"/>.
-    /// Objekt se může odregistrovat (typicky v Dispose()) metodou <see cref="DxComponent.UnSubscribeToZoomChange(ISubscriberToZoomChange)"/>, ale není to povinné.
+    /// Interface pro listener události <see cref="Application.Idle"/>
     /// </summary>
-    public interface ISubscriberToZoomChange
+    public interface IListenerApplicationIdle : IListener
     {
         /// <summary>
-        /// Došlo ke změně Zoomu
+        /// Metoda je volaná v situaci, kdy aplikační kontext nemá co dělat
         /// </summary>
-        void ZoomChanged();
+        void ApplicationIdle();
     }
     #endregion
     #region class DrawingExtensions : Extensions metody pro grafické třídy (z namespace System.Drawing)
@@ -5636,6 +5671,58 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             return borders;
+        }
+        #endregion
+        #region ConvertToDpi
+        /// <summary>
+        /// Vrátí this <see cref="Point"/> transformovaný do cílového DPI
+        /// </summary>
+        /// <param name="designValue"></param>
+        /// <param name="designDpi"></param>
+        /// <param name="currentDpi"></param>
+        /// <returns></returns>
+        public static Point ConvertToDpi(this Point designValue, int designDpi, int currentDpi)
+        {
+            if (!ConvertDpiIsChanged(designDpi, currentDpi, out var ratio)) return designValue;
+            return Point.Round(new PointF(ratio * (float)designValue.X, ratio * (float)designValue.Y));
+        }
+        /// <summary>
+        /// Vrátí this <see cref="Size"/> transformovaný do cílového DPI
+        /// </summary>
+        /// <param name="designValue"></param>
+        /// <param name="designDpi"></param>
+        /// <param name="currentDpi"></param>
+        /// <returns></returns>
+        public static Size ConvertToDpi(this Size designValue, int designDpi, int currentDpi)
+        {
+            if (!ConvertDpiIsChanged(designDpi, currentDpi, out var ratio)) return designValue;
+            return Size.Round(new SizeF(ratio * (float)designValue.Width, ratio * (float)designValue.Height));
+        }
+        /// <summary>
+        /// Vrátí this <see cref="Rectangle"/> transformovaný do cílového DPI
+        /// </summary>
+        /// <param name="designValue"></param>
+        /// <param name="designDpi"></param>
+        /// <param name="currentDpi"></param>
+        /// <returns></returns>
+        public static Rectangle ConvertToDpi(this Rectangle designValue, int designDpi, int currentDpi)
+        {
+            if (!ConvertDpiIsChanged(designDpi, currentDpi, out var ratio)) return designValue;
+            return Rectangle.Round(new RectangleF(ratio * (float)designValue.X, ratio * (float)designValue.Y, ratio * (float)designValue.Width, ratio * (float)designValue.Height));
+        }
+        /// <summary>
+        /// Určí, zda existuje změna DPI mezi <paramref name="designDpi"/> a <paramref name="currentDpi"/>, vrátí true = změna a nastaví <paramref name="ratio"/> = koeficient změny.
+        /// </summary>
+        /// <param name="designDpi"></param>
+        /// <param name="currentDpi"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        private static bool ConvertDpiIsChanged(int designDpi, int currentDpi, out float ratio)
+        {
+            ratio = 0f;
+            if (designDpi <= 0 || currentDpi <= 0 || designDpi == currentDpi) return false;
+            ratio = (float)currentDpi / (float)designDpi;
+            return true;
         }
         #endregion
     }

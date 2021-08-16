@@ -62,7 +62,6 @@ namespace TestDevExpress.Forms
             SplashUpdate("Otevírám okno...", title: "Hotovo");
 
             this.Disposed += MainForm_Disposed;
-            System.Windows.Forms.Application.Idle += Application_Idle;
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
 
             // ActivatePage(7, true);
@@ -70,7 +69,6 @@ namespace TestDevExpress.Forms
         }
         private void MainForm_Disposed(object sender, EventArgs e)
         {
-            System.Windows.Forms.Application.Idle -= Application_Idle;
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
         }
 
@@ -93,14 +91,13 @@ namespace TestDevExpress.Forms
         /// <param name="e"></param>
         protected override void OnShown(EventArgs e)
         {
-            HideSplash();
             base.OnShown(e);
+            HideSplash();
         }
         private void InitData()
         {
             DxComponent.ClipboardApplicationId = "TestDevExpress";
             this.Text = $"TestDevExpress :: {DxComponent.FrameworkName}";
-            DxComponent.UhdPaintEnabled = false;
         }
         #region Log
 
@@ -108,7 +105,7 @@ namespace TestDevExpress.Forms
         {
             _LogContainChanges = true;
         }
-        private void Application_Idle(object sender, EventArgs e)
+        protected override void OnApplicationIdle()
         {
             if (this._StatusStartLabel.Tag == null)
                 RefreshStartTime();
@@ -192,7 +189,9 @@ namespace TestDevExpress.Forms
 
             page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
             pages.Add(page);
-            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true));
+            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
+            group.Items.Add(ImagePickerForm.CreateRibbonButton());
+            page.Groups.Add(group);
 
             group = CreateFunctionGroup();
             if (group != null) page.Groups.Add(group);
@@ -221,7 +220,7 @@ namespace TestDevExpress.Forms
         private DataRibbonGroup CreateFunctionGroup()
         {
             var group = new DataRibbonGroup() { GroupText = "FUNKCE" };
-            group.Items.Add(CreateRibbonFunction("DevExpress Image", "svgimages/icon%20builder/actions_image.svg", "Otevře okno s nabídkou systémových ikon", _OpenImagePickerFormButton_Click));
+            group.Items.Add(CreateRibbonFunction("Graph Form", "svgimages/chart/chart.svg", "Ukázky grafů DevExpress", _OpenGraphFormButton_Click));
             group.Items.Add(CreateRibbonFunction("Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
@@ -241,19 +240,20 @@ namespace TestDevExpress.Forms
             };
             return iRibbonItem;
         }
-
-        private void _OpenImagePickerFormButton_Click(IMenuItem menuItem)
+        
+        private void _OpenGraphFormButton_Click(IMenuItem menuItem)
         {
-            using (ImagePickerForm form = new ImagePickerForm())
+            DxComponent.TryRun(() =>
             {
-                form.ShowDialog(this);
-            }
+                using (GraphForm form = new GraphForm())
+                {
+                    form.ShowDialog(this);
+                }
+            });
         }
         private void _OpenLayoutFormButton_Click(IMenuItem menuItem)
         {
             LayoutForm form = new LayoutForm(true);
-            form.Text = "Test řízení LayoutPanel";
-            // form.AddControl(new LayoutTestPanel() { CloseButtonVisible = false });        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
             form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
             form.Show();
         }

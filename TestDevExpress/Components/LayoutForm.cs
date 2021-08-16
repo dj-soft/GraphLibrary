@@ -17,6 +17,8 @@ namespace TestDevExpress.Components
         { }
         public LayoutForm(bool useDevExpress)
         {
+            this.Text = $"Test řízení LayoutPanel :: {DxComponent.FrameworkName}";
+
             _LayoutPanel = new DxLayoutPanel()
             {
                 Dock = System.Windows.Forms.DockStyle.Fill,

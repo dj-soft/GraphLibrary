@@ -2351,12 +2351,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", RibbonItemType = RibbonItemType.SkinSetDropDown });
             if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
             if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", RibbonItemType = RibbonItemType.SkinPaletteGallery });
-            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", 
+            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() 
+            { 
+                ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
                 RibbonItemType = RibbonItemType.CheckBoxToggle, 
-                ImageUnChecked = "svgimages/zoom/zoomout.svg", ImageChecked = "svgimages/zoom/zoomin.svg",
-                Checked = DxComponent.UhdPaintEnabled, MenuAction = DxComponent.SetUhdPaint });
+                // ImageUnChecked = "svgimages/zoom/zoomout.svg", ImageChecked = "svgimages/zoom/zoomin.svg",
+                Checked = DxComponent.UhdPaintEnabled, MenuAction = SetUhdPaint });
 
             return iGroup;
+        }
+        private static void SetUhdPaint(IMenuItem menuItem) 
+        {
+            DxComponent.UhdPaintEnabled = (menuItem?.Checked ?? false);
+            DxComponent.ApplicationRestart();
         }
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy

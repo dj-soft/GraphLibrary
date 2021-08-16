@@ -23,14 +23,10 @@ namespace TestDevExpress
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
                 Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
+                Noris.Clients.Win.Components.AsolDX.DxComponent.UhdPaintEnabled = true;
 
-                Application.Run(new TestDevExpress.Forms.MainForm());
+                Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), Properties.Resources.Moon10);
 
-                // Application.Run(new TestDevExpress.Forms.DataForm());
-
-                // Application.Run(new TestDevExpress.Forms.RibbonForm());
-
-                // Application.Run(new TestDevExpress.Forms.ImagePickerForm());
 
                 // Application.Run(new TestDevExpress.Forms.GraphForm());
 

@@ -18,6 +18,7 @@ namespace TestDevExpress.Forms
     /// </summary>
     public class ImagePickerForm : DxRibbonForm
     {
+        #region Konstruktor a static tvorba
         /// <summary>
         /// Konstuktor
         /// </summary>
@@ -48,6 +49,28 @@ namespace TestDevExpress.Forms
                 }
             }
         }
+        /// <summary>
+        /// Vygneruje a vrátí prvek do Ribbonu, který zobrazí this formulář
+        /// </summary>
+        /// <returns></returns>
+        public static IRibbonItem CreateRibbonButton()
+        {
+            return new DataRibbonItem()
+            {
+                ItemId = "_SYS__DevExpress_ShowImagePickerForm", Text = "DevExpress Images", ToolTipText = "Otevře okno s nabídkou systémových ikon",
+                RibbonItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large,
+                Image = "svgimages/icon%20builder/actions_image.svg", MenuAction = ShowImagePicker
+            };
+        }
+        /// <summary>
+        /// Zajistí zobrazení this formuláře jako reakce na kliknutí na Ribbon
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private static void ShowImagePicker(IMenuItem menuItem)
+        {
+            ImagePickerForm.ShowForm();
+        }
+        #endregion
         #region WinForm designer
         /// <summary>
         /// Required designer variable.
@@ -190,6 +213,5 @@ namespace TestDevExpress.Forms
 
         private DxImagePickerListBox _ImagePickerList;
         #endregion
-
     }
 }

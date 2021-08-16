@@ -3184,7 +3184,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Titulkový řádek. Obsahuje titulek a button Close.
     /// </summary>
-    public class DxTitlePanel : DxPanelControl, ISubscriberToZoomChange
+    public class DxTitlePanel : DxPanelControl
     {
         #region Konstruktor, inicializace, proměnné TitleLabel a CloseButton
         /// <summary>
@@ -3211,7 +3211,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
             TitleLabelRight = 200;
 
-            DxComponent.SubscribeToZoomChange(this);
             this.DragAndDropInit();
 
             this.Height = 35;
@@ -3224,6 +3223,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
+            DoLayout();
+        }
+        /// <summary>
+        /// Po změně Skinu
+        /// </summary>
+        protected override void OnStyleChanged()
+        {
+            base.OnStyleChanged();
+            DoLayout();
+        }
+        /// <summary>
+        /// Po změně Zoomu
+        /// </summary>
+        protected override void OnZoomChanged()
+        {
+            base.OnZoomChanged();
             DoLayout();
         }
         /// <summary>
@@ -3896,21 +3911,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
         */
-        #endregion
-        #region ISubscriberToZoomChange
-        void ISubscriberToZoomChange.ZoomChanged()
-        {
-            DoLayout();
-        }
-        /// <summary>
-        /// Dispose
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            DxComponent.UnSubscribeToZoomChange(this);
-            base.Dispose(disposing);
-        }
         #endregion
     }
     #endregion

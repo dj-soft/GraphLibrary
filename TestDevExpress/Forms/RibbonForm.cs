@@ -23,7 +23,6 @@ namespace TestDevExpress.Forms
 
             this.UseLazyLoad = true;
             this.InitializeForm();
-            System.Windows.Forms.Application.Idle += Application_Idle;
 
             DxComponent.SplashUpdate(rightFooter: "Už to jede...");
         }
@@ -36,7 +35,6 @@ namespace TestDevExpress.Forms
         {
             base.Dispose(disposing);
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
-            System.Windows.Forms.Application.Idle -= Application_Idle;
         }
         public static void PrepareSkin()
         {
@@ -120,7 +118,6 @@ namespace TestDevExpress.Forms
             this.DxRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
             this.DxRibbon.ApplicationButtonText = " SYSTEM ";
 
-            string imgZoom = "images/zoom/zoom_32x32.png";
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
 
@@ -130,12 +127,13 @@ namespace TestDevExpress.Forms
 
             page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
             pages.Add(page);
-            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true));
+            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
+            group.Items.Add(ImagePickerForm.CreateRibbonButton());
+            page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.ImgPick", Text = "Image Picker", ToolTipText = "Otevře nabídku systémových ikon", Image = imgZoom, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", Image = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
 
             page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda" };
@@ -185,7 +183,7 @@ namespace TestDevExpress.Forms
         {
             _LogContainChanges = true;
         }
-        private void Application_Idle(object sender, EventArgs e)
+        protected override void OnApplicationIdle()
         {
             if (_LogContainChanges)
                 _RefreshLog();
