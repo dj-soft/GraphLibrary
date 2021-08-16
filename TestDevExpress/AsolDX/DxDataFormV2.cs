@@ -25,11 +25,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba" };
             this.Controls.Add(_CheckBox);
 
-            _VScrollBar = new DevExpress.XtraEditors.VScrollBar();
-            this.Controls.Add(_VScrollBar);
-            _HScrollBar = new DevExpress.XtraEditors.HScrollBar();
-            this.Controls.Add(_HScrollBar);
-            DoLayoutScrollBars();
+            InitializeScrollBars();
 
 
             Items = new List<DxDataFormItemV2>();
@@ -66,22 +62,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnDpiChangedAfterParent(e);
             this.DxAfterDpiChanged();
-        }
-        private void DoLayoutScrollBars()
-        {
-            bool vVisible = true;
-            bool hVisible = true;
-
-            if (vVisible || hVisible)
-            {
-                Size clientSize = this.ClientSize;
-                int vSize = vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0;
-                int hSize = hVisible ? _HScrollBar.GetDefaultHorizontalScrollBarHeight() : 0;
-                if (vSize > 0) _VScrollBar.Bounds = new Rectangle(clientSize.Width - vSize, 0, vSize, clientSize.Height - hSize);
-                if (hSize > 0) _HScrollBar.Bounds = new Rectangle(0, clientSize.Height - hSize, clientSize.Width - vSize, hSize);
-            }
-            if (_VScrollBar.IsSetVisible() != vVisible) _VScrollBar.Visible = vVisible;
-            if (_HScrollBar.IsSetVisible() != hVisible) _HScrollBar.Visible = hVisible;
         }
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -153,6 +133,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             return control;
         }
         private Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>> _DataFormControls;
+
+
+        #region ScrollBars a velikost obsahu
+        /// <summary>
+        /// Velikost dat obsažených v tomto containeru, má vliv na Scrollbary a posouvání
+        /// </summary>
+        public Size ContentSize { get { return _ContentSize; } set { _ContentSize = value;  } }
+        private Size _ContentSize;
+        private void InitializeScrollBars()
+        {
+            _VScrollBar = new DevExpress.XtraEditors.VScrollBar() { Visible = false };
+            this.Controls.Add(_VScrollBar);
+            _HScrollBar = new DevExpress.XtraEditors.HScrollBar() { Visible = false };
+            this.Controls.Add(_HScrollBar);
+            DoLayoutScrollBars();
+        }
+
+        private void DoLayoutScrollBars()
+        {
+            bool vVisible = true;
+            bool hVisible = true;
+
+            if (vVisible || hVisible)
+            {
+                Size clientSize = this.ClientSize;
+                int vSize = vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0;
+                int hSize = hVisible ? _HScrollBar.GetDefaultHorizontalScrollBarHeight() : 0;
+                if (vSize > 0) _VScrollBar.Bounds = new Rectangle(clientSize.Width - vSize, 0, vSize, clientSize.Height - hSize);
+                if (hSize > 0) _HScrollBar.Bounds = new Rectangle(0, clientSize.Height - hSize, clientSize.Width - vSize, hSize);
+            }
+            if (_VScrollBar.IsSetVisible() != vVisible) _VScrollBar.Visible = vVisible;
+            if (_HScrollBar.IsSetVisible() != hVisible) _HScrollBar.Visible = hVisible;
+        }
+        #endregion
     }
     public interface IDxDataFormV2
     {
