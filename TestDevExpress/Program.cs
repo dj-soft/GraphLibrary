@@ -16,14 +16,13 @@ namespace TestDevExpress
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-            // TryRun(new Action(() => System.Windows.Forms.MessageBox.Show("xxx")));
-
             try
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
                 Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
                 Noris.Clients.Win.Components.AsolDX.DxComponent.UhdPaintEnabled = true;
+                
+
 
                 Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), Properties.Resources.Moon10);
 
