@@ -940,7 +940,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Tag = iRibbonGroup
             };
             group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImage, ImagesSize, iRibbonGroup.GroupText);
-            page.Groups.Add(group);
+            if (page != null) page.Groups.Add(group);
             return group;
         }
         /// <summary>
@@ -1711,6 +1711,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         private void _RibbonItemClick(IRibbonItem iRibbonItem)
         {
+            iRibbonItem?.MenuAction?.Invoke(iRibbonItem);
             var args = new TEventArgs<IRibbonItem>(iRibbonItem);
             OnRibbonItemClick(args);
             RibbonItemClick?.Invoke(this, args);
@@ -1786,8 +1787,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             iRibbonItem = null;
             if (item == null) return false;
             if (item.Tag is IRibbonItem found) { iRibbonItem = found; return true; }
-
-
             return false;
         }
         /// <summary>
@@ -2342,6 +2341,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="addSkinButton"></param>
         /// <param name="addPaletteButton"></param>
         /// <param name="addPaletteGallery"></param>
+        /// <param name="addUhdSupport"></param>
         /// <returns></returns>
         public static IRibbonGroup CreateSkinIGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false, bool addUhdSupport = false)
         {
@@ -2351,29 +2351,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", RibbonItemType = RibbonItemType.SkinSetDropDown });
             if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
             if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", RibbonItemType = RibbonItemType.SkinPaletteGallery });
-            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", RibbonItemType = RibbonItemType.CheckBoxToggle, MenuAction =   });
+            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", 
+                RibbonItemType = RibbonItemType.CheckBoxToggle, 
+                ImageUnChecked = "svgimages/zoom/zoomout.svg", ImageChecked = "svgimages/zoom/zoomin.svg",
+                Checked = DxComponent.UhdPaintEnabled, MenuAction = DxComponent.SetUhdPaint });
 
             return iGroup;
         }
-        /// <summary>
-        /// Vytvoří a vrátí fyzickou Grupu do Ribbonu s obsahem tlačítek pro skiny
-        /// </summary>
-        /// <param name="groupText"></param>
-        /// <param name="addSkinButton"></param>
-        /// <param name="addPaletteButton"></param>
-        /// <param name="addPaletteGallery"></param>
-        /// <returns></returns>
-        public static DxRibbonGroup CreateSkinGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false)
-        {
-            string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
-            DxRibbonGroup group = new DxRibbonGroup(text);
+        ///// <summary>
+        ///// Vytvoří a vrátí fyzickou Grupu do Ribbonu s obsahem tlačítek pro skiny
+        ///// </summary>
+        ///// <param name="groupText"></param>
+        ///// <param name="addSkinButton"></param>
+        ///// <param name="addPaletteButton"></param>
+        ///// <param name="addPaletteGallery"></param>
+        ///// <param name="addUhdSupport"></param>
+        ///// <returns></returns>
+        //public static DxRibbonGroup CreateSkinGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false, bool addUhdSupport = false)
+        //{
+        //    IRibbonGroup iGroup = CreateSkinIGroup(groupText, addSkinButton, addPaletteButton, addPaletteGallery, addUhdSupport);
+        //    DxRibbonGroup group = crea
+        //    string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
+        //    DxRibbonGroup group = new DxRibbonGroup(text);
 
-            if (addSkinButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinDropDownButtonItem());
-            if (addPaletteButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteDropDownButtonItem());
-            if (addPaletteGallery) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem());
+        //    if (addSkinButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinDropDownButtonItem());
+        //    if (addPaletteButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteDropDownButtonItem());
+        //    if (addPaletteGallery) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem());
 
-            return group;
-        }
+        //    return group;
+        //}
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
         /*
@@ -3072,6 +3078,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice stránky v Ribbonu
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DataRibbonPage : IRibbonPage
     {
         /// <summary>
@@ -3079,6 +3086,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataRibbonPage()
         {
+            this._PageId = null;
             this.ChangeMode = ContentChangeMode.Add;
             this.Groups = new List<IRibbonGroup>();
         }
@@ -3088,7 +3096,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Page: {this.PageText}; Groups: {Groups.Count}";
+            return this.PageText;
+        }
+        /// <summary>
+        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// </summary>
+        protected virtual string DebugText
+        {
+            get
+            {
+                string debugText = $"Page: {this.PageText}; Groups: {Groups.Count}";
+                return debugText;
+            }
         }
         /// <summary>
         /// Z dodané kolekce stránek sestaví setříděný List a vrátí jej
@@ -3145,7 +3164,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// ID grupy, musí být jednoznačné v rámci Ribbonu
         /// </summary>
-        public string PageId { get; set; }
+        public string PageId
+        {
+            get
+            {
+                if (_PageId == null) _PageId = Guid.NewGuid().ToString();
+                return _PageId;
+            }
+            set { _PageId = value; }
+        }
+        /// <summary>
+        /// Reálně uložené ID stránky
+        /// </summary>
+        protected string _PageId;
         /// <summary>
         /// Režim pro vytvoření / refill / remove této stránky
         /// </summary>
@@ -3183,25 +3214,51 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice kategorie, do které patří stránka v Ribbonu
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DataRibbonCategory : IRibbonCategory
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public DataRibbonCategory()
-        { }
+        {
+            _CategoryId = null;
+        }
         /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Category: {this.CategoryText}";
+            return this.CategoryText;
+        }
+        /// <summary>
+        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// </summary>
+        protected virtual string DebugText
+        {
+            get
+            {
+                string debugText = $"Category: {this.CategoryText}";
+                return debugText;
+            }
         }
         /// <summary>
         /// ID kategorie, jednoznačné per Ribbon
         /// </summary>
-        public string CategoryId { get; set; }
+        public string CategoryId
+        {
+            get
+            {
+                if (_CategoryId == null) _CategoryId = Guid.NewGuid().ToString();
+                return _CategoryId;
+            }
+            set { _CategoryId = value; }
+        }
+        /// <summary>
+        /// Reálně uložené ID stránky
+        /// </summary>
+        protected string _CategoryId;
         /// <summary>
         /// Titulek kategorie zobrazovaný uživateli
         /// </summary>
@@ -3222,6 +3279,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice skupiny ve stránce Ribbonu
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DataRibbonGroup : IRibbonGroup
     {
         /// <summary>
@@ -3229,6 +3287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataRibbonGroup()
         {
+            this._GroupId = null;
             this.ChangeMode = ContentChangeMode.Add;
             this.Items = new List<IRibbonItem>();
         }
@@ -3238,7 +3297,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Page: {this.GroupText}; Items: {Items.Count}";
+            return this.GroupText;
+        }
+        /// <summary>
+        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// </summary>
+        protected virtual string DebugText
+        {
+            get
+            {
+                string debugText = $"Id: {_GroupId}; Text: {GroupText}; Items: {Items.Count}";
+                return debugText;
+            }
         }
         /// <summary>
         /// Z dodané kolekce stránek sestaví setříděný List a vrátí jej
@@ -3268,7 +3338,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// ID grupy, musí být jednoznačné v rámci stránky
         /// </summary>
-        public string GroupId { get; set; }
+        public string GroupId
+        {
+            get
+            {
+                if (_GroupId == null) _GroupId = Guid.NewGuid().ToString();
+                return _GroupId;
+            }
+            set { _GroupId = value; }
+        }
+        /// <summary>
+        /// Reálně uložené ID grupy
+        /// </summary>
+        protected string _GroupId;
         /// <summary>
         /// Režim pro vytvoření / refill / remove této grupy
         /// </summary>
@@ -3330,7 +3412,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string debugText = $"Id: {ItemId}; Text: {Text}; Type: {RibbonItemType}";
+                string debugText = $"Id: {_ItemId}; Text: {Text}; Type: {RibbonItemType}";
                 if (this.SubRibbonItems != null)
                     debugText += $"; SubItems: {this.SubRibbonItems.Count}";
                 return debugText;

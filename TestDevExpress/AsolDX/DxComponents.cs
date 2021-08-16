@@ -2840,6 +2840,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private string __FrameworkName;
+        public static void SetUhdPaint(IMenuItem menuItem) { Instance._SetUhdPaint(menuItem.Checked ?? false); }
+        public static bool UhdPaintEnabled { get { return Instance._UhdPaintEnabled; } set { Instance._SetUhdPaint(value); } }
+
+        private void _SetUhdPaint(bool uhdEnable)
+        {
+            if (uhdEnable)
+            {
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = false;
+                DevExpress.XtraEditors.WindowsFormsSettings.ForceDirectXPaint();
+                DevExpress.XtraEditors.WindowsFormsSettings.SetPerMonitorDpiAware();
+            }
+            else
+            {
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowAutoScale = DevExpress.Utils.DefaultBoolean.True;
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = true;
+                DevExpress.XtraEditors.WindowsFormsSettings.ForceGDIPlusPaint();
+            }
+        }
+        private bool _UhdPaintEnabled;
         #endregion
         #region Win32Api Block input a DoEventsBlockingInput
         [DllImport("user32.dll", EntryPoint = "BlockInput")]
@@ -5275,6 +5294,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Rectangle(r.X - x, r.Y - y, r.Width, r.Height);
         }
         /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zmenšeným o dané vnitřní okraje.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle Sub(this Rectangle r, Padding padding)
+        {
+            return new Rectangle(r.X + padding.Left, r.Y + padding.Top, r.Width - padding.Horizontal, r.Height - padding.Vertical);
+        }
+        /// <summary>
         /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
@@ -5709,6 +5738,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             return default;
+        }
+        /// <summary>
+        /// V dané kolekci najde první prvek vyhovující filtru (nebo pokud není dán filtr, pak najde první prvek) a vrátí true = existuje.
+        /// Prvek uloží do out parametru <paramref name="found"/>.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="predicate"></param>
+        /// <param name="found"></param>
+        /// <returns></returns>
+        public static bool TryGetFirst<TItem>(this IEnumerable<TItem> items, Func<TItem, bool> predicate, out TItem found)
+        {
+            found = default;
+            bool result = false;
+            if (items != null)
+            {
+                bool hasPredicate = (predicate != null);
+                foreach (var item in items)
+                {
+                    if (!hasPredicate || predicate(item))
+                    {
+                        found = item;
+                        result = true;
+                    }
+                }
+            }
+            return result;
         }
         #endregion
     }

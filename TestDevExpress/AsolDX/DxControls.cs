@@ -2525,7 +2525,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string debugText = $"Id: {ItemId}; Text: {Text}; Type: {ItemType}";
+                string debugText = $"Id: {_ItemId}; Text: {Text}; Type: {ItemType}";
                 if (this.SubItems != null)
                     debugText += $"; SubItems: {this.SubItems.Count}";
                 return debugText;
@@ -2628,6 +2628,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataTextItem()
         {
+            this._ItemId = null;
             this.Enabled = true;
         }
         /// <summary>
@@ -2680,14 +2681,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string debugText = $"Id: {ItemId}; Text: {Text}";
+                string debugText = $"Id: {_ItemId}; Text: {Text}";
                 return debugText;
             }
         }
         /// <summary>
         /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
         /// </summary>
-        public virtual string ItemId { get; set; }
+        public virtual string ItemId 
+        {
+            get
+            {
+                if (_ItemId == null) _ItemId = Guid.NewGuid().ToString();
+                return _ItemId;
+            }
+            set { _ItemId = value; }
+        }
+        /// <summary>
+        /// Reálně uložené ID
+        /// </summary>
+        protected string _ItemId;
         /// <summary>
         /// Hlavní text v prvku
         /// </summary>

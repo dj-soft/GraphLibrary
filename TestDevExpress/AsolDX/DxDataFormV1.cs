@@ -14,13 +14,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Panel reprezentující DataForm - včetně záložek a scrollování
     /// </summary>
-    public partial class DxDataForm : DxPanelControl, IDxDataForm
+    public partial class DxDataFormV1 : DxPanelControl, IDxDataForm
     {
         #region Konstruktor a proměnné, Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataForm()
+        public DxDataFormV1()
         {
             __Pages = new Dictionary<string, DxDataFormPage>();
             __Items = new Dictionary<string, DxDataFormControlItem>();
@@ -335,7 +335,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         
     }
     /// <summary>
-    /// Interní přístup do <see cref="DxDataForm"/> pro jeho podřízené třídy
+    /// Interní přístup do <see cref="DxDataFormV1"/> pro jeho podřízené třídy
     /// </summary>
     internal interface IDxDataForm
     {
@@ -357,7 +357,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     #region class DxDataFormPage : Data jedné stránky (záložky) DataFormu
     /// <summary>
     /// Data jedné stránky (záložky) DataFormu: ID, titulek, ikona, vizuální control <see cref="DxDataFormScrollPanel"/>.
-    /// Tento vizuální control může být umístěn přímo v <see cref="DxDataForm"/> (což je vizuální panel),
+    /// Tento vizuální control může být umístěn přímo v <see cref="DxDataFormV1"/> (což je vizuální panel),
     /// anebo může být umístěn na záložce.
     /// </summary>
     public class DxDataFormPage : DxDataFormScrollPanel
@@ -367,7 +367,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konstruktor
         /// </summary>
         /// <param name="dataForm"></param>
-        public DxDataFormPage(DxDataForm dataForm)
+        public DxDataFormPage(DxDataFormV1 dataForm)
             : base(dataForm)
         {
             IsActiveContentInternal = false;
@@ -433,7 +433,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konstruktor
         /// </summary>
         /// <param name="dataForm"></param>
-        public DxDataFormScrollPanel(DxDataForm dataForm)
+        public DxDataFormScrollPanel(DxDataFormV1 dataForm)
         {
             __DataForm = dataForm;
             __ContentPanel = new DxDataFormContentPanel(this);
@@ -480,8 +480,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odkaz na main instanci DataForm
         /// </summary>
-        public DxDataForm DataForm { get { return __DataForm; } }
-        private DxDataForm __DataForm;
+        public DxDataFormV1 DataForm { get { return __DataForm; } }
+        private DxDataFormV1 __DataForm;
         /// <summary>
         /// Odkaz na main instanci DataForm typovanou pro interní přístup
         /// </summary>
@@ -1028,7 +1028,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Main DataForm
         /// </summary>
-        public DxDataForm DataForm { get { return __ScrollPanel?.DataForm; } }
+        public DxDataFormV1 DataForm { get { return __ScrollPanel?.DataForm; } }
         /// <summary>
         /// Odkaz na main instanci DataForm typovanou pro interní přístup
         /// </summary>
@@ -1179,7 +1179,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ScrollPanel = scrollPanel;
             __DataFormItem = dataFormItem;
             __Control = control;
-            __IsFocusableControl = DxDataForm.IsFocusableControl(dataFormItem.ItemType);
+            __IsFocusableControl = DxDataFormV1.IsFocusableControl(dataFormItem.ItemType);
             if (control != null)
             {
                 __ControlIsExternal = true;
@@ -1213,7 +1213,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Main DataForm
         /// </summary>
-        public DxDataForm DataForm { get { return __ScrollPanel?.DataForm; } }
+        public DxDataFormV1 DataForm { get { return __ScrollPanel?.DataForm; } }
         /// <summary>
         /// Odkaz na main instanci DataForm typovanou pro interní přístup
         /// </summary>
@@ -1590,7 +1590,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         Image
     }
     /// <summary>
-    /// Režim práce při zobrazování controlů v <see cref="DxDataForm"/>
+    /// Režim práce při zobrazování controlů v <see cref="DxDataFormV1"/>
     /// </summary>
     [Flags]
     public enum DxDataFormMemoryMode
@@ -1629,7 +1629,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
     #region Pouze pro testování, později smazat
-    partial class DxDataForm
+    partial class DxDataFormTest
     {
         #region Tvorba testovacích dat : CreateSamples()
         /// <summary>
@@ -2403,7 +2403,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static string _SampleItemName(List<DataFormItem> items) { return "item_" + (items.Count + 1000).ToString(); }
 
         // Tvorba podle předpisu DxDataFormSample:
-        public static IEnumerable<IDataFormItem> CreateSample(DxDataFormSample sample)
+        public static IEnumerable<IDataFormItem> CreateSample(DxDataFormTestDefinition sample)
         {
             List<DataFormItem> items = new List<DataFormItem>();
             Random rand = _SampleRandom;
@@ -2501,9 +2501,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    public class DxDataFormTestDefinition
+    {
+        public DxDataFormTestDefinition()
+        { }
+        public DxDataFormTestDefinition(int labelCount, int textCount, int checkCount, int rowsCount, int pagesCount)
+        {
+            this.LabelCount = labelCount;
+            this.TextCount = textCount;
+            this.CheckCount = checkCount;
+            this.RowsCount = rowsCount;
+            this.PagesCount = pagesCount;
+        }
+        public int LabelCount { get; set; }
+        public int TextCount { get; set; }
+        public int CheckCount { get; set; }
+        public int RowsCount { get; set; }
+        public int PagesCount { get; set; }
+    }
     public class WfDataForm : WF.Panel
     {
-        public void CreateSample(DxDataFormSample sample)
+        public void CreateSample(DxDataFormTestDefinition sample)
         {
             this.SuspendLayout();
 
@@ -2578,23 +2596,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Controls.Clear();
         }
     }
-    public class DxDataFormSample
-    {
-        public DxDataFormSample()
-        { }
-        public DxDataFormSample(int labelCount, int textCount, int checkCount, int rowsCount, int pagesCount)
-        {
-            this.LabelCount = labelCount;
-            this.TextCount = textCount;
-            this.CheckCount = checkCount;
-            this.RowsCount = rowsCount;
-            this.PagesCount = pagesCount;
-        }
-        public int LabelCount { get; set; }
-        public int TextCount { get; set; }
-        public int CheckCount { get; set; }
-        public int RowsCount { get; set; }
-        public int PagesCount { get; set; }
-    }
+    
     #endregion
 }
