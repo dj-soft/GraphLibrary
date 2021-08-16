@@ -166,7 +166,7 @@
     </Compile>
     <Compile Include="Components\DialogForm.cs" />
     <Compile Include="AsolDX\DxComponents.cs" />
-    <Compile Include="AsolDX\DxDataForm.cs">
+    <Compile Include="AsolDX\DxDataFormV1.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AsolDX\DxLayoutPanel.cs">
