@@ -2358,28 +2358,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return iGroup;
         }
-        ///// <summary>
-        ///// Vytvoří a vrátí fyzickou Grupu do Ribbonu s obsahem tlačítek pro skiny
-        ///// </summary>
-        ///// <param name="groupText"></param>
-        ///// <param name="addSkinButton"></param>
-        ///// <param name="addPaletteButton"></param>
-        ///// <param name="addPaletteGallery"></param>
-        ///// <param name="addUhdSupport"></param>
-        ///// <returns></returns>
-        //public static DxRibbonGroup CreateSkinGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false, bool addUhdSupport = false)
-        //{
-        //    IRibbonGroup iGroup = CreateSkinIGroup(groupText, addSkinButton, addPaletteButton, addPaletteGallery, addUhdSupport);
-        //    DxRibbonGroup group = crea
-        //    string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
-        //    DxRibbonGroup group = new DxRibbonGroup(text);
-
-        //    if (addSkinButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinDropDownButtonItem());
-        //    if (addPaletteButton) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteDropDownButtonItem());
-        //    if (addPaletteGallery) group.ItemLinks.Add(new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem());
-
-        //    return group;
-        //}
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
         /*

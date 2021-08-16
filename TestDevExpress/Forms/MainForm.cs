@@ -59,8 +59,6 @@ namespace TestDevExpress.Forms
             InitTreeView();            // 9
             InitDragDrop();            // 10
 
-            InitRibbonFunctions();
-
             SplashUpdate("Otevírám okno...", title: "Hotovo");
 
             this.Disposed += MainForm_Disposed;
@@ -102,20 +100,7 @@ namespace TestDevExpress.Forms
         {
             DxComponent.ClipboardApplicationId = "TestDevExpress";
             this.Text = $"TestDevExpress :: {DxComponent.FrameworkName}";
-
-            bool UHD = true;
-            if (UHD)
-            {
-                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = false;
-                DevExpress.XtraEditors.WindowsFormsSettings.ForceDirectXPaint();
-                DevExpress.XtraEditors.WindowsFormsSettings.SetPerMonitorDpiAware();
-            }
-            else
-            {
-                DevExpress.XtraEditors.WindowsFormsSettings.AllowAutoScale = DevExpress.Utils.DefaultBoolean.True;
-                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = true;
-                DevExpress.XtraEditors.WindowsFormsSettings.ForceGDIPlusPaint();
-            }
+            DxComponent.UhdPaintEnabled = false;
         }
         #region Log
 
@@ -201,28 +186,20 @@ namespace TestDevExpress.Forms
         XB.BarManager _BarManager;
         protected override void DxRibbonPrepare()
         {
-            DxRibbonPageBasic = this.DxRibbon.CreatePage("ZÁKLADNÍ");
-            DxRibbonPageBasic.Groups.Add(DxRibbonControl.CreateSkinGroup());
-            DxRibbonGroupFunctions = this.DxRibbon.CreateGroup("FUNKCE", DxRibbonPageBasic);
+            List<DataRibbonPage> pages = new List<DataRibbonPage>();
+            DataRibbonPage page;
+            DataRibbonGroup group;
+
+            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
+            pages.Add(page);
+            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true));
+
+            group = CreateFunctionGroup();
+            if (group != null) page.Groups.Add(group);
+
+            this.DxRibbon.Clear();
+            this.DxRibbon.AddPages(pages);
         }
-        protected DevExpress.XtraBars.BarItem CreateRibbonFunction(string text, string image, string toolTipText, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
-        {
-            DataRibbonItem iRibbonItem = new DataRibbonItem()
-            {
-                Text = text,
-                Image = image,
-                ToolTipText = toolTipText,
-                RibbonItemType = RibbonItemType.Button,
-                RibbonStyle = RibbonItemStyles.Large
-            };
-            return CreateRibbonFunction(iRibbonItem, clickHandler);
-        }
-        protected DevExpress.XtraBars.BarItem CreateRibbonFunction(IRibbonItem iRibbonItem, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
-        {
-            return this.DxRibbon.CreateItem(iRibbonItem, DxRibbonGroupFunctions, clickHandler);
-        }
-        private DxRibbonPage DxRibbonPageBasic;
-        private DxRibbonGroup DxRibbonGroupFunctions;
         protected override void DxStatusPrepare()
         {
             this._StatusStartLabel = DxComponent.CreateDxStatusLabel(this.DxStatusBar, "Start time: ...", XB.BarStaticItemSize.Content);
@@ -241,22 +218,38 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region Ribbon Functions
-        private void InitRibbonFunctions()
+        private DataRibbonGroup CreateFunctionGroup()
         {
-            CreateRibbonFunction("DevExpress Image", "svgimages/icon%20builder/actions_image.svg", "Otevře okno s nabídkou systémových ikon", _OpenImagePickerFormButton_Click);
-            CreateRibbonFunction("Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click);
-            CreateRibbonFunction("DataForm1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click);
-            CreateRibbonFunction("DataForm2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click);
-            CreateRibbonFunction("Ribon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click);
+            var group = new DataRibbonGroup() { GroupText = "FUNKCE" };
+            group.Items.Add(CreateRibbonFunction("DevExpress Image", "svgimages/icon%20builder/actions_image.svg", "Otevře okno s nabídkou systémových ikon", _OpenImagePickerFormButton_Click));
+            group.Items.Add(CreateRibbonFunction("Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click));
+            group.Items.Add(CreateRibbonFunction("DataForm1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("DataForm2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("Ribon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
+            return group;
         }
-        private void _OpenImagePickerFormButton_Click(object sender, EventArgs e)
+        protected DataRibbonItem CreateRibbonFunction(string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null)
+        {
+            DataRibbonItem iRibbonItem = new DataRibbonItem()
+            {
+                Text = text,
+                Image = image,
+                ToolTipText = toolTipText,
+                RibbonItemType = RibbonItemType.Button,
+                RibbonStyle = RibbonItemStyles.Large,
+                MenuAction = clickHandler
+            };
+            return iRibbonItem;
+        }
+
+        private void _OpenImagePickerFormButton_Click(IMenuItem menuItem)
         {
             using (ImagePickerForm form = new ImagePickerForm())
             {
                 form.ShowDialog(this);
             }
         }
-        private void _OpenLayoutFormButton_Click(object sender, EventArgs e)
+        private void _OpenLayoutFormButton_Click(IMenuItem menuItem)
         {
             LayoutForm form = new LayoutForm(true);
             form.Text = "Test řízení LayoutPanel";
@@ -264,36 +257,36 @@ namespace TestDevExpress.Forms
             form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
             form.Show();
         }
-        private void _TestDataForm1ModalButton_Click(object sender, EventArgs e)
+        private void _TestDataForm1ModalButton_Click(IMenuItem menuItem)
         {
             DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
-            using (var dataForm = new DataForm())
+            using (var dataForm = new DataFormV1())
             {
                 dataForm.WinProcessInfoBeforeForm = winProcessInfo;
                 dataForm.WindowState = FormWindowState.Maximized;
                 dataForm.ShowDialog();
             }
         }
-        private void _TestDataForm1NormalButton_Click(object sender, EventArgs e)
+        private void _TestDataForm1NormalButton_Click(IMenuItem menuItem)
         {
             DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
-            var dataForm = new DataForm();
+            var dataForm = new DataFormV1();
             dataForm.WinProcessInfoBeforeForm = winProcessInfo;
             dataForm.WindowState = FormWindowState.Normal;
             dataForm.Size = new Size(1400, 900);
             dataForm.StartPosition = FormStartPosition.WindowsDefaultLocation;
             dataForm.Show();
         }
-        private void _TestDataForm2ModalButton_Click(object sender, EventArgs e)
+        private void _TestDataForm2ModalButton_Click(IMenuItem menuItem)
         {
             DxComponent.WinProcessInfo winProcessInfo = DxComponent.WinProcessInfo.GetCurent();
-            using (var dataForm = new DataForm2())
+            using (var dataForm = new DataFormV2())
             {
                 dataForm.WindowState = FormWindowState.Maximized;
                 dataForm.ShowDialog();
             }
         }
-        private void _TestDxRibbonFormModalButton_Click(object sender, EventArgs e)
+        private void _TestDxRibbonFormModalButton_Click(IMenuItem menuItem)
         {
             using (var ribbonForm = new RibbonForm())
             {

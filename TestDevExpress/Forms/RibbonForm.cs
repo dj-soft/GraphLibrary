@@ -128,10 +128,9 @@ namespace TestDevExpress.Forms
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "DevExpress" };
+            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
             pages.Add(page);
-
-            page.Groups.Add(DxRibbonControl.CreateSkinIGroup());
+            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true));
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             page.Groups.Add(group);

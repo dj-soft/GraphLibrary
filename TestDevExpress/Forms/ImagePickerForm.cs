@@ -145,10 +145,16 @@ namespace TestDevExpress.Forms
         {
             this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
 
-            DXB.Ribbon.RibbonPage pageSkin = new DXB.Ribbon.RibbonPage("SKIN");
-            this.Ribbon.Pages.Add(pageSkin);
+            List<DataRibbonPage> pages = new List<DataRibbonPage>();
+            DataRibbonPage page;
+            DataRibbonGroup group;
 
-            pageSkin.Groups.Add(DxRibbonControl.CreateSkinGroup());
+            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
+            pages.Add(page);
+            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN"));
+
+            this.DxRibbon.Clear();
+            this.DxRibbon.AddPages(pages);
         }
         /// <summary>
         /// Naplní prvky do StatusBaru

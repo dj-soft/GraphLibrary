@@ -8,13 +8,13 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
-    public class DataForm : DxRibbonForm
+    public class DataFormV1 : DxRibbonForm
     {
         #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataForm()
+        public DataFormV1()
         {
             DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", 
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
@@ -135,15 +135,14 @@ namespace TestDevExpress.Forms
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "DevExpress" };
+            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
             pages.Add(page);
+            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true));
 
             group = new DataRibbonGroup() { GroupId = "basic", GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Basic.Refresh", Text = "Refresh", ToolTipText = "Znovu načíst údaje do statusbaru o spotřebě systémových zdrojů", Image = imageRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Basic.Clear", Text = "Smazat", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", Image = imageClear });
-
-            page.Groups.Add(DxRibbonControl.CreateSkinIGroup("DESIGN"));
 
             group = new DataRibbonGroup() { GroupId = "sample", GroupText = "VZORKY" };
             page.Groups.Add(group);
@@ -162,45 +161,45 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "g100", GroupText = "LABEL" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 10, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.LT10.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 0, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.LT10.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g010", GroupText = "TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 10, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(0, 1, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g001", GroupText = "CHECKBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 10, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(0, 0, 1, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g110", GroupText = "LABEL + TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 10, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g120", GroupText = "LABEL + 2x TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 10, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 2, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g111", GroupText = "LABEL + TEXTBOX + CHECKBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 10, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormSample(1, 1, 1, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 30, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 300, 1) });
 
             string resource1 = "images/xaf/action_reload_32x32.png";
             string resource3 = "images/zoom/zoom_32x32.png";
@@ -272,7 +271,7 @@ namespace TestDevExpress.Forms
                     break;
                 default:
                     DxComponent.LogClear();
-                    if (e.Item.Tag is DxDataFormSample sampleData)
+                    if (e.Item.Tag is DxDataFormTestDefinition sampleData)
                         this._AddDataFormSampleData(sampleData);
                     else if (e.Item.Tag is string sampleName)
                         this._AddDataFormSampleName(sampleName);
@@ -281,7 +280,7 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region DataForm
-        private void _AddDataFormSampleData(DxDataFormSample sampleData)
+        private void _AddDataFormSampleData(DxDataFormTestDefinition sampleData)
         {
             _RemoveDataForms();
 
@@ -305,7 +304,7 @@ namespace TestDevExpress.Forms
             if (sampleId <= 0) return;
 
             var sampleStartTime = DxComponent.LogTimeCurrent;
-            var sampleItems = DxDataForm.CreateSample(sampleId);
+            var sampleItems = DxDataFormTest.CreateSample(sampleId);
             if (sampleItems == null) return;
             int count = sampleItems.Count();
             DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
@@ -313,7 +312,7 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-            DxDataForm dxDataForm = CreateValidDxDataForm();
+            DxDataFormV1 dxDataForm = CreateValidDxDataForm();
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
@@ -331,16 +330,16 @@ namespace TestDevExpress.Forms
             RefreshStatusCurrent();
         }
    
-        private void _AddDataFormDx(DxDataFormSample sample)
+        private void _AddDataFormDx(DxDataFormTestDefinition sample)
         {
-            DxDataForm dxDataForm = CreateValidDxDataForm();
+            DxDataFormV1 dxDataForm = CreateValidDxDataForm();
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
             _DoLayoutAnyDataForm();
 
             var sampleStartTime = DxComponent.LogTimeCurrent;
-            var sampleItems = DxDataForm.CreateSample(sample);
+            var sampleItems = DxDataFormTest.CreateSample(sample);
             int count = sampleItems.Count();
             DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
 
@@ -350,7 +349,7 @@ namespace TestDevExpress.Forms
 
             _DxMainPanel.Controls.Add(dxDataForm);
         }
-        private void _AddDataFormWf(DxDataFormSample sample)
+        private void _AddDataFormWf(DxDataFormTestDefinition sample)
         {
             WfDataForm wfDataForm = new WfDataForm();
             wfDataForm.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -364,9 +363,9 @@ namespace TestDevExpress.Forms
 
             _DxMainPanel.Controls.Add(wfDataForm);
         }
-        private DxDataForm CreateValidDxDataForm()
+        private DxDataFormV1 CreateValidDxDataForm()
         {
-            DxDataForm dxDataForm = new DxDataForm();
+            DxDataFormV1 dxDataForm = new DxDataFormV1();
             dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
             dxDataForm.MemoryMode = (_DxDataFormMemoryOptimized ? DxDataFormMemoryMode.Default2 : DxDataFormMemoryMode.HostAllways);
             dxDataForm.GotFocus += DxDataForm_GotFocus;
@@ -455,7 +454,7 @@ namespace TestDevExpress.Forms
                 anyDataForm.Bounds = new System.Drawing.Rectangle(6, 32, clientSize.Width - 12, clientSize.Height - 38);
             }
         }
-        private DxDataForm _DxDataForm;
+        private DxDataFormV1 _DxDataForm;
         private WfDataForm _WfDataForm;
         private System.Windows.Forms.Control _AnyDataForm;
         private bool _DxShowLog;
