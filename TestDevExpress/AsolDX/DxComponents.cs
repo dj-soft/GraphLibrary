@@ -3213,6 +3213,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 catch { }
             }
         }
+        /// <summary>
+        /// Do this controlu vloží potřebné souřadnice, pokud jsou změněny.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="newBounds"></param>
+        public static void SetBounds(this Control control, Rectangle newBounds)
+        {
+            if (control != null)
+            {
+                var oldBounds = control.Bounds;
+                bool equalLocation = (newBounds.Location == oldBounds.Location);
+                bool equalSize = (newBounds.Location == oldBounds.Location);
+                if (!equalLocation && !equalSize)
+                    control.Bounds = newBounds;
+                else if (!equalSize)
+                    control.Size = newBounds.Size;
+                else if (!equalLocation)
+                    control.Location = newBounds.Location;
+            }
+        }
         #endregion
         #region Invoke to GUI: run, get, set
         /// <summary>

@@ -25,7 +25,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba" };
             this.Controls.Add(_CheckBox);
 
-            InitializeScrollBars();
+            InitializeContent();
 
 
             Items = new List<DxDataFormItemV2>();
@@ -46,12 +46,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxLabelControl _Label;
         private DxTextEdit _TextBox;
         private DxCheckEdit _CheckBox;
-        private DevExpress.XtraEditors.VScrollBar _VScrollBar;
-        private DevExpress.XtraEditors.HScrollBar _HScrollBar;
         private List<DxDataFormItemV2> Items;
         protected override void OnSizeChanged(EventArgs e)
         {
-            DoLayoutScrollBars();
+            DoLayoutContent();
             base.OnSizeChanged(e);
         }
         protected override void OnDpiChangedBeforeParent(EventArgs e)
@@ -101,7 +99,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         protected void DxAfterStyleChanged()
         {
-            this.DoLayoutScrollBars();
+            this.DoLayoutContent();
             Items.ForEachExec(i => i.Invalidate());
         }
         protected void DxAfterDpiChanged()
@@ -135,37 +133,83 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>> _DataFormControls;
 
 
-        #region ScrollBars a velikost obsahu
+        #region ContentPanel, ScrollBars a velikost obsahu
+
         /// <summary>
         /// Velikost dat obsažených v tomto containeru, má vliv na Scrollbary a posouvání
         /// </summary>
-        public Size ContentSize { get { return _ContentSize; } set { _ContentSize = value;  } }
+        public Size ContentSize { get { return _ContentSize; } set { _ContentSize = value; DoLayoutContent();  } }
         private Size _ContentSize;
-        private void InitializeScrollBars()
+        private void InitializeContent()
         {
+            _ContentPanel = new DxPanelControl() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            _ContentPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+            this.Controls.Add(_ContentPanel);
             _VScrollBar = new DevExpress.XtraEditors.VScrollBar() { Visible = false };
             this.Controls.Add(_VScrollBar);
             _HScrollBar = new DevExpress.XtraEditors.HScrollBar() { Visible = false };
             this.Controls.Add(_HScrollBar);
-            DoLayoutScrollBars();
+            _BottomRightPanel = new DxPanelControl() { Visible = false, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            this.Controls.Add(_BottomRightPanel);
+            
+            DoLayoutContent();
         }
 
-        private void DoLayoutScrollBars()
+        private void DoLayoutContent()
         {
-            bool vVisible = true;
-            bool hVisible = true;
+            Size contentSize = this.ContentSize;
+            Size clientSize = this.ClientSize;
+            int clientWidth = clientSize.Width;
+            int clientHeight = clientSize.Height;
 
-            if (vVisible || hVisible)
+            // Vertikální (svislý) ScrollBar: bude viditelný, když výška obsahu je větší než výška klienta, a zmenší šířku klienta:
+            bool vVisible = (contentSize.Height > clientHeight);
+            int vScrollSize = (vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0);
+            if (vVisible) clientWidth -= vScrollSize;
+
+            // Horizontální (vodorovný) ScrollBar: bude viditelný, když šířka obsahu je větší než šířka klienta, a zmenší výšku klienta:
+            bool hVisible = (contentSize.Width > clientWidth);
+            int hScrollSize = (hVisible ? _VScrollBar.GetDefaultHorizontalScrollBarHeight() : 0);
+            if (hVisible) clientHeight -= hScrollSize;
+
+            // Pokud dosud nebyl viditelný Vertikální (svislý) ScrollBar, ale je viditelný Horizontální (vodorovný) ScrollBar:
+            //  pak Horizontální ScrollBar zmenšil výšku obsahu (clientHeight), a může se stát, že bude třeba zobrazit i Vertikální ScrollBar:
+            if (!vVisible && hVisible && (contentSize.Height > clientHeight))
             {
-                Size clientSize = this.ClientSize;
-                int vSize = vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0;
-                int hSize = hVisible ? _HScrollBar.GetDefaultHorizontalScrollBarHeight() : 0;
-                if (vSize > 0) _VScrollBar.Bounds = new Rectangle(clientSize.Width - vSize, 0, vSize, clientSize.Height - hSize);
-                if (hSize > 0) _HScrollBar.Bounds = new Rectangle(0, clientSize.Height - hSize, clientSize.Width - vSize, hSize);
+                vVisible = true;
+                vScrollSize = _VScrollBar.GetDefaultVerticalScrollBarWidth();
+                clientWidth -= vScrollSize;
             }
+
+            // Pokud je přílš malá šířka a je viditelný Vertikální (svislý) ScrollBar: vrátit plnou šířku a zrušit scrollBar:
+            if (clientWidth < 10 && vVisible)
+            {
+                clientWidth = clientSize.Width;
+                vVisible = false;
+                vScrollSize = 0;
+            }
+            // Pokud je přílš malá výška a je viditelný Horizontální (vodorovný) ScrollBar: vrátit plnou výšku a zrušit scrollBar:
+            if (clientHeight < 10 && hVisible)
+            {
+                clientHeight = clientSize.Height;
+                hVisible = false;
+                hScrollSize = 0;
+            }
+
+            bool rVisible = vVisible && hVisible;
+            _ContentPanel.SetBounds(new Rectangle(0, 0, clientWidth, clientHeight));
+            if (vVisible) _VScrollBar.SetBounds(new Rectangle(clientWidth, 0, vScrollSize, clientHeight));
+            if (hVisible) _HScrollBar.SetBounds(new Rectangle(0, clientHeight, clientWidth, hScrollSize));
+            if (rVisible) _BottomRightPanel.SetBounds(new Rectangle(clientWidth, clientHeight, vScrollSize, hScrollSize));
+
             if (_VScrollBar.IsSetVisible() != vVisible) _VScrollBar.Visible = vVisible;
             if (_HScrollBar.IsSetVisible() != hVisible) _HScrollBar.Visible = hVisible;
+            if (_BottomRightPanel.IsSetVisible() != rVisible) _BottomRightPanel.Visible = rVisible;
         }
+        private DxPanelControl _ContentPanel;
+        private DevExpress.XtraEditors.VScrollBar _VScrollBar;
+        private DevExpress.XtraEditors.HScrollBar _HScrollBar;
+        private DxPanelControl _BottomRightPanel;
         #endregion
     }
     public interface IDxDataFormV2
